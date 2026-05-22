@@ -1,19 +1,36 @@
 # UI Framework Design Notes
 
-A small SPA framework. Four constraints shape everything:
+A small SPA framework. Below constraints shape everything:
 
 1. **Buildless** — plain ES modules, runs directly in the browser.
-2. **Hyperscript syntax** — HTML expressed as JS function calls.
+2. **Element-factory syntax** — DOM expressed as JS function calls (`el(tag, ...)` plus per-tag shortcuts). HTML elements are the substrate, not the ceiling — imp-ui is an app framework, not a hypertext renderer.
 3. **`render` produces real DOM** — no virtual DOM, no string templates.
 4. **Solid-style signals** — fine-grained reactivity; components run once.
+5. **Simplicity** - it's supposed to be very simple to use, without need to study long documentation
+6. **AI Agents target** - Framework simple to use by AI agents. Assumption - no hand written code. Javascript instead of Typescript to save tokens.
+7. **All in one toolkit** - This Framework will serve also as local runtime, provide reach std library (already good base of components)
+8. **Reactivity is opt-in** — signals are a tool, not a religion. Plain imperative code is a first-class path: `el` returns real DOM nodes, so you can hold a reference, mutate `.textContent`, `appendChild`, set attributes, attach listeners directly. Nothing in the framework requires a signal to exist. Use signals when fine-grained reactivity earns its keep; reach for direct DOM manipulation when it's simpler.
+9. **Themable and translatable by default** — theming (colors, radius, shadows, spacing, typography tokens) and i18n (locale + `t()`) are first-class framework concerns, not user-space layers bolted on top. Every stdlib component reads tokens from a reactive `theme` signal and pipes user-facing strings through a reactive `t()`. Changing either re-skins or re-localizes the whole app instantly. Every layer below must be designed with this in mind — rendering exposes a CSS-variable surface, reactivity carries the theme/locale signals, the CLI ships a live-editing showcase, and the stdlib is a downstream consumer of both systems.
 
 SPA only. No SSR. No hydration.
 
 ---
 
-## 1. Hyperscript
+## 0. Why this framework
 
-HTML expressed as function calls. Each tag is a factory that returns a real DOM node.
+**Fragmentation is the real problem.** Modern frontend forces a stack assembly exercise before any product work happens: pick a framework, pick a router, pick a state library, pick a forms library, pick a component kit, pick a build tool, pick a dev server, pick a testing harness. Each choice has five viable answers, each answer has its own conventions, and the seams between them are where bugs and onboarding pain live. This framework rejects that: one toolkit covers rendering, reactivity, routing, runtime, and a standard component library. Boring, consistent, opinionated.
+
+**80% is the target, not 100%.** No claim of universality. Some apps need things this won't provide (heavy data viz, native-bridge mobile, complex collaborative editing, etc.). That's fine — pick something else for those. For the broad middle — dashboards, CRUD apps, internal tools, marketing-adjacent product UIs — this should be the full answer. And when something *is* missing, the framework is simple enough that an AI agent can produce the missing piece from scratch rather than introducing a heavy dependency.
+
+**SPAs are still the right default.** SSR has captured a lot of mindshare lately, and a lot of that mindshare is downstream of the fact that companies selling compute love selling SSR compute. The original move — frontend on a CDN, backend serving clean readable JSON, clear separation of concerns — remains one of the best things that happened to web development. Backends become debuggable, cacheable, language-agnostic. Frontend deploys are cheap and instant. Loading states are a solved problem. This framework leans into that model unapologetically.
+
+**Boring on purpose.** No novel rendering algorithm, no new reactivity paradigm, no breakthrough perf claim. Just a small, legible set of tools that get most of the job done. Novelty is a tax — both on the user and on the AI agents we expect to write code in this framework. If a feature isn't here, the assumption is that with an AI agent you can write it yourself, in user code, in an afternoon.
+
+---
+
+## 1. Elements
+
+DOM expressed as function calls. `el(tag, ...args)` is the one primitive; per-tag shortcuts (`div`, `p`, `button`, …) are thin wrappers around it. Each call returns a real DOM node — no virtual DOM, no string template, no compile step. Element factories are the substrate; the framework's job is everything *above* them (reactivity, theming, i18n, routing, runtime, stdlib).
 
 ```js
 p("This is a paragraph")
@@ -37,7 +54,7 @@ Arguments are identified by **type**, not position. Order doesn't matter; `p({..
 - `null`, `undefined`, `false` → ignored (so `cond && el` works)
 
 ```js
-function h(tag, ...args) {
+function el(tag, ...args) {
   const node = document.createElement(tag)
   const { props, children } = normalize(args)
   applyProps(node, props)
@@ -75,7 +92,7 @@ const tags = ['div', 'p', 'span', 'h1', 'h2', 'h3', 'ul', 'li',
               'main', 'footer', 'nav', 'aside', /* … */]
 
 export const { div, p, span, h1, h2, h3, ul, li, /* … */ } =
-  Object.fromEntries(tags.map(t => [t, (...args) => h(t, ...args)]))
+  Object.fromEntries(tags.map(t => [t, (...args) => el(t, ...args)]))
 ```
 
 A `Proxy` would let any tag name work — easier for custom elements, but harder to tree-shake. Start with the explicit list.
@@ -86,7 +103,13 @@ SVG elements need `createElementNS('http://www.w3.org/2000/svg', tag)`. Expose a
 
 ### Components are just functions
 
-`Card({ title }) → div(...)`. No framework concept, no special syntax. Most of the readability gain in practice comes from naming subtrees rather than from the library itself.
+`card({ title }) → div(...)`. No framework concept, no special syntax. Most of the readability gain in practice comes from naming subtrees rather than from the library itself.
+
+**Naming convention: lowercase, always.** Components are functions just like the tag factories, and share their casing. No JSX-style `App` / `Card` capitalization — write `app`, `card`, `userMenu`. We pick consistency over the visual hint; AI agents don't benefit from casing-as-signal, and one rule ("everything is a lowercase function call") is easier to internalize than two.
+
+**Forbidden names.** Component names cannot collide with any name exported by `imp.js` — every tag factory (`div`, `p`, `header`, `main`, `nav`, `footer`, `section`, `article`, `aside`, `form`, `table`, `dialog`, …) plus framework primitives (`el`, `render`, `signal`, `effect`, `computed`, `when`, `each`, `match`, `onMount`, …). When you want a component that renders one of these tags, pick a non-colliding name (`siteHeader`, `pageNav`, `dataTable`). Forbidden list is forward-compatible: any HTML element name is reserved even if the framework doesn't currently export a factory for it, so adding factories later never breaks user code.
+
+Both rules are enforced by custom Deno lint plugins shipped with the `imp` CLI — see Layer 4.
 
 ---
 
@@ -363,7 +386,7 @@ Decide whether the owner tree manages a single signal per scope or per effect.
 ```js
 import { signal, computed } from './signals.js'
 import { when, each } from './reactive.js'
-import { div, ul, li, span, button, input, h1 } from './h.js'
+import { div, ul, li, span, button, input, h1 } from './imp.js'
 
 function TodoApp() {
   const todos = signal([])
@@ -429,5 +452,184 @@ document.body.appendChild(TodoApp())
 ## References
 
 - **SolidJS** — closest existing design; study its store, owner tree, and `<For>`.
-- **`htm` / `lit-html`** — alternative buildless templating, if hyperscript ergonomics frustrate.
+- **`htm` / `lit-html`** — alternative buildless templating, if the element-factory ergonomics frustrate.
 - **WICG Context Protocol** — out of scope for v1, but the bubbling-event pattern is worth knowing if cross-component state surfaces later.
+
+---
+
+## Implementation Plan
+
+Build layer by layer. Each layer should be usable on its own before moving to the next. Don't pre-build for layers you haven't reached yet.
+
+### Layer 1 — Rendering
+
+The foundation. Everything else assumes you can produce real DOM from JS.
+
+- [ ] **1a. Element factory core (`imp.js`)**
+  - [ ] `el(tag, ...args)` with type-based dispatch (array → children, string/number → text, object → props, node → child, function → reactive, falsy → skip)
+  - [ ] Recursive children flattening; drop `null`/`undefined`/`false`
+  - [ ] Tag factories: explicit list exported via `Object.fromEntries`
+  - [ ] Special prop keys: `style` (object → inline CSS, camelCase → kebab), `className`, `on*` events, `dataset`, boolean attrs, `ref`
+  - [ ] Fallthrough to `setAttribute` for everything else
+  - [ ] SVG namespace handling (`svg.rect`, `svg.circle`, …)
+- [ ] **1b. External / raw HTML interop**
+  - [ ] Accept existing `Node` instances as children (already implicit; verify)
+  - [ ] `html("<div>…</div>")` helper for trusted raw HTML → parsed DOM nodes
+  - [ ] Wrapping a 3rd-party component (Chart.js, Leaflet, etc.) — usually via `ref` + `onMount`; document the pattern
+  - [ ] Decide on `innerHTML` escape hatch vs. forcing the `html()` helper
+
+### Layer 2 — Reactivity
+
+Once Layer 1 renders static trees, signals make them live.
+
+- [ ] **2a. Signal primitives (`signals.js`)**
+  - [ ] `signal(initial)` — read/`set`/`update`, observer tracking
+  - [ ] `effect(fn)` — runs once, re-runs on dependency change
+  - [ ] `computed(fn)` — derived signal
+  - [ ] Wiring reactive props/children in `el` (function value → effect)
+- [ ] **2b. Structural primitives (`reactive.js`)**
+  - [ ] `when(signal, render)` — conditional via marker comment
+  - [ ] `match(signal, branches)` — multi-way branching
+  - [ ] `each(listSignal, renderItem, getKey)` — keyed list diffing
+  - [ ] Decide item-level reactivity strategy (id + `computed` / per-field signals / Proxy store) — Open Q #1
+  - [ ] Component hierarchy via signal-as-context (children read parent's signal directly — close over it)
+- [ ] **2c. Custom subscription hook**
+  - [ ] Expose `subscribe(signal, fn)` for 3rd-party scripts (charts, etc.) that need raw notifications outside the effect system
+  - [ ] Return an unsubscribe handle; tie into disposal
+- [ ] **2d. Disposal & ownership**
+  - [ ] Owner tree mirroring component tree
+  - [ ] `onMount(node, fn)` with disposer return
+  - [ ] `AbortController` integration for unified cleanup (effects + fetch + listeners)
+- [ ] **2e. Quality-of-life (defer until core works)**
+  - [ ] Class/style object sugar (`{ name: signal }`)
+  - [ ] Two-way `bind:` sugar
+  - [ ] `async(promise, { pending, then, catch })`
+  - [ ] `batch(() => …)`
+  - [ ] `portal(target, node)`
+
+### Layer 3 — Routing
+
+Independent of rendering/reactivity but builds on them.
+
+- [ ] **3a. Router implementation**
+  - [ ] Hash vs. History API (pick one; History is the default)
+  - [ ] Route definitions: path pattern → component factory
+  - [ ] `route` signal — current path/params drive a `match`-style render
+  - [ ] Navigation: `navigate(path)`, `<Link>` component (or `a({ href, onClick })`)
+  - [ ] Nested routes & route params
+  - [ ] Lazy route loading via dynamic `import()` (still buildless)
+
+### Layer 4 — Runtime / dev tooling
+
+Make the framework runnable without a build step locally. **Deno is the runtime** for the `imp` CLI — chosen for: built-in JS/TS handling, native file watcher, native HTTP server, native test runner, native linter with a custom-rule plugin API, single static binary, zero `node_modules`. The CLI is distributed as a `deno compile`d binary (and as `deno run -A jsr:@imp/cli` for those who already have Deno).
+
+- [ ] **4a. Static dev server (`imp dev`)**
+  - [ ] `Deno.serve` over the current directory as static files
+  - [ ] Live reload via `Deno.watchFs` → SSE → page reload script auto-injected into served HTML
+  - [ ] Bare-specifier resolution (decide: import maps generator vs. rewrite-on-the-fly vs. force user-relative imports)
+- [ ] **4b. `imp` engine injection**
+  - [ ] Decide how engine is delivered: import map → CDN, bundled local copy, or auto-injected `<script>` tag
+  - [ ] CLI scaffolder: `imp new my-app` → minimal `index.html` + `app.js`
+  - [ ] Decide whether the engine is one file or multi-file ES modules (one file = easier to vendor, multi = better dev DX)
+- [ ] **4c. Bundler (`imp build`)**
+  - [ ] Production bundle via `deno bundle` (fallback to `esbuild` through Deno's npm interop if `deno bundle` is insufficient — tree-shaking, minification, sourcemaps)
+  - [ ] Single-file ES module: framework engine + user app + stdlib components used, minified
+  - [ ] Asset copy step (images, CSS, fonts) + `index.html` rewrite to point at the bundled entry and hash-stamped filenames for cache-busting
+  - [ ] No code-splitting in v1 — flat output is easier to reason about and the bundles will be small
+- [ ] **4d. Custom lint rules (`imp lint`)**
+  - [ ] Thin wrapper around `deno lint` that pre-registers the framework's lint plugin (Deno's lint plugin API: a JS module exporting AST visitor rules)
+  - [ ] `no-capital-component` — flag any user-defined function whose name starts with an uppercase letter. Component convention is lowercase (see §1)
+  - [ ] `no-reserved-component-name` — flag a component declaration whose name collides with any `imp.js` export (tag factories + primitives). Names sourced from a single canonical list (`reserved.js`) shared between the runtime and the lint plugin so they cannot drift
+  - [ ] `no-reserved-html-name` — flag component names matching any HTML element name, even ones the framework doesn't currently export. Future-proofs against added tag factories
+  - [ ] All three rules ship in the same plugin so `imp lint` runs them in one pass; users opt out per-rule via standard `deno lint` config
+- [ ] **4e. Test runner (`imp test`)**
+  - [ ] Thin wrapper around `deno test`. The CLI's job is to inject a UI-aware environment and ergonomic helpers; assertions, reporters, watch mode, and filtering are inherited from Deno verbatim so users get one mental model, not two
+  - [ ] **DOM polyfill auto-loaded.** Default is `happy-dom` (`linkedom` as fallback if perf or compat warrants). Polyfill is wired into `globalThis` (`document`, `window`, `Node`, `Event`, `customElements`) before any user test module loads — same surface `imp.js` uses in the browser, so the same code under test runs unchanged
+  - [ ] **Test file convention.** `*_test.js` or `*.test.js` next to source. No separate `tests/` directory required; co-located tests are the norm. Discovery matches `deno test`'s defaults so users who already know Deno don't have to relearn
+  - [ ] **UI test helpers** (exported from `imp/testing.js`):
+    - [ ] `mount(component)` — renders into a detached container, returns `{ el, unmount, query, queryAll, fire }`. `unmount` runs the disposal tree from Layer 2d so leak-checks are possible
+    - [ ] `query(selector)` / `queryAll(selector)` — CSS selector helpers scoped to the mounted root
+    - [ ] `fire(node, eventType, detail?)` — wraps `dispatchEvent`, fills in sensible defaults (`bubbles: true`), supports `'click'`, `'input'`, `'change'`, keyboard events with shorthand
+    - [ ] `tick()` — awaits one microtask flush so signal updates propagate before assertions. Pairs with the eventual `batch()` primitive (Open Q #3)
+    - [ ] `withTheme(theme, fn)` / `withLocale(locale, fn)` — scoped overrides that auto-restore after the test, so visual/i18n assertions don't pollute siblings
+  - [ ] **Signal testing.** Encourage testing signals directly (`signal()`, `effect()`, `computed()` are framework-public). Add `flushEffects()` for tests that need a synchronous boundary
+  - [ ] **Async helpers.** `waitFor(predicate, { timeout = 1000 })` polls until truthy or rejects — needed for fetch / `async()` primitive testing without sprinkling `setTimeout`s
+  - [ ] **Snapshot avoidance.** No built-in snapshot DSL in v1. Snapshots rot and hide intent in UI code; prefer explicit assertions on `textContent`, `getAttribute`, `classList`. Revisit only if real demand surfaces
+  - [ ] **Watch mode.** `imp test --watch` passes through to `deno test --watch`. No reinvention
+  - [ ] **Coverage.** Pass-through to `deno test --coverage=…`; the CLI just ensures the polyfill is still installed when coverage instrumentation is active
+  - [ ] **CI integration.** Stable, machine-readable reporter (`--reporter=tap` / `--reporter=junit` via Deno's options). No bespoke output format
+  - [ ] **Per-test isolation.** Each test gets a fresh polyfilled `document` (`beforeEach`-style hook installed by the runner), so tests can't leak DOM state across files. Cheap with `happy-dom`
+- [ ] **4f. Showcase (`imp showcase`)**
+  - [ ] Stub here for completeness — full design lives in Layer 5. The CLI command boots a local server that serves a gallery of every stdlib component with a live theme editor and locale switcher
+
+### Layer 5 — Theme & i18n
+
+Cross-cutting framework concern (constraint #9). Sits between foundations (Layers 1–2) and the stdlib (Layer 6): stdlib components are downstream consumers, user apps are too. Builds on the reactivity primitives from Layer 2 — theme and locale are just signals — but is called out as its own layer because the design decisions here (token shape, override scope, translation key strategy) propagate into every component.
+
+- [ ] **5a. Theme tokens**
+  - [ ] Source of truth: CSS custom properties on `:root`. Browser-native, scoped, inspectable in devtools, no runtime style recalculation cost
+  - [ ] Token categories (minimum v1): `color.*` (background, surface, surface-alt, text, text-muted, primary, secondary, accent, danger, warning, success, border), `radius.*` (none/sm/md/lg/full), `shadow.*` (sm/md/lg), `space.*` (4–64px scale), `font.family` (sans/mono), `font.size.*` (xs–2xl), `font.weight.*`
+  - [ ] `mode`: `'light' | 'dark'` — colour-scheme flag carried on the theme object itself so a theme always knows which palette it is. Drives the `color-scheme` CSS property (form controls, scrollbars get matching native styling) and the `data-imp-mode` attribute on `<html>` for CSS hooks
+  - [ ] `direction`: `'ltr' | 'rtl'` — text-flow setting carried by the theme. Drives `<html dir="…">` and the `--imp-direction` CSS variable. Stdlib components must use logical CSS properties (`margin-inline-start`, `padding-inline-end`, `inset-inline-*`, `text-align: start/end`) instead of left/right counterparts so layouts mirror automatically when direction flips. Default `'ltr'`; RTL locales (Arabic, Hebrew, Persian, Urdu) ship with `direction: 'rtl'` as a sensible default in their locale-paired themes
+  - [ ] Token naming flat & predictable: `--imp-color-primary`, `--imp-radius-md`, `--imp-shadow-lg`. AI-friendly; no nested theme path resolution at runtime
+- [ ] **5b. Theme runtime**
+  - [ ] `theme` signal holds the active theme object (including `mode` and `direction`)
+  - [ ] `defineTheme(name, tokens)` registers a theme; `setTheme(name)` swaps it. Swap writes all `--imp-*` variables to `:root` in one pass, plus sets `<html data-imp-mode="…" dir="…">` and the CSS `color-scheme` property — every component re-skins (and re-mirrors, if direction changed) instantly with no re-render
+  - [ ] Default themes shipped: `light` (mode: light, ltr), `dark` (mode: dark, ltr). Both are plain objects users can copy and tweak; user-defined themes pick their own `mode` and `direction`
+  - [ ] Convenience helpers: `setMode('light' | 'dark' | 'system')` — `'system'` syncs to `window.matchMedia('(prefers-color-scheme: dark)')` and updates live as the OS preference changes. `setDirection('ltr' | 'rtl' | 'auto')` — `'auto'` derives direction from `locale()`'s script via `Intl.Locale().textInfo.direction`
+  - [ ] Per-component override scope: components can declare their own `--imp-<component>-*` variables that default to the global tokens but can be overridden by parent containers — keeps customization local without forking
+- [ ] **5c. i18n runtime**
+  - [ ] `locale` signal holds the active locale code (`'en'`, `'pl'`, …)
+  - [ ] `t(key, params?)` reads `locale()`, returns the translated string. Used as a reactive child or prop value (a function), so changing locale updates only affected text nodes
+  - [ ] Message catalogs: plain JS object per locale, registered via `defineMessages(locale, catalog)`. Eager loading in v1; lazy per-locale via dynamic `import()` later
+  - [ ] Fallback chain: requested locale → default locale → key as-is (visible enough to catch missing translations)
+  - [ ] Interpolation: `t('greeting', { name })` — simple `{name}` placeholder substitution
+  - [ ] Pluralization: `Intl.PluralRules`-based — `t('items', { count })` selects the right variant from `{ zero, one, other }`. ICU MessageFormat deferred unless real cases demand it
+  - [ ] Number / date / relative-time formatting via `Intl.*`, locale pulled from `locale()` automatically — exported as `n(value, opts)`, `d(date, opts)`, `rt(date)`
+- [ ] **5d. Showcase / sandbox page (`imp showcase`)**
+  - [ ] CLI command that serves an auto-generated gallery page listing every stdlib component, each with a live preview and copy-paste source
+  - [ ] **Live theme editor panel:** color pickers for every `color.*` token, sliders for `radius.*` and `shadow.*`, font-family + size selectors. Edits write into the `theme` signal in real time, so every component on the page re-skins as you drag
+  - [ ] **Mode toggle:** light / dark / system in the editor panel — flips `mode` on the active theme and every component restyles instantly. Lets users sanity-check both palettes without code changes
+  - [ ] **Direction toggle:** ltr / rtl / auto in the editor panel — verifies every stdlib component mirrors correctly. Catches components that accidentally hardcoded `left`/`right` instead of `start`/`end`
+  - [ ] Theme export: "copy as `defineTheme(...)`" button so a tweaked theme can be lifted into user code
+  - [ ] Locale switcher in the same panel — flips `locale()` to preview translations side by side (and, with `direction: 'auto'`, demonstrates automatic RTL switching when an RTL locale is picked)
+  - [ ] Page itself is built with `imp` (eats its own dogfood, doubles as the largest example app)
+- [ ] **5e. Layer-by-layer integration notes**
+  - [ ] *Layer 1 (rendering):* tag factories don't need to know about theme. Components must never hardcode colors / radii / shadows — always reference `--imp-*` variables via CSS so theme swaps work
+  - [ ] *Layer 2 (reactivity):* `theme` and `locale` are ordinary signals; no special machinery. `t()` is just a function that closes over `locale()` and is used as a reactive child
+  - [ ] *Layer 3 (routing):* no coupling, but locale-aware routes (`/en/...`, `/pl/...`) are a future option to consider
+  - [ ] *Layer 4 (runtime):* `imp new` scaffold includes `theme.js` (light + dark) and `messages/en.js`; `imp showcase` is the visible payoff
+  - [ ] *Layer 6 (stdlib):* every component reads tokens; every user-facing string passes through `t()`; default catalogs ship with the framework. **Logical CSS only** — no `margin-left`, `padding-right`, `left`, `right`, `text-align: left/right`; always `margin-inline-*`, `inset-inline-*`, `text-align: start/end` so RTL flips for free. Lint rule candidate: flag forbidden physical properties in stdlib CSS
+
+### Layer 6 — Standard library
+
+Ready-made components covering the 80% of UI building blocks. Built on Layers 1–2 and consumes Layer 5 (theme tokens + `t()`).
+
+All names below are lowercase per §1 convention.
+
+- [ ] **6a. Layout** — `stack`, `row`, `grid`, `spacer`, `container`
+- [ ] **6b. Inputs** — `textField`, `selectBox`, `checkbox`, `radio`, `switchToggle`, `slider`, `datePicker`, `formBox`
+- [ ] **6c. Display** — `card`, `badge`, `avatar`, `tag`, `tooltip`
+- [ ] **6d. Feedback** — `toast`, `modal`, `drawer`, `spinner`, `progressBar`, `alert`
+- [ ] **6e. Navigation** — `tabs`, `menuList`, `breadcrumbs`, `pagination`
+- [ ] **6f. Data** — `dataTable` (sortable, paginated), `listView`, `tree`
+
+(Names that would collide with HTML tags — `form`, `table`, `dialog`, `menu`, `nav`, `header`, `footer`, `aside`, `select` — are renamed to non-colliding equivalents per §1's forbidden-names rule.)
+
+### Layer 7 — Example apps
+
+Prove the framework on realistic apps, not just `todoApp`. Each example must exercise theme switching and at least two locales.
+
+- [ ] **7a. Todo list** (canonical sanity check)
+- [ ] **7b. Markdown notes app** (routing, persistence, forms)
+- [ ] **7c. Dashboard** (charts via 3rd-party lib → tests interop)
+- [ ] **7d. Chat/feed** (real-time, `each` under load, async)
+- [ ] **7e. Settings panel** (every stdlib input exercised, includes theme + locale switcher)
+
+### Layer 8 — Documentation & landing
+
+- [ ] **8a. Landing page** — pitch, code sample, "try it" CodePen-style embed
+- [ ] **8b. Tutorial** — todo app, step by step
+- [ ] **8c. API reference** — every export, signal/effect/primitive
+- [ ] **8d. Component gallery** — points at the `imp showcase` page from Layer 5; docs site embeds the same gallery so visitors can play with themes without installing anything
+- [ ] **8e. AI-agent-friendly docs** — flat, terse, machine-readable section/page that an agent can ingest as a single context
