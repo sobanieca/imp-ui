@@ -71,16 +71,33 @@ function el(tag, ...args) {
 
 `p("Hello ", strong("world"))` won't work — the second arg is interpreted as props. Use the array form: `p(["Hello ", strong("world")])`. The dispatch rule stays clean in exchange.
 
-### Special prop keys
+### Prop keys
 
-- `style: {...}` — object → inline CSS, camelCase → kebab-case
-- `className` — sets `class`
-- `onClick`, `onChange`, … — strip `on`, lowercase, `addEventListener`
-- `dataset: {...}` — `data-*` attributes
-- Boolean attrs (`disabled: true`) — toggle, don't set the string `"true"`
-- `ref: (el) => …` — imperative escape hatch (see §4.7)
+Prop keys map directly to HTML attribute names. No aliases (`className`, `htmlFor`, `dataset`) — one name per attribute, and it's the HTML one. Names that aren't valid bare JS identifiers go in string-quoted keys:
 
-Everything else falls through to `setAttribute`.
+```js
+div({ class: "card", "data-id": "42", "aria-label": "Close" })
+label({ for: "email" })
+```
+
+`class` and `for` are no longer reserved as object property names in modern JS, so they work bare; `data-*` and `aria-*` need quotes.
+
+Dispatch order inside `applyProps`:
+
+1. `ref: fn` — call with the node.
+2. `on*` — strip `on`, lowercase, `addEventListener`.
+3. `style: {...}` — object → inline CSS (camelCase → kebab-case).
+4. **Property-first fallthrough:** if `key in node`, assign as a property (`node[key] = v`); otherwise `setAttribute(key, v)`.
+
+The property-first rule quietly absorbs the cases that would otherwise need special-casing:
+
+- **Boolean attrs** (`disabled`, `checked`, `hidden`, `open`, …) — every one has a boolean *property*, so `{ disabled: true }` does `node.disabled = true` correctly; `false` clears it. No stringy `"true"` foot-gun.
+- **Live form state** (`value`, `checked`, `selected`, `indeterminate`, `files`) — these must be set as properties, not attributes; the attribute only seeds the *initial* value and is ignored after the user types. Property-first makes reactive `{ value: draft }` actually work.
+- **Custom element properties** — `myChart({ data: obj })` works: `"data" in node` is true on the custom element, so the object is assigned as a property instead of being stringified to `[object Object]` by `setAttribute`.
+
+SVG branch skips step 4: SVG element properties are mostly read-only mirrors, and case-sensitive attribute names (`viewBox`, `preserveAspectRatio`) need to round-trip through `setAttribute(NS)` verbatim.
+
+`null` / `undefined` / `false` as a prop value removes the attribute (or sets the property to `null`), so `{ disabled: isLocked }` toggles cleanly when `isLocked` flips.
 
 ### Tag factories
 
@@ -107,9 +124,7 @@ SVG elements need `createElementNS('http://www.w3.org/2000/svg', tag)`. Expose a
 
 **Naming convention: lowercase, always.** Components are functions just like the tag factories, and share their casing. No JSX-style `App` / `Card` capitalization — write `app`, `card`, `userMenu`. We pick consistency over the visual hint; AI agents don't benefit from casing-as-signal, and one rule ("everything is a lowercase function call") is easier to internalize than two.
 
-**Forbidden names.** Component names cannot collide with any name exported by `imp.js` — every tag factory (`div`, `p`, `header`, `main`, `nav`, `footer`, `section`, `article`, `aside`, `form`, `table`, `dialog`, …) plus framework primitives (`el`, `render`, `signal`, `effect`, `computed`, `when`, `each`, `match`, `onMount`, …). When you want a component that renders one of these tags, pick a non-colliding name (`siteHeader`, `pageNav`, `dataTable`). Forbidden list is forward-compatible: any HTML element name is reserved even if the framework doesn't currently export a factory for it, so adding factories later never breaks user code.
-
-Both rules are enforced by custom Deno lint plugins shipped with the `imp` CLI — see Layer 4.
+Enforced by a custom Deno lint plugin shipped with the `imp` CLI — see Layer 4.
 
 ---
 
@@ -539,9 +554,7 @@ Make the framework runnable without a build step locally. **Deno is the runtime*
 - [ ] **4d. Custom lint rules (`imp lint`)**
   - [ ] Thin wrapper around `deno lint` that pre-registers the framework's lint plugin (Deno's lint plugin API: a JS module exporting AST visitor rules)
   - [ ] `no-capital-component` — flag any user-defined function whose name starts with an uppercase letter. Component convention is lowercase (see §1)
-  - [ ] `no-reserved-component-name` — flag a component declaration whose name collides with any `imp.js` export (tag factories + primitives). Names sourced from a single canonical list (`reserved.js`) shared between the runtime and the lint plugin so they cannot drift
-  - [ ] `no-reserved-html-name` — flag component names matching any HTML element name, even ones the framework doesn't currently export. Future-proofs against added tag factories
-  - [ ] All three rules ship in the same plugin so `imp lint` runs them in one pass; users opt out per-rule via standard `deno lint` config
+  - [ ] Users opt out via standard `deno lint` config
 - [ ] **4e. Test runner (`imp test`)**
   - [ ] Thin wrapper around `deno test`. The CLI's job is to inject a UI-aware environment and ergonomic helpers; assertions, reporters, watch mode, and filtering are inherited from Deno verbatim so users get one mental model, not two
   - [ ] **DOM polyfill auto-loaded.** Default is `happy-dom` (`linkedom` as fallback if perf or compat warrants). Polyfill is wired into `globalThis` (`document`, `window`, `Node`, `Event`, `customElements`) before any user test module loads — same surface `imp.js` uses in the browser, so the same code under test runs unchanged
@@ -613,8 +626,6 @@ All names below are lowercase per §1 convention.
 - [ ] **6d. Feedback** — `toast`, `modal`, `drawer`, `spinner`, `progressBar`, `alert`
 - [ ] **6e. Navigation** — `tabs`, `menuList`, `breadcrumbs`, `pagination`
 - [ ] **6f. Data** — `dataTable` (sortable, paginated), `listView`, `tree`
-
-(Names that would collide with HTML tags — `form`, `table`, `dialog`, `menu`, `nav`, `header`, `footer`, `aside`, `select` — are renamed to non-colliding equivalents per §1's forbidden-names rule.)
 
 ### Layer 7 — Example apps
 
