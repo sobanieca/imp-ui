@@ -1,6 +1,6 @@
 import {
   el, render, h1, h2, p, div, ul, li, button, span, strong, hr,
-} from './imp.js'
+} from '../src/imp.js'
 
 // `code` isn't in the explicit tag list — show how to fall back to raw el().
 const code = (text) => el('code', text)

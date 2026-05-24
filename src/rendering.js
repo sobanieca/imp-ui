@@ -1,10 +1,5 @@
 // Layer 1 — element factory core. Pure rendering, no signals yet.
 
-const BOOLEAN_ATTRS = new Set([
-  'disabled', 'checked', 'readonly', 'required', 'multiple',
-  'selected', 'autofocus', 'hidden', 'open',
-])
-
 function camelToKebab(s) {
   return s.replace(/[A-Z]/g, c => '-' + c.toLowerCase())
 }
@@ -55,27 +50,25 @@ function applyProps(node, props) {
   for (const k in props) {
     const v = props[k]
 
-    if (k === 'style') { applyStyle(node, v); continue }
-    if (k === 'className' || k === 'class') { node.setAttribute('class', v); continue }
-    if (k === 'dataset' && v && typeof v === 'object') {
-      for (const dk in v) node.dataset[dk] = v[dk]
-      continue
-    }
     if (k === 'ref' && typeof v === 'function') { v(node); continue }
+    if (k === 'style') { applyStyle(node, v); continue }
 
     if (k.startsWith('on') && typeof v === 'function') {
       node.addEventListener(k.slice(2).toLowerCase(), v)
       continue
     }
 
-    if (BOOLEAN_ATTRS.has(k)) {
-      if (v) node.setAttribute(k, '')
-      else node.removeAttribute(k)
-      continue
+    // Property-first fallthrough. Handles booleans (disabled/checked),
+    // live form state (value/selected/indeterminate), and custom element
+    // properties in one path. Names not exposed as JS properties
+    // (`class`, `for`, `data-*`, `aria-*`) fall to setAttribute.
+    if (k in node) {
+      node[k] = v ?? ''
+    } else if (v === false || v === null || v === undefined) {
+      node.removeAttribute(k)
+    } else {
+      node.setAttribute(k, v === true ? '' : String(v))
     }
-
-    if (v === false || v === null || v === undefined) continue
-    node.setAttribute(k, v === true ? '' : String(v))
   }
 }
 
