@@ -50,7 +50,6 @@ function applyProps(node, props) {
   for (const k in props) {
     const v = props[k]
 
-    if (k === 'ref' && typeof v === 'function') { v(node); continue }
     if (k === 'style') { applyStyle(node, v); continue }
 
     if (k.startsWith('on') && typeof v === 'function') {

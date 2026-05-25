@@ -84,10 +84,9 @@ label({ for: "email" })
 
 Dispatch order inside `applyProps`:
 
-1. `ref: fn` — call with the node.
-2. `on*` — strip `on`, lowercase, `addEventListener`.
-3. `style: {...}` — object → inline CSS (camelCase → kebab-case).
-4. **Property-first fallthrough:** if `key in node`, assign as a property (`node[key] = v`); otherwise `setAttribute(key, v)`.
+1. `events: {...}` — object map of event name → handler, attached via `addEventListener` with an `AbortController` signal owned by the element's disposal scope (see Events subsection below).
+2. `style: {...}` — object → inline CSS (camelCase → kebab-case).
+3. **Property-first fallthrough:** if `key in node`, assign as a property (`node[key] = v`); otherwise `setAttribute(key, v)`.
 
 The property-first rule quietly absorbs the cases that would otherwise need special-casing:
 
@@ -98,6 +97,28 @@ The property-first rule quietly absorbs the cases that would otherwise need spec
 SVG branch skips step 4: SVG element properties are mostly read-only mirrors, and case-sensitive attribute names (`viewBox`, `preserveAspectRatio`) need to round-trip through `setAttribute(NS)` verbatim.
 
 `null` / `undefined` / `false` as a prop value removes the attribute (or sets the property to `null`), so `{ disabled: isLocked }` toggles cleanly when `isLocked` flips.
+
+### Events
+
+Event listeners live under a single `events` prop — an object mapping event name to handler. The event name is the one you'd pass to `addEventListener`: bare, lowercase, no `on` prefix.
+
+```js
+button({ events: { click: add } }, "Add")
+input({ events: { input: e => draft.set(e.target.value) } })
+form({ events: { submit: handleSubmit } })
+div({ events: { pointerdown: start, pointermove: drag, pointerup: end } })
+```
+
+Why a nested object instead of bare `onClick` props:
+
+- `click` is the DOM-native event name; `onClick` is React legacy.
+- Custom events (`'chart-rendered'`, `'my-component:ready'`) have no `on<name>` IDL property, so any prefix-based detection rule can't catch them. `events: { 'chart-rendered': fn }` works uniformly for spec and custom events.
+- Listener options have a natural home: `events: { click: [fn, { once: true, passive: true }] }`.
+- The nesting shape mirrors `style: { ... }` — users learn one pattern, not two.
+
+Each entry is attached with `addEventListener(name, fn, { signal })` where `signal` comes from an `AbortController` owned by the element's disposal scope (§5). On framework-driven unmount — `when` / `each` swaps the subtree out, a route changes, the parent component tears down — the controller aborts and every listener attached this way detaches in one pass. No leaked handlers, no manual `removeEventListener`.
+
+Caveat: this fires only on *framework-driven* unmount. Calling `node.remove()` imperatively is invisible to the disposal tree (the DOM emits no removal event for regular elements), so handlers attached that way persist until the node is garbage-collected. Stay inside the structural primitives, or use the eventual `onMount` hook (§4.5) to manage your own `AbortController` for imperative cases.
 
 ### Tag factories
 
@@ -192,7 +213,9 @@ if (typeof child === 'function') {
 }
 
 // Reactive prop → live attribute / property
-if (typeof v === 'function' && !k.startsWith('on')) {
+// (events live under `events: {...}`, so any function value at the
+// top level of props is a reactive value, not a handler)
+if (typeof v === 'function') {
   effect(() => setAttr(node, k, v()))
 }
 ```
@@ -312,37 +335,30 @@ A special case of reactive attributes, common enough to deserve sugar:
 
 ```js
 div({
-  className: { active: isSelected, disabled: isLocked }, // values are signals
-  style:     { color: theme, opacity: () => fading() ? 0.5 : 1 },
+  class: { active: isSelected, disabled: isLocked }, // values are signals
+  style: { color: theme, opacity: () => fading() ? 0.5 : 1 },
 })
 ```
 
-Implementation: when `className`/`style` is an object, iterate it and set up an effect per entry.
+Implementation: when `class`/`style` is an object, iterate it and set up an effect per entry. Note that `class` overlaps with the static string form (`class: "card"`) — the implementation dispatches on value type: string → `setAttribute('class', v)`, object → reactive toggling.
 
-### 4.5 Mount / unmount hooks
+### 4.5 Mount / unmount hooks — *not yet implemented*
 
-Needed for: third-party library init (charts, maps), cleanup (timers, subscriptions, websockets), enter/exit animations.
+Needed for: capturing the DOM node for later imperative use (focus, measurement), third-party library init (charts, maps), cleanup (timers, subscriptions, websockets), enter/exit animations. This subsumes the role that a `ref` callback would play in other frameworks — fires *after* the node is attached to the document, so `focus()`, `getBoundingClientRect()`, and library handoff all work, and it returns a disposer that ties cleanly into the owner tree.
 
 ```js
 onMount(node, () => {
+  node.focus()                       // works — node is in the document
   const chart = new Chart(node)
-  return () => chart.destroy()  // disposer runs on unmount
+  return () => chart.destroy()       // disposer runs on unmount
 })
 ```
 
+A plain `ref` prop (callback that receives the node at construction time, before mount) is intentionally *not* exposed in v1. It fires too early to be useful for the common cases (the node isn't in the document yet), and the timing relative to other props is fragile (depends on object-key order). When users need a node reference, the path is: take it inside `onMount` and stash it in an outer variable or signal. One escape hatch, well-defined timing.
+
 Couples to disposal (§5). Whatever owner model we land on, `onMount` is the user-facing surface.
 
-### 4.6 `refs`
-
-Imperative escape hatch — focus an input, measure a node, hand a DOM node to a non-reactive library.
-
-```js
-let inputEl
-input({ ref: el => inputEl = el, type: 'text' })
-// later: inputEl.focus()
-```
-
-### 4.7 Portals
+### 4.6 Portals
 
 Render a child into a different part of the DOM (modals, tooltips, toasts). Element is logically a child here, physically attached there.
 
@@ -350,7 +366,7 @@ Render a child into a different part of the DOM (modals, tooltips, toasts). Elem
 portal(document.body, Modal({ open: isOpen }))
 ```
 
-### 4.8 Async values
+### 4.7 Async values
 
 `fetch` and async iterables. Could be expressed via `when` + a signal that captures the promise state, but a dedicated primitive is more ergonomic:
 
@@ -362,7 +378,7 @@ async(fetchUser(id), {
 })
 ```
 
-### 4.9 Two-way binding
+### 4.8 Two-way binding
 
 Pure sugar over `value: signal` + `onInput: e => signal.set(e.target.value)`. Writing that by hand 50 times gets old.
 
@@ -372,7 +388,7 @@ input({ bind: draft })   // ↔ draft is a signal
 
 ### What's in v1?
 
-`when`, `each`, `ref` cover ~90% of real apps. `match`, class/style toggling, `onMount`, async, two-way binding are quality-of-life — ship them as the design firms up. Portals can wait until a real use case turns up.
+`when`, `each`, and `onMount` cover ~90% of real apps. `match`, class/style toggling, async, two-way binding are quality-of-life — ship them as the design firms up. Portals can wait until a real use case turns up.
 
 ---
 
@@ -423,10 +439,10 @@ function TodoApp() {
     h1("Todos"),
     input({
       value: draft,
-      onInput: e => draft.set(e.target.value),
+      events: { input: e => draft.set(e.target.value) },
       placeholder: "What needs doing?",
     }),
-    button({ onClick: add }, "Add"),
+    button({ events: { click: add } }, "Add"),
     when(() => todos().length === 0, empty =>
       empty ? p("Nothing here yet") : null),
     ul([
@@ -435,12 +451,12 @@ function TodoApp() {
           input({
             type: 'checkbox',
             checked: todo.done,
-            onChange: () => toggle(todo.id),
+            events: { change: () => toggle(todo.id) },
           }),
           span({
             style: todo.done ? 'text-decoration: line-through' : '',
           }, todo.text),
-          button({ onClick: () => remove(todo.id) }, "×"),
+          button({ events: { click: () => remove(todo.id) } }, "×"),
         ])
       ),
     ]),
@@ -484,13 +500,13 @@ The foundation. Everything else assumes you can produce real DOM from JS.
   - [ ] `el(tag, ...args)` with type-based dispatch (array → children, string/number → text, object → props, node → child, function → reactive, falsy → skip)
   - [ ] Recursive children flattening; drop `null`/`undefined`/`false`
   - [ ] Tag factories: explicit list exported via `Object.fromEntries`
-  - [ ] Special prop keys: `style` (object → inline CSS, camelCase → kebab), `className`, `on*` events, `dataset`, boolean attrs, `ref`
+  - [ ] Special prop keys (the only ones needing dedicated branches): `style` (object → inline CSS, camelCase → kebab) and `events` (object map, attached via `addEventListener` with disposal-scoped `AbortController` signal — see §1 Events, §5). Everything else — `class`, `for`, `data-*`, `aria-*`, boolean attrs (`disabled`, `checked`, `hidden`, …), live form state (`value`, `selected`, `indeterminate`), and custom-element properties — flows through the property-first fallthrough (`k in node` → property, else `setAttribute`).
   - [ ] Fallthrough to `setAttribute` for everything else
   - [ ] SVG namespace handling (`svg.rect`, `svg.circle`, …)
 - [ ] **1b. External / raw HTML interop**
   - [ ] Accept existing `Node` instances as children (already implicit; verify)
   - [ ] `html("<div>…</div>")` helper for trusted raw HTML → parsed DOM nodes
-  - [ ] Wrapping a 3rd-party component (Chart.js, Leaflet, etc.) — usually via `ref` + `onMount`; document the pattern
+  - [ ] Wrapping a 3rd-party component (Chart.js, Leaflet, etc.) — usually via `onMount`; document the pattern
   - [ ] Decide on `innerHTML` escape hatch vs. forcing the `html()` helper
 
 ### Layer 2 — Reactivity
