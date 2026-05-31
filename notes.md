@@ -12,7 +12,7 @@ A small SPA framework. Below constraints shape everything:
 8. **Reactivity is opt-in** — signals are a tool, not a religion. Plain imperative code is a first-class path: `el` returns real DOM nodes, so you can hold a reference, mutate `.textContent`, `appendChild`, set attributes, attach listeners directly. Nothing in the framework requires a signal to exist. Use signals when fine-grained reactivity earns its keep; reach for direct DOM manipulation when it's simpler.
 9. **Themable and translatable by default** — theming (colors, radius, shadows, spacing, typography tokens) and i18n (locale + `t()`) are first-class framework concerns, not user-space layers bolted on top. Every stdlib component reads tokens from a reactive `theme` signal and pipes user-facing strings through a reactive `t()`. Changing either re-skins or re-localizes the whole app instantly. Every layer below must be designed with this in mind — rendering exposes a CSS-variable surface, reactivity carries the theme/locale signals, the CLI ships a live-editing showcase, and the stdlib is a downstream consumer of both systems.
 
-SPA only. No SSR. No hydration.
+SPA-first, but not SPA-only. Imp renders on the client — there is no SSR of imp components and no hydration of imp-produced markup. What *is* supported: a server can return ordinary HTML (MVC-style, any backend) with one or more imp mount points embedded in it, and imp renders into those just like it renders a full app. Server-rendered shell + imp islands, not server-rendered imp. See §1.6.
 
 ---
 
@@ -146,6 +146,52 @@ SVG elements need `createElementNS('http://www.w3.org/2000/svg', tag)`. Expose a
 **Naming convention: lowercase, always.** Components are functions just like the tag factories, and share their casing. No JSX-style `App` / `Card` capitalization — write `app`, `card`, `userMenu`. We pick consistency over the visual hint; AI agents don't benefit from casing-as-signal, and one rule ("everything is a lowercase function call") is easier to internalize than two.
 
 Enforced by a custom Deno lint plugin shipped with the `imp` CLI — see Layer 4.
+
+### 1.5 Web components — `wc()`
+
+Web components are a first-class interop surface, not an afterthought. Imp's own components stay plain lowercase functions (above), but the platform's custom-element model is how imp talks to the outside world — both directions:
+
+- **Consuming** a third-party or hand-written custom element (`<my-chart>`, a design-system element, a Leaflet/Chart wrapper) from inside an imp tree.
+- **Exposing** an imp component *as* a custom element so non-imp pages (or server-rendered HTML, §1.6) can drop it in with a plain tag.
+
+`wc()` is the wrapper that bridges the two worlds:
+
+```js
+// Consume: turn a registered custom element into an imp element factory
+const chart = wc('my-chart')
+chart({ data: series, events: { 'chart-rendered': onReady } })   // props/events flow through §1 dispatch
+
+// Expose: register an imp component as a custom element
+wc.define('todo-app', todoApp)        // → <todo-app> usable in any HTML
+```
+
+Why it fits cleanly:
+
+- The §1 dispatch already does the right thing for custom elements — `"data" in node` is true, so object props are assigned as properties, not stringified (see *Custom element properties* under Prop keys). `wc()` is mostly a thin, typed front door over that existing behavior plus attribute/prop and `events` mapping.
+- Reactive props (`{ data: () => series() }`) and the `events: {...}` map work unchanged, so a wrapped web component participates in signals and disposal like any other imp node.
+- Exposed-as-custom-element is what makes the server-HTML model (§1.6) ergonomic: the server emits `<todo-app>` and imp upgrades it in place.
+
+Open: whether `wc.define` opts into shadow DOM (style isolation) or light DOM by default, and how theme tokens (§5, CSS custom properties) pierce a shadow boundary. Lean: light DOM by default so theme variables inherit for free; shadow as an opt-in flag for components that need hard isolation.
+
+### 1.6 Mounting into server-rendered HTML
+
+Imp is SPA-first but doesn't have to own the whole page. The supported server model: a backend returns ordinary HTML (MVC-style, any language) with **imp mount points** embedded in it; imp renders into those on the client. This is server-rendered *shell* with imp *islands* — **not** SSR of imp components and **not** hydration of imp-produced markup.
+
+Two mounting shapes, both client-side:
+
+```js
+// 1. Explicit mount into a placeholder the server emitted
+//    <div id="cart"></div>  in the server HTML
+mount('#cart', cartWidget({ userId }))
+
+// 2. Custom-element upgrade (via §1.5 wc.define)
+//    server emits  <todo-app></todo-app>  and imp renders it in place
+wc.define('todo-app', todoApp)
+```
+
+The render entry point is the same one a full SPA uses (`mount(target, node)` / appending `component()` to a target) — a full app is just the degenerate case where the target is `document.body` and the server shell is near-empty. Nothing imp-specific has to round-trip from the server; the server only emits plain HTML plus the mount markers, so backends stay debuggable, cacheable, and language-agnostic (the §0 "SPAs are still the right default" argument holds — this just lets imp coexist with an existing server-rendered app instead of replacing it wholesale).
+
+No hydration step means no markup-matching contract between server and client: imp owns the subtree inside each mount point and renders it fresh. Server-rendered content *around* the mount points is left untouched.
 
 ---
 
@@ -508,6 +554,14 @@ The foundation. Everything else assumes you can produce real DOM from JS.
   - [ ] `html("<div>…</div>")` helper for trusted raw HTML → parsed DOM nodes
   - [ ] Wrapping a 3rd-party component (Chart.js, Leaflet, etc.) — usually via `onMount`; document the pattern
   - [ ] Decide on `innerHTML` escape hatch vs. forcing the `html()` helper
+- [ ] **1c. Web components — `wc()`** (see §1.5)
+  - [ ] `wc(tagName)` → imp element factory for consuming a registered custom element (props-as-properties, `events` map, reactive props all via the §1 dispatch)
+  - [ ] `wc.define(tagName, impComponent)` → register an imp component as a custom element for use outside imp / in server HTML
+  - [ ] Decide shadow DOM vs. light DOM default and how §5 theme CSS variables cross a shadow boundary (lean: light DOM default, shadow opt-in)
+- [ ] **1d. Mounting into server-rendered HTML** (see §1.6)
+  - [ ] `mount(target, node)` — render an imp subtree into a server-emitted placeholder (selector or element); full-app render is the `document.body` case
+  - [ ] Custom-element upgrade path: server emits `<todo-app>`, `wc.define` renders it in place
+  - [ ] No hydration / no markup-matching — imp owns each mount-point subtree, server content around it is untouched
 
 ### Layer 2 — Reactivity
 
@@ -544,6 +598,7 @@ Independent of rendering/reactivity but builds on them.
 
 - [ ] **3a. Router implementation**
   - [ ] Hash vs. History API (pick one; History is the default)
+  - [ ] **File-based routing (preferred).** Derive the route tree from project layout — `modules/<module>/pages/<page>.js` maps to a route. Each module is its own lazy-loaded chunk (dynamic `import()`), so navigating into a module fetches its code on demand. Explicit `route(path, factory)` registration stays as the escape hatch for routes that don't fit the convention.
   - [ ] Route definitions: path pattern → component factory
   - [ ] `route` signal — current path/params drive a `match`-style render
   - [ ] Navigation: `navigate(path)`, `<Link>` component (or `a({ href, onClick })`)
@@ -557,6 +612,7 @@ Make the framework runnable without a build step locally. **Deno is the runtime*
 - [ ] **4a. Static dev server (`imp dev`)**
   - [ ] `Deno.serve` over the current directory as static files
   - [ ] Live reload via `Deno.watchFs` → SSE → page reload script auto-injected into served HTML
+  - [ ] **Browser → CLI telemetry bridge.** The auto-injected client script forwards `console.*` output and network activity (fetch/XHR requests + their responses/errors) over the same SSE/dev channel back to the terminal running `imp dev`. Lets an AI agent read runtime logs and failed requests straight from the CLI — the most basic observability — with no MCP server or browser extension involved.
   - [ ] Bare-specifier resolution (decide: import maps generator vs. rewrite-on-the-fly vs. force user-relative imports)
 - [ ] **4b. `imp` engine injection**
   - [ ] Decide how engine is delivered: import map → CDN, bundled local copy, or auto-injected `<script>` tag
@@ -590,6 +646,8 @@ Make the framework runnable without a build step locally. **Deno is the runtime*
   - [ ] **Per-test isolation.** Each test gets a fresh polyfilled `document` (`beforeEach`-style hook installed by the runner), so tests can't leak DOM state across files. Cheap with `happy-dom`
 - [ ] **4f. Showcase (`imp showcase`)**
   - [ ] Stub here for completeness — full design lives in Layer 5. The CLI command boots a local server that serves a gallery of every stdlib component with a live theme editor and locale switcher
+- [ ] **4g. Formatter (`imp fmt`)**
+  - [ ] Thin wrapper around `deno fmt` — one formatting standard, zero config, shipped in the same compiled binary as `imp lint`. Users opt out / tune via standard `deno fmt` config
 
 ### Layer 5 — Theme & i18n
 
@@ -605,6 +663,7 @@ Cross-cutting framework concern (constraint #9). Sits between foundations (Layer
   - [ ] `theme` signal holds the active theme object (including `mode` and `direction`)
   - [ ] `defineTheme(name, tokens)` registers a theme; `setTheme(name)` swaps it. Swap writes all `--imp-*` variables to `:root` in one pass, plus sets `<html data-imp-mode="…" dir="…">` and the CSS `color-scheme` property — every component re-skins (and re-mirrors, if direction changed) instantly with no re-render
   - [ ] Default themes shipped: `light` (mode: light, ltr), `dark` (mode: dark, ltr). Both are plain objects users can copy and tweak; user-defined themes pick their own `mode` and `direction`
+  - [ ] **Preset themes modeled on familiar app styles.** Beyond bare `light`/`dark`, ship 2–3 opinionated, ready-to-use looks resembling recognizable application styles (e.g. an admin-dashboard theme, a social/Facebook-like theme, and one more) as copy-and-tweak starting points, so a new app looks finished without designing tokens from scratch
   - [ ] Convenience helpers: `setMode('light' | 'dark' | 'system')` — `'system'` syncs to `window.matchMedia('(prefers-color-scheme: dark)')` and updates live as the OS preference changes. `setDirection('ltr' | 'rtl' | 'auto')` — `'auto'` derives direction from `locale()`'s script via `Intl.Locale().textInfo.direction`
   - [ ] Per-component override scope: components can declare their own `--imp-<component>-*` variables that default to the global tokens but can be overridden by parent containers — keeps customization local without forking
 - [ ] **5c. i18n runtime**
