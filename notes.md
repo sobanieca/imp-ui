@@ -193,6 +193,40 @@ The render entry point is the same one a full SPA uses (`mount(target, node)` / 
 
 No hydration step means no markup-matching contract between server and client: imp owns the subtree inside each mount point and renders it fresh. Server-rendered content *around* the mount points is left untouched.
 
+### 1.7 Styles — `css()`
+
+Two styling surfaces exist already: inline `style: {...}` objects (§1 dispatch) and theme tokens as `--imp-*` CSS variables (§5). What's missing is the *reusable/static* layer — where the CSS for `card` or a stdlib `modal` lives. That layer is `css`:
+
+```js
+// Module level: returns a generated class name; rule injected once
+const cardStyle = css`
+  background: var(--imp-color-surface);
+  border-radius: var(--imp-radius-md);
+  padding: var(--imp-space-16);
+  &:hover { box-shadow: var(--imp-shadow-md); }
+  @media (max-width: 600px) { padding: var(--imp-space-8); }
+`
+
+const card = (title, body) => div({ class: cardStyle }, [h2(title), body])
+```
+
+Implementation: hash the rule text for a class name (`imp-x1f3a`), wrap (`.imp-x1f3a { ... }`), insert into one shared `CSSStyleSheet` attached via `document.adoptedStyleSheets`. Content-hash dedup means calling a component factory 2,000 times injects the rule once. Native CSS nesting (evergreen-supported) makes `&:hover` and `@media` blocks work with zero parsing on our side — the browser does it. Buildless CSS-in-JS, co-located with the component: one file, one mental model ("everything is a JS function call"), which matters for AI agents generating whole components in one pass.
+
+**Why not inline styles for everything?** Two reasons, and performance is the lesser one:
+
+- **Capability.** Inline styles cannot express pseudo-classes (`:hover`, `:focus-visible`, `:disabled`), pseudo-elements (`::before`, `::placeholder`), media/container queries, `@keyframes`, or state selectors (`[data-imp-mode="dark"] &`). The stdlib needs hover states, focus rings, and dark-mode hooks — a stylesheet layer is mandatory regardless.
+- **Repetition cost.** For a single element, setting inline style is cheap — no measurable penalty. The cost appears in lists: `each` rendering 2,000 rows that each carry the same 10-property inline style object pays the property-setting work 2,000 times and stores 2,000 copies of the declaration in the DOM. With a class, the browser parses the rule once and shares computed-style data between elements matching the same rules — an optimization inline styles defeat. Module-level `css` calls *are* the shared styles.
+
+**Division of labor** (the documented rule):
+
+1. **Shared/static styles** → `css` at module level → class name. The default for components.
+2. **Per-instance dynamic values** → inline `style: {...}`, especially reactive ones (`style: { opacity: () => fading() ? 0.5 : 1 }`). This is what inline style is *for* — values that differ per element per moment. Refinement: set dynamic scalars as inline CSS custom properties (`style: { '--progress': pct }`) consumed by the shared class, so rule structure stays shared and only the scalar varies.
+3. **State variants** → the §4.4 class-toggling sugar (`class: { active: isSelected }`) flipping between `css`-defined classes.
+
+Plain `.css` files via `<link>` remain the zero-framework escape hatch — nothing about `el()` prevents `class: "my-thing"` — but they're not the blessed path; they split a component across two files and two syntaxes.
+
+Theming composes unchanged: `css` rules reference `--imp-*` variables, so a theme swap (§5b) re-skins every class with no re-render. And `adoptedStyleSheets` works on shadow roots too, so if a `wc.define`'d component opts into shadow DOM (§1.5), the same sheet can be adopted into the shadow root — which mildly reinforces the light-DOM-default lean (no extra machinery needed either way).
+
 ---
 
 ## 2. Signals
@@ -562,6 +596,12 @@ The foundation. Everything else assumes you can produce real DOM from JS.
   - [ ] `mount(target, node)` — render an imp subtree into a server-emitted placeholder (selector or element); full-app render is the `document.body` case
   - [ ] Custom-element upgrade path: server emits `<todo-app>`, `wc.define` renders it in place
   - [ ] No hydration / no markup-matching — imp owns each mount-point subtree, server content around it is untouched
+- [ ] **1e. Reusable styles — `css()`** (see §1.7)
+  - [ ] `` css`...` `` tagged template → content-hashed class name; rule wrapped and inserted into one shared `CSSStyleSheet` via `document.adoptedStyleSheets`
+  - [ ] Content-hash dedup — repeated calls with the same rule text inject once
+  - [ ] Rely on native CSS nesting for `&:hover`, `@media`, etc. — no parsing in the framework
+  - [ ] Document the division of labor: shared statics → `css`, per-instance dynamics → inline `style` (prefer inline `--custom-props` consumed by the shared class), state variants → §4.4 class toggling
+  - [ ] Decide: sheet adoption story for shadow roots when `wc.define` opts into shadow DOM (adopt the same shared sheet)
 
 ### Layer 2 — Reactivity
 
