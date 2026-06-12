@@ -4,7 +4,7 @@
     "test": "deno test -A tests/",
     "lint": "deno run -A cli/main.js lint imp/ stdlib/ examples/ showcase/",
     "fmt": "deno fmt",
-    "showcase": "deno run -A cli/main.js showcase"
+    "showcase": "deno run -A cli/main.js showcase --port 8000"
   },
   "lint": {
     "plugins": ["./cli/lint_plugin.js"],
