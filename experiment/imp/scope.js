@@ -7,7 +7,7 @@
 // Structural primitives (when/each/match/router) create and dispose scopes;
 // user code normally never touches this module directly.
 
-let current = null
+let current = null;
 
 export function createScope(parent = current) {
   const scope = {
@@ -16,56 +16,56 @@ export function createScope(parent = current) {
     disposers: null,
     ctrl: null,
     disposed: false,
-  }
-  if (scope.parent) (scope.parent.children ??= new Set()).add(scope)
-  return scope
+  };
+  if (scope.parent) (scope.parent.children ??= new Set()).add(scope);
+  return scope;
 }
 
 export function runInScope(scope, fn) {
-  const prev = current
-  current = scope
+  const prev = current;
+  current = scope;
   try {
-    return fn()
+    return fn();
   } finally {
-    current = prev
+    current = prev;
   }
 }
 
-export const getScope = () => current
+export const getScope = () => current;
 
 // Register a cleanup on the active scope. No-op at top level (top-level
 // effects and listeners are intentionally permanent).
 export function onDispose(fn) {
-  if (current) (current.disposers ??= []).push(fn)
-  return fn
+  if (current) (current.disposers ??= []).push(fn);
+  return fn;
 }
 
 // Lazy AbortSignal of the active scope — pass to addEventListener/fetch.
 // undefined at top level.
 export function scopeSignal() {
-  if (!current) return undefined
-  current.ctrl ??= new AbortController()
-  return current.ctrl.signal
+  if (!current) return undefined;
+  current.ctrl ??= new AbortController();
+  return current.ctrl.signal;
 }
 
 export function disposeScope(scope) {
-  if (!scope || scope.disposed) return
-  scope.disposed = true
+  if (!scope || scope.disposed) return;
+  scope.disposed = true;
   if (scope.children) {
-    for (const child of [...scope.children]) disposeScope(child)
-    scope.children = null
+    for (const child of [...scope.children]) disposeScope(child);
+    scope.children = null;
   }
-  if (scope.ctrl) scope.ctrl.abort()
+  if (scope.ctrl) scope.ctrl.abort();
   if (scope.disposers) {
     for (const d of scope.disposers) {
       try {
-        d()
+        d();
       } catch (e) {
-        console.error('imp: disposer threw', e)
+        console.error("imp: disposer threw", e);
       }
     }
-    scope.disposers = null
+    scope.disposers = null;
   }
-  scope.parent?.children?.delete(scope)
-  scope.parent = null
+  scope.parent?.children?.delete(scope);
+  scope.parent = null;
 }

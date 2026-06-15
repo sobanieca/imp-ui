@@ -1,21 +1,32 @@
 # imp-ui (experiment)
 
-Full implementation of the framework described in [`../essence.md`](../essence.md): buildless,
-vanilla-JS, element factories + Solid-style signals + real DOM, all-in-one toolkit, AI agents as the
-primary author.
+Full implementation of the framework described in
+[`../essence.md`](../essence.md): buildless, vanilla-JS, element factories +
+Solid-style signals + real DOM, all-in-one toolkit, AI agents as the primary
+author.
 
 ```js
-import { button, css, div, each, h1, mount, signal, t, when } from './imp/imp.js'
+import {
+  button,
+  css,
+  div,
+  each,
+  h1,
+  mount,
+  signal,
+  t,
+  when,
+} from "./imp/imp.js";
 
 function counter() {
-  const count = signal(0)
+  const count = signal(0);
   return div([
     h1(() => `Count: ${count()}`),
-    button({ events: { click: () => count.update((c) => c + 1) } }, '+1'),
-  ])
+    button({ events: { click: () => count.update((c) => c + 1) } }, "+1"),
+  ]);
 }
 
-mount('#app', counter)
+mount("#app", counter);
 ```
 
 ## Layout
@@ -39,5 +50,5 @@ deno run -A cli/main.js dev          # serve any app dir
 deno compile -A -o imp cli/main.js   # the single-binary CLI
 ```
 
-The whole framework is plain ES modules — `imp/` + `stdlib/` can be vendored into an app by copying
-the two directories (`imp new` does exactly that).
+The whole framework is plain ES modules — `imp/` + `stdlib/` can be vendored
+into an app by copying the two directories (`imp new` does exactly that).

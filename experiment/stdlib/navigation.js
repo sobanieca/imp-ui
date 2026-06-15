@@ -1,7 +1,19 @@
 // Navigation components: tabs, menuList, breadcrumbs, pagination.
 
-import { button, css, div, li, link, match, nav, ol, signal, span, t } from '../imp/imp.js'
-import { cx, isSignal, read } from './util.js'
+import {
+  button,
+  css,
+  div,
+  li,
+  link,
+  match,
+  nav,
+  ol,
+  signal,
+  span,
+  t,
+} from "../imp/imp.js";
+import { cx, isSignal, read } from "./util.js";
 
 const tabBarCss = css`
   display: flex;
@@ -26,30 +38,33 @@ const tabBarCss = css`
     border-color: var(--imp-color-primary);
     font-weight: var(--imp-font-weight-medium);
   }
-`
+`;
 const tabPanelCss = css`
   padding-block-start: var(--imp-space-16);
-`
+`;
 
 // tabs({ tabs: [{ id, label, content }], active? })
 // content: () => Node, built lazily per activation; active: optional signal.
 export function tabs({ tabs: items = [], active, class: extra, ...rest } = {}) {
-  const current = isSignal(active) ? active : signal(active ?? items[0]?.id)
+  const current = isSignal(active) ? active : signal(active ?? items[0]?.id);
   return div({ ...rest, class: extra }, [
     div(
-      { class: tabBarCss, role: 'tablist' },
+      { class: tabBarCss, role: "tablist" },
       items.map((item) =>
         button({
-          role: 'tab',
-          'aria-selected': () => String(current() === item.id),
+          role: "tab",
+          "aria-selected": () => String(current() === item.id),
           events: { click: () => current.set(item.id) },
-        }, typeof item.label === 'function' ? item.label : String(item.label))
+        }, typeof item.label === "function" ? item.label : String(item.label))
       ),
     ),
-    div({ class: tabPanelCss, role: 'tabpanel' }, [
-      match(current, Object.fromEntries(items.map((item) => [item.id, item.content]))),
+    div({ class: tabPanelCss, role: "tabpanel" }, [
+      match(
+        current,
+        Object.fromEntries(items.map((item) => [item.id, item.content])),
+      ),
     ]),
-  ])
+  ]);
 }
 
 const menuCss = css`
@@ -78,25 +93,27 @@ const menuCss = css`
     background: var(--imp-color-primary);
     color: var(--imp-color-on-primary);
   }
-`
+`;
 
 // menuList({ items: [{ id, label, onSelect }], active? }) — active: signal of id
 export function menuList({ items = [], active, class: extra, ...rest } = {}) {
   return div(
-    { ...rest, class: cx(menuCss, extra), role: 'menu' },
+    { ...rest, class: cx(menuCss, extra), role: "menu" },
     items.map((item) =>
       button({
-        role: 'menuitem',
-        'aria-current': active ? () => String(read(active) === item.id) : 'false',
+        role: "menuitem",
+        "aria-current": active
+          ? () => String(read(active) === item.id)
+          : "false",
         events: {
           click: () => {
-            if (isSignal(active)) active.set(item.id)
-            item.onSelect?.(item)
+            if (isSignal(active)) active.set(item.id);
+            item.onSelect?.(item);
           },
         },
-      }, typeof item.label === 'function' ? item.label : String(item.label))
+      }, typeof item.label === "function" ? item.label : String(item.label))
     ),
-  )
+  );
 }
 
 const crumbsCss = css`
@@ -121,23 +138,23 @@ const crumbsCss = css`
   & [aria-current] {
     color: var(--imp-color-text-muted);
   }
-`
+`;
 
 // breadcrumbs({ items: [{ label, href? }] }) — last item is the current page.
 export function breadcrumbs({ items = [], class: extra, ...rest } = {}) {
   return nav(
-    { ...rest, class: extra, 'aria-label': 'breadcrumbs' },
+    { ...rest, class: extra, "aria-label": "breadcrumbs" },
     ol(
       { class: crumbsCss },
       items.map((item, i) =>
         li(
           item.href && i < items.length - 1
             ? link({ href: item.href }, item.label)
-            : span({ 'aria-current': 'page' }, item.label),
+            : span({ "aria-current": "page" }, item.label),
         )
       ),
     ),
-  )
+  );
 }
 
 const pagerCss = css`
@@ -163,20 +180,20 @@ const pagerCss = css`
     opacity: 0.45;
     cursor: default;
   }
-`
+`;
 
 // pagination({ page, pages }) — page: signal (1-based), pages: number or fn.
 export function pagination({ page, pages = 1, class: extra, ...rest } = {}) {
-  const total = () => Math.max(1, read(pages))
+  const total = () => Math.max(1, read(pages));
   return div({ ...rest, class: cx(pagerCss, extra) }, [
     button({
       disabled: () => page() <= 1,
       events: { click: () => page.update((p) => Math.max(1, p - 1)) },
-    }, () => t('imp.prev')),
-    span(() => t('imp.page', { page: page(), pages: total() })),
+    }, () => t("imp.prev")),
+    span(() => t("imp.page", { page: page(), pages: total() })),
     button({
       disabled: () => page() >= total(),
       events: { click: () => page.update((p) => Math.min(total(), p + 1)) },
-    }, () => t('imp.next')),
-  ])
+    }, () => t("imp.next")),
+  ]);
 }

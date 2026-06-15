@@ -3,48 +3,100 @@
 A small SPA framework. Below constraints shape everything:
 
 1. **Buildless** — plain ES modules, runs directly in the browser.
-2. **Element-factory syntax** — DOM expressed as JS function calls (`el(tag, ...)` plus per-tag shortcuts). HTML elements are the substrate, not the ceiling — imp-ui is an app framework, not a hypertext renderer.
+2. **Element-factory syntax** — DOM expressed as JS function calls
+   (`el(tag, ...)` plus per-tag shortcuts). HTML elements are the substrate, not
+   the ceiling — imp-ui is an app framework, not a hypertext renderer.
 3. **`render` produces real DOM** — no virtual DOM, no string templates.
 4. **Solid-style signals** — fine-grained reactivity; components run once.
-5. **Simplicity** - it's supposed to be very simple to use, without need to study long documentation
-6. **AI Agents target** - Framework simple to use by AI agents. Assumption - no hand written code. Javascript instead of Typescript to save tokens.
-7. **All in one toolkit** - This Framework will serve also as local runtime, provide reach std library (already good base of components)
-8. **Reactivity is opt-in** — signals are a tool, not a religion. Plain imperative code is a first-class path: `el` returns real DOM nodes, so you can hold a reference, mutate `.textContent`, `appendChild`, set attributes, attach listeners directly. Nothing in the framework requires a signal to exist. Use signals when fine-grained reactivity earns its keep; reach for direct DOM manipulation when it's simpler.
-9. **Themable and translatable by default** — theming (colors, radius, shadows, spacing, typography tokens) and i18n (locale + `t()`) are first-class framework concerns, not user-space layers bolted on top. Every stdlib component reads tokens from a reactive `theme` signal and pipes user-facing strings through a reactive `t()`. Changing either re-skins or re-localizes the whole app instantly. Every layer below must be designed with this in mind — rendering exposes a CSS-variable surface, reactivity carries the theme/locale signals, the CLI ships a live-editing showcase, and the stdlib is a downstream consumer of both systems.
+5. **Simplicity** - it's supposed to be very simple to use, without need to
+   study long documentation
+6. **AI Agents target** - Framework simple to use by AI agents. Assumption - no
+   hand written code. Javascript instead of Typescript to save tokens.
+7. **All in one toolkit** - This Framework will serve also as local runtime,
+   provide reach std library (already good base of components)
+8. **Reactivity is opt-in** — signals are a tool, not a religion. Plain
+   imperative code is a first-class path: `el` returns real DOM nodes, so you
+   can hold a reference, mutate `.textContent`, `appendChild`, set attributes,
+   attach listeners directly. Nothing in the framework requires a signal to
+   exist. Use signals when fine-grained reactivity earns its keep; reach for
+   direct DOM manipulation when it's simpler.
+9. **Themable and translatable by default** — theming (colors, radius, shadows,
+   spacing, typography tokens) and i18n (locale + `t()`) are first-class
+   framework concerns, not user-space layers bolted on top. Every stdlib
+   component reads tokens from a reactive `theme` signal and pipes user-facing
+   strings through a reactive `t()`. Changing either re-skins or re-localizes
+   the whole app instantly. Every layer below must be designed with this in mind
+   — rendering exposes a CSS-variable surface, reactivity carries the
+   theme/locale signals, the CLI ships a live-editing showcase, and the stdlib
+   is a downstream consumer of both systems.
 
-SPA-first, but not SPA-only. Imp renders on the client — there is no SSR of imp components and no hydration of imp-produced markup. What *is* supported: a server can return ordinary HTML (MVC-style, any backend) with one or more imp mount points embedded in it, and imp renders into those just like it renders a full app. Server-rendered shell + imp islands, not server-rendered imp. See §1.6.
+SPA-first, but not SPA-only. Imp renders on the client — there is no SSR of imp
+components and no hydration of imp-produced markup. What _is_ supported: a
+server can return ordinary HTML (MVC-style, any backend) with one or more imp
+mount points embedded in it, and imp renders into those just like it renders a
+full app. Server-rendered shell + imp islands, not server-rendered imp. See
+§1.6.
 
 ---
 
 ## 0. Why this framework
 
-**Fragmentation is the real problem.** Modern frontend forces a stack assembly exercise before any product work happens: pick a framework, pick a router, pick a state library, pick a forms library, pick a component kit, pick a build tool, pick a dev server, pick a testing harness. Each choice has five viable answers, each answer has its own conventions, and the seams between them are where bugs and onboarding pain live. This framework rejects that: one toolkit covers rendering, reactivity, routing, runtime, and a standard component library. Boring, consistent, opinionated.
+**Fragmentation is the real problem.** Modern frontend forces a stack assembly
+exercise before any product work happens: pick a framework, pick a router, pick
+a state library, pick a forms library, pick a component kit, pick a build tool,
+pick a dev server, pick a testing harness. Each choice has five viable answers,
+each answer has its own conventions, and the seams between them are where bugs
+and onboarding pain live. This framework rejects that: one toolkit covers
+rendering, reactivity, routing, runtime, and a standard component library.
+Boring, consistent, opinionated.
 
-**80% is the target, not 100%.** No claim of universality. Some apps need things this won't provide (heavy data viz, native-bridge mobile, complex collaborative editing, etc.). That's fine — pick something else for those. For the broad middle — dashboards, CRUD apps, internal tools, marketing-adjacent product UIs — this should be the full answer. And when something *is* missing, the framework is simple enough that an AI agent can produce the missing piece from scratch rather than introducing a heavy dependency.
+**80% is the target, not 100%.** No claim of universality. Some apps need things
+this won't provide (heavy data viz, native-bridge mobile, complex collaborative
+editing, etc.). That's fine — pick something else for those. For the broad
+middle — dashboards, CRUD apps, internal tools, marketing-adjacent product UIs —
+this should be the full answer. And when something _is_ missing, the framework
+is simple enough that an AI agent can produce the missing piece from scratch
+rather than introducing a heavy dependency.
 
-**SPAs are still the right default.** SSR has captured a lot of mindshare lately, and a lot of that mindshare is downstream of the fact that companies selling compute love selling SSR compute. The original move — frontend on a CDN, backend serving clean readable JSON, clear separation of concerns — remains one of the best things that happened to web development. Backends become debuggable, cacheable, language-agnostic. Frontend deploys are cheap and instant. Loading states are a solved problem. This framework leans into that model unapologetically.
+**SPAs are still the right default.** SSR has captured a lot of mindshare
+lately, and a lot of that mindshare is downstream of the fact that companies
+selling compute love selling SSR compute. The original move — frontend on a CDN,
+backend serving clean readable JSON, clear separation of concerns — remains one
+of the best things that happened to web development. Backends become debuggable,
+cacheable, language-agnostic. Frontend deploys are cheap and instant. Loading
+states are a solved problem. This framework leans into that model
+unapologetically.
 
-**Boring on purpose.** No novel rendering algorithm, no new reactivity paradigm, no breakthrough perf claim. Just a small, legible set of tools that get most of the job done. Novelty is a tax — both on the user and on the AI agents we expect to write code in this framework. If a feature isn't here, the assumption is that with an AI agent you can write it yourself, in user code, in an afternoon.
+**Boring on purpose.** No novel rendering algorithm, no new reactivity paradigm,
+no breakthrough perf claim. Just a small, legible set of tools that get most of
+the job done. Novelty is a tax — both on the user and on the AI agents we expect
+to write code in this framework. If a feature isn't here, the assumption is that
+with an AI agent you can write it yourself, in user code, in an afternoon.
 
 ---
 
 ## 1. Elements
 
-DOM expressed as function calls. `el(tag, ...args)` is the one primitive; per-tag shortcuts (`div`, `p`, `button`, …) are thin wrappers around it. Each call returns a real DOM node — no virtual DOM, no string template, no compile step. Element factories are the substrate; the framework's job is everything *above* them (reactivity, theming, i18n, routing, runtime, stdlib).
+DOM expressed as function calls. `el(tag, ...args)` is the one primitive;
+per-tag shortcuts (`div`, `p`, `button`, …) are thin wrappers around it. Each
+call returns a real DOM node — no virtual DOM, no string template, no compile
+step. Element factories are the substrate; the framework's job is everything
+_above_ them (reactivity, theming, i18n, routing, runtime, stdlib).
 
 ```js
-p("This is a paragraph")
-p({ style: { marginTop: '10px' } }, "with inline style")
+p("This is a paragraph");
+p({ style: { marginTop: "10px" } }, "with inline style");
 
 div([
   p("paragraph inside div"),
   p("another paragraph"),
-])
+]);
 ```
 
 ### Dispatch rule
 
-Arguments are identified by **type**, not position. Order doesn't matter; `p({...}, "text")` and `p("text", {...})` are equivalent.
+Arguments are identified by **type**, not position. Order doesn't matter;
+`p({...}, "text")` and `p("text", {...})` are equivalent.
 
 - **Array** → children
 - **String / number** → text content
@@ -55,147 +107,241 @@ Arguments are identified by **type**, not position. Order doesn't matter; `p({..
 
 ```js
 function el(tag, ...args) {
-  const node = document.createElement(tag)
-  const { props, children } = normalize(args)
-  applyProps(node, props)
-  appendChildren(node, children)
-  return node
+  const node = document.createElement(tag);
+  const { props, children } = normalize(args);
+  applyProps(node, props);
+  appendChildren(node, children);
+  return node;
 }
 ```
 
 ### Children flattening
 
-`div([header(), items.map(renderItem), footer()])` mixes nodes with arrays. Flatten recursively when building, and drop `null`/`undefined`/`false` in the same pass so conditionals stay natural.
+`div([header(), items.map(renderItem), footer()])` mixes nodes with arrays.
+Flatten recursively when building, and drop `null`/`undefined`/`false` in the
+same pass so conditionals stay natural.
 
 ### Inline-text trade-off
 
-`p("Hello ", strong("world"))` won't work — the second arg is interpreted as props. Use the array form: `p(["Hello ", strong("world")])`. The dispatch rule stays clean in exchange.
+`p("Hello ", strong("world"))` won't work — the second arg is interpreted as
+props. Use the array form: `p(["Hello ", strong("world")])`. The dispatch rule
+stays clean in exchange.
 
 ### Prop keys
 
-Prop keys map directly to HTML attribute names. No aliases (`className`, `htmlFor`, `dataset`) — one name per attribute, and it's the HTML one. Names that aren't valid bare JS identifiers go in string-quoted keys:
+Prop keys map directly to HTML attribute names. No aliases (`className`,
+`htmlFor`, `dataset`) — one name per attribute, and it's the HTML one. Names
+that aren't valid bare JS identifiers go in string-quoted keys:
 
 ```js
-div({ class: "card", "data-id": "42", "aria-label": "Close" })
-label({ for: "email" })
+div({ class: "card", "data-id": "42", "aria-label": "Close" });
+label({ for: "email" });
 ```
 
-`class` and `for` are no longer reserved as object property names in modern JS, so they work bare; `data-*` and `aria-*` need quotes.
+`class` and `for` are no longer reserved as object property names in modern JS,
+so they work bare; `data-*` and `aria-*` need quotes.
 
 Dispatch order inside `applyProps`:
 
-1. `events: {...}` — object map of event name → handler, attached via `addEventListener` with an `AbortController` signal owned by the element's disposal scope (see Events subsection below).
+1. `events: {...}` — object map of event name → handler, attached via
+   `addEventListener` with an `AbortController` signal owned by the element's
+   disposal scope (see Events subsection below).
 2. `style: {...}` — object → inline CSS (camelCase → kebab-case).
-3. **Property-first fallthrough:** if `key in node`, assign as a property (`node[key] = v`); otherwise `setAttribute(key, v)`.
+3. **Property-first fallthrough:** if `key in node`, assign as a property
+   (`node[key] = v`); otherwise `setAttribute(key, v)`.
 
-The property-first rule quietly absorbs the cases that would otherwise need special-casing:
+The property-first rule quietly absorbs the cases that would otherwise need
+special-casing:
 
-- **Boolean attrs** (`disabled`, `checked`, `hidden`, `open`, …) — every one has a boolean *property*, so `{ disabled: true }` does `node.disabled = true` correctly; `false` clears it. No stringy `"true"` foot-gun.
-- **Live form state** (`value`, `checked`, `selected`, `indeterminate`, `files`) — these must be set as properties, not attributes; the attribute only seeds the *initial* value and is ignored after the user types. Property-first makes reactive `{ value: draft }` actually work.
-- **Custom element properties** — `myChart({ data: obj })` works: `"data" in node` is true on the custom element, so the object is assigned as a property instead of being stringified to `[object Object]` by `setAttribute`.
+- **Boolean attrs** (`disabled`, `checked`, `hidden`, `open`, …) — every one has
+  a boolean _property_, so `{ disabled: true }` does `node.disabled = true`
+  correctly; `false` clears it. No stringy `"true"` foot-gun.
+- **Live form state** (`value`, `checked`, `selected`, `indeterminate`, `files`)
+  — these must be set as properties, not attributes; the attribute only seeds
+  the _initial_ value and is ignored after the user types. Property-first makes
+  reactive `{ value: draft }` actually work.
+- **Custom element properties** — `myChart({ data: obj })` works:
+  `"data" in node` is true on the custom element, so the object is assigned as a
+  property instead of being stringified to `[object Object]` by `setAttribute`.
 
-SVG branch skips step 4: SVG element properties are mostly read-only mirrors, and case-sensitive attribute names (`viewBox`, `preserveAspectRatio`) need to round-trip through `setAttribute(NS)` verbatim.
+SVG branch skips step 4: SVG element properties are mostly read-only mirrors,
+and case-sensitive attribute names (`viewBox`, `preserveAspectRatio`) need to
+round-trip through `setAttribute(NS)` verbatim.
 
-`null` / `undefined` / `false` as a prop value removes the attribute (or sets the property to `null`), so `{ disabled: isLocked }` toggles cleanly when `isLocked` flips.
+`null` / `undefined` / `false` as a prop value removes the attribute (or sets
+the property to `null`), so `{ disabled: isLocked }` toggles cleanly when
+`isLocked` flips.
 
 ### Events
 
-Event listeners live under a single `events` prop — an object mapping event name to handler. The event name is the one you'd pass to `addEventListener`: bare, lowercase, no `on` prefix.
+Event listeners live under a single `events` prop — an object mapping event name
+to handler. The event name is the one you'd pass to `addEventListener`: bare,
+lowercase, no `on` prefix.
 
 ```js
-button({ events: { click: add } }, "Add")
-input({ events: { input: e => draft.set(e.target.value) } })
-form({ events: { submit: handleSubmit } })
-div({ events: { pointerdown: start, pointermove: drag, pointerup: end } })
+button({ events: { click: add } }, "Add");
+input({ events: { input: (e) => draft.set(e.target.value) } });
+form({ events: { submit: handleSubmit } });
+div({ events: { pointerdown: start, pointermove: drag, pointerup: end } });
 ```
 
 Why a nested object instead of bare `onClick` props:
 
 - `click` is the DOM-native event name; `onClick` is React legacy.
-- Custom events (`'chart-rendered'`, `'my-component:ready'`) have no `on<name>` IDL property, so any prefix-based detection rule can't catch them. `events: { 'chart-rendered': fn }` works uniformly for spec and custom events.
-- Listener options have a natural home: `events: { click: [fn, { once: true, passive: true }] }`.
+- Custom events (`'chart-rendered'`, `'my-component:ready'`) have no `on<name>`
+  IDL property, so any prefix-based detection rule can't catch them.
+  `events: { 'chart-rendered': fn }` works uniformly for spec and custom events.
+- Listener options have a natural home:
+  `events: { click: [fn, { once: true, passive: true }] }`.
 - The nesting shape mirrors `style: { ... }` — users learn one pattern, not two.
 
-Each entry is attached with `addEventListener(name, fn, { signal })` where `signal` comes from an `AbortController` owned by the element's disposal scope (§5). On framework-driven unmount — `when` / `each` swaps the subtree out, a route changes, the parent component tears down — the controller aborts and every listener attached this way detaches in one pass. No leaked handlers, no manual `removeEventListener`.
+Each entry is attached with `addEventListener(name, fn, { signal })` where
+`signal` comes from an `AbortController` owned by the element's disposal scope
+(§5). On framework-driven unmount — `when` / `each` swaps the subtree out, a
+route changes, the parent component tears down — the controller aborts and every
+listener attached this way detaches in one pass. No leaked handlers, no manual
+`removeEventListener`.
 
-Caveat: this fires only on *framework-driven* unmount. Calling `node.remove()` imperatively is invisible to the disposal tree (the DOM emits no removal event for regular elements), so handlers attached that way persist until the node is garbage-collected. Stay inside the structural primitives, or use the eventual `onMount` hook (§4.5) to manage your own `AbortController` for imperative cases.
+Caveat: this fires only on _framework-driven_ unmount. Calling `node.remove()`
+imperatively is invisible to the disposal tree (the DOM emits no removal event
+for regular elements), so handlers attached that way persist until the node is
+garbage-collected. Stay inside the structural primitives, or use the eventual
+`onMount` hook (§4.5) to manage your own `AbortController` for imperative cases.
 
 ### Tag factories
 
 Don't hand-write 100 factories:
 
 ```js
-const tags = ['div', 'p', 'span', 'h1', 'h2', 'h3', 'ul', 'li',
-              'a', 'button', 'input', 'label', 'section', 'header',
-              'main', 'footer', 'nav', 'aside', /* … */]
+const tags = [
+  "div",
+  "p",
+  "span",
+  "h1",
+  "h2",
+  "h3",
+  "ul",
+  "li",
+  "a",
+  "button",
+  "input",
+  "label",
+  "section",
+  "header",
+  "main",
+  "footer",
+  "nav",
+  "aside",
+  /* … */
+];
 
-export const { div, p, span, h1, h2, h3, ul, li, /* … */ } =
-  Object.fromEntries(tags.map(t => [t, (...args) => el(t, ...args)]))
+export const { div, p, span, h1, h2, h3, ul, li /* … */ } = Object.fromEntries(
+  tags.map((t) => [t, (...args) => el(t, ...args)]),
+);
 ```
 
-A `Proxy` would let any tag name work — easier for custom elements, but harder to tree-shake. Start with the explicit list.
+A `Proxy` would let any tag name work — easier for custom elements, but harder
+to tree-shake. Start with the explicit list.
 
 ### SVG
 
-SVG elements need `createElementNS('http://www.w3.org/2000/svg', tag)`. Expose a separate `svg.rect`, `svg.circle` namespace, or detect SVG context when descending into children of an `<svg>` root.
+SVG elements need `createElementNS('http://www.w3.org/2000/svg', tag)`. Expose a
+separate `svg.rect`, `svg.circle` namespace, or detect SVG context when
+descending into children of an `<svg>` root.
 
 ### Components are just functions
 
-`card({ title }) → div(...)`. No framework concept, no special syntax. Most of the readability gain in practice comes from naming subtrees rather than from the library itself.
+`card({ title }) → div(...)`. No framework concept, no special syntax. Most of
+the readability gain in practice comes from naming subtrees rather than from the
+library itself.
 
-**Naming convention: lowercase, always.** Components are functions just like the tag factories, and share their casing. No JSX-style `App` / `Card` capitalization — write `app`, `card`, `userMenu`. We pick consistency over the visual hint; AI agents don't benefit from casing-as-signal, and one rule ("everything is a lowercase function call") is easier to internalize than two.
+**Naming convention: lowercase, always.** Components are functions just like the
+tag factories, and share their casing. No JSX-style `App` / `Card`
+capitalization — write `app`, `card`, `userMenu`. We pick consistency over the
+visual hint; AI agents don't benefit from casing-as-signal, and one rule
+("everything is a lowercase function call") is easier to internalize than two.
 
 Enforced by a custom Deno lint plugin shipped with the `imp` CLI — see Layer 4.
 
 ### 1.5 Web components — `wc()`
 
-Web components are a first-class interop surface, not an afterthought. Imp's own components stay plain lowercase functions (above), but the platform's custom-element model is how imp talks to the outside world — both directions:
+Web components are a first-class interop surface, not an afterthought. Imp's own
+components stay plain lowercase functions (above), but the platform's
+custom-element model is how imp talks to the outside world — both directions:
 
-- **Consuming** a third-party or hand-written custom element (`<my-chart>`, a design-system element, a Leaflet/Chart wrapper) from inside an imp tree.
-- **Exposing** an imp component *as* a custom element so non-imp pages (or server-rendered HTML, §1.6) can drop it in with a plain tag.
+- **Consuming** a third-party or hand-written custom element (`<my-chart>`, a
+  design-system element, a Leaflet/Chart wrapper) from inside an imp tree.
+- **Exposing** an imp component _as_ a custom element so non-imp pages (or
+  server-rendered HTML, §1.6) can drop it in with a plain tag.
 
 `wc()` is the wrapper that bridges the two worlds:
 
 ```js
 // Consume: turn a registered custom element into an imp element factory
-const chart = wc('my-chart')
-chart({ data: series, events: { 'chart-rendered': onReady } })   // props/events flow through §1 dispatch
+const chart = wc("my-chart");
+chart({ data: series, events: { "chart-rendered": onReady } }); // props/events flow through §1 dispatch
 
 // Expose: register an imp component as a custom element
-wc.define('todo-app', todoApp)        // → <todo-app> usable in any HTML
+wc.define("todo-app", todoApp); // → <todo-app> usable in any HTML
 ```
 
 Why it fits cleanly:
 
-- The §1 dispatch already does the right thing for custom elements — `"data" in node` is true, so object props are assigned as properties, not stringified (see *Custom element properties* under Prop keys). `wc()` is mostly a thin, typed front door over that existing behavior plus attribute/prop and `events` mapping.
-- Reactive props (`{ data: () => series() }`) and the `events: {...}` map work unchanged, so a wrapped web component participates in signals and disposal like any other imp node.
-- Exposed-as-custom-element is what makes the server-HTML model (§1.6) ergonomic: the server emits `<todo-app>` and imp upgrades it in place.
+- The §1 dispatch already does the right thing for custom elements —
+  `"data" in node` is true, so object props are assigned as properties, not
+  stringified (see _Custom element properties_ under Prop keys). `wc()` is
+  mostly a thin, typed front door over that existing behavior plus
+  attribute/prop and `events` mapping.
+- Reactive props (`{ data: () => series() }`) and the `events: {...}` map work
+  unchanged, so a wrapped web component participates in signals and disposal
+  like any other imp node.
+- Exposed-as-custom-element is what makes the server-HTML model (§1.6)
+  ergonomic: the server emits `<todo-app>` and imp upgrades it in place.
 
-Open: whether `wc.define` opts into shadow DOM (style isolation) or light DOM by default, and how theme tokens (§5, CSS custom properties) pierce a shadow boundary. Lean: light DOM by default so theme variables inherit for free; shadow as an opt-in flag for components that need hard isolation.
+Open: whether `wc.define` opts into shadow DOM (style isolation) or light DOM by
+default, and how theme tokens (§5, CSS custom properties) pierce a shadow
+boundary. Lean: light DOM by default so theme variables inherit for free; shadow
+as an opt-in flag for components that need hard isolation.
 
 ### 1.6 Mounting into server-rendered HTML
 
-Imp is SPA-first but doesn't have to own the whole page. The supported server model: a backend returns ordinary HTML (MVC-style, any language) with **imp mount points** embedded in it; imp renders into those on the client. This is server-rendered *shell* with imp *islands* — **not** SSR of imp components and **not** hydration of imp-produced markup.
+Imp is SPA-first but doesn't have to own the whole page. The supported server
+model: a backend returns ordinary HTML (MVC-style, any language) with **imp
+mount points** embedded in it; imp renders into those on the client. This is
+server-rendered _shell_ with imp _islands_ — **not** SSR of imp components and
+**not** hydration of imp-produced markup.
 
 Two mounting shapes, both client-side:
 
 ```js
 // 1. Explicit mount into a placeholder the server emitted
 //    <div id="cart"></div>  in the server HTML
-mount('#cart', cartWidget({ userId }))
+mount("#cart", cartWidget({ userId }));
 
 // 2. Custom-element upgrade (via §1.5 wc.define)
 //    server emits  <todo-app></todo-app>  and imp renders it in place
-wc.define('todo-app', todoApp)
+wc.define("todo-app", todoApp);
 ```
 
-The render entry point is the same one a full SPA uses (`mount(target, node)` / appending `component()` to a target) — a full app is just the degenerate case where the target is `document.body` and the server shell is near-empty. Nothing imp-specific has to round-trip from the server; the server only emits plain HTML plus the mount markers, so backends stay debuggable, cacheable, and language-agnostic (the §0 "SPAs are still the right default" argument holds — this just lets imp coexist with an existing server-rendered app instead of replacing it wholesale).
+The render entry point is the same one a full SPA uses (`mount(target, node)` /
+appending `component()` to a target) — a full app is just the degenerate case
+where the target is `document.body` and the server shell is near-empty. Nothing
+imp-specific has to round-trip from the server; the server only emits plain HTML
+plus the mount markers, so backends stay debuggable, cacheable, and
+language-agnostic (the §0 "SPAs are still the right default" argument holds —
+this just lets imp coexist with an existing server-rendered app instead of
+replacing it wholesale).
 
-No hydration step means no markup-matching contract between server and client: imp owns the subtree inside each mount point and renders it fresh. Server-rendered content *around* the mount points is left untouched.
+No hydration step means no markup-matching contract between server and client:
+imp owns the subtree inside each mount point and renders it fresh.
+Server-rendered content _around_ the mount points is left untouched.
 
 ### 1.7 Styles — `css()`
 
-Two styling surfaces exist already: inline `style: {...}` objects (§1 dispatch) and theme tokens as `--imp-*` CSS variables (§5). What's missing is the *reusable/static* layer — where the CSS for `card` or a stdlib `modal` lives. That layer is `css`:
+Two styling surfaces exist already: inline `style: {...}` objects (§1 dispatch)
+and theme tokens as `--imp-*` CSS variables (§5). What's missing is the
+_reusable/static_ layer — where the CSS for `card` or a stdlib `modal` lives.
+That layer is `css`:
 
 ```js
 // Module level: returns a generated class name; rule injected once
@@ -203,70 +349,111 @@ const cardStyle = css`
   background: var(--imp-color-surface);
   border-radius: var(--imp-radius-md);
   padding: var(--imp-space-16);
-  &:hover { box-shadow: var(--imp-shadow-md); }
-  @media (max-width: 600px) { padding: var(--imp-space-8); }
-`
+  &:hover {
+    box-shadow: var(--imp-shadow-md);
+  }
+  @media (max-width: 600px) {
+    padding: var(--imp-space-8);
+  }
+`;
 
-const card = (title, body) => div({ class: cardStyle }, [h2(title), body])
+const card = (title, body) => div({ class: cardStyle }, [h2(title), body]);
 ```
 
-Implementation: hash the rule text for a class name (`imp-x1f3a`), wrap (`.imp-x1f3a { ... }`), insert into one shared `CSSStyleSheet` attached via `document.adoptedStyleSheets`. Content-hash dedup means calling a component factory 2,000 times injects the rule once. Native CSS nesting (evergreen-supported) makes `&:hover` and `@media` blocks work with zero parsing on our side — the browser does it. Buildless CSS-in-JS, co-located with the component: one file, one mental model ("everything is a JS function call"), which matters for AI agents generating whole components in one pass.
+Implementation: hash the rule text for a class name (`imp-x1f3a`), wrap
+(`.imp-x1f3a { ... }`), insert into one shared `CSSStyleSheet` attached via
+`document.adoptedStyleSheets`. Content-hash dedup means calling a component
+factory 2,000 times injects the rule once. Native CSS nesting
+(evergreen-supported) makes `&:hover` and `@media` blocks work with zero parsing
+on our side — the browser does it. Buildless CSS-in-JS, co-located with the
+component: one file, one mental model ("everything is a JS function call"),
+which matters for AI agents generating whole components in one pass.
 
-**Why not inline styles for everything?** Two reasons, and performance is the lesser one:
+**Why not inline styles for everything?** Two reasons, and performance is the
+lesser one:
 
-- **Capability.** Inline styles cannot express pseudo-classes (`:hover`, `:focus-visible`, `:disabled`), pseudo-elements (`::before`, `::placeholder`), media/container queries, `@keyframes`, or state selectors (`[data-imp-mode="dark"] &`). The stdlib needs hover states, focus rings, and dark-mode hooks — a stylesheet layer is mandatory regardless.
-- **Repetition cost.** For a single element, setting inline style is cheap — no measurable penalty. The cost appears in lists: `each` rendering 2,000 rows that each carry the same 10-property inline style object pays the property-setting work 2,000 times and stores 2,000 copies of the declaration in the DOM. With a class, the browser parses the rule once and shares computed-style data between elements matching the same rules — an optimization inline styles defeat. Module-level `css` calls *are* the shared styles.
+- **Capability.** Inline styles cannot express pseudo-classes (`:hover`,
+  `:focus-visible`, `:disabled`), pseudo-elements (`::before`, `::placeholder`),
+  media/container queries, `@keyframes`, or state selectors
+  (`[data-imp-mode="dark"] &`). The stdlib needs hover states, focus rings, and
+  dark-mode hooks — a stylesheet layer is mandatory regardless.
+- **Repetition cost.** For a single element, setting inline style is cheap — no
+  measurable penalty. The cost appears in lists: `each` rendering 2,000 rows
+  that each carry the same 10-property inline style object pays the
+  property-setting work 2,000 times and stores 2,000 copies of the declaration
+  in the DOM. With a class, the browser parses the rule once and shares
+  computed-style data between elements matching the same rules — an optimization
+  inline styles defeat. Module-level `css` calls _are_ the shared styles.
 
 **Division of labor** (the documented rule):
 
-1. **Shared/static styles** → `css` at module level → class name. The default for components.
-2. **Per-instance dynamic values** → inline `style: {...}`, especially reactive ones (`style: { opacity: () => fading() ? 0.5 : 1 }`). This is what inline style is *for* — values that differ per element per moment. Refinement: set dynamic scalars as inline CSS custom properties (`style: { '--progress': pct }`) consumed by the shared class, so rule structure stays shared and only the scalar varies.
-3. **State variants** → the §4.4 class-toggling sugar (`class: { active: isSelected }`) flipping between `css`-defined classes.
+1. **Shared/static styles** → `css` at module level → class name. The default
+   for components.
+2. **Per-instance dynamic values** → inline `style: {...}`, especially reactive
+   ones (`style: { opacity: () => fading() ? 0.5 : 1 }`). This is what inline
+   style is _for_ — values that differ per element per moment. Refinement: set
+   dynamic scalars as inline CSS custom properties
+   (`style: { '--progress': pct }`) consumed by the shared class, so rule
+   structure stays shared and only the scalar varies.
+3. **State variants** → the §4.4 class-toggling sugar
+   (`class: { active: isSelected }`) flipping between `css`-defined classes.
 
-Plain `.css` files via `<link>` remain the zero-framework escape hatch — nothing about `el()` prevents `class: "my-thing"` — but they're not the blessed path; they split a component across two files and two syntaxes.
+Plain `.css` files via `<link>` remain the zero-framework escape hatch — nothing
+about `el()` prevents `class: "my-thing"` — but they're not the blessed path;
+they split a component across two files and two syntaxes.
 
-Theming composes unchanged: `css` rules reference `--imp-*` variables, so a theme swap (§5b) re-skins every class with no re-render. And `adoptedStyleSheets` works on shadow roots too, so if a `wc.define`'d component opts into shadow DOM (§1.5), the same sheet can be adopted into the shadow root — which mildly reinforces the light-DOM-default lean (no extra machinery needed either way).
+Theming composes unchanged: `css` rules reference `--imp-*` variables, so a
+theme swap (§5b) re-skins every class with no re-render. And
+`adoptedStyleSheets` works on shadow roots too, so if a `wc.define`'d component
+opts into shadow DOM (§1.5), the same sheet can be adopted into the shadow root
+— which mildly reinforces the light-DOM-default lean (no extra machinery needed
+either way).
 
 ---
 
 ## 2. Signals
 
-Solid-style fine-grained reactivity. Components run **once** to build the DOM; signals update specific nodes thereafter.
+Solid-style fine-grained reactivity. Components run **once** to build the DOM;
+signals update specific nodes thereafter.
 
 ```js
-let currentObserver = null
+let currentObserver = null;
 
 export function signal(initial) {
-  let value = initial
-  const subs = new Set()
+  let value = initial;
+  const subs = new Set();
 
   function read() {
-    if (currentObserver) subs.add(currentObserver)
-    return value
+    if (currentObserver) subs.add(currentObserver);
+    return value;
   }
   read.set = (next) => {
-    if (Object.is(value, next)) return
-    value = next
-    for (const sub of [...subs]) sub()
-  }
-  read.update = (fn) => read.set(fn(value))
-  return read
+    if (Object.is(value, next)) return;
+    value = next;
+    for (const sub of [...subs]) sub();
+  };
+  read.update = (fn) => read.set(fn(value));
+  return read;
 }
 
 export function effect(fn) {
   const run = () => {
-    const prev = currentObserver
-    currentObserver = run
-    try { fn() } finally { currentObserver = prev }
-  }
-  run()
-  return run
+    const prev = currentObserver;
+    currentObserver = run;
+    try {
+      fn();
+    } finally {
+      currentObserver = prev;
+    }
+  };
+  run();
+  return run;
 }
 
 export function computed(fn) {
-  const s = signal()
-  effect(() => s.set(fn()))
-  return s
+  const s = signal();
+  effect(() => s.set(fn()));
+  return s;
 }
 ```
 
@@ -282,53 +469,64 @@ API:
 
 ## 3. Wiring Signals Into the DOM
 
-**The rule:** if a prop value or a child is a **function**, it's reactive. Plain values are static.
+**The rule:** if a prop value or a child is a **function**, it's reactive. Plain
+values are static.
 
 ```js
 // Reactive child → live text node
-if (typeof child === 'function') {
-  const t = document.createTextNode('')
-  effect(() => { t.textContent = String(child()) })
-  node.appendChild(t)
+if (typeof child === "function") {
+  const t = document.createTextNode("");
+  effect(() => {
+    t.textContent = String(child());
+  });
+  node.appendChild(t);
 }
 
 // Reactive prop → live attribute / property
 // (events live under `events: {...}`, so any function value at the
 // top level of props is a reactive value, not a handler)
-if (typeof v === 'function') {
-  effect(() => setAttr(node, k, v()))
+if (typeof v === "function") {
+  effect(() => setAttr(node, k, v()));
 }
 ```
 
-That covers the two easy cases: text content and attributes. Updates are surgical — only the affected text node or attribute touches the DOM. Surrounding siblings are untouched.
+That covers the two easy cases: text content and attributes. Updates are
+surgical — only the affected text node or attribute touches the DOM. Surrounding
+siblings are untouched.
 
-Everything else — conditionals, lists, lifecycle — is a reactive *primitive* layered on top of `effect`. See §4.
+Everything else — conditionals, lists, lifecycle — is a reactive _primitive_
+layered on top of `effect`. See §4.
 
 ---
 
 ## 4. Reactive Primitives
 
-The two-line `effect`-based wiring above handles text and attributes. Anything that changes the *structure* of the DOM needs a primitive.
+The two-line `effect`-based wiring above handles text and attributes. Anything
+that changes the _structure_ of the DOM needs a primitive.
 
-**The unifying idea:** a primitive returns a **marker node** (a comment) that anchors a position in the DOM. The effect inside the primitive inserts/removes/swaps siblings around that marker. The marker stays put even when the slot is empty, so when the signal next fires we still know where the slot is.
+**The unifying idea:** a primitive returns a **marker node** (a comment) that
+anchors a position in the DOM. The effect inside the primitive
+inserts/removes/swaps siblings around that marker. The marker stays put even
+when the slot is empty, so when the signal next fires we still know where the
+slot is.
 
 ### 4.1 `when` — conditional rendering
 
 ```js
 export function when(signal, render) {
-  const marker = document.createComment('when')
-  let current = null
+  const marker = document.createComment("when");
+  let current = null;
 
   effect(() => {
-    const next = render(signal())
-    if (current) current.remove()
+    const next = render(signal());
+    if (current) current.remove();
     if (next && marker.parentNode) {
-      marker.parentNode.insertBefore(next, marker.nextSibling)
+      marker.parentNode.insertBefore(next, marker.nextSibling);
     }
-    current = next
-  })
+    current = next;
+  });
 
-  return marker
+  return marker;
 }
 ```
 
@@ -337,57 +535,65 @@ Usage:
 ```js
 div([
   h1("Dashboard"),
-  when(isLoading, loading => loading ? Spinner() : Dashboard()),
+  when(isLoading, (loading) => loading ? Spinner() : Dashboard()),
   footer("© 2026"),
-])
+]);
 ```
 
-**The key insight:** the reactive boundary is the *slot*, not the element. You're not modifying an existing element conditionally — you're swapping which element occupies a position. The comment marker remembers where the slot is, even when the slot is empty.
+**The key insight:** the reactive boundary is the _slot_, not the element.
+You're not modifying an existing element conditionally — you're swapping which
+element occupies a position. The comment marker remembers where the slot is,
+even when the slot is empty.
 
 ### 4.2 `each` — keyed list rendering
 
-The big one. Add / remove / reorder without recreating unchanged rows. Identity-tracked: keep `key → node`, diff old vs new, only touch what changed. This preserves focus, input state, and CSS animations on stable rows.
+The big one. Add / remove / reorder without recreating unchanged rows.
+Identity-tracked: keep `key → node`, diff old vs new, only touch what changed.
+This preserves focus, input state, and CSS animations on stable rows.
 
 ```js
 export function each(listSignal, renderItem, getKey = (item) => item.id) {
-  const marker = document.createComment('each')
-  const nodesByKey = new Map()
+  const marker = document.createComment("each");
+  const nodesByKey = new Map();
 
   effect(() => {
-    const items = listSignal()
-    const parent = marker.parentNode
-    if (!parent) return
+    const items = listSignal();
+    const parent = marker.parentNode;
+    if (!parent) return;
 
-    const seen = new Set()
-    let prev = marker
+    const seen = new Set();
+    let prev = marker;
 
     for (const item of items) {
-      const key = getKey(item)
-      seen.add(key)
-      let node = nodesByKey.get(key)
+      const key = getKey(item);
+      seen.add(key);
+      let node = nodesByKey.get(key);
       if (!node) {
-        node = renderItem(item)
-        nodesByKey.set(key, node)
+        node = renderItem(item);
+        nodesByKey.set(key, node);
       }
       if (prev.nextSibling !== node) {
-        parent.insertBefore(node, prev.nextSibling)
+        parent.insertBefore(node, prev.nextSibling);
       }
-      prev = node
+      prev = node;
     }
 
     for (const [key, node] of nodesByKey) {
       if (!seen.has(key)) {
-        node.remove()
-        nodesByKey.delete(key)
+        node.remove();
+        nodesByKey.delete(key);
       }
     }
-  })
+  });
 
-  return marker
+  return marker;
 }
 ```
 
-**Open question — intra-item reactivity:** items receive plain objects. Toggling `done` on one todo currently re-runs the array signal and refreshes via `each`, which sees the same key and keeps the node. To get *granular* updates (only that row's `<span>` style changes), pass either:
+**Open question — intra-item reactivity:** items receive plain objects. Toggling
+`done` on one todo currently re-runs the array signal and refreshes via `each`,
+which sees the same key and keeps the node. To get _granular_ updates (only that
+row's `<span>` style changes), pass either:
 
 - (a) an id, and let items look up their own reactive view via `computed`
 - (b) per-field signals on each item
@@ -402,9 +608,9 @@ Built on `when`, but cleaner for finite-state UIs:
 ```js
 match(status, {
   loading: () => Spinner(),
-  error:   (err) => ErrorBox(err),
-  ready:   (data) => Dashboard(data),
-})
+  error: (err) => ErrorBox(err),
+  ready: (data) => Dashboard(data),
+});
 ```
 
 Worth having as a dedicated primitive once you have more than two branches.
@@ -417,73 +623,96 @@ A special case of reactive attributes, common enough to deserve sugar:
 div({
   class: { active: isSelected, disabled: isLocked }, // values are signals
   style: { color: theme, opacity: () => fading() ? 0.5 : 1 },
-})
+});
 ```
 
-Implementation: when `class`/`style` is an object, iterate it and set up an effect per entry. Note that `class` overlaps with the static string form (`class: "card"`) — the implementation dispatches on value type: string → `setAttribute('class', v)`, object → reactive toggling.
+Implementation: when `class`/`style` is an object, iterate it and set up an
+effect per entry. Note that `class` overlaps with the static string form
+(`class: "card"`) — the implementation dispatches on value type: string →
+`setAttribute('class', v)`, object → reactive toggling.
 
-### 4.5 Mount / unmount hooks — *not yet implemented*
+### 4.5 Mount / unmount hooks — _not yet implemented_
 
-Needed for: capturing the DOM node for later imperative use (focus, measurement), third-party library init (charts, maps), cleanup (timers, subscriptions, websockets), enter/exit animations. This subsumes the role that a `ref` callback would play in other frameworks — fires *after* the node is attached to the document, so `focus()`, `getBoundingClientRect()`, and library handoff all work, and it returns a disposer that ties cleanly into the owner tree.
+Needed for: capturing the DOM node for later imperative use (focus,
+measurement), third-party library init (charts, maps), cleanup (timers,
+subscriptions, websockets), enter/exit animations. This subsumes the role that a
+`ref` callback would play in other frameworks — fires _after_ the node is
+attached to the document, so `focus()`, `getBoundingClientRect()`, and library
+handoff all work, and it returns a disposer that ties cleanly into the owner
+tree.
 
 ```js
 onMount(node, () => {
-  node.focus()                       // works — node is in the document
-  const chart = new Chart(node)
-  return () => chart.destroy()       // disposer runs on unmount
-})
+  node.focus(); // works — node is in the document
+  const chart = new Chart(node);
+  return () => chart.destroy(); // disposer runs on unmount
+});
 ```
 
-A plain `ref` prop (callback that receives the node at construction time, before mount) is intentionally *not* exposed in v1. It fires too early to be useful for the common cases (the node isn't in the document yet), and the timing relative to other props is fragile (depends on object-key order). When users need a node reference, the path is: take it inside `onMount` and stash it in an outer variable or signal. One escape hatch, well-defined timing.
+A plain `ref` prop (callback that receives the node at construction time, before
+mount) is intentionally _not_ exposed in v1. It fires too early to be useful for
+the common cases (the node isn't in the document yet), and the timing relative
+to other props is fragile (depends on object-key order). When users need a node
+reference, the path is: take it inside `onMount` and stash it in an outer
+variable or signal. One escape hatch, well-defined timing.
 
-Couples to disposal (§5). Whatever owner model we land on, `onMount` is the user-facing surface.
+Couples to disposal (§5). Whatever owner model we land on, `onMount` is the
+user-facing surface.
 
 ### 4.6 Portals
 
-Render a child into a different part of the DOM (modals, tooltips, toasts). Element is logically a child here, physically attached there.
+Render a child into a different part of the DOM (modals, tooltips, toasts).
+Element is logically a child here, physically attached there.
 
 ```js
-portal(document.body, Modal({ open: isOpen }))
+portal(document.body, Modal({ open: isOpen }));
 ```
 
 ### 4.7 Async values
 
-`fetch` and async iterables. Could be expressed via `when` + a signal that captures the promise state, but a dedicated primitive is more ergonomic:
+`fetch` and async iterables. Could be expressed via `when` + a signal that
+captures the promise state, but a dedicated primitive is more ergonomic:
 
 ```js
 async(fetchUser(id), {
   pending: () => Spinner(),
-  then:    (user) => UserCard(user),
-  catch:   (err)  => ErrorBox(err),
-})
+  then: (user) => UserCard(user),
+  catch: (err) => ErrorBox(err),
+});
 ```
 
 ### 4.8 Two-way binding
 
-Pure sugar over `value: signal` + `onInput: e => signal.set(e.target.value)`. Writing that by hand 50 times gets old.
+Pure sugar over `value: signal` + `onInput: e => signal.set(e.target.value)`.
+Writing that by hand 50 times gets old.
 
 ```js
-input({ bind: draft })   // ↔ draft is a signal
+input({ bind: draft }); // ↔ draft is a signal
 ```
 
 ### What's in v1?
 
-`when`, `each`, and `onMount` cover ~90% of real apps. `match`, class/style toggling, async, two-way binding are quality-of-life — ship them as the design firms up. Portals can wait until a real use case turns up.
+`when`, `each`, and `onMount` cover ~90% of real apps. `match`, class/style
+toggling, async, two-way binding are quality-of-life — ship them as the design
+firms up. Portals can wait until a real use case turns up.
 
 ---
 
 ## 5. Disposal
 
-Effects need to be torn down when their owning DOM is removed. Otherwise effects leak — they keep their subscribers alive and keep firing into detached nodes.
+Effects need to be torn down when their owning DOM is removed. Otherwise effects
+leak — they keep their subscribers alive and keep firing into detached nodes.
 
-Solid's approach: an **owner tree** that mirrors the component tree; disposing an owner disposes all child effects. Worth copying.
+Solid's approach: an **owner tree** that mirrors the component tree; disposing
+an owner disposes all child effects. Worth copying.
 
-For the bigger cleanup surface (effects + event listeners + fetches + websockets), `AbortController` is the right unifying tool:
+For the bigger cleanup surface (effects + event listeners + fetches +
+websockets), `AbortController` is the right unifying tool:
 
 ```js
-const ctrl = new AbortController()
-fetch(url,   { signal: ctrl.signal })
-elem.addEventListener('click', fn, { signal: ctrl.signal })
+const ctrl = new AbortController();
+fetch(url, { signal: ctrl.signal });
+elem.addEventListener("click", fn, { signal: ctrl.signal });
 // custom effects also listen for 'abort' and tear themselves down
 // on unmount: ctrl.abort()  → everything cleans up
 ```
@@ -495,113 +724,148 @@ Decide whether the owner tree manages a single signal per scope or per effect.
 ## 6. Sample App (sketch)
 
 ```js
-import { signal, computed } from './signals.js'
-import { when, each } from './reactive.js'
-import { div, ul, li, span, button, input, h1 } from './imp.js'
+import { computed, signal } from "./signals.js";
+import { each, when } from "./reactive.js";
+import { button, div, h1, input, li, span, ul } from "./imp.js";
 
 function TodoApp() {
-  const todos = signal([])
-  const draft = signal('')
-  const remaining = computed(() => todos().filter(t => !t.done).length)
+  const todos = signal([]);
+  const draft = signal("");
+  const remaining = computed(() => todos().filter((t) => !t.done).length);
 
   const add = () => {
-    const text = draft().trim()
-    if (!text) return
-    todos.update(l => [...l, { id: Date.now(), text, done: false }])
-    draft.set('')
-  }
+    const text = draft().trim();
+    if (!text) return;
+    todos.update((l) => [...l, { id: Date.now(), text, done: false }]);
+    draft.set("");
+  };
   const toggle = (id) =>
-    todos.update(l => l.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  const remove = (id) =>
-    todos.update(l => l.filter(t => t.id !== id))
+    todos.update((l) =>
+      l.map((t) => t.id === id ? { ...t, done: !t.done } : t)
+    );
+  const remove = (id) => todos.update((l) => l.filter((t) => t.id !== id));
 
   return div([
     h1("Todos"),
     input({
       value: draft,
-      events: { input: e => draft.set(e.target.value) },
+      events: { input: (e) => draft.set(e.target.value) },
       placeholder: "What needs doing?",
     }),
     button({ events: { click: add } }, "Add"),
-    when(() => todos().length === 0, empty =>
-      empty ? p("Nothing here yet") : null),
+    when(
+      () => todos().length === 0,
+      (empty) => empty ? p("Nothing here yet") : null,
+    ),
     ul([
-      each(todos, todo =>
+      each(todos, (todo) =>
         li([
           input({
-            type: 'checkbox',
+            type: "checkbox",
             checked: todo.done,
             events: { change: () => toggle(todo.id) },
           }),
           span({
-            style: todo.done ? 'text-decoration: line-through' : '',
+            style: todo.done ? "text-decoration: line-through" : "",
           }, todo.text),
           button({ events: { click: () => remove(todo.id) } }, "×"),
-        ])
-      ),
+        ])),
     ]),
     div(() => `${remaining()} remaining`),
-  ])
+  ]);
 }
 
-document.body.appendChild(TodoApp())
+document.body.appendChild(TodoApp());
 ```
 
 ---
 
 ## 7. Open Questions
 
-1. **Item-level reactivity in `each`** — see §4.2. Pick (a) id + `computed`, (b) per-field signals, or (c) Proxy store before v1.
-2. **Owner tree for disposal** — Solid-style. Effects need a parent so unmount cascades.
-3. **Batching** — multiple `.set()`s in one tick should flush once. `batch(() => …)` helper.
+1. **Item-level reactivity in `each`** — see §4.2. Pick (a) id + `computed`, (b)
+   per-field signals, or (c) Proxy store before v1.
+2. **Owner tree for disposal** — Solid-style. Effects need a parent so unmount
+   cascades.
+3. **Batching** — multiple `.set()`s in one tick should flush once.
+   `batch(() => …)` helper.
 4. **Circular dependencies** — detect or just accept the stack overflow?
-5. **`AbortController` integration** — unify effect disposal with `fetch`/`addEventListener` cleanup.
-6. **Class / style sugar shape** — confirm the `{ name: signal }` form before locking the prop API.
+5. **`AbortController` integration** — unify effect disposal with
+   `fetch`/`addEventListener` cleanup.
+6. **Class / style sugar shape** — confirm the `{ name: signal }` form before
+   locking the prop API.
 
 ---
 
 ## References
 
-- **SolidJS** — closest existing design; study its store, owner tree, and `<For>`.
-- **`htm` / `lit-html`** — alternative buildless templating, if the element-factory ergonomics frustrate.
-- **WICG Context Protocol** — out of scope for v1, but the bubbling-event pattern is worth knowing if cross-component state surfaces later.
+- **SolidJS** — closest existing design; study its store, owner tree, and
+  `<For>`.
+- **`htm` / `lit-html`** — alternative buildless templating, if the
+  element-factory ergonomics frustrate.
+- **WICG Context Protocol** — out of scope for v1, but the bubbling-event
+  pattern is worth knowing if cross-component state surfaces later.
 
 ---
 
 ## Implementation Plan
 
-Build layer by layer. Each layer should be usable on its own before moving to the next. Don't pre-build for layers you haven't reached yet.
+Build layer by layer. Each layer should be usable on its own before moving to
+the next. Don't pre-build for layers you haven't reached yet.
 
 ### Layer 1 — Rendering
 
 The foundation. Everything else assumes you can produce real DOM from JS.
 
 - [ ] **1a. Element factory core (`imp.js`)**
-  - [ ] `el(tag, ...args)` with type-based dispatch (array → children, string/number → text, object → props, node → child, function → reactive, falsy → skip)
+  - [ ] `el(tag, ...args)` with type-based dispatch (array → children,
+        string/number → text, object → props, node → child, function → reactive,
+        falsy → skip)
   - [ ] Recursive children flattening; drop `null`/`undefined`/`false`
   - [ ] Tag factories: explicit list exported via `Object.fromEntries`
-  - [ ] Special prop keys (the only ones needing dedicated branches): `style` (object → inline CSS, camelCase → kebab) and `events` (object map, attached via `addEventListener` with disposal-scoped `AbortController` signal — see §1 Events, §5). Everything else — `class`, `for`, `data-*`, `aria-*`, boolean attrs (`disabled`, `checked`, `hidden`, …), live form state (`value`, `selected`, `indeterminate`), and custom-element properties — flows through the property-first fallthrough (`k in node` → property, else `setAttribute`).
+  - [ ] Special prop keys (the only ones needing dedicated branches): `style`
+        (object → inline CSS, camelCase → kebab) and `events` (object map,
+        attached via `addEventListener` with disposal-scoped `AbortController`
+        signal — see §1 Events, §5). Everything else — `class`, `for`, `data-*`,
+        `aria-*`, boolean attrs (`disabled`, `checked`, `hidden`, …), live form
+        state (`value`, `selected`, `indeterminate`), and custom-element
+        properties — flows through the property-first fallthrough (`k in node` →
+        property, else `setAttribute`).
   - [ ] Fallthrough to `setAttribute` for everything else
   - [ ] SVG namespace handling (`svg.rect`, `svg.circle`, …)
 - [ ] **1b. External / raw HTML interop**
   - [ ] Accept existing `Node` instances as children (already implicit; verify)
   - [ ] `html("<div>…</div>")` helper for trusted raw HTML → parsed DOM nodes
-  - [ ] Wrapping a 3rd-party component (Chart.js, Leaflet, etc.) — usually via `onMount`; document the pattern
+  - [ ] Wrapping a 3rd-party component (Chart.js, Leaflet, etc.) — usually via
+        `onMount`; document the pattern
   - [ ] Decide on `innerHTML` escape hatch vs. forcing the `html()` helper
 - [ ] **1c. Web components — `wc()`** (see §1.5)
-  - [ ] `wc(tagName)` → imp element factory for consuming a registered custom element (props-as-properties, `events` map, reactive props all via the §1 dispatch)
-  - [ ] `wc.define(tagName, impComponent)` → register an imp component as a custom element for use outside imp / in server HTML
-  - [ ] Decide shadow DOM vs. light DOM default and how §5 theme CSS variables cross a shadow boundary (lean: light DOM default, shadow opt-in)
+  - [ ] `wc(tagName)` → imp element factory for consuming a registered custom
+        element (props-as-properties, `events` map, reactive props all via the
+        §1 dispatch)
+  - [ ] `wc.define(tagName, impComponent)` → register an imp component as a
+        custom element for use outside imp / in server HTML
+  - [ ] Decide shadow DOM vs. light DOM default and how §5 theme CSS variables
+        cross a shadow boundary (lean: light DOM default, shadow opt-in)
 - [ ] **1d. Mounting into server-rendered HTML** (see §1.6)
-  - [ ] `mount(target, node)` — render an imp subtree into a server-emitted placeholder (selector or element); full-app render is the `document.body` case
-  - [ ] Custom-element upgrade path: server emits `<todo-app>`, `wc.define` renders it in place
-  - [ ] No hydration / no markup-matching — imp owns each mount-point subtree, server content around it is untouched
+  - [ ] `mount(target, node)` — render an imp subtree into a server-emitted
+        placeholder (selector or element); full-app render is the
+        `document.body` case
+  - [ ] Custom-element upgrade path: server emits `<todo-app>`, `wc.define`
+        renders it in place
+  - [ ] No hydration / no markup-matching — imp owns each mount-point subtree,
+        server content around it is untouched
 - [ ] **1e. Reusable styles — `css()`** (see §1.7)
-  - [ ] `` css`...` `` tagged template → content-hashed class name; rule wrapped and inserted into one shared `CSSStyleSheet` via `document.adoptedStyleSheets`
+  - [ ] `` css`...` `` tagged template → content-hashed class name; rule wrapped
+        and inserted into one shared `CSSStyleSheet` via
+        `document.adoptedStyleSheets`
   - [ ] Content-hash dedup — repeated calls with the same rule text inject once
-  - [ ] Rely on native CSS nesting for `&:hover`, `@media`, etc. — no parsing in the framework
-  - [ ] Document the division of labor: shared statics → `css`, per-instance dynamics → inline `style` (prefer inline `--custom-props` consumed by the shared class), state variants → §4.4 class toggling
-  - [ ] Decide: sheet adoption story for shadow roots when `wc.define` opts into shadow DOM (adopt the same shared sheet)
+  - [ ] Rely on native CSS nesting for `&:hover`, `@media`, etc. — no parsing in
+        the framework
+  - [ ] Document the division of labor: shared statics → `css`, per-instance
+        dynamics → inline `style` (prefer inline `--custom-props` consumed by
+        the shared class), state variants → §4.4 class toggling
+  - [ ] Decide: sheet adoption story for shadow roots when `wc.define` opts into
+        shadow DOM (adopt the same shared sheet)
 
 ### Layer 2 — Reactivity
 
@@ -616,15 +880,19 @@ Once Layer 1 renders static trees, signals make them live.
   - [ ] `when(signal, render)` — conditional via marker comment
   - [ ] `match(signal, branches)` — multi-way branching
   - [ ] `each(listSignal, renderItem, getKey)` — keyed list diffing
-  - [ ] Decide item-level reactivity strategy (id + `computed` / per-field signals / Proxy store) — Open Q #1
-  - [ ] Component hierarchy via signal-as-context (children read parent's signal directly — close over it)
+  - [ ] Decide item-level reactivity strategy (id + `computed` / per-field
+        signals / Proxy store) — Open Q #1
+  - [ ] Component hierarchy via signal-as-context (children read parent's signal
+        directly — close over it)
 - [ ] **2c. Custom subscription hook**
-  - [ ] Expose `subscribe(signal, fn)` for 3rd-party scripts (charts, etc.) that need raw notifications outside the effect system
+  - [ ] Expose `subscribe(signal, fn)` for 3rd-party scripts (charts, etc.) that
+        need raw notifications outside the effect system
   - [ ] Return an unsubscribe handle; tie into disposal
 - [ ] **2d. Disposal & ownership**
   - [ ] Owner tree mirroring component tree
   - [ ] `onMount(node, fn)` with disposer return
-  - [ ] `AbortController` integration for unified cleanup (effects + fetch + listeners)
+  - [ ] `AbortController` integration for unified cleanup (effects + fetch +
+        listeners)
 - [ ] **2e. Quality-of-life (defer until core works)**
   - [ ] Class/style object sugar (`{ name: signal }`)
   - [ ] Two-way `bind:` sugar
@@ -638,124 +906,270 @@ Independent of rendering/reactivity but builds on them.
 
 - [ ] **3a. Router implementation**
   - [ ] Hash vs. History API (pick one; History is the default)
-  - [ ] **File-based routing (preferred).** Derive the route tree from project layout — `modules/<module>/pages/<page>.js` maps to a route. Each module is its own lazy-loaded chunk (dynamic `import()`), so navigating into a module fetches its code on demand. Explicit `route(path, factory)` registration stays as the escape hatch for routes that don't fit the convention.
+  - [ ] **File-based routing (preferred).** Derive the route tree from project
+        layout — `modules/<module>/pages/<page>.js` maps to a route. Each module
+        is its own lazy-loaded chunk (dynamic `import()`), so navigating into a
+        module fetches its code on demand. Explicit `route(path, factory)`
+        registration stays as the escape hatch for routes that don't fit the
+        convention.
   - [ ] Route definitions: path pattern → component factory
   - [ ] `route` signal — current path/params drive a `match`-style render
-  - [ ] Navigation: `navigate(path)`, `<Link>` component (or `a({ href, onClick })`)
+  - [ ] Navigation: `navigate(path)`, `<Link>` component (or
+        `a({ href, onClick })`)
   - [ ] Nested routes & route params
   - [ ] Lazy route loading via dynamic `import()` (still buildless)
 
 ### Layer 4 — Runtime / dev tooling
 
-Make the framework runnable without a build step locally. **Deno is the runtime** for the `imp` CLI — chosen for: built-in JS/TS handling, native file watcher, native HTTP server, native test runner, native linter with a custom-rule plugin API, single static binary, zero `node_modules`. The CLI is distributed as a `deno compile`d binary (and as `deno run -A jsr:@imp/cli` for those who already have Deno).
+Make the framework runnable without a build step locally. **Deno is the
+runtime** for the `imp` CLI — chosen for: built-in JS/TS handling, native file
+watcher, native HTTP server, native test runner, native linter with a
+custom-rule plugin API, single static binary, zero `node_modules`. The CLI is
+distributed as a `deno compile`d binary (and as `deno run -A jsr:@imp/cli` for
+those who already have Deno).
 
 - [ ] **4a. Static dev server (`imp dev`)**
   - [ ] `Deno.serve` over the current directory as static files
-  - [ ] Live reload via `Deno.watchFs` → SSE → page reload script auto-injected into served HTML
-  - [ ] **Browser → CLI telemetry bridge.** The auto-injected client script forwards `console.*` output and network activity (fetch/XHR requests + their responses/errors) over the same SSE/dev channel back to the terminal running `imp dev`. Lets an AI agent read runtime logs and failed requests straight from the CLI — the most basic observability — with no MCP server or browser extension involved.
-  - [ ] Bare-specifier resolution (decide: import maps generator vs. rewrite-on-the-fly vs. force user-relative imports)
+  - [ ] Live reload via `Deno.watchFs` → SSE → page reload script auto-injected
+        into served HTML
+  - [ ] **Browser → CLI telemetry bridge.** The auto-injected client script
+        forwards `console.*` output and network activity (fetch/XHR requests +
+        their responses/errors) over the same SSE/dev channel back to the
+        terminal running `imp dev`. Lets an AI agent read runtime logs and
+        failed requests straight from the CLI — the most basic observability —
+        with no MCP server or browser extension involved.
+  - [ ] Bare-specifier resolution (decide: import maps generator vs.
+        rewrite-on-the-fly vs. force user-relative imports)
 - [ ] **4b. `imp` engine injection**
-  - [ ] Decide how engine is delivered: import map → CDN, bundled local copy, or auto-injected `<script>` tag
+  - [ ] Decide how engine is delivered: import map → CDN, bundled local copy, or
+        auto-injected `<script>` tag
   - [ ] CLI scaffolder: `imp new my-app` → minimal `index.html` + `app.js`
-  - [ ] Decide whether the engine is one file or multi-file ES modules (one file = easier to vendor, multi = better dev DX)
+  - [ ] Decide whether the engine is one file or multi-file ES modules (one file
+        = easier to vendor, multi = better dev DX)
 - [ ] **4c. Bundler (`imp build`)**
-  - [ ] Production bundle via `deno bundle` (fallback to `esbuild` through Deno's npm interop if `deno bundle` is insufficient — tree-shaking, minification, sourcemaps)
-  - [ ] Single-file ES module: framework engine + user app + stdlib components used, minified
-  - [ ] Asset copy step (images, CSS, fonts) + `index.html` rewrite to point at the bundled entry and hash-stamped filenames for cache-busting
-  - [ ] No code-splitting in v1 — flat output is easier to reason about and the bundles will be small
+  - [ ] Production bundle via `deno bundle` (fallback to `esbuild` through
+        Deno's npm interop if `deno bundle` is insufficient — tree-shaking,
+        minification, sourcemaps)
+  - [ ] Single-file ES module: framework engine + user app + stdlib components
+        used, minified
+  - [ ] Asset copy step (images, CSS, fonts) + `index.html` rewrite to point at
+        the bundled entry and hash-stamped filenames for cache-busting
+  - [ ] No code-splitting in v1 — flat output is easier to reason about and the
+        bundles will be small
 - [ ] **4d. Custom lint rules (`imp lint`)**
-  - [ ] Thin wrapper around `deno lint` that pre-registers the framework's lint plugin (Deno's lint plugin API: a JS module exporting AST visitor rules)
-  - [ ] `no-capital-component` — flag any user-defined function whose name starts with an uppercase letter. Component convention is lowercase (see §1)
+  - [ ] Thin wrapper around `deno lint` that pre-registers the framework's lint
+        plugin (Deno's lint plugin API: a JS module exporting AST visitor rules)
+  - [ ] `no-capital-component` — flag any user-defined function whose name
+        starts with an uppercase letter. Component convention is lowercase (see
+        §1)
   - [ ] Users opt out via standard `deno lint` config
 - [ ] **4e. Test runner (`imp test`)**
-  - [ ] Thin wrapper around `deno test`. The CLI's job is to inject a UI-aware environment and ergonomic helpers; assertions, reporters, watch mode, and filtering are inherited from Deno verbatim so users get one mental model, not two
-  - [ ] **DOM polyfill auto-loaded.** Default is `happy-dom` (`linkedom` as fallback if perf or compat warrants). Polyfill is wired into `globalThis` (`document`, `window`, `Node`, `Event`, `customElements`) before any user test module loads — same surface `imp.js` uses in the browser, so the same code under test runs unchanged
-  - [ ] **Test file convention.** `*_test.js` or `*.test.js` next to source. No separate `tests/` directory required; co-located tests are the norm. Discovery matches `deno test`'s defaults so users who already know Deno don't have to relearn
+  - [ ] Thin wrapper around `deno test`. The CLI's job is to inject a UI-aware
+        environment and ergonomic helpers; assertions, reporters, watch mode,
+        and filtering are inherited from Deno verbatim so users get one mental
+        model, not two
+  - [ ] **DOM polyfill auto-loaded.** Default is `happy-dom` (`linkedom` as
+        fallback if perf or compat warrants). Polyfill is wired into
+        `globalThis` (`document`, `window`, `Node`, `Event`, `customElements`)
+        before any user test module loads — same surface `imp.js` uses in the
+        browser, so the same code under test runs unchanged
+  - [ ] **Test file convention.** `*_test.js` or `*.test.js` next to source. No
+        separate `tests/` directory required; co-located tests are the norm.
+        Discovery matches `deno test`'s defaults so users who already know Deno
+        don't have to relearn
   - [ ] **UI test helpers** (exported from `imp/testing.js`):
-    - [ ] `mount(component)` — renders into a detached container, returns `{ el, unmount, query, queryAll, fire }`. `unmount` runs the disposal tree from Layer 2d so leak-checks are possible
-    - [ ] `query(selector)` / `queryAll(selector)` — CSS selector helpers scoped to the mounted root
-    - [ ] `fire(node, eventType, detail?)` — wraps `dispatchEvent`, fills in sensible defaults (`bubbles: true`), supports `'click'`, `'input'`, `'change'`, keyboard events with shorthand
-    - [ ] `tick()` — awaits one microtask flush so signal updates propagate before assertions. Pairs with the eventual `batch()` primitive (Open Q #3)
-    - [ ] `withTheme(theme, fn)` / `withLocale(locale, fn)` — scoped overrides that auto-restore after the test, so visual/i18n assertions don't pollute siblings
-  - [ ] **Signal testing.** Encourage testing signals directly (`signal()`, `effect()`, `computed()` are framework-public). Add `flushEffects()` for tests that need a synchronous boundary
-  - [ ] **Async helpers.** `waitFor(predicate, { timeout = 1000 })` polls until truthy or rejects — needed for fetch / `async()` primitive testing without sprinkling `setTimeout`s
-  - [ ] **Snapshot avoidance.** No built-in snapshot DSL in v1. Snapshots rot and hide intent in UI code; prefer explicit assertions on `textContent`, `getAttribute`, `classList`. Revisit only if real demand surfaces
-  - [ ] **Watch mode.** `imp test --watch` passes through to `deno test --watch`. No reinvention
-  - [ ] **Coverage.** Pass-through to `deno test --coverage=…`; the CLI just ensures the polyfill is still installed when coverage instrumentation is active
-  - [ ] **CI integration.** Stable, machine-readable reporter (`--reporter=tap` / `--reporter=junit` via Deno's options). No bespoke output format
-  - [ ] **Per-test isolation.** Each test gets a fresh polyfilled `document` (`beforeEach`-style hook installed by the runner), so tests can't leak DOM state across files. Cheap with `happy-dom`
+    - [ ] `mount(component)` — renders into a detached container, returns
+          `{ el, unmount, query, queryAll, fire }`. `unmount` runs the disposal
+          tree from Layer 2d so leak-checks are possible
+    - [ ] `query(selector)` / `queryAll(selector)` — CSS selector helpers scoped
+          to the mounted root
+    - [ ] `fire(node, eventType, detail?)` — wraps `dispatchEvent`, fills in
+          sensible defaults (`bubbles: true`), supports `'click'`, `'input'`,
+          `'change'`, keyboard events with shorthand
+    - [ ] `tick()` — awaits one microtask flush so signal updates propagate
+          before assertions. Pairs with the eventual `batch()` primitive (Open Q
+          #3)
+    - [ ] `withTheme(theme, fn)` / `withLocale(locale, fn)` — scoped overrides
+          that auto-restore after the test, so visual/i18n assertions don't
+          pollute siblings
+  - [ ] **Signal testing.** Encourage testing signals directly (`signal()`,
+        `effect()`, `computed()` are framework-public). Add `flushEffects()` for
+        tests that need a synchronous boundary
+  - [ ] **Async helpers.** `waitFor(predicate, { timeout = 1000 })` polls until
+        truthy or rejects — needed for fetch / `async()` primitive testing
+        without sprinkling `setTimeout`s
+  - [ ] **Snapshot avoidance.** No built-in snapshot DSL in v1. Snapshots rot
+        and hide intent in UI code; prefer explicit assertions on `textContent`,
+        `getAttribute`, `classList`. Revisit only if real demand surfaces
+  - [ ] **Watch mode.** `imp test --watch` passes through to
+        `deno test --watch`. No reinvention
+  - [ ] **Coverage.** Pass-through to `deno test --coverage=…`; the CLI just
+        ensures the polyfill is still installed when coverage instrumentation is
+        active
+  - [ ] **CI integration.** Stable, machine-readable reporter (`--reporter=tap`
+        / `--reporter=junit` via Deno's options). No bespoke output format
+  - [ ] **Per-test isolation.** Each test gets a fresh polyfilled `document`
+        (`beforeEach`-style hook installed by the runner), so tests can't leak
+        DOM state across files. Cheap with `happy-dom`
 - [ ] **4f. Showcase (`imp showcase`)**
-  - [ ] Stub here for completeness — full design lives in Layer 5. The CLI command boots a local server that serves a gallery of every stdlib component with a live theme editor and locale switcher
+  - [ ] Stub here for completeness — full design lives in Layer 5. The CLI
+        command boots a local server that serves a gallery of every stdlib
+        component with a live theme editor and locale switcher
 - [ ] **4g. Formatter (`imp fmt`)**
-  - [ ] Thin wrapper around `deno fmt` — one formatting standard, zero config, shipped in the same compiled binary as `imp lint`. Users opt out / tune via standard `deno fmt` config
+  - [ ] Thin wrapper around `deno fmt` — one formatting standard, zero config,
+        shipped in the same compiled binary as `imp lint`. Users opt out / tune
+        via standard `deno fmt` config
 
 ### Layer 5 — Theme & i18n
 
-Cross-cutting framework concern (constraint #9). Sits between foundations (Layers 1–2) and the stdlib (Layer 6): stdlib components are downstream consumers, user apps are too. Builds on the reactivity primitives from Layer 2 — theme and locale are just signals — but is called out as its own layer because the design decisions here (token shape, override scope, translation key strategy) propagate into every component.
+Cross-cutting framework concern (constraint #9). Sits between foundations
+(Layers 1–2) and the stdlib (Layer 6): stdlib components are downstream
+consumers, user apps are too. Builds on the reactivity primitives from Layer 2 —
+theme and locale are just signals — but is called out as its own layer because
+the design decisions here (token shape, override scope, translation key
+strategy) propagate into every component.
 
 - [ ] **5a. Theme tokens**
-  - [ ] Source of truth: CSS custom properties on `:root`. Browser-native, scoped, inspectable in devtools, no runtime style recalculation cost
-  - [ ] Token categories (minimum v1): `color.*` (background, surface, surface-alt, text, text-muted, primary, secondary, accent, danger, warning, success, border), `radius.*` (none/sm/md/lg/full), `shadow.*` (sm/md/lg), `space.*` (4–64px scale), `font.family` (sans/mono), `font.size.*` (xs–2xl), `font.weight.*`
-  - [ ] `mode`: `'light' | 'dark'` — colour-scheme flag carried on the theme object itself so a theme always knows which palette it is. Drives the `color-scheme` CSS property (form controls, scrollbars get matching native styling) and the `data-imp-mode` attribute on `<html>` for CSS hooks
-  - [ ] `direction`: `'ltr' | 'rtl'` — text-flow setting carried by the theme. Drives `<html dir="…">` and the `--imp-direction` CSS variable. Stdlib components must use logical CSS properties (`margin-inline-start`, `padding-inline-end`, `inset-inline-*`, `text-align: start/end`) instead of left/right counterparts so layouts mirror automatically when direction flips. Default `'ltr'`; RTL locales (Arabic, Hebrew, Persian, Urdu) ship with `direction: 'rtl'` as a sensible default in their locale-paired themes
-  - [ ] Token naming flat & predictable: `--imp-color-primary`, `--imp-radius-md`, `--imp-shadow-lg`. AI-friendly; no nested theme path resolution at runtime
+  - [ ] Source of truth: CSS custom properties on `:root`. Browser-native,
+        scoped, inspectable in devtools, no runtime style recalculation cost
+  - [ ] Token categories (minimum v1): `color.*` (background, surface,
+        surface-alt, text, text-muted, primary, secondary, accent, danger,
+        warning, success, border), `radius.*` (none/sm/md/lg/full), `shadow.*`
+        (sm/md/lg), `space.*` (4–64px scale), `font.family` (sans/mono),
+        `font.size.*` (xs–2xl), `font.weight.*`
+  - [ ] `mode`: `'light' | 'dark'` — colour-scheme flag carried on the theme
+        object itself so a theme always knows which palette it is. Drives the
+        `color-scheme` CSS property (form controls, scrollbars get matching
+        native styling) and the `data-imp-mode` attribute on `<html>` for CSS
+        hooks
+  - [ ] `direction`: `'ltr' | 'rtl'` — text-flow setting carried by the theme.
+        Drives `<html dir="…">` and the `--imp-direction` CSS variable. Stdlib
+        components must use logical CSS properties (`margin-inline-start`,
+        `padding-inline-end`, `inset-inline-*`, `text-align: start/end`) instead
+        of left/right counterparts so layouts mirror automatically when
+        direction flips. Default `'ltr'`; RTL locales (Arabic, Hebrew, Persian,
+        Urdu) ship with `direction: 'rtl'` as a sensible default in their
+        locale-paired themes
+  - [ ] Token naming flat & predictable: `--imp-color-primary`,
+        `--imp-radius-md`, `--imp-shadow-lg`. AI-friendly; no nested theme path
+        resolution at runtime
 - [ ] **5b. Theme runtime**
-  - [ ] `theme` signal holds the active theme object (including `mode` and `direction`)
-  - [ ] `defineTheme(name, tokens)` registers a theme; `setTheme(name)` swaps it. Swap writes all `--imp-*` variables to `:root` in one pass, plus sets `<html data-imp-mode="…" dir="…">` and the CSS `color-scheme` property — every component re-skins (and re-mirrors, if direction changed) instantly with no re-render
-  - [ ] Default themes shipped: `light` (mode: light, ltr), `dark` (mode: dark, ltr). Both are plain objects users can copy and tweak; user-defined themes pick their own `mode` and `direction`
-  - [ ] **Preset themes modeled on familiar app styles.** Beyond bare `light`/`dark`, ship 2–3 opinionated, ready-to-use looks resembling recognizable application styles (e.g. an admin-dashboard theme, a social/Facebook-like theme, and one more) as copy-and-tweak starting points, so a new app looks finished without designing tokens from scratch
-  - [ ] Convenience helpers: `setMode('light' | 'dark' | 'system')` — `'system'` syncs to `window.matchMedia('(prefers-color-scheme: dark)')` and updates live as the OS preference changes. `setDirection('ltr' | 'rtl' | 'auto')` — `'auto'` derives direction from `locale()`'s script via `Intl.Locale().textInfo.direction`
-  - [ ] Per-component override scope: components can declare their own `--imp-<component>-*` variables that default to the global tokens but can be overridden by parent containers — keeps customization local without forking
+  - [ ] `theme` signal holds the active theme object (including `mode` and
+        `direction`)
+  - [ ] `defineTheme(name, tokens)` registers a theme; `setTheme(name)` swaps
+        it. Swap writes all `--imp-*` variables to `:root` in one pass, plus
+        sets `<html data-imp-mode="…" dir="…">` and the CSS `color-scheme`
+        property — every component re-skins (and re-mirrors, if direction
+        changed) instantly with no re-render
+  - [ ] Default themes shipped: `light` (mode: light, ltr), `dark` (mode: dark,
+        ltr). Both are plain objects users can copy and tweak; user-defined
+        themes pick their own `mode` and `direction`
+  - [ ] **Preset themes modeled on familiar app styles.** Beyond bare
+        `light`/`dark`, ship 2–3 opinionated, ready-to-use looks resembling
+        recognizable application styles (e.g. an admin-dashboard theme, a
+        social/Facebook-like theme, and one more) as copy-and-tweak starting
+        points, so a new app looks finished without designing tokens from
+        scratch
+  - [ ] Convenience helpers: `setMode('light' | 'dark' | 'system')` — `'system'`
+        syncs to `window.matchMedia('(prefers-color-scheme: dark)')` and updates
+        live as the OS preference changes.
+        `setDirection('ltr' | 'rtl' | 'auto')` — `'auto'` derives direction from
+        `locale()`'s script via `Intl.Locale().textInfo.direction`
+  - [ ] Per-component override scope: components can declare their own
+        `--imp-<component>-*` variables that default to the global tokens but
+        can be overridden by parent containers — keeps customization local
+        without forking
 - [ ] **5c. i18n runtime**
   - [ ] `locale` signal holds the active locale code (`'en'`, `'pl'`, …)
-  - [ ] `t(key, params?)` reads `locale()`, returns the translated string. Used as a reactive child or prop value (a function), so changing locale updates only affected text nodes
-  - [ ] Message catalogs: plain JS object per locale, registered via `defineMessages(locale, catalog)`. Eager loading in v1; lazy per-locale via dynamic `import()` later
-  - [ ] Fallback chain: requested locale → default locale → key as-is (visible enough to catch missing translations)
-  - [ ] Interpolation: `t('greeting', { name })` — simple `{name}` placeholder substitution
-  - [ ] Pluralization: `Intl.PluralRules`-based — `t('items', { count })` selects the right variant from `{ zero, one, other }`. ICU MessageFormat deferred unless real cases demand it
-  - [ ] Number / date / relative-time formatting via `Intl.*`, locale pulled from `locale()` automatically — exported as `n(value, opts)`, `d(date, opts)`, `rt(date)`
+  - [ ] `t(key, params?)` reads `locale()`, returns the translated string. Used
+        as a reactive child or prop value (a function), so changing locale
+        updates only affected text nodes
+  - [ ] Message catalogs: plain JS object per locale, registered via
+        `defineMessages(locale, catalog)`. Eager loading in v1; lazy per-locale
+        via dynamic `import()` later
+  - [ ] Fallback chain: requested locale → default locale → key as-is (visible
+        enough to catch missing translations)
+  - [ ] Interpolation: `t('greeting', { name })` — simple `{name}` placeholder
+        substitution
+  - [ ] Pluralization: `Intl.PluralRules`-based — `t('items', { count })`
+        selects the right variant from `{ zero, one, other }`. ICU MessageFormat
+        deferred unless real cases demand it
+  - [ ] Number / date / relative-time formatting via `Intl.*`, locale pulled
+        from `locale()` automatically — exported as `n(value, opts)`,
+        `d(date, opts)`, `rt(date)`
 - [ ] **5d. Showcase / sandbox page (`imp showcase`)**
-  - [ ] CLI command that serves an auto-generated gallery page listing every stdlib component, each with a live preview and copy-paste source
-  - [ ] **Live theme editor panel:** color pickers for every `color.*` token, sliders for `radius.*` and `shadow.*`, font-family + size selectors. Edits write into the `theme` signal in real time, so every component on the page re-skins as you drag
-  - [ ] **Mode toggle:** light / dark / system in the editor panel — flips `mode` on the active theme and every component restyles instantly. Lets users sanity-check both palettes without code changes
-  - [ ] **Direction toggle:** ltr / rtl / auto in the editor panel — verifies every stdlib component mirrors correctly. Catches components that accidentally hardcoded `left`/`right` instead of `start`/`end`
-  - [ ] Theme export: "copy as `defineTheme(...)`" button so a tweaked theme can be lifted into user code
-  - [ ] Locale switcher in the same panel — flips `locale()` to preview translations side by side (and, with `direction: 'auto'`, demonstrates automatic RTL switching when an RTL locale is picked)
-  - [ ] Page itself is built with `imp` (eats its own dogfood, doubles as the largest example app)
+  - [ ] CLI command that serves an auto-generated gallery page listing every
+        stdlib component, each with a live preview and copy-paste source
+  - [ ] **Live theme editor panel:** color pickers for every `color.*` token,
+        sliders for `radius.*` and `shadow.*`, font-family + size selectors.
+        Edits write into the `theme` signal in real time, so every component on
+        the page re-skins as you drag
+  - [ ] **Mode toggle:** light / dark / system in the editor panel — flips
+        `mode` on the active theme and every component restyles instantly. Lets
+        users sanity-check both palettes without code changes
+  - [ ] **Direction toggle:** ltr / rtl / auto in the editor panel — verifies
+        every stdlib component mirrors correctly. Catches components that
+        accidentally hardcoded `left`/`right` instead of `start`/`end`
+  - [ ] Theme export: "copy as `defineTheme(...)`" button so a tweaked theme can
+        be lifted into user code
+  - [ ] Locale switcher in the same panel — flips `locale()` to preview
+        translations side by side (and, with `direction: 'auto'`, demonstrates
+        automatic RTL switching when an RTL locale is picked)
+  - [ ] Page itself is built with `imp` (eats its own dogfood, doubles as the
+        largest example app)
 - [ ] **5e. Layer-by-layer integration notes**
-  - [ ] *Layer 1 (rendering):* tag factories don't need to know about theme. Components must never hardcode colors / radii / shadows — always reference `--imp-*` variables via CSS so theme swaps work
-  - [ ] *Layer 2 (reactivity):* `theme` and `locale` are ordinary signals; no special machinery. `t()` is just a function that closes over `locale()` and is used as a reactive child
-  - [ ] *Layer 3 (routing):* no coupling, but locale-aware routes (`/en/...`, `/pl/...`) are a future option to consider
-  - [ ] *Layer 4 (runtime):* `imp new` scaffold includes `theme.js` (light + dark) and `messages/en.js`; `imp showcase` is the visible payoff
-  - [ ] *Layer 6 (stdlib):* every component reads tokens; every user-facing string passes through `t()`; default catalogs ship with the framework. **Logical CSS only** — no `margin-left`, `padding-right`, `left`, `right`, `text-align: left/right`; always `margin-inline-*`, `inset-inline-*`, `text-align: start/end` so RTL flips for free. Lint rule candidate: flag forbidden physical properties in stdlib CSS
+  - [ ] _Layer 1 (rendering):_ tag factories don't need to know about theme.
+        Components must never hardcode colors / radii / shadows — always
+        reference `--imp-*` variables via CSS so theme swaps work
+  - [ ] _Layer 2 (reactivity):_ `theme` and `locale` are ordinary signals; no
+        special machinery. `t()` is just a function that closes over `locale()`
+        and is used as a reactive child
+  - [ ] _Layer 3 (routing):_ no coupling, but locale-aware routes (`/en/...`,
+        `/pl/...`) are a future option to consider
+  - [ ] _Layer 4 (runtime):_ `imp new` scaffold includes `theme.js` (light +
+        dark) and `messages/en.js`; `imp showcase` is the visible payoff
+  - [ ] _Layer 6 (stdlib):_ every component reads tokens; every user-facing
+        string passes through `t()`; default catalogs ship with the framework.
+        **Logical CSS only** — no `margin-left`, `padding-right`, `left`,
+        `right`, `text-align: left/right`; always `margin-inline-*`,
+        `inset-inline-*`, `text-align: start/end` so RTL flips for free. Lint
+        rule candidate: flag forbidden physical properties in stdlib CSS
 
 ### Layer 6 — Standard library
 
-Ready-made components covering the 80% of UI building blocks. Built on Layers 1–2 and consumes Layer 5 (theme tokens + `t()`).
+Ready-made components covering the 80% of UI building blocks. Built on Layers
+1–2 and consumes Layer 5 (theme tokens + `t()`).
 
 All names below are lowercase per §1 convention.
 
 - [ ] **6a. Layout** — `stack`, `row`, `grid`, `spacer`, `container`
-- [ ] **6b. Inputs** — `textField`, `selectBox`, `checkbox`, `radio`, `switchToggle`, `slider`, `datePicker`, `formBox`
+- [ ] **6b. Inputs** — `textField`, `selectBox`, `checkbox`, `radio`,
+      `switchToggle`, `slider`, `datePicker`, `formBox`
 - [ ] **6c. Display** — `card`, `badge`, `avatar`, `tag`, `tooltip`
-- [ ] **6d. Feedback** — `toast`, `modal`, `drawer`, `spinner`, `progressBar`, `alert`
+- [ ] **6d. Feedback** — `toast`, `modal`, `drawer`, `spinner`, `progressBar`,
+      `alert`
 - [ ] **6e. Navigation** — `tabs`, `menuList`, `breadcrumbs`, `pagination`
 - [ ] **6f. Data** — `dataTable` (sortable, paginated), `listView`, `tree`
 
 ### Layer 7 — Example apps
 
-Prove the framework on realistic apps, not just `todoApp`. Each example must exercise theme switching and at least two locales.
+Prove the framework on realistic apps, not just `todoApp`. Each example must
+exercise theme switching and at least two locales.
 
 - [ ] **7a. Todo list** (canonical sanity check)
 - [ ] **7b. Markdown notes app** (routing, persistence, forms)
 - [ ] **7c. Dashboard** (charts via 3rd-party lib → tests interop)
 - [ ] **7d. Chat/feed** (real-time, `each` under load, async)
-- [ ] **7e. Settings panel** (every stdlib input exercised, includes theme + locale switcher)
+- [ ] **7e. Settings panel** (every stdlib input exercised, includes theme +
+      locale switcher)
 
 ### Layer 8 — Documentation & landing
 
 - [ ] **8a. Landing page** — pitch, code sample, "try it" CodePen-style embed
 - [ ] **8b. Tutorial** — todo app, step by step
 - [ ] **8c. API reference** — every export, signal/effect/primitive
-- [ ] **8d. Component gallery** — points at the `imp showcase` page from Layer 5; docs site embeds the same gallery so visitors can play with themes without installing anything
-- [ ] **8e. AI-agent-friendly docs** — flat, terse, machine-readable section/page that an agent can ingest as a single context
+- [ ] **8d. Component gallery** — points at the `imp showcase` page from Layer
+      5; docs site embeds the same gallery so visitors can play with themes
+      without installing anything
+- [ ] **8e. AI-agent-friendly docs** — flat, terse, machine-readable
+      section/page that an agent can ingest as a single context

@@ -1,7 +1,7 @@
 // Display components: card, badge, avatar, tag, tooltip.
 
-import { css, div, h3, img, span } from '../imp/imp.js'
-import { cx, split } from './util.js'
+import { css, div, h3, img, span } from "../imp/imp.js";
+import { cx, split } from "./util.js";
 
 const cardCss = css`
   background: var(--imp-color-surface);
@@ -10,19 +10,19 @@ const cardCss = css`
   border-radius: var(--imp-radius-md);
   box-shadow: var(--imp-shadow-sm);
   padding: var(--imp-space-16);
-`
+`;
 const cardTitleCss = css`
   margin: 0 0 var(--imp-space-12) 0;
   font-size: var(--imp-font-size-lg);
   font-weight: var(--imp-font-weight-medium);
-`
+`;
 
 export function card(...args) {
-  const [{ title, class: extra, ...rest }, children] = split(args)
+  const [{ title, class: extra, ...rest }, children] = split(args);
   return div({ ...rest, class: cx(cardCss, extra) }, [
     title ? h3({ class: cardTitleCss }, title) : null,
     children,
-  ])
+  ]);
 }
 
 const badgeCss = css`
@@ -48,12 +48,15 @@ const badgeCss = css`
   &[data-kind="success"] {
     background: var(--imp-color-success);
   }
-`
+`;
 
 // kind: primary (default) | secondary | accent | danger | warning | success
 export function badge(...args) {
-  const [{ kind = 'primary', class: extra, ...rest }, children] = split(args)
-  return span({ ...rest, class: cx(badgeCss, extra), 'data-kind': kind }, children)
+  const [{ kind = "primary", class: extra, ...rest }, children] = split(args);
+  return span(
+    { ...rest, class: cx(badgeCss, extra), "data-kind": kind },
+    children,
+  );
 }
 
 const avatarCss = css`
@@ -70,18 +73,25 @@ const avatarCss = css`
     block-size: 100%;
     object-fit: cover;
   }
-`
+`;
 
-const initials = (name = '') =>
-  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
+const initials = (name = "") =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase())
+    .join("");
 
-export function avatar({ src, name = '', size = 40, class: extra, ...rest } = {}) {
+export function avatar(
+  { src, name = "", size = 40, class: extra, ...rest } = {},
+) {
   return span({
     ...rest,
     class: cx(avatarCss, extra),
     title: name || null,
-    style: { inlineSize: size + 'px', blockSize: size + 'px', fontSize: size * 0.4 + 'px' },
-  }, src ? img({ src, alt: name }) : initials(name))
+    style: {
+      inlineSize: size + "px",
+      blockSize: size + "px",
+      fontSize: size * 0.4 + "px",
+    },
+  }, src ? img({ src, alt: name }) : initials(name));
 }
 
 const tagCss = css`
@@ -92,11 +102,11 @@ const tagCss = css`
   font-size: var(--imp-font-size-xs);
   background: var(--imp-color-surface-alt);
   color: var(--imp-color-text-muted);
-`
+`;
 
 export function tag(...args) {
-  const [{ class: extra, ...rest }, children] = split(args)
-  return span({ ...rest, class: cx(tagCss, extra) }, children)
+  const [{ class: extra, ...rest }, children] = split(args);
+  return span({ ...rest, class: cx(tagCss, extra) }, children);
 }
 
 const tooltipCss = css`
@@ -122,10 +132,13 @@ const tooltipCss = css`
   &:hover::after, &:focus-within::after {
     opacity: 1;
   }
-`
+`;
 
 // tooltip({ text: 'Delete' }, button(...)) — pure CSS, shows on hover/focus.
 export function tooltip(...args) {
-  const [{ text, class: extra, ...rest }, children] = split(args)
-  return span({ ...rest, class: cx(tooltipCss, extra), 'data-imp-tip': text }, children)
+  const [{ text, class: extra, ...rest }, children] = split(args);
+  return span(
+    { ...rest, class: cx(tooltipCss, extra), "data-imp-tip": text },
+    children,
+  );
 }
