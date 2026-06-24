@@ -1,0 +1,33 @@
+# 0001 — Real DOM, no virtual DOM
+
+**Status:** Accepted
+
+## Context
+
+A rendering layer can produce either a virtual representation of the UI that is diffed against the
+previous one and reconciled into the DOM (React-style), or real DOM nodes directly. The virtual-DOM
+route brings a diffing algorithm, a reconciliation model, and a component-instance lifecycle —
+non-trivial machinery that AI agents (the primary authors, essence #3) and human readers must hold
+in their heads, and the source of most "why did this re-render" surprises.
+
+imp-ui's essence is simplicity over capability and "boring on purpose" — no novel rendering
+algorithm (essence #4), and explicitly real DOM with no diffing (essence #8).
+
+## Decision
+
+`el(tag, ...)` and the tag factories return **actual DOM `Node`s**. There is no virtual DOM, no
+diffing, and no reconciliation. A component is a plain function that runs and returns the nodes it
+built; callers may hold the reference and mutate it imperatively.
+
+`mount(target, view)` runs `view` once and inserts the resulting nodes. Updates to already-built DOM
+are made by mutating specific nodes/attributes directly — never by re-diffing markup.
+
+## Consequences
+
+- No diff/reconcile code to write, document, or reason about. Output is inspectable with normal DOM
+  tools.
+- Imperative DOM manipulation with normal DOM APIs is a first-class, supported path.
+- Because there is no whole-tree re-render, updates target specific nodes/attributes directly; there
+  is no automatic child reconciliation for structural/list changes.
+- Holding stale references to nodes that later get replaced is a foot-gun the framework does not
+  protect against — the trade-off accepted for simplicity.

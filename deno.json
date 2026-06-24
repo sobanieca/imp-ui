@@ -1,0 +1,8 @@
+{
+  "fmt": {
+    "semiColons": false,
+    "singleQuote": true,
+    "lineWidth": 100,
+    "exclude": ["prev/"]
+  }
+}
