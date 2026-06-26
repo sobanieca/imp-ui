@@ -21,7 +21,7 @@ Arguments to `el`/tag factories are dispatched by **runtime type, in any order**
 | array                                   | children, flattened recursively |
 | string / number / bigint                | text child                      |
 | `Node`                                  | child                           |
-| plain object                            | props (multiple objects merged) |
+| plain object                            | props (one object per call)     |
 | `null` / `undefined` / `false` / `true` | skipped                         |
 
 "Plain object" means a direct `Object`/`null`-prototype object, so `Node`s, arrays, and class
@@ -32,7 +32,10 @@ and `list?.length && ...` drop out cleanly without wrapper syntax.
 
 - The frequent cases read naturally: `div('hi')`, `div([a, b])`, `div({ class: 'x' }, 'hi')` — no
   positional placeholders.
-- Multiple prop objects merge, so props can be spread/composed across call sites.
+- Exactly one props object per call. Merging several silently clobbers structured keys (`class`,
+  `style`), so a second props object is a usage error: the runtime warns and applies last-wins, and
+  an `imp lint` rule is planned to catch it statically. Compose props into one object before the
+  call (`div({ ...base, ...extra }, …)`).
 - The cost is a small dispatch function and one rule to learn instead of an argument signature; type
   confusion is possible in principle (e.g. an array meant as a prop value must sit inside a props
   object, not float as an argument) but rare in practice.

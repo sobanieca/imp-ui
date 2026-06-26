@@ -32,7 +32,7 @@ Argument dispatch by **type**, order irrelevant:
 | array                             | children, flattened recursively      |
 | string / number / bigint          | text child                           |
 | `Node`                            | child                                |
-| plain object                      | props (multiple objects are merged)  |
+| plain object                      | props (one object per call)          |
 | `null`/`undefined`/`false`/`true` | skipped (so `cond && el(...)` works) |
 
 Inline text mixes with elements in document order — both forms work:

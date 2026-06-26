@@ -25,6 +25,7 @@ export function isPlainObject(v) {
 
 function normalize(args) {
   let props = null
+  let seenProps = false
   const children = []
   const push = (v) => {
     if (v === null || v === undefined || v === false || v === true) return
@@ -43,14 +44,26 @@ function normalize(args) {
     // anything else at child position is dropped
   }
   for (const a of args) {
-    if (isPlainObject(a)) props = Object.assign(props ?? {}, a)
-    else push(a)
+    if (isPlainObject(a)) {
+      // A single props object per call (adr/0002). Merging multiple silently
+      // clobbers structured keys (class/style), so warn and let last-wins apply.
+      if (seenProps) {
+        console.warn(
+          'imp: multiple props objects passed to one element; pass a single props object instead. Later keys win.',
+        )
+      }
+      seenProps = true
+      props = Object.assign(props ?? {}, a)
+    } else push(a)
   }
   return { props, children }
 }
 
 function setAttr(node, k, v) {
-  if (v === null || v === undefined || v === false) node.removeAttribute(k)
+  // Only null/undefined remove the attribute. `false` serializes to the string
+  // "false" — ARIA and other tri-state attributes treat absent and "false" as
+  // distinct (e.g. aria-expanded="false"). `true` sets a bare attribute.
+  if (v === null || v === undefined) node.removeAttribute(k)
   else node.setAttribute(k, v === true ? '' : String(v))
 }
 
@@ -145,8 +158,10 @@ function appendChildren(node, children) {
 export function el(tag, ...args) {
   const node = document.createElement(tag)
   const { props, children } = normalize(args)
-  if (props) applyProps(node, props)
+  // Children first: live props like <select>.value and <textarea>.value depend
+  // on the relevant child nodes already existing (or must win over text children).
   appendChildren(node, children)
+  if (props) applyProps(node, props)
   return node
 }
 
@@ -156,8 +171,8 @@ export const svg = new Proxy({}, {
   get: (_, tag) => (...args) => {
     const node = document.createElementNS(SVG_NS, tag)
     const { props, children } = normalize(args)
-    if (props) applyProps(node, props)
     appendChildren(node, children)
+    if (props) applyProps(node, props)
     return node
   },
 })
