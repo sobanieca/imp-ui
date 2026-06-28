@@ -1,5 +1,3 @@
-const SVG_NS = 'http://www.w3.org/2000/svg'
-
 const ATTRIBUTE_ONLY_PROPS = new Set(['list', 'form'])
 
 const isSkippable = (v) => v === null || v === undefined || v === false || v === true
@@ -52,7 +50,7 @@ function setAttribute(node, name, value) {
 const isCustomElement = (node) => node.localName.includes('-') || node.hasAttribute('is')
 
 function setProp(node, name, value) {
-  const mustUseAttribute = node.namespaceURI === SVG_NS || ATTRIBUTE_ONLY_PROPS.has(name)
+  const mustUseAttribute = ATTRIBUTE_ONLY_PROPS.has(name)
   if (mustUseAttribute) return setAttribute(node, name, value)
 
   const exposedAsProperty = name in node
@@ -147,10 +145,6 @@ function build(node, args) {
 export function el(tag, ...args) {
   return build(document.createElement(tag), args)
 }
-
-export const svg = new Proxy({}, {
-  get: (_, tag) => (...args) => build(document.createElementNS(SVG_NS, tag), args),
-})
 
 const TAGS = [
   'div',

@@ -22,7 +22,6 @@ Import surface: `src/imp.js`.
 ```js
 el(tag, ...args) -> Node            // the one primitive
 div, p, span, h1..h6, ul, li, button, input, form, table, ...  // ~80 tag factories
-svg.circle({ r: 4 })                // any SVG tag via the svg.* proxy (attrs verbatim)
 ```
 
 Argument dispatch by **type**, order irrelevant:
@@ -63,7 +62,7 @@ button(
 - **Property-first** (adr/0004). If the name exists as a JS property on the node it is assigned as a
   property (`disabled`, `checked`, `value`, `selected`, custom-element props). Otherwise it becomes
   an attribute. `null`/`undefined`/`false` removes; `true` sets a bare attribute. `list` and `form`
-  are always attributes; SVG nodes are always attribute-based.
+  are always attributes.
 - **`null` on properties.** For **built-in** elements a `null`/`undefined` property value is coerced
   to `''` (avoids the literal `"null"` string that non-`[LegacyNullToEmptyString]` IDL setters would
   produce). For **custom elements** (hyphenated tag, or `is=`) the raw value is passed through, so a
