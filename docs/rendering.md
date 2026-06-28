@@ -64,6 +64,13 @@ button(
   property (`disabled`, `checked`, `value`, `selected`, custom-element props). Otherwise it becomes
   an attribute. `null`/`undefined`/`false` removes; `true` sets a bare attribute. `list` and `form`
   are always attributes; SVG nodes are always attribute-based.
+- **`null` on properties.** For **built-in** elements a `null`/`undefined` property value is coerced
+  to `''` (avoids the literal `"null"` string that non-`[LegacyNullToEmptyString]` IDL setters would
+  produce). For **custom elements** (hyphenated tag, or `is=`) the raw value is passed through, so a
+  setter typed as `T | null` receives real `null`. Caveat: this only applies once the property
+  exists on the node — if the element is built **before** `customElements.define(...)`, the prop is
+  not yet exposed and falls back to an attribute, so define custom elements before constructing
+  nodes that pass rich/`null` props to them.
 - **`class`**: `'card'` · `['card', extra]` (falsy entries dropped, joined) · `{ active: cond }`
   (object — each truthy entry toggles its class on).
 - **`style`**: `'color:red'` · object (`camelCase` -> kebab, `--custom-props` kept verbatim).

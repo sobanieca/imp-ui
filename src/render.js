@@ -49,13 +49,16 @@ function setAttribute(node, name, value) {
   else node.setAttribute(name, value === true ? '' : String(value))
 }
 
+const isCustomElement = (node) => node.localName.includes('-') || node.hasAttribute('is')
+
 function setProp(node, name, value) {
   const mustUseAttribute = node.namespaceURI === SVG_NS || ATTRIBUTE_ONLY_PROPS.has(name)
   if (mustUseAttribute) return setAttribute(node, name, value)
 
   const exposedAsProperty = name in node
   if (exposedAsProperty) {
-    const propertyValue = value === null || value === undefined ? '' : value
+    const nullish = value === null || value === undefined
+    const propertyValue = nullish && !isCustomElement(node) ? '' : value
     try {
       node[name] = propertyValue
       return
