@@ -1,21 +1,10 @@
-// Element-factory rendering core (essence #7-#9, #15).
-//
-// `el(tag, ...args)` returns a real DOM node. Arguments are dispatched by
-// TYPE, never by position:
-//   array            -> children (flattened recursively)
-//   string / number  -> text child
-//   Node             -> child
-//   plain object     -> props (merged)
-//   null/undefined/false/true -> skipped
-//
-// Prop keys are HTML attribute names verbatim (`class`, `for`, `data-*`,
-// `aria-*`) — no aliases. This module turns factory calls into static DOM.
-
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
-// Attributes whose IDL property is read-only or detached from the attribute —
-// they must round-trip through setAttribute (see adr/0004).
-const FORCE_ATTR = new Set(['list', 'form'])
+const ATTRIBUTE_ONLY_PROPS = new Set(['list', 'form'])
+
+const isSkippable = (v) => v === null || v === undefined || v === false || v === true
+
+const isTextChild = (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'bigint'
 
 export function isPlainObject(v) {
   if (v === null || typeof v !== 'object') return false
@@ -27,103 +16,93 @@ function normalize(args) {
   let props = null
   let seenProps = false
   const children = []
-  const push = (v) => {
-    if (v === null || v === undefined || v === false || v === true) return
+
+  const collectChild = (v) => {
+    if (isSkippable(v)) return
     if (Array.isArray(v)) {
-      for (const c of v) push(c)
+      for (const c of v) collectChild(c)
       return
     }
     if (v instanceof Node) {
       children.push(v)
       return
     }
-    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'bigint') {
-      children.push(String(v))
-      return
-    }
-    // anything else at child position is dropped
+    if (isTextChild(v)) children.push(String(v))
   }
-  for (const a of args) {
-    if (isPlainObject(a)) {
-      // A single props object per call (adr/0002). Merging multiple silently
-      // clobbers structured keys (class/style), so warn and let last-wins apply.
+
+  for (const arg of args) {
+    if (isPlainObject(arg)) {
       if (seenProps) {
         console.warn(
           'imp: multiple props objects passed to one element; pass a single props object instead. Later keys win.',
         )
       }
       seenProps = true
-      props = Object.assign(props ?? {}, a)
-    } else push(a)
+      props = Object.assign(props ?? {}, arg)
+    } else collectChild(arg)
   }
   return { props, children }
 }
 
-function setAttr(node, k, v) {
-  // Only null/undefined remove the attribute. `false` serializes to the string
-  // "false" — ARIA and other tri-state attributes treat absent and "false" as
-  // distinct (e.g. aria-expanded="false"). `true` sets a bare attribute.
-  if (v === null || v === undefined) node.removeAttribute(k)
-  else node.setAttribute(k, v === true ? '' : String(v))
+function setAttribute(node, name, value) {
+  if (value === null || value === undefined) node.removeAttribute(name)
+  else node.setAttribute(name, value === true ? '' : String(value))
 }
 
-// Property-first fallthrough (adr/0004): handles booleans (disabled/checked),
-// live form state (value/selected/indeterminate), and custom-element
-// properties in one path. Names not exposed as JS properties (class, for,
-// data-*, aria-*) fall to setAttribute. SVG is always attribute-based.
-function setProp(node, k, v) {
-  if (node.namespaceURI === SVG_NS || FORCE_ATTR.has(k)) {
-    return setAttr(node, k, v)
-  }
-  if (k in node) {
+function setProp(node, name, value) {
+  const mustUseAttribute = node.namespaceURI === SVG_NS || ATTRIBUTE_ONLY_PROPS.has(name)
+  if (mustUseAttribute) return setAttribute(node, name, value)
+
+  const exposedAsProperty = name in node
+  if (exposedAsProperty) {
+    const propertyValue = value === null || value === undefined ? '' : value
     try {
-      node[k] = v === null || v === undefined ? '' : v
+      node[name] = propertyValue
       return
     } catch {
-      // read-only property — fall through to attribute
+      setAttribute(node, name, value)
+      return
     }
   }
-  setAttr(node, k, v)
+  setAttribute(node, name, value)
 }
 
-// events: { click: fn } or { click: [fn, { once: true }] } — native DOM event
-// names, no `on` prefix. The optional second array element is addEventListener
-// options.
 function applyEvents(node, events) {
-  for (const name in events) {
-    const entry = events[name]
-    const [fn, opts] = Array.isArray(entry) ? entry : [entry, null]
-    if (typeof fn !== 'function') continue
-    node.addEventListener(name, fn, opts ?? undefined)
+  for (const eventName in events) {
+    const entry = events[eventName]
+    const [listener, options] = Array.isArray(entry) ? entry : [entry, null]
+    if (typeof listener !== 'function') continue
+    node.addEventListener(eventName, listener, options ?? undefined)
   }
 }
 
-const styleKey = (k) => k.startsWith('--') ? k : k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())
+const toStylePropertyName = (name) =>
+  name.startsWith('--') ? name : name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())
 
-function setStyleEntry(node, k, v) {
-  if (v === null || v === undefined || v === false) {
-    node.style.removeProperty(styleKey(k))
-  } else node.style.setProperty(styleKey(k), String(v))
+function setStyleEntry(node, name, value) {
+  const propertyName = toStylePropertyName(name)
+  if (value === null || value === undefined || value === false) {
+    node.style.removeProperty(propertyName)
+  } else node.style.setProperty(propertyName, String(value))
 }
 
-// style: string | object (camelCase -> kebab, --custom-props verbatim).
 function applyStyle(node, style) {
   if (typeof style === 'string') {
     node.setAttribute('style', style)
     return
   }
   if (!style || typeof style !== 'object') return
-  for (const k in style) setStyleEntry(node, k, style[k])
+  for (const name in style) setStyleEntry(node, name, style[name])
 }
 
-// class: 'card' | ['card', extra] | { active: cond }
 function applyClass(node, cls) {
   if (typeof cls === 'string') {
     node.setAttribute('class', cls)
     return
   }
   if (Array.isArray(cls)) {
-    node.setAttribute('class', cls.filter((c) => typeof c === 'string' && c).join(' '))
+    const names = cls.filter((c) => typeof c === 'string' && c)
+    node.setAttribute('class', names.join(' '))
     return
   }
   if (!cls || typeof cls !== 'object') return
@@ -131,50 +110,43 @@ function applyClass(node, cls) {
 }
 
 function applyProps(node, props) {
-  for (const k in props) {
-    const v = props[k]
-    if (k === 'events') {
-      if (v && typeof v === 'object') applyEvents(node, v)
+  for (const key in props) {
+    const value = props[key]
+    if (key === 'events') {
+      if (value && typeof value === 'object') applyEvents(node, value)
       continue
     }
-    if (k === 'style') {
-      applyStyle(node, v)
+    if (key === 'style') {
+      applyStyle(node, value)
       continue
     }
-    if (k === 'class') {
-      applyClass(node, v)
+    if (key === 'class') {
+      applyClass(node, value)
       continue
     }
-    setProp(node, k, v)
+    setProp(node, key, value)
   }
 }
 
 function appendChildren(node, children) {
-  for (const c of children) {
-    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c)
+  for (const child of children) {
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child)
   }
 }
 
-export function el(tag, ...args) {
-  const node = document.createElement(tag)
+function build(node, args) {
   const { props, children } = normalize(args)
-  // Children first: live props like <select>.value and <textarea>.value depend
-  // on the relevant child nodes already existing (or must win over text children).
   appendChildren(node, children)
   if (props) applyProps(node, props)
   return node
 }
 
-// svg.circle({ r: 40 }) — any SVG tag via proxy. Attributes are set verbatim,
-// so case-sensitive names like viewBox round-trip correctly.
+export function el(tag, ...args) {
+  return build(document.createElement(tag), args)
+}
+
 export const svg = new Proxy({}, {
-  get: (_, tag) => (...args) => {
-    const node = document.createElementNS(SVG_NS, tag)
-    const { props, children } = normalize(args)
-    appendChildren(node, children)
-    if (props) applyProps(node, props)
-    return node
-  },
+  get: (_, tag) => (...args) => build(document.createElementNS(SVG_NS, tag), args),
 })
 
 const TAGS = [
@@ -337,9 +309,6 @@ export const {
   menu,
 } = Object.fromEntries(TAGS.map((t) => [t, (...args) => el(t, ...args)]))
 
-// Render a view into the app root or a server-emitted placeholder (essence
-// #19). `view` is a component function (run once) or an already-built Node.
-// Returns an unmount function that clears the target.
 export function mount(target, view) {
   const host = typeof target === 'string' ? document.querySelector(target) : target
   if (!host) throw new Error('imp: mount target not found: ' + target)
@@ -352,7 +321,6 @@ export function mount(target, view) {
   return () => host.replaceChildren()
 }
 
-// Trusted raw HTML -> DocumentFragment. Never pass user input through this.
 export function html(str) {
   const tpl = document.createElement('template')
   tpl.innerHTML = str
