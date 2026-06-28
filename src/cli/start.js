@@ -1,5 +1,15 @@
 import { basename, dirname, extname, fromFileUrl, join, normalize, resolve } from '@std/path'
 import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
+import { prepareConfig } from './config.js'
+import {
+  bundleDependency,
+  dependencyUrl,
+  isDependencyRequest,
+  isDependencySpecifier,
+  rewriteDependencySpecifiers,
+  shutdownDependencies,
+  specifierFromRequest,
+} from './deps.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('..', import.meta.url))
 
@@ -49,25 +59,44 @@ function printEntry(entry) {
 }
 
 const INJECTION_MARKER = '/@imp/imp.js'
-const HEAD_INJECTION =
-  `<script>${CLIENT_JS}</script>\n<script type="importmap">{"imports":{"imp":"/@imp/imp.js"}}</script>`
 
-function injectImp(html) {
+function browserImports(imports) {
+  return Object.fromEntries(
+    Object.entries(imports).map((
+      [name, specifier],
+    ) => [name, isDependencySpecifier(specifier) ? dependencyUrl(specifier) : specifier]),
+  )
+}
+
+function buildHeadInjection(imports) {
+  const importMap = { imports: { imp: '/@imp/imp.js', ...browserImports(imports) } }
+  return `<script>${CLIENT_JS}</script>\n<script type="importmap">${
+    JSON.stringify(importMap)
+  }</script>`
+}
+
+function injectImp(html, headInjection) {
   if (html.includes(INJECTION_MARKER)) return html
   if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${HEAD_INJECTION}`)
+    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${headInjection}`)
   }
   if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html[^>]*>/i, (open) => `${open}\n<head>${HEAD_INJECTION}</head>`)
+    return html.replace(/<html[^>]*>/i, (open) => `${open}\n<head>${headInjection}</head>`)
   }
-  return `${HEAD_INJECTION}\n${html}`
+  return `${headInjection}\n${html}`
 }
 
 function contentType(path) {
   return CONTENT_TYPES[extname(path).toLowerCase()] ?? 'application/octet-stream'
 }
 
-async function serveFromDir(dir, relativePath, { inject = false } = {}) {
+const JS_EXTENSIONS = new Set(['.js', '.mjs'])
+
+async function serveFromDir(
+  dir,
+  relativePath,
+  { headInjection = null, rewriteJs = false } = {},
+) {
   let path = decodeURIComponent(relativePath)
   if (path.endsWith('/')) path += 'index.html'
   const fsPath = normalize(join(dir, path))
@@ -83,8 +112,14 @@ async function serveFromDir(dir, relativePath, { inject = false } = {}) {
     return new Response('not found: ' + path, { status: 404 })
   }
   const type = contentType(fsPath)
-  if (inject && extname(fsPath).toLowerCase() === '.html') {
-    return new Response(injectImp(new TextDecoder().decode(bytes)), {
+  const extension = extname(fsPath).toLowerCase()
+  if (headInjection && extension === '.html') {
+    return new Response(injectImp(new TextDecoder().decode(bytes), headInjection), {
+      headers: { 'content-type': type },
+    })
+  }
+  if (rewriteJs && JS_EXTENSIONS.has(extension)) {
+    return new Response(rewriteDependencySpecifiers(new TextDecoder().decode(bytes)), {
       headers: { 'content-type': type },
     })
   }
@@ -107,6 +142,8 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
 
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
+  const { configPath, imports } = await prepareConfig(root)
+  const headInjection = buildHeadInjection(imports)
   const clients = new Set()
 
   const broadcast = (message) => {
@@ -180,12 +217,30 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
       return serveFromDir(FRAMEWORK_SRC, url.pathname.slice('/@imp/'.length))
     }
 
-    if (url.pathname === '/' || url.pathname === '/' + entryName) {
-      return serveFromDir(root, '/' + entryName, { inject: true })
+    if (isDependencyRequest(url.pathname)) {
+      const specifier = specifierFromRequest(url.pathname)
+      try {
+        const code = await bundleDependency(specifier, { configPath })
+        return new Response(code, {
+          headers: { 'content-type': CONTENT_TYPES['.js'], 'cache-control': 'no-store' },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.log(`\x1b[31m[imp] bundle failed: ${specifier}\x1b[0m\n${message}`)
+        return new Response(
+          `throw new Error(${JSON.stringify(`imp: failed to bundle ${specifier}\n${message}`)})`,
+          { status: 500, headers: { 'content-type': CONTENT_TYPES['.js'] } },
+        )
+      }
     }
 
-    return serveFromDir(root, url.pathname, { inject: true })
+    if (url.pathname === '/' || url.pathname === '/' + entryName) {
+      return serveFromDir(root, '/' + entryName, { headInjection, rewriteJs: true })
+    }
+
+    return serveFromDir(root, url.pathname, { headInjection, rewriteJs: true })
   })
 
+  server.finished.finally(() => shutdownDependencies())
   return server.finished
 }

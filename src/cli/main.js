@@ -1,7 +1,5 @@
 #!/usr/bin/env -S deno run -A
-import { dirname, fromFileUrl, join } from '@std/path'
-
-const HERE = dirname(fromFileUrl(import.meta.url))
+import { prepareConfig } from './config.js'
 
 const HELP = `imp — buildless UI toolkit
 
@@ -36,24 +34,6 @@ async function runDeno(subcommand, args) {
   Deno.exit(status.code)
 }
 
-async function lint(args) {
-  let hasProjectPlugins = false
-  try {
-    const config = JSON.parse(await Deno.readTextFile('deno.json'))
-    hasProjectPlugins = Array.isArray(config.lint?.plugins) && config.lint.plugins.length > 0
-  } catch { /* no project config */ }
-  if (hasProjectPlugins) {
-    await runDeno('lint', args)
-    return
-  }
-  const tempConfig = await Deno.makeTempFile({ suffix: '.json' })
-  await Deno.writeTextFile(
-    tempConfig,
-    JSON.stringify({ lint: { plugins: [join(HERE, 'lint_plugin.js')] } }),
-  )
-  await runDeno('lint', ['--config', tempConfig, ...args])
-}
-
 const [command, ...rest] = Deno.args
 
 switch (command) {
@@ -65,12 +45,16 @@ switch (command) {
     })
     break
   }
-  case 'lint':
-    await lint(rest)
+  case 'lint': {
+    const { configPath } = await prepareConfig(Deno.cwd())
+    await runDeno('lint', ['--config', configPath, ...rest])
     break
-  case 'fmt':
-    await runDeno('fmt', rest)
+  }
+  case 'fmt': {
+    const { configPath } = await prepareConfig(Deno.cwd())
+    await runDeno('fmt', ['--config', configPath, ...rest])
     break
+  }
   default:
     console.log(HELP)
     if (command && command !== 'help' && command !== '--help') Deno.exit(1)
