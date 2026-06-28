@@ -2,7 +2,9 @@
   "version": "5",
   "specifiers": {
     "jsr:@b-fuze/deno-dom@*": "0.1.56",
-    "jsr:@hono/hono@*": "4.12.27"
+    "jsr:@hono/hono@*": "4.12.27",
+    "jsr:@std/internal@^1.0.14": "1.0.14",
+    "jsr:@std/path@1": "1.1.5"
   },
   "jsr": {
     "@b-fuze/deno-dom@0.1.56": {
@@ -10,6 +12,20 @@
     },
     "@hono/hono@4.12.27": {
       "integrity": "3acc640592008e43f7048e8e53275203e0da84fbcd50201121195da7560583dc"
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    },
+    "@std/path@1.1.5": {
+      "integrity": "ccea00982ea28c36becaf6e62f855406c76a8c32d462f66f415bbb7d83a271bc",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
     }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/path@1"
+    ]
   }
 }

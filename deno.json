@@ -1,4 +1,10 @@
 {
+  "tasks": {
+    "imp": "deno run -A src/cli/main.js"
+  },
+  "imports": {
+    "@std/path": "jsr:@std/path@^1"
+  },
   "fmt": {
     "semiColons": false,
     "singleQuote": true,
