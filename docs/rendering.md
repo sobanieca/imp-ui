@@ -1,22 +1,21 @@
 # imp-ui — Rendering
 
-Reference for the rendering phase: turning element-factory calls into real DOM. Terse and
-machine-ingestible. Buildless ES modules — no compile step, plain JS, runs directly in the browser.
-Everything is imported from the bare `imp` specifier (mapped automatically by `imp start`).
+How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX —
+plain JavaScript ES modules that run directly in the browser. Everything is imported from the bare
+`imp` specifier (mapped automatically by `imp start`).
 
-> Scope: this covers building static DOM from factory calls. Styling, theming, i18n, routing, and
-> web components are separate phases and are not part of this module yet.
+> Scope: this page covers building DOM from factory calls. Styling, theming, i18n, routing, and
+> web components are not covered here yet.
 
 ## Mental model
 
 - A **component** is a lowercase function that returns a real DOM node:
-  `card({ title }) -> div(...)`. No framework component concept, no JSX
-  (adr/element-factory-syntax.md).
+  `card({ title }) -> div(...)`. No framework component concept, no JSX.
 - `el()` and the tag factories return actual `Node`s. You hold the reference and mutate it with
-  normal DOM APIs — there is no virtual DOM and no diffing (adr/real-dom-no-virtual-dom.md).
-- Arguments are dispatched by **type**, not position (adr/type-based-argument-dispatch.md).
+  normal DOM APIs — there is no virtual DOM and no diffing.
+- Arguments are dispatched by **type**, not position.
 - Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) — no
-  aliases (adr/property-first-prop-model.md).
+  aliases.
 
 ## Elements
 
@@ -60,7 +59,7 @@ button(
 
 - **Verbatim names.** Keys are the HTML attribute names exactly: `class`, `for`, `data-*`, `aria-*`.
   No camelCase aliases.
-- **Property-first** (adr/property-first-prop-model.md). If the name exists as a JS property on the
+- **Property-first.** If the name exists as a JS property on the
   node it is assigned as a property (`disabled`, `checked`, `value`, `selected`, custom-element
   props). Otherwise it becomes an attribute. `null`/`undefined`/`false` removes; `true` sets a bare
   attribute. `list` and `form` are always attributes.

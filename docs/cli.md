@@ -6,10 +6,8 @@ exactly as you wrote them.
 
 ## Installation
 
-`imp` ships as a single self-contained binary. Download it, put it on your `PATH`, and you are ready
-— there is nothing else to install.
-
-> TODO: add the download URL / install one-liner once the binary is hosted.
+`imp` ships as a single self-contained binary. Download the binary for your platform, put it on
+your `PATH`, and you are ready — there is nothing else to install.
 
 ## Commands
 
@@ -74,8 +72,8 @@ imp library by path (injection is skipped for documents that already contain it)
   `i`, `p`, `time`, and `menu` that would collide on `window`.
 
 - **Console + error telemetry.** A small inline script forwards `console.*`, uncaught errors, and
-  unhandled rejections to the terminal, prefixed `[browser:*]`. An LLM driving the session reads
-  runtime behavior straight from stdout.
+  unhandled rejections to the terminal, prefixed `[browser:*]` — you (or an LLM coding assistant
+  driving the session) read runtime behavior straight from the terminal, no devtools needed.
 
 - **Network telemetry.** A service worker (registered at root scope) intercepts _all_ request types
   — `fetch`, `XMLHttpRequest`, images, scripts, navigations — and reports each as
@@ -136,9 +134,6 @@ dependencies, so no rule flags them.
 Extra configuration declared under `lint` in `imp.json` (`rules`, `plugins`, `exclude`) is layered
 on top.
 
-> TODO: document the full set of flags `imp lint` accepts (e.g. `--fix`) once the passthrough
-> surface is finalized.
-
 ## `imp fmt`
 
 ```
@@ -151,5 +146,3 @@ change without writing them and exits non-zero when formatting is needed — use
 
 Options come from the `fmt` block of `imp.json`. Defaults when absent: no semicolons, single quotes,
 line width 100.
-
-> TODO: document the full list of supported `fmt` options once the passthrough surface is finalized.

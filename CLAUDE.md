@@ -36,14 +36,25 @@ ADRs record accepted architectural decisions, one decision per file. Conventions
   status markers.
 - **Keep ADRs in sync with the code.** An ADR must not describe features that are not implemented;
   planned work belongs in `todo/`. Keep the table in `adr/README.md` updated when adding,
-  renaming, or removing ADRs, and use the file-name slug when referencing an ADR from docs or other
-  ADRs.
+  renaming, or removing ADRs, and use the file-name slug when referencing an ADR from other ADRs.
 
 ## TODOs (`todo/`)
 
 Planned work lives in `todo/`, one item per file. File names are descriptive slugs
 (`version-manager.md`), matching the ADR convention. When an item is implemented, delete its file
 (and record any architectural decision it introduced as an ADR).
+
+## Docs (`docs/`)
+
+`docs/` is public-facing documentation, written for an external reader: a software developer who
+wants to learn imp's features and what it makes possible, and who will never read imp's source
+code. The docs will be published on a public site, so:
+
+- Explain everything in terms of what the reader writes and what imp does for them — never point
+  at source files, internal function names, or repo paths.
+- Do not reference `adr/` or `todo/` from docs. When a design rationale helps the reader,
+  summarize it inline in plain language.
+- No maintainer notes or TODO markers in docs — planned work belongs in `todo/`.
 
 ## Code style
 

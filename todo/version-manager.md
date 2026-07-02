@@ -64,7 +64,7 @@ current binary — a pin that is not enforced is not a pin. The error message po
 
 ## Download source
 
-Gated on the binary-hosting TODO in `docs/cli.md`. GitHub Releases with a predictable scheme:
+Gated on `binary-hosting.md`. GitHub Releases with a predictable scheme:
 
 ```
 .../releases/download/v{version}/imp-{os}-{arch}
