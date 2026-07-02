@@ -1,0 +1,46 @@
+=== document with head ===
+--- input ---
+<html>
+<head>
+<title>x</title>
+</head>
+<body></body>
+</html>
+--- output ---
+<html>
+<head>
+<script>imp-injection</script>
+<title>x</title>
+</head>
+<body></body>
+</html>
+
+=== document without head ===
+--- input ---
+<html>
+<body>no head here</body>
+</html>
+--- output ---
+<html>
+<head><script>imp-injection</script></head>
+<body>no head here</body>
+</html>
+
+=== bare fragment ===
+--- input ---
+<h1>fragment</h1>
+--- output ---
+<script>imp-injection</script>
+<h1>fragment</h1>
+
+=== already injected ===
+--- input ---
+<html>
+<head><script type="importmap">{"imports":{"imp":"/@imp/imp.js"}}</script></head>
+<body></body>
+</html>
+--- output ---
+<html>
+<head><script type="importmap">{"imports":{"imp":"/@imp/imp.js"}}</script></head>
+<body></body>
+</html>

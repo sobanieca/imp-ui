@@ -1,0 +1,8 @@
+$ imp lint app.js  (cwd: test/fixtures/basic)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Checked 1 file

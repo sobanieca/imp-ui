@@ -1,0 +1,11 @@
+import mitt from 'npm:mitt@3'
+import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
+import { greeting } from './lib.js'
+import { div, mount } from 'imp'
+
+const emitter = mitt()
+const loadDayjs = () => import('npm:dayjs@1')
+
+emitter.on('ready', loadDayjs)
+
+mount('#app', () => div(`${greeting} ${encodeBase64('imp')}`))

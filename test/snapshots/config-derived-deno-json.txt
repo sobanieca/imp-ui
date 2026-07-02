@@ -1,0 +1,22 @@
+{
+  "imports": {
+    "mitt": "npm:mitt@3"
+  },
+  "fmt": {
+    "lineWidth": 80,
+    "semiColons": false,
+    "singleQuote": true
+  },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-import-prefix",
+        "no-unused-vars"
+      ]
+    },
+    "plugins": [
+      "<root>/src/cli/lint_plugin.js"
+    ]
+  },
+  "lock": "../imp.lock"
+}

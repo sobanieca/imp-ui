@@ -1,0 +1,23 @@
+$ imp lint components.js  (cwd: test/fixtures/lint-bad)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp-lint/no-capital-component]: 'Card' starts with a capital letter — imp components are lowercase functions (write 'card')
+ --> <root>/test/fixtures/lint-bad/components.js:1:17
+  | 
+1 | export function Card(title) {
+  |                 ^^^^
+
+
+error[imp-lint/no-capital-component]: 'NavBar' starts with a capital letter — imp components are lowercase functions (write 'navBar')
+ --> <root>/test/fixtures/lint-bad/components.js:5:14
+  | 
+5 | export const NavBar = () => Card('nav')
+  |              ^^^^^^
+
+
+Found 2 problems
+Checked 1 file

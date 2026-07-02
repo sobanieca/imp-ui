@@ -31,6 +31,10 @@ export async function prepareConfig(root) {
     fmt: imp.fmt ?? DEFAULT_FMT,
     lint: {
       ...imp.lint,
+      rules: {
+        ...imp.lint?.rules,
+        exclude: ['no-import-prefix', ...(imp.lint?.rules?.exclude ?? [])],
+      },
       plugins: [LINT_PLUGIN, ...(imp.lint?.plugins ?? [])],
     },
     lock: '../imp.lock',

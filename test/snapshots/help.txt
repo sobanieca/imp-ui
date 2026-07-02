@@ -1,0 +1,14 @@
+$ imp 
+exit code: 0
+
+--- stdout ---
+imp — buildless UI toolkit
+
+USAGE
+  imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
+                                        live reload, console + network → terminal
+  imp lint [...paths]                   deno lint + imp rules
+  imp fmt [...paths]                    deno fmt
+
+--- stderr ---
+(empty)

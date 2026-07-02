@@ -75,7 +75,7 @@ function buildHeadInjection(imports) {
   }</script>`
 }
 
-function injectImp(html, headInjection) {
+export function injectImp(html, headInjection) {
   if (html.includes(INJECTION_MARKER)) return html
   if (/<head[^>]*>/i.test(html)) {
     return html.replace(/<head[^>]*>/i, (open) => `${open}\n${headInjection}`)

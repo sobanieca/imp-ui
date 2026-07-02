@@ -1,0 +1,7 @@
+GET /@imp/sw.js
+status: 200
+content-type: text/javascript; charset=utf-8
+service-worker-allowed: /
+cache-control: no-store
+
+[imp service worker source]
