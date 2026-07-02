@@ -35,9 +35,15 @@ ADRs record accepted architectural decisions, one decision per file. Conventions
   delete it if the decision is dropped) — do not keep superseded records around and do not add
   status markers.
 - **Keep ADRs in sync with the code.** An ADR must not describe features that are not implemented;
-  planned work belongs in `todo.md`. Keep the table in `adr/README.md` updated when adding,
+  planned work belongs in `todo/`. Keep the table in `adr/README.md` updated when adding,
   renaming, or removing ADRs, and use the file-name slug when referencing an ADR from docs or other
   ADRs.
+
+## TODOs (`todo/`)
+
+Planned work lives in `todo/`, one item per file. File names are descriptive slugs
+(`version-manager.md`), matching the ADR convention. When an item is implemented, delete its file
+(and record any architectural decision it introduced as an ADR).
 
 ## Code style
 
