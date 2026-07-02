@@ -23,6 +23,22 @@ internal build file and is baked into the compiled binary — end users never se
 features, route any new Deno-tooling dependency through this same translation layer rather than
 asking users to touch Deno directly.
 
+## ADRs (`adr/`)
+
+ADRs record accepted architectural decisions, one decision per file. Conventions:
+
+- **Presence means accepted.** There is no status field and no numbering — every ADR in `adr/`
+  reflects the current, accepted state of that decision.
+- **File names are descriptive slugs** (`real-dom-no-virtual-dom.md`), not numbers.
+- **Format per record:** Context · Decision · Consequences.
+- **When a decision changes**, replace the old ADR with a new one describing the new decision (or
+  delete it if the decision is dropped) — do not keep superseded records around and do not add
+  status markers.
+- **Keep ADRs in sync with the code.** An ADR must not describe features that are not implemented;
+  planned work belongs in `todo.md`. Keep the table in `adr/README.md` updated when adding,
+  renaming, or removing ADRs, and use the file-name slug when referencing an ADR from docs or other
+  ADRs.
+
 ## Code style
 
 **Do not add comments to code.** Write self-explanatory code instead — use clear, descriptive names

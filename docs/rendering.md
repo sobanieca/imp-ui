@@ -2,7 +2,7 @@
 
 Reference for the rendering phase: turning element-factory calls into real DOM. Terse and
 machine-ingestible. Buildless ES modules — no compile step, plain JS, runs directly in the browser.
-Import surface: `src/imp.js`.
+Everything is imported from the bare `imp` specifier (mapped automatically by `imp start`).
 
 > Scope: this covers building static DOM from factory calls. Styling, theming, i18n, routing, and
 > web components are separate phases and are not part of this module yet.
@@ -10,12 +10,13 @@ Import surface: `src/imp.js`.
 ## Mental model
 
 - A **component** is a lowercase function that returns a real DOM node:
-  `card({ title }) -> div(...)`. No framework component concept, no JSX.
+  `card({ title }) -> div(...)`. No framework component concept, no JSX
+  (adr/element-factory-syntax.md).
 - `el()` and the tag factories return actual `Node`s. You hold the reference and mutate it with
-  normal DOM APIs — there is no virtual DOM and no diffing (adr/0003).
-- Arguments are dispatched by **type**, not position (adr/0002).
+  normal DOM APIs — there is no virtual DOM and no diffing (adr/real-dom-no-virtual-dom.md).
+- Arguments are dispatched by **type**, not position (adr/type-based-argument-dispatch.md).
 - Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) — no
-  aliases (adr/0004).
+  aliases (adr/property-first-prop-model.md).
 
 ## Elements
 
@@ -26,13 +27,13 @@ div, p, span, h1..h6, ul, li, button, input, form, table, ...  // ~80 tag factor
 
 Argument dispatch by **type**, order irrelevant:
 
-| Arg type                          | Meaning                              |
-| --------------------------------- | ------------------------------------ |
-| array                             | children, flattened recursively      |
-| string / number / bigint          | text child                           |
-| `Node`                            | child                                |
-| plain object                      | props (one object per call)          |
-| `null`/`undefined`/`false`/`true` | skipped (so `cond && el(...)` works) |
+| Arg type                          | Meaning                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| array                             | children, flattened recursively                                              |
+| string / number / bigint          | text child                                                                   |
+| `Node`                            | child                                                                        |
+| plain object                      | props (one object per call — extras merge with later keys winning, and warn) |
+| `null`/`undefined`/`false`/`true` | skipped (so `cond && el(...)` works)                                         |
 
 Inline text mixes with elements in document order — both forms work:
 
@@ -59,10 +60,10 @@ button(
 
 - **Verbatim names.** Keys are the HTML attribute names exactly: `class`, `for`, `data-*`, `aria-*`.
   No camelCase aliases.
-- **Property-first** (adr/0004). If the name exists as a JS property on the node it is assigned as a
-  property (`disabled`, `checked`, `value`, `selected`, custom-element props). Otherwise it becomes
-  an attribute. `null`/`undefined`/`false` removes; `true` sets a bare attribute. `list` and `form`
-  are always attributes.
+- **Property-first** (adr/property-first-prop-model.md). If the name exists as a JS property on the
+  node it is assigned as a property (`disabled`, `checked`, `value`, `selected`, custom-element
+  props). Otherwise it becomes an attribute. `null`/`undefined`/`false` removes; `true` sets a bare
+  attribute. `list` and `form` are always attributes.
 - **`null` on properties.** For **built-in** elements a `null`/`undefined` property value is coerced
   to `''` (avoids the literal `"null"` string that non-`[LegacyNullToEmptyString]` IDL setters would
   produce). For **custom elements** (hyphenated tag, or `is=`) the raw value is passed through, so a
@@ -80,10 +81,12 @@ button(
 
 ```js
 mount('#app', app) // selector or element; component fn or Node
-const unmount = mount('#cart', () => cart({ id })) // server-HTML island (essence #19)
+const unmount = mount('#cart', () => cart({ id })) // server-HTML island
 unmount() // clears the host
 html('<b>trusted</b>') // raw HTML -> DocumentFragment (trusted input only)
 ```
 
 `mount(target, view)` runs `view` once (if a function), replaces the host's children with the
-result, and returns an `unmount` function that empties the host.
+result, and returns an `unmount` function that empties the host. The result may be a `Node`, a
+string (becomes a text node), or an array of either; `null`/`undefined`/`false` entries are skipped.
+A `target` selector that matches nothing throws.

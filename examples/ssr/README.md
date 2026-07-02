@@ -1,8 +1,8 @@
 # ssr — server-rendered islands
 
-A small e-commerce product page that demonstrates the **islands** pattern from `docs/rendering.md`
-(essence #19): a [Hono](https://hono.dev) server renders the full page as HTML, and the client
-hydrates a few mount points with `mount('#id', ...)`.
+A small e-commerce product page that demonstrates the **islands** pattern from `docs/rendering.md`:
+a [Hono](https://hono.dev) server renders the full page as HTML, and the client hydrates a few mount
+points with `mount('#id', ...)`.
 
 `src/render.js` is browser-only — it builds real DOM with `document.createElement`. So the server
 renders the static shell as plain HTML strings (good for SEO and no-JS), and imp-ui is used **only

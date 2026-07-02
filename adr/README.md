@@ -1,18 +1,24 @@
 # Architecture Decision Records
 
 Each ADR captures one architectural decision: the context that forced it, the choice made, and the
-consequences. They are append-only history — when a decision changes, add a new ADR that supersedes
-the old one rather than editing it in place.
+consequences. Every ADR in this folder is the current, accepted state of that decision — there is no
+status field. When a decision changes, replace the ADR with a new one describing the new decision;
+when a decision is dropped, delete its ADR.
 
-Format per record: **Status · Context · Decision · Consequences**. Status is one of `Accepted`,
-`Superseded by NNNN`, or `Proposed`.
+Conventions:
+
+- **File name** is a short descriptive slug of the decision (`real-dom-no-virtual-dom.md`) — no
+  numbering.
+- **Format per record:** Context · Decision · Consequences.
+- **Presence means accepted.** Nothing in the folder is a proposal or history; the folder always
+  reflects what the code does (or must do).
 
 ## Rendering phase
 
-| #                                            | Title                                             | Status   |
-| -------------------------------------------- | ------------------------------------------------- | -------- |
-| [0001](0001-real-dom-no-virtual-dom.md)      | Real DOM, no virtual DOM                          | Accepted |
-| [0002](0002-type-based-argument-dispatch.md) | Type-based argument dispatch                      | Accepted |
-| [0003](0003-element-factory-syntax.md)       | Element-factory syntax, no JSX or templates       | Accepted |
-| [0004](0004-property-first-prop-model.md)    | Verbatim attribute names, property-first fallback | Accepted |
-| [0005](0005-special-prop-namespaces.md)      | Special prop namespaces: class, style, events     | Accepted |
+| ADR                                                             | Decision                                          |
+| --------------------------------------------------------------- | ------------------------------------------------- |
+| [real-dom-no-virtual-dom](real-dom-no-virtual-dom.md)           | Real DOM, no virtual DOM                          |
+| [type-based-argument-dispatch](type-based-argument-dispatch.md) | Type-based argument dispatch                      |
+| [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates       |
+| [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback |
+| [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events     |

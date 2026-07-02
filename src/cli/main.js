@@ -6,8 +6,8 @@ const HELP = `imp — buildless UI toolkit
 USAGE
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
                                         live reload, console + network → terminal
-  imp lint [...paths]                   deno lint + imp rules
-  imp fmt [...paths]                    deno fmt
+  imp lint [...paths]                   lint with imp rules
+  imp fmt [...paths]                    format source
 `
 
 function flag(args, name, fallback) {

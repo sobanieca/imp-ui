@@ -1,10 +1,9 @@
-# 0005 — Special prop namespaces: class, style, events
-
-**Status:** Accepted
+# Special prop namespaces: class, style, events
 
 ## Context
 
-Three prop keys carry structure that the plain property-first model (adr/0004) cannot express well:
+Three prop keys carry structure that the plain property-first model
+(adr/property-first-prop-model.md) cannot express well:
 
 - **`class`** is frequently conditional ("active when selected") and composed from several sources.
   A bare string forces the author to build that string by hand at every call site.
@@ -35,6 +34,6 @@ Three reserved keys in the same props object, each with richer handling:
 - Native DOM event names (`click`, not `onClick`) mean one naming system for spec and custom events,
   and `addEventListener` options are available.
 - These three keys are the only deviations from "key = attribute name"; everyone else follows
-  adr/0004. The special-casing is enumerable and small.
+  adr/property-first-prop-model.md. The special-casing is enumerable and small.
 - `events` listeners are attached with `addEventListener` and are not auto-removed; callers that
   detach listeners do so themselves.

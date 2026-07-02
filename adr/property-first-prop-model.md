@@ -1,6 +1,4 @@
-# 0004 — Verbatim attribute names, property-first fallback
-
-**Status:** Accepted
+# Verbatim attribute names, property-first fallback
 
 ## Context
 
@@ -29,8 +27,8 @@ Two rules:
    `null`/`undefined`/`false` remove the attribute / clear the property; `true` sets a bare
    attribute when the attribute path is taken.
 
-Exceptions: names in a small **force-attribute** set (`list`, `form`) and all SVG nodes always use
-`setAttribute`, because their properties are read-only or absent.
+Exceptions: names in a small **force-attribute** set (`list`, `form`) always use `setAttribute`,
+because their IDL properties are read-only or detached from the attribute.
 
 ## Consequences
 
@@ -41,7 +39,7 @@ Exceptions: names in a small **force-attribute** set (`list`, `form`) and all SV
 - The force-attribute set is a known, named exception list rather than scattered special cases;
   growing it is a deliberate, reviewable act.
 - `class` and `style` look like plain attributes but get richer handling (objects, arrays); that is
-  a separate decision (adr/0005), layered on top of this base rule.
+  a separate decision (adr/special-prop-namespaces.md), layered on top of this base rule.
 - Edge risk: a custom element whose property and attribute disagree in semantics will follow the
   property path; authors needing the literal attribute use the force-attribute escape or set it
   imperatively.

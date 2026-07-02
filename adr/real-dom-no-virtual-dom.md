@@ -1,17 +1,15 @@
-# 0001 — Real DOM, no virtual DOM
-
-**Status:** Accepted
+# Real DOM, no virtual DOM
 
 ## Context
 
 A rendering layer can produce either a virtual representation of the UI that is diffed against the
 previous one and reconciled into the DOM (React-style), or real DOM nodes directly. The virtual-DOM
 route brings a diffing algorithm, a reconciliation model, and a component-instance lifecycle —
-non-trivial machinery that AI agents (the primary authors, essence #3) and human readers must hold
-in their heads, and the source of most "why did this re-render" surprises.
+non-trivial machinery that AI agents (the primary authors) and human readers must hold in their
+heads, and the source of most "why did this re-render" surprises.
 
-imp-ui's essence is simplicity over capability and "boring on purpose" — no novel rendering
-algorithm (essence #4), and explicitly real DOM with no diffing (essence #8).
+imp-ui's guiding principle is simplicity over capability and "boring on purpose" — no novel
+rendering algorithm, and explicitly real DOM with no diffing.
 
 ## Decision
 

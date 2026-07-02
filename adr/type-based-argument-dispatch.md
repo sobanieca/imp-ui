@@ -1,14 +1,11 @@
-# 0002 — Type-based argument dispatch
-
-**Status:** Accepted
+# Type-based argument dispatch
 
 ## Context
 
 Factory functions need a way to tell props from children from text. The common approach fixes
 argument **position** — e.g. `el(tag, props, children)` — which forces callers to pass `null`/`{}`
 placeholders when a slot is unused (`el('div', null, [...])`) and makes the common "just children"
-case noisy. For agent-authored code (essence #3) that regularity-with-ceremony is pure token
-overhead.
+case noisy. For agent-authored code that regularity-with-ceremony is pure token overhead.
 
 JavaScript values already carry enough type information to disambiguate the roles without positions.
 
