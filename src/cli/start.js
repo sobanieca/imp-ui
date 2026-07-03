@@ -1,6 +1,6 @@
 import { basename, dirname, extname, fromFileUrl, join, normalize, resolve } from '@std/path'
 import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
-import { prepareConfig } from './config.js'
+import { loadImpConfig } from './config.js'
 import {
   bundleDependency,
   dependencyUrl,
@@ -142,7 +142,8 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
 
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
-  const { configPath, imports } = await prepareConfig(root)
+  const imp = await loadImpConfig(root)
+  const imports = imp.imports ?? {}
   const headInjection = buildHeadInjection(imports)
   const clients = new Set()
 
@@ -220,7 +221,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
     if (isDependencyRequest(url.pathname)) {
       const specifier = specifierFromRequest(url.pathname)
       try {
-        const code = await bundleDependency(specifier, { configPath })
+        const code = await bundleDependency(specifier)
         return new Response(code, {
           headers: { 'content-type': CONTENT_TYPES['.js'], 'cache-control': 'no-store' },
         })

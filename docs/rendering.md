@@ -1,11 +1,11 @@
 # imp-ui — Rendering
 
-How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX —
-plain JavaScript ES modules that run directly in the browser. Everything is imported from the bare
-`imp` specifier (mapped automatically by `imp start`).
+How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX — plain
+JavaScript ES modules that run directly in the browser. Everything is imported from the bare `imp`
+specifier (mapped automatically by `imp start`).
 
-> Scope: this page covers building DOM from factory calls. Styling, theming, i18n, routing, and
-> web components are not covered here yet.
+> Scope: this page covers building DOM from factory calls. Styling, theming, i18n, routing, and web
+> components are not covered here yet.
 
 ## Mental model
 
@@ -59,10 +59,10 @@ button(
 
 - **Verbatim names.** Keys are the HTML attribute names exactly: `class`, `for`, `data-*`, `aria-*`.
   No camelCase aliases.
-- **Property-first.** If the name exists as a JS property on the
-  node it is assigned as a property (`disabled`, `checked`, `value`, `selected`, custom-element
-  props). Otherwise it becomes an attribute. `null`/`undefined`/`false` removes; `true` sets a bare
-  attribute. `list` and `form` are always attributes.
+- **Property-first.** If the name exists as a JS property on the node it is assigned as a property
+  (`disabled`, `checked`, `value`, `selected`, custom-element props). Otherwise it becomes an
+  attribute. `null`/`undefined`/`false` removes; `true` sets a bare attribute. `list` and `form` are
+  always attributes.
 - **`null` on properties.** For **built-in** elements a `null`/`undefined` property value is coerced
   to `''` (avoids the literal `"null"` string that non-`[LegacyNullToEmptyString]` IDL setters would
   produce). For **custom elements** (hyphenated tag, or `is=`) the raw value is passed through, so a

@@ -16,13 +16,13 @@ export const specifierFromRequest = (pathname) =>
 const cache = new Map()
 const inflight = new Map()
 
-export async function bundleDependency(specifier, { configPath } = {}) {
+export async function bundleDependency(specifier) {
   if (cache.has(specifier)) return cache.get(specifier)
   if (inflight.has(specifier)) return inflight.get(specifier)
 
   const job = (async () => {
     const result = await esbuild.build({
-      plugins: denoPlugins(configPath ? { configPath } : {}),
+      plugins: denoPlugins(),
       entryPoints: [specifier],
       bundle: true,
       format: 'esm',

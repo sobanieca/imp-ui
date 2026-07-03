@@ -1,0 +1,15 @@
+$ imp lint index.html  (cwd: test/fixtures/lint-html)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-capital-component]: 'Header' starts with a capital letter — imp components are lowercase functions (write 'header')
+ --> <root>/test/fixtures/lint-html/index.html:12:16
+
+error[no-unused-vars]: 'unused' is assigned a value but never used.
+ --> <root>/test/fixtures/lint-html/index.html:16:13
+
+Found 2 problems
+Checked 1 file

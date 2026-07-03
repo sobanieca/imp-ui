@@ -1,0 +1,3 @@
+{
+  "imports": { "dayjs": "npm:dayjs@1" }
+}

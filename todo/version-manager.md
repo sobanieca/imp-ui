@@ -8,26 +8,26 @@ Let a project pin the imp version it is built against:
 }
 ```
 
-Every imp binary transparently detects the pin, fetches that version if needed, and re-executes
-into it — the corepack / `"packageManager"` model. No shims, no shell hooks, no PATH manipulation:
-imp is a single self-contained binary, so the launcher logic ships inside every release.
+Every imp binary transparently detects the pin, fetches that version if needed, and re-executes into
+it — the corepack / `"packageManager"` model. No shims, no shell hooks, no PATH manipulation: imp is
+a single self-contained binary, so the launcher logic ships inside every release.
 
 ## Startup flow
 
 Runs before command dispatch in `src/cli/main.js`:
 
-1. **Read the pin.** Walk up from cwd to find `imp.json` (walking up matters — `imp lint src/`
-   from a subdirectory must honor the project pin). No file or no `"version"` field → run as-is.
-2. **Compare** the pin against the version embedded in the running binary. Match → run as-is.
-   This is the hot path; it costs one file read that `prepareConfig` already performs.
-3. **On mismatch, resolve** the requested binary at `~/.imp/versions/<version>/imp`
-   (`imp.exe` on Windows; root overridable via `IMP_HOME`). If absent, download it:
+1. **Read the pin.** Walk up from cwd to find `imp.json` (walking up matters — `imp lint src/` from
+   a subdirectory must honor the project pin). No file or no `"version"` field → run as-is.
+2. **Compare** the pin against the version embedded in the running binary. Match → run as-is. This
+   is the hot path; it costs one file read that `prepareConfig` already performs.
+3. **On mismatch, resolve** the requested binary at `~/.imp/versions/<version>/imp` (`imp.exe` on
+   Windows; root overridable via `IMP_HOME`). If absent, download it:
    - fetch the release asset for `Deno.build.os` / `Deno.build.arch`
    - verify its checksum against the published `.sha256`
    - write to a temp file, `chmod +x`, atomically rename into place
    - print one imp-branded status line, e.g. `imp 2.4.5 (pinned by imp.json) — downloading…`
 4. **Re-exec:** spawn the resolved binary with the original `Deno.args`, stdio inherited, and exit
-   with its code — same shape as the existing `runDeno` helper.
+   with its code.
 
 Recursion cannot loop in the normal case (the delegated binary sees its own version matches the
 pin), but set a guard env var (`IMP_DELEGATED=1`) so a corrupted download errors out instead of
@@ -58,9 +58,8 @@ current binary — a pin that is not enforced is not a pin. The error message po
 
 ## Version store
 
-- Global store at `~/.imp/versions/<version>/imp` — deliberately distinct from the per-project
-  `.imp/` derived-config dir. Docs framing: project `.imp/` is disposable, home `~/.imp/` is the
-  version cache.
+- Global store at `~/.imp/versions/<version>/imp` — everything imp stores lives under the per-user
+  `~/.imp/`, never inside a project (`adr/no-lockfile-exact-versions.md`).
 
 ## Download source
 

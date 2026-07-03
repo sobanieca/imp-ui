@@ -1,5 +1,5 @@
 {
-  "imports": { "mitt": "npm:mitt@3" },
+  "imports": { "mitt": "npm:mitt@3.0.1" },
   "fmt": { "lineWidth": 80, "semiColons": false, "singleQuote": true },
-  "lint": { "rules": { "exclude": ["no-unused-vars"] } }
+  "lint": { "rules": { "no-unused-vars": "off" } }
 }

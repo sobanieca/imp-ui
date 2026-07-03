@@ -1,6 +1,4 @@
 #!/usr/bin/env -S deno run -A
-import { prepareConfig } from './config.js'
-
 const HELP = `imp — buildless UI toolkit
 
 USAGE
@@ -23,17 +21,6 @@ function positional(args) {
   })
 }
 
-async function runDeno(subcommand, args) {
-  const child = new Deno.Command(Deno.execPath(), {
-    args: [subcommand, ...args],
-    stdin: 'inherit',
-    stdout: 'inherit',
-    stderr: 'inherit',
-  }).spawn()
-  const status = await child.status
-  Deno.exit(status.code)
-}
-
 const [command, ...rest] = Deno.args
 
 switch (command) {
@@ -46,13 +33,15 @@ switch (command) {
     break
   }
   case 'lint': {
-    const { configPath } = await prepareConfig(Deno.cwd())
-    await runDeno('lint', ['--config', configPath, ...rest])
+    const { lint } = await import('./lint.js')
+    Deno.exit(await lint({ root: Deno.cwd(), paths: positional(rest) }))
     break
   }
   case 'fmt': {
-    const { configPath } = await prepareConfig(Deno.cwd())
-    await runDeno('fmt', ['--config', configPath, ...rest])
+    const { fmt } = await import('./fmt.js')
+    const check = rest.includes('--check')
+    const args = rest.filter((arg) => arg !== '--check')
+    Deno.exit(await fmt({ root: Deno.cwd(), paths: positional(args), check }))
     break
   }
   default:

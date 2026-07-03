@@ -49,13 +49,27 @@ Deno.test('imp commands', async (t) => {
   await test('lint-clean', ['lint', 'app.js'], fixture('with-config'))
   await test('lint-inline-specifiers-allowed', ['lint', 'app.js'], fixture('basic'))
   await test('lint-capital-component', ['lint', 'components.js'], fixture('lint-bad'))
+  await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
+  await test('lint-unpinned-dependencies', ['lint', 'app.js'], fixture('lint-unpinned'))
+  await test('lint-ignore-directive', ['lint', 'app.js'], fixture('lint-ignore'))
   await test('fmt-check-clean', ['fmt', '--check', 'app.js'], fixture('basic'))
   await test('fmt-check-dirty', ['fmt', '--check', 'messy.js'], fixture('fmt-dirty'))
+  await test('fmt-check-multi-language', ['fmt', '--check'], fixture('fmt-multi'))
+  await test('fmt-ignore-directive', ['fmt', '--check', 'app.js'], fixture('fmt-ignore'))
 
-  await t.step('config-derived-deno-json', async () => {
-    await runImp(['lint', 'app.js'], fixture('with-config'))
-    const derived = await Deno.readTextFile(join(fixture('with-config'), '.imp', 'deno.json'))
-    await assertSnapshot('config-derived-deno-json', `${normalize(derived)}\n`)
+  await t.step('fmt-writes-file', async () => {
+    const dir = await Deno.makeTempDir()
+    const file = join(dir, 'messy.js')
+    await Deno.writeTextFile(file, 'const  a=1;\nconst   double=(x)=>x*2\nexport { a,double }\n')
+    const result = await runImp(['fmt', 'messy.js'], dir)
+    const formatted = await Deno.readTextFile(file)
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'fmt-writes-file',
+      `${
+        commandTranscript('imp fmt messy.js  (cwd: <tmp>)', result)
+      }\n--- formatted file ---\n${formatted}`,
+    )
   })
 })
 

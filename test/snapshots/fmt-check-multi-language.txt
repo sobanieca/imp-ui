@@ -1,0 +1,51 @@
+$ imp fmt --check  (cwd: test/fixtures/fmt-multi)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+
+from <root>/test/fixtures/fmt-multi/ci.yaml:
+4 | -      - run:   echo hi
+4 | +      - run: echo hi
+
+from <root>/test/fixtures/fmt-multi/data.json:
+1 | -{"name"  :"imp","tags":[1,2,
+1 | +{ "name": "imp", "tags": [1, 2, 3] }
+2 | -3]}
+2 | +
+3 | -
+
+from <root>/test/fixtures/fmt-multi/notes.md:
+1 | -#  Notes
+1 | +# Notes
+3 | -*  first item
+3 | +- first item
+4 | -*    second item
+4 | +- second item
+
+from <root>/test/fixtures/fmt-multi/page.html:
+1 | -<div  class="app"></div>
+1 | +<div class="app"></div>
+3 | -      const  greet=(name)=>{console.log("hi "+name);};
+3 | +const greet = (name) => {
+4 | -   greet( "imp" )
+4 | +  console.log('hi ' + name)
+5 | -</script>
+5 | +}
+6 | -
+6 | +greet('imp')
+7 | +</script>
+8 | +
+
+from <root>/test/fixtures/fmt-multi/style.css:
+1 | -.card{color:red;padding:4px   8px}
+1 | +.card {
+2 | -
+2 | +  color: red;
+3 | +  padding: 4px 8px;
+4 | +}
+5 | +
+
+error: Found 5 not formatted files in 5 files

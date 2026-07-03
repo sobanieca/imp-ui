@@ -22,3 +22,10 @@ Conventions:
 | [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates       |
 | [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback |
 | [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events     |
+
+## CLI
+
+| ADR                                                         | Decision                                        |
+| ----------------------------------------------------------- | ----------------------------------------------- |
+| [in-process-toolchain](in-process-toolchain.md)             | fmt and lint run in-process, no subprocess      |
+| [no-lockfile-exact-versions](no-lockfile-exact-versions.md) | No lock/generated files; exact versions in code |

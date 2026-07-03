@@ -2,13 +2,13 @@ GET /app.js
 status: 200
 content-type: text/javascript; charset=utf-8
 
-import mitt from '/@dep/npm%3Amitt%403'
-import { encodeBase64 } from '/@dep/jsr%3A%40std%2Fencoding%401%2Fbase64'
+import mitt from '/@dep/npm%3Amitt%403.0.1'
+import { encodeBase64 } from '/@dep/jsr%3A%40std%2Fencoding%401.0.10%2Fbase64'
 import { greeting } from './lib.js'
 import { div, mount } from 'imp'
 
 const emitter = mitt()
-const loadDayjs = () => import('/@dep/npm%3Adayjs%401')
+const loadDayjs = () => import('/@dep/npm%3Adayjs%401.11.13')
 
 emitter.on('ready', loadDayjs)
 

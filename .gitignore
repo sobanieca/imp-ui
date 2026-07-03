@@ -142,5 +142,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
-# imp generated Deno config (derived from imp.json)
-.imp/
+
+# vendored formatter wasm plugins (fetched by 'deno task vendor')
+src/cli/vendor/
+
+# compiled binary (deno task compile)
+/imp
