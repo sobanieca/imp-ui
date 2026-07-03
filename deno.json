@@ -2,18 +2,21 @@
   "tasks": {
     "imp": "deno run -A src/cli/main.js",
     "vendor": "deno run -A tools/vendor.js",
+    "update": "deno task update:deps && deno task update:dprint",
+    "update:deps": "deno outdated --update --latest",
+    "update:dprint": "deno run -A tools/update_dprint.js",
     "compile": "deno run -A tools/vendor.js && deno compile -A --include src/cli/vendor -o imp src/cli/main.js",
     "test": "deno run -A tools/vendor.js && deno test -A test/",
     "test:update": "deno run -A tools/vendor.js && deno test -A test/ -- --update"
   },
   "imports": {
-    "@dprint/formatter": "npm:@dprint/formatter@^0.5",
-    "@eslint/js": "npm:@eslint/js@^9",
-    "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11",
-    "@std/path": "jsr:@std/path@^1",
-    "esbuild": "npm:esbuild@^0.24",
-    "eslint": "npm:eslint@^9",
-    "globals": "npm:globals@^16"
+    "@dprint/formatter": "npm:@dprint/formatter@^0.5.1",
+    "@eslint/js": "npm:@eslint/js@^10.0.1",
+    "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@^0.11.1",
+    "@std/path": "jsr:@std/path@^1.1.6",
+    "esbuild": "npm:esbuild@^0.28.1",
+    "eslint": "npm:eslint@^10.6.0",
+    "globals": "npm:globals@^17.7.0"
   },
   "lint": {
     "exclude": ["prev/", "test/fixtures/"]
