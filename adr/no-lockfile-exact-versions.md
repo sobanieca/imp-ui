@@ -27,7 +27,11 @@ imp never writes files or directories into the user's project.
   on an explicit assumption: **the packages an imp app uses are well-behaved about their transitive
   dependencies** (compatible ranges, no breakage across the releases they admit). imp targets small
   browser apps built on small, self-contained packages, where that assumption holds; packages with
-  fragile transitive graphs are a poor fit for imp regardless.
+  fragile transitive graphs are a poor fit for imp regardless. It also rests on a second assumption:
+  **imp users minimize the number of dependencies they take on**, and because those dependencies are
+  mostly frontend packages, the exposure to major vulnerabilities in the resolved transitive graph
+  is expected to be low — low enough that the absence of a lock file to audit and pin the full graph
+  is an acceptable trade-off.
 - The only file imp recognizes in a project is the optional, user-authored `imp.json`.
 
 ## Consequences
@@ -39,3 +43,8 @@ imp never writes files or directories into the user's project.
   resolved-graph pinning can be added inside `imp.json` without introducing a second file.
 - The lint rule makes version discipline a default rather than a convention — code review sees the
   exact dependency change because the version lives in the import line.
+- This is not a closed door. A lock file may still be introduced later if the transitive-graph or
+  vulnerability-exposure assumptions above stop holding. A likely future direction is a separate imp
+  command that downloads a dependency from npm, bundles it on the fly, and stores the result in the
+  git repository — so that no `npm install` (or equivalent) is ever needed in CI, and bundling the
+  main app becomes much faster because dependencies are already resolved and vendored in-tree.

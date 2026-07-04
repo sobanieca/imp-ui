@@ -1,10 +1,20 @@
 # imp — CLI
 
 The `imp` CLI is an all-in-one toolkit for imp apps: a static dev server, a linter, and a formatter
-in a single buildless binary. imp is built for the AI era — every part of the workflow is designed
-to work hand in hand with AI coding agents, to the point where an app can be developed end to end
-without writing a line of code by hand. No bundling, no transforms, no install step for your
-dependencies — your files are served exactly as you wrote them.
+in a single binary. imp is built for the AI era — every part of the workflow is designed to work
+hand in hand with AI coding agents, to the point where an app can be developed end to end without
+writing a line of code by hand.
+
+**Development is buildless.** There is no build step, no bundling, no transforms, and no install
+step for your dependencies while you work — `imp start` serves your files exactly as you wrote them,
+resolving imports on the fly. You edit a file, the browser reloads, and what runs is the source you
+typed.
+
+**Production has a build.** When you are ready to ship, imp packs the app into a single
+self-contained, minified bundle you can upload to any static host or CDN — no imp runtime required on
+the server, just static files. Lazy-loaded modules are built too, split into separate chunks that
+load on demand instead of being inlined into the main bundle. The same resolution used in
+development is applied to the bundle, so what you tested is what ships.
 
 ## Installation
 
