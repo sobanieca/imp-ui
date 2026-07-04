@@ -30,7 +30,7 @@ committed bytes, not from tracking every transitive version.
 ### `imp install`
 
 Resolve, bundle (reusing the esbuild-wasm + `@deno/esbuild-plugin` engine in `src/cli/deps.js`),
-write the bundle into `@imp/deps/`, and add the pin to `imp.json` under `dependencies`.
+write the bundle into `dependencies/`, and add the pin to `imp.json` under `dependencies`.
 
 **Version syntax.** The version can be attached to the package name or passed as a separate
 argument — both forms are equivalent:
@@ -40,13 +40,21 @@ imp install mitt@3.0.1
 imp install mitt 3.0.1
 ```
 
-If the version is omitted, the latest is resolved and the exact version it resolved to is pinned.
-Because a re-install always re-resolves, this doubles as the update path — running `imp install`
-against an already-declared dependency with no version bumps it (and its transitive graph) to the
-latest patched releases:
+If the version is omitted but a package is named, the latest is resolved and the exact version it
+resolved to is pinned. Because a re-install always re-resolves, this doubles as the update path —
+running `imp install` against an already-declared dependency with no version bumps it (and its
+transitive graph) to the latest patched releases:
 
 ```
 imp install mitt
+```
+
+**No arguments at all** updates *everything*: `imp install` with no package name re-resolves every
+declared dependency in the root `imp.json` to the latest patched release and re-bundles it. This is
+the "update all" entry point — one command refreshes the entire dependency surface.
+
+```
+imp install
 ```
 
 **Registry scheme.** `npm:` is assumed when no scheme is given, so `imp install mitt` means
@@ -78,8 +86,8 @@ Delete the bundle and drop the `imp.json` entry.
 
 ## Storage and config
 
-- **`@imp/deps/`** in the project root holds the committed bundles, one self-contained ESM file per
-  top-level dependency (e.g. `@imp/deps/mitt.js`), plus any emitted assets (see below). Each file is
+- **`dependencies/`** in the project root holds the committed bundles, one self-contained ESM file
+  per top-level dependency (e.g. `dependencies/mitt.js`), plus any emitted assets (see below). Each file is
   already **bundled and minified** at install time — the reachable dependency code and nothing else,
   so the repository never carries unused package files or unminified bulk. `imp bundle` still
   tree-shakes these vendored bundles into the final app bundle for production, but the on-disk vendor
@@ -100,7 +108,7 @@ Delete the bundle and drop the `imp.json` entry.
 
 ## Import surface
 
-Users import a vendored dependency by its alias, resolved through the import map to its `@imp/deps/`
+Users import a vendored dependency by its alias, resolved through the import map to its `dependencies/`
 file — no scheme and no version in the import line:
 
 ```js
@@ -115,10 +123,10 @@ Some packages import non-JS assets — a `.wasm` binary, an `.svg`, an image, a 
 reference them via `new URL('./thing.wasm', import.meta.url)`. Bundling handles these through
 esbuild's loaders; the vendoring output is therefore not always a single `.js` file:
 
-- **Emit as sibling files (default).** Configure esbuild's `file` loader with `@imp/deps/` as the
-  output directory so each asset is written next to the bundle (e.g. `@imp/deps/mitt.js` +
-  `@imp/deps/<hash>.wasm`), and imports / `new URL(..., import.meta.url)` references are rewritten to
-  point at the emitted path. The dev server serves these from `@imp/deps/`; `imp bundle` carries them
+- **Emit as sibling files (default).** Configure esbuild's `file` loader with `dependencies/` as the
+  output directory so each asset is written next to the bundle (e.g. `dependencies/mitt.js` +
+  `dependencies/<hash>.wasm`), and imports / `new URL(..., import.meta.url)` references are rewritten to
+  point at the emitted path. The dev server serves these from `dependencies/`; `imp bundle` carries them
   into the production output. This keeps binary assets as real files rather than bloating the JS.
 - **Inline small assets.** Small assets can instead be inlined as `dataurl` (base64) so the bundle
   stays a single self-contained file; apply a size threshold to avoid ballooning committed text.
@@ -137,25 +145,25 @@ no matching `dependencies` entry is a lint error hinting `imp install`).
 
 ## Dev server and bundle integration
 
-- **`imp start`** serves `@imp/deps/` files directly through the import map instead of bundling on
+- **`imp start`** serves `dependencies/` files directly through the import map instead of bundling on
   the fly. On-the-fly `/@dep/` bundling is retained only as the internal mechanism `imp install`
   uses, so the dev server itself needs no network once dependencies are vendored.
-- **`imp bundle`** (`bundle-command.md`) tree-shakes the vendored `@imp/deps/` bundles into the
+- **`imp bundle`** (`bundle-command.md`) tree-shakes the vendored `dependencies/` bundles into the
   final app bundle and dedupes transitive packages shared across top-level dependencies, so the
   per-dependency duplication in the vendored tree is removed from the shipped output.
 
 ## ADR impact
 
 Implementing this **replaces `adr/no-lockfile-exact-versions.md`**: imp would now write one thing
-into the project — the user-requested, committed `@imp/deps/` vendor directory (source, not derived
+into the project — the user-requested, committed `dependencies/` vendor directory (source, not derived
 toolchain config). Record the new decision (vendored bundles as the reproducibility mechanism, still
 no lock file and no transitive-version tracking, since the committed bundle is the frozen state) and
 update the ADR table.
 
 ## Open questions
 
-- **Directory name.** `@imp/deps/` is clearly imp-branded but the `@` prefix can trip some globbing
-  and tooling; `imp.deps/` or `vendor/` are alternatives to weigh.
+- **Directory name.** `dependencies/` is plain and self-explanatory; `imp.deps/` or `vendor/` are
+  alternatives to weigh if the bare name collides with an existing project convention.
 - **Asset inlining threshold.** The byte size below which assets are inlined as data URLs rather than
   emitted as sibling files.
 - **Update policy.** Whether a version-less `imp install` always jumps to the latest version across
