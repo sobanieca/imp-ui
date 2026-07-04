@@ -1,10 +1,7 @@
 {
   "tasks": {
     "imp": "deno run -A src/cli/main.js",
-    "download:fmt-plugins": "deno run -A tools/download_fmt_plugins.js",
-    "update": "deno task update:deps && deno task update:dprint",
-    "update:deps": "deno outdated --update --latest",
-    "update:dprint": "deno run -A tools/update_dprint.js",
+    "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
     "compile": "deno run -A tools/download_fmt_plugins.js && deno compile -A --include src -o imp src/cli/main.js",
     "test": "deno task compile && deno test -A test/",
     "test:update": "deno task compile && deno test -A test/ -- --update"

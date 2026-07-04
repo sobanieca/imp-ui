@@ -42,7 +42,7 @@ binary at compile time. The imp binary never spawns a subprocess.
 - Lint rule names follow ESLint conventions, and new imp rules are written against ESLint's plugin
   API. Linting is slower than native-Rust linters — acceptable at the scale of buildless projects
   imp targets, with oxlint available as a future drop-in if that changes.
-- The wasm plugins add ~10 MB and ESLint ~10 MB to the binary. `deno task download:fmt-plugins` must run before
-  compiling or testing (wired into the `compile` and `test` tasks).
+- The wasm plugins add ~10 MB and ESLint ~10 MB to the binary. `deno run -A tools/download_fmt_plugins.js` must
+  run before compiling or testing (wired into the `compile` and `test` tasks).
 - User-supplied lint plugins (dynamic import of user JS inside a compiled binary) are not supported
   until verified separately.
