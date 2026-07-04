@@ -6,8 +6,8 @@
     "update:deps": "deno outdated --update --latest",
     "update:dprint": "deno run -A tools/update_dprint.js",
     "compile": "deno run -A tools/download_fmt_plugins.js && deno compile -A --include src -o imp src/cli/main.js",
-    "test": "deno run -A tools/download_fmt_plugins.js && deno test -A test/",
-    "test:update": "deno run -A tools/download_fmt_plugins.js && deno test -A test/ -- --update"
+    "test": "deno task compile && deno test -A test/",
+    "test:update": "deno task compile && deno test -A test/ -- --update"
   },
   "imports": {
     "@dprint/formatter": "npm:@dprint/formatter@^0.5.1",

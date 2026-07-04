@@ -5,7 +5,7 @@ import { injectImp } from '../src/cli/start.js'
 import { rewriteDependencySpecifiers } from '../src/cli/deps.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
-const MAIN = join(ROOT, 'src', 'cli', 'main.js')
+const IMP = join(ROOT, Deno.build.os === 'windows' ? 'imp.exe' : 'imp')
 const fixture = (name) => join(ROOT, 'test', 'fixtures', name)
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[a-zA-Z]`, 'g')
@@ -21,8 +21,8 @@ const commandTranscript = (display, { code, stdout, stderr }) =>
   }\n`
 
 async function runImp(args, cwd = ROOT) {
-  const { code, stdout, stderr } = await new Deno.Command(Deno.execPath(), {
-    args: ['run', '-A', MAIN, ...args],
+  const { code, stdout, stderr } = await new Deno.Command(IMP, {
+    args,
     cwd,
     stdout: 'piped',
     stderr: 'piped',
@@ -78,8 +78,8 @@ Deno.test('imp commands', async (t) => {
 })
 
 async function startServer(cwd) {
-  const child = new Deno.Command(Deno.execPath(), {
-    args: ['run', '-A', MAIN, 'start', 'index.html', '--port', '0'],
+  const child = new Deno.Command(IMP, {
+    args: ['start', 'index.html', '--port', '0'],
     cwd,
     stdin: 'null',
     stdout: 'piped',
