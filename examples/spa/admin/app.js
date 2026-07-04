@@ -1,4 +1,4 @@
-import { button, div, mount, span } from '../../../src/imp.js'
+import { button, div, mount, span } from 'imp'
 import { activity, roles, stats, users } from './data.js'
 import {
   activityFeed,

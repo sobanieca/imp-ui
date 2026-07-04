@@ -18,7 +18,7 @@ import {
   thead,
   tr,
   ul,
-} from '../../../src/imp.js'
+} from 'imp'
 
 export function statCard({ label: name, value, delta, trend }) {
   return div(

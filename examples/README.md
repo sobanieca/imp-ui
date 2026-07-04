@@ -1,7 +1,7 @@
 # examples
 
-Live, buildless examples for `src/render.js`. They import the library directly from `src/imp.js`
-(via a relative path) — no bundler, no install step. Two groups sit side by side:
+Live, buildless examples — no bundler, no install step. The SPA examples import the library from the
+bare `imp` specifier, which `imp start` resolves for you. Two groups sit side by side:
 
 - `spa/` — client-rendered single-page apps. The browser builds all DOM; there is no server beyond a
   static file host.
@@ -9,18 +9,15 @@ Live, buildless examples for `src/render.js`. They import the library directly f
 
 ## Running the SPA examples
 
-ES modules need to be served over HTTP (file:// imports are blocked by the browser). The SPA
-examples import the library with a relative path that climbs to `src/`, so the server must be rooted
-at the **repo root** — not the `examples/` folder — otherwise `src/` is out of reach and the page
-loads blank. From the repo root:
+Serve this folder with `imp start` and open the index. From the `examples/` folder:
 
 ```sh
-deno run --allow-net --allow-read jsr:@std/http/file-server .
-# or any static server, e.g.
-python3 -m http.server 8000
+imp start index.html
 ```
 
-Then open <http://localhost:8000/examples/>.
+Then open <http://localhost:4507/>. `imp start` serves the `examples/` folder, injects the import
+map that points `imp` at the library, and gives you live reload plus console/network telemetry in
+the terminal.
 
 The `ssr/` example runs its own server instead — see `ssr/README.md`.
 

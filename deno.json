@@ -5,7 +5,7 @@
     "update": "deno task update:deps && deno task update:dprint",
     "update:deps": "deno outdated --update --latest",
     "update:dprint": "deno run -A tools/update_dprint.js",
-    "compile": "deno run -A tools/download_fmt_plugins.js && deno compile -A --include src/cli/vendor -o imp src/cli/main.js",
+    "compile": "deno run -A tools/download_fmt_plugins.js && deno compile -A --include src -o imp src/cli/main.js",
     "test": "deno run -A tools/download_fmt_plugins.js && deno test -A test/",
     "test:update": "deno run -A tools/download_fmt_plugins.js && deno test -A test/ -- --update"
   },

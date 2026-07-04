@@ -14,7 +14,7 @@ import {
   span,
   strong,
   ul,
-} from '../../../src/imp.js'
+} from 'imp'
 
 function demo(title, source, node) {
   return div(
