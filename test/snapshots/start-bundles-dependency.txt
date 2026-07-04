@@ -1,6 +1,0 @@
-GET /@dep/npm%3Amitt%403.0.1
-status: 200
-content-type: text/javascript; charset=utf-8
-cache-control: no-store
-
-[bundled module: default export is function, emit('ping') delivered 'pong']

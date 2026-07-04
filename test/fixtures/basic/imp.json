@@ -1,3 +1,5 @@
 {
-  "imports": { "mitt": "npm:mitt@3.0.1" }
+  "dependencies": {
+    "mitt": "npm:mitt@3.0.1"
+  }
 }

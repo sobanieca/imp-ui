@@ -1,0 +1,27 @@
+$ imp install  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+installed base64 (jsr:@std/encoding@<latest>/base64)
+  dependencies/base64/base64.js (<size>)
+  bundled packages:
+    @std/encoding@<latest>
+installed mitt (npm:mitt@<latest>)
+  dependencies/mitt/mitt.js (<size>)
+  bundled packages:
+    mitt@<latest>
+
+--- stderr ---
+(empty)
+
+--- files ---
+dependencies/base64/base64.js
+dependencies/mitt/mitt.js
+
+--- imp.json ---
+{
+  "dependencies": {
+    "base64": "jsr:@std/encoding@<latest>/base64",
+    "mitt": "npm:mitt@<latest>"
+  }
+}

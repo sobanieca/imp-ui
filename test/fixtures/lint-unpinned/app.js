@@ -1,9 +1,11 @@
-import mitt from 'npm:mitt@3'
-import { encodeBase64 } from 'jsr:@std/encoding'
-const loadLodash = () => import('npm:lodash-es@^4.17')
+import mitt from 'npm:mitt@3.0.1'
+import dayjs from 'dayjs'
+import confetti from 'canvas-confetti'
+const loadBase64 = () => import('jsr:@std/encoding@1.0.10/base64')
 
 export const wire = () => {
   mitt()
-  encodeBase64('imp')
-  loadLodash()
+  dayjs()
+  confetti()
+  loadBase64()
 }

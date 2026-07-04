@@ -1,0 +1,24 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-unpinned)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/exact-dependency-versions]: dependency 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) — the vendored bundle in dependencies/ is built from this pin (e.g. 'npm:dayjs@1.0.0'); run 'imp install' to re-resolve and re-pin it
+ --> imp.json:1:1
+
+error[imp/exact-dependency-versions]: dependency 'utils': 'lodash-es' must be an 'npm:' or 'jsr:' specifier (e.g. 'npm:mitt@3.0.1') — run 'imp install' to declare dependencies
+ --> imp.json:1:1
+
+error[imp/exact-dependency-versions]: 'npm:mitt@3.0.1' is an inline dependency specifier — dependencies are vendored: run 'imp install mitt@3.0.1' and import 'mitt' instead
+ --> app.js:1:18
+
+error[imp/exact-dependency-versions]: 'canvas-confetti' is not a declared dependency — run 'imp install canvas-confetti' to vendor it and add it to 'dependencies' in imp.json
+ --> app.js:3:22
+
+error[imp/exact-dependency-versions]: 'jsr:@std/encoding@1.0.10/base64' is an inline dependency specifier — dependencies are vendored: run 'imp install jsr:@std/encoding@1.0.10/base64' and import 'base64' instead
+ --> app.js:4:33
+
+Found 5 problems
+Checked 1 file

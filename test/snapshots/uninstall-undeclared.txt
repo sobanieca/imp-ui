@@ -1,0 +1,8 @@
+$ imp uninstall lodash  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: 'lodash' is not a declared dependency in imp.json

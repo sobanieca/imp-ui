@@ -1,0 +1,3 @@
+{
+  "imports": { "mitt": "npm:mitt@3.0.1" }
+}

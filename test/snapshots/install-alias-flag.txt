@@ -1,0 +1,23 @@
+$ imp install mitt 3.0.1 --alias bus  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+installed bus (npm:mitt@3.0.1)
+  dependencies/bus/bus.js (323 B)
+  bundled packages:
+    mitt@3.0.1
+
+--- stderr ---
+(empty)
+
+--- files ---
+dependencies/bus/bus.js
+dependencies/mitt/mitt.js
+
+--- imp.json ---
+{
+  "dependencies": {
+    "bus": "npm:mitt@3.0.1",
+    "mitt": "npm:mitt@3.0.1"
+  }
+}

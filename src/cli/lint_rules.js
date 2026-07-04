@@ -1,12 +1,4 @@
-const DEPENDENCY_SPECIFIER = /^(npm|jsr):/
-
-const EXACT_VERSION = /^\d+\.\d+\.\d+([-+][\w.-]+)?$/
-
-const parseDependency = (specifier) => {
-  const rest = specifier.replace(DEPENDENCY_SPECIFIER, '')
-  const match = rest.match(/^(@[^/@]+\/[^/@]+|[^/@]+)(?:@([^/]+))?(?:\/.*)?$/)
-  return { name: match?.[1], version: match?.[2] }
-}
+import { defaultAlias, DEPENDENCY_SCHEME, EXACT_VERSION, parseSpecifier } from './specifiers.js'
 
 const exampleVersion = (version) => {
   const digits = version?.match(/\d+(\.\d+){0,2}/)?.[0]
@@ -16,14 +8,21 @@ const exampleVersion = (version) => {
   return parts.join('.')
 }
 
-export const dependencyVersionProblem = (specifier) => {
-  if (!DEPENDENCY_SPECIFIER.test(specifier)) return null
-  const { name, version } = parseDependency(specifier)
-  if (version && EXACT_VERSION.test(version)) return null
-  const example = `${specifier.split(':')[0]}:${name ?? 'package'}@${exampleVersion(version)}`
-  const reason = version ? `'${version}' is not an exact version` : 'no version is given'
-  return `'${specifier}' must pin an exact version (${reason}) — imp has no lock file, so exact versions (e.g. '${example}') keep dependency resolution reproducible`
+export const dependencyPinProblem = (specifier) => {
+  const parsed = parseSpecifier(specifier)
+  if (!parsed?.scheme) {
+    return `'${specifier}' must be an 'npm:' or 'jsr:' specifier (e.g. 'npm:mitt@3.0.1') — run 'imp install' to declare dependencies`
+  }
+  if (parsed.version && EXACT_VERSION.test(parsed.version)) return null
+  const example = `${parsed.scheme}:${parsed.name}@${exampleVersion(parsed.version)}`
+  const reason = parsed.version
+    ? `'${parsed.version}' is not an exact version`
+    : 'no version is given'
+  return `'${specifier}' must pin an exact version (${reason}) — the vendored bundle in dependencies/ is built from this pin (e.g. '${example}'); run 'imp install' to re-resolve and re-pin it`
 }
+
+const isRelativeOrUrl = (specifier) =>
+  specifier.startsWith('.') || specifier.startsWith('/') || /^[a-zA-Z][\w+.-]*:/.test(specifier)
 
 export default {
   rules: {
@@ -57,10 +56,27 @@ export default {
     },
     'exact-dependency-versions': {
       create(context) {
+        const aliases = new Set(context.settings?.imp?.dependencyAliases ?? [])
         const check = (node) => {
           if (!node || typeof node.value !== 'string') return
-          const problem = dependencyVersionProblem(node.value)
-          if (problem) context.report({ node, message: problem })
+          const specifier = node.value
+          if (DEPENDENCY_SCHEME.test(specifier)) {
+            const parsed = parseSpecifier(specifier)
+            const installArg = specifier.replace(/^npm:/, '')
+            const alias = parsed ? defaultAlias(parsed) : 'the-alias'
+            context.report({
+              node,
+              message:
+                `'${specifier}' is an inline dependency specifier — dependencies are vendored: run 'imp install ${installArg}' and import '${alias}' instead`,
+            })
+            return
+          }
+          if (specifier === 'imp' || isRelativeOrUrl(specifier) || aliases.has(specifier)) return
+          context.report({
+            node,
+            message:
+              `'${specifier}' is not a declared dependency — run 'imp install ${specifier}' to vendor it and add it to 'dependencies' in imp.json`,
+          })
         }
         return {
           ImportDeclaration(node) {

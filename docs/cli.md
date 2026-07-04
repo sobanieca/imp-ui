@@ -1,18 +1,19 @@
 # imp — CLI
 
-The `imp` CLI is an all-in-one toolkit for imp apps: a static dev server, a linter, and a formatter
-in a single binary. imp is built for the AI era — every part of the workflow is designed to work
-hand in hand with AI coding agents, to the point where an app can be developed end to end without
-writing a line of code by hand.
+The `imp` CLI is an all-in-one toolkit for imp apps: a static dev server, a dependency manager, a
+linter, and a formatter in a single binary. imp is built for the AI era — every part of the workflow
+is designed to work hand in hand with AI coding agents, to the point where an app can be developed
+end to end without writing a line of code by hand.
 
-**Development is buildless.** There is no build step, no bundling, no transforms, and no install
-step for your dependencies while you work — `imp start` serves your files exactly as you wrote them,
-resolving imports on the fly. You edit a file, the browser reloads, and what runs is the source you
-typed.
+**Development is buildless.** There is no build step, no bundling, and no transforms while you work
+— `imp start` serves your files exactly as you wrote them. You edit a file, the browser reloads, and
+what runs is the source you typed. Dependencies are added once with `imp install` and live inside
+your repository from then on (see **[Managing dependencies](dependencies.md)**), so serving needs no
+network and no package installation — a fresh clone is the whole, runnable app.
 
 **Production has a build.** When you are ready to ship, imp packs the app into a single
-self-contained, minified bundle you can upload to any static host or CDN — no imp runtime required on
-the server, just static files. Lazy-loaded modules are built too, split into separate chunks that
+self-contained, minified bundle you can upload to any static host or CDN — no imp runtime required
+on the server, just static files. Lazy-loaded modules are built too, split into separate chunks that
 load on demand instead of being inlined into the main bundle. The same resolution used in
 development is applied to the bundle, so what you tested is what ships.
 
@@ -25,6 +26,9 @@ development is applied to the bundle, so what you tested is what ships.
 
 ```
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
+imp install [package[@version]]       vendor a dependency into dependencies/
+                                      (no version: latest · no package: update all)
+imp uninstall <package>               remove a vendored dependency
 imp lint  [...paths]                  lint with imp rules
 imp fmt   [...paths]                  format source
 imp help                              show usage
@@ -40,25 +44,29 @@ works without it.
 
 ```json
 {
-  "imports": { "mitt": "npm:mitt@3.0.1" },
+  "dependencies": { "mitt": "npm:mitt@3.0.1" },
   "fmt": { "lineWidth": 100 }
 }
 ```
 
-- **`imports`** — bare-specifier aliases for dependencies, so you can write
-  `import mitt from 'mitt'` instead of the full `npm:`/`jsr:` specifier. Each alias is exposed to
-  the browser through the injected import map and resolved through `/@dep/` (see below).
+- **`dependencies`** — the dependencies vendored into your project, one entry per package mapping a
+  bare import alias to the exact version installed. Written and updated by `imp install` /
+  `imp uninstall`; you normally never edit it by hand. Each alias is exposed to the browser through
+  the injected import map, so you write `import mitt from 'mitt'`. See
+  **[Managing dependencies](dependencies.md)**.
 - **`fmt`** — formatting options for `imp fmt` (defaults listed under `imp fmt` below).
 - **`lint`** — extra lint configuration (`rules`, `exclude`); the imp rule set is always applied on
   top.
 
-That is the whole footprint: **imp never creates files or directories in your project** — no lock
-file, no cache folder, no generated config. Your repository contains your code and, at most, one
-`imp.json`. Downloaded dependencies are cached per-user, outside the project.
+That is the whole footprint: your repository contains your code, at most one `imp.json`, and the
+`dependencies/` folder holding your vendored dependencies — all of it source you commit. imp writes
+no lock file, no cache folder, and no generated config into your project; registry downloads are
+cached per-user, outside the project.
 
-Instead of a lock file, reproducibility comes from your source: dependency specifiers pin exact
-versions (`npm:mitt@3.0.1`, never `npm:mitt@3`), and `imp lint` enforces this — see the
-`exact-dependency-versions` rule under `imp lint`.
+Instead of a lock file, reproducibility comes from what is committed: `imp.json` pins exact versions
+(`npm:mitt@3.0.1`, never `npm:mitt@3`) and the committed bundle in `dependencies/` is the frozen
+result of resolving that pin. `imp lint` enforces the model — see the `exact-dependency-versions`
+rule under `imp lint`.
 
 ## `imp start`
 
@@ -100,62 +108,37 @@ redirects to its trailing-slash URL and serves the `index.html` inside it; paths
 directory are rejected.
 
 Internal endpoints (reserved, not part of your app): `/@imp/events` (reload stream), `/@imp/log`
-(telemetry sink), `/@imp/sw.js` (the service worker), `/@imp/*` (library source), and `/@dep/*`
-(bundled third-party dependencies, see below).
+(telemetry sink), `/@imp/sw.js` (the service worker), and `/@imp/*` (library source).
 
-### npm and jsr dependencies
+### Dependencies
 
-Import any npm or jsr package straight from app code — no install step, no manual import map. Always
-pin the exact version (there is no lock file — the version in your code _is_ the pin):
+Vendored dependencies need nothing special from the dev server: the injected import map points each
+declared alias at its bundle inside your project's `dependencies/` folder, which is served like any
+other static file — no network, no on-the-fly resolution:
 
 ```js
-import mitt from 'npm:mitt@3.0.1'
-import { encodeBase64 } from 'jsr:@std/encoding@1.0.10/base64'
+import mitt from 'mitt'
 ```
 
-When the dev server serves a `.js`/`.mjs` file it rewrites these `npm:`/`jsr:` specifiers — in
-static imports, re-exports, and dynamic `import()` calls — to `/@dep/…` URLs. The first request for
-each `/@dep/…` URL resolves the package (honouring `imp.json`) and transpiles it to a single
-browser-ready ES module; results are cached in memory for the life of the process. Only
-`npm:`/`jsr:` specifiers are touched — every other line is served byte-for-byte, and bare `imp`
-still resolves via the import map. A package that fails to resolve returns a module that throws,
-surfacing the error in both the browser console and the terminal.
+If a declared dependency has no vendored bundle yet (say, right after editing `imp.json` by hand),
+`imp start` prints a warning suggesting `imp install`.
 
-Bare aliases declared under `imports` in `imp.json` work the same way: they are added to the
-injected import map pointing at their `/@dep/…` URL, so `import mitt from 'mitt'` resolves without
-the full specifier.
+## `imp install` and `imp uninstall`
 
-### Why exact versions?
+```
+imp install [package[@version]] [version] [--alias name]
+imp uninstall <package>
+```
 
-imp has no lock file, so your source code is the only record of what your app depends on. An exact
-version makes that record reproducible: every machine and every CI run resolves the same package
-from the same import line, and a dependency change is visible in code review because the version
-lives in the import statement.
+`imp install` adds a dependency to your project: it resolves the package (npm by default, `jsr:` for
+the jsr registry), bundles it into a single minified browser-ready module, writes the bundle into
+the committed `dependencies/` folder, and pins the exact version in `imp.json`. Without a version it
+resolves the latest release — which also makes re-running it the update path — and with no arguments
+at all it updates every declared dependency. `imp uninstall` removes a dependency's folder and its
+pin. Your code imports dependencies by their bare alias (`import mitt from 'mitt'`).
 
-One thing an exact pin cannot freeze is the package's _own_ dependencies — package authors declare
-those as ranges, and they are resolved when the package is fetched. **imp assumes the packages you
-use are well-behaved about their transitive dependencies**: the ranges they declare stay compatible,
-so resolving them at a different time does not change behavior. In practice this means preferring
-small, self-contained packages — which are also the packages that work best in the browser. If a
-library has a history of breaking through its transitive dependencies, it is a poor fit for imp.
-
-More broadly, imp assumes you will lean on dependencies as little as possible. In the AI era, an
-agent can write and maintain a small, purpose-built module for your app faster than you can vet a
-package — so before reaching for npm, consider having your agent write the code instead. Fewer
-dependencies mean fewer transitive surprises, less code shipped to the browser, and a codebase your
-agent understands completely.
-
-### Shared dependencies and singletons
-
-> **One copy per top-level package.** Each top-level specifier is bundled independently, with its
-> transitive dependencies inlined into the bundle. Two packages that share a dependency therefore
-> each get their own copy of it. For stateless utility libraries this is harmless. But libraries
-> built around the **singleton pattern** — a single shared instance that multiple packages are
-> supposed to see — can break in subtle ways: a framework and its plugin each bundle their own copy
-> of the "shared" core, state written through one copy is invisible through the other, and
-> `instanceof` checks fail across copies (e.g. React and a React component library). If you need a
-> shared library, import it once yourself at the top level and pass instances to the code that needs
-> them, or choose packages that don't rely on shared module state.
+See **[Managing dependencies](dependencies.md)** for the full story: version pinning, updating,
+aliases, jsr packages and subpaths, what gets printed, and why the vendored folder is committed.
 
 ## `imp lint`
 
@@ -165,9 +148,9 @@ imp lint [...paths]
 
 Lints the given paths (default: the whole project) with a standard recommended rule set plus imp's
 own rules, which are always applied: `no-capital-component` (imp components are lowercase functions)
-and `exact-dependency-versions` (every `npm:`/`jsr:` specifier must pin an exact version — see _Why
-exact versions?_ above). `.html` files are covered too: inline `<script>` blocks are linted like any
-other code.
+and `exact-dependency-versions` (dependency pins in `imp.json` must be exact, and imports must go
+through declared, vendored dependencies — see **[Managing dependencies](dependencies.md)**). `.html`
+files are covered too: inline `<script>` blocks are linted like any other code.
 
 Per-rule severities and excluded paths are configured under `lint` in `imp.json`, and
 `imp-lint-ignore` comments suppress findings in code.

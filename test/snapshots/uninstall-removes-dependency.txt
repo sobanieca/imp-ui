@@ -1,0 +1,20 @@
+$ imp uninstall bus  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+uninstalled bus (npm:mitt@3.0.1)
+
+--- stderr ---
+(empty)
+
+--- files ---
+dependencies/base64/base64.js
+dependencies/mitt/mitt.js
+
+--- imp.json ---
+{
+  "dependencies": {
+    "base64": "jsr:@std/encoding@1.0.10/base64",
+    "mitt": "npm:mitt@3.0.1"
+  }
+}

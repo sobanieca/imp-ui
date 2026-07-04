@@ -1,0 +1,8 @@
+$ imp install mitt@^3  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: '^3' is not an exact version — give an exact version (e.g. 1.2.3) or omit it to resolve the latest

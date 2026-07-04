@@ -1,0 +1,5 @@
+GET /dependencies/mitt/mitt.js
+status: 200
+content-type: text/javascript; charset=utf-8
+
+[vendored module: default export is function, emit('ping') delivered 'pong']

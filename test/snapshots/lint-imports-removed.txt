@@ -1,0 +1,8 @@
+$ imp lint app.js  (cwd: test/fixtures/legacy-imports)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: invalid imp.json — 'imports' has been replaced by 'dependencies'; run 'imp install <package>' to declare each dependency

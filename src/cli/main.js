@@ -4,6 +4,9 @@ const HELP = `imp — buildless UI toolkit
 USAGE
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
                                         live reload, console + network → terminal
+  imp install [package[@version]]       vendor a dependency into dependencies/
+                                        (no version: latest · no package: update all)
+  imp uninstall <package>               remove a vendored dependency
   imp lint [...paths]                   lint with imp rules
   imp fmt [...paths]                    format source
 `
@@ -31,6 +34,22 @@ try {
         entry: positional(rest)[0] ?? 'index.html',
         port: Number(flag(rest, 'port', 4507)),
       })
+      break
+    }
+    case 'install': {
+      const { install } = await import('./install.js')
+      const positionals = positional(rest)
+      await install({
+        root: Deno.cwd(),
+        packageArg: positionals[0] ?? null,
+        versionArg: positionals[1] ?? null,
+        aliasArg: flag(rest, 'alias', null),
+      })
+      break
+    }
+    case 'uninstall': {
+      const { uninstall } = await import('./install.js')
+      await uninstall({ root: Deno.cwd(), alias: positional(rest)[0] ?? null })
       break
     }
     case 'lint': {

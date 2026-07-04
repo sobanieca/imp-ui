@@ -48,24 +48,45 @@ error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp c
 
 ### `imp/exact-dependency-versions`
 
-Every `npm:`/`jsr:` specifier must pin an exact version (`npm:mitt@3.0.1` — never `npm:mitt@3`,
-`npm:mitt@^3.0.1`, or a bare `npm:mitt`). imp has no lock file: the versions written in your code
-are what make dependency resolution reproducible across machines, so ranges and missing versions are
-reported.
+Dependencies are vendored: declared under `dependencies` in `imp.json` and bundled into your
+project's `dependencies/` folder by `imp install` (see
+**[Managing dependencies](dependencies.md)**). This rule enforces that model in all three places a
+dependency can appear:
 
-The rule checks every place a dependency can be declared: static imports, re-exports, dynamic
-`import()` calls with a literal specifier, and the `imports` aliases in `imp.json`. Inline
-`npm:`/`jsr:` specifiers are how imp apps declare dependencies — no rule forbids them, only the
-version pinning applies.
+- **Pins in `imp.json` must be exact.** Every `dependencies` entry must be an `npm:`/`jsr:`
+  specifier with an exact version (`npm:mitt@3.0.1` — never `npm:mitt@3`, `npm:mitt@^3.0.1`, or a
+  bare `npm:mitt`). There is no lock file: the exact pin plus the committed bundle are what make
+  resolution reproducible.
 
-```js
-import mitt from 'npm:mitt@3'
-```
+  ```
+  error[imp/exact-dependency-versions]: dependency 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) — the vendored bundle in dependencies/ is built from this pin (e.g. 'npm:dayjs@1.0.0'); run 'imp install' to re-resolve and re-pin it
+   --> imp.json:1:1
+  ```
 
-```
-error[imp/exact-dependency-versions]: 'npm:mitt@3' must pin an exact version ('3' is not an exact version) — imp has no lock file, so exact versions (e.g. 'npm:mitt@3.0.0') keep dependency resolution reproducible
- --> src/app.js:1:18
-```
+- **No inline `npm:`/`jsr:` specifiers in code.** Dependencies are installed, not imported by URL:
+
+  ```js
+  import mitt from 'npm:mitt@3.0.1'
+  ```
+
+  ```
+  error[imp/exact-dependency-versions]: 'npm:mitt@3.0.1' is an inline dependency specifier — dependencies are vendored: run 'imp install mitt@3.0.1' and import 'mitt' instead
+   --> src/app.js:1:18
+  ```
+
+- **Bare imports must be declared.** A bare specifier (anything that is not relative, absolute, a
+  URL, or `imp` itself) must match a declared dependency alias:
+
+  ```js
+  import confetti from 'canvas-confetti'
+  ```
+
+  ```
+  error[imp/exact-dependency-versions]: 'canvas-confetti' is not a declared dependency — run 'imp install canvas-confetti' to vendor it and add it to 'dependencies' in imp.json
+   --> src/app.js:1:22
+  ```
+
+The rule checks static imports, re-exports, and dynamic `import()` calls with a literal specifier.
 
 ## Configuration
 

@@ -1,8 +1,8 @@
-import { fromFileUrl, join } from '@std/path'
+import { fromFileUrl, join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { CLIENT_JS } from '../src/cli/client.js'
 import { injectImp } from '../src/cli/start.js'
-import { rewriteDependencySpecifiers } from '../src/cli/deps.js'
+import { defaultAlias, parseSpecifier } from '../src/cli/specifiers.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
 const IMP = join(ROOT, Deno.build.os === 'windows' ? 'imp.exe' : 'imp')
@@ -47,10 +47,11 @@ Deno.test('imp commands', async (t) => {
   await test('help-command', ['help'])
   await test('unknown-command', ['bogus'])
   await test('lint-clean', ['lint', 'app.js'], fixture('with-config'))
-  await test('lint-inline-specifiers-allowed', ['lint', 'app.js'], fixture('basic'))
+  await test('lint-vendored-imports', ['lint', 'app.js'], fixture('basic'))
   await test('lint-capital-component', ['lint', 'components.js'], fixture('lint-bad'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
-  await test('lint-unpinned-dependencies', ['lint', 'app.js'], fixture('lint-unpinned'))
+  await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))
+  await test('lint-imports-removed', ['lint', 'app.js'], fixture('legacy-imports'))
   await test('lint-ignore-directive', ['lint', 'app.js'], fixture('lint-ignore'))
   await test('lint-path-not-found', ['lint', 'missing.js'], fixture('basic'))
   await test('lint-invalid-imp-json', ['lint', 'app.js'], fixture('broken-config'))
@@ -75,6 +76,90 @@ Deno.test('imp commands', async (t) => {
       }\n--- formatted file ---\n${formatted}`,
     )
   })
+})
+
+Deno.test('imp install and uninstall', async (t) => {
+  const dir = await Deno.makeTempDir()
+
+  const withoutDownloadNoise = (result) => ({
+    ...result,
+    stderr: result.stderr
+      .split('\n')
+      .filter((line) => !/^Download(ing)? /.test(line))
+      .join('\n'),
+  })
+
+  const maskLatest = (text) =>
+    text
+      .replace(/@\d+\.\d+\.\d+([-+][\w.-]+)?/g, '@<latest>')
+      .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+
+  const projectState = async () => {
+    const files = []
+    const walk = async (directory, prefix) => {
+      for await (const entry of Deno.readDir(directory)) {
+        if (entry.isDirectory) await walk(join(directory, entry.name), `${prefix}${entry.name}/`)
+        else files.push(prefix + entry.name)
+      }
+    }
+    await walk(join(dir, 'dependencies'), 'dependencies/').catch(() => {})
+    files.sort()
+    const impJson = await Deno.readTextFile(join(dir, 'imp.json')).catch(() => '(missing)')
+    return `\n${section('files', files.join('\n'))}\n\n${section('imp.json', impJson)}\n`
+  }
+
+  const test = async (name, args, { state = true, mask = (text) => text } = {}) => {
+    await t.step(name, async () => {
+      const result = withoutDownloadNoise(await runImp(args, dir))
+      const transcript = commandTranscript(`imp ${args.join(' ')}  (cwd: <tmp>)`, result)
+      const suffix = state ? await projectState() : ''
+      await assertSnapshot(name, mask(transcript + suffix))
+    })
+  }
+
+  try {
+    await t.step('install-nothing-declared', async () => {
+      const empty = await Deno.makeTempDir()
+      const result = withoutDownloadNoise(await runImp(['install'], empty))
+      await Deno.remove(empty, { recursive: true })
+      await assertSnapshot(
+        'install-nothing-declared',
+        commandTranscript('imp install  (cwd: <tmp>)', result),
+      )
+    })
+
+    await test('install-pinned-npm', ['install', 'mitt@3.0.1'])
+    await test('install-alias-flag', ['install', 'mitt', '3.0.1', '--alias', 'bus'])
+
+    await t.step('install-jsr-subpath', async () => {
+      const result = withoutDownloadNoise(
+        await runImp(['install', 'jsr:@std/encoding@1.0.10/base64'], dir),
+      )
+      const module = await import(toFileUrl(join(dir, 'dependencies', 'base64', 'base64.js')).href)
+      const usage = `[vendored module: encodeBase64('imp') returned '${
+        module.encodeBase64('imp')
+      }']`
+      await assertSnapshot(
+        'install-jsr-subpath',
+        `${
+          commandTranscript(
+            'imp install jsr:@std/encoding@1.0.10/base64  (cwd: <tmp>)',
+            result,
+          )
+        }\n${usage}\n${await projectState()}`,
+      )
+    })
+
+    await test('uninstall-removes-dependency', ['uninstall', 'bus'])
+    await test('install-update-all', ['install'], { mask: maskLatest })
+    await test('install-unknown-package', ['install', 'imp-test-no-such-package-404'], {
+      state: false,
+    })
+    await test('install-range-version-rejected', ['install', 'mitt@^3'], { state: false })
+    await test('uninstall-undeclared', ['uninstall', 'lodash'], { state: false })
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
 })
 
 async function startServer(cwd) {
@@ -157,10 +242,10 @@ Deno.test('imp start', async (t) => {
     await get('start-injected-html', '/', {
       maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
     })
-    await get('start-rewrites-dependency-specifiers', '/app.js')
+    await get('start-serves-module-verbatim', '/app.js')
 
-    await t.step('start-bundles-dependency', async () => {
-      const path = '/@dep/npm%3Amitt%403.0.1'
+    await t.step('start-vendored-dependency', async () => {
+      const path = '/dependencies/mitt/mitt.js'
       const response = await fetch(`http://127.0.0.1:${port}${path}`)
       const code = await response.text()
       const module = await import(`data:text/javascript,${encodeURIComponent(code)}`)
@@ -170,32 +255,10 @@ Deno.test('imp start', async (t) => {
         received = value
       })
       emitter.emit('ping', 'pong')
-      const summary = `[bundled module: default export is ${typeof module
+      const summary = `[vendored module: default export is ${typeof module
         .default}, emit('ping') delivered '${received}']`
       await assertSnapshot(
-        'start-bundles-dependency',
-        responseTranscript(path, response, summary),
-      )
-    })
-
-    await t.step('start-bundles-dependency-tree', async () => {
-      const path = '/@dep/npm%3Amicromark%404.0.2'
-      const response = await fetch(`http://127.0.0.1:${port}${path}`)
-      const code = await response.text()
-      const documentStubForBrowserBundle = {
-        createElement: () => ({ innerHTML: '', textContent: '' }),
-      }
-      globalThis.document ??= documentStubForBrowserBundle
-      let module
-      try {
-        module = await import(`data:text/javascript,${encodeURIComponent(code)}`)
-      } finally {
-        if (globalThis.document === documentStubForBrowserBundle) delete globalThis.document
-      }
-      const html = module.micromark('# Hello, *imp*!')
-      const summary = `[bundled module: micromark('# Hello, *imp*!') returned '${html}']`
-      await assertSnapshot(
-        'start-bundles-dependency-tree',
+        'start-vendored-dependency',
         responseTranscript(path, response, summary),
       )
     })
@@ -222,6 +285,16 @@ Deno.test('imp start', async (t) => {
   }
 })
 
+Deno.test('imp start warns about missing vendored dependency', async () => {
+  const server = await startServer(fixture('with-config'))
+  try {
+    const banner = normalize(server.banner).replaceAll(`:${server.port}`, ':<port>')
+    await assertSnapshot('start-missing-dependency-warning', banner)
+  } finally {
+    await server.stop()
+  }
+})
+
 Deno.test('injectImp', async () => {
   const headInjection = '<script>imp-injection</script>'
   const cases = [
@@ -243,17 +316,25 @@ Deno.test('injectImp', async () => {
   await assertSnapshot('inject-imp', transcript)
 })
 
-Deno.test('rewriteDependencySpecifiers', async () => {
-  const input = `import mitt from 'npm:mitt@3'
-import { encodeBase64 } from "jsr:@std/encoding@1/base64"
-import local from './local.js'
-import imp from 'imp'
-export { default as dayjs } from 'npm:dayjs@1'
-const lazy = () => import('npm:lodash-es@4')
-const literal = 'npm:not-an-import@1'
-`
-  const transcript = `${section('input', input)}\n${
-    section('output', rewriteDependencySpecifiers(input))
-  }\n`
-  await assertSnapshot('rewrite-dependency-specifiers', transcript)
+Deno.test('parseSpecifier', async () => {
+  const inputs = [
+    'mitt',
+    'mitt@3.0.1',
+    'npm:mitt@3.0.1',
+    'npm:@scope/pkg@1.2.3/sub/module.js',
+    'jsr:@std/encoding@1.0.10/base64',
+    'jsr:@std/encoding',
+    'preact@10.19.3/hooks',
+    'not@a@version',
+    '@lonely-scope',
+    '',
+  ]
+  const transcript = inputs
+    .map((input) => {
+      const parsed = parseSpecifier(input)
+      const alias = parsed ? ` alias=${defaultAlias(parsed)}` : ''
+      return `'${input}' → ${JSON.stringify(parsed)}${alias}`
+    })
+    .join('\n')
+  await assertSnapshot('parse-specifiers', transcript + '\n')
 })

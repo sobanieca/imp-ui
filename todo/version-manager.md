@@ -59,7 +59,7 @@ current binary — a pin that is not enforced is not a pin. The error message po
 ## Version store
 
 - Global store at `~/.imp/versions/<version>/imp` — everything imp stores lives under the per-user
-  `~/.imp/`, never inside a project (`adr/no-lockfile-exact-versions.md`).
+  `~/.imp/`, never inside a project (`adr/vendored-dependencies.md`).
 
 ## Download source
 

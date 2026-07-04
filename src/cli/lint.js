@@ -2,7 +2,7 @@ import { Linter } from 'eslint/universal'
 import js from '@eslint/js'
 import globals from 'globals'
 import { relative } from '@std/path'
-import impPlugin, { dependencyVersionProblem } from './lint_rules.js'
+import impPlugin, { dependencyPinProblem } from './lint_rules.js'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 
@@ -13,12 +13,13 @@ const IMP_RULES = {
   'imp/exact-dependency-versions': 'error',
 }
 
-const buildConfig = (userRules) => ({
+const buildConfig = (userRules, dependencyAliases) => ({
   languageOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
     globals: globals.browser,
   },
+  settings: { imp: { dependencyAliases } },
   plugins: { imp: impPlugin },
   rules: { ...js.configs.recommended.rules, ...userRules, ...IMP_RULES },
 })
@@ -60,7 +61,8 @@ export const scriptBlocks = (html) => {
 export async function lint({ root, paths }) {
   const imp = await loadImpConfig(root)
   const lintConfig = imp.lint ?? {}
-  const config = buildConfig(lintConfig.rules ?? {})
+  const dependencies = imp.dependencies ?? {}
+  const config = buildConfig(lintConfig.rules ?? {}, Object.keys(dependencies))
   const files = await collectFiles({
     root,
     paths,
@@ -72,11 +74,11 @@ export async function lint({ root, paths }) {
   let errors = 0
   let warnings = 0
 
-  for (const [alias, target] of Object.entries(imp.imports ?? {})) {
-    const problem = dependencyVersionProblem(target)
+  for (const [alias, specifier] of Object.entries(dependencies)) {
+    const problem = dependencyPinProblem(specifier)
     if (!problem) continue
     errors++
-    console.error(`error[imp/exact-dependency-versions]: alias '${alias}': ${problem}`)
+    console.error(`error[imp/exact-dependency-versions]: dependency '${alias}': ${problem}`)
     console.error(` --> imp.json:1:1\n`)
   }
 

@@ -1,0 +1,8 @@
+$ imp install  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+nothing to install — no dependencies declared in imp.json
+
+--- stderr ---
+(empty)

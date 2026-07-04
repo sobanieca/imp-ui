@@ -1,0 +1,8 @@
+$ imp install imp-test-no-such-package-404  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: package not found: npm:imp-test-no-such-package-404

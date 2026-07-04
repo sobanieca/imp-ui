@@ -1,12 +1,13 @@
 # `imp bundle` command
 
-Pack an app into a prod-ready, self-contained, minified JS bundle the user can
-upload to any static host or CDN. Must reuse the same resolution as the dev server so dev and prod
-resolve specifiers identically: `imp`, `npm:`/`jsr:` inline specifiers, and `imp.json` bare aliases.
+Pack an app into a prod-ready, self-contained, minified JS bundle the user can upload to any static
+host or CDN. Must reuse the same resolution as the dev server so dev and prod resolve specifiers
+identically: `imp` and the bare `imp.json` `dependencies` aliases pointing at their vendored
+`dependencies/<alias>/` bundles.
 
-## Engine — already solved by the dev server
+## Engine — already solved by `imp install`
 
-The compiled binary already bundles dependencies in-process for `imp start`'s `/@dep/` serving:
+The compiled binary already bundles dependencies in-process for `imp install`'s vendoring:
 `esbuild-wasm` (ESM browser build, manually supplied wasm module, `worker: false`) driven by the
 official `@deno/esbuild-plugin` for `npm:`/`jsr:` resolution — see
 `adr/in-process-dependency-bundling.md` and `src/cli/deps.js`. `imp bundle` reuses this exact engine
@@ -23,21 +24,22 @@ Deno's own bundling utilities remain unusable inside a compiled binary (probed a
 ## Remaining work
 
 - Drive `esbuild.build` in bundle mode over the app's HTML/JS entry points: minified ESM output,
-  `imp` resolved to the baked-in library source, `imp.json` `imports` aliases expanded
-  before resolution.
+  `imp` resolved to the baked-in library source, `imp.json` `dependencies` aliases resolved to their
+  vendored `dependencies/<alias>/` bundles before resolution.
 - Code-splitting: lazy-loaded modules (`import()`) split into separate chunks that load on demand
   rather than inlined into the main bundle.
 - Write the built assets to an output directory the user can upload as-is.
-- Dedupe shared dependencies by resolved package identity across the whole bundle graph (the dev
-  server serves one copy per top-level package; the full bundle graph can do better).
+- Dedupe shared dependencies by resolved package identity across the whole bundle graph (each
+  vendored bundle carries its own copy of shared transitive packages; the full bundle graph can do
+  better).
 - Emit self-contained JS with no external runtime dependency, so a web component authored with imp
-  ui can be bundled and then dropped into any application — React, or anything else — without pulling
-  in imp or a separate runtime. The bundle carries everything it needs to run on its own.
+  ui can be bundled and then dropped into any application — React, or anything else — without
+  pulling in imp or a separate runtime. The bundle carries everything it needs to run on its own.
 
-There is no lock file (`adr/no-lockfile-exact-versions.md`): top-level specifiers carry exact
-versions enforced by the `exact-dependency-versions` lint rule, so resolution input is fully
-determined by source code, and downloaded packages are cached in Deno's per-user global cache
-outside the project.
+There is no lock file (`adr/vendored-dependencies.md`): `imp.json` `dependencies` carries exact
+versions enforced by the `exact-dependency-versions` lint rule, and the committed `dependencies/`
+bundles are the frozen resolution state, so the bundle input is fully determined by what is in the
+repository.
 
 ## Considered and rejected
 
