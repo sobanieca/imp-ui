@@ -30,6 +30,9 @@ Deno's own bundling utilities remain unusable inside a compiled binary (probed a
 - Write the built assets to an output directory the user can upload as-is.
 - Dedupe shared dependencies by resolved package identity across the whole bundle graph (the dev
   server serves one copy per top-level package; the full bundle graph can do better).
+- Emit self-contained JS with no external runtime dependency, so a web component authored with imp
+  ui can be bundled and then dropped into any application — React, or anything else — without pulling
+  in imp or a separate runtime. The bundle carries everything it needs to run on its own.
 
 There is no lock file (`adr/no-lockfile-exact-versions.md`): top-level specifiers carry exact
 versions enforced by the `exact-dependency-versions` lint rule, so resolution input is fully
