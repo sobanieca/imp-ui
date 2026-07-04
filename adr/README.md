@@ -25,7 +25,8 @@ Conventions:
 
 ## CLI
 
-| ADR                                                         | Decision                                        |
-| ----------------------------------------------------------- | ----------------------------------------------- |
-| [in-process-toolchain](in-process-toolchain.md)             | fmt and lint run in-process, no subprocess      |
-| [no-lockfile-exact-versions](no-lockfile-exact-versions.md) | No lock/generated files; exact versions in code |
+| ADR                                                                 | Decision                                              |
+| ------------------------------------------------------------------- | ----------------------------------------------------- |
+| [in-process-toolchain](in-process-toolchain.md)                     | fmt and lint run in-process, no subprocess            |
+| [in-process-dependency-bundling](in-process-dependency-bundling.md) | Bundle deps in-process via esbuild-wasm + Deno plugin |
+| [no-lockfile-exact-versions](no-lockfile-exact-versions.md)         | No lock/generated files; exact versions in code       |

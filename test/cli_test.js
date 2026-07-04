@@ -170,8 +170,8 @@ Deno.test('imp start', async (t) => {
         received = value
       })
       emitter.emit('ping', 'pong')
-      const summary =
-        `[bundled module: default export is ${typeof module.default}, emit('ping') delivered '${received}']`
+      const summary = `[bundled module: default export is ${typeof module
+        .default}, emit('ping') delivered '${received}']`
       await assertSnapshot(
         'start-bundles-dependency',
         responseTranscript(path, response, summary),

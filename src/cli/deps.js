@@ -1,8 +1,21 @@
-import * as esbuild from 'esbuild'
-import { denoPlugins } from '@luca/esbuild-deno-loader'
+import * as esbuild from 'esbuild-wasm/esm/browser.js'
+import { denoPlugin } from '@deno/esbuild-plugin'
 
 const DEP_PREFIX = '/@dep/'
 const DEPENDENCY_SCHEMES = /^(npm:|jsr:)/
+
+const ESBUILD_WASM_URL = import.meta.resolve('esbuild-wasm/esbuild.wasm')
+
+let esbuildReady = null
+function initEsbuild() {
+  if (!esbuildReady) {
+    esbuildReady = (async () => {
+      const wasmModule = await WebAssembly.compile(await Deno.readFile(new URL(ESBUILD_WASM_URL)))
+      await esbuild.initialize({ wasmModule, worker: false })
+    })()
+  }
+  return esbuildReady
+}
 
 export const isDependencySpecifier = (specifier) => DEPENDENCY_SCHEMES.test(specifier)
 
@@ -21,8 +34,9 @@ export async function bundleDependency(specifier) {
   if (inflight.has(specifier)) return inflight.get(specifier)
 
   const job = (async () => {
+    await initEsbuild()
     const result = await esbuild.build({
-      plugins: denoPlugins(),
+      plugins: [denoPlugin()],
       entryPoints: [specifier],
       bundle: true,
       format: 'esm',
