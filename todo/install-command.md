@@ -154,11 +154,16 @@ no matching `dependencies` entry is a lint error hinting `imp install`).
 
 ## ADR impact
 
-Implementing this **replaces `adr/no-lockfile-exact-versions.md`**: imp would now write one thing
-into the project — the user-requested, committed `dependencies/` vendor directory (source, not derived
-toolchain config). Record the new decision (vendored bundles as the reproducibility mechanism, still
-no lock file and no transitive-version tracking, since the committed bundle is the frozen state) and
-update the ADR table.
+**A new ADR must be created** to record this whole decision — the move to vendored, in-tree
+dependencies managed by `imp install` / `imp uninstall`: the committed `dependencies/` directory as
+the reproducibility mechanism, exact-version pins in `imp.json` `dependencies`, and the deliberate
+choice of **no lock file and no transitive-version tracking** (the committed bundle is the frozen
+state). Follow the `adr/` conventions (Context · Decision · Consequences, descriptive slug filename).
+
+This ADR **replaces `adr/no-lockfile-exact-versions.md`**, since imp would now write one thing into
+the project — the user-requested, committed `dependencies/` vendor directory (source, not derived
+toolchain config). Delete the superseded ADR (do not keep it around or add a status marker) and
+update the table in `adr/README.md`.
 
 ## Open questions
 
