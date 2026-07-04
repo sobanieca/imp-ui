@@ -30,7 +30,8 @@ committed bytes, not from tracking every transitive version.
 ### `imp install`
 
 Resolve, bundle (reusing the esbuild-wasm + `@deno/esbuild-plugin` engine in `src/cli/deps.js`),
-write the bundle into `dependencies/`, and add the pin to `imp.json` under `dependencies`.
+write the bundle into that dependency's `dependencies/<alias>/` subfolder, and add the pin to
+`imp.json` under `dependencies`.
 
 **Version syntax.** The version can be attached to the package name or passed as a separate
 argument — both forms are equivalent:
@@ -82,13 +83,17 @@ exactly what was pulled in, and note a specific transitive version if they need 
 imp uninstall mitt
 ```
 
-Delete the bundle and drop the `imp.json` entry.
+Delete the dependency's `dependencies/<alias>/` folder (bundle and all its assets) and drop the
+`imp.json` entry.
 
 ## Storage and config
 
-- **`dependencies/`** in the project root holds the committed bundles, one self-contained ESM file
-  per top-level dependency (e.g. `dependencies/mitt.js`), plus any emitted assets (see below). Each file is
-  already **bundled and minified** at install time — the reachable dependency code and nothing else,
+- **`dependencies/`** in the project root holds the committed bundles, **one subfolder per top-level
+  dependency keyed by its alias** (e.g. `dependencies/mitt/`). Each subfolder contains that
+  dependency's self-contained ESM bundle (e.g. `dependencies/mitt/mitt.js`) plus any emitted assets
+  (see below), so everything belonging to one dependency — bundle, wasm, css, images — is grouped
+  together and a single `imp uninstall` removes the whole folder cleanly. Each bundle is already
+  **bundled and minified** at install time — the reachable dependency code and nothing else,
   so the repository never carries unused package files or unminified bulk. `imp bundle` still
   tree-shakes these vendored bundles into the final app bundle for production, but the on-disk vendor
   copy is kept small from the start.
@@ -108,8 +113,8 @@ Delete the bundle and drop the `imp.json` entry.
 
 ## Import surface
 
-Users import a vendored dependency by its alias, resolved through the import map to its `dependencies/`
-file — no scheme and no version in the import line:
+Users import a vendored dependency by its alias, resolved through the import map to its
+`dependencies/<alias>/` bundle — no scheme and no version in the import line:
 
 ```js
 import mitt from 'mitt'
@@ -123,11 +128,13 @@ Some packages import non-JS assets — a `.wasm` binary, an `.svg`, an image, a 
 reference them via `new URL('./thing.wasm', import.meta.url)`. Bundling handles these through
 esbuild's loaders; the vendoring output is therefore not always a single `.js` file:
 
-- **Emit as sibling files (default).** Configure esbuild's `file` loader with `dependencies/` as the
-  output directory so each asset is written next to the bundle (e.g. `dependencies/mitt.js` +
-  `dependencies/<hash>.wasm`), and imports / `new URL(..., import.meta.url)` references are rewritten to
-  point at the emitted path. The dev server serves these from `dependencies/`; `imp bundle` carries them
-  into the production output. This keeps binary assets as real files rather than bloating the JS.
+- **Emit as sibling files (default).** Configure esbuild's `file` loader with the dependency's
+  `dependencies/<alias>/` subfolder as the output directory so each asset is written next to the
+  bundle (e.g. `dependencies/mitt/mitt.js` + `dependencies/mitt/<hash>.wasm`), and imports /
+  `new URL(..., import.meta.url)` references are rewritten to point at the emitted path. Grouping the
+  bundle and its assets in one per-alias folder keeps related files together. The dev server serves
+  these from `dependencies/<alias>/`; `imp bundle` carries them into the production output. This keeps
+  binary assets as real files rather than bloating the JS.
 - **Inline small assets.** Small assets can instead be inlined as `dataurl` (base64) so the bundle
   stays a single self-contained file; apply a size threshold to avoid ballooning committed text.
 - **CSS** imported by a package is bundled by esbuild into an emitted `.css` (or inlined), handled
@@ -145,9 +152,9 @@ no matching `dependencies` entry is a lint error hinting `imp install`).
 
 ## Dev server and bundle integration
 
-- **`imp start`** serves `dependencies/` files directly through the import map instead of bundling on
-  the fly. On-the-fly `/@dep/` bundling is retained only as the internal mechanism `imp install`
-  uses, so the dev server itself needs no network once dependencies are vendored.
+- **`imp start`** serves `dependencies/<alias>/` files directly through the import map instead of
+  bundling on the fly. On-the-fly `/@dep/` bundling is retained only as the internal mechanism
+  `imp install` uses, so the dev server itself needs no network once dependencies are vendored.
 - **`imp bundle`** (`bundle-command.md`) tree-shakes the vendored `dependencies/` bundles into the
   final app bundle and dedupes transitive packages shared across top-level dependencies, so the
   per-dependency duplication in the vendored tree is removed from the shipped output.
@@ -164,6 +171,14 @@ This ADR **replaces `adr/no-lockfile-exact-versions.md`**, since imp would now w
 the project — the user-requested, committed `dependencies/` vendor directory (source, not derived
 toolchain config). Delete the superseded ADR (do not keep it around or add a status marker) and
 update the table in `adr/README.md`.
+
+## Docs
+
+**A docs page must be authored** in `docs/` covering managing dependencies with imp — written for an
+external developer per the `docs/` conventions: how to add a dependency (`imp install mitt`), pin an
+exact version, update one or update all (`imp install` with no args), remove one (`imp uninstall`),
+and import it by its bare alias. Explain the vendored `dependencies/` directory in plain terms (what
+it is, why it's committed) without pointing at source files, ADRs, or repo internals.
 
 ## Open questions
 
