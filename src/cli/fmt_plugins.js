@@ -50,7 +50,7 @@ export const FMT_PLUGINS = [
     file: 'markup_fmt-v0.27.3.wasm',
     url: 'https://plugins.dprint.dev/g-plane/markup_fmt-v0.27.3.wasm',
     sha256: '07cebe7cebf3660d15a92ad94888f2b04903ee0c1aabbb6a5b8a018720d04568',
-    extensions: ['html'],
+    extensions: ['html', 'svg'],
     config: () => ({
       ignoreCommentDirective: IGNORE_NODE,
       ignoreFileCommentDirective: IGNORE_FILE,

@@ -209,6 +209,7 @@ One formatter covers your whole project:
 | `.md`                    | Markdown   |
 | `.css .scss .sass .less` | CSS        |
 | `.html`                  | HTML       |
+| `.svg`                   | SVG        |
 | `.yaml .yml`             | YAML       |
 
 HTML is formatted inside-out: inline `<script>` and `<style>` blocks are formatted with the
