@@ -1,6 +1,6 @@
 # `imp bundle` command
 
-Pack an app into a prod-ready, self-contained, minified JS bundle (plus source map) the user can
+Pack an app into a prod-ready, self-contained, minified JS bundle the user can
 upload to any static host or CDN. Must reuse the same resolution as the dev server so dev and prod
 resolve specifiers identically: `imp`, `npm:`/`jsr:` inline specifiers, and `imp.json` bare aliases.
 
@@ -22,8 +22,8 @@ Deno's own bundling utilities remain unusable inside a compiled binary (probed a
 
 ## Remaining work
 
-- Drive `esbuild.build` in bundle mode over the app's HTML/JS entry points: minified ESM output plus
-  source maps, `imp` resolved to the baked-in library source, `imp.json` `imports` aliases expanded
+- Drive `esbuild.build` in bundle mode over the app's HTML/JS entry points: minified ESM output,
+  `imp` resolved to the baked-in library source, `imp.json` `imports` aliases expanded
   before resolution.
 - Code-splitting: lazy-loaded modules (`import()`) split into separate chunks that load on demand
   rather than inlined into the main bundle.
