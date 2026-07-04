@@ -6,16 +6,16 @@ exit code: 1
 
 --- stderr ---
 error[imp/exact-dependency-versions]: alias 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) — imp has no lock file, so exact versions (e.g. 'npm:dayjs@1.0.0') keep dependency resolution reproducible
- --> <root>/test/fixtures/lint-unpinned/imp.json:1:1
+ --> imp.json:1:1
 
 error[imp/exact-dependency-versions]: 'npm:mitt@3' must pin an exact version ('3' is not an exact version) — imp has no lock file, so exact versions (e.g. 'npm:mitt@3.0.0') keep dependency resolution reproducible
- --> <root>/test/fixtures/lint-unpinned/app.js:1:18
+ --> app.js:1:18
 
 error[imp/exact-dependency-versions]: 'jsr:@std/encoding' must pin an exact version (no version is given) — imp has no lock file, so exact versions (e.g. 'jsr:@std/encoding@1.2.3') keep dependency resolution reproducible
- --> <root>/test/fixtures/lint-unpinned/app.js:2:30
+ --> app.js:2:30
 
 error[imp/exact-dependency-versions]: 'npm:lodash-es@^4.17' must pin an exact version ('^4.17' is not an exact version) — imp has no lock file, so exact versions (e.g. 'npm:lodash-es@4.17.0') keep dependency resolution reproducible
- --> <root>/test/fixtures/lint-unpinned/app.js:3:33
+ --> app.js:3:33
 
 Found 4 problems
 Checked 1 file

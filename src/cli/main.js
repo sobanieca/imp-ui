@@ -23,28 +23,33 @@ function positional(args) {
 
 const [command, ...rest] = Deno.args
 
-switch (command) {
-  case 'start': {
-    const { start } = await import('./start.js')
-    await start({
-      entry: positional(rest)[0] ?? 'index.html',
-      port: Number(flag(rest, 'port', 4507)),
-    })
-    break
+try {
+  switch (command) {
+    case 'start': {
+      const { start } = await import('./start.js')
+      await start({
+        entry: positional(rest)[0] ?? 'index.html',
+        port: Number(flag(rest, 'port', 4507)),
+      })
+      break
+    }
+    case 'lint': {
+      const { lint } = await import('./lint.js')
+      Deno.exit(await lint({ root: Deno.cwd(), paths: positional(rest) }))
+      break
+    }
+    case 'fmt': {
+      const { fmt } = await import('./fmt.js')
+      const check = rest.includes('--check')
+      const args = rest.filter((arg) => arg !== '--check')
+      Deno.exit(await fmt({ root: Deno.cwd(), paths: positional(args), check }))
+      break
+    }
+    default:
+      console.log(HELP)
+      if (command && command !== 'help' && command !== '--help') Deno.exit(1)
   }
-  case 'lint': {
-    const { lint } = await import('./lint.js')
-    Deno.exit(await lint({ root: Deno.cwd(), paths: positional(rest) }))
-    break
-  }
-  case 'fmt': {
-    const { fmt } = await import('./fmt.js')
-    const check = rest.includes('--check')
-    const args = rest.filter((arg) => arg !== '--check')
-    Deno.exit(await fmt({ root: Deno.cwd(), paths: positional(args), check }))
-    break
-  }
-  default:
-    console.log(HELP)
-    if (command && command !== 'help' && command !== '--help') Deno.exit(1)
+} catch (error) {
+  console.error(`error: ${error.message}`)
+  Deno.exit(1)
 }

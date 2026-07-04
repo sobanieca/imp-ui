@@ -6,10 +6,10 @@ exit code: 1
 
 --- stderr ---
 error[imp/no-capital-component]: 'Card' starts with a capital letter — imp components are lowercase functions (write 'card')
- --> <root>/test/fixtures/lint-bad/components.js:1:17
+ --> components.js:1:17
 
 error[imp/no-capital-component]: 'NavBar' starts with a capital letter — imp components are lowercase functions (write 'navBar')
- --> <root>/test/fixtures/lint-bad/components.js:5:14
+ --> components.js:5:14
 
 Found 2 problems
 Checked 1 file

@@ -1,0 +1,8 @@
+$ imp fmt --check app.js  (cwd: test/fixtures/broken-config)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: invalid imp.json — Expected double-quoted property name in JSON at position 33 (line 3 column 1)

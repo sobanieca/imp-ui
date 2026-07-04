@@ -5,11 +5,12 @@ import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 
 async function createFormatterContext(fmtConfig) {
-  const context = createContext({
+  const layoutSettings = {
     lineWidth: fmtConfig.lineWidth ?? 100,
     indentWidth: fmtConfig.indentWidth ?? 2,
     useTabs: fmtConfig.useTabs ?? false,
-  })
+  }
+  const context = createContext(layoutSettings)
   for (const plugin of FMT_PLUGINS) {
     let buffer
     try {
@@ -17,7 +18,7 @@ async function createFormatterContext(fmtConfig) {
     } catch {
       throw new Error(`formatter plugin ${plugin.file} is missing — run 'deno task download:fmt-plugins'`)
     }
-    context.addPlugin(buffer, plugin.config(fmtConfig))
+    context.addPlugin(buffer, { ...layoutSettings, ...plugin.config(fmtConfig) })
   }
   return context
 }
@@ -64,7 +65,7 @@ export async function fmt({ root, paths, check }) {
     if (formatted === original) continue
     changed++
     if (check) {
-      console.error(`\nfrom ${file}:`)
+      console.error(`\nfrom ${relative(root, file)}:`)
       console.error(lineDiff(original, formatted))
     } else {
       await Deno.writeTextFile(file, formatted)

@@ -6,7 +6,7 @@ exit code: 1
 
 --- stderr ---
 
-from <root>/test/fixtures/fmt-dirty/messy.js:
+from messy.js:
 1 | -export function messy (first,second)   {
 1 | +export function messy(first, second) {
 2 | -    return first+second;

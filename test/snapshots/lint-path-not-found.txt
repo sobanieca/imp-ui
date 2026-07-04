@@ -1,0 +1,8 @@
+$ imp lint missing.js  (cwd: test/fixtures/basic)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: path not found: missing.js

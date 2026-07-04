@@ -1,8 +1,10 @@
 # imp — CLI
 
-The `imp` CLI is the buildless toolkit for imp apps: a static dev server plus a linter and a
-formatter. No bundling, no transforms, no install step for your dependencies — your files are served
-exactly as you wrote them.
+The `imp` CLI is an all-in-one toolkit for imp apps: a static dev server, a linter, and a formatter
+in a single buildless binary. imp is built for the AI era — every part of the workflow is designed
+to work hand in hand with AI coding agents, to the point where an app can be developed end to end
+without writing a line of code by hand. No bundling, no transforms, no install step for your
+dependencies — your files are served exactly as you wrote them.
 
 ## Installation
 
@@ -127,6 +129,12 @@ so resolving them at a different time does not change behavior. In practice this
 small, self-contained packages — which are also the packages that work best in the browser. If a
 library has a history of breaking through its transitive dependencies, it is a poor fit for imp.
 
+More broadly, imp assumes you will lean on dependencies as little as possible. In the AI era, an
+agent can write and maintain a small, purpose-built module for your app faster than you can vet a
+package — so before reaching for npm, consider having your agent write the code instead. Fewer
+dependencies mean fewer transitive surprises, less code shipped to the browser, and a codebase your
+agent understands completely.
+
 ### Shared dependencies and singletons
 
 > **One copy per top-level package.** Each top-level specifier is bundled independently, with its
@@ -146,49 +154,16 @@ imp lint [...paths]
 ```
 
 Lints the given paths (default: the whole project) with a standard recommended rule set plus imp's
-own rules, which are always applied:
+own rules, which are always applied: `no-capital-component` (imp components are lowercase functions)
+and `exact-dependency-versions` (every `npm:`/`jsr:` specifier must pin an exact version — see _Why
+exact versions?_ above). `.html` files are covered too: inline `<script>` blocks are linted like any
+other code.
 
-- **`no-capital-component`** — imp components are lowercase functions; a capitalized function name
-  is reported.
-- **`exact-dependency-versions`** — every `npm:`/`jsr:` specifier (in imports, dynamic imports, and
-  `imp.json` aliases) must pin an exact version (`npm:mitt@3.0.1`). imp has no lock file, so the
-  versions written in your code are what make dependency resolution reproducible across machines;
-  ranges and missing versions are reported. See _Why exact versions?_ under `imp start` for the full
-  rationale and what it assumes about your dependencies.
+Per-rule severities and excluded paths are configured under `lint` in `imp.json`, and
+`imp-lint-ignore` comments suppress findings in code.
 
-`imp lint` checks `.js`, `.mjs`, and `.cjs` files — and `.html` files too: inline `<script>` blocks
-are linted like any other code, with problems reported at their real line in the HTML file. Inline
-`npm:`/`jsr:` import specifiers are how imp apps declare dependencies — no rule forbids them, only
-the version pinning above applies. Directories named `.git`, `node_modules`, and `dist` are always
-skipped.
-
-Rule names follow the widely used ESLint naming, so any rule you know from that ecosystem is spelled
-the same here. Extra configuration declared under `lint` in `imp.json` is layered on top:
-
-```json
-{
-  "lint": {
-    "rules": { "no-unused-vars": "off" },
-    "exclude": ["legacy/"]
-  }
-}
-```
-
-- **`rules`** — per-rule severities (`"off"`, `"warn"`, `"error"`). Warnings are reported but do not
-  fail the command; errors exit non-zero.
-- **`exclude`** — project-relative paths to skip.
-
-To suppress a finding in code, use an ignore comment on the line above (rule list optional,
-comma-separated), or disable linting for a whole file:
-
-```js
-// imp-lint-ignore no-capital-component
-const Widget = () => div('widget')
-```
-
-```js
-// imp-lint-ignore-file
-```
+See **[Linting](lint.md)** for the full rule descriptions, configuration, ignore directives, and
+output format.
 
 ## `imp fmt`
 
@@ -197,40 +172,13 @@ imp fmt [...paths]
 imp fmt --check [...paths]
 ```
 
-Formats the given paths in place (default: the whole project). `--check` reports files that would
-change without writing them and exits non-zero when formatting is needed — useful in CI.
+Formats the given paths in place (default: the whole project) — JavaScript, JSON, Markdown, CSS,
+HTML, SVG, XML, SQL, and YAML, with inline `<script>`/`<style>` blocks in HTML formatted too.
+`--check` reports files that would change without writing them and exits non-zero when formatting is
+needed — useful in CI.
 
-One formatter covers your whole project:
+Options (line width, quotes, semicolons, …) come from the `fmt` block of `imp.json`, and
+`imp-fmt-ignore` comments protect hand-crafted layout.
 
-| Files                    | Language   |
-| ------------------------ | ---------- |
-| `.js .mjs .cjs`          | JavaScript |
-| `.json .jsonc`           | JSON       |
-| `.md`                    | Markdown   |
-| `.css .scss .sass .less` | CSS        |
-| `.html`                  | HTML       |
-| `.svg`                   | SVG        |
-| `.xml`                   | XML        |
-| `.sql`                   | SQL        |
-| `.yaml .yml`             | YAML       |
-
-HTML is formatted inside-out: inline `<script>` and `<style>` blocks are formatted with the
-JavaScript and CSS formatters, honouring your `fmt` options.
-
-Options come from the `fmt` block of `imp.json`. Defaults when absent: no semicolons
-(`"semiColons": false`), single quotes (`"singleQuote": true`), line width 100 (`"lineWidth": 100`),
-two-space indentation (`"indentWidth": 2`, `"useTabs": false`). An `exclude` list of
-project-relative paths is honoured like in `lint`.
-
-To keep hand-crafted layout, mark the next node with an ignore comment — or exempt a whole file:
-
-```js
-// imp-fmt-ignore
-const matrix = [1, 2, 3]
-```
-
-```js
-// imp-fmt-ignore-file
-```
-
-In Markdown, `imp-fmt-ignore-start` / `imp-fmt-ignore-end` comments fence off a region.
+See **[Formatting](fmt.md)** for supported languages, all options and their defaults, ignore
+directives, and check mode.

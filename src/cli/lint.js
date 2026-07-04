@@ -1,7 +1,7 @@
 import { Linter } from 'eslint/universal'
 import js from '@eslint/js'
 import globals from 'globals'
-import { join } from '@std/path'
+import { relative } from '@std/path'
 import impPlugin, { dependencyVersionProblem } from './lint_rules.js'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
@@ -77,7 +77,7 @@ export async function lint({ root, paths }) {
     if (!problem) continue
     errors++
     console.error(`error[imp/exact-dependency-versions]: alias '${alias}': ${problem}`)
-    console.error(` --> ${join(root, 'imp.json')}:1:1\n`)
+    console.error(` --> imp.json:1:1\n`)
   }
 
   const reportMessages = (file, messages, lineOffset = 0) => {
@@ -87,7 +87,7 @@ export async function lint({ root, paths }) {
       else warnings++
       const rule = message.ruleId ?? 'parse'
       console.error(`${isError ? 'error' : 'warning'}[${rule}]: ${message.message}`)
-      console.error(` --> ${file}:${message.line + lineOffset}:${message.column}\n`)
+      console.error(` --> ${relative(root, file)}:${message.line + lineOffset}:${message.column}\n`)
     }
   }
 

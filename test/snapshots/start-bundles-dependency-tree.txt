@@ -1,0 +1,6 @@
+GET /@dep/npm%3Amicromark%404.0.2
+status: 200
+content-type: text/javascript; charset=utf-8
+cache-control: no-store
+
+[bundled module: micromark('# Hello, *imp*!') returned '<h1>Hello, <em>imp</em>!</h1>']

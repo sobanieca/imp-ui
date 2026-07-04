@@ -52,10 +52,14 @@ Deno.test('imp commands', async (t) => {
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
   await test('lint-unpinned-dependencies', ['lint', 'app.js'], fixture('lint-unpinned'))
   await test('lint-ignore-directive', ['lint', 'app.js'], fixture('lint-ignore'))
+  await test('lint-path-not-found', ['lint', 'missing.js'], fixture('basic'))
+  await test('lint-invalid-imp-json', ['lint', 'app.js'], fixture('broken-config'))
   await test('fmt-check-clean', ['fmt', '--check', 'app.js'], fixture('basic'))
   await test('fmt-check-dirty', ['fmt', '--check', 'messy.js'], fixture('fmt-dirty'))
   await test('fmt-check-multi-language', ['fmt', '--check'], fixture('fmt-multi'))
   await test('fmt-ignore-directive', ['fmt', '--check', 'app.js'], fixture('fmt-ignore'))
+  await test('fmt-path-not-found', ['fmt', 'missing.js'], fixture('basic'))
+  await test('fmt-invalid-imp-json', ['fmt', '--check', 'app.js'], fixture('broken-config'))
 
   await t.step('fmt-writes-file', async () => {
     const dir = await Deno.makeTempDir()
@@ -154,6 +158,48 @@ Deno.test('imp start', async (t) => {
       maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
     })
     await get('start-rewrites-dependency-specifiers', '/app.js')
+
+    await t.step('start-bundles-dependency', async () => {
+      const path = '/@dep/npm%3Amitt%403.0.1'
+      const response = await fetch(`http://127.0.0.1:${port}${path}`)
+      const code = await response.text()
+      const module = await import(`data:text/javascript,${encodeURIComponent(code)}`)
+      const emitter = module.default()
+      let received = null
+      emitter.on('ping', (value) => {
+        received = value
+      })
+      emitter.emit('ping', 'pong')
+      const summary =
+        `[bundled module: default export is ${typeof module.default}, emit('ping') delivered '${received}']`
+      await assertSnapshot(
+        'start-bundles-dependency',
+        responseTranscript(path, response, summary),
+      )
+    })
+
+    await t.step('start-bundles-dependency-tree', async () => {
+      const path = '/@dep/npm%3Amicromark%404.0.2'
+      const response = await fetch(`http://127.0.0.1:${port}${path}`)
+      const code = await response.text()
+      const documentStubForBrowserBundle = {
+        createElement: () => ({ innerHTML: '', textContent: '' }),
+      }
+      globalThis.document ??= documentStubForBrowserBundle
+      let module
+      try {
+        module = await import(`data:text/javascript,${encodeURIComponent(code)}`)
+      } finally {
+        if (globalThis.document === documentStubForBrowserBundle) delete globalThis.document
+      }
+      const html = module.micromark('# Hello, *imp*!')
+      const summary = `[bundled module: micromark('# Hello, *imp*!') returned '${html}']`
+      await assertSnapshot(
+        'start-bundles-dependency-tree',
+        responseTranscript(path, response, summary),
+      )
+    })
+
     await get('start-framework-module', '/@imp/imp.js', {
       maskBody: () => '[imp library source]',
     })
