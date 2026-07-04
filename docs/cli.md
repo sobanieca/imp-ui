@@ -210,6 +210,8 @@ One formatter covers your whole project:
 | `.css .scss .sass .less` | CSS        |
 | `.html`                  | HTML       |
 | `.svg`                   | SVG        |
+| `.xml`                   | XML        |
+| `.sql`                   | SQL        |
 | `.yaml .yml`             | YAML       |
 
 HTML is formatted inside-out: inline `<script>` and `<style>` blocks are formatted with the

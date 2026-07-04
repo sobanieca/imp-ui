@@ -22,7 +22,7 @@ binary at compile time. The imp binary never spawns a subprocess.
   so JS output matches `deno fmt`. TypeScript is deliberately out of scope for both commands — imp
   is buildless, apps are plain JavaScript. Embedded `<script>`/`<style>` in HTML are formatted via
   the context's host delegation. Plugin wasm files are pinned by version and checksum in
-  `src/cli/fmt_plugins.js`, vendored by `tools/vendor.js`, and embedded with
+  `src/cli/fmt_plugins.js`, downloaded by `tools/download_fmt_plugins.js`, and embedded with
   `deno compile --include`.
 - **`imp lint`** runs ESLint's core `Linter` (`eslint/universal` — pure JS, no filesystem) with the
   `@eslint/js` recommended rules, browser globals, and imp's own rules from `src/cli/lint_rules.js`.
@@ -42,7 +42,7 @@ binary at compile time. The imp binary never spawns a subprocess.
 - Lint rule names follow ESLint conventions, and new imp rules are written against ESLint's plugin
   API. Linting is slower than native-Rust linters — acceptable at the scale of buildless projects
   imp targets, with oxlint available as a future drop-in if that changes.
-- The wasm plugins add ~10 MB and ESLint ~10 MB to the binary. `deno task vendor` must run before
+- The wasm plugins add ~10 MB and ESLint ~10 MB to the binary. `deno task download:fmt-plugins` must run before
   compiling or testing (wired into the `compile` and `test` tasks).
 - User-supplied lint plugins (dynamic import of user JS inside a compiled binary) are not supported
   until verified separately.

@@ -17,6 +17,14 @@ from <root>/test/fixtures/fmt-multi/data.json:
 2 | +
 3 | -
 
+from <root>/test/fixtures/fmt-multi/feed.xml:
+1 | -<feed><entry   id="1"    title="hello"/></feed>
+1 | +<feed><entry id="1" title="hello" /></feed>
+
+from <root>/test/fixtures/fmt-multi/icon.svg:
+1 | -<svg    xmlns="http://www.w3.org/2000/svg"><rect   x="1"    y="2"/></svg>
+1 | +<svg xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" /></svg>
+
 from <root>/test/fixtures/fmt-multi/notes.md:
 1 | -#  Notes
 1 | +# Notes
@@ -39,6 +47,14 @@ from <root>/test/fixtures/fmt-multi/page.html:
 7 | +</script>
 8 | +
 
+from <root>/test/fixtures/fmt-multi/query.sql:
+1 | -select   id,name   from    users   where id=1;
+1 | +select id,name
+2 | -
+2 | +from users
+3 | +where id=1;
+4 | +
+
 from <root>/test/fixtures/fmt-multi/style.css:
 1 | -.card{color:red;padding:4px   8px}
 1 | +.card {
@@ -48,4 +64,4 @@ from <root>/test/fixtures/fmt-multi/style.css:
 4 | +}
 5 | +
 
-error: Found 5 not formatted files in 5 files
+error: Found 8 not formatted files in 8 files

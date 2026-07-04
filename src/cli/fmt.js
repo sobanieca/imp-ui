@@ -15,7 +15,7 @@ async function createFormatterContext(fmtConfig) {
     try {
       buffer = await Deno.readFile(wasmUrl(plugin.file))
     } catch {
-      throw new Error(`formatter plugin ${plugin.file} is missing — run 'deno task vendor'`)
+      throw new Error(`formatter plugin ${plugin.file} is missing — run 'deno task download:fmt-plugins'`)
     }
     context.addPlugin(buffer, plugin.config(fmtConfig))
   }

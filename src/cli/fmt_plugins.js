@@ -50,11 +50,18 @@ export const FMT_PLUGINS = [
     file: 'markup_fmt-v0.27.3.wasm',
     url: 'https://plugins.dprint.dev/g-plane/markup_fmt-v0.27.3.wasm',
     sha256: '07cebe7cebf3660d15a92ad94888f2b04903ee0c1aabbb6a5b8a018720d04568',
-    extensions: ['html', 'svg'],
+    extensions: ['html', 'svg', 'xml'],
     config: () => ({
       ignoreCommentDirective: IGNORE_NODE,
       ignoreFileCommentDirective: IGNORE_FILE,
     }),
+  },
+  {
+    file: 'lax-sql-0.3.0.wasm',
+    url: 'https://plugins.dprint.dev/bartlomieju/lax-sql-0.3.0.wasm',
+    sha256: 'c21281b3031d20182f34fed537d0695a4ffa7e705374c00ecb18d6194908da27',
+    extensions: ['sql'],
+    config: () => ({}),
   },
   {
     file: 'pretty_yaml-v0.6.0.wasm',
