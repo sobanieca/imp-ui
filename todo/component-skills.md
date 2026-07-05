@@ -11,7 +11,7 @@ Ask the component author to export a `skill` describing the component from the c
 (its main file):
 
 ```js
-export const skill = "description of the component: what it does, its props, and how to use it";
+export const skill = 'description of the component: what it does, its props, and how to use it'
 ```
 
 imp's CLI then follows a convention to locate and import that exported `skill` from a component
@@ -20,10 +20,10 @@ module, so an agent can read it and learn how to use the component before writin
 ## Open questions
 
 - **Discovery mechanism.** How the CLI finds skill-bearing modules — a dedicated command
-  (`imp skills`?) that scans dependencies and installed components, an aggregate surface an agent can
-  read, or something imported on demand.
-- **Skill shape.** Plain string vs. a structured object (name, summary, props, examples). A string is
-  the simplest starting point; structure makes props/events machine-parsable.
+  (`imp skills`?) that scans dependencies and installed components, an aggregate surface an agent
+  can read, or something imported on demand.
+- **Skill shape.** Plain string vs. a structured object (name, summary, props, examples). A string
+  is the simplest starting point; structure makes props/events machine-parsable.
 - **Where it surfaces to the agent.** How the collected skills reach the agent — e.g. emitted into a
   generated context file, exposed via a command's output, or surfaced through tooling.
 - **Relationship to the standard component library** (`todo/stdlib-components.md`): whether built-in

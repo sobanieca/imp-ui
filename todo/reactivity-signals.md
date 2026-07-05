@@ -34,8 +34,8 @@ isolation.
 
 Wire the signal graph into `src/render.js` under the existing `adr/type-based-argument-dispatch.md`
 rule: **a function-valued prop or child is reactive**, a plain value is static (essence #10/#11 in
-`prev/essence.md`). A function child/prop is wrapped in an `effect` that surgically updates just that
-text node or attribute. Reactivity stays **opt-in** — imperative DOM mutation remains fully
+`prev/essence.md`). A function child/prop is wrapped in an `effect` that surgically updates just
+that text node or attribute. Reactivity stays **opt-in** — imperative DOM mutation remains fully
 supported; nothing forces a signal to exist.
 
 ## Owner-tree disposal — the keystone
@@ -50,10 +50,11 @@ must be repointed to register through the active scope's `scopeSignal()`.
 ## Structural primitives
 
 Port `prev/experiment/imp/primitives.js`: `when(cond, render)`, `each(list, renderItem, getKey)`
-(keyed — stable keys keep their DOM so focus/input/animation survive reorders), `match(sig,
-branches)`, plus `onMount(node, fn)` and `portal(target, node)`. Each anchors a slot with a comment
-marker and swaps siblings around it, running every branch/row in its own scope so teardown is
-automatic. Essence note: ~90% of apps need only `when`, `each`, `onMount`.
+(keyed — stable keys keep their DOM so focus/input/animation survive reorders),
+`match(sig,
+branches)`, plus `onMount(node, fn)` and `portal(target, node)`. Each anchors a slot
+with a comment marker and swaps siblings around it, running every branch/row in its own scope so
+teardown is automatic. Essence note: ~90% of apps need only `when`, `each`, `onMount`.
 
 ## Foundation for other work
 
@@ -63,8 +64,8 @@ component stdlib (`stdlib-components.md`) all build on — land this first.
 ## ADR impact
 
 - New ADR `fine-grained-signals.md` (run-once components, synchronous fine-grained updates, opt-in
-  reactivity) and `owner-tree-disposal.md` (scope tree + AbortController-unified cleanup); update the
-  ADR table.
+  reactivity) and `owner-tree-disposal.md` (scope tree + AbortController-unified cleanup); update
+  the ADR table.
 - Extend `adr/type-based-argument-dispatch.md` to state that a function argument means "reactive".
 
 ## Open questions

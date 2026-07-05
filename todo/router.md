@@ -27,8 +27,8 @@ while a lazy chunk loads.
 - `navigate(path, { replace })` — `pushState`/`replaceState` + updates the signal; `popstate` keeps
   it in sync with back/forward.
 - `router()` — a **marker-slot outlet** built exactly like the `when`/`each` structural primitives
-  (`todo/reactivity-signals.md`): it runs the matched factory in a fresh child scope and disposes the
-  previous one on every navigation, so a route's listeners/effects/fetches are torn down
+  (`todo/reactivity-signals.md`): it runs the matched factory in a fresh child scope and disposes
+  the previous one on every navigation, so a route's listeners/effects/fetches are torn down
   automatically. Lazy loads are guarded by a nav token so a slow chunk can't clobber a newer route.
 - `link(...)` — a **real `<a href>`** (middle-click, copy-link, and SEO all work) that intercepts
   plain left-clicks and navigates client-side; modifier/target/external/`mailto:` clicks fall

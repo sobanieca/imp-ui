@@ -6,9 +6,9 @@ imp fmt --check [...paths]
 ```
 
 `imp fmt` formats your whole project with one command — JavaScript, JSON, Markdown, CSS, HTML, SVG,
-XML, SQL, and YAML, all with consistent options. The formatter is built into the `imp` binary: nothing to install,
-works offline, and a given imp release formats the same way on every machine, so a team never
-disagrees about formatting because of tool versions.
+XML, SQL, and YAML, all with consistent options. The formatter is built into the `imp` binary:
+nothing to install, works offline, and a given imp release formats the same way on every machine, so
+a team never disagrees about formatting because of tool versions.
 
 Given paths (files or directories) are formatted in place; with no paths, the whole project is. The
 command exits with an error if a given path does not exist. Directories named `.git`,
@@ -57,8 +57,8 @@ Options live under `fmt` in `imp.json`. Every option has a default, so the block
 - **`indentWidth`** (default `2`) — spaces per indentation level.
 - **`useTabs`** (default `false`) — indent with tabs instead of spaces.
 - **`singleQuote`** (default `true`) — prefer single quotes in JavaScript.
-- **`semiColons`** (default `false`) — write JavaScript with semicolons; by default they are
-  omitted where the language allows.
+- **`semiColons`** (default `false`) — write JavaScript with semicolons; by default they are omitted
+  where the language allows.
 - **`exclude`** — project-relative paths to skip.
 
 `singleQuote` and `semiColons` apply to JavaScript (including inline `<script>` blocks in HTML); the
@@ -89,7 +89,9 @@ const matrix = [1, 0, 0, 1]
 
 ```css
 /* imp-fmt-ignore */
-.grid { grid-template-areas: "nav  main"; }
+.grid {
+  grid-template-areas: "nav  main";
+}
 ```
 
 ```html
@@ -110,7 +112,7 @@ In Markdown, `imp-fmt-ignore-start` / `imp-fmt-ignore-end` comments fence off a 
 ```markdown
 <!-- imp-fmt-ignore-start -->
 
-|  a |  deliberately | ragged | table |
+| a | deliberately | ragged | table |
 
 <!-- imp-fmt-ignore-end -->
 ```

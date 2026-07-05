@@ -30,7 +30,9 @@ listener) and with signal subscriptions, but every app re-invents the wiring. Ce
 
   ```js
   onAnalytics(({ name, props }) => posthog.capture(name, props))
-  onAnalytics(({ name, props }) => fetch('/collect', { method: 'POST', body: JSON.stringify({ name, props }) }))
+  onAnalytics(({ name, props }) =>
+    fetch('/collect', { method: 'POST', body: JSON.stringify({ name, props }) })
+  )
   ```
 
 - A sink that throws is reported through the built-in logger (`todo/logger.md`) and skipped — one
@@ -93,10 +95,10 @@ fire. imp ships no hard-coded event names beyond the `pageview` convention.
 
 ## Dependencies
 
-Builds on the signal graph and scope disposal (`todo/reactivity-signals.md`) for scoped sink
-cleanup and for state-change emits; pageview auto-instrumentation needs the router
-(`todo/router.md`); diagnostics route through the built-in logger (`todo/logger.md`). The
-`data-track` delegation is pure real DOM and needs none of them.
+Builds on the signal graph and scope disposal (`todo/reactivity-signals.md`) for scoped sink cleanup
+and for state-change emits; pageview auto-instrumentation needs the router (`todo/router.md`);
+diagnostics route through the built-in logger (`todo/logger.md`). The `data-track` delegation is
+pure real DOM and needs none of them.
 
 ## ADR impact
 

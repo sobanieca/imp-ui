@@ -33,9 +33,9 @@ Group components the way the draft does, importable from imp itself (never a thi
 ## Dependencies
 
 This is the top of the stack: it needs the signal graph and structural primitives
-(`todo/reactivity-signals.md`), `css``` + theme tokens (`todo/theme-styling.md`), and the i18n
-`t()`/`defineMessages` layer. Some components (`toast`, `modal`, `drawer`) also use `portal` from the
-structural primitives. Land those first; the stdlib can grow group by group.
+(`todo/reactivity-signals.md`),
+``css``` + theme tokens (``todo/theme-styling.md`), and the i18n`t()`/`defineMessages`layer. Some components (`toast`,`modal`,`drawer`) also use`portal`
+from the structural primitives. Land those first; the stdlib can grow group by group.
 
 ## A showcase surface
 
