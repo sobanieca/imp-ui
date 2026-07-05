@@ -1,5 +1,4 @@
-import { Hono } from 'jsr:@hono/hono@4.12.27'
-import { serveStatic } from 'jsr:@hono/hono@4.12.27/deno'
+import { Hono, serveStatic } from './deps.js'
 import { addReview, addToCart, getCart, listReviews, product } from './data.js'
 import { productPage } from './page.js'
 

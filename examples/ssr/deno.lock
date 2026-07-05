@@ -1,7 +1,8 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@hono/hono@*": "4.12.27"
+    "jsr:@hono/hono@*": "4.12.27",
+    "jsr:@hono/hono@4.12.27": "4.12.27"
   },
   "jsr": {
     "@hono/hono@4.12.27": {
