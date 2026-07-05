@@ -140,11 +140,19 @@ one small file per dependency, not thousands. In exchange you get:
 ## Choosing dependencies well
 
 Each dependency is bundled independently and self-contained, so two packages that share an internal
-dependency each carry their own copy of it. For stateless utility libraries this is harmless.
-Libraries built around a **singleton** — one shared instance that several packages are supposed to
-see — can break in subtle ways: state written through one copy is invisible through the other, and
-`instanceof` checks fail across copies. If you need a shared library, install it once yourself and
-pass instances to the code that needs it, or choose packages that don't rely on shared module state.
+dependency each carry their own copy of it. This holds in production too: `imp bundle` ships each
+dependency's bundle as-is and never merges shared internals across dependencies. That is a
+deliberate choice, not a missing feature — merging would mean re-resolving packages at build time,
+giving up the offline, reproducible-from-your-repository build — and it reflects how imp expects
+apps to be built: with few dependencies, so there is little overlap to merge in the first place. If
+shipped weight from overlapping dependencies becomes noticeable, treat it as a prompt to drop or
+consolidate dependencies rather than something a build option will solve.
+
+For stateless utility libraries the duplication is harmless. Libraries built around a **singleton**
+— one shared instance that several packages are supposed to see — can break in subtle ways: state
+written through one copy is invisible through the other, and `instanceof` checks fail across copies.
+If you need a shared library, install it once yourself and pass instances to the code that needs it,
+or choose packages that don't rely on shared module state.
 
 Two more things to know:
 

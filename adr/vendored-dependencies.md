@@ -66,7 +66,7 @@ files into the project.
 - Each bundle is self-contained, so two dependencies sharing a transitive package each carry their
   own copy. For stateless utilities this is harmless; singleton-style libraries that rely on shared
   module state remain a poor fit. `imp bundle` emits each vendored bundle once across the whole
-  output, but copies shared _between_ vendored bundles remain duplicated
-  (`todo/bundle-dedupe-transitive.md`).
+  output, but copies shared _between_ vendored bundles stay duplicated — a deliberate choice
+  (`transitive-duplication-accepted.md`).
 - Packages that fetch assets at runtime from absolute or CDN URLs (invisible to the bundler) are not
   vendored and still hit the network — such packages are a poor fit for the offline guarantee.

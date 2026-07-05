@@ -54,8 +54,9 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   content-hash cache busting; only chunks and emitted assets are hashed.
 - Each vendored bundle enters the graph as one opaque, already-minified module: it is emitted once
   and shared across all chunks, but a transitive package duplicated across two different vendored
-  bundles stays duplicated in the output (`todo/bundle-dedupe-transitive.md`), and tree-shaking
-  inside vendored bundles is limited to what their bundled form exposes.
+  bundles stays duplicated in the output — accepted deliberately
+  (`transitive-duplication-accepted.md`) — and tree-shaking inside vendored bundles is limited to
+  what their bundled form exposes.
 - Externalized component bundles trade the frozen-version guarantee for sharing: the component runs
   against whatever imp (or dependency) version the host provides, so version skew between author and
   host becomes possible — a contract self-contained bundles never have. In exchange the host page

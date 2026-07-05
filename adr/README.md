@@ -25,9 +25,10 @@ Conventions:
 
 ## CLI
 
-| ADR                                                                 | Decision                                              |
-| ------------------------------------------------------------------- | ----------------------------------------------------- |
-| [in-process-toolchain](in-process-toolchain.md)                     | fmt and lint run in-process, no subprocess            |
-| [in-process-dependency-bundling](in-process-dependency-bundling.md) | Bundle deps in-process via esbuild-wasm + Deno plugin |
-| [vendored-dependencies](vendored-dependencies.md)                   | Vendored, committed deps via imp install; no lockfile |
-| [production-bundling](production-bundling.md)                       | imp bundle from vendored bundles + baked-in library   |
+| ADR                                                                   | Decision                                              |
+| --------------------------------------------------------------------- | ----------------------------------------------------- |
+| [in-process-toolchain](in-process-toolchain.md)                       | fmt and lint run in-process, no subprocess            |
+| [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin |
+| [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile |
+| [production-bundling](production-bundling.md)                         | imp bundle from vendored bundles + baked-in library   |
+| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design         |
