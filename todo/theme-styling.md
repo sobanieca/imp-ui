@@ -13,8 +13,10 @@ Port `prev/experiment/imp/styles.js`:
   constructable stylesheets or `insertRule` are unavailable). Identical rule text dedupes to one
   class. Native CSS nesting handles `&:hover` / `@media` — imp parses no CSS.
 - `css.global` for top-level rules that can't live in a class block (`@keyframes`, `@font-face`).
-- Rule: **static styles go in `css``; per-instance dynamic values go in inline `style`.** Function
-  interpolation into `css``` throws — reactive values must not leak into a shared, cached rule.
+- Rule: **static styles go in `css`; per-instance dynamic values go in
+  inline``style`.** Function
+  interpolation into`css``` throws — reactive values must not leak into
+  a shared, cached rule.
 - `flushStyles()` to emit rules queued before a DOM exists (needed by `imp test`'s DOM stubs, see
   `todo/test-command.md`).
 - `adoptStyles(shadowRoot)` so styles reach components exposed as web components.
@@ -26,8 +28,9 @@ arrays/objects) — a `css``` result is just a class string.
 
 Port `prev/experiment/imp/theme.js`. Design tokens (color, radius, shadow, spacing, typography) are
 `--imp-*` CSS custom properties on `:root`, driven by a reactive `theme` signal. Swapping the theme
-rewrites the variables in one pass, so every `css``` rule that references a token re-skins the whole
-app **instantly with no re-render** — depends on the signal graph in `todo/reactivity-signals.md`.
+rewrites the variables in one pass, so every
+``css``` rule that references a token re-skins the whole
+app **instantly with no re-render** — depends on the signal graph in``todo/reactivity-signals.md`.
 
 - `defineTheme(name, { mode, direction, tokens })` — starts from the built-in light/dark token set
   for its mode; `tokens` overrides individual entries (copy-and-tweak, no full list needed).
@@ -48,16 +51,18 @@ locale dependency behind a small seam so theming can land before full i18n.
 
 ## ADR impact
 
-- New ADR `buildless-co-located-css.md` (content-hashed `css``` into one adopted stylesheet, static
-  in `css``` / dynamic inline) and `themable-by-default-tokens.md` (`--imp-*` tokens on a reactive
-  `theme` signal, mode + direction); update the ADR table.
+- New ADR `buildless-co-located-css.md` (content-hashed
+  ``css``` into one adopted stylesheet, static
+  in``css``` / dynamic inline) and
+  `themable-by-default-tokens.md` (`--imp-*` tokens on a reactive `theme` signal, mode + direction);
+  update the ADR table.
 
 ## Open questions
 
-- **Token surface.** Which token groups ship built-in vs. left to apps; naming stability of `--imp-*`
-  keys (they become public API the moment stdlib and user CSS reference them).
+- **Token surface.** Which token groups ship built-in vs. left to apps; naming stability of
+  `--imp-*` keys (they become public API the moment stdlib and user CSS reference them).
 - **Hash function & collisions.** The draft uses FNV-1a with a `_`-suffix collision guard — confirm
   that is good enough, or move to a stronger hash.
 - **`console`/error paths.** Route any diagnostics through the built-in logger (`todo/logger.md`).
 - **Bundle/PWA integration.** How injected `adoptedStyleSheets` rules are emitted into the static
-  output by `imp bundle` (`todo/bundle-command.md`).
+  output by `imp bundle` (`adr/production-bundling.md`).

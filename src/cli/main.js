@@ -4,6 +4,10 @@ const HELP = `imp — buildless UI toolkit
 USAGE
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
                                         live reload, console + network → terminal
+  imp bundle [file.html] [--outdir dist]  build the app for production: minified,
+                                        code-split JS, ready to upload as-is
+                                        (JS entry + --external <import>: leave an
+                                        import for the host app to provide)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -14,6 +18,14 @@ USAGE
 function flag(args, name, fallback) {
   const index = args.indexOf('--' + name)
   return index !== -1 && args[index + 1] ? args[index + 1] : fallback
+}
+
+function flagList(args, name) {
+  return args
+    .flatMap((arg, index) =>
+      arg === '--' + name && args[index + 1] ? args[index + 1].split(',') : []
+    )
+    .filter(Boolean)
 }
 
 function positional(args) {
@@ -33,6 +45,15 @@ try {
       await start({
         entry: positional(rest)[0] ?? 'index.html',
         port: Number(flag(rest, 'port', 4507)),
+      })
+      break
+    }
+    case 'bundle': {
+      const { bundle } = await import('./bundle.js')
+      await bundle({
+        entry: positional(rest)[0] ?? 'index.html',
+        outdir: flag(rest, 'outdir', 'dist'),
+        external: flagList(rest, 'external'),
       })
       break
     }

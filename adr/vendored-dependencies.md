@@ -54,9 +54,9 @@ files into the project.
 
 ## Consequences
 
-- Once a dependency is added, `imp start` and CI are fully offline — the network is touched only by
-  `imp install`. The eventual `imp bundle` gets faster because dependencies are already resolved and
-  bundled in-tree.
+- Once a dependency is added, `imp start`, `imp bundle`, and CI are fully offline — the network is
+  touched only by `imp install`. `imp bundle` is faster because dependencies are already resolved
+  and bundled in-tree (`production-bundling.md`).
 - A fresh clone is the whole app, dependencies included; nothing needs installing before work
   starts. Committed bundles stay small because only reachable, minified code is stored, and a
   dependency change shows up in review as a diff of its pin and its bundle.
@@ -65,7 +65,8 @@ files into the project.
   bytes — drift can no longer happen silently.
 - Each bundle is self-contained, so two dependencies sharing a transitive package each carry their
   own copy. For stateless utilities this is harmless; singleton-style libraries that rely on shared
-  module state remain a poor fit. The planned `imp bundle` tree-shakes and dedupes the vendored
-  bundles in the shipped output.
+  module state remain a poor fit. `imp bundle` emits each vendored bundle once across the whole
+  output, but copies shared _between_ vendored bundles remain duplicated
+  (`todo/bundle-dedupe-transitive.md`).
 - Packages that fetch assets at runtime from absolute or CDN URLs (invisible to the bundler) are not
   vendored and still hit the network — such packages are a poor fit for the offline guarantee.

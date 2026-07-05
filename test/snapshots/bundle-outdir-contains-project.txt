@@ -1,0 +1,8 @@
+$ imp bundle --outdir .  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: output directory must not contain the project: .

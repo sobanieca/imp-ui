@@ -15,7 +15,7 @@ function initEsbuild() {
   return esbuildReady
 }
 
-const ASSET_LOADERS = Object.fromEntries(
+export const ASSET_LOADERS = Object.fromEntries(
   ['.wasm', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.woff', '.woff2']
     .map((extension) => [extension, 'file']),
 )
@@ -37,9 +37,13 @@ export function bundledPackages(metafile) {
   return [...packages].sort()
 }
 
-export async function bundleDependency({ specifier, alias }) {
+export async function runEsbuild(options) {
   await initEsbuild()
-  const result = await esbuild.build({
+  return esbuild.build(options)
+}
+
+export async function bundleDependency({ specifier, alias }) {
+  const result = await runEsbuild({
     plugins: [denoPlugin()],
     entryPoints: [specifier],
     bundle: true,

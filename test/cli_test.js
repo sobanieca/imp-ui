@@ -162,6 +162,131 @@ Deno.test('imp install and uninstall', async (t) => {
   }
 })
 
+async function copyDirectory(source, destination) {
+  await Deno.mkdir(destination, { recursive: true })
+  for await (const entry of Deno.readDir(source)) {
+    const from = join(source, entry.name)
+    const to = join(destination, entry.name)
+    if (entry.isDirectory) await copyDirectory(from, to)
+    else await Deno.copyFile(from, to)
+  }
+}
+
+Deno.test('imp bundle', async (t) => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('bundle'), dir)
+
+  const mask = (text) =>
+    text
+      .replaceAll(dir, '<tmp>')
+      .replaceAll(dir.slice(1), '<tmp>')
+      .replaceAll(ROOT.slice(1), '<root>/')
+      .replace(/-[A-Z0-9]{8}\b/g, '-<hash>')
+      .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+
+  const outputTree = async (outdir) => {
+    const files = []
+    const walk = async (directory, prefix) => {
+      for await (const entry of Deno.readDir(directory)) {
+        if (entry.isDirectory) await walk(join(directory, entry.name), `${prefix}${entry.name}/`)
+        else files.push(prefix + entry.name)
+      }
+    }
+    await walk(join(dir, outdir), `${outdir}/`).catch(() => {})
+    files.sort()
+    return section('output files', files.join('\n'))
+  }
+
+  try {
+    await t.step('bundle-app', async () => {
+      const result = await runImp(['bundle'], dir)
+      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      const module = await import(toFileUrl(join(dir, 'dist', 'app.js')).href)
+      const usage =
+        `[bundled module: message='${module.message}', propsAreObjects=${module.propsAreObjects}, lazy loadShout()='${await module
+          .loadShout()}']`
+      await assertSnapshot(
+        'bundle-app',
+        mask(
+          `${commandTranscript('imp bundle  (cwd: <tmp>)', result)}\n${await outputTree(
+            'dist',
+          )}\n\n${section('dist/index.html', html)}\n\n${usage}\n`,
+        ),
+      )
+    })
+
+    await t.step('bundle-js-entry', async () => {
+      const result = await runImp(['bundle', 'app.js', '--outdir', 'component'], dir)
+      const module = await import(toFileUrl(join(dir, 'component', 'app.js')).href)
+      const usage = `[bundled module: message='${module.message}', lazy loadShout()='${await module
+        .loadShout()}']`
+      await assertSnapshot(
+        'bundle-js-entry',
+        mask(
+          `${
+            commandTranscript('imp bundle app.js --outdir component  (cwd: <tmp>)', result)
+          }\n${await outputTree('component')}\n\n${usage}\n`,
+        ),
+      )
+    })
+
+    await t.step('bundle-external', async () => {
+      const result = await runImp(
+        ['bundle', 'app.js', '--outdir', 'shared', '--external', 'imp,mitt'],
+        dir,
+      )
+      const code = await Deno.readTextFile(join(dir, 'shared', 'app.js'))
+      await assertSnapshot(
+        'bundle-external',
+        mask(
+          `${
+            commandTranscript(
+              'imp bundle app.js --outdir shared --external imp,mitt  (cwd: <tmp>)',
+              result,
+            )
+          }\n${await outputTree('shared')}\n\n${section('shared/app.js', code)}\n`,
+        ),
+      )
+    })
+
+    await t.step('bundle-external-html-entry', async () => {
+      const result = await runImp(['bundle', '--external', 'imp'], dir)
+      await assertSnapshot(
+        'bundle-external-html-entry',
+        mask(commandTranscript('imp bundle --external imp  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('bundle-missing-entry', async () => {
+      const result = await runImp(['bundle', 'missing.html'], dir)
+      await assertSnapshot(
+        'bundle-missing-entry',
+        mask(commandTranscript('imp bundle missing.html  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('bundle-outdir-contains-project', async () => {
+      const result = await runImp(['bundle', '--outdir', '.'], dir)
+      await assertSnapshot(
+        'bundle-outdir-contains-project',
+        mask(commandTranscript('imp bundle --outdir .  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('bundle-not-vendored', async () => {
+      const result = await runImp(['bundle'], fixture('with-config'))
+      await assertSnapshot(
+        'bundle-not-vendored',
+        mask(
+          commandTranscript('imp bundle  (cwd: /test/fixtures/with-config)', result),
+        ),
+      )
+    })
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
 async function startServer(cwd) {
   const child = new Deno.Command(IMP, {
     args: ['start', 'index.html', '--port', '0'],

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>bundle fixture</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script type="module">
+      import { isPlainObject } from 'imp'
+      console.log('inline module sees imp:', isPlainObject({}))
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/app.js"></script>
+    <script type="module" src="https://example.com/external.js"></script>
+  </body>
+</html>

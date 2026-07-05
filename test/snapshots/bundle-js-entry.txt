@@ -1,0 +1,18 @@
+$ imp bundle app.js --outdir component  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+bundled app.js → component/
+  app.js (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/lazy-<hash>.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- output files ---
+component/app.js
+component/chunks/chunk-<hash>.js
+component/chunks/lazy-<hash>.js
+
+[bundled module: message='hello from the bundle', lazy loadShout()='HELLO FROM THE BUNDLE']

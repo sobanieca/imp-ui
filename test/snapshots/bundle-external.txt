@@ -1,0 +1,20 @@
+$ imp bundle app.js --outdir shared --external imp,mitt  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+bundled app.js → shared/
+  external imports (resolved by the host at runtime): imp, mitt
+  app.js (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/lazy-<hash>.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- output files ---
+shared/app.js
+shared/chunks/chunk-<hash>.js
+shared/chunks/lazy-<hash>.js
+
+--- shared/app.js ---
+import{a as e}from"./chunks/chunk-<hash>.js";import i from"mitt";import{isPlainObject as s}from"imp";var o=i(),r=null;o.on("ready",t=>{r=t});o.emit("ready",e);var a=r,c=s({}),l=async()=>{let{shout:t}=await import("./chunks/lazy-<hash>.js");return t()};export{l as loadShout,a as message,c as propsAreObjects};

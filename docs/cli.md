@@ -26,6 +26,7 @@ development is applied to the bundle, so what you tested is what ships.
 
 ```
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
+imp bundle [file.html] [--outdir dist]  build the app for production
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
@@ -122,6 +123,74 @@ import mitt from 'mitt'
 
 If a declared dependency has no vendored bundle yet (say, right after editing `imp.json` by hand),
 `imp start` prints a warning suggesting `imp install`.
+
+## `imp bundle`
+
+```
+imp bundle [file.html] [--outdir dist]
+imp bundle <file.js> [--outdir dist] [--external <import>]
+```
+
+Builds the production version of your app into an output directory (default: `dist/`) that you
+upload to any static host or CDN exactly as it is — plain static files, no imp runtime, no import
+map, nothing to install on the server. The output directory is replaced on every run.
+
+Given an HTML page (default: `index.html`, the same entry `imp start` serves), imp finds the page's
+module scripts and bundles each one into minified, self-contained JavaScript:
+
+- **Same resolution as development.** `import { div } from 'imp'` and every vendored dependency
+  alias resolve exactly as they do under `imp start` — `imp` to the built-in library, each alias to
+  the bundle in your `dependencies/` folder. The build runs fully offline; what you tested in
+  development is what ships.
+- **Paths are preserved.** Each `<script type="module" src="…">` keeps its URL — the bundled file is
+  written to the same relative path the source file had — so the HTML works unchanged. Inline
+  `<script type="module">` blocks are bundled too and re-inlined, minified with their imports
+  resolved.
+- **Code splitting.** Modules you load lazily with `import()` are split into separate chunks (under
+  `chunks/`, with content hashes) that load on demand, and code shared between several entry points
+  is emitted once instead of being duplicated into each bundle.
+- **Everything else ships verbatim.** Files that were compiled into the bundles (your module
+  sources, the vendored dependency bundles) are omitted from the output; every other project file —
+  stylesheets, images, fonts, plain text — is copied over unchanged, so the output directory is the
+  complete site.
+
+Given a JavaScript module instead of a page, `imp bundle` emits that module as a single
+self-contained file: imp itself and every dependency are compiled in, so the result — say, a web
+component authored with imp — can be dropped into any application, whatever framework it uses,
+without pulling in imp or any other runtime.
+
+### External imports — using the host's copy
+
+```
+imp bundle component.js --external imp
+imp bundle component.js --external imp,mitt
+```
+
+By default a JS-entry bundle carries everything it needs. If your component will run inside an
+application that already provides some of those imports, `--external` (repeatable, or
+comma-separated) names imports to leave out of the bundle: they stay in the output as bare `import`
+statements for the host page to resolve, and the file shrinks accordingly.
+
+The main use is a component shipped into another imp application. There, `imp` and any dependency
+alias the host also declares are already resolvable — in development through the import map the dev
+server injects, and in production because the host's own `imp bundle` resolves the bare imports when
+it builds. The host page then holds a **single copy** of imp shared by the app and your component,
+instead of one copy each.
+
+Two things to be aware of:
+
+- **The host must actually provide every external import.** Outside an imp application that means
+  adding an import map entry (or bundler alias) mapping each name — an externalized bundle fails at
+  load time in a page that maps nothing. When in doubt, ship self-contained.
+- **imp version skew.** A self-contained bundle freezes the imp version it was built with; an
+  externalized one runs against whatever imp version the host provides, which may be newer or older
+  than the one you developed against. A host upgrading imp can change your component's behavior
+  without your bundle changing at all — test your component against the imp versions your host
+  applications actually run.
+
+`--external` applies only to JS entries. An HTML build has no import map in its production output,
+so nothing could resolve a bare import that was left external — `imp bundle` rejects the
+combination.
 
 ## `imp install` and `imp uninstall`
 

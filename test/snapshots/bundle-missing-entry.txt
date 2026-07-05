@@ -1,0 +1,8 @@
+$ imp bundle missing.html  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: file not found: missing.html

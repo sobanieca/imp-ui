@@ -50,5 +50,5 @@ the dependency's vendor folder.
 - wasm esbuild is roughly an order of magnitude slower than native esbuild; that cost is paid once
   per `imp install`, never while serving or in CI.
 - Resolution semantics match Deno's own, since the plugin uses Deno's resolver crates — the same
-  behavior apps get under `deno task imp`. The engine and resolver are reused by the planned
-  `imp bundle` command (`todo/bundle-command.md`).
+  behavior apps get under `deno task imp`. The engine and resolver are reused by `imp bundle`
+  (`production-bundling.md`).
