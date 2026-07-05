@@ -45,8 +45,9 @@ themselves all run in-process.
 - Lint rule names follow ESLint conventions, and new imp rules are written against ESLint's plugin
   API. Linting is slower than native-Rust linters — acceptable at the scale of buildless projects
   imp targets, with oxlint available as a future drop-in if that changes.
-- The wasm plugins add ~10 MB and ESLint ~10 MB to the binary.
-  `deno run -A tools/download_fmt_plugins.js` must run before compiling or testing (wired into the
-  `compile` and `test` tasks).
+- The wasm plugins add ~10 MB and the pre-bundled ESLint ~1.3 MB to the binary
+  (`prebundled-npm-dependencies.md`). `deno run -A tools/download_fmt_plugins.js` and
+  `deno run -A tools/prebundle_npm_deps.js` must run before compiling or testing (wired into the
+  `compile` task, which the `test` task runs first).
 - User-supplied lint plugins (dynamic import of user JS inside a compiled binary) are not supported
   until verified separately.

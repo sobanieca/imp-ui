@@ -217,7 +217,7 @@ async function runUnitFile({ code, filter }) {
 const slug = (text) => text.replaceAll(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
 
 async function launchBrowser(executablePath) {
-  const { default: puppeteer } = await import('puppeteer-core')
+  const { default: puppeteer } = await import('./vendor/puppeteer_core.js')
   const args = ['--disable-dev-shm-usage']
   try {
     if (Deno.uid() === 0) args.push('--no-sandbox')

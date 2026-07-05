@@ -1,6 +1,4 @@
-import { Linter } from 'eslint/universal'
-import js from '@eslint/js'
-import globals from 'globals'
+import { browserGlobals, Linter, recommendedRules } from './vendor/eslint.js'
 import { relative } from '@std/path'
 import impPlugin, { dependencyPinProblem } from './lint_rules.js'
 import { loadImpConfig } from './config.js'
@@ -18,11 +16,11 @@ const buildConfig = (userRules, dependencyAliases) => ({
   languageOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    globals: globals.browser,
+    globals: browserGlobals,
   },
   settings: { imp: { dependencyAliases } },
   plugins: { imp: impPlugin },
-  rules: { ...js.configs.recommended.rules, ...userRules, ...IMP_RULES },
+  rules: { ...recommendedRules, ...userRules, ...IMP_RULES },
 })
 
 const IMP_RULE_NAMES = Object.keys(impPlugin.rules)

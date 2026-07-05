@@ -53,8 +53,8 @@ feeds discovery; explicit paths run exactly those files.
   independently schedulable.
 - Test files are bundled before running, so failures report per test with assertion detail but
   without original file/line stack traces — the per-file granularity and test names carry location.
-- happy-dom and puppeteer-core add to the binary size (consistent with the fmt/lint engines); the
-  pinned Chrome download is ~190 MB once per user per pinned version, and platforms without a pinned
-  build must configure `test.browser`.
+- happy-dom and puppeteer-core add ~3 MB to the binary as pre-bundled vendor files
+  (`prebundled-npm-dependencies.md`); the pinned Chrome download is ~190 MB once per user per pinned
+  version, and platforms without a pinned build must configure `test.browser`.
 - A checksum pin means imp releases, not ambient browser updates, decide the managed e2e browser
   version; bumping it is a one-file change (version + hashes).

@@ -1,4 +1,4 @@
-import { Window } from 'happy-dom'
+import { Window } from './vendor/happy_dom.js'
 
 const LOWERCASE_GLOBALS = new Set([
   'window',
