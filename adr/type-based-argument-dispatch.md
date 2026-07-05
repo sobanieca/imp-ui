@@ -31,8 +31,8 @@ and `list?.length && ...` drop out cleanly without wrapper syntax.
   positional placeholders.
 - Exactly one props object per call. Merging several silently clobbers structured keys (`class`,
   `style`), so a second props object is a usage error: the runtime warns and applies last-wins, and
-  an `imp lint` rule is planned to catch it statically. Compose props into one object before the
-  call (`div({ ...base, ...extra }, …)`).
+  the `single-props-object` `imp lint` rule catches it statically. Compose props into one object
+  before the call (`div({ ...base, ...extra }, …)`).
 - The cost is a small dispatch function and one rule to learn instead of an argument signature; type
   confusion is possible in principle (e.g. an array meant as a prop value must sit inside a props
   object, not float as an argument) but rare in practice.

@@ -1,4 +1,13 @@
 import { defaultAlias, DEPENDENCY_SCHEME, EXACT_VERSION, parseSpecifier } from './specifiers.js'
+import { TAGS } from '../render.js'
+
+const ELEMENT_FACTORIES = new Set(TAGS)
+
+const classifyFactory = (importedName) => {
+  if (importedName === 'el') return 'el'
+  if (ELEMENT_FACTORIES.has(importedName)) return 'tag'
+  return null
+}
 
 const exampleVersion = (version) => {
   const digits = version?.match(/\d+(\.\d+){0,2}/)?.[0]
@@ -49,6 +58,61 @@ export default {
                 node.init.type === 'FunctionExpression')
             ) {
               report(node.id, node.id.name)
+            }
+          },
+        }
+      },
+    },
+    'single-props-object': {
+      create(context) {
+        const factoryLocals = new Map()
+        const namespaceLocals = new Set()
+        const calls = []
+
+        const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
+
+        const factoryKind = (callee) => {
+          if (callee.type === 'Identifier') return factoryLocals.get(callee.name) ?? null
+          if (
+            callee.type === 'MemberExpression' && !callee.computed &&
+            callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
+            callee.property.type === 'Identifier'
+          ) return classifyFactory(callee.property.name)
+          return null
+        }
+
+        const factoryName = (callee) =>
+          callee.type === 'Identifier' ? callee.name : callee.property.name
+
+        return {
+          ImportDeclaration(node) {
+            if (node.source.value !== 'imp') return
+            for (const specifier of node.specifiers) {
+              if (specifier.type === 'ImportSpecifier') {
+                const kind = classifyFactory(importedName(specifier))
+                if (kind) factoryLocals.set(specifier.local.name, kind)
+              } else if (specifier.type === 'ImportNamespaceSpecifier') {
+                namespaceLocals.add(specifier.local.name)
+              }
+            }
+          },
+          CallExpression(node) {
+            calls.push(node)
+          },
+          'Program:exit'() {
+            for (const node of calls) {
+              const kind = factoryKind(node.callee)
+              if (!kind) continue
+              const propsObjects = node.arguments
+                .slice(kind === 'el' ? 1 : 0)
+                .filter((argument) => argument.type === 'ObjectExpression')
+              if (propsObjects.length < 2) continue
+              context.report({
+                node: propsObjects[1],
+                message: `multiple props objects passed to '${
+                  factoryName(node.callee)
+                }' — pass a single props object; later keys win`,
+              })
             }
           },
         }

@@ -146,7 +146,7 @@ export function el(tag, ...args) {
   return build(document.createElement(tag), args)
 }
 
-const TAGS = [
+export const TAGS = [
   'div',
   'p',
   'span',

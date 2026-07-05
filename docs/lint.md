@@ -47,6 +47,25 @@ error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp c
  --> src/widget.js:1:7
 ```
 
+### `imp/single-props-object`
+
+An element takes at most one props object; everything else you pass is a child. Passing a second
+object literal to an element factory is almost always a mistake — at runtime the objects are merged
+and later keys silently win. The rule flags any call to a built-in element factory (`div`, `span`,
+…, and the generic `el`) that receives more than one object literal:
+
+```js
+div({ class: 'card' }, { onclick: open }, 'Open')
+```
+
+```
+error[imp/single-props-object]: multiple props objects passed to 'div' — pass a single props object; later keys win
+ --> src/app.js:1:26
+```
+
+Merge the properties into one object instead. For `el`, the leading tag argument is ignored, so only
+the object literals after it are counted.
+
 ### `imp/exact-dependency-versions`
 
 Dependencies are vendored: declared under `dependencies` in `imp.json` and bundled into your

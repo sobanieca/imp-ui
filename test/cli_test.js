@@ -50,6 +50,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-clean', ['lint', 'app.js'], fixture('with-config'))
   await test('lint-vendored-imports', ['lint', 'app.js'], fixture('basic'))
   await test('lint-capital-component', ['lint', 'components.js'], fixture('lint-bad'))
+  await test('lint-multiple-props-objects', ['lint', 'app.js'], fixture('lint-props'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
   await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))
   await test('lint-imports-removed', ['lint', 'app.js'], fixture('legacy-imports'))

@@ -11,6 +11,7 @@ const LINT_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
 const IMP_RULES = {
   'imp/no-capital-component': 'error',
   'imp/exact-dependency-versions': 'error',
+  'imp/single-props-object': 'error',
 }
 
 const buildConfig = (userRules, dependencyAliases) => ({
