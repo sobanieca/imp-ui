@@ -1,9 +1,9 @@
 # Standalone example showcase repositories
 
-Ship a set of larger, self-contained imp apps as **separate open-source GitHub repositories** —
-each a real project a developer can clone, run, and study end to end, not a snippet under
-`examples/`. Every repo is imp-branded (`imp.json`, `imp start`, `imp.lock`) with its own README,
-license, and CI, and demonstrates imp holding up at application scale.
+Ship a set of larger, self-contained imp apps as **separate open-source GitHub repositories** — each
+a real project a developer can clone, run, and study end to end, not a snippet under `examples/`.
+Every repo is imp-branded (`imp.json`, `imp start`, `imp.lock`) with its own README, license, and
+CI, and demonstrates imp holding up at application scale.
 
 Initial set:
 

@@ -56,6 +56,13 @@ The docs will be published on a public site, so:
   it inline in plain language.
 - No maintainer notes or TODO markers in docs — planned work belongs in `todo/`.
 
+## After making changes
+
+After completing a batch of code changes, always run `deno lint` and `deno fmt` and address any
+issues they report before considering the work done. These operate on imp's own repo source, so it
+is fine to invoke Deno directly here — this is internal maintainer tooling, not a user-facing
+surface.
+
 ## Code style
 
 **Do not add comments to code.** Write self-explanatory code instead — use clear, descriptive names
