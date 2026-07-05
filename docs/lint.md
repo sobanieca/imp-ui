@@ -2,6 +2,7 @@
 
 ```
 imp lint [...paths]
+imp lint --fix [...paths]
 ```
 
 `imp lint` checks your code with a standard recommended rule set plus imp's own rules. The linter is
@@ -134,6 +135,33 @@ directive anywhere in the file:
 
 imp rule names can be written bare (`no-capital-component`) or fully qualified
 (`imp/no-capital-component`) — both work.
+
+## Applying fixes
+
+Many rules know how to repair the code they flag. Run `imp lint --fix` to apply every available
+autofix and rewrite the affected files in place:
+
+```
+imp lint --fix
+```
+
+Only problems with a known fix are changed; anything that needs a human decision (an imp rule
+violation, an unused variable, …) is left untouched and still reported. In `.html` files the inline
+`<script>` blocks are fixed just like standalone modules. Problems you have silenced with an
+`imp-lint-ignore` comment are never fixed, and the ignore comments themselves are preserved exactly
+as written.
+
+After a fix run, the summary counts the files that changed alongside the problems that remain:
+
+```
+Fixed 1 file
+Found 1 problem
+Checked 8 files
+```
+
+The exit code follows the same rule as a plain run: `1` if any error remains after fixing, `0`
+otherwise. It is good practice to commit or stash your work before a `--fix` run so the rewrites are
+easy to review.
 
 ## Output and exit code
 

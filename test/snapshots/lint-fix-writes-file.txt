@@ -1,0 +1,43 @@
+$ imp lint --fix app.js  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp components are lowercase functions (write 'widget')
+ --> app.js:6:14
+
+Fixed 1 file
+Found 1 problem
+Checked 1 file
+
+--- fixed file ---
+export const toggle = (flag) => (flag ? 'on' : 'off')
+
+// imp-lint-ignore no-extra-boolean-cast
+export const keep = (flag) => (!!flag ? 'y' : 'n')
+
+export const Widget = () => toggle(true)
+
+--- second run (idempotent) ---
+$ imp lint --fix app.js  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp components are lowercase functions (write 'widget')
+ --> app.js:6:14
+
+Found 1 problem
+Checked 1 file
+
+--- file after second run ---
+export const toggle = (flag) => (flag ? 'on' : 'off')
+
+// imp-lint-ignore no-extra-boolean-cast
+export const keep = (flag) => (!!flag ? 'y' : 'n')
+
+export const Widget = () => toggle(true)

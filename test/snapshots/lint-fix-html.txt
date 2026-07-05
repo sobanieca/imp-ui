@@ -1,0 +1,27 @@
+$ imp lint --fix index.html  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Fixed 1 file
+Checked 1 file
+
+--- fixed file ---
+<!doctype html>
+<html>
+  <head>
+    <script type="importmap">{ "imports": { "imp": "/@imp/imp.js" } }</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { div, mount } from 'imp'
+
+      const label = (on) => div(on ? 'on' : 'off')
+
+      mount('#app', () => div(label(true)))
+    </script>
+  </body>
+</html>

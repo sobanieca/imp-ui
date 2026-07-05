@@ -11,7 +11,7 @@ USAGE
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
-  imp lint [...paths]                   lint with imp rules
+  imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
 `
 
@@ -71,7 +71,9 @@ try {
     }
     case 'lint': {
       const { lint } = await import('./lint.js')
-      Deno.exit(await lint({ root: Deno.cwd(), paths: positional(rest) }))
+      const fix = rest.includes('--fix')
+      const args = rest.filter((arg) => arg !== '--fix')
+      Deno.exit(await lint({ root: Deno.cwd(), paths: positional(args), fix }))
       break
     }
     case 'fmt': {

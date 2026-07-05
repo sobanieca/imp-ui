@@ -30,7 +30,7 @@ imp bundle [file.html] [--outdir dist]  build the app for production
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
-imp lint  [...paths]                  lint with imp rules
+imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
 imp help                              show usage
 ```
@@ -223,6 +223,7 @@ aliases, jsr packages and subpaths, what gets printed, and why the vendored fold
 
 ```
 imp lint [...paths]
+imp lint --fix [...paths]
 ```
 
 Lints the given paths (default: the whole project) with a standard recommended rule set plus imp's
@@ -230,6 +231,10 @@ own rules, which are always applied: `no-capital-component` (imp components are 
 and `exact-dependency-versions` (dependency pins in `imp.json` must be exact, and imports must go
 through declared, vendored dependencies — see **[Managing dependencies](dependencies.md)**). `.html`
 files are covered too: inline `<script>` blocks are linted like any other code.
+
+`--fix` rewrites files in place, applying every autofix the rule set offers (in `.html` files the
+inline `<script>` blocks are fixed too) and leaving only the problems that need a human. Problems
+suppressed by `imp-lint-ignore` comments are never touched.
 
 Per-rule severities and excluded paths are configured under `lint` in `imp.json`, and
 `imp-lint-ignore` comments suppress findings in code.

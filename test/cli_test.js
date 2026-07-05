@@ -63,6 +63,40 @@ Deno.test('imp commands', async (t) => {
   await test('fmt-path-not-found', ['fmt', 'missing.js'], fixture('basic'))
   await test('fmt-invalid-imp-json', ['fmt', '--check', 'app.js'], fixture('broken-config'))
 
+  await t.step('lint-fix-writes-file', async () => {
+    const dir = await Deno.makeTempDir()
+    const file = join(dir, 'app.js')
+    await Deno.copyFile(join(fixture('lint-fix'), 'app.js'), file)
+    const result = await runImp(['lint', '--fix', 'app.js'], dir)
+    const fixed = await Deno.readTextFile(file)
+    const again = await runImp(['lint', '--fix', 'app.js'], dir)
+    const afterSecondRun = await Deno.readTextFile(file)
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'lint-fix-writes-file',
+      `${
+        commandTranscript('imp lint --fix app.js  (cwd: <tmp>)', result)
+      }\n--- fixed file ---\n${fixed}\n--- second run (idempotent) ---\n${
+        commandTranscript('imp lint --fix app.js  (cwd: <tmp>)', again)
+      }\n--- file after second run ---\n${afterSecondRun}`,
+    )
+  })
+
+  await t.step('lint-fix-html', async () => {
+    const dir = await Deno.makeTempDir()
+    const file = join(dir, 'index.html')
+    await Deno.copyFile(join(fixture('lint-fix'), 'index.html'), file)
+    const result = await runImp(['lint', '--fix', 'index.html'], dir)
+    const fixed = await Deno.readTextFile(file)
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'lint-fix-html',
+      `${
+        commandTranscript('imp lint --fix index.html  (cwd: <tmp>)', result)
+      }\n--- fixed file ---\n${fixed}`,
+    )
+  })
+
   await t.step('fmt-writes-file', async () => {
     const dir = await Deno.makeTempDir()
     const file = join(dir, 'messy.js')
