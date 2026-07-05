@@ -1,0 +1,20 @@
+$ imp bundle app.js --outdir shared  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+bundled app.js → shared/
+  imp imports kept bare — resolved by the imp host at runtime
+  app.js (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/lazy-<hash>.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- output files ---
+shared/app.js
+shared/chunks/chunk-<hash>.js
+shared/chunks/lazy-<hash>.js
+
+--- shared/app.js ---
+import{a as r}from"./chunks/chunk-<hash>.js";function s(t){return{all:t=t||new Map,on:function(o,n){var e=t.get(o);e?e.push(n):t.set(o,[n])},off:function(o,n){var e=t.get(o);e&&(n?e.splice(e.indexOf(n)>>>0,1):t.set(o,[]))},emit:function(o,n){var e=t.get(o);e&&e.slice().map(function(i){i(n)}),(e=t.get("*"))&&e.slice().map(function(i){i(o,n)})}}}import{isPlainObject as p}from"imp";var a=s(),c=null;a.on("ready",t=>{c=t});a.emit("ready",r);var d=c,g=p({}),x=async()=>{let{shout:t}=await import("./chunks/lazy-<hash>.js");return t()};export{x as loadShout,d as message,g as propsAreObjects};

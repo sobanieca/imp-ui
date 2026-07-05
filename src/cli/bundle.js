@@ -59,14 +59,13 @@ const withoutExtension = (path) => path.slice(0, path.length - extname(path).len
 
 const asPosix = (path) => path.replaceAll('\\', '/')
 
-function impResolverPlugin({ root, dependencies, inlineSources, external }) {
-  const externalNames = new Set(external)
-  const aliases = Object.keys(dependencies).filter((alias) => !externalNames.has(alias))
+function impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost }) {
+  const aliases = Object.keys(dependencies)
   const escapeForRegExp = (text) => text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
   return {
     name: 'imp',
     setup(build) {
-      if (!externalNames.has('imp')) {
+      if (!impProvidedByHost) {
         build.onResolve({ filter: /^imp$/ }, () => ({
           path: IMP_LIBRARY_URL,
           namespace: 'imp-library',
@@ -107,13 +106,16 @@ function impResolverPlugin({ root, dependencies, inlineSources, external }) {
 }
 
 async function buildEntryPoints(
-  { root, entryPoints, dependencies, inlineSources, outdir, external },
+  { root, entryPoints, dependencies, inlineSources, outdir, impProvidedByHost },
 ) {
   try {
     return await runEsbuild({
-      plugins: [impResolverPlugin({ root, dependencies, inlineSources, external }), denoPlugin()],
+      plugins: [
+        impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost }),
+        denoPlugin(),
+      ],
       entryPoints,
-      external,
+      external: impProvidedByHost ? ['imp'] : [],
       bundle: true,
       splitting: true,
       minify: true,
@@ -185,7 +187,7 @@ async function copyStaticFiles({ root, outdir, skipFiles, written }) {
 
 const formatSize = (bytes) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} kB`
 
-export async function bundle({ entry = 'index.html', outdir = 'dist', external = [] } = {}) {
+export async function bundle({ entry = 'index.html', outdir = 'dist' } = {}) {
   const entryPath = resolve(entry)
   let entryStat
   try {
@@ -210,12 +212,8 @@ export async function bundle({ entry = 'index.html', outdir = 'dist', external =
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
   const isHtmlEntry = ['.html', '.htm'].includes(extname(entryName).toLowerCase())
-  const externalImports = [...new Set(external)]
-  if (externalImports.length && isHtmlEntry) {
-    throw new Error(
-      '--external requires a JS entry — the production output of an HTML page has no import map to resolve bare imports',
-    )
-  }
+  const targetImpHost = imp.targetImpHost === true
+  const impProvidedByHost = targetImpHost && !isHtmlEntry
 
   let html = null
   let scripts = [entryPath]
@@ -247,7 +245,7 @@ export async function bundle({ entry = 'index.html', outdir = 'dist', external =
     dependencies,
     inlineSources,
     outdir: outdirPath,
-    external: externalImports,
+    impProvidedByHost,
   })
 
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
@@ -275,10 +273,10 @@ export async function bundle({ entry = 'index.html', outdir = 'dist', external =
   }
 
   console.log(`bundled ${entryName} → ${relative(Deno.cwd(), outdirPath) || '.'}/`)
-  if (externalImports.length) {
-    console.log(
-      `  external imports (resolved by the host at runtime): ${externalImports.join(', ')}`,
-    )
+  if (impProvidedByHost) {
+    console.log('  imp imports kept bare — resolved by the imp host at runtime')
+  } else if (targetImpHost && isHtmlEntry) {
+    console.log('  targetImpHost ignored — an HTML page is its own host, imp is bundled in')
   }
   written.sort()
   for (const name of written) {

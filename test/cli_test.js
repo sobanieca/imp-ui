@@ -1,6 +1,7 @@
 import { fromFileUrl, join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { CLIENT_JS } from '../src/cli/client.js'
+import { bundleDependency, shutdownBundler } from '../src/cli/deps.js'
 import { injectImp } from '../src/cli/start.js'
 import { defaultAlias, parseSpecifier } from '../src/cli/specifiers.js'
 
@@ -152,6 +153,25 @@ Deno.test('imp install and uninstall', async (t) => {
 
     await test('uninstall-removes-dependency', ['uninstall', 'bus'])
     await test('install-update-all', ['install'], { mask: maskLatest })
+    await test('install-imp-package-rejected', ['install', 'imp'], { state: false })
+    await test('install-imp-alias-rejected', ['install', 'mitt', '3.0.1', '--alias', 'imp'], {
+      state: false,
+    })
+
+    await t.step('install-imp-alias-declared', async () => {
+      const declared = await Deno.makeTempDir()
+      await Deno.writeTextFile(
+        join(declared, 'imp.json'),
+        '{ "dependencies": { "imp": "npm:imp@1.0.1" } }\n',
+      )
+      const result = withoutDownloadNoise(await runImp(['install'], declared))
+      await Deno.remove(declared, { recursive: true })
+      await assertSnapshot(
+        'install-imp-alias-declared',
+        commandTranscript('imp install  (cwd: <tmp>)', result),
+      )
+    })
+
     await test('install-unknown-package', ['install', 'imp-test-no-such-package-404'], {
       state: false,
     })
@@ -230,30 +250,52 @@ Deno.test('imp bundle', async (t) => {
       )
     })
 
-    await t.step('bundle-external', async () => {
-      const result = await runImp(
-        ['bundle', 'app.js', '--outdir', 'shared', '--external', 'imp,mitt'],
-        dir,
-      )
+    const writeImpJson = (config) =>
+      Deno.writeTextFile(join(dir, 'imp.json'), JSON.stringify(config, null, 2) + '\n')
+
+    await t.step('bundle-target-imp-host', async () => {
+      await writeImpJson({
+        dependencies: { mitt: 'npm:mitt@3.0.1' },
+        targetImpHost: true,
+      })
+      const result = await runImp(['bundle', 'app.js', '--outdir', 'shared'], dir)
       const code = await Deno.readTextFile(join(dir, 'shared', 'app.js'))
       await assertSnapshot(
-        'bundle-external',
+        'bundle-target-imp-host',
         mask(
           `${
-            commandTranscript(
-              'imp bundle app.js --outdir shared --external imp,mitt  (cwd: <tmp>)',
-              result,
-            )
+            commandTranscript('imp bundle app.js --outdir shared  (cwd: <tmp>)', result)
           }\n${await outputTree('shared')}\n\n${section('shared/app.js', code)}\n`,
         ),
       )
     })
 
-    await t.step('bundle-external-html-entry', async () => {
-      const result = await runImp(['bundle', '--external', 'imp'], dir)
+    await t.step('bundle-html-entry-ignores-target-imp-host', async () => {
+      const result = await runImp(['bundle'], dir)
       await assertSnapshot(
-        'bundle-external-html-entry',
-        mask(commandTranscript('imp bundle --external imp  (cwd: <tmp>)', result)),
+        'bundle-html-entry-ignores-target-imp-host',
+        mask(commandTranscript('imp bundle  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('bundle-external-flag-removed', async () => {
+      const result = await runImp(['bundle', 'app.js', '--external', 'imp'], dir)
+      await assertSnapshot(
+        'bundle-external-flag-removed',
+        mask(commandTranscript('imp bundle app.js --external imp  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('bundle-invalid-target-imp-host', async () => {
+      await writeImpJson({
+        dependencies: { mitt: 'npm:mitt@3.0.1' },
+        targetImpHost: 'yes',
+      })
+      const result = await runImp(['bundle', 'app.js'], dir)
+      await writeImpJson({ dependencies: { mitt: 'npm:mitt@3.0.1' } })
+      await assertSnapshot(
+        'bundle-invalid-target-imp-host',
+        mask(commandTranscript('imp bundle app.js  (cwd: <tmp>)', result)),
       )
     })
 
@@ -439,6 +481,31 @@ Deno.test('injectImp', async () => {
     )
     .join('\n')
   await assertSnapshot('inject-imp', transcript)
+})
+
+Deno.test('bundleDependency keeps bare imp imports external', async () => {
+  const dir = await Deno.makeTempDir()
+  const entry = join(dir, 'component.js')
+  await Deno.writeTextFile(
+    entry,
+    "import { div } from 'imp'\nexport const box = (text) => div(text)\n",
+  )
+  try {
+    const { files, packages, impImports } = await bundleDependency({
+      specifier: toFileUrl(entry).href,
+      alias: 'component',
+    })
+    const code = new TextDecoder().decode(files[0].contents)
+    const transcript = `${section('files', files.map((file) => file.name).join('\n'))}\n\n${
+      section('bundled packages', packages.join('\n'))
+    }\n\n${section('imp imports kept bare', impImports.join('\n'))}\n\n${
+      section('component.js', code)
+    }\n`
+    await assertSnapshot('bundle-dependency-imp-external', transcript)
+  } finally {
+    await shutdownBundler()
+    await Deno.remove(dir, { recursive: true })
+  }
 })
 
 Deno.test('parseSpecifier', async () => {

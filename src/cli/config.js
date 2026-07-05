@@ -30,9 +30,17 @@ export async function loadImpConfig(root) {
     }
   }
   for (const [alias, specifier] of Object.entries(config.dependencies ?? {})) {
+    if (alias === 'imp') {
+      throw new Error(
+        "invalid imp.json — 'imp' is reserved for the imp library and cannot be a dependency alias",
+      )
+    }
     if (typeof specifier !== 'string') {
       throw new Error(`invalid imp.json — dependency '${alias}' must be a string specifier`)
     }
+  }
+  if (config.targetImpHost !== undefined && typeof config.targetImpHost !== 'boolean') {
+    throw new Error("invalid imp.json — 'targetImpHost' must be true or false")
   }
   return config
 }

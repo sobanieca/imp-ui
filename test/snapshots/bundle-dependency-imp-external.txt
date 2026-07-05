@@ -1,0 +1,11 @@
+--- files ---
+component.js
+
+--- bundled packages ---
+(empty)
+
+--- imp imports kept bare ---
+imp
+
+--- component.js ---
+import{div as r}from"imp";var i=o=>r(o);export{i as box};

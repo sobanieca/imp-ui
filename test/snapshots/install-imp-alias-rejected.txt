@@ -1,0 +1,8 @@
+$ imp install mitt 3.0.1 --alias imp  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: 'imp' is reserved for the imp library, which every app can already import — pick a different alias

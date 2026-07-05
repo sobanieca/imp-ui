@@ -1,8 +1,0 @@
-$ imp bundle --external imp  (cwd: <tmp>)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-error: --external requires a JS entry — the production output of an HTML page has no import map to resolve bare imports

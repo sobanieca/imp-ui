@@ -40,6 +40,9 @@ choose your own:
 imp install mitt --alias events
 ```
 
+One name is reserved: `imp` always refers to the imp library itself, which every app can already
+import — it cannot be installed as a dependency or used as an alias.
+
 ## Pinning a version
 
 To install a specific version, attach it to the package name or pass it as a second argument — the
@@ -119,6 +122,37 @@ installed micromark (npm:micromark@4.0.2)
 
 This listing is your audit record: read it to see what you are actually shipping, and note a
 specific version if you ever need to trace one.
+
+## Packages built with imp
+
+A component published from another imp project built for an imp host (see **[the CLI docs](cli.md)**
+on `targetImpHost`) contains bare `import { div } from 'imp'` statements, deliberately left
+unresolved so the component shares the application's copy of imp instead of carrying its own.
+
+`imp install` honors that contract: a bare `imp` import is the one specifier never resolved against
+a registry — it always means the imp library your toolchain ships, never an npm package that happens
+to be called `imp`. The import is kept bare in the vendored bundle, and your app provides it the
+same way it provides it to your own code: through the import map in development, and through your
+own `imp bundle` in production.
+
+Everything else a package imports is bundled in at install time from the package's own dependency
+graph, exactly as declared by its author — your `imp.json` aliases play no part in how a package's
+internals resolve. `imp` is the only external.
+
+When a package expects imp, the install listing says so:
+
+```
+installed counter (npm:some-imp-counter@1.0.0)
+  dependencies/counter/counter.js (2.1 kB)
+  bundled packages:
+    some-imp-counter@1.0.0
+  imp imports kept bare (resolved by this app at runtime): imp
+    note: this package runs against the imp version this app provides, not the one it was built with
+```
+
+That note is worth taking seriously: the component runs against your imp version, which may be newer
+or older than the one its author developed against — after upgrading imp, exercise the installed
+components that expect it.
 
 ## The `dependencies/` folder
 

@@ -37,11 +37,14 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   replaced on each run) is the complete uploadable site.
 - **A JS entry emits a self-contained module**: imp and all dependencies compiled in, so an imp
   component can be dropped into any application without a runtime. No files are copied in this mode.
-- **`--external <import>` (JS entries only) keeps named imports out of the bundle** as bare
-  specifiers for the host context to resolve — the dev server's import map and a host app's own
-  `imp bundle` both resolve bare `imp` and alias imports, so a component can share the host's single
-  copy of imp instead of carrying its own. HTML builds reject the flag: their production output has
-  no import map, so an external bare import could never resolve.
+- **`targetImpHost: true` in `imp.json` (JS entries only) keeps `imp` imports out of the bundle** as
+  bare specifiers for the host context to resolve — the dev server's import map and a host app's own
+  `imp bundle` both resolve bare `imp`, so a component can share the host's single copy of imp
+  instead of carrying its own. imp is the only import that can stay bare: declared dependencies are
+  always compiled in with their vendored, pinned versions, keeping the option a single boolean
+  instead of a per-import list. An HTML entry compiles imp in regardless — the page is its own host,
+  and its production output has no import map that could resolve a bare import. The former
+  `--external` flag is removed and rejected with a migration hint.
 
 ## Consequences
 
@@ -57,11 +60,14 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   bundles stays duplicated in the output — accepted deliberately
   (`transitive-duplication-accepted.md`) — and tree-shaking inside vendored bundles is limited to
   what their bundled form exposes.
-- Externalized component bundles trade the frozen-version guarantee for sharing: the component runs
-  against whatever imp (or dependency) version the host provides, so version skew between author and
-  host becomes possible — a contract self-contained bundles never have. In exchange the host page
-  holds one imp instance, which matters once imp carries shared state.
-- `imp install` cannot yet vendor a published package whose bundle keeps bare external imports; it
-  would try to resolve `imp` against the npm registry (`todo/install-external-dependencies.md`).
+- Bundles built for an imp host trade the frozen-version guarantee for sharing: the component runs
+  against whatever imp version the host provides, so version skew between author and host becomes
+  possible — a contract self-contained bundles never have. In exchange the host page holds one imp
+  instance, which matters once imp carries shared state. The skew is confined to imp: every other
+  dependency ships frozen inside the bundle, at the cost of possible duplicates between host and
+  component (`transitive-duplication-accepted.md`).
+- `imp install` closes the consumer side of this contract: while vendoring it treats `imp` as
+  external, so a published bundle built with `targetImpHost` keeps its bare `imp` imports instead of
+  resolving them against a registry (`vendored-dependencies.md`).
 - wasm esbuild is roughly an order of magnitude slower than native esbuild; the cost is paid per
   `imp bundle` run, never while serving.

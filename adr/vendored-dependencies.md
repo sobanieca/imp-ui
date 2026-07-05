@@ -40,6 +40,16 @@ Dependencies are vendored: resolved, bundled, and committed into the repository,
   transitive versions are whatever was latest at install/update time. Reproducibility comes from the
   committed bytes, not from tracking every transitive version. The printed resolution at install
   time is the audit record.
+- **`imp` is the only external while vendoring.** `imp install` never resolves the bare specifier
+  `imp` against a registry: `imp` is reserved — rejected as an alias and as an `imp.json` dependency
+  key — and always denotes the imp library. A bare `imp` import in a package is kept in the vendored
+  bundle as-is, resolved by the app itself: through the injected import map in development and by
+  `imp bundle` in production — the consumer side of publishing with `targetImpHost`
+  (`production-bundling.md`), applied on every install with no opt-in. Every other import a package
+  makes is resolved from the package's own dependency graph and bundled in at install time; the
+  installing app's declared aliases play no part in a package's internal resolution, so a vendored
+  bundle depends on nothing local except imp. Kept bare `imp` imports are listed in the printed
+  resolution with a version-skew note.
 - **The dev server does no dependency bundling.** The injected import map maps each alias to its
   `dependencies/<alias>/` bundle, served as plain static files. The in-process bundling engine
   (`in-process-dependency-bundling.md`) is invoked only by `imp install`.
@@ -70,3 +80,9 @@ files into the project.
   (`transitive-duplication-accepted.md`).
 - Packages that fetch assets at runtime from absolute or CDN URLs (invisible to the bundler) are not
   vendored and still hit the network — such packages are a poor fit for the offline guarantee.
+- A vendored package that expects imp runs against the app's imp version, not the one it was
+  authored against — the version-skew trade-off of `production-bundling.md`, surfaced by the printed
+  kept-bare-imports note. For every other import the opposite holds: a package always carries the
+  versions its author declared, even when the app vendors the same package under an alias — the
+  deliberate duplication of `transitive-duplication-accepted.md`, chosen over silently rewiring a
+  package's internals to a same-named local alias.

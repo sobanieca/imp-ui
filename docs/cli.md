@@ -55,6 +55,9 @@ works without it.
   `imp uninstall`; you normally never edit it by hand. Each alias is exposed to the browser through
   the injected import map, so you write `import mitt from 'mitt'`. See
   **[Managing dependencies](dependencies.md)**.
+- **`targetImpHost`** — set to `true` when what you build is meant to run inside another imp
+  application: `imp bundle` then keeps `imp` imports bare for that host to provide instead of
+  compiling its own copy in. See **Targeting an imp host** under `imp bundle` below.
 - **`fmt`** — formatting options for `imp fmt` (defaults listed under `imp fmt` below).
 - **`lint`** — extra lint configuration (`rules`, `exclude`); the imp rule set is always applied on
   top.
@@ -127,8 +130,7 @@ If a declared dependency has no vendored bundle yet (say, right after editing `i
 ## `imp bundle`
 
 ```
-imp bundle [file.html] [--outdir dist]
-imp bundle <file.js> [--outdir dist] [--external <import>]
+imp bundle [file.html|file.js] [--outdir dist]
 ```
 
 Builds the production version of your app into an output directory (default: `dist/`) that you
@@ -159,38 +161,44 @@ self-contained file: imp itself and every dependency are compiled in, so the res
 component authored with imp — can be dropped into any application, whatever framework it uses,
 without pulling in imp or any other runtime.
 
-### External imports — using the host's copy
+### Targeting an imp host — sharing the host's imp
 
+```json
+{
+  "dependencies": { "mitt": "npm:mitt@3.0.1" },
+  "targetImpHost": true
+}
 ```
-imp bundle component.js --external imp
-imp bundle component.js --external imp,mitt
-```
 
-By default a JS-entry bundle carries everything it needs. If your component will run inside an
-application that already provides some of those imports, `--external` (repeatable, or
-comma-separated) names imports to leave out of the bundle: they stay in the output as bare `import`
-statements for the host page to resolve, and the file shrinks accordingly.
+By default a JS-entry bundle carries everything it needs, including imp itself. If what you are
+building is a component meant to run inside another imp application — an application that already
+has imp — set `targetImpHost: true` in `imp.json`: bundling a JS entry then leaves every
+`import … from 'imp'` in the output as a bare import for the host to resolve, and only your code and
+your dependencies are compiled in. Nothing changes in development — the dev server's import map
+resolves `imp` exactly as before — and nothing changes for your other dependencies, which are always
+bundled in with the versions you pinned.
 
-The main use is a component shipped into another imp application. There, `imp` and any dependency
-alias the host also declares are already resolvable — in development through the import map the dev
-server injects, and in production because the host's own `imp bundle` resolves the bare imports when
-it builds. The host page then holds a **single copy** of imp shared by the app and your component,
-instead of one copy each.
+Inside an imp application the bare `imp` import is already resolvable: in development through the
+import map the dev server injects, and in production because the host's own `imp bundle` resolves it
+when it builds. The host page then holds a **single copy** of imp shared by the app and your
+component, instead of one copy each. The same contract holds when your component is published to a
+registry and vendored with `imp install` — the consuming app keeps the `imp` import bare and
+provides its own copy. See **[Managing dependencies](dependencies.md)**.
 
 Two things to be aware of:
 
-- **The host must actually provide every external import.** Outside an imp application that means
-  adding an import map entry (or bundler alias) mapping each name — an externalized bundle fails at
-  load time in a page that maps nothing. When in doubt, ship self-contained.
-- **imp version skew.** A self-contained bundle freezes the imp version it was built with; an
-  externalized one runs against whatever imp version the host provides, which may be newer or older
+- **The host must actually provide imp.** Outside an imp application that means adding an import map
+  entry (or bundler alias) mapping `imp` — the bundle fails at load time in a page that maps
+  nothing. When in doubt, leave `targetImpHost` off and ship self-contained.
+- **imp version skew.** A self-contained bundle freezes the imp version it was built with; one built
+  for an imp host runs against whatever imp version the host provides, which may be newer or older
   than the one you developed against. A host upgrading imp can change your component's behavior
   without your bundle changing at all — test your component against the imp versions your host
   applications actually run.
 
-`--external` applies only to JS entries. An HTML build has no import map in its production output,
-so nothing could resolve a bare import that was left external — `imp bundle` rejects the
-combination.
+`targetImpHost` affects only JS entries. An HTML build has no import map in its production output,
+so nothing could resolve a bare import left in it — bundling an HTML page compiles imp in as usual,
+because the page is its own host.
 
 ## `imp install` and `imp uninstall`
 
@@ -204,7 +212,9 @@ the jsr registry), bundles it into a single minified browser-ready module, write
 the committed `dependencies/` folder, and pins the exact version in `imp.json`. Without a version it
 resolves the latest release — which also makes re-running it the update path — and with no arguments
 at all it updates every declared dependency. `imp uninstall` removes a dependency's folder and its
-pin. Your code imports dependencies by their bare alias (`import mitt from 'mitt'`).
+pin. Your code imports dependencies by their bare alias (`import mitt from 'mitt'`). A package that
+itself imports `imp` keeps that import bare — your app provides the imp library, so `imp` is never
+mistaken for a registry package.
 
 See **[Managing dependencies](dependencies.md)** for the full story: version pinning, updating,
 aliases, jsr packages and subpaths, what gets printed, and why the vendored folder is committed.

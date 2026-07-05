@@ -1,0 +1,22 @@
+$ imp bundle  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+bundled index.html → dist/
+  targetImpHost ignored — an HTML page is its own host, imp is bundled in
+  app.js (<size>)
+  assets/note.txt (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/lazy-<hash>.js (<size>)
+  component/app.js (<size>)
+  component/chunks/chunk-<hash>.js (<size>)
+  component/chunks/lazy-<hash>.js (<size>)
+  index.html (<size>)
+  shared/app.js (<size>)
+  shared/chunks/chunk-<hash>.js (<size>)
+  shared/chunks/lazy-<hash>.js (<size>)
+  styles.css (<size>)
+
+--- stderr ---
+(empty)

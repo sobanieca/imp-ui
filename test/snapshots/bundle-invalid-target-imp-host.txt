@@ -1,0 +1,8 @@
+$ imp bundle app.js  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: invalid imp.json — 'targetImpHost' must be true or false

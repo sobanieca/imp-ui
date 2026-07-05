@@ -6,8 +6,8 @@ USAGE
                                         live reload, console + network → terminal
   imp bundle [file.html] [--outdir dist]  build the app for production: minified,
                                         code-split JS, ready to upload as-is
-                                        (JS entry + --external <import>: leave an
-                                        import for the host app to provide)
+                                        ("targetImpHost": true in imp.json keeps
+                                        imp imports for the host app to provide)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -18,14 +18,6 @@ USAGE
 function flag(args, name, fallback) {
   const index = args.indexOf('--' + name)
   return index !== -1 && args[index + 1] ? args[index + 1] : fallback
-}
-
-function flagList(args, name) {
-  return args
-    .flatMap((arg, index) =>
-      arg === '--' + name && args[index + 1] ? args[index + 1].split(',') : []
-    )
-    .filter(Boolean)
 }
 
 function positional(args) {
@@ -49,11 +41,15 @@ try {
       break
     }
     case 'bundle': {
+      if (rest.includes('--external')) {
+        throw new Error(
+          '--external has been removed — set "targetImpHost": true in imp.json to keep imp imports for the host application to provide',
+        )
+      }
       const { bundle } = await import('./bundle.js')
       await bundle({
         entry: positional(rest)[0] ?? 'index.html',
         outdir: flag(rest, 'outdir', 'dist'),
-        external: flagList(rest, 'external'),
       })
       break
     }

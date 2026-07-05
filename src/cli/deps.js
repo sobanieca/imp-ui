@@ -42,10 +42,23 @@ export async function runEsbuild(options) {
   return esbuild.build(options)
 }
 
+function keptImpImports(metafile) {
+  const kept = new Set()
+  for (const output of Object.values(metafile.outputs)) {
+    for (const imported of output.imports ?? []) {
+      if (imported.external && (imported.path === 'imp' || imported.path.startsWith('imp/'))) {
+        kept.add(imported.path)
+      }
+    }
+  }
+  return [...kept].sort()
+}
+
 export async function bundleDependency({ specifier, alias }) {
   const result = await runEsbuild({
     plugins: [denoPlugin()],
     entryPoints: [specifier],
+    external: ['imp'],
     bundle: true,
     minify: true,
     format: 'esm',
@@ -64,7 +77,11 @@ export async function bundleDependency({ specifier, alias }) {
     name: basename(file.path),
     contents: file.contents,
   }))
-  return { files, packages: bundledPackages(result.metafile) }
+  return {
+    files,
+    packages: bundledPackages(result.metafile),
+    impImports: keptImpImports(result.metafile),
+  }
 }
 
 export async function shutdownBundler() {

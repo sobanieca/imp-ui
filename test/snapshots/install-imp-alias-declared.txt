@@ -1,0 +1,8 @@
+$ imp install  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: invalid imp.json — 'imp' is reserved for the imp library and cannot be a dependency alias

@@ -31,7 +31,7 @@ const formatSize = (bytes) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).to
 async function installOne({ root, alias, scheme, name, version, subpath }) {
   const resolvedVersion = version ?? await latestVersion(scheme, name)
   const specifier = `${scheme}:${name}@${resolvedVersion}${subpath}`
-  const { files, packages } = await bundleDependency({ specifier, alias })
+  const { files, packages, impImports } = await bundleDependency({ specifier, alias })
   const folder = join(root, 'dependencies', alias)
   await Deno.remove(folder, { recursive: true }).catch(() => {})
   await Deno.mkdir(folder, { recursive: true })
@@ -42,6 +42,14 @@ async function installOne({ root, alias, scheme, name, version, subpath }) {
   }
   console.log('  bundled packages:')
   for (const bundled of packages) console.log(`    ${bundled}`)
+  if (impImports.length) {
+    console.log(
+      `  imp imports kept bare (resolved by this app at runtime): ${impImports.join(', ')}`,
+    )
+    console.log(
+      '    note: this package runs against the imp version this app provides, not the one it was built with',
+    )
+  }
   return specifier
 }
 
@@ -81,6 +89,11 @@ function requestedTarget(packageArg, versionArg, aliasArg, dependencies) {
   }
   const alias = aliasArg ?? defaultAlias(parsed)
   if (!VALID_ALIAS.test(alias)) throw new Error(`invalid dependency alias: '${alias}'`)
+  if (alias === 'imp') {
+    throw new Error(
+      "'imp' is reserved for the imp library, which every app can already import — pick a different alias",
+    )
+  }
   return { alias, scheme: scheme ?? 'npm', name, version, subpath }
 }
 
