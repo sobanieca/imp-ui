@@ -32,6 +32,7 @@ export const CLIENT_JS = `
     queue.push(entry)
     if (!timer) timer = setTimeout(flush, 200)
   }
+  globalThis.__impFlushTelemetry = flush
 
   for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
     const orig = console[level]

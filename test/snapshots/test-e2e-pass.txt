@@ -1,0 +1,14 @@
+$ imp test  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+counter.spec.js
+  ✓ starts at zero (*ms)
+  ✓ increments on click (*ms)
+
+imp test: 2 passed (1 file, *ms)
+
+--- stderr ---
+(empty)
+
+[browser log forwarded: true]

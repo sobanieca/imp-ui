@@ -95,7 +95,7 @@ dependency can appear:
   ```
 
 - **Bare imports must be declared.** A bare specifier (anything that is not relative, absolute, a
-  URL, or `imp` itself) must match a declared dependency alias:
+  URL, `imp` itself, or `imp/test`) must match a declared dependency alias:
 
   ```js
   import confetti from 'canvas-confetti'

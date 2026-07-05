@@ -148,3 +148,6 @@ src/cli/vendor/
 
 # compiled binary (deno task compile)
 /imp
+
+# imp internal project folder (derived config, test screenshots)
+.imp/

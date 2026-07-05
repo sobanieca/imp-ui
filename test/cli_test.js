@@ -217,6 +217,79 @@ Deno.test('imp install and uninstall', async (t) => {
   }
 })
 
+Deno.test('imp test', async (t) => {
+  const test = async (name, args, cwd) => {
+    await t.step(name, async () => {
+      const result = await runImp(args, cwd)
+      const location = cwd ? `  (cwd: ${cwd.slice(ROOT.length)})` : ''
+      await assertSnapshot(name, commandTranscript(`imp ${args.join(' ')}${location}`, result))
+    })
+  }
+
+  await test('test-unit-pass', ['test'], fixture('test-unit'))
+  await test('test-unit-fail', ['test'], fixture('test-fail'))
+  await test('test-unit-filter', ['test', '--filter', 'adds'], fixture('test-unit'))
+  await test('test-list', ['test', '--list'], fixture('test-list'))
+  await test('test-list-e2e-only', ['test', '--e2e', '--list'], fixture('test-list'))
+  await test('test-not-a-test-file', ['test', 'app.js'], fixture('basic'))
+  await test('test-no-files', ['test'], fixture('with-config'))
+  await test('test-missing-entry', ['test', 'login.spec.js'], fixture('test-list'))
+})
+
+const isTelemetryLine = (line) => line.startsWith('[browser:') || line.startsWith('[net]')
+
+const withoutTelemetry = (result) => ({
+  ...result,
+  stdout: result.stdout.split('\n').filter((line) => !isTelemetryLine(line)).join('\n'),
+})
+
+const localBrowser = await (async () => {
+  const { findCachedBrowser, findSystemBrowser } = await import('../src/cli/test_browser.js')
+  return (await findSystemBrowser()) ?? (await findCachedBrowser())
+})()
+
+Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('test-e2e'), dir)
+
+  try {
+    await t.step('test-e2e-pass', async () => {
+      const result = await runImp(['test'], dir)
+      const forwarded = result.stdout.includes('[browser:log] counter clicked 2')
+      await assertSnapshot(
+        'test-e2e-pass',
+        `${
+          commandTranscript('imp test  (cwd: <tmp>)', withoutTelemetry(result))
+        }\n[browser log forwarded: ${forwarded}]\n`,
+      )
+    })
+
+    await t.step('test-e2e-failure-screenshot', async () => {
+      await Deno.writeTextFile(
+        join(dir, 'failing.spec.js'),
+        "import { expect, test } from 'imp/test'\n\n" +
+          "test('shows 999', async ({ page }) => {\n" +
+          "  const text = await page.$eval('#count', (element) => element.textContent)\n" +
+          "  expect(text).toBe('999')\n" +
+          '})\n',
+      )
+      const result = await runImp(['test', 'failing.spec.js'], dir)
+      await Deno.remove(join(dir, 'failing.spec.js'))
+      const screenshot = await Deno.stat(
+        join(dir, '.imp', 'screenshots', 'failing.spec.js-shows-999.png'),
+      ).then((info) => info.isFile, () => false)
+      await assertSnapshot(
+        'test-e2e-failure-screenshot',
+        `${
+          commandTranscript('imp test failing.spec.js  (cwd: <tmp>)', withoutTelemetry(result))
+        }\n[screenshot written: ${screenshot}]\n`,
+      )
+    })
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
 async function copyDirectory(source, destination) {
   await Deno.mkdir(destination, { recursive: true })
   for await (const entry of Deno.readDir(source)) {

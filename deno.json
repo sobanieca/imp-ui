@@ -3,17 +3,21 @@
     "imp": "deno run -A src/cli/main.js",
     "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
     "compile": "deno run -A tools/download_fmt_plugins.js && deno compile -A --include src -o imp src/cli/main.js",
-    "test": "deno task compile && deno test -A test/",
-    "test:update": "deno task compile && deno test -A test/ -- --update"
+    "test": "deno task compile && deno test -A test/cli_test.js",
+    "test:update": "deno task compile && deno test -A test/cli_test.js -- --update"
   },
   "imports": {
     "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",
     "@dprint/formatter": "npm:@dprint/formatter@^0.5.1",
     "@eslint/js": "npm:@eslint/js@^10.0.1",
+    "@std/encoding": "jsr:@std/encoding@^1.0.10",
     "@std/path": "jsr:@std/path@^1.1.6",
+    "@zip-js/zip-js": "jsr:@zip-js/zip-js@^2.8.7",
     "esbuild-wasm/": "npm:/esbuild-wasm@0.28.1/",
     "eslint": "npm:eslint@^10.6.0",
-    "globals": "npm:globals@^17.7.0"
+    "globals": "npm:globals@^17.7.0",
+    "happy-dom": "npm:happy-dom@^20.0.11",
+    "puppeteer-core": "npm:puppeteer-core@^24.36.0"
   },
   "lint": {
     "exclude": ["prev/", "test/fixtures/"]

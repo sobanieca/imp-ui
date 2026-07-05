@@ -106,67 +106,25 @@ async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
   return new Response(bytes, { headers: { 'content-type': type } })
 }
 
-export async function start({ entry = 'index.html', port = 4507 } = {}) {
-  const entryPath = resolve(entry)
-  let entryStat
-  try {
-    entryStat = await Deno.stat(entryPath)
-  } catch {
-    console.error(`imp start: file not found: ${entry}`)
-    Deno.exit(1)
-  }
-  if (entryStat.isDirectory) {
-    console.error(`imp start: expected an HTML file, got a directory: ${entry}`)
-    Deno.exit(1)
-  }
-
+export async function loadApp(entryPath) {
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
   const headInjection = buildHeadInjection(dependencies)
-  const clients = new Set()
-
+  const missingDependencies = []
   for (const alias of Object.keys(dependencies)) {
     try {
       await Deno.stat(join(root, 'dependencies', alias, `${alias}.js`))
     } catch {
-      console.log(
-        `\x1b[33m[imp] dependency '${alias}' is declared but not vendored — run 'imp install'\x1b[0m`,
-      )
+      missingDependencies.push(alias)
     }
   }
+  return { root, entryName, headInjection, missingDependencies }
+}
 
-  const broadcast = (message) => {
-    const payload = new TextEncoder().encode(`data: ${message}\n\n`)
-    for (const controller of clients) {
-      try {
-        controller.enqueue(payload)
-      } catch {
-        clients.delete(controller)
-      }
-    }
-  }
-  ;(async () => {
-    let timer = null
-    for await (const event of Deno.watchFs(root)) {
-      if (event.paths.every((p) => /[/\\](\.git|node_modules|dist)[/\\]/.test(p))) continue
-      clearTimeout(timer)
-      timer = setTimeout(() => {
-        console.log(dim('[imp] change detected → reload'))
-        broadcast('reload')
-      }, 80)
-    }
-  })()
-
-  const server = Deno.serve({
-    port,
-    onListen: ({ port }) => {
-      console.log(`\x1b[1mimp start\x1b[0m serving ${entryName} from ${root}`)
-      console.log(`  → http://localhost:${port}/`)
-      console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
-    },
-  }, async (req) => {
+export function createRequestHandler({ root, entryName, headInjection, clients }) {
+  return async (req) => {
     const url = new URL(req.url)
 
     if (url.pathname === '/@imp/events') {
@@ -213,7 +171,62 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
     }
 
     return serveFromDir(root, url.pathname, { headInjection })
-  })
+  }
+}
+
+export async function start({ entry = 'index.html', port = 4507 } = {}) {
+  const entryPath = resolve(entry)
+  let entryStat
+  try {
+    entryStat = await Deno.stat(entryPath)
+  } catch {
+    console.error(`imp start: file not found: ${entry}`)
+    Deno.exit(1)
+  }
+  if (entryStat.isDirectory) {
+    console.error(`imp start: expected an HTML file, got a directory: ${entry}`)
+    Deno.exit(1)
+  }
+
+  const { root, entryName, headInjection, missingDependencies } = await loadApp(entryPath)
+  const clients = new Set()
+
+  for (const alias of missingDependencies) {
+    console.log(
+      `\x1b[33m[imp] dependency '${alias}' is declared but not vendored — run 'imp install'\x1b[0m`,
+    )
+  }
+
+  const broadcast = (message) => {
+    const payload = new TextEncoder().encode(`data: ${message}\n\n`)
+    for (const controller of clients) {
+      try {
+        controller.enqueue(payload)
+      } catch {
+        clients.delete(controller)
+      }
+    }
+  }
+  ;(async () => {
+    let timer = null
+    for await (const event of Deno.watchFs(root)) {
+      if (event.paths.every((p) => /[/\\](\.git|node_modules|dist)[/\\]/.test(p))) continue
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        console.log(dim('[imp] change detected → reload'))
+        broadcast('reload')
+      }, 80)
+    }
+  })()
+
+  const server = Deno.serve({
+    port,
+    onListen: ({ port }) => {
+      console.log(`\x1b[1mimp start\x1b[0m serving ${entryName} from ${root}`)
+      console.log(`  → http://localhost:${port}/`)
+      console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
+    },
+  }, createRequestHandler({ root, entryName, headInjection, clients }))
 
   return server.finished
 }

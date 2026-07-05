@@ -24,10 +24,22 @@ export async function loadImpConfig(root) {
       "invalid imp.json — 'imports' has been replaced by 'dependencies'; run 'imp install <package>' to declare each dependency",
     )
   }
-  for (const key of ['dependencies', 'fmt', 'lint']) {
+  for (const key of ['dependencies', 'fmt', 'lint', 'test']) {
     if (config[key] !== undefined && !isPlainObject(config[key])) {
       throw new Error(`invalid imp.json — '${key}' must be an object`)
     }
+  }
+  for (const key of ['entry', 'browser']) {
+    if (config.test?.[key] !== undefined && typeof config.test[key] !== 'string') {
+      throw new Error(`invalid imp.json — 'test.${key}' must be a string`)
+    }
+  }
+  if (
+    config.test?.exclude !== undefined &&
+    (!Array.isArray(config.test.exclude) ||
+      config.test.exclude.some((entry) => typeof entry !== 'string'))
+  ) {
+    throw new Error("invalid imp.json — 'test.exclude' must be an array of strings")
   }
   for (const [alias, specifier] of Object.entries(config.dependencies ?? {})) {
     if (alias === 'imp') {

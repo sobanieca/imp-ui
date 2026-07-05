@@ -1,0 +1,17 @@
+$ imp test failing.spec.js  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+failing.spec.js
+  ✗ shows 999 (*ms)
+      expect(received).toBe("999")
+        expected: "999"
+        received: "0"
+      screenshot: .imp/screenshots/failing.spec.js-shows-999.png
+
+imp test: 0 passed, 1 failed (1 file, *ms)
+
+--- stderr ---
+(empty)
+
+[screenshot written: true]

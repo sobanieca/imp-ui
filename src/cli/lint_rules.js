@@ -135,7 +135,10 @@ export default {
             })
             return
           }
-          if (specifier === 'imp' || isRelativeOrUrl(specifier) || aliases.has(specifier)) return
+          if (
+            specifier === 'imp' || specifier === 'imp/test' || isRelativeOrUrl(specifier) ||
+            aliases.has(specifier)
+          ) return
           context.report({
             node,
             message:

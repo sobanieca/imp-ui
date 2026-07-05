@@ -30,6 +30,8 @@ imp bundle [file.html] [--outdir dist]  build the app for production
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
+imp test  [...paths]                  run tests: *.test.js unit tests in-process,
+                                      *.spec.js e2e specs in a real browser
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
 imp help                              show usage
@@ -61,6 +63,8 @@ works without it.
 - **`fmt`** — formatting options for `imp fmt` (defaults listed under `imp fmt` below).
 - **`lint`** — extra lint configuration (`rules`, `exclude`); the imp rule set is always applied on
   top.
+- **`test`** — testing options for `imp test` (`entry`, `browser`, `exclude`). See
+  **[Testing](testing.md)**.
 
 That is the whole footprint: your repository contains your code, at most one `imp.json`, and the
 `dependencies/` folder holding your vendored dependencies — all of it source you commit. imp writes
@@ -218,6 +222,27 @@ mistaken for a registry package.
 
 See **[Managing dependencies](dependencies.md)** for the full story: version pinning, updating,
 aliases, jsr packages and subpaths, what gets printed, and why the vendored folder is committed.
+
+## `imp test`
+
+```
+imp test [...paths] [--unit] [--e2e] [--filter <text>] [--list]
+```
+
+Runs the project's tests on two levels through one command: files ending in `.test.js` are unit and
+integration tests, executed in-process against a built-in simulated browser environment — no real
+browser, very fast; files ending in `.spec.js` are end-to-end tests — imp serves your app exactly
+like `imp start`, launches a headless Chrome, and hands each spec a ready-made Puppeteer page
+pointed at the running app, with the browser's console and network activity streaming to the
+terminal. Tests are written with `test` and `expect` imported from `imp/test` — runner and
+assertions are built into the binary, nothing to install.
+
+Because `imp test <file>.spec.js` runs one self-contained spec (own server, own browser) and exits
+with its result, e2e specs parallelize across CI machines with a one-job-per-spec matrix fed by
+`imp test --e2e --list`.
+
+See **[Testing](testing.md)** for the full runner API, the assertion reference, browser resolution,
+and the CI parallelization pattern.
 
 ## `imp lint`
 

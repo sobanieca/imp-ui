@@ -14,6 +14,9 @@ USAGE
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
+  imp test [...paths]                   run tests: *.test.js unit tests in-process,
+                                        *.spec.js e2e specs in a real browser
+                                        (--unit · --e2e · --filter <text> · --list)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
 

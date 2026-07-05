@@ -11,6 +11,9 @@ USAGE
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
+  imp test [...paths]                   run tests: *.test.js unit tests in-process,
+                                        *.spec.js e2e specs in a real browser
+                                        (--unit · --e2e · --filter <text> · --list)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
 `
@@ -67,6 +70,22 @@ try {
     case 'uninstall': {
       const { uninstall } = await import('./install.js')
       await uninstall({ root: Deno.cwd(), alias: positional(rest)[0] ?? null })
+      break
+    }
+    case 'test': {
+      const { runTests } = await import('./test.js')
+      const booleanFlags = ['--list', '--unit', '--e2e']
+      const args = rest.filter((arg) => !booleanFlags.includes(arg))
+      Deno.exit(
+        await runTests({
+          root: Deno.cwd(),
+          paths: positional(args),
+          list: rest.includes('--list'),
+          unit: rest.includes('--unit'),
+          e2e: rest.includes('--e2e'),
+          filter: flag(rest, 'filter', null),
+        }),
+      )
       break
     }
     case 'lint': {

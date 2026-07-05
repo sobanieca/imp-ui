@@ -32,3 +32,4 @@ Conventions:
 | [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile |
 | [production-bundling](production-bundling.md)                         | imp bundle from vendored bundles + baked-in library   |
 | [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design         |
+| [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome |

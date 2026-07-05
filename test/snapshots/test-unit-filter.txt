@@ -1,0 +1,15 @@
+$ imp test --filter adds  (cwd: test/fixtures/test-unit)
+exit code: 0
+
+--- stdout ---
+counter.test.js
+  - renders and reacts to clicks (skipped)
+  - mount replaces previous content (skipped)
+lib.test.js
+  ✓ adds numbers (*ms)
+  - greets by name (skipped)
+
+imp test: 1 passed, 3 skipped (2 files, *ms)
+
+--- stderr ---
+(empty)
