@@ -30,8 +30,9 @@ imp bundle [file.html] [--outdir dist]  build the app for production
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
-imp test  [...paths]                  run tests: *.test.js unit tests in-process,
-                                      *.spec.js e2e specs in a real browser
+imp test  <file>                      run one test file: *.test.js unit in-process,
+                                      *.spec.js e2e in a real browser (no file: list
+                                      the tests to run separately, one process each)
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
 imp help                              show usage
@@ -226,7 +227,8 @@ aliases, jsr packages and subpaths, what gets printed, and why the vendored fold
 ## `imp test`
 
 ```
-imp test [...paths] [--unit] [--e2e] [--filter <text>] [--list]
+imp test <file> [--filter <text>]
+imp test [--unit] [--e2e] [--json]
 ```
 
 Runs the project's tests on two levels through one command: files ending in `.test.js` are unit and
@@ -237,9 +239,14 @@ pointed at the running app, with the browser's console and network activity stre
 terminal. Tests are written with `test` and `expect` imported from `imp/test` — runner and
 assertions are built into the binary, nothing to install.
 
-Because `imp test <file>.spec.js` runs one self-contained spec (own server, own browser) and exits
-with its result, e2e specs parallelize across CI machines with a one-job-per-spec matrix fed by
-`imp test --e2e --list`.
+imp runs **one test file per process**, which is the core idea behind the imp CLI: imp stays
+single-process and never schedules concurrency itself, so the caller controls all parallel
+operations. `imp test <file>` runs exactly that file and exits with its result; a bare `imp test`
+(or any selection of more than one file) instead prints a run plan — each discovered file as its own
+`imp test <file>` command — and runs nothing. Because every file is self-contained, whoever calls
+imp — a CI matrix, a shell `xargs -P`, or an AI coding agent reading the plan off stdout — decides
+how many to run at once, with one file as the unit of both parallelism and isolation.
+`imp test --json` feeds the file list to a CI matrix or shell as JSON.
 
 See **[Testing](testing.md)** for the full runner API, the assertion reference, browser resolution,
 and the CI parallelization pattern.

@@ -323,8 +323,23 @@ async function selectFiles({ root, paths, unit, e2e, exclude }) {
   }
 }
 
+function printRunPlan({ unitFiles, specFiles, toRelative }) {
+  console.log(
+    'imp runs one test file per process so the caller controls parallelism — no tests were run.',
+  )
+  const section = (heading, testFiles) => {
+    if (!testFiles.length) return
+    console.log(`\n${heading}`)
+    for (const file of testFiles) console.log(`  imp test ${toRelative(file)}`)
+  }
+  section('Run each unit test separately:', unitFiles)
+  section('Run each e2e test separately:', specFiles)
+  console.log('\nTo run them in parallel from a shell:')
+  console.log("  imp test --json | jq -r '.[]' | xargs -P4 -n1 imp test")
+}
+
 export async function runTests(
-  { root, paths, list = false, unit = false, e2e = false, filter = null },
+  { root, paths, json = false, unit = false, e2e = false, filter = null },
 ) {
   const imp = await loadImpConfig(root)
   const testConfig = imp.test ?? {}
@@ -338,8 +353,9 @@ export async function runTests(
     exclude: testConfig.exclude ?? [],
   })
 
-  if (list) {
-    const toRelative = (file) => relative(root, file).replaceAll('\\', '/')
+  const toRelative = (file) => relative(root, file).replaceAll('\\', '/')
+
+  if (json) {
     console.log(JSON.stringify([...unitFiles, ...specFiles].map(toRelative)))
     return 0
   }
@@ -347,6 +363,11 @@ export async function runTests(
   const files = [...unitFiles, ...specFiles]
   if (!files.length) {
     console.log('no test files found (unit tests end with .test.js, e2e specs with .spec.js)')
+    return 0
+  }
+
+  if (files.length > 1) {
+    printRunPlan({ unitFiles, specFiles, toRelative })
     return 0
   }
 

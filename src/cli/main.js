@@ -11,9 +11,10 @@ USAGE
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
-  imp test [...paths]                   run tests: *.test.js unit tests in-process,
-                                        *.spec.js e2e specs in a real browser
-                                        (--unit · --e2e · --filter <text> · --list)
+  imp test <file>                       run one test file: *.test.js unit in-process,
+                                        *.spec.js e2e in a real browser. With no file
+                                        imp lists the tests to run separately, one per
+                                        process (--unit · --e2e · --filter <text> · --json)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
 `
@@ -74,13 +75,13 @@ try {
     }
     case 'test': {
       const { runTests } = await import('./test.js')
-      const booleanFlags = ['--list', '--unit', '--e2e']
+      const booleanFlags = ['--json', '--unit', '--e2e']
       const args = rest.filter((arg) => !booleanFlags.includes(arg))
       Deno.exit(
         await runTests({
           root: Deno.cwd(),
           paths: positional(args),
-          list: rest.includes('--list'),
+          json: rest.includes('--json'),
           unit: rest.includes('--unit'),
           e2e: rest.includes('--e2e'),
           filter: flag(rest, 'filter', null),

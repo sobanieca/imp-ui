@@ -1,10 +1,11 @@
 # imp — Testing
 
 ```
-imp test [...paths]
-imp test --unit | --e2e
-imp test --filter <text>
-imp test --list
+imp test <file>            run one test file
+imp test                   list the test files to run separately (one process each)
+imp test --unit | --e2e    narrow discovery to unit / e2e files
+imp test --filter <text>   run only tests whose name contains <text>
+imp test --json            print the selected files as JSON
 ```
 
 `imp test` is imp's built-in test runner. It covers two levels of testing through one command and
@@ -20,18 +21,26 @@ There is nothing to install or configure: the runner, the assertion library, and
 are built into the `imp` binary. The only external piece is the e2e browser, which imp finds or
 fetches for you (see _The browser_ below).
 
-With no paths, `imp test` discovers and runs every test file in the project (directories named
-`.git`, `node_modules`, and `dist` are always skipped). With paths, it runs exactly those files or
-directories — `imp test login.spec.js` runs that one spec and exits with its result, which is the
-building block for parallel CI (see _Parallel e2e in CI_ below). The exit code is `0` when
-everything passed and `1` otherwise.
+imp runs **one test file per process**, and you choose how to parallelize. `imp test <file>` runs
+exactly that file and exits with its result — `0` when everything passed, `1` otherwise. That single
+invocation is the building block for parallel runs (see _Running in parallel_ below). Point
+`imp test` at more than one file — a bare `imp test`, a directory, or several paths — and it does
+**not** run them; it prints a **run plan** instead: the discovered unit and e2e files as
+ready-to-run `imp test <file>` commands, one per process, plus a shell one-liner for running them at
+once. (`.git`, `node_modules`, and `dist` are always skipped during discovery.)
+
+This is deliberate — it is the core idea behind the imp CLI. imp itself stays single-process and
+never schedules concurrency for you, so the caller decides how much to run in parallel: your CI
+matrix, a shell loop, or an AI coding agent reading the plan straight off stdout. One file is always
+the unit of both parallelism and isolation — no two files ever share a process's globals, timers, or
+module state.
 
 Flags:
 
 - `--unit` / `--e2e` — run only `.test.js` files, or only `.spec.js` files.
 - `--filter <text>` — run only tests whose name contains the text; everything else is reported as
   skipped.
-- `--list` — print the selected test files as a JSON array instead of running them (combine with
+- `--json` — print the selected test files as a JSON array instead of running them (combine with
   `--e2e` to feed a CI matrix).
 
 ## Writing tests
@@ -243,16 +252,32 @@ E2E tests need a Chrome or Chromium binary. imp resolves one in this order:
 4. **A managed download** — otherwise imp downloads a pinned, checksum-verified Chrome build once
    into `~/.imp/browser/` (per user, never inside your project) and reuses it from then on.
 
-## Parallel e2e in CI — one job per spec
+## Running in parallel
+
+Because every `imp test <file>` is self-contained — a unit file gets its own fresh simulated DOM, a
+spec file gets its own server, port, and browser, and nothing is shared between files — you can run
+as many files at once as you like. imp does not do this for you; it lists the files and leaves the
+scheduling to you.
+
+`imp test --json` prints the selected files as a JSON array (add `--unit` or `--e2e` to narrow it).
+From a shell, fan that out across your cores:
+
+```bash
+imp test --json | jq -r '.[]' | xargs -P4 -n1 imp test
+```
+
+`-P4` runs four files at a time — raise or lower it to match your machine. This is the same list a
+bare `imp test` prints as a ready-to-read run plan.
+
+### One job per spec in CI
 
 E2E suites get slow because everything runs in sequence in one browser. imp's answer: since
-`imp test <file>.spec.js` is completely self-contained — own server, own port, own browser, nothing
-shared — you can run every spec file on its own machine at the same time. Splitting your suite into
-one spec per user flow (login, checkout, search, …) turns total e2e time into the time of the
-slowest flow. The trade-off is that each spec repeats its own setup (for example logging in), which
-is exactly what makes it independent.
+`imp test <file>.spec.js` is completely self-contained, you can run every spec file on its own
+machine at the same time. Splitting your suite into one spec per user flow (login, checkout, search,
+…) turns total e2e time into the time of the slowest flow. The trade-off is that each spec repeats
+its own setup (for example logging in), which is exactly what makes it independent.
 
-`imp test --e2e --list` prints the spec files as JSON, which plugs straight into a GitHub Actions
+`imp test --e2e --json` prints the spec files as JSON, which plugs straight into a GitHub Actions
 matrix — one job per spec file, no hardcoded file list to maintain:
 
 ```yaml
@@ -270,7 +295,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: list
-        run: echo "specs=$(imp test --e2e --list)" >> "$GITHUB_OUTPUT"
+        run: echo "specs=$(imp test --e2e --json)" >> "$GITHUB_OUTPUT"
 
   e2e:
     needs: discover
