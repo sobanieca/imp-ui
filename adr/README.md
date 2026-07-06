@@ -33,4 +33,5 @@ Conventions:
 | [production-bundling](production-bundling.md)                         | imp bundle from vendored bundles + baked-in library   |
 | [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design         |
 | [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome |
+| [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests       |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time            |

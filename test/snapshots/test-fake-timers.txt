@@ -1,0 +1,14 @@
+$ imp test  (cwd: test/fixtures/test-fake-timers)
+exit code: 0
+
+--- stdout ---
+timers.test.js
+  ✓ setTimeout fires on virtual time (*ms)
+  ✓ setInterval and Date advance from a fixed start (*ms)
+  ✓ tickAsync flushes awaited work between timers (*ms)
+  ✓ a plain test keeps real timers and no clock (*ms)
+
+imp test: 4 passed (1 file, *ms)
+
+--- stderr ---
+(empty)

@@ -5,6 +5,7 @@ import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 import { runEsbuild, shutdownBundler } from './deps.js'
 import { createRequestHandler, loadApp } from './start.js'
+import { createClock } from './test_clock.js'
 
 const IMP_LIBRARY_URL = import.meta.resolve('../lib/imp.js')
 const TEST_LIBRARY_URL = import.meta.resolve('./test_library.js')
@@ -102,6 +103,9 @@ async function bundleTestFile(file, { root, dependencies }) {
 
 const importCode = (code) => import(`data:text/javascript;base64,${encodeBase64(code)}`)
 
+const nativeSetTimeout = globalThis.setTimeout
+const nativeClearTimeout = globalThis.clearTimeout
+
 const freshRegistry = () => {
   const registry = {
     tests: [],
@@ -118,7 +122,7 @@ const freshRegistry = () => {
 async function runWithTimeout(run, timeoutMs, context) {
   let timer
   const timeout = new Promise((_, reject) => {
-    timer = setTimeout(
+    timer = nativeSetTimeout(
       () => reject(new Error(`test timed out after ${timeoutMs}ms`)),
       timeoutMs,
     )
@@ -126,7 +130,7 @@ async function runWithTimeout(run, timeoutMs, context) {
   try {
     await Promise.race([Promise.resolve(run(context)), timeout])
   } finally {
-    clearTimeout(timer)
+    nativeClearTimeout(timer)
   }
 }
 
@@ -137,11 +141,21 @@ const indentMessage = (error) => {
   return message.split('\n').map((line) => `      ${line}`).join('\n')
 }
 
-async function runRegistry(registry, { context, defaultTimeout, filter, onFailure }) {
+const createTestClock = (fakeTimers, environment) => {
+  if (!fakeTimers) return null
+  if (environment === 'e2e') {
+    throw new Error(
+      'fakeTimers is only available in unit tests (*.test.js) — e2e specs run in a real browser; control time through the Puppeteer page instead',
+    )
+  }
+  return createClock(fakeTimers === true ? undefined : fakeTimers)
+}
+
+async function runRegistry(registry, { context, defaultTimeout, filter, onFailure, environment }) {
   const counts = { passed: 0, failed: 0, skipped: 0 }
 
-  const runHooks = async (hooks) => {
-    for (const hook of hooks) await runWithTimeout(hook, defaultTimeout, context)
+  const runHooks = async (hooks, hookContext = context) => {
+    for (const hook of hooks) await runWithTimeout(hook, defaultTimeout, hookContext)
   }
 
   try {
@@ -163,17 +177,23 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
     }
     const startedAt = performance.now()
     let failure = null
+    let clock = null
     try {
-      await runHooks(registry.beforeEach)
-      await runWithTimeout(entry.run, entry.timeout ?? defaultTimeout, context)
+      clock = createTestClock(entry.fakeTimers, environment)
+      const testContext = clock ? { ...context, clock } : context
+      await runHooks(registry.beforeEach, testContext)
+      await runWithTimeout(entry.run, entry.timeout ?? defaultTimeout, testContext)
     } catch (error) {
       failure = error
     }
     try {
-      await runHooks(registry.afterEach)
+      await runHooks(registry.afterEach, clock ? { ...context, clock } : context)
     } catch (error) {
       failure ??= error
     }
+    try {
+      clock?.restore()
+    } catch { /* already restored */ }
     const duration = `(${Math.round(performance.now() - startedAt)}ms)`
     if (failure === null) {
       counts.passed++
@@ -207,6 +227,7 @@ async function runUnitFile({ code, filter }) {
       context: { window: globalThis.window, document: globalThis.document },
       defaultTimeout: UNIT_TIMEOUT,
       filter,
+      environment: 'unit',
     })
   } finally {
     delete globalThis[REGISTRY_KEY]
@@ -246,6 +267,7 @@ async function runSpecFile(file, { root, code, filter, browserPath, app }) {
       context: { page, browser, baseUrl },
       defaultTimeout: E2E_TIMEOUT,
       filter,
+      environment: 'e2e',
       onFailure: async (entry) => {
         const path = join(
           root,

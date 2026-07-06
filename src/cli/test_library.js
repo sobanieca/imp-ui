@@ -17,7 +17,13 @@ function register(mode, name, run, options) {
     throw new TypeError(`test('${name}', fn) — fn must be a function`)
   }
   if (mode === 'only') registry.focused = true
-  registry.tests.push({ name, run, mode, timeout: options?.timeout })
+  registry.tests.push({
+    name,
+    run,
+    mode,
+    timeout: options?.timeout,
+    fakeTimers: options?.fakeTimers,
+  })
 }
 
 export function test(name, run, options) {

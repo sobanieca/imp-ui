@@ -227,6 +227,7 @@ Deno.test('imp test', async (t) => {
   }
 
   await test('test-unit-pass', ['test'], fixture('test-unit'))
+  await test('test-fake-timers', ['test'], fixture('test-fake-timers'))
   await test('test-unit-fail', ['test'], fixture('test-fail'))
   await test('test-unit-filter', ['test', '--filter', 'adds'], fixture('test-unit'))
   await test('test-list', ['test', '--list'], fixture('test-list'))
@@ -261,6 +262,22 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
         `${
           commandTranscript('imp test  (cwd: <tmp>)', withoutTelemetry(result))
         }\n[browser log forwarded: ${forwarded}]\n`,
+      )
+    })
+
+    await t.step('test-fake-timers-e2e-rejected', async () => {
+      await Deno.writeTextFile(
+        join(dir, 'clock.spec.js'),
+        "import { expect, test } from 'imp/test'\n\n" +
+          "test('fakeTimers unavailable in e2e', ({ page }) => {\n" +
+          '  expect(page).toBeDefined()\n' +
+          '}, { fakeTimers: true })\n',
+      )
+      const result = await runImp(['test', 'clock.spec.js'], dir)
+      await Deno.remove(join(dir, 'clock.spec.js'))
+      await assertSnapshot(
+        'test-fake-timers-e2e-rejected',
+        commandTranscript('imp test clock.spec.js  (cwd: <tmp>)', withoutTelemetry(result)),
       )
     })
 

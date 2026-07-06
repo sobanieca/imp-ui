@@ -59,6 +59,9 @@ test('adds numbers', () => {
   }, { timeout: 120_000 })
   ```
 
+- `options.fakeTimers` — run this test under a virtual clock and pass it as `clock` in the test
+  context (unit tests only). See [Fake timers](#fake-timers).
+
 Hooks run around the tests of their own file: `beforeAll`, `beforeEach`, `afterEach`, `afterAll`
 (imported from `imp/test`). An async test or hook is awaited.
 
@@ -124,6 +127,70 @@ it (reset what you need in `beforeEach`), separate files never see each other's 
 
 The test callback also receives `{ window, document }` for convenience, but plain globals work just
 as well, as in the browser.
+
+### Fake timers
+
+Time-dependent code — debouncing, throttling, polling, retry backoff, animations — shouldn't force
+your tests to wait in real time. Add `{ fakeTimers: true }` to a unit test's options and imp runs it
+under a virtual clock, handed to you as `clock` in the test context — you advance time by hand:
+
+```js
+import { expect, test } from 'imp/test'
+
+test('debounce fires once, 300ms after the last call', ({ clock }) => {
+  let calls = 0
+  const ping = debounce(() => calls++, 300)
+
+  ping()
+  ping()
+  ping()
+  clock.tick(299)
+  expect(calls).toBe(0)
+  clock.tick(1)
+  expect(calls).toBe(1)
+}, { fakeTimers: true })
+```
+
+While fake timers are on, `setTimeout`, `setInterval`, `requestAnimationFrame`, `Date` (`Date.now()`
+and `new Date()`), and `performance.now()` all read from virtual time — nothing fires until you
+advance it. imp installs the clock before the test (and its `beforeEach`/`afterEach` hooks, which
+receive the same `clock`) and restores the real timers afterward, so there is nothing to clean up.
+
+Control the clock through the `clock` handle:
+
+| Call                  | Does                                                       |
+| --------------------- | ---------------------------------------------------------- |
+| `clock.tick(ms)`      | advance time, running every timer that comes due, in order |
+| `clock.tickAsync(ms)` | same, but awaits promises between timers — for async code  |
+| `clock.next()`        | run only the next scheduled timer                          |
+| `clock.runAll()`      | run everything still pending                               |
+| `clock.now`           | current virtual time, in milliseconds                      |
+| `clock.restore()`     | switch back to real timers before the test ends            |
+
+Start the clock at a fixed instant when your code reads the wall clock — pass `now` (a number or a
+`Date`) instead of `true`:
+
+```js
+test('renews the token on the first of the year', ({ clock }) => {
+  expect(new Date().getFullYear()).toBe(2030)
+  // …
+}, { fakeTimers: { now: new Date('2030-01-01') } })
+```
+
+For async flows that `await` between timers, reach for `tickAsync`, which flushes pending promise
+callbacks as it advances, so the next timer sees the state the awaits produced:
+
+```js
+test('retries after a 1s backoff', async ({ clock }) => {
+  const done = fetchWithRetry('/data') // awaits, then schedules a retry in 1000ms
+  await clock.tickAsync(1000)
+  expect(await done).toEqual({ ok: true })
+}, { fakeTimers: true })
+```
+
+Fake timers are a unit-test tool. E2E specs run against a real browser, where time belongs to the
+page — drive it through Puppeteer (`page.evaluateOnNewDocument`, the CDP clock) instead; setting
+`fakeTimers` on a spec fails, reporting that it is unit-only.
 
 ## E2E tests — `*.spec.js`
 
