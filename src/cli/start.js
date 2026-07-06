@@ -2,7 +2,7 @@ import { basename, dirname, extname, fromFileUrl, join, normalize, resolve } fro
 import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
 import { loadImpConfig } from './config.js'
 
-const FRAMEWORK_SRC = fromFileUrl(new URL('..', import.meta.url))
+const FRAMEWORK_SRC = fromFileUrl(new URL('../lib', import.meta.url))
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',

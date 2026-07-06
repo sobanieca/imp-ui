@@ -6,8 +6,8 @@ import { collectFiles } from './walk.js'
 import { runEsbuild, shutdownBundler } from './deps.js'
 import { createRequestHandler, loadApp } from './start.js'
 
-const IMP_LIBRARY_URL = import.meta.resolve('../imp.js')
-const TEST_LIBRARY_URL = import.meta.resolve('../test.js')
+const IMP_LIBRARY_URL = import.meta.resolve('../lib/imp.js')
+const TEST_LIBRARY_URL = import.meta.resolve('./test_library.js')
 
 const REGISTRY_KEY = Symbol.for('imp.test.registry')
 

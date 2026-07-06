@@ -15,7 +15,7 @@ import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 
-const IMP_LIBRARY_URL = import.meta.resolve('../imp.js')
+const IMP_LIBRARY_URL = import.meta.resolve('../lib/imp.js')
 
 const SCRIPT_TAG = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi
 

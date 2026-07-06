@@ -13,7 +13,7 @@ runs dominate CI time.
 
 One command, `imp test`, with the level chosen by file name — `*.test.js` runs in-process against a
 simulated DOM, `*.spec.js` runs against a served app in headless Chrome. Both import their API from
-`imp/test` (`src/test.js`): `test`/`test.only`/`test.skip` with per-test timeouts,
+`imp/test` (`src/cli/test_library.js`): `test`/`test.only`/`test.skip` with per-test timeouts,
 `beforeAll`/`beforeEach`/`afterEach`/`afterAll`, and an `expect` matcher set. imp's file walker
 feeds discovery; explicit paths run exactly those files.
 

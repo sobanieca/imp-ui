@@ -13,7 +13,7 @@ import {
   span,
   textarea,
   ul,
-} from '../../../src/imp.js'
+} from '../../../src/lib/imp.js'
 
 const stars = (n) => '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n)
 
