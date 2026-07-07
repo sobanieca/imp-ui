@@ -2,6 +2,7 @@ import { join } from '@std/path'
 import { loadImpConfig } from './config.js'
 import { bundleDependency, shutdownBundler } from './deps.js'
 import { defaultAlias, EXACT_VERSION, parseSpecifier, VALID_ALIAS } from './specifiers.js'
+import { logger } from './logger.js'
 
 const NPM_REGISTRY = 'https://registry.npmjs.org'
 const JSR_REGISTRY = 'https://jsr.io'
@@ -26,12 +27,26 @@ async function latestVersion(scheme, name) {
   return latest
 }
 
-const formatSize = (bytes) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} kB`
+const LARGE_DEPENDENCY_BYTES = 200 * 1024
+
+const formatSize = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} kB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 async function installOne({ root, alias, scheme, name, version, subpath }) {
   const resolvedVersion = version ?? await latestVersion(scheme, name)
   const specifier = `${scheme}:${name}@${resolvedVersion}${subpath}`
   const { files, packages, impImports } = await bundleDependency({ specifier, alias })
+  const totalSize = files.reduce((sum, file) => sum + file.contents.length, 0)
+  if (totalSize > LARGE_DEPENDENCY_BYTES) {
+    logger.warn(
+      `${specifier} bundles to ${
+        formatSize(totalSize)
+      }, which will be committed into your git repository`,
+    )
+  }
   const folder = join(root, 'dependencies', alias)
   await Deno.remove(folder, { recursive: true }).catch(() => {})
   await Deno.mkdir(folder, { recursive: true })

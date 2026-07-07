@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: package not found: npm:imp-test-no-such-package-404
+[ERROR] package not found: npm:imp-test-no-such-package-404

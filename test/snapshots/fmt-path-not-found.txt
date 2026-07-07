@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: path not found: missing.js
+[ERROR] path not found: missing.js

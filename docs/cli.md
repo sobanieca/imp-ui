@@ -228,7 +228,7 @@ aliases, jsr packages and subpaths, what gets printed, and why the vendored fold
 
 ```
 imp test <file> [--filter <text>]
-imp test [--unit] [--e2e] [--json]
+imp test [--unit] [--e2e] [--list]
 ```
 
 Runs the project's tests on two levels through one command: files ending in `.test.js` are unit and
@@ -246,7 +246,7 @@ operations. `imp test <file>` runs exactly that file and exits with its result; 
 `imp test <file>` command — and runs nothing. Because every file is self-contained, whoever calls
 imp — a CI matrix, a shell `xargs -P`, or an AI coding agent reading the plan off stdout — decides
 how many to run at once, with one file as the unit of both parallelism and isolation.
-`imp test --json` feeds the file list to a CI matrix or shell as JSON.
+`imp test --list` feeds the file list to a CI matrix or shell as JSON.
 
 See **[Testing](testing.md)** for the full runner API, the assertion reference, browser resolution,
 and the CI parallelization pattern.

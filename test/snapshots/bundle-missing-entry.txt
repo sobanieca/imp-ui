@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: file not found: missing.html
+[ERROR] file not found: missing.html

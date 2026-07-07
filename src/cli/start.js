@@ -1,6 +1,8 @@
 import { basename, dirname, extname, fromFileUrl, join, normalize, resolve } from '@std/path'
 import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
 import { loadImpConfig } from './config.js'
+import { dim, green, red } from './colors.js'
+import { logger } from './logger.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../lib', import.meta.url))
 
@@ -24,28 +26,18 @@ const CONTENT_TYPES = {
   '.md': 'text/plain; charset=utf-8',
 }
 
-const dim = (s) => `\x1b[2m${s}\x1b[0m`
-const consoleColor = {
-  error: '\x1b[31m',
-  warn: '\x1b[33m',
-  info: '\x1b[36m',
-  log: '\x1b[2m',
-  debug: '\x1b[2m',
-}
-
 function printEntry(entry) {
   if (entry.type === 'console') {
-    const color = consoleColor[entry.level] ?? ''
-    console.log(`${color}[browser:${entry.level}]\x1b[0m ${entry.text}`)
+    logger.browser(entry.level, entry.text)
   } else if (entry.type === 'page') {
-    console.log(`\x1b[31m[browser:uncaught]\x1b[0m ${entry.text}`)
+    logger.browser('uncaught', entry.text)
   } else if (entry.type === 'net') {
     const status = entry.error
-      ? `\x1b[31m${entry.error}\x1b[0m`
+      ? red(entry.error)
       : entry.status >= 400
-      ? `\x1b[31m${entry.status}\x1b[0m`
-      : `\x1b[32m${entry.status}\x1b[0m`
-    console.log(`${dim('[net]')} ${entry.method} ${entry.url} → ${status} ${dim(entry.ms + 'ms')}`)
+      ? red(entry.status)
+      : green(entry.status)
+    logger.http(`${entry.method} ${entry.url} → ${status} ${dim(entry.ms + 'ms')}`)
   }
 }
 
@@ -180,11 +172,11 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
   try {
     entryStat = await Deno.stat(entryPath)
   } catch {
-    console.error(`imp start: file not found: ${entry}`)
+    logger.error(`file not found: ${entry}`)
     Deno.exit(1)
   }
   if (entryStat.isDirectory) {
-    console.error(`imp start: expected an HTML file, got a directory: ${entry}`)
+    logger.error(`expected an HTML file, got a directory: ${entry}`)
     Deno.exit(1)
   }
 
@@ -192,9 +184,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
   const clients = new Set()
 
   for (const alias of missingDependencies) {
-    console.log(
-      `\x1b[33m[imp] dependency '${alias}' is declared but not vendored — run 'imp install'\x1b[0m`,
-    )
+    logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
   }
 
   const broadcast = (message) => {
@@ -213,7 +203,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
       if (event.paths.every((p) => /[/\\](\.git|node_modules|dist)[/\\]/.test(p))) continue
       clearTimeout(timer)
       timer = setTimeout(() => {
-        console.log(dim('[imp] change detected → reload'))
+        logger.debug('change detected → reload')
         broadcast('reload')
       }, 80)
     }
@@ -222,7 +212,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
   const server = Deno.serve({
     port,
     onListen: ({ port }) => {
-      console.log(`\x1b[1mimp start\x1b[0m serving ${entryName} from ${root}`)
+      logger.info(`imp start serving ${entryName} from ${root}`)
       console.log(`  → http://localhost:${port}/`)
       console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
     },

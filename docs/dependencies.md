@@ -123,6 +123,19 @@ installed micromark (npm:micromark@4.0.2)
 This listing is your audit record: read it to see what you are actually shipping, and note a
 specific version if you ever need to trace one.
 
+## Large dependencies
+
+Because vendored bundles are committed to your repository, imp warns you when a package is heavy. If
+a dependency bundles to more than **200 kB**, `imp install` prints its size in human-friendly form
+so you notice what is going into git:
+
+```
+warning: npm:some-heavy-package@2.1.0 bundles to 1.4 MB, which will be committed into your git repository
+```
+
+The install proceeds normally — the warning is just a nudge to double-check that a dependency this
+large is worth committing, or a prompt to look for a lighter alternative.
+
 ## Packages built with imp
 
 A component published from another imp project built for an imp host (see **[the CLI docs](cli.md)**

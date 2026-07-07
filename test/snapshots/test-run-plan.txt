@@ -12,7 +12,7 @@ Run each e2e test separately:
   imp test login.spec.js
 
 To run them in parallel from a shell:
-  imp test --json | jq -r '.[]' | xargs -P4 -n1 imp test
+  imp test --list | jq -r '.[]' | xargs -P4 -n1 imp test
 
 --- stderr ---
 (empty)

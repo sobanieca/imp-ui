@@ -1,5 +1,6 @@
 import { dirname, join } from '@std/path'
 import { BlobReader, Uint8ArrayWriter, ZipReader } from '@zip-js/zip-js'
+import { logger } from './logger.js'
 
 export const CHROME_VERSION = '150.0.7871.46'
 
@@ -147,8 +148,8 @@ export async function downloadBrowser() {
   const build = currentBuild()
   const url =
     `https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/${build.platform}/chrome-${build.platform}.zip`
-  console.error(
-    `[imp] downloading Chrome ${CHROME_VERSION} for e2e tests (one-time, cached in ~/.imp/browser)…`,
+  logger.info(
+    `downloading Chrome ${CHROME_VERSION} for e2e tests (one-time, cached in ~/.imp/browser)…`,
   )
   const response = await fetch(url)
   if (!response.ok) {
@@ -168,7 +169,7 @@ export async function downloadBrowser() {
   if (!(await isExecutableFile(executable))) {
     throw new Error(`browser download completed but no executable at ${executable}`)
   }
-  console.error(`[imp] browser ready: ${executable}`)
+  logger.info(`browser ready: ${executable}`)
   return executable
 }
 

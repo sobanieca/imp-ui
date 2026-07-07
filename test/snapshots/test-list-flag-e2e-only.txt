@@ -1,4 +1,4 @@
-$ imp test --e2e --json  (cwd: test/fixtures/test-list)
+$ imp test --e2e --list  (cwd: test/fixtures/test-list)
 exit code: 0
 
 --- stdout ---

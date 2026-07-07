@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: 'lodash' is not a declared dependency in imp.json
+[ERROR] 'lodash' is not a declared dependency in imp.json

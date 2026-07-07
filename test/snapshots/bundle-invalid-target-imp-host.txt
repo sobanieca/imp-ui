@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: invalid imp.json — 'targetImpHost' must be true or false
+[ERROR] invalid imp.json — 'targetImpHost' must be true or false

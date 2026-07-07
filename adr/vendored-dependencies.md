@@ -36,6 +36,10 @@ Dependencies are vendored: resolved, bundled, and committed into the repository,
   arguments re-resolves and re-bundles every declared dependency. `npm:` is assumed when no scheme
   is given. The command prints the top-level package and every transitive package (`name@version`)
   that went into the bundle.
+- **There is no separate `imp update` command.** Updating is folded into `imp install` rather than
+  given its own verb, because installing latest and updating to latest are the same
+  resolve-and-re-vendor operation — a distinct command would only duplicate it. `imp install` (all)
+  and `imp install <package>` (one) are the sole update path.
 - **No lock file and no resolved-graph manifest.** The committed bundle is the frozen state;
   transitive versions are whatever was latest at install/update time. Reproducibility comes from the
   committed bytes, not from tracking every transitive version. The printed resolution at install

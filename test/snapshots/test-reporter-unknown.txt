@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: unknown --reporter 'bogus' — use 'junit' or 'json'
+[ERROR] unknown --reporter 'bogus' — use 'junit' or 'json'

@@ -1,4 +1,4 @@
-$ imp test --json  (cwd: test/fixtures/test-list)
+$ imp test --list  (cwd: test/fixtures/test-list)
 exit code: 0
 
 --- stdout ---

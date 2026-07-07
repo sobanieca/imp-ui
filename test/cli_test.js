@@ -249,14 +249,14 @@ Deno.test('imp test', async (t) => {
   await test('test-unit-fail', ['test'], fixture('test-fail'))
   await test('test-unit-filter', ['test', 'lib.test.js', '--filter', 'adds'], fixture('test-unit'))
   await test('test-run-plan', ['test'], fixture('test-list'))
-  await test('test-json', ['test', '--json'], fixture('test-list'))
-  await test('test-json-e2e-only', ['test', '--e2e', '--json'], fixture('test-list'))
+  await test('test-list-flag', ['test', '--list'], fixture('test-list'))
+  await test('test-list-flag-e2e-only', ['test', '--e2e', '--list'], fixture('test-list'))
   await test('test-not-a-test-file', ['test', 'app.js'], fixture('basic'))
   await test('test-no-files', ['test'], fixture('with-config'))
   await test('test-missing-entry', ['test', 'login.spec.js'], fixture('test-list'))
 })
 
-const isTelemetryLine = (line) => line.startsWith('[browser:') || line.startsWith('[net]')
+const isTelemetryLine = (line) => line.startsWith('[BROWSER:') || line.startsWith('[HTTP]')
 
 const withoutTelemetry = (result) => ({
   ...result,
@@ -275,7 +275,7 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
   try {
     await t.step('test-e2e-pass', async () => {
       const result = await runImp(['test'], dir)
-      const forwarded = result.stdout.includes('[browser:log] counter clicked 2')
+      const forwarded = result.stdout.includes('[BROWSER:log] counter clicked 2')
       await assertSnapshot(
         'test-e2e-pass',
         `${

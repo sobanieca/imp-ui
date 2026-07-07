@@ -15,6 +15,8 @@ import { collectFiles } from './walk.js'
 import { runEsbuild, shutdownBundler } from './deps.js'
 import { createRequestHandler, loadApp } from './start.js'
 import { createClock } from './test_clock.js'
+import { dim, green, red, yellow } from './colors.js'
+import { logger } from './logger.js'
 
 const IMP_LIBRARY_URL = import.meta.resolve('../lib/imp.js')
 const TEST_LIBRARY_URL = import.meta.resolve('./test_library.js')
@@ -28,11 +30,6 @@ const TEST_EXTENSIONS = new Set(['js', 'mjs'])
 
 const MODULE_EXTENSIONS = ['.js', '.mjs']
 const MOCK_NAMESPACE = 'imp-mock'
-
-const green = (s) => `\x1b[32m${s}\x1b[0m`
-const red = (s) => `\x1b[31m${s}\x1b[0m`
-const yellow = (s) => `\x1b[33m${s}\x1b[0m`
-const dim = (s) => `\x1b[2m${s}\x1b[0m`
 
 export const isUnitFile = (path) => path.endsWith('.test.js') || path.endsWith('.test.mjs')
 export const isSpecFile = (path) => path.endsWith('.spec.js') || path.endsWith('.spec.mjs')
@@ -646,7 +643,7 @@ function printRunPlan({ unitFiles, specFiles, toRelative }) {
   section('Run each unit test separately:', unitFiles)
   section('Run each e2e test separately:', specFiles)
   console.log('\nTo run them in parallel from a shell:')
-  console.log("  imp test --json | jq -r '.[]' | xargs -P4 -n1 imp test")
+  console.log("  imp test --list | jq -r '.[]' | xargs -P4 -n1 imp test")
 }
 
 const REPORTERS = new Set(['junit', 'json'])
@@ -712,7 +709,7 @@ const renderReport = (reporter, fileReports, totals, elapsedMs) =>
     : renderJsonResults(fileReports, totals, elapsedMs)
 
 export async function runTests(
-  { root, paths, json = false, unit = false, e2e = false, filter = null, reporter = null },
+  { root, paths, list = false, unit = false, e2e = false, filter = null, reporter = null },
 ) {
   const imp = await loadImpConfig(root)
   const testConfig = imp.test ?? {}
@@ -732,7 +729,7 @@ export async function runTests(
 
   const toRelative = (file) => relative(root, file).replaceAll('\\', '/')
 
-  if (json) {
+  if (list) {
     console.log(JSON.stringify([...unitFiles, ...specFiles].map(toRelative)))
     return 0
   }
@@ -791,9 +788,7 @@ export async function runTests(
       }
       const app = await loadApp(entryPath)
       for (const alias of app.missingDependencies) {
-        console.log(
-          yellow(`[imp] dependency '${alias}' is declared but not vendored — run 'imp install'`),
-        )
+        logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
       }
       const { resolveBrowser } = await import('./test_browser.js')
       e2eRun = { app, browserPath: await resolveBrowser(testConfig.browser) }

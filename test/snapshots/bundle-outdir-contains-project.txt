@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error: output directory must not contain the project: .
+[ERROR] output directory must not contain the project: .

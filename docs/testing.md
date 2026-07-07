@@ -5,7 +5,7 @@ imp test <file>            run one test file
 imp test                   list the test files to run separately (one process each)
 imp test --unit | --e2e    narrow discovery to unit / e2e files
 imp test --filter <text>   run only tests whose name contains <text>
-imp test --json            print the selected files as JSON
+imp test --list            print the selected files as JSON
 imp test --reporter <fmt>  emit machine-readable results (junit | json)
 ```
 
@@ -41,7 +41,7 @@ Flags:
 - `--unit` / `--e2e` — run only `.test.js` files, or only `.spec.js` files.
 - `--filter <text>` — run only tests whose name contains the text; everything else is reported as
   skipped.
-- `--json` — print the selected test files as a JSON array instead of running them (combine with
+- `--list` — print the selected test files as a JSON array instead of running them (combine with
   `--e2e` to feed a CI matrix).
 - `--reporter <junit|json>` — write machine-readable results for the run. See
   [Machine-readable results](#machine-readable-results).
@@ -440,11 +440,11 @@ spec file gets its own server, port, and browser, and nothing is shared between 
 as many files at once as you like. imp does not do this for you; it lists the files and leaves the
 scheduling to you.
 
-`imp test --json` prints the selected files as a JSON array (add `--unit` or `--e2e` to narrow it).
+`imp test --list` prints the selected files as a JSON array (add `--unit` or `--e2e` to narrow it).
 From a shell, fan that out across your cores:
 
 ```bash
-imp test --json | jq -r '.[]' | xargs -P4 -n1 imp test
+imp test --list | jq -r '.[]' | xargs -P4 -n1 imp test
 ```
 
 `-P4` runs four files at a time — raise or lower it to match your machine. This is the same list a
@@ -458,7 +458,7 @@ machine at the same time. Splitting your suite into one spec per user flow (logi
 …) turns total e2e time into the time of the slowest flow. The trade-off is that each spec repeats
 its own setup (for example logging in), which is exactly what makes it independent.
 
-`imp test --e2e --json` prints the spec files as JSON, which plugs straight into a GitHub Actions
+`imp test --e2e --list` prints the spec files as JSON, which plugs straight into a GitHub Actions
 matrix — one job per spec file, no hardcoded file list to maintain:
 
 ```yaml
@@ -476,7 +476,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: list
-        run: echo "specs=$(imp test --e2e --json)" >> "$GITHUB_OUTPUT"
+        run: echo "specs=$(imp test --e2e --list)" >> "$GITHUB_OUTPUT"
 
   e2e:
     needs: discover
@@ -497,7 +497,7 @@ add an `actions/upload-artifact` step if you want them attached to the run.
 
 ## Machine-readable results
 
-`--json` lists which files _would_ run; to capture how a run _went_, add `--reporter` when running a
+`--list` lists which files _would_ run; to capture how a run _went_, add `--reporter` when running a
 file. It writes a machine-readable report of that file's results to **stdout**, while the usual
 human output (and any browser telemetry) goes to **stderr** — so redirecting stdout gives you a
 clean report and nothing else:

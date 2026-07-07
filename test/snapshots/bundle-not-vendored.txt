@@ -9,5 +9,5 @@ exit code: 1
         ╵                  ~~~~~~
 
 --- stderr ---
-error: Build failed with 1 error:
+[ERROR] Build failed with 1 error:
 <root>/test/fixtures/with-config/app.js:1:17: ERROR: [plugin: imp] dependency 'mitt' is declared but not vendored — run 'imp install'

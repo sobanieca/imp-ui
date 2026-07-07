@@ -22,7 +22,7 @@ feeds discovery.
   invocation that resolves to more than one file (a bare `imp test`, a directory, several explicit
   paths) prints a _run plan_ — the discovered unit and e2e files as ready-to-run `imp test <file>`
   commands plus a shell one-liner for running them in parallel — and exits `0` without running
-  anything. `--json` still emits the same selection as a JSON array for machine consumption. imp
+  anything. `--list` still emits the same selection as a JSON array for machine consumption. imp
   never schedules concurrency itself: the runner, bundler, and browser stay single-process, and
   whoever calls imp — a CI matrix, a shell `xargs -P`, or an AI coding agent reading the plan off
   stdout — decides how many files to run at once and how to isolate them. This keeps a bare
@@ -73,7 +73,7 @@ feeds discovery.
   matcher family.
 - **Machine-readable results.** `--reporter <junit|json>` emits a structured report of a run to
   stdout while redirecting the human/telemetry output to stderr, so a redirect yields a clean
-  report; `--json` stays what it was (the pre-run file _selection_, for CI fan-out). The runner
+  report; `--list` emits the pre-run file _selection_ as a JSON array, for CI fan-out. The runner
   records a per-test `{ name, status, durationMs, message? }` list that both reporters render. Exit
   codes are unchanged, so a reporter drops into an existing per-file CI job without changing
   pass/fail detection.
@@ -102,7 +102,7 @@ feeds discovery.
   puppeteer-core drives a headless browser; tests receive `{ page, browser, baseUrl }` and share the
   page within a file (a spec reads as one user session). Failing tests save a screenshot under
   `.imp/screenshots/`. Nothing is shared between spec files, so `imp test <file>.spec.js` is a
-  self-contained CI job; `imp test --e2e --json` emits the spec list as JSON for one-job-per-spec
+  self-contained CI job; `imp test --e2e --list` emits the spec list as JSON for one-job-per-spec
   GitHub Actions matrices.
 - **Browser resolution**, in order: `test.browser` in `imp.json`, the `IMP_BROWSER` environment
   variable, an installed Chrome/Chromium (covers GitHub Actions runners out of the box), else a
@@ -120,7 +120,7 @@ feeds discovery.
   spec repeating its own setup state (e.g. logging in) — that repetition is what makes specs
   independently schedulable.
 - A bare `imp test` no longer runs the suite; it plans it. Existing pipelines that relied on
-  `imp test` running everything must switch to per-file invocations (feed `imp test --json` into a
+  `imp test` running everything must switch to per-file invocations (feed `imp test --list` into a
   matrix or `xargs -P`, or run each `imp test <file>` the plan prints). In exchange, a single file
   is always the unit of both parallelism and isolation — there is no longer a mode where unrelated
   files share one process — and the exit code of `imp test <file>` maps to exactly one file's

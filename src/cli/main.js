@@ -14,7 +14,7 @@ USAGE
   imp test <file>                       run one test file: *.test.js unit in-process,
                                         *.spec.js e2e in a real browser. With no file
                                         imp lists the tests to run separately, one per
-                                        process (--unit · --e2e · --filter <text> · --json ·
+                                        process (--unit · --e2e · --filter <text> · --list ·
                                         --reporter <junit|json> for machine-readable results)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
@@ -76,13 +76,13 @@ try {
     }
     case 'test': {
       const { runTests } = await import('./test.js')
-      const booleanFlags = ['--json', '--unit', '--e2e']
+      const booleanFlags = ['--list', '--unit', '--e2e']
       const args = rest.filter((arg) => !booleanFlags.includes(arg))
       Deno.exit(
         await runTests({
           root: Deno.cwd(),
           paths: positional(args),
-          json: rest.includes('--json'),
+          list: rest.includes('--list'),
           unit: rest.includes('--unit'),
           e2e: rest.includes('--e2e'),
           filter: flag(rest, 'filter', null),
@@ -110,6 +110,7 @@ try {
       if (command && command !== 'help' && command !== '--help') Deno.exit(1)
   }
 } catch (error) {
-  console.error(`error: ${error.message}`)
+  const { logger } = await import('./logger.js')
+  logger.error(error.message)
   Deno.exit(1)
 }
