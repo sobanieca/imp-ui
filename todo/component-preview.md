@@ -52,7 +52,7 @@ are visible at once, each under its export name. Whether a scenario is an eager 
 ## Discovery — reuse the file walker
 
 Preview files are found with the same walker `imp test` and `imp lint` already use
-(`src/cli/walk.js`): every `*.preview.js` under the project (respecting the same ignore rules) is a
+(`cli/src/walk.js`): every `*.preview.js` under the project (respecting the same ignore rules) is a
 preview target. This gives an **index page** listing all previews for free, and mirrors the
 `*.test.js` / `*.spec.js` file-name-drives-behavior convention from `adr/two-level-testing.md`.
 Explicit paths preview exactly those files; no argument previews the whole tree.
@@ -62,7 +62,7 @@ Explicit paths preview exactly those files; no argument previews the whole tree.
 Build on the `imp start` internals rather than a second server, exactly the way `imp test`'s e2e
 mode reuses them (`adr/two-level-testing.md`):
 
-- Reuse `loadApp` / `createRequestHandler` (`src/cli/start.js`) so dependency resolution, the import
+- Reuse `loadApp` / `createRequestHandler` (`cli/src/start.js`) so dependency resolution, the import
   map, the auto-injected client script, and browser console + network telemetry all work unchanged
   in a preview.
 - Instead of serving a user `index.html`, imp **synthesizes the host HTML page**: a generated shell

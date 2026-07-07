@@ -144,10 +144,7 @@ vite.config.ts.timestamp-*
 
 
 # vendored formatter wasm plugins (fetched by 'deno task vendor')
-src/cli/vendor/
+cli/src/vendor/
 
 # compiled binary (deno task compile)
 /imp
-
-# imp internal project folder (derived config, test screenshots)
-.imp/

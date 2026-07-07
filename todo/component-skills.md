@@ -58,7 +58,7 @@ imp skill ./components/counter.js
 ### How it loads the module
 
 Reuse the exact machinery `imp test` already uses to load user modules in-process
-(`src/cli/test.js`): bundle the target file with esbuild through the shared resolver so `imp`,
+(`cli/src/test.js`): bundle the target file with esbuild through the shared resolver so `imp`,
 `imp/test`, and vendored `dependencies/` specifiers resolve, then import the result as a data URL
 and read the `skill` export. This means a component whose module imports `imp` or other dependencies
 still resolves correctly when its skill is read, with no separate resolution path to maintain.
@@ -72,7 +72,7 @@ heavy work at import time are the open question below.
 Start with the single-file `imp skill <file>` command — it is the minimal useful surface and
 unblocks agents immediately. A project-wide view can follow once the single-file path is proven:
 
-- `imp skill` with no path could scan the project (reusing the `src/cli/walk.js` walker, like
+- `imp skill` with no path could scan the project (reusing the `cli/src/walk.js` walker, like
   `imp
   test` and `imp preview`) for every module that exports a `skill`, and print an aggregated
   catalog (one section per component, JSON with `--json`) — a single surface an agent reads to learn

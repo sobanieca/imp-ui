@@ -1,11 +1,11 @@
-$ imp test failing.spec.js  (cwd: <tmp>)
+$ imp test failing.spec.js --screenshots shots  (cwd: <tmp>)
 exit code: 1
 
 --- stdout ---
 failing.spec.js
   ✗ shows 999 (*ms)
       TypeError: expect(...).toBe is not a function
-      screenshot: .imp/screenshots/failing.spec.js-shows-999.png
+      screenshot: shots/failing.spec.js-shows-999.png
 
 imp test: 0 passed, 1 failed (1 file, *ms)
 

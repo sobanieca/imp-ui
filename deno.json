@@ -1,10 +1,10 @@
 {
   "tasks": {
-    "imp": "deno run -A src/cli/main.js",
+    "imp": "deno run -A cli/src/main.js",
     "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
-    "compile": "deno run -A tools/download_fmt_plugins.js && deno run -A tools/prebundle_npm_deps.js && deno compile -A --include src -o imp src/cli/main.js",
-    "test": "deno task compile && deno test -A test/cli_test.js",
-    "test:update": "deno task compile && deno test -A test/cli_test.js -- --update"
+    "compile": "deno run -A tools/download_fmt_plugins.js && deno run -A tools/prebundle_npm_deps.js && deno compile -A --include cli/src --include lib/src -o imp cli/src/main.js",
+    "test": "deno task compile && deno test -A cli/test/cli_test.js",
+    "test:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update"
   },
   "imports": {
     "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",
@@ -15,12 +15,12 @@
     "esbuild-wasm/": "npm:/esbuild-wasm@0.28.1/"
   },
   "lint": {
-    "exclude": ["prev/", "test/fixtures/", "src/cli/vendor/"]
+    "exclude": ["prev/", "cli/test/fixtures/", "cli/src/vendor/"]
   },
   "fmt": {
     "semiColons": false,
     "singleQuote": true,
     "lineWidth": 100,
-    "exclude": ["prev/", "test/fixtures/", "test/snapshots/", "src/cli/vendor/"]
+    "exclude": ["prev/", "cli/test/fixtures/", "cli/test/snapshots/", "cli/src/vendor/"]
   }
 }

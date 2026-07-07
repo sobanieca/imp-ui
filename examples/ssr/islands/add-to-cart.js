@@ -1,4 +1,4 @@
-import { button, div, mount, span } from '../../../src/lib/imp.js'
+import { button, div, mount, span } from '../../../lib/src/imp.js'
 import { addToCart } from './cart-store.js'
 
 export function mountAddToCart() {

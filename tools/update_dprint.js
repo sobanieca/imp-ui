@@ -1,8 +1,8 @@
 import { dirname, fromFileUrl } from '@std/path'
-import { FMT_PLUGINS, wasmUrl } from '../src/cli/fmt_plugins.js'
+import { FMT_PLUGINS, wasmUrl } from '../cli/src/fmt_plugins.js'
 
 const REGISTRY_URL = 'https://plugins.dprint.dev/info.json'
-const PLUGINS_SOURCE_URL = new URL('../src/cli/fmt_plugins.js', import.meta.url)
+const PLUGINS_SOURCE_URL = new URL('../cli/src/fmt_plugins.js', import.meta.url)
 
 const sha256 = async (bytes) => {
   const digest = await crypto.subtle.digest('SHA-256', bytes)

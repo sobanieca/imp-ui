@@ -35,7 +35,7 @@ Dependency bundling runs fully in-process, with no hand-rolled resolver:
   `registry.npmjs.org` and `jsr:` specifiers from `jsr.io` itself, over the network, requiring no
   `node_modules`, no lockfile, and no ambient `deno`.
 
-`src/cli/deps.js` initializes esbuild-wasm lazily and bundles each installed specifier with
+`cli/src/deps.js` initializes esbuild-wasm lazily and bundles each installed specifier with
 `[denoPlugin()]`, minified, emitting non-JS assets (wasm, images, fonts, css) as sibling files in
 the dependency's vendor folder.
 

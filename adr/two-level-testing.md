@@ -13,7 +13,7 @@ runs dominate CI time.
 
 One command, `imp test`, with the level chosen by file name — `*.test.js` runs in-process against a
 simulated DOM, `*.spec.js` runs against a served app in headless Chrome. Both import their API from
-`imp/test` (`src/cli/test_library.js`): `test`/`test.only`/`test.skip` with per-test timeouts,
+`imp/test` (`cli/src/test_library.js`): `test`/`test.only`/`test.skip` with per-test timeouts,
 `beforeAll`/`beforeEach`/`afterEach`/`afterAll`, and an `expect` matcher set. imp's file walker
 feeds discovery.
 
@@ -106,7 +106,7 @@ feeds discovery.
   GitHub Actions matrices.
 - **Browser resolution**, in order: `test.browser` in `imp.json`, the `IMP_BROWSER` environment
   variable, an installed Chrome/Chromium (covers GitHub Actions runners out of the box), else a
-  Chrome for Testing build pinned by version and per-platform sha256 in `src/cli/test_browser.js`,
+  Chrome for Testing build pinned by version and per-platform sha256 in `cli/src/test_browser.js`,
   downloaded once into the per-user `~/.imp/browser/` cache (never inside a project,
   `vendored-dependencies.md`) and extracted with a pure-JS unzip.
 - **The browser is the sanctioned subprocess exception** to `in-process-toolchain.md`: it is the

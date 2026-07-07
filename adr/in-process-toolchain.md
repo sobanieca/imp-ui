@@ -25,10 +25,10 @@ themselves all run in-process.
   so JS output matches `deno fmt`. TypeScript is deliberately out of scope for both commands — imp
   is buildless, apps are plain JavaScript. Embedded `<script>`/`<style>` in HTML are formatted via
   the context's host delegation. Plugin wasm files are pinned by version and checksum in
-  `src/cli/fmt_plugins.js`, downloaded by `tools/download_fmt_plugins.js`, and embedded with
+  `cli/src/fmt_plugins.js`, downloaded by `tools/download_fmt_plugins.js`, and embedded with
   `deno compile --include`.
 - **`imp lint`** runs ESLint's core `Linter` (`eslint/universal` — pure JS, no filesystem) with the
-  `@eslint/js` recommended rules, browser globals, and imp's own rules from `src/cli/lint_rules.js`.
+  `@eslint/js` recommended rules, browser globals, and imp's own rules from `cli/src/lint_rules.js`.
   HTML files are linted by extracting inline `<script>` blocks and remapping diagnostics to their
   original lines. imp's file walker feeds both commands.
 - **Directives are imp-branded:** formatter ignore comments are configured as `imp-fmt-ignore` /

@@ -4,10 +4,10 @@ A small e-commerce product page that demonstrates the **islands** pattern from `
 a [Hono](https://hono.dev) server renders the full page as HTML, and the client hydrates a few mount
 points with `mount('#id', ...)`.
 
-`src/render.js` is browser-only — it builds real DOM with `document.createElement`. So the server
-renders the static shell as plain HTML strings (good for SEO and no-JS), and imp-ui is used **only
-on the client** to make individual regions interactive. Nothing is re-rendered wholesale; each
-island owns its own host element.
+`lib/src/render.js` is browser-only — it builds real DOM with `document.createElement`. So the
+server renders the static shell as plain HTML strings (good for SEO and no-JS), and imp-ui is used
+**only on the client** to make individual regions interactive. Nothing is re-rendered wholesale;
+each island owns its own host element.
 
 ## What's server-rendered vs. hydrated
 
@@ -23,7 +23,7 @@ Two islands share state: `add-to-cart` posts to the cart API, and `cart-store.js
 
 ## Files
 
-- `server.js` — Hono app: SSR route `/`, JSON APIs, static serving of `src/` and the islands.
+- `server.js` — Hono app: SSR route `/`, JSON APIs, static serving of `lib/src/` and the islands.
 - `data.js` — in-memory product, reviews, and cart (server state; global, for demo simplicity).
 - `page.js` — server-side HTML for the page; embeds the initial reviews as JSON for hydration.
 - `islands/` — client modules, imported with no build step:
@@ -47,5 +47,5 @@ deno run --allow-net --allow-read examples/ssr/server.js
 ```
 
 Either way works — the server `chdir`s to the repo root on startup so `serveStatic` can reach
-`src/`. Then open <http://localhost:8000>. Add items to the cart and post a review; reload to
+`lib/src/`. Then open <http://localhost:8000>. Add items to the cart and post a review; reload to
 confirm the server kept the state.

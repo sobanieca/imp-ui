@@ -1,9 +1,9 @@
 import { builtinModules } from 'node:module'
 import { dirname, fromFileUrl, join, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { runEsbuild, shutdownBundler } from '../src/cli/deps.js'
+import { runEsbuild, shutdownBundler } from '../cli/src/deps.js'
 
-const VENDOR_DIR = fromFileUrl(new URL('../src/cli/vendor/', import.meta.url))
+const VENDOR_DIR = fromFileUrl(new URL('../cli/src/vendor/', import.meta.url))
 
 const VERSIONS = {
   'happy-dom': '20.10.6',

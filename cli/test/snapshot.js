@@ -26,12 +26,12 @@ export async function assertSnapshot(name, actual) {
     expected = await Deno.readTextFile(path)
   } catch {
     throw new Error(
-      `missing snapshot test/snapshots/${name}.txt — run 'deno task test:update' to create it`,
+      `missing snapshot cli/test/snapshots/${name}.txt — run 'deno task test:update' to create it`,
     )
   }
   if (expected === actual) return
   throw new Error(
-    `snapshot mismatch in test/snapshots/${name}.txt (- expected, + actual):\n` +
+    `snapshot mismatch in cli/test/snapshots/${name}.txt (- expected, + actual):\n` +
       `${diffLines(expected, actual)}\n\n` +
       `run 'deno task test:update' if the new output is correct`,
   )

@@ -8,7 +8,7 @@ service worker. Driven by an `imp pwa` command family plus a `pwa` block in `imp
 
 imp already registers a service worker at `/@imp/sw.js`, but that is a **dev-only telemetry sink** —
 it forwards browser network activity to the terminal and does no caching, so it gives no offline
-capability (`src/cli/client.js`, `docs/cli.md` "Network telemetry"). PWA support is separate new
+capability (`cli/src/client.js`, `docs/cli.md` "Network telemetry"). PWA support is separate new
 work: a real, cache-backed service worker shipped in the production build, plus the manifest and
 icons the dev SW has nothing to do with. The dev telemetry SW stays as-is for `imp start`.
 
@@ -33,7 +33,7 @@ translation model, users only ever edit `imp.json`:
 - `icon` points at **one** high-resolution source image (SVG preferred, or a large PNG). imp scales
   it to every required target size — no hand-maintained icon set.
 - Presence of `pwa` is what tells imp the app is a PWA; absent, nothing changes.
-- `loadImpConfig` (`src/cli/config.js`) validates `pwa` as an object alongside
+- `loadImpConfig` (`cli/src/config.js`) validates `pwa` as an object alongside
   `imports`/`fmt`/`lint`.
 
 ## Icon scaling — in-process
@@ -44,7 +44,7 @@ output the dev server and `imp bundle` serve.
 
 Scaling must run **in-process** to honor `adr/in-process-toolchain.md` (no subprocess — so no
 shelling out to ImageMagick/sharp CLIs). Resolve a pure-wasm or pure-JS image encoder/resizer,
-vendored and pinned by checksum the same way the esbuild wasm module is (`src/cli/vendor`,
+vendored and pinned by checksum the same way the esbuild wasm module is (`cli/src/vendor`,
 `adr/in-process-dependency-bundling.md`). SVG sources rasterize cleanly to each size; verify the
 chosen library covers PNG decode + resize + encode. If no in-process path is viable, that constraint
 belongs in the ADR discussion below before this is built.
@@ -52,7 +52,7 @@ belongs in the ADR discussion below before this is built.
 ## Manifest and head tags — derived, injected
 
 - Derive a `manifest.webmanifest` from the `pwa` block plus the generated icon set.
-- Extend the existing head-injection path (`buildHeadInjection` in `src/cli/start.js`, which already
+- Extend the existing head-injection path (`buildHeadInjection` in `cli/src/start.js`, which already
   injects the import map and client script) to also emit `<link rel="manifest">`, the
   `<meta name="theme-color">` tag, and the `apple-touch-icon` links — so installability works in
   `imp start` with zero HTML edits, exactly like imp auto-injection today.

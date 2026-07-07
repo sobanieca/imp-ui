@@ -18,7 +18,7 @@ import { createClock } from './test_clock.js'
 import { dim, green, red, yellow } from './colors.js'
 import { logger } from './logger.js'
 
-const IMP_LIBRARY_URL = import.meta.resolve('../lib/imp.js')
+const IMP_LIBRARY_URL = import.meta.resolve('../../lib/src/imp.js')
 const TEST_LIBRARY_URL = import.meta.resolve('./test_library.js')
 
 const REGISTRY_KEY = Symbol.for('imp.test.registry')
@@ -554,7 +554,7 @@ async function launchBrowser(executablePath) {
   return puppeteer.launch({ executablePath, headless: true, args })
 }
 
-async function runSpecFile(file, { root, code, filter, browserPath, app }) {
+async function runSpecFile(file, { root, code, filter, browserPath, app, screenshotDir }) {
   const clients = new Set()
   const server = Deno.serve(
     { port: 0, hostname: '127.0.0.1', onListen: () => {} },
@@ -576,19 +576,17 @@ async function runSpecFile(file, { root, code, filter, browserPath, app }) {
       defaultTimeout: E2E_TIMEOUT,
       filter,
       environment: 'e2e',
-      onFailure: async (entry) => {
-        const path = join(
-          root,
-          '.imp',
-          'screenshots',
-          `${slug(basename(file))}-${slug(entry.name)}.png`,
-        )
-        try {
-          await Deno.mkdir(join(root, '.imp', 'screenshots'), { recursive: true })
-          await page.screenshot({ path })
-          console.log(dim(`      screenshot: ${relative(root, path)}`))
-        } catch { /* page may be gone */ }
-      },
+      onFailure: screenshotDir
+        ? async (entry) => {
+          const dir = resolve(root, screenshotDir)
+          const path = join(dir, `${slug(basename(file))}-${slug(entry.name)}.png`)
+          try {
+            await Deno.mkdir(dir, { recursive: true })
+            await page.screenshot({ path })
+            console.log(dim(`      screenshot: ${relative(root, path)}`))
+          } catch { /* page may be gone */ }
+        }
+        : undefined,
     })
   } finally {
     delete globalThis[REGISTRY_KEY]
@@ -709,7 +707,16 @@ const renderReport = (reporter, fileReports, totals, elapsedMs) =>
     : renderJsonResults(fileReports, totals, elapsedMs)
 
 export async function runTests(
-  { root, paths, list = false, unit = false, e2e = false, filter = null, reporter = null },
+  {
+    root,
+    paths,
+    list = false,
+    unit = false,
+    e2e = false,
+    filter = null,
+    reporter = null,
+    screenshotDir = null,
+  },
 ) {
   const imp = await loadImpConfig(root)
   const testConfig = imp.test ?? {}
@@ -824,7 +831,7 @@ export async function runTests(
       try {
         const counts = isUnitFile(file)
           ? await runUnitFile({ code, filter })
-          : await runSpecFile(file, { root, code, filter, ...e2eRun })
+          : await runSpecFile(file, { root, code, filter, ...e2eRun, screenshotDir })
         addCounts(counts)
         recordFile(file, counts, fileStartedAt)
       } catch (error) {

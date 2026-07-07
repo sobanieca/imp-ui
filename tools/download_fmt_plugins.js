@@ -1,5 +1,5 @@
 import { dirname, fromFileUrl } from '@std/path'
-import { FMT_PLUGINS, wasmUrl } from '../src/cli/fmt_plugins.js'
+import { FMT_PLUGINS, wasmUrl } from '../cli/src/fmt_plugins.js'
 
 const sha256 = async (bytes) => {
   const digest = await crypto.subtle.digest('SHA-256', bytes)

@@ -40,7 +40,7 @@ Each referenced file is a flat JSON object of values (string / number / boolean)
   (`Deno.env.get('NAME')`). Any other string is a literal. This is the only bit of syntax to learn.
 - Referencing a `$env.NAME` that is unset is a **fail-fast error** naming the alias, the key, and
   the missing variable — a half-populated environment is worse than a stopped build.
-- `loadImpConfig` (`src/cli/config.js`) validates `environments` as an object of string paths,
+- `loadImpConfig` (`cli/src/config.js`) validates `environments` as an object of string paths,
   alongside `dependencies`/`fmt`/`lint`/`test`. File contents are read and resolved only when an
   `--env` is actually selected, not on every config load.
 
@@ -53,13 +53,13 @@ Keep env files out of the repo when they hold `$env.` secrets or per-developer v
 - **No `--env` given:** if an environment named `default` exists, use it; otherwise run with an
   empty env object (today's behavior — no breakage for projects that never opt in).
 - **Unknown alias:** fail fast listing the aliases defined in `imp.json`.
-- Parse the flag in `src/cli/main.js` argument handling and thread the resolved env object into
-  `bundle()` (`src/cli/bundle.js`) and the start server (`src/cli/start.js`).
+- Parse the flag in `cli/src/main.js` argument handling and thread the resolved env object into
+  `bundle()` (`cli/src/bundle.js`) and the start server (`cli/src/start.js`).
 
 ## How code reads it — one runtime mechanism, dev == prod
 
 The key constraint: `imp start` serves **raw ES modules** with an injected import map and does no
-bundling (`src/cli/start.js`, `buildHeadInjection`), while `imp bundle` runs esbuild. A
+bundling (`cli/src/start.js`, `buildHeadInjection`), while `imp bundle` runs esbuild. A
 compile-time-only approach (esbuild `define` / `import.meta.env`) would work in the bundle but not
 in the raw dev server, forcing two divergent code paths. Avoid that.
 
@@ -78,7 +78,7 @@ commands:
   ```
 
   `env` is a frozen object read from `globalThis.__IMP_ENV__` (empty object when nothing was
-  injected). Add it under `src/lib/` next to the other `imp` exports.
+  injected). Add it under `lib/src/` next to the other `imp` exports.
 
 This gives one mechanism, one behavior, and no bundler-vs-dev-server skew. If tree-shaking unused
 env keys out of production ever matters, an esbuild `define` layer can be added later **on top of**

@@ -1,12 +1,13 @@
 import { fromFileUrl, join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
-import { CLIENT_JS } from '../src/cli/client.js'
-import { bundleDependency, shutdownBundler } from '../src/cli/deps.js'
-import { injectImp } from '../src/cli/start.js'
-import { defaultAlias, parseSpecifier } from '../src/cli/specifiers.js'
+import { CLIENT_JS } from '../src/client.js'
+import { bundleDependency, shutdownBundler } from '../src/deps.js'
+import { injectImp } from '../src/start.js'
+import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
-const IMP = join(ROOT, Deno.build.os === 'windows' ? 'imp.exe' : 'imp')
+const REPO_ROOT = fromFileUrl(new URL('../..', import.meta.url))
+const IMP = join(REPO_ROOT, Deno.build.os === 'windows' ? 'imp.exe' : 'imp')
 const fixture = (name) => join(ROOT, 'test', 'fixtures', name)
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[a-zA-Z]`, 'g')
@@ -264,7 +265,7 @@ const withoutTelemetry = (result) => ({
 })
 
 const localBrowser = await (async () => {
-  const { findCachedBrowser, findSystemBrowser } = await import('../src/cli/test_browser.js')
+  const { findCachedBrowser, findSystemBrowser } = await import('../src/test_browser.js')
   return (await findSystemBrowser()) ?? (await findCachedBrowser())
 })()
 
@@ -309,15 +310,18 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
           "  expect(text).toBe('999')\n" +
           '})\n',
       )
-      const result = await runImp(['test', 'failing.spec.js'], dir)
+      const result = await runImp(['test', 'failing.spec.js', '--screenshots', 'shots'], dir)
       await Deno.remove(join(dir, 'failing.spec.js'))
       const screenshot = await Deno.stat(
-        join(dir, '.imp', 'screenshots', 'failing.spec.js-shows-999.png'),
+        join(dir, 'shots', 'failing.spec.js-shows-999.png'),
       ).then((info) => info.isFile, () => false)
       await assertSnapshot(
         'test-e2e-failure-screenshot',
         `${
-          commandTranscript('imp test failing.spec.js  (cwd: <tmp>)', withoutTelemetry(result))
+          commandTranscript(
+            'imp test failing.spec.js --screenshots shots  (cwd: <tmp>)',
+            withoutTelemetry(result),
+          )
         }\n[screenshot written: ${screenshot}]\n`,
       )
     })

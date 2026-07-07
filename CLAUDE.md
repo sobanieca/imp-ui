@@ -12,8 +12,9 @@ imp uses Deno as its underlying runtime and toolchain, but **this must stay an i
 detail** — users should not need to know Deno is involved to use imp. Keep every user-facing surface
 imp-branded:
 
-- **Config** lives in `imp.json`, never a user-authored `deno.json`. The CLI derives an internal
-  Deno config (`.imp/deno.json`, gitignored) from it on the fly; users only ever edit `imp.json`.
+- **Config** lives in `imp.json`, never a user-authored `deno.json`. The CLI reads `imp.json`
+  in-process and applies its settings directly — there is no derived `deno.json` written to disk;
+  users only ever edit `imp.json`.
 - **Lockfile** is surfaced as `imp.lock`, not `deno.lock`.
 - **Commands and docs** speak in terms of `imp` (`imp start`, `imp lint`, …), not `deno` — even
   though they shell out to Deno underneath.

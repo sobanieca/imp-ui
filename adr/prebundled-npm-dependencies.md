@@ -12,7 +12,7 @@ chromium-bidi and devtools-protocol ~35 MB) plus the eslint tree pushed the bina
 ## Decision
 
 Every npm package imp uses **at runtime inside the compiled binary** is pre-bundled at build time
-into a single minified ESM file under `src/cli/vendor/`, and imp's source imports that file instead
+into a single minified ESM file under `cli/src/vendor/`, and imp's source imports that file instead
 of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
 
 - `tools/prebundle_npm_deps.js` (wired into the `compile` task) bundles each entry with the
@@ -20,7 +20,7 @@ of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
   `vendor/puppeteer_core.js`, and eslint (`eslint/universal` + the `@eslint/js` recommended rules +
   browser `globals`) → `vendor/eslint.js`.
 - **Exact versions are pinned in the tool itself**, mirroring how the wasm plugin pins live in
-  `src/cli/fmt_plugins.js`. The packages must _not_ appear in `deno.json` imports: `deno compile`
+  `cli/src/fmt_plugins.js`. The packages must _not_ appear in `deno.json` imports: `deno compile`
   embeds every npm package in the workspace lockfile whether or not the module graph references it,
   so an import-map entry alone re-adds the whole package tree. The tool generates entry modules
   against `npm:<name>@<version>`, and a version banner on the first line of each vendor file lets
@@ -32,7 +32,7 @@ of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
   calls of those externals, and packages whose `module` field points at a default-export-only ESM
   build while CJS consumers `require` their named API (esquery) are redirected to their `main`
   entry.
-- `src/cli/vendor/` stays gitignored and is excluded from repo lint/fmt; the vendor files are build
+- `cli/src/vendor/` stays gitignored and is excluded from repo lint/fmt; the vendor files are build
   artifacts, regenerated on demand.
 - Packages used only at build/tooling time, or whose package tree is needed at runtime
   (`esbuild-wasm`'s wasm binary, `@dprint/formatter`), are out of scope.

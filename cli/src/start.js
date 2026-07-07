@@ -4,7 +4,7 @@ import { loadImpConfig } from './config.js'
 import { dim, green, red } from './colors.js'
 import { logger } from './logger.js'
 
-const FRAMEWORK_SRC = fromFileUrl(new URL('../lib', import.meta.url))
+const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',

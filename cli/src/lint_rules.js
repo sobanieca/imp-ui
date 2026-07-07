@@ -1,5 +1,5 @@
 import { defaultAlias, DEPENDENCY_SCHEME, EXACT_VERSION, parseSpecifier } from './specifiers.js'
-import { TAGS } from '../lib/render.js'
+import { TAGS } from '../../lib/src/render.js'
 
 const ELEMENT_FACTORIES = new Set(TAGS)
 

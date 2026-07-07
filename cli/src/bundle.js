@@ -15,7 +15,7 @@ import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 
-const IMP_LIBRARY_URL = import.meta.resolve('../lib/imp.js')
+const IMP_LIBRARY_URL = import.meta.resolve('../../lib/src/imp.js')
 
 const SCRIPT_TAG = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi
 
@@ -164,7 +164,7 @@ function replaceInlineScripts(html, inlineOutputs) {
 }
 
 async function copyStaticFiles({ root, outdir, skipFiles, written }) {
-  const skippedDirectories = new Set(['.git', '.imp', 'node_modules'])
+  const skippedDirectories = new Set(['.git', 'node_modules'])
   const skippedRootFiles = new Set(['imp.json', 'imp.lock'])
   const copy = async (directory, prefix) => {
     for await (const entry of Deno.readDir(directory)) {

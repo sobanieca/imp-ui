@@ -14,7 +14,7 @@ a single self-contained binary, so the launcher logic ships inside every release
 
 ## Startup flow
 
-Runs before command dispatch in `src/cli/main.js`:
+Runs before command dispatch in `cli/src/main.js`:
 
 1. **Read the pin.** Walk up from cwd to find `imp.json` (walking up matters — `imp lint src/` from
    a subdirectory must honor the project pin). No file or no `"version"` field → run as-is.

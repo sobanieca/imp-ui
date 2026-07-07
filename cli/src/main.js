@@ -15,7 +15,8 @@ USAGE
                                         *.spec.js e2e in a real browser. With no file
                                         imp lists the tests to run separately, one per
                                         process (--unit · --e2e · --filter <text> · --list ·
-                                        --reporter <junit|json> for machine-readable results)
+                                        --reporter <junit|json> for machine-readable results ·
+                                        --screenshots <dir> saves a screenshot per failed e2e test)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
 `
@@ -87,6 +88,7 @@ try {
           e2e: rest.includes('--e2e'),
           filter: flag(rest, 'filter', null),
           reporter: flag(rest, 'reporter', null),
+          screenshotDir: flag(rest, 'screenshots', null),
         }),
       )
       break
