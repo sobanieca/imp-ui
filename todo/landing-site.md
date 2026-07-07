@@ -48,6 +48,20 @@ The page should make the case for the SPA architecture, plainly and confidently:
 Keep the tone confident and builder-facing, not preachy — it should read like the docs, aimed at a
 developer deciding what to learn next.
 
+## Home page — AI changes what "best practice" means
+
+The page should make the case that many of today's tools and frameworks are artifacts of their era:
+
+- They were created when **JavaScript wasn't as powerful as it is now** — much of their machinery
+  exists to paper over gaps in a language that has since closed them.
+- They were designed to **speed up and improve the quality of code written by hand** — optimizing for
+  the human author who types every line.
+- **AI changes this significantly.** When an agent writes and maintains the code, the constraints
+  that made a technique "bad practice" no longer bite the same way. We can **go back to some
+  techniques previously considered bad practice** and use them to good effect.
+- imp embraces this shift rather than carrying forward conventions built for a world that no longer
+  exists.
+
 ## Home page — honest constraints
 
 Be upfront about what imp is not, right on the landing page — it earns trust and sets expectations:
