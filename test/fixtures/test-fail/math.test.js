@@ -1,11 +1,11 @@
 import { expect, test } from 'imp/test'
 
 test('passes', () => {
-  expect(1 + 1).toBe(2)
+  expect(1 + 1).toEqual(2)
 })
 
 test('wrong sum', () => {
-  expect(2 + 2).toBe(5)
+  expect(2 + 2).toEqual(5)
 })
 
 test('throws unexpectedly', () => {

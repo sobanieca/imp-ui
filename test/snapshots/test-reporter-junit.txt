@@ -1,0 +1,25 @@
+$ imp test report.test.js --reporter junit  (cwd: test/fixtures/test-reporter)
+exit code: 1
+
+--- stdout ---
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="imp" tests="3" failures="1" skipped="1" time="*">
+  <testsuite name="report.test.js" tests="3" failures="1" skipped="1" time="*">
+    <testcase name="adds numbers" time="*" />
+    <testcase name="reports a failure" time="*"><failure message="expect(received).toEqual(3)">expect(received).toEqual(3)
+  expected: 3
+  received: 2</failure></testcase>
+    <testcase name="is skipped for now" time="*"><skipped /></testcase>
+  </testsuite>
+</testsuites>
+
+--- stderr ---
+report.test.js
+  ✓ adds numbers (*ms)
+  ✗ reports a failure (*ms)
+      expect(received).toEqual(3)
+        expected: 3
+        received: 2
+  - is skipped for now (skipped)
+
+imp test: 1 passed, 1 failed, 1 skipped (1 file, *ms)

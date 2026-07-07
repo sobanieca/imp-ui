@@ -90,38 +90,26 @@ export function createClock(options) {
     get now() {
       return currentTime
     },
-    tick(ms = 0) {
-      const limit = currentTime + Math.max(0, Number(ms) || 0)
-      let steps = 0
-      let entry
-      while ((entry = nextDue(limit))) {
-        guard(++steps, 'tick')
-        fire(entry)
-      }
-      currentTime = limit
-    },
-    async tickAsync(ms = 0) {
+    async tick(ms = 0) {
       const limit = currentTime + Math.max(0, Number(ms) || 0)
       let steps = 0
       let entry
       await flushPromises()
       while ((entry = nextDue(limit))) {
-        guard(++steps, 'tickAsync')
+        guard(++steps, 'tick')
         await fire(entry)
         await flushPromises()
       }
       currentTime = limit
     },
-    next() {
-      const entry = nextDue()
-      if (entry) fire(entry)
-    },
-    runAll() {
+    async runAll() {
       let steps = 0
       let entry
+      await flushPromises()
       while ((entry = nextDue())) {
         guard(++steps, 'runAll')
-        fire(entry)
+        await fire(entry)
+        await flushPromises()
       }
     },
     restore() {

@@ -5,7 +5,7 @@ exit code: 1
 math.test.js
   ✓ passes (*ms)
   ✗ wrong sum (*ms)
-      expect(received).toBe(5)
+      expect(received).toEqual(5)
         expected: 5
         received: 4
   ✗ throws unexpectedly (*ms)

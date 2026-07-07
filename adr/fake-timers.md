@@ -16,20 +16,21 @@ silently disables the safety timeout — a genuinely hung test would no longer f
 ## Decision
 
 A unit test opts into virtual time with a `fakeTimers` option —
-`test(name, fn, { fakeTimers: true })` — and receives a `clock` in its test context
-(`{ window, document, clock }`) to advance it. The runner, not the test body, owns the clock: it
-installs the clock before the test (and that test's `beforeEach`/`afterEach` hooks) run and restores
-real timers afterward. There is no imperative install call and nothing to clean up.
-`{ fakeTimers: { now } }` seeds the starting instant from a number or `Date`.
+`test(name, fn, { fakeTimers: true })` — and receives a `clock` in its test context (`{ clock }`) to
+advance it. The runner, not the test body, owns the clock: it installs the clock before the test
+(and that test's `beforeEach`/`afterEach` hooks) run and restores real timers afterward. There is no
+imperative install call and nothing to clean up. `{ fakeTimers: { now } }` seeds the starting
+instant from a number or `Date`.
 
 - **What is faked.** While a clock is installed it replaces `setTimeout`, `clearTimeout`,
   `setInterval`, `clearInterval`, `Date` (`Date.now()` and `new Date()`), `performance.now()`, and
   `requestAnimationFrame`/`cancelAnimationFrame`; time only moves when the test advances it.
-- **Clock handle.** `clock.tick(ms)` advances virtual time, firing every timer that comes due in
-  order; `clock.tickAsync(ms)` does the same but flushes awaited promises between timers for async
-  code; `clock.next()` fires the single next timer; `clock.runAll()` drains all pending timers;
-  `clock.now` reads the current virtual time; `clock.restore()` returns to real timers early. A
-  runaway self-rescheduling interval is capped and throws rather than hanging.
+- **Clock handle.** The handle is kept small: `await clock.tick(ms)` advances virtual time, firing
+  every timer that comes due in order; `await clock.runAll()` drains all pending timers; `clock.now`
+  reads the current virtual time; `clock.restore()` returns to real timers early. `tick`/`runAll`
+  are async and flush awaited promises between timers, so a single method covers both synchronous
+  and `await`-between-timers code — there is no separate `tickAsync` to choose, and no one-timer
+  `next`. A runaway self-rescheduling interval is capped and throws rather than hanging.
 - **Auto-restore.** The runner restores the clock after each test, before it measures the test's
   duration with the real `performance.now`, so a fake clock can neither leak across tests nor
   distort the runner's own timing.
@@ -53,5 +54,5 @@ real timers afterward. There is no imperative install call and nothing to clean 
 - Fake timers are a unit-test tool only; e2e time control stays a Puppeteer/CDP concern, keeping the
   two levels' capabilities distinct as `two-level-testing.md` intends.
 - The clock is a virtual-time model, not a full timer emulation: it covers the timing APIs apps
-  actually schedule against and leaves microtask draining to `tickAsync`, which relies on the real
-  event loop yielding between timers.
+  actually schedule against and drains microtasks by yielding to the real event loop between timers,
+  which is why advancing time is asynchronous.

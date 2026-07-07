@@ -1,0 +1,14 @@
+$ imp test profile.test.js  (cwd: test/fixtures/test-mock)
+exit code: 0
+
+--- stdout ---
+profile.test.js
+  ✓ mocks a module transitively, across import depths (*ms)
+  ✓ mocks the default export of an npm dependency (*ms)
+  ✓ orig() keeps some exports real while mocking others (*ms)
+  ✓ spy records calls and wraps an existing method (*ms)
+
+imp test: 4 passed (1 file, *ms)
+
+--- stderr ---
+(empty)

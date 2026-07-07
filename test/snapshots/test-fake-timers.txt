@@ -5,10 +5,11 @@ exit code: 0
 timers.test.js
   ✓ setTimeout fires on virtual time (*ms)
   ✓ setInterval and Date advance from a fixed start (*ms)
-  ✓ tickAsync flushes awaited work between timers (*ms)
+  ✓ tick flushes awaited work between timers (*ms)
+  ✓ runAll drains every pending timer (*ms)
   ✓ a plain test keeps real timers and no clock (*ms)
 
-imp test: 4 passed (1 file, *ms)
+imp test: 5 passed (1 file, *ms)
 
 --- stderr ---
 (empty)

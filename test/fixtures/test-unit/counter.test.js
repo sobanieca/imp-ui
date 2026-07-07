@@ -14,12 +14,12 @@ test('renders and reacts to clicks', () => {
   mount(document.body, counter)
   document.querySelector('#inc').click()
   document.querySelector('#inc').click()
-  expect(clicks).toBe(2)
-  expect(document.querySelector('#inc')).toBeInstanceOf(HTMLButtonElement)
+  expect(clicks).toEqual(2)
+  expect(document.querySelector('#inc')).toEqual(expect.any(HTMLButtonElement))
 })
 
 test('mount replaces previous content', () => {
   document.body.appendChild(div('old'))
   mount(document.body, () => div('new'))
-  expect(document.body.textContent).toBe('new')
+  expect(document.body.textContent).toEqual('new')
 })

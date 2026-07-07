@@ -13,6 +13,8 @@ const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[a-zA-Z]`, 'g')
 
 const normalize = (text) =>
   text.replaceAll(ANSI, '').replaceAll(ROOT, '<root>/').replace(/\b\d+ms\b/g, '*ms')
+    .replace(/time="[\d.]+"/g, 'time="*"')
+    .replace(/"durationMs": \d+/g, '"durationMs": *')
 
 const section = (label, text) => `--- ${label} ---\n${text.trim() ? text.trimEnd() : '(empty)'}`
 
@@ -228,6 +230,22 @@ Deno.test('imp test', async (t) => {
 
   await test('test-unit-pass', ['test', 'counter.test.js'], fixture('test-unit'))
   await test('test-fake-timers', ['test'], fixture('test-fake-timers'))
+  await test('test-mock', ['test', 'profile.test.js'], fixture('test-mock'))
+  await test(
+    'test-reporter-junit',
+    ['test', 'report.test.js', '--reporter', 'junit'],
+    fixture('test-reporter'),
+  )
+  await test(
+    'test-reporter-json',
+    ['test', 'report.test.js', '--reporter', 'json'],
+    fixture('test-reporter'),
+  )
+  await test(
+    'test-reporter-unknown',
+    ['test', 'report.test.js', '--reporter', 'bogus'],
+    fixture('test-reporter'),
+  )
   await test('test-unit-fail', ['test'], fixture('test-fail'))
   await test('test-unit-filter', ['test', 'lib.test.js', '--filter', 'adds'], fixture('test-unit'))
   await test('test-run-plan', ['test'], fixture('test-list'))

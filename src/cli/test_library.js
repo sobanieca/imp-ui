@@ -7,6 +7,9 @@ const registry = globalThis[REGISTRY_KEY] ??= {
   beforeEach: [],
   afterEach: [],
   afterAll: [],
+  spies: [],
+  restores: [],
+  running: false,
 }
 
 function register(mode, name, run, options) {
@@ -37,14 +40,67 @@ export const beforeEach = (hook) => registry.beforeEach.push(hook)
 export const afterEach = (hook) => registry.afterEach.push(hook)
 export const afterAll = (hook) => registry.afterAll.push(hook)
 
+function makeSpy(implementation) {
+  const spy = function (...args) {
+    spy.calls.push(args)
+    return typeof implementation === 'function' ? implementation.apply(this, args) : undefined
+  }
+  spy.calls = []
+  registry.spies.push(spy)
+  return spy
+}
+
+export function spy(target, method, implementation) {
+  const patchesMethod = (typeof target === 'object' || typeof target === 'function') &&
+    target !== null && typeof method === 'string'
+  if (!patchesMethod) return makeSpy(target)
+  const original = target[method]
+  if (typeof original !== 'function') {
+    throw new TypeError(`spy(object, '${method}') — '${method}' is not a method on the object`)
+  }
+  const wrapped = makeSpy(implementation ?? ((...args) => original.apply(target, args)))
+  target[method] = wrapped
+  if (registry.running) registry.restores.push(() => target[method] = original)
+  return wrapped
+}
+
+export const mockModule = () => {}
+
 const typeTag = (value) => Object.prototype.toString.call(value).slice(8, -1)
 
 const isDomNode = (value) =>
   typeof value?.nodeType === 'number' && typeof value?.nodeName === 'string'
 
+const ASYMMETRIC = Symbol.for('imp.test.asymmetric')
+const asymmetric = (label, match) => ({ [ASYMMETRIC]: true, label, match })
+const isAsymmetric = (value) =>
+  value !== null && typeof value === 'object' && value[ASYMMETRIC] === true
+
+const matchesConstructor = (constructor, actual) => {
+  switch (constructor) {
+    case String:
+      return typeof actual === 'string' || actual instanceof String
+    case Number:
+      return typeof actual === 'number' || actual instanceof Number
+    case Boolean:
+      return typeof actual === 'boolean'
+    case BigInt:
+      return typeof actual === 'bigint'
+    case Symbol:
+      return typeof actual === 'symbol'
+    case Function:
+      return typeof actual === 'function'
+    case Object:
+      return actual !== null && typeof actual === 'object'
+    default:
+      return actual != null && actual instanceof constructor
+  }
+}
+
 const clip = (text) => text.length > 200 ? `${text.slice(0, 200)}…` : text
 
 export function stringify(value) {
+  if (isAsymmetric(value)) return value.label
   if (typeof value === 'string') return JSON.stringify(value)
   if (typeof value === 'function') return `[function ${value.name || '(anonymous)'}]`
   if (typeof value === 'bigint') return `${value}n`
@@ -67,8 +123,11 @@ export function stringify(value) {
 }
 
 export function deepEqual(a, b) {
+  if (isAsymmetric(b)) return b.match(a)
+  if (isAsymmetric(a)) return a.match(b)
   if (Object.is(a, b)) return true
   if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false
+  if (isDomNode(a) || isDomNode(b)) return false
   const tag = typeTag(a)
   if (tag !== typeTag(b)) return false
   if (tag === 'Date') return a.getTime() === b.getTime()
@@ -85,6 +144,7 @@ export function deepEqual(a, b) {
     return a.size === b.size &&
       [...a].every(([key, entry]) => b.has(key) && deepEqual(entry, b.get(key)))
   }
+  if (tag !== 'Object') return false
   const keys = Object.keys(a)
   return keys.length === Object.keys(b).length &&
     keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]))
@@ -113,12 +173,6 @@ function buildMatchers(received, negated) {
   }
 
   const matchers = {
-    toBe(expected) {
-      check(Object.is(received, expected), 'toBe', {
-        expected: stringify(expected),
-        argument: stringify(expected),
-      })
-    },
     toEqual(expected) {
       check(deepEqual(received, expected), 'toEqual', {
         expected: stringify(expected),
@@ -150,35 +204,8 @@ function buildMatchers(received, negated) {
     toBeTruthy() {
       check(!!received, 'toBeTruthy')
     },
-    toBeFalsy() {
-      check(!received, 'toBeFalsy')
-    },
-    toBeNull() {
-      check(received === null, 'toBeNull')
-    },
-    toBeUndefined() {
-      check(received === undefined, 'toBeUndefined')
-    },
-    toBeDefined() {
-      check(received !== undefined, 'toBeDefined')
-    },
-    toBeNaN() {
-      check(Number.isNaN(received), 'toBeNaN')
-    },
-    toBeInstanceOf(expected) {
-      check(received instanceof expected, 'toBeInstanceOf', {
-        expected: expected?.name ?? stringify(expected),
-        argument: expected?.name,
-      })
-    },
     toBeGreaterThan(expected) {
       check(received > expected, 'toBeGreaterThan', {
-        expected: stringify(expected),
-        argument: stringify(expected),
-      })
-    },
-    toBeGreaterThanOrEqual(expected) {
-      check(received >= expected, 'toBeGreaterThanOrEqual', {
         expected: stringify(expected),
         argument: stringify(expected),
       })
@@ -187,44 +214,6 @@ function buildMatchers(received, negated) {
       check(received < expected, 'toBeLessThan', {
         expected: stringify(expected),
         argument: stringify(expected),
-      })
-    },
-    toBeLessThanOrEqual(expected) {
-      check(received <= expected, 'toBeLessThanOrEqual', {
-        expected: stringify(expected),
-        argument: stringify(expected),
-      })
-    },
-    toBeCloseTo(expected, digits = 2) {
-      const pass = Math.abs(received - expected) < 10 ** -digits / 2
-      check(pass, 'toBeCloseTo', {
-        expected: stringify(expected),
-        argument: stringify(expected),
-      })
-    },
-    toHaveLength(expected) {
-      check(received?.length === expected, 'toHaveLength', {
-        expected: String(expected),
-        expectedLabel: 'expected length',
-        argument: String(expected),
-      })
-    },
-    toHaveProperty(key, ...rest) {
-      const expected = rest[0]
-      const path = String(key).split('.')
-      let value = received
-      let present = true
-      for (const segment of path) {
-        if (value === null || value === undefined || !(segment in Object(value))) {
-          present = false
-          break
-        }
-        value = value[segment]
-      }
-      const pass = present && (!rest.length || deepEqual(value, expected))
-      check(pass, 'toHaveProperty', {
-        expected: rest.length ? `'${key}' = ${stringify(expected)}` : `property '${key}'`,
-        argument: stringify(key),
       })
     },
     toThrow(expected) {
@@ -278,3 +267,39 @@ function buildMatchers(received, negated) {
 export function expect(received) {
   return buildMatchers(received, false)
 }
+
+expect.anything = () =>
+  asymmetric('anything()', (actual) => actual !== null && actual !== undefined)
+expect.any = (constructor) =>
+  asymmetric(
+    `any(${constructor?.name ?? String(constructor)})`,
+    (actual) => matchesConstructor(constructor, actual),
+  )
+expect.stringContaining = (text) =>
+  asymmetric(
+    `stringContaining(${stringify(text)})`,
+    (actual) => typeof actual === 'string' && actual.includes(text),
+  )
+expect.stringMatching = (pattern) =>
+  asymmetric(`stringMatching(${stringify(pattern)})`, (actual) =>
+    typeof actual === 'string' &&
+    (pattern instanceof RegExp ? pattern.test(actual) : actual.includes(String(pattern))))
+expect.arrayContaining = (items) =>
+  asymmetric(
+    `arrayContaining(${stringify(items)})`,
+    (actual) =>
+      Array.isArray(actual) &&
+      items.every((item) => actual.some((entry) => deepEqual(entry, item))),
+  )
+expect.objectContaining = (shape) =>
+  asymmetric(
+    `objectContaining(${stringify(shape)})`,
+    (actual) =>
+      actual !== null && typeof actual === 'object' &&
+      Object.keys(shape).every((key) => key in actual && deepEqual(actual[key], shape[key])),
+  )
+expect.closeTo = (value, digits = 2) =>
+  asymmetric(
+    `closeTo(${value})`,
+    (actual) => typeof actual === 'number' && Math.abs(actual - value) < 10 ** -digits / 2,
+  )

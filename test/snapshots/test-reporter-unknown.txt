@@ -1,0 +1,8 @@
+$ imp test report.test.js --reporter bogus  (cwd: test/fixtures/test-reporter)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error: unknown --reporter 'bogus' — use 'junit' or 'json'

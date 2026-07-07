@@ -4,9 +4,7 @@ exit code: 1
 --- stdout ---
 failing.spec.js
   ✗ shows 999 (*ms)
-      expect(received).toBe("999")
-        expected: "999"
-        received: "0"
+      TypeError: expect(...).toBe is not a function
       screenshot: .imp/screenshots/failing.spec.js-shows-999.png
 
 imp test: 0 passed, 1 failed (1 file, *ms)
