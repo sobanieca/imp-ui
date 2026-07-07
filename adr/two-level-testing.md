@@ -71,12 +71,15 @@ feeds discovery.
   their `match(actual)`. Because they hook `deepEqual`, they compose everywhere structural equality
   runs — inside `toEqual`, `toContain`, and `spy.calls` assertions — rather than being a parallel
   matcher family.
-- **Machine-readable results.** `--reporter <junit|json>` emits a structured report of a run to
-  stdout while redirecting the human/telemetry output to stderr, so a redirect yields a clean
-  report; `--list` emits the pre-run file _selection_ as a JSON array, for CI fan-out. The runner
-  records a per-test `{ name, status, durationMs, message? }` list that both reporters render. Exit
-  codes are unchanged, so a reporter drops into an existing per-file CI job without changing
-  pass/fail detection.
+- **Results are human-readable stdout only — no report files.** The runner emits no machine-readable
+  report format: there is no `--reporter`, and no JUnit or JSON output. Each `imp test <file>`
+  prints per-test pass/fail lines and a one-line summary to stdout, and exits `0`/`1`; a failing
+  test prints its name and assertion message inline on stdout. This is a deliberate simplification —
+  the primary consumer is an AI coding agent that drives imp turn by turn and reads plain stdout
+  logs, so a structured report format is complexity that consumer never uses, and CI that wants
+  pass/fail reads the same stdout and exit code. The one machine-readable surface that remains is
+  `--list`, which emits the pre-run file _selection_ as a JSON array for fan-out across a CI matrix
+  or `xargs -P`; it describes what _would_ run, not how a run went.
 - **One equality matcher.** `expect` exposes a single `toEqual` rather than a `toBe`/`toEqual` pair:
   it is structural for data (primitives via `Object.is`; arrays, plain objects, `Map`, `Set`,
   `Date`, `RegExp` by value) and falls back to identity for everything else (DOM nodes — matched via

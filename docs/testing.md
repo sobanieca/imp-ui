@@ -6,7 +6,6 @@ imp test                   list the test files to run separately (one process ea
 imp test --unit | --e2e    narrow discovery to unit / e2e files
 imp test --filter <text>   run only tests whose name contains <text>
 imp test --list            print the selected files as JSON
-imp test --reporter <fmt>  emit machine-readable results (junit | json)
 ```
 
 `imp test` is imp's built-in test runner. It covers two levels of testing through one command and
@@ -43,8 +42,6 @@ Flags:
   skipped.
 - `--list` — print the selected test files as a JSON array instead of running them (combine with
   `--e2e` to feed a CI matrix).
-- `--reporter <junit|json>` — write machine-readable results for the run. See
-  [Machine-readable results](#machine-readable-results).
 
 ## Writing tests
 
@@ -495,25 +492,17 @@ dependencies are vendored in your repository — so there is no install step, an
 preinstalled Chrome means no browser setup either. Failure screenshots land in `.imp/screenshots/`;
 add an `actions/upload-artifact` step if you want them attached to the run.
 
-## Machine-readable results
+## Reading results
 
-`--list` lists which files _would_ run; to capture how a run _went_, add `--reporter` when running a
-file. It writes a machine-readable report of that file's results to **stdout**, while the usual
-human output (and any browser telemetry) goes to **stderr** — so redirecting stdout gives you a
-clean report and nothing else:
+There is no report format to configure — `imp test` writes plain text to **stdout**: a line per test
+(`✓` passed, `✗` failed, `-` skipped) and a one-line summary. A failing test prints its name and the
+assertion message right where it failed, so the log alone tells you what broke. The exit code is `0`
+when everything passed and `1` otherwise, which is all a CI step needs to go red or green. This
+keeps the output easy to read directly — whether by a person scanning the log or an AI agent driving
+`imp test` and reading its stdout.
 
-```bash
-imp test checkout.spec.js --reporter junit > results.xml
-imp test lib.test.js      --reporter json  > results.json
-```
-
-- **`junit`** — JUnit XML (`<testsuites>` / `<testsuite>` / `<testcase>`, with `<failure>` and
-  `<skipped>`), the format CI dashboards and test-report actions understand.
-- **`json`** — a JSON object with per-file and per-test `name` / `status` / `durationMs` (plus the
-  failure `message`), for your own tooling.
-
-The exit code is unchanged — `0` if everything passed, `1` otherwise — so `--reporter` slots into an
-existing per-file CI job without altering how pass/fail is detected.
+The one machine-readable surface is `--list`, which prints the files that _would_ run as a JSON
+array — it describes the selection to fan out, not how a run went.
 
 ## Configuration
 

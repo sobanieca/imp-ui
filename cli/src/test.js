@@ -437,16 +437,7 @@ const createTestClock = (fakeTimers, environment) => {
 }
 
 async function runRegistry(registry, { context, defaultTimeout, filter, onFailure, environment }) {
-  const counts = { passed: 0, failed: 0, skipped: 0, results: [] }
-  const record = (name, status, durationMs, message) =>
-    counts.results.push(
-      message === undefined ? { name, status, durationMs } : {
-        name,
-        status,
-        durationMs,
-        message,
-      },
-    )
+  const counts = { passed: 0, failed: 0, skipped: 0 }
 
   const runHooks = async (hooks, hookContext = context) => {
     for (const hook of hooks) await runWithTimeout(hook, defaultTimeout, hookContext)
@@ -458,7 +449,6 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
     console.log(`  ${red('✗')} beforeAll hook failed`)
     console.log(red(indentMessage(error)))
     counts.failed += registry.tests.length || 1
-    record('beforeAll hook', 'failed', 0, errorMessage(error))
     return counts
   }
 
@@ -467,7 +457,6 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
       (filter && !entry.name.includes(filter))
     if (excluded) {
       counts.skipped++
-      record(entry.name, 'skipped', 0)
       console.log(`  ${yellow('-')} ${entry.name} ${dim('(skipped)')}`)
       continue
     }
@@ -498,15 +487,12 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
     try {
       clock?.restore()
     } catch { /* already restored */ }
-    const durationMs = Math.round(performance.now() - startedAt)
-    const duration = `(${durationMs}ms)`
+    const duration = `(${Math.round(performance.now() - startedAt)}ms)`
     if (failure === null) {
       counts.passed++
-      record(entry.name, 'passed', durationMs)
       console.log(`  ${green('✓')} ${entry.name} ${dim(duration)}`)
     } else {
       counts.failed++
-      record(entry.name, 'failed', durationMs, errorMessage(failure))
       console.log(`  ${red('✗')} ${entry.name} ${dim(duration)}`)
       console.log(red(indentMessage(failure)))
       await onFailure?.(entry)
@@ -519,7 +505,6 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
     console.log(`  ${red('✗')} afterAll hook failed`)
     console.log(red(indentMessage(error)))
     counts.failed++
-    record('afterAll hook', 'failed', 0, errorMessage(error))
   }
 
   return counts
@@ -644,68 +629,6 @@ function printRunPlan({ unitFiles, specFiles, toRelative }) {
   console.log("  imp test --list | jq -r '.[]' | xargs -P4 -n1 imp test")
 }
 
-const REPORTERS = new Set(['junit', 'json'])
-
-const XML_ENTITIES = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }
-const xmlEscape = (text) => String(text).replace(/[<>&"']/g, (char) => XML_ENTITIES[char])
-
-function renderJunit(fileReports, totals, elapsedMs) {
-  const total = totals.passed + totals.failed + totals.skipped
-  const seconds = (ms) => (ms / 1000).toFixed(3)
-  const lines = ['<?xml version="1.0" encoding="UTF-8"?>']
-  lines.push(
-    `<testsuites name="imp" tests="${total}" failures="${totals.failed}" ` +
-      `skipped="${totals.skipped}" time="${seconds(elapsedMs)}">`,
-  )
-  for (const report of fileReports) {
-    lines.push(
-      `  <testsuite name="${xmlEscape(report.file)}" tests="${report.results.length}" ` +
-        `failures="${report.failed}" skipped="${report.skipped}" time="${
-          seconds(report.durationMs)
-        }">`,
-    )
-    for (const result of report.results) {
-      const head = `    <testcase name="${xmlEscape(result.name)}" time="${
-        seconds(result.durationMs)
-      }"`
-      if (result.status === 'passed') {
-        lines.push(`${head} />`)
-      } else if (result.status === 'skipped') {
-        lines.push(`${head}><skipped /></testcase>`)
-      } else {
-        const summary = xmlEscape((result.message ?? '').split('\n')[0])
-        lines.push(
-          `${head}><failure message="${summary}">${
-            xmlEscape(result.message ?? '')
-          }</failure></testcase>`,
-        )
-      }
-    }
-    lines.push('  </testsuite>')
-  }
-  lines.push('</testsuites>')
-  return lines.join('\n')
-}
-
-const renderJsonResults = (fileReports, totals, elapsedMs) =>
-  JSON.stringify(
-    {
-      tool: 'imp',
-      passed: totals.passed,
-      failed: totals.failed,
-      skipped: totals.skipped,
-      durationMs: elapsedMs,
-      files: fileReports,
-    },
-    null,
-    2,
-  )
-
-const renderReport = (reporter, fileReports, totals, elapsedMs) =>
-  reporter === 'junit'
-    ? renderJunit(fileReports, totals, elapsedMs)
-    : renderJsonResults(fileReports, totals, elapsedMs)
-
 export async function runTests(
   {
     root,
@@ -714,17 +637,12 @@ export async function runTests(
     unit = false,
     e2e = false,
     filter = null,
-    reporter = null,
     screenshotDir = null,
   },
 ) {
   const imp = await loadImpConfig(root)
   const testConfig = imp.test ?? {}
   const dependencies = imp.dependencies ?? {}
-
-  if (reporter && !REPORTERS.has(reporter)) {
-    throw new Error(`unknown --reporter '${reporter}' — use 'junit' or 'json'`)
-  }
 
   const { unitFiles, specFiles } = await selectFiles({
     root,
@@ -752,120 +670,74 @@ export async function runTests(
     return 0
   }
 
-  const originalConsoleLog = console.log
-  if (reporter) console.log = (...args) => console.error(...args)
-
   const totals = { passed: 0, failed: 0, skipped: 0 }
-  const fileReports = []
   const startedAt = performance.now()
-  const recordFile = (file, counts, fileStartedAt) =>
-    fileReports.push({
-      file: toRelative(file),
-      passed: counts.passed,
-      failed: counts.failed,
-      skipped: counts.skipped,
-      durationMs: Math.round(performance.now() - fileStartedAt),
-      results: counts.results,
-    })
 
+  const bundles = new Map()
   try {
-    const bundles = new Map()
-    try {
-      for (const file of files) {
-        try {
-          bundles.set(file, { code: await bundleTestFile(file, { root, dependencies }) })
-        } catch (error) {
-          bundles.set(file, { error })
-        }
-      }
-    } finally {
-      await shutdownBundler()
-    }
-
-    let e2eRun = null
-    if (specFiles.some((file) => !bundles.get(file).error)) {
-      const entry = testConfig.entry ?? 'index.html'
-      const entryPath = resolve(root, entry)
-      try {
-        await Deno.stat(entryPath)
-      } catch {
-        throw new Error(
-          `e2e entry not found: ${entry} — each *.spec.js runs against your served app; set "test": { "entry": "<page>.html" } in imp.json if it is not index.html`,
-        )
-      }
-      const app = await loadApp(entryPath)
-      for (const alias of app.missingDependencies) {
-        logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
-      }
-      const { resolveBrowser } = await import('./test_browser.js')
-      e2eRun = { app, browserPath: await resolveBrowser(testConfig.browser) }
-    }
-
-    const addCounts = (counts) => {
-      totals.passed += counts.passed
-      totals.failed += counts.failed
-      totals.skipped += counts.skipped
-    }
-
     for (const file of files) {
-      const fileStartedAt = performance.now()
-      console.log(relative(root, file))
-      const { code, error } = bundles.get(file)
-      if (error) {
-        totals.failed++
-        console.log(`  ${red('✗')} failed to load`)
-        console.log(red(indentMessage(error)))
-        recordFile(file, {
-          passed: 0,
-          failed: 1,
-          skipped: 0,
-          results: [{
-            name: '(failed to load)',
-            status: 'failed',
-            durationMs: 0,
-            message: errorMessage(error),
-          }],
-        }, fileStartedAt)
-        continue
-      }
       try {
-        const counts = isUnitFile(file)
-          ? await runUnitFile({ code, filter })
-          : await runSpecFile(file, { root, code, filter, ...e2eRun, screenshotDir })
-        addCounts(counts)
-        recordFile(file, counts, fileStartedAt)
+        bundles.set(file, { code: await bundleTestFile(file, { root, dependencies }) })
       } catch (error) {
-        totals.failed++
-        console.log(`  ${red('✗')} failed to run`)
-        console.log(red(indentMessage(error)))
-        recordFile(file, {
-          passed: 0,
-          failed: 1,
-          skipped: 0,
-          results: [{
-            name: '(failed to run)',
-            status: 'failed',
-            durationMs: 0,
-            message: errorMessage(error),
-          }],
-        }, fileStartedAt)
+        bundles.set(file, { error })
       }
     }
-
-    const parts = [`${totals.passed} passed`]
-    if (totals.failed) parts.push(red(`${totals.failed} failed`))
-    if (totals.skipped) parts.push(`${totals.skipped} skipped`)
-    const fileCount = `${files.length} ${files.length === 1 ? 'file' : 'files'}`
-    const elapsed = Math.round(performance.now() - startedAt)
-    console.log(`\nimp test: ${parts.join(', ')} ${dim(`(${fileCount}, ${elapsed}ms)`)}`)
   } finally {
-    if (reporter) console.log = originalConsoleLog
+    await shutdownBundler()
   }
 
-  if (reporter) {
-    console.log(
-      renderReport(reporter, fileReports, totals, Math.round(performance.now() - startedAt)),
-    )
+  let e2eRun = null
+  if (specFiles.some((file) => !bundles.get(file).error)) {
+    const entry = testConfig.entry ?? 'index.html'
+    const entryPath = resolve(root, entry)
+    try {
+      await Deno.stat(entryPath)
+    } catch {
+      throw new Error(
+        `e2e entry not found: ${entry} — each *.spec.js runs against your served app; set "test": { "entry": "<page>.html" } in imp.json if it is not index.html`,
+      )
+    }
+    const app = await loadApp(entryPath)
+    for (const alias of app.missingDependencies) {
+      logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
+    }
+    const { resolveBrowser } = await import('./test_browser.js')
+    e2eRun = { app, browserPath: await resolveBrowser(testConfig.browser) }
   }
+
+  const addCounts = (counts) => {
+    totals.passed += counts.passed
+    totals.failed += counts.failed
+    totals.skipped += counts.skipped
+  }
+
+  for (const file of files) {
+    console.log(relative(root, file))
+    const { code, error } = bundles.get(file)
+    if (error) {
+      totals.failed++
+      console.log(`  ${red('✗')} failed to load`)
+      console.log(red(indentMessage(error)))
+      continue
+    }
+    try {
+      const counts = isUnitFile(file)
+        ? await runUnitFile({ code, filter })
+        : await runSpecFile(file, { root, code, filter, ...e2eRun, screenshotDir })
+      addCounts(counts)
+    } catch (error) {
+      totals.failed++
+      console.log(`  ${red('✗')} failed to run`)
+      console.log(red(indentMessage(error)))
+    }
+  }
+
+  const parts = [`${totals.passed} passed`]
+  if (totals.failed) parts.push(red(`${totals.failed} failed`))
+  if (totals.skipped) parts.push(`${totals.skipped} skipped`)
+  const fileCount = `${files.length} ${files.length === 1 ? 'file' : 'files'}`
+  const elapsed = Math.round(performance.now() - startedAt)
+  console.log(`\nimp test: ${parts.join(', ')} ${dim(`(${fileCount}, ${elapsed}ms)`)}`)
+
   return totals.failed ? 1 : 0
 }
