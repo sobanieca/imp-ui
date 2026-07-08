@@ -1,8 +1,8 @@
-$ imp bundle app.js --outdir shared  (cwd: <tmp>)
+$ imp build app.js --outdir shared  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-bundled app.js → shared/
+built app.js → shared/
   imp imports kept bare — resolved by the imp host at runtime
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)

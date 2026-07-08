@@ -16,7 +16,7 @@ hand-authored a second time.
 - Run **in-process** to honor `adr/in-process-toolchain.md` — no shelling out to an external
   Markdown CLI. Resolve a pure-JS/wasm Markdown renderer, vendored and pinned by checksum the same
   way esbuild-wasm is (`adr/in-process-dependency-bundling.md`, `cli/src/vendor`).
-- Dogfood: build the site itself with imp and ship it with `imp bundle`
+- Dogfood: build the site itself with imp and ship it with `imp build`
   (`adr/production-bundling.md`) so the home page and docs are a static bundle — practicing exactly
   the CDN-hosted SPA story the copy preaches.
 

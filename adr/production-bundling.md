@@ -1,4 +1,4 @@
-# Production bundling — `imp bundle` over vendored bundles and the baked-in library
+# Production build — `imp build` over vendored bundles and the baked-in library
 
 ## Context
 
@@ -14,7 +14,13 @@ bundling utilities remain unavailable inside a compiled binary (`deno bundle` is
 
 ## Decision
 
-`imp bundle [file.html|file.js] [--outdir dist]` reuses the `imp install` engine to build the app's
+The command is named `imp build`, not `imp bundle`, because bundling JavaScript is only part of
+producing a deployable site: it owns the whole production-output step and is expected to emit other
+generated files alongside the bundled code (planned PWA support, for example, would add a manifest,
+icons, and a service worker). `build` names that whole step; the former `imp bundle` name is
+retained only to report the rename.
+
+`imp build [file.html|file.js] [--outdir dist]` reuses the `imp install` engine to build the app's
 own module graph, resolving bare specifiers the same way the dev import map does — offline, with an
 imp-owned esbuild resolver that intercepts before the Deno resolver:
 
@@ -39,7 +45,7 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   component can be dropped into any application without a runtime. No files are copied in this mode.
 - **`targetImpHost: true` in `imp.json` (JS entries only) keeps `imp` imports out of the bundle** as
   bare specifiers for the host context to resolve — the dev server's import map and a host app's own
-  `imp bundle` both resolve bare `imp`, so a component can share the host's single copy of imp
+  `imp build` both resolve bare `imp`, so a component can share the host's single copy of imp
   instead of carrying its own. imp is the only import that can stay bare: declared dependencies are
   always compiled in with their vendored, pinned versions, keeping the option a single boolean
   instead of a per-import list. An HTML entry compiles imp in regardless — the page is its own host,
@@ -70,4 +76,4 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   external, so a published bundle built with `targetImpHost` keeps its bare `imp` imports instead of
   resolving them against a registry (`vendored-dependencies.md`).
 - wasm esbuild is roughly an order of magnitude slower than native esbuild; the cost is paid per
-  `imp bundle` run, never while serving.
+  `imp build` run, never while serving.

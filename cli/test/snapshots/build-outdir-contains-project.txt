@@ -1,4 +1,4 @@
-$ imp bundle --outdir .  (cwd: <tmp>)
+$ imp build --outdir .  (cwd: <tmp>)
 exit code: 1
 
 --- stdout ---

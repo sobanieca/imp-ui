@@ -5,7 +5,7 @@ other library growth items (`reactivity-signals.md`, `router.md`) are implemente
 export pattern and the size checks are applied once, over the complete library surface, instead of
 being reworked with every addition.
 
-`imp bundle` tree-shakes the whole graph (esbuild dead-code elimination,
+`imp build` tree-shakes the whole graph (esbuild dead-code elimination,
 `adr/production-bundling.md`), and app modules shake perfectly — but the imp library itself is
 all-or-nothing. Measured: an entry importing only `isPlainObject` gets a 3.2 kB imp chunk; one
 importing `div`, `h1`, `html`, and `mount` gets 3.6 kB. Importing anything from `imp` ships

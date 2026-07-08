@@ -17,20 +17,34 @@ simulated DOM, `*.spec.js` runs against a served app in headless Chrome. Both im
 `beforeAll`/`beforeEach`/`afterEach`/`afterAll`, and an `expect` matcher set. imp's file walker
 feeds discovery.
 
-- **One file per process — the caller owns parallelism.** A single `imp test` invocation runs at
-  most one test file. `imp test <file>` runs exactly that file and exits with its result; any
-  invocation that resolves to more than one file (a bare `imp test`, a directory, several explicit
-  paths) prints a _run plan_ — the discovered unit and e2e files as ready-to-run `imp test <file>`
-  commands plus a shell one-liner for running them in parallel — and exits `0` without running
-  anything. `--list` still emits the same selection as a JSON array for machine consumption. imp
-  never schedules concurrency itself: the runner, bundler, and browser stay single-process, and
-  whoever calls imp — a CI matrix, a shell `xargs -P`, or an AI coding agent reading the plan off
-  stdout — decides how many files to run at once and how to isolate them. This keeps a bare
-  `imp test` from silently sharing one process's globals, timers, and module graph across unrelated
-  files, and makes the parallelism decision explicit at the layer that has the resource context to
-  make it. It matters most for AI agents, which drive imp turn by turn: a deterministic plan on
-  stdout lets an agent fan work out across its own concurrent tool calls rather than inheriting a
-  scheduler baked into the CLI.
+- **One file per process is the isolation primitive; `imp test` fans out across processes for a
+  whole level.** A single `imp test <file>` runs exactly that one file, in-process, and exits with
+  its result — the runner, bundler, server, and browser stay single-process, so a file's globals,
+  timers, module graph, and (for e2e) its server and browser never leak into another file. That
+  worker invocation is also the unit imp schedules: running a whole level requires an explicit level
+  flag, and imp then discovers every file of that kind and **spawns one `imp test <file>` subprocess
+  per file**, running them through a bounded pool (`--jobs <n>`, defaulting to
+  `navigator.hardwareConcurrency`). Passing files are summarized to a single line; a failing file's
+  full child output is reproduced verbatim, and the aggregate exits `1` if any file failed. This is
+  a **deliberate subprocess exception** to the in-process rule (`in-process-toolchain.md`): the CLI
+  reinvokes itself — the compiled binary via `Deno.execPath()`, dev mode via `deno run <mainModule>`
+  — rather than delegating to an external tool, and the one-file-per-process isolation is exactly
+  what makes fanning out to subprocesses equivalent to running each file alone.
+  - **A bare `imp test` refuses to guess.** With no level flag and more than one candidate file
+    (`imp test`, a directory, several paths) imp prints the three ways to run — `--unit`, `--e2e`,
+    or a single file — and exits **non-zero** without running anything, so it never silently runs a
+    partial or unintended subset and a stray `imp test` in a CI step fails loudly rather than
+    passing green having run nothing. A path narrows discovery (`imp test --e2e checkout/`); a
+    single resolved file with no flag is unambiguous and runs in-process.
+  - **`--list` stays the machine-readable surface for cross-machine fan-out.** It emits the selected
+    files as a JSON array (narrowed by `--unit`/`--e2e`) so a CI matrix can put one file per job on
+    its own runner — parallelism imp cannot schedule because it spans machines. `--jobs` handles the
+    single-machine case; `--list` handles the multi-machine case.
+
+  The reason imp schedules the within-machine fan-out itself — rather than leaving every caller to
+  wire up `xargs -P` — is local ergonomics: a developer or AI agent running the whole suite gets
+  parallel results and failure-only detail from one command, while the isolation guarantees and the
+  per-file exit code that CI depends on are unchanged.
 
 - **Mocking is two concepts — `spy` and `mockModule` — kept deliberately small.** A `spy(fn?)` is a
   function that records its calls in a plain `spy.calls` array; its behavior is just the function
@@ -61,7 +75,7 @@ feeds discovery.
   test-file locals — the same constraint jest imposes.
 - **Execution model.** The runner is imp's own, in-process. Each test file is bundled by the
   embedded esbuild engine (resolving `imp`, `imp/test`, vendored dependency aliases, and relative
-  imports — same resolution as `imp bundle`) and executed via a `data:` URL dynamic import, which
+  imports — same resolution as `imp build`) and executed via a `data:` URL dynamic import, which
   works identically under `deno run` and inside the compiled binary. Registration flows through a
   `Symbol.for`-keyed global registry, so the bundled copy of `imp/test` and the CLI share state
   without sharing module identity.
@@ -74,12 +88,15 @@ feeds discovery.
 - **Results are human-readable stdout only — no report files.** The runner emits no machine-readable
   report format: there is no `--reporter`, and no JUnit or JSON output. Each `imp test <file>`
   prints per-test pass/fail lines and a one-line summary to stdout, and exits `0`/`1`; a failing
-  test prints its name and assertion message inline on stdout. This is a deliberate simplification —
-  the primary consumer is an AI coding agent that drives imp turn by turn and reads plain stdout
-  logs, so a structured report format is complexity that consumer never uses, and CI that wants
-  pass/fail reads the same stdout and exit code. The one machine-readable surface that remains is
-  `--list`, which emits the pre-run file _selection_ as a JSON array for fan-out across a CI matrix
-  or `xargs -P`; it describes what _would_ run, not how a run went.
+  test prints its name and assertion message inline on stdout. A level run (`--unit`/`--e2e`) layers
+  on top of this without inventing a new format: it prints one `✓ <file>` line per passing file and,
+  for each failing file, the failing worker's own stdout verbatim, then an aggregate summary — full
+  detail only where a run went red. This is a deliberate simplification — the primary consumer is an
+  AI coding agent that drives imp turn by turn and reads plain stdout logs, so a structured report
+  format is complexity that consumer never uses, and CI that wants pass/fail reads the same stdout
+  and exit code. The one machine-readable surface that remains is `--list`, which emits the pre-run
+  file _selection_ as a JSON array for fan-out across a CI matrix; it describes what _would_ run,
+  not how a run went.
 - **One equality matcher.** `expect` exposes a single `toEqual` rather than a `toBe`/`toEqual` pair:
   it is structural for data (primitives via `Object.is`; arrays, plain objects, `Map`, `Set`,
   `Date`, `RegExp` by value) and falls back to identity for everything else (DOM nodes — matched via
@@ -112,9 +129,12 @@ feeds discovery.
   Chrome for Testing build pinned by version and per-platform sha256 in `cli/src/test_browser.js`,
   downloaded once into the per-user `~/.imp/browser/` cache (never inside a project,
   `vendored-dependencies.md`) and extracted with a pure-JS unzip.
-- **The browser is the sanctioned subprocess exception** to `in-process-toolchain.md`: it is the
-  system under test, not a delegated tool. Runner, bundler, server, and assertions all stay
-  in-process; unit tests spawn nothing.
+- **`imp test` has two sanctioned subprocess exceptions** to `in-process-toolchain.md`: the e2e
+  browser (the system under test, not a delegated tool) and the level fan-out (imp reinvoking itself
+  as one worker per file). Both keep the actual work in-process — within any single
+  `imp test <file>` worker the runner, bundler, server, and assertions all run in-process, and a
+  unit worker spawns nothing at all. The subprocesses are the browser under test and imp's own
+  copies, never an external toolchain.
 
 ## Consequences
 
@@ -122,12 +142,18 @@ feeds discovery.
   one code path. E2E total time in CI drops to the slowest spec file, at the deliberate cost of each
   spec repeating its own setup state (e.g. logging in) — that repetition is what makes specs
   independently schedulable.
-- A bare `imp test` no longer runs the suite; it plans it. Existing pipelines that relied on
-  `imp test` running everything must switch to per-file invocations (feed `imp test --list` into a
-  matrix or `xargs -P`, or run each `imp test <file>` the plan prints). In exchange, a single file
-  is always the unit of both parallelism and isolation — there is no longer a mode where unrelated
-  files share one process — and the exit code of `imp test <file>` maps to exactly one file's
-  result.
+- A bare `imp test` no longer runs the suite; it asks which level to run. Running a level is now a
+  single command (`imp test --unit` / `--e2e`) that fans out across local processes; existing
+  pipelines that relied on a bare `imp test` running everything must add the level flag (or keep
+  feeding `imp test --list` into a CI matrix for cross-machine fan-out). A single file is still the
+  unit of both isolation and the per-file exit code — a level run is just many such single-file
+  processes scheduled together, so no two files ever share one process's globals, timers, server, or
+  browser.
+- The fan-out makes imp spawn copies of itself, so it depends on being able to reinvoke its own
+  entrypoint — `Deno.execPath()` for the compiled binary, `deno run <mainModule>` from source. A
+  level run's cost is one process per file plus, for e2e, one browser and server per concurrent
+  file; `--jobs` bounds that, and CI that needs cross-machine spread still uses `--list` rather than
+  a large local `--jobs`.
 - Test files are bundled before running, so failures report per test with assertion detail but
   without original file/line stack traces — the per-file granularity and test names carry location.
 - Mocking is resolved per file, which fits the one-file-per-process isolation model: a `mockModule`

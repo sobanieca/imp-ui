@@ -1,3 +1,4 @@
 {
-  "fmt": { "lineWidth": 100 },
+  // comments and trailing commas are allowed, but 'fmt' must be an object
+  "fmt": 100,
 }

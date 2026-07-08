@@ -2,6 +2,7 @@ import {
   basename,
   dirname,
   extname,
+  fromFileUrl,
   isAbsolute,
   join,
   relative,
@@ -15,7 +16,8 @@ import { collectFiles } from './walk.js'
 import { runEsbuild, shutdownBundler } from './deps.js'
 import { createRequestHandler, loadApp } from './start.js'
 import { createClock } from './test_clock.js'
-import { dim, green, red, yellow } from './colors.js'
+import { encodeGif, resolveVideoOptions, startScreencast, stopScreencast } from './test_video.js'
+import { bold, dim, green, red, yellow } from './colors.js'
 import { logger } from './logger.js'
 
 const IMP_LIBRARY_URL = import.meta.resolve('../../lib/src/imp.js')
@@ -539,7 +541,22 @@ async function launchBrowser(executablePath) {
   return puppeteer.launch({ executablePath, headless: true, args })
 }
 
-async function runSpecFile(file, { root, code, filter, browserPath, app, screenshotDir }) {
+async function saveRecording(recording, { root, file, videoDir, videoOptions }) {
+  const frames = await stopScreencast(recording)
+  if (!frames.length) return
+  const bytes = encodeGif(frames, videoOptions)
+  if (!bytes) return
+  const dir = resolve(root, videoDir)
+  const path = join(dir, `${slug(basename(file))}.gif`)
+  await Deno.mkdir(dir, { recursive: true })
+  await Deno.writeFile(path, bytes)
+  console.log(dim(`  video: ${relative(root, path)}`))
+}
+
+async function runSpecFile(
+  file,
+  { root, code, filter, browserPath, app, screenshotDir, videoDir, videoOptions },
+) {
   const clients = new Set()
   const server = Deno.serve(
     { port: 0, hostname: '127.0.0.1', onListen: () => {} },
@@ -549,10 +566,12 @@ async function runSpecFile(file, { root, code, filter, browserPath, app, screens
 
   let browser = null
   let page = null
+  let recording = null
   try {
     browser = await launchBrowser(browserPath)
     page = await browser.newPage()
     await page.goto(baseUrl, { waitUntil: 'load' })
+    if (videoDir) recording = await startScreencast(page, videoOptions)
 
     const registry = freshRegistry()
     await importCode(code)
@@ -575,6 +594,11 @@ async function runSpecFile(file, { root, code, filter, browserPath, app, screens
     })
   } finally {
     delete globalThis[REGISTRY_KEY]
+    if (recording) {
+      await saveRecording(recording, { root, file, videoDir, videoOptions }).catch((error) =>
+        logger.warn(`failed to write video for ${relative(root, file)}: ${error.message}`)
+      )
+    }
     if (page) {
       await page.evaluate(() => globalThis.__impFlushTelemetry?.()).catch(() => {})
       await new Promise((done) => setTimeout(done, 120))
@@ -614,19 +638,89 @@ async function selectFiles({ root, paths, unit, e2e, exclude }) {
   }
 }
 
-function printRunPlan({ unitFiles, specFiles, toRelative }) {
+function printChooseLevel() {
   console.log(
-    'imp runs one test file per process so the caller controls parallelism — no tests were run.',
+    'imp test needs a single file, or a level to run every file of that kind in parallel:',
   )
-  const section = (heading, testFiles) => {
-    if (!testFiles.length) return
-    console.log(`\n${heading}`)
-    for (const file of testFiles) console.log(`  imp test ${toRelative(file)}`)
+  console.log(`  ${bold('imp test --unit')}   run every *.test.js file, each in its own process`)
+  console.log(`  ${bold('imp test --e2e')}    run every *.spec.js file, each in its own process`)
+  console.log(`  ${bold('imp test <file>')}   run a single test file in this process`)
+  console.log(
+    `\nNarrow discovery with a path (${dim('imp test --e2e checkout/')}), cap parallelism`,
+  )
+  console.log(`with ${dim('--jobs <n>')}, or filter tests with ${dim('--filter <text>')}.`)
+}
+
+const defaultJobs = () => Math.max(1, navigator.hardwareConcurrency || 4)
+
+function impReinvocation(extraArgs) {
+  const execPath = Deno.execPath()
+  const denoBinary = Deno.build.os === 'windows' ? 'deno.exe' : 'deno'
+  if (basename(execPath).toLowerCase() === denoBinary) {
+    return { command: execPath, args: ['run', '-A', fromFileUrl(Deno.mainModule), ...extraArgs] }
   }
-  section('Run each unit test separately:', unitFiles)
-  section('Run each e2e test separately:', specFiles)
-  console.log('\nTo run them in parallel from a shell:')
-  console.log("  imp test --list | jq -r '.[]' | xargs -P4 -n1 imp test")
+  return { command: execPath, args: extraArgs }
+}
+
+async function runTestSubprocess(relativeFile, { root, passthroughArgs }) {
+  const { command, args } = impReinvocation(['test', relativeFile, ...passthroughArgs])
+  const { code, stdout, stderr } = await new Deno.Command(command, {
+    args,
+    cwd: root,
+    stdout: 'piped',
+    stderr: 'piped',
+  }).output()
+  const decoder = new TextDecoder()
+  return { file: relativeFile, code, output: decoder.decode(stdout) + decoder.decode(stderr) }
+}
+
+async function runInPool(items, concurrency, worker) {
+  const results = new Array(items.length)
+  let next = 0
+  const runner = async () => {
+    while (true) {
+      const index = next++
+      if (index >= items.length) return
+      results[index] = await worker(items[index])
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, runner),
+  )
+  return results
+}
+
+const indentBlock = (text) => text.split('\n').map((line) => `    ${line}`).join('\n')
+
+async function orchestrate({ root, files, jobs, passthroughArgs, toRelative }) {
+  const startedAt = performance.now()
+  const relativeFiles = files.map(toRelative)
+  const fileCount = `${files.length} ${files.length === 1 ? 'file' : 'files'}`
+  console.log(`imp test: running ${fileCount} in parallel\n`)
+
+  const results = await runInPool(
+    relativeFiles,
+    jobs,
+    (relativeFile) => runTestSubprocess(relativeFile, { root, passthroughArgs }),
+  )
+
+  let failed = 0
+  for (const result of results) {
+    if (result.code === 0) {
+      console.log(`${green('✓')} ${result.file}`)
+    } else {
+      failed++
+      console.log(`${red('✗')} ${result.file}`)
+      const output = result.output.trimEnd()
+      if (output) console.log(indentBlock(output))
+    }
+  }
+
+  const parts = [`${results.length - failed} passed`]
+  if (failed) parts.push(red(`${failed} failed`))
+  const elapsed = Math.round(performance.now() - startedAt)
+  console.log(`\nimp test: ${parts.join(', ')} ${dim(`(${fileCount}, ${elapsed}ms)`)}`)
+  return failed ? 1 : 0
 }
 
 export async function runTests(
@@ -636,13 +730,20 @@ export async function runTests(
     list = false,
     unit = false,
     e2e = false,
+    jobs = null,
     filter = null,
     screenshotDir = null,
+    videoDir = null,
   },
 ) {
   const imp = await loadImpConfig(root)
   const testConfig = imp.test ?? {}
   const dependencies = imp.dependencies ?? {}
+  const videoConfig = testConfig.video ?? {}
+  const resolvedVideoDir = (videoDir !== null || videoConfig.enable === true)
+    ? (videoDir ?? '.imp/videos')
+    : null
+  const videoOptions = resolveVideoOptions(videoConfig)
 
   const { unitFiles, specFiles } = await selectFiles({
     root,
@@ -665,9 +766,23 @@ export async function runTests(
     return 0
   }
 
+  if (unit || e2e) {
+    const passthroughArgs = []
+    if (filter) passthroughArgs.push('--filter', filter)
+    if (screenshotDir) passthroughArgs.push('--screenshots', screenshotDir)
+    if (videoDir) passthroughArgs.push('--video', videoDir)
+    return await orchestrate({
+      root,
+      files,
+      jobs: jobs ?? defaultJobs(),
+      passthroughArgs,
+      toRelative,
+    })
+  }
+
   if (files.length > 1) {
-    printRunPlan({ unitFiles, specFiles, toRelative })
-    return 0
+    printChooseLevel()
+    return 1
   }
 
   const totals = { passed: 0, failed: 0, skipped: 0 }
@@ -723,7 +838,15 @@ export async function runTests(
     try {
       const counts = isUnitFile(file)
         ? await runUnitFile({ code, filter })
-        : await runSpecFile(file, { root, code, filter, ...e2eRun, screenshotDir })
+        : await runSpecFile(file, {
+          root,
+          code,
+          filter,
+          ...e2eRun,
+          screenshotDir,
+          videoDir: resolvedVideoDir,
+          videoOptions,
+        })
       addCounts(counts)
     } catch (error) {
       totals.failed++

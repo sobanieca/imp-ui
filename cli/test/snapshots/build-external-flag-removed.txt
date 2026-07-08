@@ -1,4 +1,4 @@
-$ imp bundle app.js --external imp  (cwd: <tmp>)
+$ imp build app.js --external imp  (cwd: <tmp>)
 exit code: 1
 
 --- stdout ---

@@ -11,6 +11,9 @@ const VERSIONS = {
   'eslint': '10.6.0',
   '@eslint/js': '10.0.1',
   'globals': '17.7.0',
+  'jpeg-js': '0.4.4',
+  'gifenc': '1.0.3',
+  'jsonc-parser': '3.3.1',
 }
 
 const PREBUNDLES = [
@@ -36,6 +39,26 @@ const PREBUNDLES = [
         'export const browserGlobals = allGlobals.browser',
         '',
       ].join('\n'),
+  },
+  {
+    file: 'video.js',
+    packages: ['jpeg-js', 'gifenc'],
+    entryCode: (v) =>
+      [
+        `import jpeg from 'npm:jpeg-js@${v['jpeg-js']}'`,
+        `import { applyPalette, GIFEncoder, quantize } from 'npm:gifenc@${v['gifenc']}'`,
+        'export const decodeJpeg = (bytes) => jpeg.decode(bytes, { useTArray: true })',
+        'export { applyPalette, GIFEncoder, quantize }',
+        '',
+      ].join('\n'),
+  },
+  {
+    file: 'jsonc.js',
+    packages: ['jsonc-parser'],
+    entryCode: (v) =>
+      `export { applyEdits, modify, parse, printParseErrorCode } from 'npm:jsonc-parser@${
+        v['jsonc-parser']
+      }'\n`,
   },
 ]
 
@@ -91,7 +114,7 @@ const prebundle = async (spec, entryDir) => {
     format: 'esm',
     platform: 'node',
     target: 'es2022',
-    legalComments: 'none',
+    legalComments: 'eof',
     banner: { js: `${versionBanner(spec.packages)}\n${REQUIRE_SHIM}` },
     write: false,
     outdir: '/prebundle',

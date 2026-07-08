@@ -7,20 +7,31 @@ imp — buildless UI toolkit
 USAGE
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
                                         live reload, console + network → terminal
-  imp bundle [file.html] [--outdir dist]  build the app for production: minified,
+  imp build [file.html] [--outdir dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
                                         imp imports for the host app to provide)
+                     [--pwa]            also emit a PWA: web manifest, icon set,
+                                        and an offline service worker (needs a
+                                        "pwa" block in imp.json)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
   imp test <file>                       run one test file: *.test.js unit in-process,
-                                        *.spec.js e2e in a real browser. With no file
-                                        imp lists the tests to run separately, one per
-                                        process (--unit · --e2e · --filter <text> · --list ·
-                                        --screenshots <dir> saves a screenshot per failed e2e test)
+                                        *.spec.js e2e in a real browser
+  imp test --unit | --e2e               run every file of that level, each in its own
+                                        process, in parallel — passing files are summarized,
+                                        failing files print their full output
+                                        (--jobs <n> caps parallelism · --filter <text> ·
+                                        --list prints the selected files as JSON ·
+                                        --screenshots <dir> saves a screenshot per failed e2e test ·
+                                        --video <dir> records each e2e spec as an animated GIF)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
+  imp update [version] [--check]        update to the latest release (or a given version) and
+                                        pin it in imp.json (--check only reports if one is available)
+  imp licenses                          print third-party license notices for the bundled tools
+  imp --version                         print the imp version this binary runs
 
 --- stderr ---
 (empty)

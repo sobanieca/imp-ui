@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Format check
+        run: deno fmt --check
+      - name: Lint
+        run: deno lint
+
+  release:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Read version from deno.json
+        id: version
+        run: echo "version=$(deno eval "console.log(JSON.parse(Deno.readTextFileSync('deno.json')).version)")" >> $GITHUB_OUTPUT
+
+      - name: Skip if the release already exists
+        id: tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v${{ steps.version.outputs.version }}$"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prepare bundled assets
+        if: steps.tag.outputs.exists == 'false'
+        run: |
+          deno run -A tools/download_fmt_plugins.js
+          deno run -A tools/prebundle_npm_deps.js
+
+      - name: Compile binaries
+        if: steps.tag.outputs.exists == 'false'
+        run: |
+          for target in \
+            "x86_64-unknown-linux-gnu:imp-linux-x64" \
+            "aarch64-unknown-linux-gnu:imp-linux-arm64" \
+            "x86_64-apple-darwin:imp-macos-x64" \
+            "aarch64-apple-darwin:imp-macos-arm64"; do
+            triple="${target%%:*}"
+            output="${target##*:}"
+            deno compile -A --include cli/src --include lib/src --target "$triple" -o "$output" cli/src/main.js
+            sha256sum "$output" > "$output.sha256"
+          done
+
+      - name: Create release
+        if: steps.tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            imp-linux-x64
+            imp-linux-x64.sha256
+            imp-linux-arm64
+            imp-linux-arm64.sha256
+            imp-macos-x64
+            imp-macos-x64.sha256
+            imp-macos-arm64
+            imp-macos-arm64.sha256

@@ -1,7 +1,8 @@
 import { join } from '@std/path'
-import { loadImpConfig } from './config.js'
+import { configTargetPath, loadImpConfig, updateConfigFile } from './config.js'
 import { bundleDependency, shutdownBundler } from './deps.js'
 import { defaultAlias, EXACT_VERSION, parseSpecifier, VALID_ALIAS } from './specifiers.js'
+import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file_size.js'
 import { logger } from './logger.js'
 
 const NPM_REGISTRY = 'https://registry.npmjs.org'
@@ -27,24 +28,18 @@ async function latestVersion(scheme, name) {
   return latest
 }
 
-const LARGE_DEPENDENCY_BYTES = 200 * 1024
-
-const formatSize = (bytes) => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} kB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-async function installOne({ root, alias, scheme, name, version, subpath }) {
+async function installOne({ root, alias, scheme, name, version, subpath, maxBytes, ignore }) {
   const resolvedVersion = version ?? await latestVersion(scheme, name)
   const specifier = `${scheme}:${name}@${resolvedVersion}${subpath}`
   const { files, packages, impImports } = await bundleDependency({ specifier, alias })
-  const totalSize = files.reduce((sum, file) => sum + file.contents.length, 0)
-  if (totalSize > LARGE_DEPENDENCY_BYTES) {
+  const countedSize = files
+    .filter((file) => !isFileSizeIgnored(join('dependencies', alias, file.name), ignore))
+    .reduce((sum, file) => sum + file.contents.length, 0)
+  if (countedSize > maxBytes) {
     logger.warn(
       `${specifier} bundles to ${
-        formatSize(totalSize)
-      }, which will be committed into your git repository`,
+        formatSize(countedSize)
+      }, which will be committed into your git repository — ${maxFileSizeHint}`,
     )
   }
   const folder = join(root, 'dependencies', alias)
@@ -68,11 +63,9 @@ async function installOne({ root, alias, scheme, name, version, subpath }) {
   return specifier
 }
 
-const sortedByKey = (entries) =>
-  Object.fromEntries(Object.entries(entries).sort(([a], [b]) => a.localeCompare(b)))
-
-async function writeImpConfig(root, config) {
-  await Deno.writeTextFile(join(root, 'imp.json'), JSON.stringify(config, null, 2) + '\n')
+const alphabeticalInsertionIndex = (alias) => (keys) => {
+  const index = keys.findIndex((key) => key.localeCompare(alias) > 0)
+  return index === -1 ? keys.length : index
 }
 
 function declaredTarget(alias, specifier, version) {
@@ -115,6 +108,8 @@ function requestedTarget(packageArg, versionArg, aliasArg, dependencies) {
 export async function install({ root, packageArg = null, versionArg = null, aliasArg = null }) {
   const config = await loadImpConfig(root)
   const dependencies = config.dependencies ?? {}
+  const maxBytes = maxFileBytes(config)
+  const ignore = config.maxFileSizeIgnore ?? []
   const targets = []
   if (packageArg) {
     targets.push(requestedTarget(packageArg, versionArg, aliasArg, dependencies))
@@ -129,12 +124,20 @@ export async function install({ root, packageArg = null, versionArg = null, alia
     }
   }
   try {
-    for (const target of targets) dependencies[target.alias] = await installOne({ root, ...target })
+    for (const target of targets) {
+      dependencies[target.alias] = await installOne({ root, maxBytes, ignore, ...target })
+    }
   } finally {
     await shutdownBundler()
   }
-  config.dependencies = sortedByKey(dependencies)
-  await writeImpConfig(root, config)
+  await updateConfigFile(
+    await configTargetPath(root),
+    targets.map((target) => ({
+      path: ['dependencies', target.alias],
+      value: dependencies[target.alias],
+      getInsertionIndex: alphabeticalInsertionIndex(target.alias),
+    })),
+  )
 }
 
 export async function uninstall({ root, alias = null }) {
@@ -144,11 +147,12 @@ export async function uninstall({ root, alias = null }) {
   if (!dependencies[alias]) throw new Error(`'${alias}' is not a declared dependency in imp.json`)
   const specifier = dependencies[alias]
   delete dependencies[alias]
-  if (Object.keys(dependencies).length) config.dependencies = sortedByKey(dependencies)
-  else delete config.dependencies
   if (VALID_ALIAS.test(alias)) {
     await Deno.remove(join(root, 'dependencies', alias), { recursive: true }).catch(() => {})
   }
-  await writeImpConfig(root, config)
+  const change = Object.keys(dependencies).length
+    ? { path: ['dependencies', alias], value: undefined }
+    : { path: ['dependencies'], value: undefined }
+  await updateConfigFile(await configTargetPath(root), [change])
   console.log(`uninstalled ${alias} (${specifier})`)
 }

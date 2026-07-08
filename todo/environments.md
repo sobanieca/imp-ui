@@ -5,7 +5,7 @@ serving, so the same source ships against different config without code edits:
 
 ```
 imp start --env dev
-imp bundle --env prod
+imp build --env prod
 ```
 
 Values flow from per-environment JSON files, resolvable from the shell so secrets need not be
@@ -49,7 +49,7 @@ Keep env files out of the repo when they hold `$env.` secrets or per-developer v
 
 ## `--env` flag on `start` and `bundle`
 
-- `imp start --env <alias>` and `imp bundle --env <alias>` select the environment.
+- `imp start --env <alias>` and `imp build --env <alias>` select the environment.
 - **No `--env` given:** if an environment named `default` exists, use it; otherwise run with an
   empty env object (today's behavior — no breakage for projects that never opt in).
 - **Unknown alias:** fail fast listing the aliases defined in `imp.json`.
@@ -59,7 +59,7 @@ Keep env files out of the repo when they hold `$env.` secrets or per-developer v
 ## How code reads it — one runtime mechanism, dev == prod
 
 The key constraint: `imp start` serves **raw ES modules** with an injected import map and does no
-bundling (`cli/src/start.js`, `buildHeadInjection`), while `imp bundle` runs esbuild. A
+bundling (`cli/src/start.js`, `buildHeadInjection`), while `imp build` runs esbuild. A
 compile-time-only approach (esbuild `define` / `import.meta.env`) would work in the bundle but not
 in the raw dev server, forcing two divergent code paths. Avoid that.
 

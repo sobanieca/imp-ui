@@ -3,6 +3,7 @@ import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
 import { loadImpConfig } from './config.js'
 import { dim, green, red } from './colors.js'
 import { logger } from './logger.js'
+import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './pwa.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
 
@@ -51,11 +52,21 @@ function dependencyImports(dependencies) {
   )
 }
 
-function buildHeadInjection(dependencies) {
+const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
+const DEV_ICON_PREFIX = '/@imp/pwa/'
+
+function buildHeadInjection(dependencies, pwa) {
   const importMap = { imports: { imp: '/@imp/imp.js', ...dependencyImports(dependencies) } }
+  const pwaTags = pwa
+    ? '\n' + pwaHeadTags({
+      manifestHref: DEV_MANIFEST_PATH,
+      themeColor: pwa.themeColor,
+      appleTouchHref: DEV_ICON_PREFIX + APPLE_TOUCH_ICON,
+    })
+    : ''
   return `<script>${CLIENT_JS}</script>\n<script type="importmap">${
     JSON.stringify(importMap)
-  }</script>`
+  }</script>${pwaTags}`
 }
 
 export function injectImp(html, headInjection) {
@@ -103,7 +114,8 @@ export async function loadApp(entryPath) {
   const entryName = basename(entryPath)
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
-  const headInjection = buildHeadInjection(dependencies)
+  const pwa = imp.pwa ?? null
+  const headInjection = buildHeadInjection(dependencies, pwa)
   const missingDependencies = []
   for (const alias of Object.keys(dependencies)) {
     try {
@@ -112,12 +124,32 @@ export async function loadApp(entryPath) {
       missingDependencies.push(alias)
     }
   }
-  return { root, entryName, headInjection, missingDependencies }
+  return { root, entryName, headInjection, missingDependencies, pwa }
 }
 
-export function createRequestHandler({ root, entryName, headInjection, clients }) {
+export function createRequestHandler({ root, entryName, headInjection, clients, pwa = null }) {
+  let iconSet = null
+  const devIcons = () => (iconSet ??= renderIconSet({ root, pwa }))
   return async (req) => {
     const url = new URL(req.url)
+
+    if (pwa && url.pathname === DEV_MANIFEST_PATH) {
+      return new Response(
+        buildManifest(pwa, { iconBase: DEV_ICON_PREFIX, startUrl: '/', scope: '/' }),
+        { headers: { 'content-type': 'application/manifest+json', 'cache-control': 'no-store' } },
+      )
+    }
+
+    if (pwa && url.pathname.startsWith(DEV_ICON_PREFIX)) {
+      const file = url.pathname.slice(DEV_ICON_PREFIX.length)
+      const icon = (await devIcons()).find((entry) => entry.file === file)
+      if (icon) {
+        return new Response(icon.bytes, {
+          headers: { 'content-type': CONTENT_TYPES['.png'], 'cache-control': 'no-store' },
+        })
+      }
+      return new Response('not found: ' + url.pathname, { status: 404 })
+    }
 
     if (url.pathname === '/@imp/events') {
       let controller
@@ -180,7 +212,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
     Deno.exit(1)
   }
 
-  const { root, entryName, headInjection, missingDependencies } = await loadApp(entryPath)
+  const { root, entryName, headInjection, missingDependencies, pwa } = await loadApp(entryPath)
   const clients = new Set()
 
   for (const alias of missingDependencies) {
@@ -216,7 +248,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
       console.log(`  → http://localhost:${port}/`)
       console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
     },
-  }, createRequestHandler({ root, entryName, headInjection, clients }))
+  }, createRequestHandler({ root, entryName, headInjection, clients, pwa }))
 
   return server.finished
 }

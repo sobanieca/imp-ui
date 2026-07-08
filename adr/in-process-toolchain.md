@@ -14,10 +14,13 @@ processes, or break the principle that Deno stays an implementation detail.
 ## Decision
 
 Everything `imp fmt` and `imp lint` do runs in-process via wasm and pure-JS engines embedded in the
-binary at compile time. The imp binary never spawns a subprocess for its own toolchain — the single,
-deliberate exception is `imp test` launching the e2e browser, which is the system under test rather
-than a delegated tool (`two-level-testing.md`); the test runner, server, bundler, and assertions
-themselves all run in-process.
+binary at compile time. The imp binary never spawns a subprocess for its own toolchain — the
+deliberate exceptions both belong to `imp test` (`two-level-testing.md`): launching the e2e browser,
+which is the system under test rather than a delegated tool, and the level fan-out, where
+`imp test --unit`/`--e2e` reinvokes imp itself as one `imp test <file>` worker per file to run a
+whole level in parallel. Neither shells out to an external tool — the browser is the system under
+test, the workers are imp's own copies — and within any single worker the test runner, server,
+bundler, and assertions all still run in-process.
 
 - **`imp fmt`** drives dprint wasm plugins through `@dprint/formatter`'s multi-plugin context — the
   same engines `deno fmt` multiplexes, including the identical third-party crates for CSS (`malva`),

@@ -65,4 +65,4 @@ locale dependency behind a small seam so theming can land before full i18n.
   that is good enough, or move to a stronger hash.
 - **`console`/error paths.** Route any diagnostics through the built-in logger (`todo/logger.md`).
 - **Bundle/PWA integration.** How injected `adoptedStyleSheets` rules are emitted into the static
-  output by `imp bundle` (`adr/production-bundling.md`).
+  output by `imp build` (`adr/production-bundling.md`).

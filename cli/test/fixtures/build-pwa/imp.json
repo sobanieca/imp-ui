@@ -1,0 +1,10 @@
+{
+  "pwa": {
+    "name": "Fixture PWA",
+    "shortName": "Fixture",
+    "themeColor": "#101828",
+    "backgroundColor": "#ffffff",
+    "display": "standalone",
+    "icon": "assets/icon.svg"
+  }
+}

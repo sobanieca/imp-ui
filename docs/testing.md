@@ -1,11 +1,13 @@
 # imp — Testing
 
 ```
-imp test <file>            run one test file
-imp test                   list the test files to run separately (one process each)
-imp test --unit | --e2e    narrow discovery to unit / e2e files
-imp test --filter <text>   run only tests whose name contains <text>
-imp test --list            print the selected files as JSON
+imp test <file>            run one test file in this process
+imp test --unit            run every *.test.js file, each in its own process, in parallel
+imp test --e2e             run every *.spec.js file, each in its own process, in parallel
+imp test --unit --jobs 4   cap how many files run at once (default: your CPU count)
+imp test --e2e --filter x  run only tests whose name contains <text>
+imp test --unit --list     print the selected files as JSON (for a CI matrix)
+imp test --e2e --video vid record each e2e spec as an animated GIF into ./vid
 ```
 
 `imp test` is imp's built-in test runner. It covers two levels of testing through one command and
@@ -21,27 +23,35 @@ There is nothing to install or configure: the runner, the assertion library, and
 are built into the `imp` binary. The only external piece is the e2e browser, which imp finds or
 fetches for you (see _The browser_ below).
 
-imp runs **one test file per process**, and you choose how to parallelize. `imp test <file>` runs
-exactly that file and exits with its result — `0` when everything passed, `1` otherwise. That single
-invocation is the building block for parallel runs (see _Running in parallel_ below). Point
-`imp test` at more than one file — a bare `imp test`, a directory, or several paths — and it does
-**not** run them; it prints a **run plan** instead: the discovered unit and e2e files as
-ready-to-run `imp test <file>` commands, one per process, plus a shell one-liner for running them at
-once. (`.git`, `node_modules`, and `dist` are always skipped during discovery.)
+imp runs **one test file per process** — that is the unit of isolation, so no two files ever share a
+process's globals, timers, module state, or (for e2e) server and browser. `imp test <file>` runs
+exactly that one file in the current process and exits with its result — `0` when everything passed,
+`1` otherwise.
 
-This is deliberate — it is the core idea behind the imp CLI. imp itself stays single-process and
-never schedules concurrency for you, so the caller decides how much to run in parallel: your CI
-matrix, a shell loop, or an AI coding agent reading the plan straight off stdout. One file is always
-the unit of both parallelism and isolation — no two files ever share a process's globals, timers, or
-module state.
+To run a whole level, name it and imp does the fan-out for you: `imp test --unit` discovers every
+`*.test.js` file and `imp test --e2e` every `*.spec.js` file, then runs each one in **its own
+process, in parallel**. Passing files collapse to a single `✓ <file>` line; a failing file prints
+its full output so you see exactly what broke (see _Reading results_). The command exits `1` if any
+file failed. (`.git`, `node_modules`, and `dist` are always skipped during discovery.)
+
+A bare `imp test` with no level and more than one candidate file won't guess — it asks you to pick
+`--unit`, `--e2e`, or a single file, runs nothing, and **exits non-zero**. This keeps imp from ever
+silently running a partial or unintended subset, and makes a stray `imp test` in CI fail the step
+instead of passing green having run no tests.
 
 Flags:
 
-- `--unit` / `--e2e` — run only `.test.js` files, or only `.spec.js` files.
+- `--unit` / `--e2e` — run every `.test.js` file, or every `.spec.js` file, each in its own process.
+  Add a path to narrow discovery: `imp test --e2e checkout/`.
+- `--jobs <n>` — cap how many files run at once during a level run. The default is your machine's
+  CPU count; lower it when each file is heavy (e2e specs each launch a browser) or raise it for
+  light unit files.
 - `--filter <text>` — run only tests whose name contains the text; everything else is reported as
   skipped.
 - `--list` — print the selected test files as a JSON array instead of running them (combine with
-  `--e2e` to feed a CI matrix).
+  `--unit`/`--e2e` to feed a CI matrix — see _One job per spec in CI_).
+- `--video <dir>` — record each e2e spec's browser session as an animated GIF into `<dir>` (see
+  _Recording a spec as a GIF_).
 
 ## Writing tests
 
@@ -419,6 +429,55 @@ If your app's entry page is not `index.html`, set it in `imp.json`:
 }
 ```
 
+### Recording a spec as a GIF
+
+imp can record an e2e spec's whole browser session as an animated **GIF** — a short clip of your app
+actually being driven. Turn it on with `--video <dir>`:
+
+```bash
+imp test --e2e --video videos     # one GIF per spec, written into ./videos
+imp test checkout.spec.js --video videos
+```
+
+Each spec file produces one GIF named after it (for example `videos/checkout.spec.js.gif`),
+capturing the session from the moment the page loads through the last test in the file. There's
+nothing to add to the spec — recording the session is automatic when the flag (or config) is on, and
+imp always writes whatever it captured even if a test throws partway through.
+
+**Why a GIF?** It embeds inline in a GitHub pull request's markdown, so a reviewer sees the clip
+play without downloading anything. That's the point of the feature: an AI agent (or anyone) building
+a frontend change can record the new behaviour and drop the GIF straight into the PR, letting a
+human reviewer double-check that the feature actually works and that its look and feel are right — a
+moving picture the written description can't convey. Just drag the file into the PR comment box, or
+commit it and reference it, and it plays in the thread.
+
+Clips are meant to be lightweight review aids, so imp keeps them short, downscaled, and modest-fps
+by default. Tune any of that under `test.video` in `imp.json`:
+
+```json
+{
+  "test": {
+    "video": {
+      "enable": true,
+      "fps": 10,
+      "maxDuration": 30,
+      "width": 800,
+      "quality": 80
+    }
+  }
+}
+```
+
+- **`enable`** — record without passing `--video` on every run (writes to `.imp/videos/` by default;
+  add `.imp/` to your `.gitignore`). A `--video <dir>` flag still overrides the output directory.
+- **`fps`** — target frames per second (frames are thinned to this rate).
+- **`maxDuration`** — cap the clip length in seconds; capture past this point is dropped.
+- **`width`** — downscale the recording to this width in pixels (height follows the aspect ratio).
+- **`quality`** — capture quality from 1–100; lower means smaller files.
+
+Recording adds a little capture and encoding time per spec, so it stays off unless you ask for it —
+a plain `imp test --e2e` records nothing.
+
 ### The browser
 
 E2E tests need a Chrome or Chromium binary. imp resolves one in this order:
@@ -433,19 +492,22 @@ E2E tests need a Chrome or Chromium binary. imp resolves one in this order:
 ## Running in parallel
 
 Because every `imp test <file>` is self-contained — a unit file gets its own fresh simulated DOM, a
-spec file gets its own server, port, and browser, and nothing is shared between files — you can run
-as many files at once as you like. imp does not do this for you; it lists the files and leaves the
-scheduling to you.
-
-`imp test --list` prints the selected files as a JSON array (add `--unit` or `--e2e` to narrow it).
-From a shell, fan that out across your cores:
+spec file gets its own server, port, and browser, and nothing is shared between files — files can
+run at the same time without interfering. `imp test --unit` and `imp test --e2e` do exactly that:
+each names a level, and imp runs every file of that level in its own process, several at a time.
 
 ```bash
-imp test --list | jq -r '.[]' | xargs -P4 -n1 imp test
+imp test --unit            # every *.test.js, in parallel across your CPU cores
+imp test --e2e --jobs 2    # every *.spec.js, at most two browsers alive at once
 ```
 
-`-P4` runs four files at a time — raise or lower it to match your machine. This is the same list a
-bare `imp test` prints as a ready-to-read run plan.
+`--jobs <n>` sets how many files run concurrently. It defaults to your machine's CPU count; drop it
+for heavy e2e specs, raise it for light unit files. Files that pass are summarized in one line;
+files that fail print their full output.
+
+When you want to spread files across **more than one machine** — a CI matrix, where imp on one
+runner can't schedule work on another — use `--list` instead. It prints the selected files as a JSON
+array (narrowed by `--unit`/`--e2e`) for the matrix to hand out, one file per job:
 
 ### One job per spec in CI
 
@@ -494,15 +556,39 @@ add an `actions/upload-artifact` step if you want them attached to the run.
 
 ## Reading results
 
-There is no report format to configure — `imp test` writes plain text to **stdout**: a line per test
-(`✓` passed, `✗` failed, `-` skipped) and a one-line summary. A failing test prints its name and the
-assertion message right where it failed, so the log alone tells you what broke. The exit code is `0`
-when everything passed and `1` otherwise, which is all a CI step needs to go red or green. This
-keeps the output easy to read directly — whether by a person scanning the log or an AI agent driving
-`imp test` and reading its stdout.
+There is no report format to configure — `imp test` writes plain text to **stdout**. For a single
+file (`imp test <file>`) it prints a line per test (`✓` passed, `✗` failed, `-` skipped) and a
+one-line summary; a failing test prints its name and the assertion message right where it failed, so
+the log alone tells you what broke.
+
+A level run (`--unit` / `--e2e`) keeps that output focused on what matters. Since files run in
+parallel, imp collects each file's result and reports **failure-only detail**: every passing file is
+one `✓ <file>` line, and every failing file is reproduced with the full output that single file
+would have printed on its own — the failed assertions, messages, and any forwarded browser logs. A
+final line tallies how many files passed and failed:
+
+```
+imp test: running 12 files in parallel
+
+✓ cart.test.js
+✗ checkout.test.js
+    checkout.test.js
+      ✗ applies the discount (2ms)
+          expect(received).toEqual(90)
+            expected: 90
+            received: 100
+    imp test: 3 passed, 1 failed (1 file)
+✓ search.test.js
+
+imp test: 11 passed, 1 failed (12 files)
+```
+
+The exit code is `0` when everything passed and `1` otherwise, which is all a CI step needs to go
+red or green. This keeps the output easy to read directly — whether by a person scanning the log or
+an AI agent driving `imp test` and reading its stdout.
 
 The one machine-readable surface is `--list`, which prints the files that _would_ run as a JSON
-array — it describes the selection to fan out, not how a run went.
+array — it describes the selection to fan out across a CI matrix, not how a run went.
 
 ## Configuration
 
@@ -522,3 +608,6 @@ Everything is optional, under `test` in `imp.json`:
 - **`browser`** — path to the browser executable for e2e tests (default: resolve as described
   above).
 - **`exclude`** — paths skipped during test discovery.
+- **`video`** — record e2e specs as GIFs; set `enable` to record without the `--video` flag, and
+  tune `fps`, `maxDuration`, `width`, and `quality` (see
+  [Recording a spec as a GIF](#recording-a-spec-as-a-gif)).

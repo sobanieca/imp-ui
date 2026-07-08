@@ -1,14 +1,16 @@
 {
+  "version": "0.1.0",
   "tasks": {
     "imp": "deno run -A cli/src/main.js",
     "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
-    "compile": "deno run -A tools/download_fmt_plugins.js && deno run -A tools/prebundle_npm_deps.js && deno compile -A --include cli/src --include lib/src -o imp cli/src/main.js",
+    "compile": "deno run -A tools/download_fmt_plugins.js && deno run -A tools/prebundle_npm_deps.js && deno compile -A --include cli/src --include lib/src --include THIRD_PARTY_LICENSES.md -o imp cli/src/main.js",
     "test": "deno task compile && deno test -A cli/test/cli_test.js",
     "test:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update"
   },
   "imports": {
     "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",
     "@dprint/formatter": "npm:@dprint/formatter@^0.5.1",
+    "@resvg/resvg-wasm": "npm:@resvg/resvg-wasm@2.6.2",
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
     "@std/path": "jsr:@std/path@^1.1.6",
     "@zip-js/zip-js": "jsr:@zip-js/zip-js@^2.8.7",

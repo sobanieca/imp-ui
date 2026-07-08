@@ -1,0 +1,15 @@
+$ imp test counter.spec.js --video vids  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+counter.spec.js
+  ✓ starts at zero (*ms)
+  ✓ increments on click (*ms)
+  video: vids/counter.spec.js.gif
+
+imp test: 2 passed (1 file, *ms)
+
+--- stderr ---
+(empty)
+
+[animated gif written: true]

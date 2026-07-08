@@ -1,7 +1,8 @@
 import { browserGlobals, Linter, recommendedRules } from './vendor/eslint.js'
-import { relative } from '@std/path'
+import { join, relative } from '@std/path'
 import impPlugin, { dependencyPinProblem } from './lint_rules.js'
-import { loadImpConfig } from './config.js'
+import { findConfigFile, loadImpConfig } from './config.js'
+import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file_size.js'
 import { collectFiles } from './walk.js'
 
 const LINT_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
@@ -70,8 +71,52 @@ export const scriptBlocks = (html) => {
   return blocks
 }
 
+async function trackedFiles(root) {
+  const command = new Deno.Command('git', {
+    args: ['ls-files', '-z'],
+    cwd: root,
+    stdout: 'piped',
+    stderr: 'null',
+  })
+  let output
+  try {
+    output = await command.output()
+  } catch {
+    return null
+  }
+  if (!output.success) return null
+  return new TextDecoder().decode(output.stdout).split('\0').filter(Boolean)
+}
+
+async function reportOversizedFiles(root, config) {
+  const files = await trackedFiles(root)
+  if (!files) return 0
+  const limit = maxFileBytes(config)
+  const ignore = config.maxFileSizeIgnore ?? []
+  let errors = 0
+  for (const relativePath of files) {
+    if (isFileSizeIgnored(relativePath, ignore)) continue
+    let info
+    try {
+      info = await Deno.stat(join(root, relativePath))
+    } catch {
+      continue
+    }
+    if (!info.isFile || info.size <= limit) continue
+    errors++
+    console.error(
+      `error[imp/max-file-size]: ${relativePath} is ${formatSize(info.size)}, over the ${
+        formatSize(limit)
+      } limit — ${maxFileSizeHint}`,
+    )
+    console.error(` --> ${relativePath}:1:1\n`)
+  }
+  return errors
+}
+
 export async function lint({ root, paths, fix = false }) {
   const imp = await loadImpConfig(root)
+  const configName = (await findConfigFile(root))?.name ?? 'imp.json'
   const lintConfig = imp.lint ?? {}
   const dependencies = imp.dependencies ?? {}
   const config = buildConfig(lintConfig.rules ?? {}, Object.keys(dependencies))
@@ -92,8 +137,10 @@ export async function lint({ root, paths, fix = false }) {
     if (!problem) continue
     errors++
     console.error(`error[imp/exact-dependency-versions]: dependency '${alias}': ${problem}`)
-    console.error(` --> imp.json:1:1\n`)
+    console.error(` --> ${configName}:1:1\n`)
   }
+
+  errors += await reportOversizedFiles(root, imp)
 
   const reportMessages = (file, messages, lineOffset = 0) => {
     for (const message of messages) {

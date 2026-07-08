@@ -64,6 +64,16 @@ issues they report before considering the work done. These operate on imp's own 
 is fine to invoke Deno directly here — this is internal maintainer tooling, not a user-facing
 surface.
 
+**Keep whatever `deno fmt` touches — even out-of-scope files.** `deno fmt` runs repo-wide and may
+reformat files unrelated to your change (e.g. pre-existing formatting drift in other `todo/` or
+`adr/` files). Do **not** revert those reformats to keep a diff "focused" — the repo's canonical
+state is the formatted one, so leave every change `deno fmt` makes in place and include it in the
+commit.
+
+**`deno lint` must pass clean.** If it reports an error — whether in code you just wrote or anywhere
+else it surfaces — fix it before considering the work done; do not ignore, suppress, or leave lint
+errors behind.
+
 ## Code style
 
 **Do not add comments to code.** Write self-explanatory code instead — use clear, descriptive names

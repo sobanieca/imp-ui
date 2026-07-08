@@ -148,3 +148,6 @@ cli/src/vendor/
 
 # compiled binary (deno task compile)
 /imp
+
+# imp test artifacts (failure screenshots, recorded videos)
+.imp/

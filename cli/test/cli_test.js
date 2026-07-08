@@ -101,6 +101,33 @@ Deno.test('imp commands', async (t) => {
     )
   })
 
+  await t.step('lint-file-size-limit', async () => {
+    const dir = await Deno.makeTempDir()
+    await new Deno.Command('git', { args: ['init', '-q'], cwd: dir }).output()
+    await Deno.writeTextFile(join(dir, 'app.js'), "console.log('ok')\n")
+    await Deno.writeTextFile(join(dir, 'big.txt'), 'x'.repeat(300 * 1024))
+    await Deno.writeTextFile(join(dir, 'huge.bin'), 'y'.repeat(300 * 1024))
+    await new Deno.Command('git', { args: ['add', '-A'], cwd: dir }).output()
+
+    const oversized = await runImp(['lint', 'app.js'], dir)
+
+    await Deno.writeTextFile(join(dir, 'imp.json'), '{ "maxFileSizeIgnore": ["huge.bin"] }\n')
+    const partiallyIgnored = await runImp(['lint', 'app.js'], dir)
+
+    await Deno.writeTextFile(join(dir, 'imp.json'), '{ "maxFileSize": 400000 }\n')
+    const raised = await runImp(['lint', 'app.js'], dir)
+
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'lint-file-size-limit',
+      `--- oversized (default limit) ---\n${
+        commandTranscript('imp lint app.js  (cwd: <tmp>)', oversized)
+      }\n--- one path ignored ---\n${
+        commandTranscript('imp lint app.js  (cwd: <tmp>)', partiallyIgnored)
+      }\n--- limit raised ---\n${commandTranscript('imp lint app.js  (cwd: <tmp>)', raised)}`,
+    )
+  })
+
   await t.step('fmt-writes-file', async () => {
     const dir = await Deno.makeTempDir()
     const file = join(dir, 'messy.js')
@@ -234,7 +261,11 @@ Deno.test('imp test', async (t) => {
   await test('test-mock', ['test', 'profile.test.js'], fixture('test-mock'))
   await test('test-unit-fail', ['test'], fixture('test-fail'))
   await test('test-unit-filter', ['test', 'lib.test.js', '--filter', 'adds'], fixture('test-unit'))
-  await test('test-run-plan', ['test'], fixture('test-list'))
+  await test('test-choose-level', ['test'], fixture('test-list'))
+  await test('test-unit-level', ['test', '--unit'], fixture('test-unit'))
+  await test('test-unit-level-jobs', ['test', '--unit', '--jobs', '1'], fixture('test-unit'))
+  await test('test-unit-level-fail', ['test', '--unit'], fixture('test-fail'))
+  await test('test-bad-jobs', ['test', '--unit', '--jobs', '0'], fixture('test-unit'))
   await test('test-list-flag', ['test', '--list'], fixture('test-list'))
   await test('test-list-flag-e2e-only', ['test', '--e2e', '--list'], fixture('test-list'))
   await test('test-not-a-test-file', ['test', 'app.js'], fixture('basic'))
@@ -310,6 +341,23 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
         }\n[screenshot written: ${screenshot}]\n`,
       )
     })
+
+    await t.step('test-e2e-video', async () => {
+      const result = await runImp(['test', 'counter.spec.js', '--video', 'vids'], dir)
+      const bytes = await Deno.readFile(join(dir, 'vids', 'counter.spec.js.gif'))
+        .catch(() => new Uint8Array())
+      const header = new TextDecoder().decode(bytes.slice(0, 6))
+      const isGif = header === 'GIF87a' || header === 'GIF89a'
+      await assertSnapshot(
+        'test-e2e-video',
+        `${
+          commandTranscript(
+            'imp test counter.spec.js --video vids  (cwd: <tmp>)',
+            withoutTelemetry(result),
+          )
+        }\n[animated gif written: ${isGif && bytes.length > 0}]\n`,
+      )
+    })
   } finally {
     await Deno.remove(dir, { recursive: true })
   }
@@ -325,9 +373,9 @@ async function copyDirectory(source, destination) {
   }
 }
 
-Deno.test('imp bundle', async (t) => {
+Deno.test('imp build', async (t) => {
   const dir = await Deno.makeTempDir()
-  await copyDirectory(fixture('bundle'), dir)
+  await copyDirectory(fixture('build'), dir)
 
   const mask = (text) =>
     text
@@ -351,33 +399,33 @@ Deno.test('imp bundle', async (t) => {
   }
 
   try {
-    await t.step('bundle-app', async () => {
-      const result = await runImp(['bundle'], dir)
+    await t.step('build-app', async () => {
+      const result = await runImp(['build'], dir)
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
       const module = await import(toFileUrl(join(dir, 'dist', 'app.js')).href)
       const usage =
         `[bundled module: message='${module.message}', propsAreObjects=${module.propsAreObjects}, lazy loadShout()='${await module
           .loadShout()}']`
       await assertSnapshot(
-        'bundle-app',
+        'build-app',
         mask(
-          `${commandTranscript('imp bundle  (cwd: <tmp>)', result)}\n${await outputTree(
+          `${commandTranscript('imp build  (cwd: <tmp>)', result)}\n${await outputTree(
             'dist',
           )}\n\n${section('dist/index.html', html)}\n\n${usage}\n`,
         ),
       )
     })
 
-    await t.step('bundle-js-entry', async () => {
-      const result = await runImp(['bundle', 'app.js', '--outdir', 'component'], dir)
+    await t.step('build-js-entry', async () => {
+      const result = await runImp(['build', 'app.js', '--outdir', 'component'], dir)
       const module = await import(toFileUrl(join(dir, 'component', 'app.js')).href)
       const usage = `[bundled module: message='${module.message}', lazy loadShout()='${await module
         .loadShout()}']`
       await assertSnapshot(
-        'bundle-js-entry',
+        'build-js-entry',
         mask(
           `${
-            commandTranscript('imp bundle app.js --outdir component  (cwd: <tmp>)', result)
+            commandTranscript('imp build app.js --outdir component  (cwd: <tmp>)', result)
           }\n${await outputTree('component')}\n\n${usage}\n`,
         ),
       )
@@ -386,75 +434,194 @@ Deno.test('imp bundle', async (t) => {
     const writeImpJson = (config) =>
       Deno.writeTextFile(join(dir, 'imp.json'), JSON.stringify(config, null, 2) + '\n')
 
-    await t.step('bundle-target-imp-host', async () => {
+    await t.step('build-target-imp-host', async () => {
       await writeImpJson({
         dependencies: { mitt: 'npm:mitt@3.0.1' },
         targetImpHost: true,
       })
-      const result = await runImp(['bundle', 'app.js', '--outdir', 'shared'], dir)
+      const result = await runImp(['build', 'app.js', '--outdir', 'shared'], dir)
       const code = await Deno.readTextFile(join(dir, 'shared', 'app.js'))
       await assertSnapshot(
-        'bundle-target-imp-host',
+        'build-target-imp-host',
         mask(
           `${
-            commandTranscript('imp bundle app.js --outdir shared  (cwd: <tmp>)', result)
+            commandTranscript('imp build app.js --outdir shared  (cwd: <tmp>)', result)
           }\n${await outputTree('shared')}\n\n${section('shared/app.js', code)}\n`,
         ),
       )
     })
 
-    await t.step('bundle-html-entry-ignores-target-imp-host', async () => {
-      const result = await runImp(['bundle'], dir)
+    await t.step('build-html-entry-ignores-target-imp-host', async () => {
+      const result = await runImp(['build'], dir)
       await assertSnapshot(
-        'bundle-html-entry-ignores-target-imp-host',
-        mask(commandTranscript('imp bundle  (cwd: <tmp>)', result)),
+        'build-html-entry-ignores-target-imp-host',
+        mask(commandTranscript('imp build  (cwd: <tmp>)', result)),
       )
     })
 
-    await t.step('bundle-external-flag-removed', async () => {
-      const result = await runImp(['bundle', 'app.js', '--external', 'imp'], dir)
+    await t.step('build-external-flag-removed', async () => {
+      const result = await runImp(['build', 'app.js', '--external', 'imp'], dir)
       await assertSnapshot(
-        'bundle-external-flag-removed',
-        mask(commandTranscript('imp bundle app.js --external imp  (cwd: <tmp>)', result)),
+        'build-external-flag-removed',
+        mask(commandTranscript('imp build app.js --external imp  (cwd: <tmp>)', result)),
       )
     })
 
-    await t.step('bundle-invalid-target-imp-host', async () => {
+    await t.step('build-invalid-target-imp-host', async () => {
       await writeImpJson({
         dependencies: { mitt: 'npm:mitt@3.0.1' },
         targetImpHost: 'yes',
       })
-      const result = await runImp(['bundle', 'app.js'], dir)
+      const result = await runImp(['build', 'app.js'], dir)
       await writeImpJson({ dependencies: { mitt: 'npm:mitt@3.0.1' } })
       await assertSnapshot(
-        'bundle-invalid-target-imp-host',
-        mask(commandTranscript('imp bundle app.js  (cwd: <tmp>)', result)),
+        'build-invalid-target-imp-host',
+        mask(commandTranscript('imp build app.js  (cwd: <tmp>)', result)),
       )
     })
 
-    await t.step('bundle-missing-entry', async () => {
-      const result = await runImp(['bundle', 'missing.html'], dir)
+    await t.step('build-missing-entry', async () => {
+      const result = await runImp(['build', 'missing.html'], dir)
       await assertSnapshot(
-        'bundle-missing-entry',
-        mask(commandTranscript('imp bundle missing.html  (cwd: <tmp>)', result)),
+        'build-missing-entry',
+        mask(commandTranscript('imp build missing.html  (cwd: <tmp>)', result)),
       )
     })
 
-    await t.step('bundle-outdir-contains-project', async () => {
-      const result = await runImp(['bundle', '--outdir', '.'], dir)
+    await t.step('build-outdir-contains-project', async () => {
+      const result = await runImp(['build', '--outdir', '.'], dir)
       await assertSnapshot(
-        'bundle-outdir-contains-project',
-        mask(commandTranscript('imp bundle --outdir .  (cwd: <tmp>)', result)),
+        'build-outdir-contains-project',
+        mask(commandTranscript('imp build --outdir .  (cwd: <tmp>)', result)),
       )
     })
 
-    await t.step('bundle-not-vendored', async () => {
-      const result = await runImp(['bundle'], fixture('with-config'))
+    await t.step('build-not-vendored', async () => {
+      const result = await runImp(['build'], fixture('with-config'))
       await assertSnapshot(
-        'bundle-not-vendored',
+        'build-not-vendored',
         mask(
-          commandTranscript('imp bundle  (cwd: /test/fixtures/with-config)', result),
+          commandTranscript('imp build  (cwd: /test/fixtures/with-config)', result),
         ),
+      )
+    })
+
+    await t.step('build-renamed-from-bundle', async () => {
+      const result = await runImp(['bundle'], dir)
+      await assertSnapshot(
+        'build-renamed-from-bundle',
+        mask(commandTranscript('imp bundle  (cwd: <tmp>)', result)),
+      )
+    })
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('imp build --pwa', async (t) => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('build-pwa'), dir)
+
+  const mask = (text) =>
+    text
+      .replaceAll(dir, '<tmp>')
+      .replace(/imp-pwa-[0-9a-f]{16}/g, 'imp-pwa-<hash>')
+      .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+
+  const outputTree = async () => {
+    const files = []
+    const walk = async (directory, prefix) => {
+      for await (const entry of Deno.readDir(directory)) {
+        if (entry.isDirectory) await walk(join(directory, entry.name), `${prefix}${entry.name}/`)
+        else files.push(prefix + entry.name)
+      }
+    }
+    await walk(join(dir, 'dist'), 'dist/').catch(() => {})
+    files.sort()
+    return section('output files', files.join('\n'))
+  }
+
+  const isPng = async (path) => {
+    const bytes = await Deno.readFile(join(dir, path))
+    return bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+  }
+
+  const writeImpJson = (config) =>
+    Deno.writeTextFile(join(dir, 'imp.json'), JSON.stringify(config, null, 2) + '\n')
+
+  try {
+    await t.step('build-pwa', async () => {
+      const result = await runImp(['build', '--pwa'], dir)
+      const manifest = await Deno.readTextFile(join(dir, 'dist', 'manifest.webmanifest'))
+      const sw = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
+      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      const icons = [
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+        'icons/icon-maskable-512.png',
+        'icons/apple-touch-icon.png',
+      ]
+      const iconReport = []
+      for (const icon of icons) {
+        iconReport.push(`${icon}: ${(await isPng(`dist/${icon}`)) ? 'PNG' : 'NOT PNG'}`)
+      }
+      await assertSnapshot(
+        'build-pwa',
+        mask(
+          `${
+            commandTranscript('imp build --pwa  (cwd: <tmp>)', result)
+          }\n${await outputTree()}\n\n` +
+            `${section('dist/manifest.webmanifest', manifest)}\n\n` +
+            `${section('dist/sw.js', sw)}\n\n` +
+            `${section('dist/index.html', html)}\n\n` +
+            `${section('icon files', iconReport.join('\n'))}\n`,
+        ),
+      )
+    })
+
+    await t.step('build-pwa-png-source', async () => {
+      await Deno.copyFile(
+        join(dir, 'dist', 'icons', 'icon-512.png'),
+        join(dir, 'assets', 'icon.png'),
+      )
+      await writeImpJson({
+        pwa: {
+          name: 'Fixture PWA',
+          shortName: 'Fixture',
+          themeColor: '#101828',
+          backgroundColor: '#ffffff',
+          display: 'standalone',
+          icon: 'assets/icon.png',
+        },
+      })
+      const result = await runImp(['build', '--pwa'], dir)
+      const iconReport = `icons/icon-512.png: ${
+        (await isPng('dist/icons/icon-512.png')) ? 'PNG' : 'NOT PNG'
+      }`
+      await assertSnapshot(
+        'build-pwa-png-source',
+        mask(
+          `${commandTranscript('imp build --pwa  (cwd: <tmp>)', result)}\n` +
+            `${section('icon from PNG source', iconReport)}\n`,
+        ),
+      )
+    })
+
+    await t.step('build-pwa-no-block', async () => {
+      await writeImpJson({})
+      const result = await runImp(['build', '--pwa'], dir)
+      await assertSnapshot(
+        'build-pwa-no-block',
+        mask(commandTranscript('imp build --pwa  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('build-pwa-js-entry', async () => {
+      await writeImpJson({ pwa: { name: 'Fixture PWA', icon: 'assets/icon.svg' } })
+      const result = await runImp(['build', 'app.js', '--pwa'], dir)
+      await assertSnapshot(
+        'build-pwa-js-entry',
+        mask(commandTranscript('imp build app.js --pwa  (cwd: <tmp>)', result)),
       )
     })
   } finally {

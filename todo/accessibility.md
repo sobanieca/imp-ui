@@ -43,9 +43,9 @@ open question left in `todo/stdlib-components.md`):
 
 Some a11y concerns live below the component layer and pair with other items:
 
-- **Route focus & scroll.** On navigation, move focus to the new view and reset scroll — the
-  "Scroll restoration & focus management" open question in `todo/router.md`. A route change with no
-  focus move strands keyboard and screen-reader users on the old page.
+- **Route focus & scroll.** On navigation, move focus to the new view and reset scroll — the "Scroll
+  restoration & focus management" open question in `todo/router.md`. A route change with no focus
+  move strands keyboard and screen-reader users on the old page.
 - **Live-region announcements** for route changes and toast/alert feedback, so assistive tech is
   told what changed without a full-page reload cue.
 

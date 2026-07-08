@@ -36,10 +36,12 @@ Dependencies are vendored: resolved, bundled, and committed into the repository,
   arguments re-resolves and re-bundles every declared dependency. `npm:` is assumed when no scheme
   is given. The command prints the top-level package and every transitive package (`name@version`)
   that went into the bundle.
-- **There is no separate `imp update` command.** Updating is folded into `imp install` rather than
-  given its own verb, because installing latest and updating to latest are the same
-  resolve-and-re-vendor operation — a distinct command would only duplicate it. `imp install` (all)
-  and `imp install <package>` (one) are the sole update path.
+- **Dependency updates have no separate command.** Updating a dependency is folded into
+  `imp install` rather than given its own verb, because installing latest and updating to latest are
+  the same resolve-and-re-vendor operation — a distinct command would only duplicate it.
+  `imp install` (all) and `imp install <package>` (one) are the sole dependency-update path. (The
+  unrelated `imp update` command updates the pinned imp _version_, not dependencies —
+  `version-pinning-self-delegation.md`.)
 - **No lock file and no resolved-graph manifest.** The committed bundle is the frozen state;
   transitive versions are whatever was latest at install/update time. Reproducibility comes from the
   committed bytes, not from tracking every transitive version. The printed resolution at install
@@ -48,7 +50,7 @@ Dependencies are vendored: resolved, bundled, and committed into the repository,
   `imp` against a registry: `imp` is reserved — rejected as an alias and as an `imp.json` dependency
   key — and always denotes the imp library. A bare `imp` import in a package is kept in the vendored
   bundle as-is, resolved by the app itself: through the injected import map in development and by
-  `imp bundle` in production — the consumer side of publishing with `targetImpHost`
+  `imp build` in production — the consumer side of publishing with `targetImpHost`
   (`production-bundling.md`), applied on every install with no opt-in. Every other import a package
   makes is resolved from the package's own dependency graph and bundled in at install time; the
   installing app's declared aliases play no part in a package's internal resolution, so a vendored
@@ -68,9 +70,9 @@ files into the project.
 
 ## Consequences
 
-- Once a dependency is added, `imp start`, `imp bundle`, and CI are fully offline — the network is
-  touched only by `imp install`. `imp bundle` is faster because dependencies are already resolved
-  and bundled in-tree (`production-bundling.md`).
+- Once a dependency is added, `imp start`, `imp build`, and CI are fully offline — the network is
+  touched only by `imp install`. `imp build` is faster because dependencies are already resolved and
+  bundled in-tree (`production-bundling.md`).
 - A fresh clone is the whole app, dependencies included; nothing needs installing before work
   starts. Committed bundles stay small because only reachable, minified code is stored, and a
   dependency change shows up in review as a diff of its pin and its bundle.
@@ -79,7 +81,7 @@ files into the project.
   bytes — drift can no longer happen silently.
 - Each bundle is self-contained, so two dependencies sharing a transitive package each carry their
   own copy. For stateless utilities this is harmless; singleton-style libraries that rely on shared
-  module state remain a poor fit. `imp bundle` emits each vendored bundle once across the whole
+  module state remain a poor fit. `imp build` emits each vendored bundle once across the whole
   output, but copies shared _between_ vendored bundles stay duplicated — a deliberate choice
   (`transitive-duplication-accepted.md`).
 - Packages that fetch assets at runtime from absolute or CDN URLs (invisible to the bundler) are not

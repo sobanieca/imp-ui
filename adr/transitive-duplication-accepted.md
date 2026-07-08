@@ -3,8 +3,8 @@
 ## Context
 
 Every vendored dependency is a self-contained, minified bundle (`vendored-dependencies.md`), so two
-dependencies that share a transitive package each carry their own copy of it, and `imp bundle`
-builds production output from those bundles as opaque modules (`production-bundling.md`) — the
+dependencies that share a transitive package each carry their own copy of it, and `imp build`
+produces the production output from those bundles as opaque modules (`production-bundling.md`) — the
 copies are invisible to the bundler and ship once per vendored bundle. Eliminating them was scoped,
 and every viable direction surrenders a core guarantee:
 
@@ -19,13 +19,13 @@ and every viable direction surrenders a core guarantee:
 ## Decision
 
 The duplication is accepted as a deliberate choice of imp's architecture — neither `imp install` nor
-`imp bundle` dedupes transitive packages across vendored bundles, and no dedupe mechanism is
-planned. imp's dependency model is intentionally hostile to the dependency profile where this cost
-would matter: apps are expected to keep external dependencies to a minimum and let an agent write
-small purpose-built modules instead of reaching for the registry. A project lean enough to fit that
-model has little or no transitive overlap to dedupe; a project where the duplication hurts is
-carrying more dependencies than imp encourages, and the growing bundle weight is the signal, not a
-tooling gap.
+`imp build` dedupes transitive packages across vendored bundles, and no dedupe mechanism is planned.
+imp's dependency model is intentionally hostile to the dependency profile where this cost would
+matter: apps are expected to keep external dependencies to a minimum and let an agent write small
+purpose-built modules instead of reaching for the registry. A project lean enough to fit that model
+has little or no transitive overlap to dedupe; a project where the duplication hurts is carrying
+more dependencies than imp encourages, and the growing bundle weight is the signal, not a tooling
+gap.
 
 The cost stays bounded and visible rather than managed:
 

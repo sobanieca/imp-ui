@@ -1,4 +1,4 @@
-$ imp bundle  (cwd: /test/fixtures/with-config)
+$ imp build  (cwd: /test/fixtures/with-config)
 exit code: 1
 
 --- stdout ---

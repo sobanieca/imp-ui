@@ -34,10 +34,10 @@ export default function counter({ start = 0, step = 1 } = {}) {
 ```
 
 The skill is a **plain string** deliberately. Because it is just a value the module exports, it
-survives `imp bundle` untouched — the string is preserved in the bundled output the same as any
-other export, so a component distributed as a bundle carries its skill with it and an agent can
-still read it. No separate sidecar file, no metadata format to keep in sync with the code; the skill
-lives in the same module as the component and is reviewed in the same change.
+survives `imp build` untouched — the string is preserved in the bundled output the same as any other
+export, so a component distributed as a bundle carries its skill with it and an agent can still read
+it. No separate sidecar file, no metadata format to keep in sync with the code; the skill lives in
+the same module as the component and is reviewed in the same change.
 
 ## Reading — `imp skill <file>`
 
@@ -112,15 +112,15 @@ export. Update the ADR table in `adr/README.md`.
 ## Open questions
 
 - **Skill ships into the production bundle.** The plain-string export is what makes the skill
-  bundle-_safe_ (it survives `imp bundle` so an agent can still read it from a distributed bundle) —
+  bundle-_safe_ (it survives `imp build` so an agent can still read it from a distributed bundle) —
   but that same property is a downside for an app that only _consumes_ a component: the skill text
   is dead weight in the shipped app bundle, because nothing references it at runtime and it won't be
   tree-shaken away (it is a used export as far as the bundler knows). This may not be the optimal
-  shape. Possible directions to explore when working on this: have `imp bundle` strip `skill`
-  exports from app output by default (an opt-out for anyone bundling a component _for
-  redistribution_, where the skill must stay), or move the skill to a form that is only pulled in
-  when explicitly requested. Leave this as an **open concern** and find a solution during
-  implementation — do not assume the plain-string-in-bundle approach is final.
+  shape. Possible directions to explore when working on this: have `imp build` strip `skill` exports
+  from app output by default (an opt-out for anyone bundling a component _for redistribution_, where
+  the skill must stay), or move the skill to a form that is only pulled in when explicitly
+  requested. Leave this as an **open concern** and find a solution during implementation — do not
+  assume the plain-string-in-bundle approach is final.
 - **Import-time side effects.** Reading `skill` imports the whole module. Components that do work at
   import time (register globals, open connections) would run that work just to print a skill. Is
   documenting "keep module top level side-effect free" enough, or does the skill need a lazier

@@ -146,7 +146,7 @@ unresolved so the component shares the application's copy of imp instead of carr
 a registry — it always means the imp library your toolchain ships, never an npm package that happens
 to be called `imp`. The import is kept bare in the vendored bundle, and your app provides it the
 same way it provides it to your own code: through the import map in development, and through your
-own `imp bundle` in production.
+own `imp build` in production.
 
 Everything else a package imports is bundled in at install time from the package's own dependency
 graph, exactly as declared by its author — your `imp.json` aliases play no part in how a package's
@@ -187,7 +187,7 @@ one small file per dependency, not thousands. In exchange you get:
 ## Choosing dependencies well
 
 Each dependency is bundled independently and self-contained, so two packages that share an internal
-dependency each carry their own copy of it. This holds in production too: `imp bundle` ships each
+dependency each carry their own copy of it. This holds in production too: `imp build` ships each
 dependency's bundle as-is and never merges shared internals across dependencies. That is a
 deliberate choice, not a missing feature — merging would mean re-resolving packages at build time,
 giving up the offline, reproducible-from-your-repository build — and it reflects how imp expects

@@ -1,8 +1,8 @@
-$ imp bundle  (cwd: <tmp>)
+$ imp build  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-bundled index.html → dist/
+built index.html → dist/
   targetImpHost ignored — an HTML page is its own host, imp is bundled in
   app.js (<size>)
   assets/note.txt (<size>)

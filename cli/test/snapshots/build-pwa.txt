@@ -1,0 +1,117 @@
+$ imp build --pwa  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built index.html → dist/
+  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
+  installable — name, 192 + 512 icons, display, start_url all present
+  app.js (<size>)
+  assets/icon.svg (<size>)
+  icons/apple-touch-icon.png (<size>)
+  icons/icon-192.png (<size>)
+  icons/icon-512.png (<size>)
+  icons/icon-maskable-512.png (<size>)
+  index.html (<size>)
+  manifest.webmanifest (<size>)
+  sw.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- output files ---
+dist/app.js
+dist/assets/icon.svg
+dist/icons/apple-touch-icon.png
+dist/icons/icon-192.png
+dist/icons/icon-512.png
+dist/icons/icon-maskable-512.png
+dist/index.html
+dist/manifest.webmanifest
+dist/sw.js
+
+--- dist/manifest.webmanifest ---
+{
+  "name": "Fixture PWA",
+  "short_name": "Fixture",
+  "theme_color": "#101828",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": ".",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
+
+--- dist/sw.js ---
+const CACHE = "imp-pwa-<hash>"
+const PRECACHE = ["app.js","assets/icon.svg","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png","icons/apple-touch-icon.png","manifest.webmanifest","index.html"]
+const SHELL = "index.html"
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting()),
+  )
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) {
+      if (key !== CACHE) await caches.delete(key)
+    }
+    await self.clients.claim()
+  })())
+})
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event
+  if (request.method !== 'GET') return
+  if (new URL(request.url).origin !== self.location.origin) return
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(SHELL).then((cached) => cached ?? Response.error())),
+    )
+    return
+  }
+  event.respondWith(caches.match(request).then((cached) => cached ?? fetch(request)))
+})
+
+--- dist/index.html ---
+<!doctype html>
+<html lang="en">
+  <head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#101828">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register("sw.js"))</script>
+    <meta charset="utf-8">
+    <title>pwa fixture</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
+
+--- icon files ---
+icons/icon-192.png: PNG
+icons/icon-512.png: PNG
+icons/icon-maskable-512.png: PNG
+icons/apple-touch-icon.png: PNG

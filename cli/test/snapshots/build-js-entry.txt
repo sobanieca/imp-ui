@@ -1,8 +1,8 @@
-$ imp bundle app.js --outdir component  (cwd: <tmp>)
+$ imp build app.js --outdir component  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-bundled app.js → component/
+built app.js → component/
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)

@@ -19,22 +19,44 @@ development is applied to the bundle, so what you tested is what ships.
 
 ## Installation
 
-`imp` ships as a single self-contained binary. Download the binary for your platform, put it on your
-`PATH`, and you are ready — there is nothing else to install.
+`imp` ships as a single self-contained binary. On macOS or Linux (x64 or arm64) the install script
+detects your platform, downloads the latest binary, and puts it on your `PATH`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/sobanieca/imp-ui/main/install.sh | bash
+```
+
+It installs to `/usr/local/bin` by default; set `INSTALL_DIR` to choose another location. To install
+by hand instead, download the binary for your platform from the
+[releases page](https://github.com/sobanieca/imp-ui/releases/latest), make it executable, and put it
+anywhere on your `PATH`:
+
+```sh
+curl -fsSL -o imp https://github.com/sobanieca/imp-ui/releases/latest/download/imp-linux-x64
+chmod +x imp
+```
+
+The asset names are `imp-linux-x64`, `imp-linux-arm64`, `imp-macos-x64`, and `imp-macos-arm64`.
+Confirm the install with `imp --version`, which prints the version the binary runs.
 
 ## Commands
 
 ```
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
-imp bundle [file.html] [--outdir dist]  build the app for production
+imp build [file.html] [--outdir dist]   build the app for production
+          [--pwa]                     also emit an installable, offline PWA
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
 imp test  <file>                      run one test file: *.test.js unit in-process,
-                                      *.spec.js e2e in a real browser (no file: list
-                                      the tests to run separately, one process each)
+                                      *.spec.js e2e in a real browser
+imp test  --unit | --e2e              run every file of that level, each in its own
+                                      process, in parallel (--jobs <n> caps concurrency)
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
+imp update [version] [--check]        update to the latest release and pin it in imp.json
+imp licenses                          print third-party license notices for bundled tools
+imp --version                         print the version this binary runs
 imp help                              show usage
 ```
 
@@ -48,24 +70,50 @@ works without it.
 
 ```json
 {
+  "version": "1.2.3",
   "dependencies": { "mitt": "npm:mitt@3.0.1" },
   "fmt": { "lineWidth": 100 }
 }
 ```
 
+You can annotate the file freely: `//` line and `/* … */` block comments and trailing commas are
+accepted even though strict JSON forbids them. If you prefer, name the file `imp.jsonc` instead —
+imp looks for `imp.json` first and falls back to `imp.jsonc` in the same directory. Commands that
+edit the file for you (`imp install`, `imp uninstall`, and the version pin written by `imp update`)
+change only the keys they touch and leave your comments and formatting in place. When no config file
+exists yet, these commands create `imp.json`.
+
+Commands find the config by searching upward from the directory you run them in, stopping at your
+repository root, so they work from any subfolder of a project — and in a monorepo, each app folder
+carries its own `imp.json` (or `imp.jsonc`) and its own `dependencies/`, discovered independently
+based on where you are.
+
+- **`version`** — the exact imp version this project is built against. When set, any imp binary
+  transparently runs the project on that version, downloading it once if needed — so everyone
+  working on the project uses the same imp regardless of which one they installed. Set it with
+  `imp update`; see **[Pinning the imp version](#imp-update--pinning-the-imp-version)** below.
 - **`dependencies`** — the dependencies vendored into your project, one entry per package mapping a
   bare import alias to the exact version installed. Written and updated by `imp install` /
   `imp uninstall`; you normally never edit it by hand. Each alias is exposed to the browser through
   the injected import map, so you write `import mitt from 'mitt'`. See
   **[Managing dependencies](dependencies.md)**.
 - **`targetImpHost`** — set to `true` when what you build is meant to run inside another imp
-  application: `imp bundle` then keeps `imp` imports bare for that host to provide instead of
-  compiling its own copy in. See **Targeting an imp host** under `imp bundle` below.
+  application: `imp build` then keeps `imp` imports bare for that host to provide instead of
+  compiling its own copy in. See **Targeting an imp host** under `imp build` below.
 - **`fmt`** — formatting options for `imp fmt` (defaults listed under `imp fmt` below).
 - **`lint`** — extra lint configuration (`rules`, `exclude`); the imp rule set is always applied on
   top.
-- **`test`** — testing options for `imp test` (`entry`, `browser`, `exclude`). See
-  **[Testing](testing.md)**.
+- **`test`** — testing options for `imp test` (`entry`, `browser`, `exclude`, and a `video` block
+  for recording e2e specs as GIFs). See **[Testing](testing.md)**.
+- **`pwa`** — describes your app as a Progressive Web App: `name` and `icon` (required), plus
+  optional `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and `scope`. It
+  drives the manifest and icons injected automatically in `imp start`, and the full offline PWA
+  emitted by `imp build --pwa`. See **Progressive Web App** under `imp build` below.
+- **`maxFileSize`** — the largest size, in bytes, any single committed file may reach before
+  `imp lint` errors and `imp install` warns. Defaults to 200 kB (`204800`). See `imp lint` and
+  `imp install` below.
+- **`maxFileSizeIgnore`** — an array of repo-relative paths exempt from `maxFileSize`; a file (or
+  everything under a listed folder) never triggers the size check.
 
 That is the whole footprint: your repository contains your code, at most one `imp.json`, and the
 `dependencies/` folder holding your vendored dependencies — all of it source you commit. imp writes
@@ -132,15 +180,19 @@ import mitt from 'mitt'
 If a declared dependency has no vendored bundle yet (say, right after editing `imp.json` by hand),
 `imp start` prints a warning suggesting `imp install`.
 
-## `imp bundle`
+## `imp build`
 
 ```
-imp bundle [file.html|file.js] [--outdir dist]
+imp build [file.html|file.js] [--outdir dist] [--pwa]
 ```
 
 Builds the production version of your app into an output directory (default: `dist/`) that you
 upload to any static host or CDN exactly as it is — plain static files, no imp runtime, no import
 map, nothing to install on the server. The output directory is replaced on every run.
+
+It's called `build`, not `bundle`, because producing that output is more than bundling your
+JavaScript: it's the whole production-build step, and it can emit additional generated files
+alongside the bundled code, not just the bundles themselves.
 
 Given an HTML page (default: `index.html`, the same entry `imp start` serves), imp finds the page's
 module scripts and bundles each one into minified, self-contained JavaScript:
@@ -161,7 +213,7 @@ module scripts and bundles each one into minified, self-contained JavaScript:
   stylesheets, images, fonts, plain text — is copied over unchanged, so the output directory is the
   complete site.
 
-Given a JavaScript module instead of a page, `imp bundle` emits that module as a single
+Given a JavaScript module instead of a page, `imp build` emits that module as a single
 self-contained file: imp itself and every dependency are compiled in, so the result — say, a web
 component authored with imp — can be dropped into any application, whatever framework it uses,
 without pulling in imp or any other runtime.
@@ -184,7 +236,7 @@ resolves `imp` exactly as before — and nothing changes for your other dependen
 bundled in with the versions you pinned.
 
 Inside an imp application the bare `imp` import is already resolvable: in development through the
-import map the dev server injects, and in production because the host's own `imp bundle` resolves it
+import map the dev server injects, and in production because the host's own `imp build` resolves it
 when it builds. The host page then holds a **single copy** of imp shared by the app and your
 component, instead of one copy each. The same contract holds when your component is published to a
 registry and vendored with `imp install` — the consuming app keeps the `imp` import bare and
@@ -205,6 +257,69 @@ Two things to be aware of:
 so nothing could resolve a bare import left in it — bundling an HTML page compiles imp in as usual,
 because the page is its own host.
 
+### Progressive Web App — `imp build --pwa`
+
+Add `--pwa` to a page build and imp emits everything an app needs to be installed to a home screen
+and to keep working offline — a web app manifest, a full icon set scaled from one source image, and
+an offline service worker — alongside the normal production output. Without the flag, `imp build`
+produces a plain build exactly as before, so a PWA project can still make a quick, plain build with
+a bare `imp build`.
+
+Describe the app once, in a `pwa` block in `imp.json`:
+
+```json
+{
+  "pwa": {
+    "name": "My App",
+    "shortName": "App",
+    "themeColor": "#0b0b0b",
+    "backgroundColor": "#ffffff",
+    "display": "standalone",
+    "icon": "assets/icon.svg"
+  }
+}
+```
+
+Only `name` and `icon` are required. `icon` points at a **single** high-resolution source image — an
+SVG (preferred, it scales to any size cleanly) or a large PNG — and imp scales it to every icon the
+manifest and the platforms need, so there is no hand-maintained icon set to keep in sync. The build
+then, in one step:
+
+- **Generates the icon set** — 192px and 512px app icons, a 512px maskable icon padded to survive
+  platform masking, and a 180px apple-touch-icon — regenerated from the source on every build.
+- **Writes `manifest.webmanifest`** with your app's name, colors, and display mode, and guarantees
+  the fields browsers require to offer installation (a name, 192px + 512px icons, a display mode,
+  and a start URL).
+- **Writes an offline service worker** (`sw.js`) and injects the manifest link, theme-color meta,
+  the apple-touch-icon link, and the service-worker registration into your page's `<head>` — the
+  built HTML ships ready to install, with no edits to your source.
+
+**The service worker is the part that matters.** Anything can template a manifest and resize an
+icon; what actually breaks for a real user is being offline, on a flaky network, or opening the app
+the day after you deploy. imp gets this right because it builds your app and therefore knows the
+exact set of files that make it up:
+
+- **The precache list is exact.** The service worker precaches precisely the files this build
+  produced — every hashed script and chunk, every asset, plus the manifest and icons — because imp
+  derives that list from the build itself, not by scanning a folder and guessing afterwards. Nothing
+  needed to run the app offline is missed, and nothing stale is cached.
+- **Deploys are never stuck.** The cache is keyed to the content of the build, so a new deploy is a
+  new cache: on activation the worker fetches what changed and deletes what's gone, and users move
+  to the new version automatically instead of being pinned to an old one by their own cache.
+- **Safe defaults, no configuration.** Your page and its deep links are served network-first and
+  fall back to the cached app shell when offline; hashed assets are served cache-first; cross-origin
+  responses, non-`GET` requests, and error responses are never cached. These are the choices that
+  avoid the classic offline footguns, and they apply out of the box.
+
+**In development (`imp start`) installability is automatic** — no `--pwa` flag and no HTML edits.
+When your `imp.json` has a `pwa` block, the dev server injects the manifest and icon links and
+serves a generated manifest and icons on the fly, so you can install the app and check its icons and
+colors while you work. The **offline** service worker, though, is only ever generated by
+`imp build --pwa`: in development the app keeps live reload and the terminal network telemetry (the
+dev service worker reports requests and does no caching), and offline behavior is something you get
+in the production build, where it belongs. That split is deliberate — you never want a caching
+worker fighting live reload while you edit.
+
 ## `imp install` and `imp uninstall`
 
 ```
@@ -224,11 +339,29 @@ mistaken for a registry package.
 See **[Managing dependencies](dependencies.md)** for the full story: version pinning, updating,
 aliases, jsr packages and subpaths, what gets printed, and why the vendored folder is committed.
 
+### File-size warning
+
+Because vendored bundles are committed to your repository, `imp install` warns when a package
+bundles to more than `maxFileSize` (200 kB by default) so a heavy dependency doesn't slip in
+unnoticed. The warning names the total that would land in `dependencies/` and reminds you of the two
+knobs. To silence it — for a dependency you know is large and want anyway — raise `maxFileSize`, or
+add the dependency to `maxFileSizeIgnore` in `imp.json` (its folder, e.g. `dependencies/charts`, or
+a specific file) so repeated updates stop warning:
+
+```json
+{
+  "maxFileSize": 262144,
+  "maxFileSizeIgnore": ["dependencies/charts"]
+}
+```
+
+This is the same limit `imp lint` enforces (see below), so one number governs both.
+
 ## `imp test`
 
 ```
 imp test <file> [--filter <text>]
-imp test [--unit] [--e2e] [--list]
+imp test --unit | --e2e [--jobs <n>] [--filter <text>] [--list] [--video <dir>]
 ```
 
 Runs the project's tests on two levels through one command: files ending in `.test.js` are unit and
@@ -239,17 +372,25 @@ pointed at the running app, with the browser's console and network activity stre
 terminal. Tests are written with `test` and `expect` imported from `imp/test` — runner and
 assertions are built into the binary, nothing to install.
 
-imp runs **one test file per process**, which is the core idea behind the imp CLI: imp stays
-single-process and never schedules concurrency itself, so the caller controls all parallel
-operations. `imp test <file>` runs exactly that file and exits with its result; a bare `imp test`
-(or any selection of more than one file) instead prints a run plan — each discovered file as its own
-`imp test <file>` command — and runs nothing. Because every file is self-contained, whoever calls
-imp — a CI matrix, a shell `xargs -P`, or an AI coding agent reading the plan off stdout — decides
-how many to run at once, with one file as the unit of both parallelism and isolation.
-`imp test --list` feeds the file list to a CI matrix or shell as JSON.
+imp runs **one test file per process** — the unit of isolation, so no two files share a process's
+globals, timers, server, or browser. `imp test <file>` runs exactly that one file and exits with its
+result. To run a whole level, name it: `imp test --unit` (every `*.test.js`) and `imp test --e2e`
+(every `*.spec.js`) discover their files and run each in its own process, in parallel, capped by
+`--jobs <n>` (default: your CPU count). Passing files are summarized to one line, failing files
+print their full output, and the run exits `1` if any file failed. A bare `imp test` with more than
+one candidate file won't guess — it asks you to choose `--unit`, `--e2e`, or a single file, runs
+nothing, and exits non-zero so a stray `imp test` fails CI instead of passing green. For fan-out
+across **machines** (a CI matrix, which imp can't schedule), `imp test --list` prints the selected
+files as JSON to hand out one per job.
+
+Add `--video <dir>` to an e2e run and imp records each spec's browser session as an animated GIF —
+one file per spec, written into `<dir>`. Because a GIF plays inline in a GitHub pull request, this
+is how an agent (or a person) can attach a clip of a new feature working so a human reviewer can
+double-check its behaviour and look and feel. Recording is off by default; a `test.video` block in
+`imp.json` tunes frame rate, duration, width, and quality (or turns it on without the flag).
 
 See **[Testing](testing.md)** for the full runner API, the assertion reference, browser resolution,
-and the CI parallelization pattern.
+recording, and the CI parallelization pattern.
 
 ## `imp lint`
 
@@ -271,6 +412,22 @@ suppressed by `imp-lint-ignore` comments are never touched.
 Per-rule severities and excluded paths are configured under `lint` in `imp.json`, and
 `imp-lint-ignore` comments suppress findings in code.
 
+**File-size check.** `imp lint` also scans every file tracked in your git repository and errors when
+any single file is larger than `maxFileSize` (200 kB by default), reporting each oversized file with
+its size and exiting non-zero so oversized commits fail CI. It shares one limit with `imp install`:
+set `maxFileSize` in `imp.json` to change it, and list repo-relative paths in `maxFileSizeIgnore` to
+exempt files that are legitimately large (a committed asset, say):
+
+```json
+{
+  "maxFileSize": 262144,
+  "maxFileSizeIgnore": ["assets/hero.png"]
+}
+```
+
+An ignored path — an exact file, or anything under a listed folder — never trips the check. Outside
+a git repository the file-size scan is skipped; the rest of `imp lint` runs unchanged.
+
 See **[Linting](lint.md)** for the full rule descriptions, configuration, ignore directives, and
 output format.
 
@@ -291,3 +448,54 @@ Options (line width, quotes, semicolons, …) come from the `fmt` block of `imp.
 
 See **[Formatting](fmt.md)** for supported languages, all options and their defaults, ignore
 directives, and check mode.
+
+## `imp update` — pinning the imp version
+
+```
+imp update [version] [--check]
+```
+
+A project can pin the exact imp version it is built against with a `"version"` field in `imp.json`.
+Once pinned, **any** imp binary runs the project on that version: on startup imp compares the pin
+against itself, and on a mismatch it fetches the pinned version (once, cached per-user) and hands
+off to it. There is nothing to install per project and no version managers to configure — whoever
+runs `imp start`, `imp test`, or any other command gets the version the project pins, so a teammate
+on a newer or older imp still builds and tests against the same one. Pins are exact (`"1.2.3"`,
+never a range), which is what makes them reproducible.
+
+`imp update` sets and moves that pin:
+
+- **`imp update`** resolves the latest published release, downloads it, and writes it into
+  `imp.json`'s `"version"` field — searching upward from the current directory for the project (so
+  it works from any subdirectory) and preferring the `imp.json` at your repository root. It prints
+  what changed, e.g. `imp updated 1.2.3 → 1.3.0`. The next command you run picks up the new version
+  automatically. If the project has no `imp.json`, the release is still downloaded and cached; no
+  pin is written.
+- **`imp update <version>`** pins a specific version instead of the latest.
+- **`imp update --check`** reports whether a newer release exists and changes nothing.
+
+When you run imp interactively and a newer release is available, imp also prints a one-line hint
+suggesting `imp update` (checked at most once a day, never blocking the command). Silence it with
+the `--no-update-check` flag or by setting `IMP_NO_UPDATE_CHECK`.
+
+If a pinned version cannot be obtained — you are offline, or the release was removed — imp stops
+with a clear error naming the version rather than silently running a different one; a pin that isn't
+enforced is not a pin. To deliberately bypass the pin (say, to debug against the binary you have),
+set `IMP_VERSION=system`.
+
+Downloaded versions are cached per-user under `~/.imp/` (each is verified against its published
+checksum before it is stored), shared across every project you work on. Set `IMP_HOME` to cache them
+somewhere else — useful in CI or containers where the home directory isn't writable, or to keep the
+binaries off your home volume.
+
+## `imp licenses`
+
+```
+imp licenses
+```
+
+imp is a single binary that bundles a number of open-source tools (the browser automation, the
+formatter and linter engines, the image and video encoders, and more). `imp licenses` prints the
+third-party license notices for everything the binary ships — each component, its version, and the
+full text of its license — so the attribution required by those licenses is available straight from
+the binary. It takes no arguments.

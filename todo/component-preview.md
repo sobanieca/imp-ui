@@ -130,7 +130,7 @@ theme/i18n switchers. Update the ADR table in `adr/README.md`.
   of scope initially (a preview re-edit covers it), or a lightweight knobs layer later?
 - **Preview location & naming.** Strictly a `*.preview.js` sibling, or also allow a `previews/`
   folder? Confirm the walker's ignore rules treat previews like tests.
-- **Bundle interaction.** Should preview files be excludable from `imp bundle` output the way test
+- **Bundle interaction.** Should preview files be excludable from `imp build` output the way test
   files are, and is there value in a static "export the preview index as a page" mode for design
   review?
 - **Mount/unmount lifecycle.** How scenarios are torn down on live reload so stubs with timers or

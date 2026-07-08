@@ -13,7 +13,17 @@ import {
 } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
+import { formatSize } from './file_size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
+import {
+  APPLE_TOUCH_ICON,
+  buildManifest,
+  buildServiceWorker,
+  cacheVersion,
+  pwaHeadTags,
+  renderIconSet,
+  validatePwaBuild,
+} from './pwa.js'
 
 const IMP_LIBRARY_URL = import.meta.resolve('../../lib/src/imp.js')
 
@@ -185,9 +195,17 @@ async function copyStaticFiles({ root, outdir, skipFiles, written }) {
   await copy(root, '')
 }
 
-const formatSize = (bytes) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} kB`
+function injectHead(html, headTags) {
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${headTags}`)
+  }
+  if (/<html[^>]*>/i.test(html)) {
+    return html.replace(/<html[^>]*>/i, (open) => `${open}\n<head>${headTags}</head>`)
+  }
+  return `${headTags}\n${html}`
+}
 
-export async function bundle({ entry = 'index.html', outdir = 'dist' } = {}) {
+export async function build({ entry = 'index.html', outdir = 'dist', pwa = false } = {}) {
   const entryPath = resolve(entry)
   let entryStat
   try {
@@ -214,6 +232,8 @@ export async function bundle({ entry = 'index.html', outdir = 'dist' } = {}) {
   const isHtmlEntry = ['.html', '.htm'].includes(extname(entryName).toLowerCase())
   const targetImpHost = imp.targetImpHost === true
   const impProvidedByHost = targetImpHost && !isHtmlEntry
+  const impPwa = imp.pwa ?? null
+  if (pwa) await validatePwaBuild(impPwa, isHtmlEntry, root)
 
   let html = null
   let scripts = [entryPath]
@@ -264,15 +284,54 @@ export async function bundle({ entry = 'index.html', outdir = 'dist' } = {}) {
 
   const skipFiles = bundledInputPaths(result.metafile)
   if (isHtmlEntry) {
-    const builtHtml = replaceInlineScripts(html, inlineOutputs)
+    let builtHtml = replaceInlineScripts(html, inlineOutputs)
+    skipFiles.add(normalize(entryPath))
+    await copyStaticFiles({ root, outdir: outdirPath, skipFiles, written })
+    if (pwa) {
+      for (const icon of await renderIconSet({ root, pwa: impPwa })) {
+        const path = join(outdirPath, icon.file)
+        await Deno.mkdir(dirname(path), { recursive: true })
+        await Deno.writeFile(path, icon.bytes)
+        written.push(icon.file)
+      }
+      await Deno.writeTextFile(join(outdirPath, 'manifest.webmanifest'), buildManifest(impPwa))
+      written.push('manifest.webmanifest')
+      builtHtml = injectHead(
+        builtHtml,
+        pwaHeadTags({
+          manifestHref: 'manifest.webmanifest',
+          themeColor: impPwa.themeColor,
+          appleTouchHref: APPLE_TOUCH_ICON,
+          swHref: 'sw.js',
+        }),
+      )
+    }
     await Deno.mkdir(outdirPath, { recursive: true })
     await Deno.writeTextFile(join(outdirPath, entryName), builtHtml)
     written.push(entryName)
-    skipFiles.add(normalize(entryPath))
-    await copyStaticFiles({ root, outdir: outdirPath, skipFiles, written })
+    if (pwa) {
+      const precache = written.filter((name) => name !== 'sw.js' && !name.endsWith('.map'))
+      const files = await Promise.all(
+        precache.map(async (path) => ({
+          path,
+          bytes: await Deno.readFile(join(outdirPath, path)),
+        })),
+      )
+      const serviceWorker = buildServiceWorker({
+        cacheName: `imp-pwa-${await cacheVersion(files)}`,
+        precache,
+        shell: entryName,
+      })
+      await Deno.writeTextFile(join(outdirPath, 'sw.js'), serviceWorker)
+      written.push('sw.js')
+    }
   }
 
-  console.log(`bundled ${entryName} → ${relative(Deno.cwd(), outdirPath) || '.'}/`)
+  console.log(`built ${entryName} → ${relative(Deno.cwd(), outdirPath) || '.'}/`)
+  if (pwa) {
+    console.log('  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker')
+    console.log('  installable — name, 192 + 512 icons, display, start_url all present')
+  }
   if (impProvidedByHost) {
     console.log('  imp imports kept bare — resolved by the imp host at runtime')
   } else if (targetImpHost && isHtmlEntry) {

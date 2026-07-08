@@ -1,4 +1,4 @@
-$ imp bundle missing.html  (cwd: <tmp>)
+$ imp build missing.html  (cwd: <tmp>)
 exit code: 1
 
 --- stdout ---
