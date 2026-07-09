@@ -25,19 +25,21 @@ Conventions:
 
 ## CLI
 
-| ADR                                                                   | Decision                                                    |
-| --------------------------------------------------------------------- | ----------------------------------------------------------- |
-| [in-process-toolchain](in-process-toolchain.md)                       | fmt and lint run in-process, no subprocess                  |
-| [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin       |
-| [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile       |
-| [production-bundling](production-bundling.md)                         | imp build from vendored bundles + baked-in library          |
-| [pwa-toolkit](pwa-toolkit.md)                                         | imp build --pwa: manifest, icons, build-graph SW            |
-| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design               |
-| [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome       |
-| [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests             |
-| [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg |
-| [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                  |
-| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES     |
-| [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push              |
-| [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary         |
-| [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits |
+| ADR                                                                   | Decision                                                       |
+| --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [in-process-toolchain](in-process-toolchain.md)                       | fmt and lint run in-process, no subprocess                     |
+| [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin          |
+| [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile          |
+| [production-bundling](production-bundling.md)                         | imp build from vendored bundles + baked-in library             |
+| [pwa-toolkit](pwa-toolkit.md)                                         | imp build --pwa: manifest, icons, build-graph SW               |
+| [raster-image-pipeline](raster-image-pipeline.md)                     | resvg decode+resize, format-preserving encode, no new codec    |
+| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design                  |
+| [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome          |
+| [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                |
+| [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg    |
+| [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                     |
+| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES        |
+| [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                 |
+| [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary            |
+| [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits    |
+| [environments](environments.md)                                       | Named env files, `$env.` shell refs, one injected `env` global |

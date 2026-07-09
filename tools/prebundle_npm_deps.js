@@ -48,6 +48,7 @@ const PREBUNDLES = [
         `import jpeg from 'npm:jpeg-js@${v['jpeg-js']}'`,
         `import { applyPalette, GIFEncoder, quantize } from 'npm:gifenc@${v['gifenc']}'`,
         'export const decodeJpeg = (bytes) => jpeg.decode(bytes, { useTArray: true })',
+        'export const encodeJpeg = (image, quality) => jpeg.encode(image, quality).data',
         'export { applyPalette, GIFEncoder, quantize }',
         '',
       ].join('\n'),

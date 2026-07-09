@@ -1,0 +1,22 @@
+$ imp build --pwa  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+[WARN] pwa icon assets/icon-small.png is 192×192 — icons up to 512×512 will be upscaled, so some quality loss is expected; use an SVG or a source at least 512px on its longest edge for sharp icons
+built index.html → dist/
+  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
+  installable — name, 192 + 512 icons, display, start_url all present
+  app.js (<size>)
+  assets/icon-small.png (<size>)
+  assets/icon.png (<size>)
+  assets/icon.svg (<size>)
+  icons/apple-touch-icon.png (<size>)
+  icons/icon-192.png (<size>)
+  icons/icon-512.png (<size>)
+  icons/icon-maskable-512.png (<size>)
+  index.html (<size>)
+  manifest.webmanifest (<size>)
+  sw.js (<size>)
+
+--- stderr ---
+(empty)

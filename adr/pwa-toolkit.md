@@ -75,3 +75,34 @@ live reload and telemetry while production gets offline.
   other in-process wasm engines; icon generation shells out to nothing.
 - `imp.json` gains a validated `pwa` block alongside `dependencies`/`fmt`/`lint`/`test`
   (`cli/src/config.js`); Deno remains an implementation detail — users only ever edit `imp.json`.
+
+## Scope and non-goals
+
+"PWA" in the wider ecosystem spans far more than what `--pwa` emits. This section fixes the boundary
+so the decision is not mistaken for "offline is fully solved."
+
+What the emitted worker **does** cover: the precached app-shell model — an install-time precache of
+the exact build graph, a content-hashed cache name reconciled on `activate`, network-first
+navigations with a cached-shell fallback, and cache-first for hashed same-origin assets.
+
+What is **deliberately out of scope**, and stays out unless a concrete user need argues otherwise:
+
+- **A configurable strategy zoo.** No per-route or per-request-type strategy selection
+  (stale-while-revalidate, runtime caching with expiry/max-entries, cache-only, network-only). imp
+  ships one opinionated set of strategies, not a policy engine — the same reasoning as bundling the
+  build graph rather than exposing esbuild config.
+- **Dynamic/runtime data caching.** Requests the build did not emit (API calls, runtime-fetched
+  images) pass through to the network uncached. Caching mutable data is an app concern with its own
+  freshness and eviction policy, not something a build flag can decide correctly.
+- **App-feature capabilities that require app code**, not a build artifact: Background Sync, Push
+  notifications, Periodic Background Sync, Web Share Target, file/protocol handlers. `--pwa`
+  generates infrastructure; these are behaviors the app author must author.
+- **A richer manifest** beyond the installability set — `shortcuts`, `share_target`,
+  `display_override`, `screenshots`, etc. The manifest guarantees installability, nothing more.
+
+Two items are **open**, tracked in `todo/` because they are correctness questions rather than
+missing conveniences: the service-worker **update lifecycle** (the emitted worker calls
+`skipWaiting()` / `clients.claim()` and purges the old cache immediately, which can pull code-split
+chunks out from under a live session mid-deploy — see `todo/pwa-update-lifecycle.md`) and an
+**offline fallback page** for uncached navigations instead of always falling back to the app shell
+(see `todo/pwa-offline-fallback.md`).

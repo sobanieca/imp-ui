@@ -1,0 +1,8 @@
+$ imp resize photo.bmp -w 100  (cwd: test/fixtures/resize)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] unsupported image format '.bmp' — imp resize handles .png and .jpg

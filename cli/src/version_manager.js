@@ -2,9 +2,11 @@ import { dirname, join } from '@std/path'
 import { cyan, dim } from './colors.js'
 import { findConfigFile, tryParseConfig, updateConfigFile } from './config.js'
 import { isNewer, VERSION } from './version.js'
+import { formatSize } from './file_size.js'
 
 const REPO = 'sobanieca/imp-ui'
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
+const STALE_AFTER = 30 * 24 * 60 * 60 * 1000
 
 const PLATFORM_SLUGS = {
   'darwin-x86_64': 'macos-x64',
@@ -35,7 +37,10 @@ function impHome() {
   return join(home, '.imp')
 }
 
-const versionBinaryPath = (version) => join(impHome(), 'versions', version, 'imp')
+const versionsDir = () => join(impHome(), 'versions')
+const versionDir = (version) => join(versionsDir(), version)
+const versionBinaryPath = (version) => join(versionDir(version), 'imp')
+const lastUsedPath = (version) => join(versionDir(version), 'lastUsed')
 
 const releaseAssetUrl = (version) =>
   `https://github.com/${REPO}/releases/download/v${version}/${assetName()}`
@@ -146,7 +151,9 @@ export async function ensureVersion(version) {
   const path = versionBinaryPath(version)
   if (await exists(path)) return path
   console.error(dim(`imp ${version} — downloading…`))
-  return await downloadVersion(version)
+  const downloaded = await downloadVersion(version)
+  await warnStaleVersions(version)
+  return downloaded
 }
 
 export async function resolveLatestVersion() {
@@ -165,7 +172,108 @@ export async function resolveLatestVersion() {
   return tag.replace(/^v/, '')
 }
 
+async function touchLastUsed(version) {
+  try {
+    if (!(await exists(versionDir(version)))) return
+    await Deno.writeTextFile(lastUsedPath(version), new Date().toISOString())
+  } catch {
+    // recording usage is best-effort and must never break a command
+  }
+}
+
+async function lastUsedTime(version) {
+  try {
+    const parsed = Date.parse((await Deno.readTextFile(lastUsedPath(version))).trim())
+    if (!Number.isNaN(parsed)) return parsed
+  } catch {
+    // no lastUsed marker — fall back to the binary's own timestamp
+  }
+  try {
+    const info = await Deno.stat(versionBinaryPath(version))
+    return info.mtime?.getTime() ?? info.birthtime?.getTime() ?? Date.now()
+  } catch {
+    return Date.now()
+  }
+}
+
+async function listInstalledVersions() {
+  const versions = []
+  try {
+    for await (const entry of Deno.readDir(versionsDir())) {
+      if (entry.isDirectory && await exists(versionBinaryPath(entry.name))) {
+        versions.push(entry.name)
+      }
+    }
+  } catch {
+    // no versions directory yet — nothing installed
+  }
+  return versions
+}
+
+async function staleVersions(excludeVersion) {
+  const now = Date.now()
+  const stale = []
+  for (const version of await listInstalledVersions()) {
+    if (version === excludeVersion) continue
+    if (now - await lastUsedTime(version) > STALE_AFTER) stale.push(version)
+  }
+  return stale.sort()
+}
+
+async function directorySize(dir) {
+  let total = 0
+  try {
+    for await (const entry of Deno.readDir(dir)) {
+      const path = join(dir, entry.name)
+      total += entry.isDirectory
+        ? await directorySize(path)
+        : await Deno.stat(path).then((info) => info.size).catch(() => 0)
+    }
+  } catch {
+    // an unreadable directory contributes nothing to the total
+  }
+  return total
+}
+
+async function warnStaleVersions(justInstalled) {
+  try {
+    const stale = await staleVersions(justInstalled)
+    if (!stale.length) return
+    const single = stale.length === 1
+    console.error(
+      dim(
+        `${stale.length} unused imp ${single ? 'version' : 'versions'} (${stale.join(', ')}) ${
+          single ? 'has' : 'have'
+        } not run in over 30 days — run 'imp prune' to remove ${
+          single ? 'it' : 'them'
+        } and reclaim disk space`,
+      ),
+    )
+  } catch {
+    // the stale-version notice must never affect an install
+  }
+}
+
+export async function prune() {
+  const stale = await staleVersions(VERSION)
+  if (!stale.length) {
+    console.log('no unused imp versions to prune — nothing cached is older than 30 days')
+    return
+  }
+  let freed = 0
+  for (const version of stale) {
+    freed += await directorySize(versionDir(version))
+    await Deno.remove(versionDir(version), { recursive: true }).catch(() => {})
+    console.log(`removed imp ${version}`)
+  }
+  const single = stale.length === 1
+  console.log(
+    `pruned ${stale.length} unused ${single ? 'version' : 'versions'}, freed ${formatSize(freed)}`,
+  )
+}
+
 export async function maybeDelegate(args) {
+  await touchLastUsed(VERSION)
   if (Deno.env.get('IMP_DELEGATED') === '1') return
   if (Deno.env.get('IMP_VERSION') === 'system') return
   if (isDevMode()) return

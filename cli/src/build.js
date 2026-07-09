@@ -13,6 +13,7 @@ import {
 } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
+import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { formatSize } from './file_size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import {
@@ -205,7 +206,9 @@ function injectHead(html, headTags) {
   return `${headTags}\n${html}`
 }
 
-export async function build({ entry = 'index.html', outdir = 'dist', pwa = false } = {}) {
+export async function build(
+  { entry = 'index.html', outdir = 'dist', pwa = false, env = null } = {},
+) {
   const entryPath = resolve(entry)
   let entryStat
   try {
@@ -229,6 +232,7 @@ export async function build({ entry = 'index.html', outdir = 'dist', pwa = false
 
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
+  const resolvedEnv = await resolveEnvironment({ root, config: imp, requestedAlias: env })
   const isHtmlEntry = ['.html', '.htm'].includes(extname(entryName).toLowerCase())
   const targetImpHost = imp.targetImpHost === true
   const impProvidedByHost = targetImpHost && !isHtmlEntry
@@ -283,8 +287,13 @@ export async function build({ entry = 'index.html', outdir = 'dist', pwa = false
   }
 
   const skipFiles = bundledInputPaths(result.metafile)
+  for (const envFile of Object.values(imp.environments ?? {})) {
+    skipFiles.add(normalize(resolve(root, envFile)))
+  }
   if (isHtmlEntry) {
     let builtHtml = replaceInlineScripts(html, inlineOutputs)
+    const envTag = envInjectionScript(resolvedEnv)
+    if (envTag) builtHtml = injectHead(builtHtml, envTag)
     skipFiles.add(normalize(entryPath))
     await copyStaticFiles({ root, outdir: outdirPath, skipFiles, written })
     if (pwa) {

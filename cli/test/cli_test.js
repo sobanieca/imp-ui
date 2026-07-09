@@ -3,6 +3,7 @@ import { assertSnapshot } from './snapshot.js'
 import { CLIENT_JS } from '../src/client.js'
 import { bundleDependency, shutdownBundler } from '../src/deps.js'
 import { injectImp } from '../src/start.js'
+import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
@@ -66,6 +67,63 @@ Deno.test('imp commands', async (t) => {
   await test('fmt-ignore-directive', ['fmt', '--check', 'app.js'], fixture('fmt-ignore'))
   await test('fmt-path-not-found', ['fmt', 'missing.js'], fixture('basic'))
   await test('fmt-invalid-imp-json', ['fmt', '--check', 'app.js'], fixture('broken-config'))
+  await test('resize-guidance', ['resize', 'logo.png'], fixture('resize'))
+  await test('resize-usage', ['resize'], fixture('resize'))
+  await test('resize-unsupported-format', ['resize', 'photo.bmp', '-w', '100'], fixture('resize'))
+  await test('resize-webp-deferred', ['resize', 'hero.webp', '-w', '100'], fixture('resize'))
+  await test('resize-missing-file', ['resize', 'missing.png', '-w', '100'], fixture('resize'))
+  await test('resize-bad-dimension', ['resize', 'logo.png', '-w', 'abc'], fixture('resize'))
+  await test('resize-upscale-clamped', ['resize', 'logo.png', '-w', '9000'], fixture('resize'))
+  await test(
+    'resize-stretch-requires-both',
+    ['resize', 'logo.png', '-w', '100', '--stretch'],
+    fixture('resize'),
+  )
+
+  await t.step('resize-writes-file', async () => {
+    const dir = await Deno.makeTempDir()
+    const pngSize = async (name) => {
+      const bytes = await Deno.readFile(join(dir, name))
+      const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+      const width = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]
+      const height = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]
+      return `${name}: ${isPng ? 'PNG' : 'NOT PNG'} ${width}×${height}`
+    }
+    await Deno.copyFile(join(fixture('resize'), 'logo.png'), join(dir, 'logo.png'))
+    const inPlace = await runImp(['resize', 'logo.png', '-w', '150'], dir)
+    const copy = await runImp(['resize', 'logo.png', '-h', '30', '--out', 'small.png'], dir)
+    const boxFit = await runImp(
+      ['resize', 'logo.png', '-w', '100', '-h', '100', '--out', 'box.png'],
+      dir,
+    )
+    const stretched = await runImp(
+      ['resize', 'logo.png', '-w', '100', '-h', '100', '--stretch', '--out', 'stretched.png'],
+      dir,
+    )
+    const overwritten = await pngSize('logo.png')
+    const sibling = await pngSize('small.png')
+    const boxFitOutput = await pngSize('box.png')
+    const stretchedOutput = await pngSize('stretched.png')
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'resize-writes-file',
+      `${commandTranscript('imp resize logo.png -w 150  (cwd: <tmp>)', inPlace)}\n` +
+        `--- overwritten source ---\n${overwritten}\n\n` +
+        `${commandTranscript('imp resize logo.png -h 30 --out small.png  (cwd: <tmp>)', copy)}\n` +
+        `--- sibling output ---\n${sibling}\n\n` +
+        `${
+          commandTranscript('imp resize logo.png -w 100 -h 100 --out box.png  (cwd: <tmp>)', boxFit)
+        }\n` +
+        `--- box-fit output ---\n${boxFitOutput}\n\n` +
+        `${
+          commandTranscript(
+            'imp resize logo.png -w 100 -h 100 --stretch --out stretched.png  (cwd: <tmp>)',
+            stretched,
+          )
+        }\n` +
+        `--- stretched output ---\n${stretchedOutput}`,
+    )
+  })
 
   await t.step('lint-fix-writes-file', async () => {
     const dir = await Deno.makeTempDir()
@@ -607,6 +665,24 @@ Deno.test('imp build --pwa', async (t) => {
       )
     })
 
+    await t.step('build-pwa-small-source-warns', async () => {
+      await Deno.copyFile(
+        join(dir, 'dist', 'icons', 'icon-192.png'),
+        join(dir, 'assets', 'icon-small.png'),
+      )
+      await writeImpJson({
+        pwa: {
+          name: 'Fixture PWA',
+          icon: 'assets/icon-small.png',
+        },
+      })
+      const result = await runImp(['build', '--pwa'], dir)
+      await assertSnapshot(
+        'build-pwa-small-source-warns',
+        mask(commandTranscript('imp build --pwa  (cwd: <tmp>)', result)),
+      )
+    })
+
     await t.step('build-pwa-no-block', async () => {
       await writeImpJson({})
       const result = await runImp(['build', '--pwa'], dir)
@@ -629,9 +705,9 @@ Deno.test('imp build --pwa', async (t) => {
   }
 })
 
-async function startServer(cwd) {
+async function startServer(cwd, extraArgs = []) {
   const child = new Deno.Command(IMP, {
-    args: ['start', 'index.html', '--port', '0'],
+    args: ['start', 'index.html', '--port', '0', ...extraArgs],
     cwd,
     stdin: 'null',
     stdout: 'piped',
@@ -781,6 +857,202 @@ Deno.test('injectImp', async () => {
     )
     .join('\n')
   await assertSnapshot('inject-imp', transcript)
+})
+
+Deno.test('resolveEnvironment', async () => {
+  const dir = await Deno.makeTempDir()
+  await Deno.writeTextFile(
+    join(dir, 'dev.json'),
+    JSON.stringify({ API_URL: 'https://dev.example.com', FEATURE: false }),
+  )
+  await Deno.writeTextFile(
+    join(dir, 'prod.json'),
+    JSON.stringify({ API_URL: 'https://api.example.com', TOKEN: '$env.IMP_TEST_TOKEN', COUNT: 3 }),
+  )
+  await Deno.writeTextFile(join(dir, 'nested.json'), JSON.stringify({ obj: { a: 1 } }))
+  await Deno.writeTextFile(join(dir, 'array.json'), JSON.stringify([1, 2]))
+  await Deno.writeTextFile(join(dir, 'broken.json'), '{ not json')
+  await Deno.writeTextFile(
+    join(dir, 'prod.env'),
+    [
+      '# production values',
+      'API_URL=https://api.example.com  # inline comment',
+      'export TOKEN=$env.IMP_TEST_TOKEN',
+      'GREETING="hello world"',
+      "RAW='keep $env.NOT_EXPANDED literal'",
+      'FEATURE=true',
+      '',
+    ].join('\n'),
+  )
+
+  const config = {
+    environments: {
+      dev: 'dev.json',
+      prod: 'prod.json',
+      default: 'dev.json',
+      nested: 'nested.json',
+      array: 'array.json',
+      broken: 'broken.json',
+      missingFile: 'nope.json',
+      dotenv: 'prod.env',
+    },
+  }
+
+  const savedImpEnv = Deno.env.get('IMP_ENV')
+
+  const run = async (
+    label,
+    { config: cfg = config, requestedAlias = null, impEnv, token } = {},
+  ) => {
+    if (impEnv === undefined) Deno.env.delete('IMP_ENV')
+    else Deno.env.set('IMP_ENV', impEnv)
+    if (token === undefined) Deno.env.delete('IMP_TEST_TOKEN')
+    else Deno.env.set('IMP_TEST_TOKEN', token)
+    let outcome
+    try {
+      const resolved = await resolveEnvironment({ root: dir, config: cfg, requestedAlias })
+      outcome = `ok: ${JSON.stringify(resolved)}`
+    } catch (error) {
+      outcome = `error: ${error.message}`
+    }
+    return `=== ${label} ===\n${outcome}\n`
+  }
+
+  try {
+    const transcript = [
+      await run('no selection uses default alias'),
+      await run('explicit dev alias', { requestedAlias: 'dev' }),
+      await run('explicit prod with token set', { requestedAlias: 'prod', token: 'sekret' }),
+      await run('prod with unset shell variable', { requestedAlias: 'prod' }),
+      await run('IMP_ENV selects the alias', { impEnv: 'prod', token: 'ci-token' }),
+      await run('flag overrides IMP_ENV', { requestedAlias: 'dev', impEnv: 'prod' }),
+      await run('unknown alias', { requestedAlias: 'staging' }),
+      await run('referenced file missing', { requestedAlias: 'missingFile' }),
+      await run('array file rejected', { requestedAlias: 'array' }),
+      await run('nested value rejected', { requestedAlias: 'nested' }),
+      await run('malformed json rejected', { requestedAlias: 'broken' }),
+      await run('dotenv file parsed', { requestedAlias: 'dotenv', token: 'env-token' }),
+      await run('no environments block returns empty', { config: {} }),
+      await run('environments without default and no selection', {
+        config: { environments: { dev: 'dev.json' } },
+      }),
+      `=== envInjectionScript empty ===\n${JSON.stringify(envInjectionScript({}))}\n`,
+      `=== envInjectionScript with values ===\n${envInjectionScript({ API_URL: 'x', N: 1 })}\n`,
+    ].join('\n')
+    await assertSnapshot('resolve-environment', transcript)
+  } finally {
+    if (savedImpEnv === undefined) Deno.env.delete('IMP_ENV')
+    else Deno.env.set('IMP_ENV', savedImpEnv)
+    Deno.env.delete('IMP_TEST_TOKEN')
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('imp build and start with environments', async (t) => {
+  const dir = await Deno.makeTempDir()
+  await Deno.writeTextFile(
+    join(dir, 'index.html'),
+    '<!doctype html>\n<html lang="en">\n<head>\n<title>env app</title>\n</head>\n<body>\n<div id="app"></div>\n<script type="module" src="/app.js"></script>\n</body>\n</html>\n',
+  )
+  await Deno.writeTextFile(
+    join(dir, 'app.js'),
+    "import { env } from 'imp'\nexport const apiUrl = env.API_URL\n",
+  )
+  await Deno.mkdir(join(dir, 'env'))
+  await Deno.writeTextFile(
+    join(dir, 'env', 'dev.json'),
+    JSON.stringify({ API_URL: 'https://dev.example.com', FEATURE_ANALYTICS: false }, null, 2),
+  )
+  await Deno.writeTextFile(
+    join(dir, 'env', 'prod.json'),
+    JSON.stringify({ API_URL: 'https://api.example.com', TOKEN: '$env.IMP_DEMO_TOKEN' }, null, 2),
+  )
+  const writeImpJson = (config) =>
+    Deno.writeTextFile(join(dir, 'imp.json'), JSON.stringify(config, null, 2) + '\n')
+  await writeImpJson({
+    environments: { dev: 'env/dev.json', prod: 'env/prod.json', default: 'env/dev.json' },
+  })
+
+  const savedToken = Deno.env.get('IMP_DEMO_TOKEN')
+  const savedImpEnv = Deno.env.get('IMP_ENV')
+  Deno.env.delete('IMP_ENV')
+
+  const mask = (text) => text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+  const envLine = (html) => html.match(/globalThis\.__IMP_ENV__ = [^<]*/)?.[0] ?? '(none injected)'
+
+  try {
+    await t.step('build-default-env', async () => {
+      Deno.env.delete('IMP_DEMO_TOKEN')
+      const result = await runImp(['build'], dir)
+      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      const envFileCopied = await Deno.stat(join(dir, 'dist', 'env', 'dev.json'))
+        .then(() => true).catch(() => false)
+      await assertSnapshot(
+        'env-build-default',
+        `${mask(commandTranscript('imp build  (cwd: <tmp>)', result))}\n${
+          section('injected env', envLine(html))
+        }\n\n[env file copied into dist: ${envFileCopied}]\n`,
+      )
+    })
+
+    await t.step('build-selected-env-with-secret', async () => {
+      Deno.env.set('IMP_DEMO_TOKEN', 'prod-secret')
+      const result = await runImp(['build', '--env', 'prod'], dir)
+      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      await assertSnapshot(
+        'env-build-selected',
+        `${mask(commandTranscript('imp build --env prod  (cwd: <tmp>)', result))}\n${
+          section('injected env', envLine(html))
+        }\n`,
+      )
+    })
+
+    await t.step('build-missing-shell-variable', async () => {
+      Deno.env.delete('IMP_DEMO_TOKEN')
+      const result = await runImp(['build', '--env', 'prod'], dir)
+      await assertSnapshot(
+        'env-build-missing-variable',
+        mask(commandTranscript('imp build --env prod  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('build-unknown-alias', async () => {
+      const result = await runImp(['build', '--env', 'staging'], dir)
+      await assertSnapshot(
+        'env-build-unknown-alias',
+        mask(commandTranscript('imp build --env staging  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('build-invalid-environments-config', async () => {
+      await writeImpJson({ environments: 5 })
+      const result = await runImp(['build'], dir)
+      await writeImpJson({
+        environments: { dev: 'env/dev.json', prod: 'env/prod.json', default: 'env/dev.json' },
+      })
+      await assertSnapshot(
+        'env-build-invalid-config',
+        mask(commandTranscript('imp build  (cwd: <tmp>)', result)),
+      )
+    })
+
+    await t.step('start-injects-selected-env', async () => {
+      const server = await startServer(dir, ['--env', 'dev'])
+      try {
+        const response = await fetch(`http://127.0.0.1:${server.port}/`)
+        const html = await response.text()
+        await assertSnapshot('env-start-injected', `${section('injected env', envLine(html))}\n`)
+      } finally {
+        await server.stop()
+      }
+    })
+  } finally {
+    if (savedToken === undefined) Deno.env.delete('IMP_DEMO_TOKEN')
+    else Deno.env.set('IMP_DEMO_TOKEN', savedToken)
+    if (savedImpEnv === undefined) Deno.env.delete('IMP_ENV')
+    else Deno.env.set('IMP_ENV', savedImpEnv)
+    await Deno.remove(dir, { recursive: true })
+  }
 })
 
 Deno.test('bundleDependency keeps bare imp imports external', async () => {

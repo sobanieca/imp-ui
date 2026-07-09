@@ -1,0 +1,8 @@
+$ imp build --env prod  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] environment 'prod' — key 'TOKEN' references shell variable 'IMP_DEMO_TOKEN', which is not set

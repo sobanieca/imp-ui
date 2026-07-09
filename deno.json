@@ -3,9 +3,12 @@
   "tasks": {
     "imp": "deno run -A cli/src/main.js",
     "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
-    "compile": "deno run -A tools/download_fmt_plugins.js && deno run -A tools/prebundle_npm_deps.js && deno compile -A --include cli/src --include lib/src --include THIRD_PARTY_LICENSES.md -o imp cli/src/main.js",
-    "test": "deno task compile && deno test -A cli/test/cli_test.js",
-    "test:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update"
+    "compile": "deno run -A tools/compile.js",
+    "test": "deno task test:lib && deno task test:lib:e2e && deno task test:cli",
+    "test:cli": "deno task compile && deno test -A cli/test/cli_test.js",
+    "test:cli:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update",
+    "test:lib": "deno task compile && cd lib/test && ../../imp test --unit",
+    "test:lib:e2e": "deno task compile && cd lib/test && ../../imp test --e2e"
   },
   "imports": {
     "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",

@@ -1,0 +1,13 @@
+$ imp build --env prod  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built index.html → dist/
+  app.js (<size>)
+  index.html (<size>)
+
+--- stderr ---
+(empty)
+
+--- injected env ---
+globalThis.__IMP_ENV__ = {"API_URL":"https://api.example.com","TOKEN":"prod-secret"}

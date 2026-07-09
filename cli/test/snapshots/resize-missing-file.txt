@@ -1,0 +1,8 @@
+$ imp resize missing.png -w 100  (cwd: test/fixtures/resize)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] image not found: missing.png

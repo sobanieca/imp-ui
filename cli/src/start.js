@@ -1,8 +1,10 @@
 import { basename, dirname, extname, fromFileUrl, join, normalize, resolve } from '@std/path'
 import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
 import { loadImpConfig } from './config.js'
+import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { dim, green, red } from './colors.js'
-import { logger } from './logger.js'
+import { addLogSink, logger } from './logger.js'
+import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev_log.js'
 import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './pwa.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
@@ -55,7 +57,7 @@ function dependencyImports(dependencies) {
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
-function buildHeadInjection(dependencies, pwa) {
+function buildHeadInjection(dependencies, pwa, env) {
   const importMap = { imports: { imp: '/@imp/imp.js', ...dependencyImports(dependencies) } }
   const pwaTags = pwa
     ? '\n' + pwaHeadTags({
@@ -64,7 +66,8 @@ function buildHeadInjection(dependencies, pwa) {
       appleTouchHref: DEV_ICON_PREFIX + APPLE_TOUCH_ICON,
     })
     : ''
-  return `<script>${CLIENT_JS}</script>\n<script type="importmap">${
+  const envTag = envInjectionScript(env)
+  return `<script>${CLIENT_JS}</script>\n${envTag ? envTag + '\n' : ''}<script type="importmap">${
     JSON.stringify(importMap)
   }</script>${pwaTags}`
 }
@@ -109,13 +112,15 @@ async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
   return new Response(bytes, { headers: { 'content-type': type } })
 }
 
-export async function loadApp(entryPath) {
+export async function loadApp(entryPath, { envAlias = null } = {}) {
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
   const pwa = imp.pwa ?? null
-  const headInjection = buildHeadInjection(dependencies, pwa)
+  const env = await resolveEnvironment({ root, config: imp, requestedAlias: envAlias })
+  const headInjection = buildHeadInjection(dependencies, pwa, env)
+  const maxLogEntries = imp.maxLogEntries ?? DEFAULT_MAX_LOG_ENTRIES
   const missingDependencies = []
   for (const alias of Object.keys(dependencies)) {
     try {
@@ -124,7 +129,7 @@ export async function loadApp(entryPath) {
       missingDependencies.push(alias)
     }
   }
-  return { root, entryName, headInjection, missingDependencies, pwa }
+  return { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries }
 }
 
 export function createRequestHandler({ root, entryName, headInjection, clients, pwa = null }) {
@@ -198,7 +203,7 @@ export function createRequestHandler({ root, entryName, headInjection, clients, 
   }
 }
 
-export async function start({ entry = 'index.html', port = 4507 } = {}) {
+export async function start({ entry = 'index.html', port = 4507, env = null } = {}) {
   const entryPath = resolve(entry)
   let entryStat
   try {
@@ -212,8 +217,14 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
     Deno.exit(1)
   }
 
-  const { root, entryName, headInjection, missingDependencies, pwa } = await loadApp(entryPath)
+  const { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries } = await loadApp(
+    entryPath,
+    { envAlias: env },
+  )
   const clients = new Set()
+
+  const devLog = await createDevLog({ root, maxEntries: maxLogEntries })
+  const removeLogSink = addLogSink(devLog.write)
 
   for (const alias of missingDependencies) {
     logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
@@ -232,7 +243,7 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
   ;(async () => {
     let timer = null
     for await (const event of Deno.watchFs(root)) {
-      if (event.paths.every((p) => /[/\\](\.git|node_modules|dist)[/\\]/.test(p))) continue
+      if (event.paths.every((p) => /[/\\](\.git|node_modules|dist|\.imp)[/\\]/.test(p))) continue
       clearTimeout(timer)
       timer = setTimeout(() => {
         logger.debug('change detected → reload')
@@ -246,9 +257,15 @@ export async function start({ entry = 'index.html', port = 4507 } = {}) {
     onListen: ({ port }) => {
       logger.info(`imp start serving ${entryName} from ${root}`)
       console.log(`  → http://localhost:${port}/`)
+      console.log(dim(`  logs → ${devLog.path}`))
       console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
     },
   }, createRequestHandler({ root, entryName, headInjection, clients, pwa }))
 
-  return server.finished
+  try {
+    await server.finished
+  } finally {
+    removeLogSink()
+    await devLog.close()
+  }
 }

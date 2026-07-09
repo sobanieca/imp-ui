@@ -1,0 +1,8 @@
+$ imp resize hero.webp -w 100  (cwd: test/fixtures/resize)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] .webp images are not yet supported — imp resize currently handles .png and .jpg

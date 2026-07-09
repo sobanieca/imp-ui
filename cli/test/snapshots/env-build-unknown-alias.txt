@@ -1,0 +1,8 @@
+$ imp build --env staging  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] unknown environment 'staging' — defined environments: dev, prod, default

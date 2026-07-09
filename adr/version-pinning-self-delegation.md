@@ -50,6 +50,15 @@ shims, no PATH manipulation: the launcher logic ships inside every binary.
   entirely, so developing imp inside a pinned project is not maddening.
 - **The store lives under `~/.imp/`.** Cached versions (`~/.imp/versions/<version>/imp`) and the
   update-check timestamp live per-user, never inside a project (`vendored-dependencies.md`).
+- **Usage tracking and pruning.** Each cached version records when it was last run in a
+  `~/.imp/versions/<version>/lastUsed` marker (written on every delegation and every direct run of a
+  cached binary; a missing marker falls back to the binary's file timestamp). A version is
+  considered stale once it has not run for 30 days. Because the cache only grows — large binaries
+  accumulate as projects pin and update — imp surfaces stale versions whenever it downloads a new
+  one: the freshly installed version is exempt, and if any others are stale it prints a one-line
+  notice suggesting `imp prune`. **`imp prune`** deletes every stale version and reports the space
+  freed; it never removes the version currently running, and any pruned version is transparently
+  re-downloaded if pinned again, so pruning is always safe.
 
 ## Consequences
 

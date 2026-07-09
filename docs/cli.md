@@ -52,9 +52,14 @@ imp test  <file>                      run one test file: *.test.js unit in-proce
                                       *.spec.js e2e in a real browser
 imp test  --unit | --e2e              run every file of that level, each in its own
                                       process, in parallel (--jobs <n> caps concurrency)
+imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
+           [--out <path>] [--stretch]  keeping aspect ratio unless --stretch is given
+                                      (neither -w nor -h: report current dimensions
+                                      and size, plus a recommended resize command)
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
 imp update [version] [--check]        update to the latest release and pin it in imp.json
+imp prune                             delete cached imp versions unused for 30+ days
 imp licenses                          print third-party license notices for bundled tools
 imp --version                         print the version this binary runs
 imp help                              show usage
@@ -109,11 +114,17 @@ based on where you are.
   optional `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and `scope`. It
   drives the manifest and icons injected automatically in `imp start`, and the full offline PWA
   emitted by `imp build --pwa`. See **Progressive Web App** under `imp build` below.
+- **`environments`** — named configuration sets you select with `--env`, each mapping an alias to a
+  JSON file of values. Lets the same source ship against a different API URL or feature flags per
+  target without code edits. See **Environments** below.
 - **`maxFileSize`** — the largest size, in bytes, any single committed file may reach before
   `imp lint` errors and `imp install` warns. Defaults to 200 kB (`204800`). See `imp lint` and
   `imp install` below.
 - **`maxFileSizeIgnore`** — an array of repo-relative paths exempt from `maxFileSize`; a file (or
   everything under a listed folder) never triggers the size check.
+- **`maxLogEntries`** — how many of the most recent entries `imp start` keeps in its dev log file
+  (`.imp/dev.log`). Defaults to 4000; older entries roll off once the limit is reached. See
+  `imp start` below.
 
 That is the whole footprint: your repository contains your code, at most one `imp.json`, and the
 `dependencies/` folder holding your vendored dependencies — all of it source you commit. imp writes
@@ -124,6 +135,80 @@ Instead of a lock file, reproducibility comes from what is committed: `imp.json`
 (`npm:mitt@3.0.1`, never `npm:mitt@3`) and the committed bundle in `dependencies/` is the frozen
 result of resolving that pin. `imp lint` enforces the model — see the `exact-dependency-versions`
 rule under `imp lint`.
+
+### Environments — per-target config
+
+When the same app needs different configuration per target — a different API URL in dev and prod, a
+feature flag on in staging — declare named environments in `imp.json` and select one when you serve
+or build. Each alias points at a file holding that environment's values:
+
+```json
+{
+  "environments": {
+    "dev": "env/dev.json",
+    "prod": "env/prod.json",
+    "default": "env/dev.json"
+  }
+}
+```
+
+Each referenced file may be either JSON or a `.env` file. A JSON file is a flat object of string,
+number, and boolean values:
+
+```json
+{
+  "API_URL": "https://api.example.com",
+  "STRIPE_PUBLISHABLE_KEY": "$env.STRIPE_PUBLISHABLE_KEY",
+  "FEATURE_ANALYTICS": true
+}
+```
+
+A `.env` file (any path named `.env`, ending in `.env`, or starting with `.env.`) uses the familiar
+`KEY=VALUE` syntax, with `#` comments, an optional `export` prefix, and single- or double-quoted
+values. Every value in a `.env` file is a string:
+
+```
+API_URL=https://api.example.com
+STRIPE_PUBLISHABLE_KEY=$env.STRIPE_PUBLISHABLE_KEY
+# analytics stays a string here
+FEATURE_ANALYTICS=true
+```
+
+A value written as `$env.NAME` — in either format — is read from the shell environment when you
+serve or build; every other string is a literal. Referencing a shell variable that is not set stops
+the command with an error naming the environment, the key, and the missing variable — a
+half-configured build never starts. Keep files that hold `$env.` secrets or per-developer values out
+of the repo by adding them to `.gitignore` (a fresh `imp init` project already ignores `.env`
+files).
+
+Select an environment with `--env` on `imp start` or `imp build`:
+
+```
+imp start --env dev
+imp build --env prod
+```
+
+With no `--env`, imp uses an alias literally named `default` if you defined one, or the `IMP_ENV`
+shell variable if it is set (handy in CI, where `--env` always takes precedence over it); otherwise
+it serves and builds with no environment at all. An alias you never declared stops the command and
+lists the ones you did.
+
+Read the selected values in your app through the `env` object exported by imp — the same code works
+in development and production:
+
+```js
+import { env } from 'imp'
+
+fetch(`${env.API_URL}/users`)
+```
+
+`env` is a frozen object; it is empty when no environment was selected.
+
+**Environment values are not secret.** Everything you put in an environment ships to the browser and
+is fully readable by any visitor — `$env.` only keeps a value out of your repository, it does not
+make it private. Put only publishable keys and public configuration here (the same rule other
+frontend toolchains express with their `VITE_` / `NEXT_PUBLIC_` prefixes); never a server-side
+secret or a private API key.
 
 ## `imp start`
 
@@ -157,8 +242,27 @@ imp library by path (injection is skipped for documents that already contain it)
   — `fetch`, `XMLHttpRequest`, images, scripts, navigations — and reports each as
   `[net] METHOD url → status ms`. Requests under `/@imp/` are passed through untouched.
 
+Everything `imp start` prints — the browser console and error telemetry, the network telemetry, and
+its own status lines — is **also written to a log file** at `.imp/dev.log`, one entry per line, so
+you don't have to keep the terminal in view to see what happened. This is what makes the dev session
+legible to an AI coding agent: while you click through the app, the agent can `grep .imp/dev.log`
+for a `[browser:error]`, a failed request, or any message it expects, instead of needing to watch
+the terminal. The file is truncated each time you start the server, so it always reflects the
+current session, and it is capped: only the most recent entries are kept (4000 by default), with
+older ones rolling off as new ones arrive, so a long session never grows the file without bound.
+Raise or lower the cap with **`maxLogEntries`** in `imp.json`:
+
+```json
+{
+  "maxLogEntries": 10000
+}
+```
+
+The path is `.imp/dev.log` under the served project — `.imp/` is imp's per-project working directory
+and should be git-ignored (a fresh `imp init` project already ignores it).
+
 Live reload is included: file changes under the served directory trigger a browser reload (changes
-inside `.git/`, `node_modules/`, and `dist/` are ignored).
+inside `.git/`, `node_modules/`, `dist/`, and imp's own `.imp/` working directory are ignored).
 
 Static files are served with correct content types for common web assets. Requesting a directory
 redirects to its trailing-slash URL and serves the `index.html` inside it; paths outside the served
@@ -281,9 +385,11 @@ Describe the app once, in a `pwa` block in `imp.json`:
 ```
 
 Only `name` and `icon` are required. `icon` points at a **single** high-resolution source image — an
-SVG (preferred, it scales to any size cleanly) or a large PNG — and imp scales it to every icon the
-manifest and the platforms need, so there is no hand-maintained icon set to keep in sync. The build
-then, in one step:
+SVG (preferred, it scales to any size cleanly) or a large PNG or JPEG — and imp scales it to every
+icon the manifest and the platforms need, so there is no hand-maintained icon set to keep in sync.
+Raster sources should be at least 512px on their longest edge — the largest generated icon is
+512×512, and a smaller source has to be upscaled to reach it, which costs sharpness; the build
+prints a warning when that happens. The build then, in one step:
 
 - **Generates the icon set** — 192px and 512px app icons, a 512px maskable icon padded to survive
   platform masking, and a 180px apple-touch-icon — regenerated from the source on every build.
@@ -319,6 +425,15 @@ colors while you work. The **offline** service worker, though, is only ever gene
 dev service worker reports requests and does no caching), and offline behavior is something you get
 in the production build, where it belongs. That split is deliberate — you never want a caching
 worker fighting live reload while you edit.
+
+**One caveat when you preview a production build.** A service worker controls a whole origin, and
+both the dev telemetry worker and the offline PWA worker claim root scope — so if you serve a
+`imp build --pwa` output and then run `imp start` on the _same host and port_, the offline worker
+installed by the production preview can linger and keep serving its cache, which looks like stale
+content or broken live reload in the dev server. It resolves itself once the dev worker takes over,
+but the production caches persist until then. If you hit it, open your browser's dev tools →
+Application → Service Workers, unregister the worker, and clear site data (or just preview
+production builds on a different port than `imp start`).
 
 ## `imp install` and `imp uninstall`
 
@@ -391,6 +506,44 @@ double-check its behaviour and look and feel. Recording is off by default; a `te
 
 See **[Testing](testing.md)** for the full runner API, the assertion reference, browser resolution,
 recording, and the CI parallelization pattern.
+
+## `imp resize`
+
+```
+imp resize <image> [-w <px>] [-h <px>] [--out <path>] [--stretch]
+```
+
+A convenience utility for the common case that bloats a repository: a committed image checked in far
+larger than the page ever displays it. `imp resize` downscales it in place — it is not an image
+editor, and anything beyond a straight resize is intentionally out of scope.
+
+The aspect ratio is always preserved unless you explicitly opt out. How the width and height flags
+combine:
+
+- **One of `-w` / `-h`** — resize to that dimension and compute the other to preserve the original
+  aspect ratio.
+- **Both `-w` and `-h`** — scale the image, keeping its aspect ratio, to the largest size that fits
+  within that width × height box.
+- **Both plus `--stretch`** — resize to exactly that width × height, even if it distorts the
+  picture. You asked for a specific size and accept the stretch.
+- **Neither** — inspect mode; nothing is written. imp reports the image's current dimensions and
+  byte size, and if the asset is oversized it also prints a ready-to-copy `imp resize` command that
+  would bring it down to a sensible size. This is the natural first step: check what you have, then
+  decide what to resize to — and it doubles as a quick way to check any PNG or JPEG's dimensions
+  from the terminal.
+
+By default the file is overwritten — that fits the "shrink a committed asset" purpose. Pass
+`--out <path>` to write the result to a new file and leave the original untouched. Either way imp
+reports the before and after dimensions and byte size.
+
+Resizing **only ever downscales pixels, with minimal compression** — quality is prioritized over
+squeezing out the last byte. A request larger than the source is clamped to the source, so the
+command never upscales. If you need fine-grained control over compression or quality, reach for a
+dedicated image tool; imp keeps this surface deliberately small.
+
+**Scope.** Static **PNG** and **JPEG** are supported today. WebP, GIF, and animated images (animated
+PNG included) are not yet handled — imp detects them and stops with a clear message rather than
+silently dropping frames or changing format — and support may broaden later.
 
 ## `imp lint`
 
@@ -487,6 +640,24 @@ Downloaded versions are cached per-user under `~/.imp/` (each is verified agains
 checksum before it is stored), shared across every project you work on. Set `IMP_HOME` to cache them
 somewhere else — useful in CI or containers where the home directory isn't writable, or to keep the
 binaries off your home volume.
+
+## `imp prune` — reclaim disk space
+
+```
+imp prune
+```
+
+Every version imp downloads stays cached so switching between pinned projects never re-downloads,
+but binaries are large and the cache only grows. imp records when each cached version was last run,
+and whenever it downloads a new one it points out any that haven't run in over 30 days:
+
+```
+2 unused imp versions (1.1.0, 1.2.3) have not run in over 30 days — run 'imp prune' to reclaim disk space
+```
+
+`imp prune` deletes exactly those stale versions — anything not run in the last 30 days — and
+reports how much space it freed. The version you are currently running is never removed, and any
+version you pin again later is simply re-downloaded on demand, so pruning is always safe.
 
 ## `imp licenses`
 

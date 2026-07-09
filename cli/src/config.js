@@ -89,9 +89,14 @@ export async function loadImpConfig(startDir) {
       `invalid ${name} — 'imports' has been replaced by 'dependencies'; run 'imp install <package>' to declare each dependency`,
     )
   }
-  for (const key of ['dependencies', 'fmt', 'lint', 'test', 'pwa']) {
+  for (const key of ['dependencies', 'fmt', 'lint', 'test', 'pwa', 'environments']) {
     if (config[key] !== undefined && !isPlainObject(config[key])) {
       throw new Error(`invalid ${name} — '${key}' must be an object`)
+    }
+  }
+  for (const [alias, path] of Object.entries(config.environments ?? {})) {
+    if (typeof path !== 'string') {
+      throw new Error(`invalid ${name} — environment '${alias}' must be a string path`)
     }
   }
   if (config.pwa !== undefined) {
@@ -171,6 +176,12 @@ export async function loadImpConfig(startDir) {
       config.maxFileSizeIgnore.some((entry) => typeof entry !== 'string'))
   ) {
     throw new Error(`invalid ${name} — 'maxFileSizeIgnore' must be an array of strings`)
+  }
+  if (
+    config.maxLogEntries !== undefined &&
+    (!Number.isInteger(config.maxLogEntries) || config.maxLogEntries <= 0)
+  ) {
+    throw new Error(`invalid ${name} — 'maxLogEntries' must be a positive integer`)
   }
   return config
 }

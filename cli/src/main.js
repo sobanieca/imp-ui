@@ -1,13 +1,15 @@
 #!/usr/bin/env -S deno run -A
 import { VERSION } from './version.js'
 import { projectRoot } from './config.js'
-import { maybeDelegate, notifyUpdate, update } from './version_manager.js'
+import { maybeDelegate, notifyUpdate, prune, update } from './version_manager.js'
 
 const HELP = `imp — buildless UI toolkit
 
 USAGE
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
-                                        live reload, console + network → terminal
+                     [--env <name>]     live reload, console + network → terminal
+                                        (--env selects an "environments" entry
+                                        from imp.json, exposed as import { env })
   imp build [file.html] [--outdir dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -15,6 +17,7 @@ USAGE
                      [--pwa]            also emit a PWA: web manifest, icon set,
                                         and an offline service worker (needs a
                                         "pwa" block in imp.json)
+                     [--env <name>]     select an "environments" entry from imp.json
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -27,10 +30,17 @@ USAGE
                                         --list prints the selected files as JSON ·
                                         --screenshots <dir> saves a screenshot per failed e2e test ·
                                         --video <dir> records each e2e spec as an animated GIF)
+  imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
+                     [--out <path>]     keeping aspect ratio (-w & -h: fit within that box ·
+                     [--stretch]        --stretch: exact -w×-h, may distort ·
+                                        neither -w nor -h: report current dimensions and
+                                        size, plus a recommended resize command ·
+                                        --out writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
   imp update [version] [--check]        update to the latest release (or a given version) and
                                         pin it in imp.json (--check only reports if one is available)
+  imp prune                             delete cached imp versions unused for 30+ days
   imp licenses                          print third-party license notices for the bundled tools
   imp --version                         print the imp version this binary runs
 `
@@ -67,12 +77,17 @@ try {
       })
       break
     }
+    case 'prune': {
+      await prune()
+      break
+    }
     case 'start': {
       const { start } = await import('./start.js')
       notifyUpdate(rest)
       await start({
         entry: positional(rest)[0] ?? 'index.html',
         port: Number(flag(rest, 'port', 4507)),
+        env: flag(rest, 'env', null),
       })
       break
     }
@@ -92,6 +107,7 @@ try {
         entry: positional(rest)[0] ?? 'index.html',
         outdir: flag(rest, 'outdir', 'dist'),
         pwa: rest.includes('--pwa'),
+        env: flag(rest, 'env', null),
       })
       break
     }
@@ -132,6 +148,34 @@ try {
           videoDir: flag(rest, 'video', null),
         }),
       )
+      break
+    }
+    case 'resize': {
+      const { resize } = await import('./resize.js')
+      const valued = new Set(['-w', '--width', '-h', '--height', '--out'])
+      const image = rest.find((arg, index) => {
+        if (arg.startsWith('-')) return false
+        const previous = rest[index - 1]
+        return !(previous && valued.has(previous))
+      }) ?? null
+      const readDim = (short, long) => {
+        const index = rest.findIndex((arg) => arg === short || arg === long)
+        if (index === -1) return null
+        const raw = rest[index + 1]
+        const value = Number(raw)
+        if (!raw || !Number.isInteger(value) || value <= 0) {
+          throw new Error(`${long} must be a positive integer, got '${raw ?? ''}'`)
+        }
+        return value
+      }
+      await resize({
+        root: await projectRoot(Deno.cwd()),
+        image,
+        width: readDim('-w', '--width'),
+        height: readDim('-h', '--height'),
+        out: flag(rest, 'out', null),
+        stretch: rest.includes('--stretch'),
+      })
       break
     }
     case 'licenses': {

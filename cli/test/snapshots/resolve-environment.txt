@@ -1,0 +1,47 @@
+=== no selection uses default alias ===
+ok: {"API_URL":"https://dev.example.com","FEATURE":false}
+
+=== explicit dev alias ===
+ok: {"API_URL":"https://dev.example.com","FEATURE":false}
+
+=== explicit prod with token set ===
+ok: {"API_URL":"https://api.example.com","TOKEN":"sekret","COUNT":3}
+
+=== prod with unset shell variable ===
+error: environment 'prod' — key 'TOKEN' references shell variable 'IMP_TEST_TOKEN', which is not set
+
+=== IMP_ENV selects the alias ===
+ok: {"API_URL":"https://api.example.com","TOKEN":"ci-token","COUNT":3}
+
+=== flag overrides IMP_ENV ===
+ok: {"API_URL":"https://dev.example.com","FEATURE":false}
+
+=== unknown alias ===
+error: unknown environment 'staging' — defined environments: dev, prod, default, nested, array, broken, missingFile, dotenv
+
+=== referenced file missing ===
+error: environment 'missingFile' — file not found: nope.json
+
+=== array file rejected ===
+error: environment 'array' — array.json must be a flat JSON object of values
+
+=== nested value rejected ===
+error: environment 'nested' — key 'obj' must be a string, number, or boolean
+
+=== malformed json rejected ===
+error: environment 'broken' — invalid JSON in broken.json: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+
+=== dotenv file parsed ===
+ok: {"API_URL":"https://api.example.com","TOKEN":"env-token","GREETING":"hello world","RAW":"keep $env.NOT_EXPANDED literal","FEATURE":"true"}
+
+=== no environments block returns empty ===
+ok: {}
+
+=== environments without default and no selection ===
+ok: {}
+
+=== envInjectionScript empty ===
+""
+
+=== envInjectionScript with values ===
+<script>globalThis.__IMP_ENV__ = {"API_URL":"x","N":1}</script>

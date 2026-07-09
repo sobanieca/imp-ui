@@ -1,0 +1,8 @@
+$ imp resize  (cwd: test/fixtures/resize)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] usage: imp resize <image> [-w <px>] [-h <px>] [--out <path>] [--stretch]

@@ -1,0 +1,2 @@
+--- injected env ---
+globalThis.__IMP_ENV__ = {"API_URL":"https://dev.example.com","FEATURE_ANALYTICS":false}

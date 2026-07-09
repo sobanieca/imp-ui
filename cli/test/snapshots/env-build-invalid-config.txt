@@ -1,0 +1,8 @@
+$ imp build  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] invalid imp.json — 'environments' must be an object

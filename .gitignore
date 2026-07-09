@@ -148,6 +148,7 @@ cli/src/vendor/
 
 # compiled binary (deno task compile)
 /imp
+/imp.exe
 
-# imp test artifacts (failure screenshots, recorded videos)
+# imp working directory (dev server logs, test failure screenshots, recorded videos)
 .imp/

@@ -1,8 +1,6 @@
-import { encodeBase64 } from '@std/encoding/base64'
 import { extname, isAbsolute, join } from '@std/path'
-import { initWasm, Resvg } from '@resvg/resvg-wasm'
-
-const RESVG_WASM_URL = import.meta.resolve('@resvg/resvg-wasm/index_bg.wasm')
+import { composeImage, dataUri, IMAGE_MEDIA_TYPES, initResvg, rasterDimensions } from './image.js'
+import { logger } from './logger.js'
 
 const DEFAULT_BACKGROUND = '#ffffff'
 const DEFAULT_THEME = '#ffffff'
@@ -24,48 +22,37 @@ const MANIFEST_ICONS = [
 
 export const APPLE_TOUCH_ICON = 'icons/apple-touch-icon.png'
 
-const IMAGE_MEDIA_TYPES = { '.svg': 'image/svg+xml', '.png': 'image/png' }
-
 const resolveIcon = (root, icon) => isAbsolute(icon) ? icon : join(root, icon)
 
-let resvgReady = null
-function initResvg() {
-  if (!resvgReady) {
-    resvgReady = (async () => {
-      await initWasm(await WebAssembly.compile(await Deno.readFile(new URL(RESVG_WASM_URL))))
-    })()
-  }
-  return resvgReady
-}
+const renderIcon = (source, { size, background = null, padding = 0 }) =>
+  composeImage(source, { width: size, height: size, fit: 'contain', background, padding }).asPng()
 
-async function sourceDataUri(iconPath) {
-  const mediaType = IMAGE_MEDIA_TYPES[extname(iconPath).toLowerCase()]
-  if (!mediaType) {
-    throw new Error(`pwa icon must be an .svg or .png file, got '${iconPath}'`)
-  }
-  return `data:${mediaType};base64,${encodeBase64(await Deno.readFile(iconPath))}`
-}
-
-function renderIcon(dataUri, { size, background = null, padding = 0 }) {
-  const inset = Math.round(size * padding)
-  const drawn = size - inset * 2
-  const backgroundRect = background
-    ? `<rect width="${size}" height="${size}" fill="${background}"/>`
-    : ''
-  const wrapper =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">${backgroundRect}` +
-    `<image href="${dataUri}" x="${inset}" y="${inset}" width="${drawn}" height="${drawn}" ` +
-    `preserveAspectRatio="xMidYMid meet"/></svg>`
-  return new Resvg(wrapper, { fitTo: { mode: 'width', value: size } }).render().asPng()
+function warnIfUpscaling(icon, mediaType, bytes) {
+  if (mediaType === 'image/svg+xml') return
+  const source = rasterDimensions(mediaType, bytes)
+  const largestTarget = Math.max(...ICON_TARGETS.map((target) => target.size))
+  if (Math.max(source.width, source.height) >= largestTarget) return
+  logger.warn(
+    `pwa icon ${icon} is ${source.width}×${source.height} — icons up to ` +
+      `${largestTarget}×${largestTarget} will be upscaled, so some quality loss is expected; ` +
+      `use an SVG or a source at least ${largestTarget}px on its longest edge for sharp icons`,
+  )
 }
 
 export async function renderIconSet({ root, pwa }) {
   await initResvg()
-  const dataUri = await sourceDataUri(resolveIcon(root, pwa.icon))
+  const iconPath = resolveIcon(root, pwa.icon)
+  const mediaType = IMAGE_MEDIA_TYPES[extname(iconPath).toLowerCase()]
+  if (!mediaType) {
+    throw new Error(`pwa icon must be an .svg, .png, or .jpg file, got '${iconPath}'`)
+  }
+  const bytes = await Deno.readFile(iconPath)
+  warnIfUpscaling(pwa.icon, mediaType, bytes)
+  const source = dataUri(mediaType, bytes)
   const background = pwa.backgroundColor ?? DEFAULT_BACKGROUND
   return ICON_TARGETS.map((target) => ({
     file: target.file,
-    bytes: renderIcon(dataUri, {
+    bytes: renderIcon(source, {
       size: target.size,
       background: target.opaque ? background : null,
       padding: target.padding ?? 0,
@@ -173,7 +160,9 @@ export async function validatePwaBuild(pwa, isHtmlEntry, root) {
   }
   const iconPath = resolveIcon(root, pwa.icon)
   if (!IMAGE_MEDIA_TYPES[extname(iconPath).toLowerCase()]) {
-    throw new Error(`invalid imp.json — 'pwa.icon' must be an .svg or .png file, got '${pwa.icon}'`)
+    throw new Error(
+      `invalid imp.json — 'pwa.icon' must be an .svg, .png, or .jpg file, got '${pwa.icon}'`,
+    )
   }
   try {
     await Deno.stat(iconPath)

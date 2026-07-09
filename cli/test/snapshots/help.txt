@@ -6,7 +6,9 @@ imp — buildless UI toolkit
 
 USAGE
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
-                                        live reload, console + network → terminal
+                     [--env <name>]     live reload, console + network → terminal
+                                        (--env selects an "environments" entry
+                                        from imp.json, exposed as import { env })
   imp build [file.html] [--outdir dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -14,6 +16,7 @@ USAGE
                      [--pwa]            also emit a PWA: web manifest, icon set,
                                         and an offline service worker (needs a
                                         "pwa" block in imp.json)
+                     [--env <name>]     select an "environments" entry from imp.json
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -26,10 +29,17 @@ USAGE
                                         --list prints the selected files as JSON ·
                                         --screenshots <dir> saves a screenshot per failed e2e test ·
                                         --video <dir> records each e2e spec as an animated GIF)
+  imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
+                     [--out <path>]     keeping aspect ratio (-w & -h: fit within that box ·
+                     [--stretch]        --stretch: exact -w×-h, may distort ·
+                                        neither -w nor -h: report current dimensions and
+                                        size, plus a recommended resize command ·
+                                        --out writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
   imp update [version] [--check]        update to the latest release (or a given version) and
                                         pin it in imp.json (--check only reports if one is available)
+  imp prune                             delete cached imp versions unused for 30+ days
   imp licenses                          print third-party license notices for the bundled tools
   imp --version                         print the imp version this binary runs
 
