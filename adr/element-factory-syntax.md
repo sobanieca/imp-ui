@@ -17,8 +17,8 @@ DOM is expressed as **JavaScript function calls**:
 - Per-tag shortcuts (`div`, `p`, `button`, … ~80 tags) are thin wrappers over `el`, generated from a
   tag list.
 
-No JSX, no string templates. Components are just lowercase functions that call these factories and
-return nodes.
+No JSX, no string templates. UI helpers are just lowercase functions that call these factories and
+return nodes; components with a lifecycle wrap the same calls (`web-component-lifecycle.md`).
 
 ## Consequences
 

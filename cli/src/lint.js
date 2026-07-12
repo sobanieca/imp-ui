@@ -11,6 +11,9 @@ const IMP_RULES = {
   'imp/no-capital-component': 'error',
   'imp/exact-dependency-versions': 'error',
   'imp/single-props-object': 'error',
+  'imp/state-name-namespace': 'error',
+  'imp/state-setup-before-await': 'error',
+  'imp/component-name': 'error',
 }
 
 const buildConfig = (userRules, dependencyAliases) => ({

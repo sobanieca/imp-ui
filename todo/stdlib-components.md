@@ -19,8 +19,10 @@ Group components the way the draft does, importable from imp itself (never a thi
 
 ## Conventions (keep from the draft)
 
-- **Components are lowercase functions** (essence #14) — no framework component concept, one naming
-  rule (lint-enforced). Built entirely on the public kernel API, nothing privileged.
+- **Components follow the kernel model** — plain lowercase helper functions for lifeless pieces,
+  `component(name, …)` web components where a lifecycle is needed
+  (`adr/web-component-lifecycle.md`), one naming rule (lint-enforced). Built entirely on the public
+  kernel API, nothing privileged.
 - **Two-way binding by convention:** pass a `signal` as `value`/`checked` and the control reads it
   reactively and writes back on input; pass a plain value for an uncontrolled initial. Extra props
   (`placeholder`, `disabled`, `events`, …) flow through to the underlying element via the existing

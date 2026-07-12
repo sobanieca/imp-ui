@@ -14,8 +14,9 @@ rendering algorithm, and explicitly real DOM with no diffing.
 ## Decision
 
 `el(tag, ...)` and the tag factories return **actual DOM `Node`s**. There is no virtual DOM, no
-diffing, and no reconciliation. A component is a plain function that runs and returns the nodes it
-built; callers may hold the reference and mutate it imperatively.
+diffing, and no reconciliation. UI is composed from plain functions that run and return the nodes
+they built; callers may hold the reference and mutate it imperatively. Components with a lifecycle
+are real custom elements (`web-component-lifecycle.md`) — still actual DOM, still no diffing.
 
 `mount(target, view)` runs `view` once and inserts the resulting nodes. Updates to already-built DOM
 are made by mutating specific nodes/attributes directly — never by re-diffing markup.

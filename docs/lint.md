@@ -66,6 +66,68 @@ error[imp/single-props-object]: multiple props objects passed to 'div' — pass 
 Merge the properties into one object instead. For `el`, the leading tag argument is ignored, so only
 the object literals after it are counted.
 
+### `imp/state-name-namespace`
+
+State names are page-wide, so they must carry a namespace: at least two non-empty dot-separated
+segments, like `myapp.user` (see **[State](state.md)**). The rule checks every `initState`/
+`useState` call whose name is written literally:
+
+```js
+const user = initState('user', { name: 'Ada' })
+```
+
+```
+error[imp/state-name-namespace]: state name 'user' must include a namespace — use dot-separated segments like 'myapp.user'
+ --> src/app.js:1:24
+```
+
+Names built dynamically (a variable, a template with expressions) are not checked statically — the
+same validation then happens at runtime, where a bad name throws.
+
+### `imp/state-setup-before-await`
+
+In an async `onMount`, state setup must happen **before the first `await`** (see
+**[State](state.md)**). Past it, the mounting context is gone: `initState` would create page-wide
+state that outlives the component, and `useState` would no longer see the component's ancestors. The
+rule flags `initState`/`useState` calls placed after an `await` in an async `onMount`:
+
+```js
+const orders = component('my-app-orders', {
+  onMount: async () => {
+    const data = await fetch('/api/orders').then((response) => response.json())
+    const orders = initState('myapp.orders', data)
+    return ul(orders.each((order) => li(order.title), (order) => order.id))
+  },
+})
+```
+
+```
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await it creates page-wide state that outlives the component; do state setup before the first await
+ --> src/orders.js:4:20
+```
+
+Initialize the state with an empty value first, `await` the data, then `set` it in — reads and
+writes are allowed anywhere, only setup is position-sensitive.
+
+### `imp/component-name`
+
+Component names become real element tags, so they must be lowercase with at least one dash, like
+`my-app-profile` (see **[Components](components.md)**) — that is what makes them valid custom
+element names, and the leading segment doubles as your app's namespace. The rule checks every
+`component` call whose name is written literally:
+
+```js
+export const profile = component('profile', { onMount: () => div('…') })
+```
+
+```
+error[imp/component-name]: component name 'profile' must be lowercase with at least one dash — like 'my-app-profile'
+ --> src/profile.js:1:34
+```
+
+A handful of names reserved by the HTML standard (`font-face`, `missing-glyph`, …) are also
+rejected. Dynamically built names are validated at runtime instead, where a bad name throws.
+
 ### `imp/exact-dependency-versions`
 
 Dependencies are vendored: declared under `dependencies` in `imp.json` and bundled into your

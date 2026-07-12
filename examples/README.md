@@ -28,6 +28,9 @@ The `ssr/` example runs its own server instead — see `ssr/README.md`.
 - `spa/admin/` — a small admin backoffice app showing how components compose. Sidebar routing, stat
   cards, a user data table with row actions, an invite form reading values off real node references,
   and a toast feed. Re-renders by calling `mount('#app', ...)` again on each state change.
+- `spa/board/` — a Trello-style todo board demonstrating move semantics: dragging a card to another
+  column is a plain DOM reparent; the card keeps its DOM, input text, and own state while its
+  `useState` bindings rebind to the new column — see `spa/board/README.md` for the demo script.
 - `ssr/` — server-rendered islands. A Hono server renders an e-commerce product page as HTML, then
   the client hydrates three mount points (cart widget, add-to-cart, product reviews) with `mount`.
   Has its own server and run instructions — see `ssr/README.md`.

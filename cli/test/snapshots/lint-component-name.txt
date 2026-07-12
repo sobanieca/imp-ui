@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-component)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/component-name]: component name 'profile' must be lowercase with at least one dash — like 'my-app-profile'
+ --> app.js:3:34
+
+error[imp/component-name]: component name 'Settings-Panel' must be lowercase with at least one dash — like 'my-app-profile'
+ --> app.js:7:35
+
+error[imp/component-name]: component name 'font-face' is reserved by the HTML standard — pick another name
+ --> app.js:11:32
+
+Found 3 problems
+Checked 1 file

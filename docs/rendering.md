@@ -4,15 +4,19 @@ How imp turns element-factory calls into real DOM. imp is buildless: no compile 
 JavaScript ES modules that run directly in the browser. Everything is imported from the bare `imp`
 specifier (mapped automatically by `imp start`).
 
-> Scope: this page covers building DOM from factory calls. Styling, theming, i18n, routing, and web
-> components are not covered here yet.
+> Scope: this page covers building DOM from factory calls. Components with a lifecycle (mount,
+> loading, unmount) are covered in **[Components](components.md)**; styling, theming, i18n, and
+> routing are not covered here yet.
 
 ## Mental model
 
-- A **component** is a lowercase function that returns a real DOM node:
-  `card({ title }) -> div(...)`. No framework component concept, no JSX.
-- `el()` and the tag factories return actual `Node`s. You hold the reference and mutate it with
-  normal DOM APIs — there is no virtual DOM and no diffing.
+- `el()` and the tag factories are **eager**: they return actual `Node`s the moment you call them.
+  You hold the reference and mutate it with normal DOM APIs — there is no virtual DOM and no
+  diffing.
+- Plain helper functions that bundle up elements (`card({ title }) -> div(...)`) are just functions
+  — lowercase, no JSX, no framework concept. When a piece of UI needs a lifecycle or state, promote
+  it to a **component** (`component('my-app-card', …)`, see **[Components](components.md)**); its
+  factory is called the same way.
 - Arguments are dispatched by **type**, not position.
 - Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) — no
   aliases.

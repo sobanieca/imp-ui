@@ -1,7 +1,11 @@
 import { defaultAlias, DEPENDENCY_SCHEME, EXACT_VERSION, parseSpecifier } from './specifiers.js'
 import { TAGS } from '../../lib/src/render.js'
+import { stateNameProblem } from '../../lib/src/state.js'
+import { componentNameProblem } from '../../lib/src/component.js'
 
 const ELEMENT_FACTORIES = new Set(TAGS)
+
+const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
 
 const classifyFactory = (importedName) => {
   if (importedName === 'el') return 'el'
@@ -32,6 +36,59 @@ export const dependencyPinProblem = (specifier) => {
 
 const isRelativeOrUrl = (specifier) =>
   specifier.startsWith('.') || specifier.startsWith('/') || /^[a-zA-Z][\w+.-]*:/.test(specifier)
+
+const literalArgumentName = (argument) => {
+  if (!argument) return { known: true, name: undefined }
+  if (argument.type === 'Literal') return { known: true, name: argument.value }
+  if (argument.type === 'TemplateLiteral' && argument.expressions.length === 0) {
+    return { known: true, name: argument.quasis[0].value.cooked }
+  }
+  return { known: false }
+}
+
+const createLiteralNameRule = (helperNames, nameProblem) => ({
+  create(context) {
+    const helperLocals = new Set()
+    const namespaceLocals = new Set()
+    const calls = []
+
+    const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
+
+    const isHelperCall = (callee) => {
+      if (callee.type === 'Identifier') return helperLocals.has(callee.name)
+      return callee.type === 'MemberExpression' && !callee.computed &&
+        callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
+        callee.property.type === 'Identifier' && helperNames.has(callee.property.name)
+    }
+
+    return {
+      ImportDeclaration(node) {
+        if (node.source.value !== 'imp') return
+        for (const specifier of node.specifiers) {
+          if (specifier.type === 'ImportSpecifier') {
+            if (helperNames.has(importedName(specifier))) {
+              helperLocals.add(specifier.local.name)
+            }
+          } else if (specifier.type === 'ImportNamespaceSpecifier') {
+            namespaceLocals.add(specifier.local.name)
+          }
+        }
+      },
+      CallExpression(node) {
+        calls.push(node)
+      },
+      'Program:exit'() {
+        for (const node of calls) {
+          if (!isHelperCall(node.callee)) continue
+          const { known, name } = literalArgumentName(node.arguments[0])
+          if (!known) continue
+          const problem = nameProblem(name)
+          if (problem) context.report({ node: node.arguments[0] ?? node, message: problem })
+        }
+      },
+    }
+  },
+})
 
 export default {
   rules: {
@@ -118,6 +175,93 @@ export default {
         }
       },
     },
+    'state-name-namespace': createLiteralNameRule(
+      new Set(['initState', 'useState']),
+      stateNameProblem,
+    ),
+    'state-setup-before-await': {
+      create(context) {
+        const helperLocals = new Map()
+        const namespaceLocals = new Set()
+        const functions = []
+        const candidates = []
+
+        const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
+
+        const calledHelper = (callee) => {
+          if (callee.type === 'Identifier') return helperLocals.get(callee.name) ?? null
+          if (
+            callee.type === 'MemberExpression' && !callee.computed &&
+            callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
+            callee.property.type === 'Identifier' &&
+            STATE_SETUP_HELPERS.has(callee.property.name)
+          ) return callee.property.name
+          return null
+        }
+
+        const isAsyncOnMount = (node) =>
+          node.async && node.parent?.type === 'Property' && !node.parent.computed &&
+          node.parent.value === node &&
+          (node.parent.key.name === 'onMount' || node.parent.key.value === 'onMount')
+
+        const enterFunction = (node) =>
+          functions.push({ tracked: isAsyncOnMount(node), firstAwaitEnd: null })
+        const exitFunction = () => functions.pop()
+
+        const markAwait = (position) => {
+          const current = functions.at(-1)
+          if (current && current.firstAwaitEnd === null) current.firstAwaitEnd = position
+        }
+
+        return {
+          ImportDeclaration(node) {
+            if (node.source.value !== 'imp') return
+            for (const specifier of node.specifiers) {
+              if (specifier.type === 'ImportSpecifier') {
+                if (STATE_SETUP_HELPERS.has(importedName(specifier))) {
+                  helperLocals.set(specifier.local.name, importedName(specifier))
+                }
+              } else if (specifier.type === 'ImportNamespaceSpecifier') {
+                namespaceLocals.add(specifier.local.name)
+              }
+            }
+          },
+          FunctionDeclaration: enterFunction,
+          'FunctionDeclaration:exit': exitFunction,
+          FunctionExpression: enterFunction,
+          'FunctionExpression:exit': exitFunction,
+          ArrowFunctionExpression: enterFunction,
+          'ArrowFunctionExpression:exit': exitFunction,
+          AwaitExpression(node) {
+            markAwait(node.range[1])
+          },
+          'ForOfStatement[await=true]'(node) {
+            markAwait(node.range[0])
+          },
+          CallExpression(node) {
+            const current = functions.at(-1)
+            if (!current?.tracked || current.firstAwaitEnd === null) return
+            if (node.range[0] < current.firstAwaitEnd) return
+            candidates.push(node)
+          },
+          'Program:exit'() {
+            for (const node of candidates) {
+              const helper = calledHelper(node.callee)
+              if (!helper) continue
+              const consequence = helper === 'initState'
+                ? 'creates page-wide state that outlives the component'
+                : 'can no longer see this component and resolves page-wide'
+              context.report({
+                node,
+                message:
+                  `'${helper}' runs after an await in an async onMount — past the first await it ${consequence}; do state setup before the first await`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'component-name': createLiteralNameRule(new Set(['component']), componentNameProblem),
     'exact-dependency-versions': {
       create(context) {
         const aliases = new Set(context.settings?.imp?.dependencyAliases ?? [])

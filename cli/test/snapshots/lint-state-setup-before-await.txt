@@ -1,0 +1,15 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-state-async)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/state-setup-before-await]: 'useState' runs after an await in an async onMount — past the first await it can no longer see this component and resolves page-wide; do state setup before the first await
+ --> app.js:12:18
+
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await it creates page-wide state that outlives the component; do state setup before the first await
+ --> app.js:13:5
+
+Found 2 problems
+Checked 1 file
