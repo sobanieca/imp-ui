@@ -6,6 +6,10 @@ one guarantee is what everything else builds on: inside a component you can subs
 measure layout, focus fields, and reach ancestors, because by the time your code runs the component
 is actually in the document.
 
+Every component renders into its own **shadow root**, so its DOM and CSS are fully isolated: what
+happens inside a component stays inside, and everything that crosses the boundary — state, errors,
+theming variables — does so through an explicit channel.
+
 ## Two layers
 
 imp renders with two layers, each doing one thing:
@@ -42,14 +46,15 @@ prefix doubles as your app's namespace, exactly like state names (`myapp.user`).
 `imp/component-name` lint rule enforces this as you type (see **[Linting](lint.md)**), and a bad
 name throws at runtime.
 
-The host element takes no layout space of its own — imp styles every component tag with
-`display: contents`, so your component's output participates in the parent's flex, grid, or flow
-layout as if the host were not there. If you _want_ the host to be a styled box, just style the tag
-in your CSS; your rule always wins.
+The host element takes no layout space of its own — every component defaults to `display: contents`,
+so your component's output participates in the parent's flex, grid, or flow layout as if the host
+were not there. If you _want_ the host to be a styled box, set `:host { display: block }` (or
+anything else) in the component's `styles`, or style the tag from page CSS — rules targeting the tag
+from outside always win for the host element itself.
 
 ## The definition object
 
-`component(name, definition)` takes the name and an object with up to four entries:
+`component(name, definition)` takes the name and an object with up to five entries:
 
 ### `onMount(...args)` — required
 
@@ -87,7 +92,64 @@ sockets, third-party widgets. You rarely need it — state subscriptions are cle
 
 Makes the component an **error boundary**: when its own mount fails, or a component anywhere in its
 subtree fails to mount, `onError` runs with the error (and the factory-call arguments) and its
-output replaces the component's children — see _Error boundaries_ below.
+output replaces the component's content — see _Error boundaries_ below.
+
+### `styles` — optional
+
+The component's own CSS, as a string. It applies only inside this component — see _Styling_ below.
+
+## Styling
+
+A component's output lives in its own shadow root, which gives you full two-way isolation: page
+stylesheets do not reach into a component, and a component's CSS cannot leak out. A component
+carries its look in the `styles` entry:
+
+```js
+export const userCard = component('my-app-user-card', {
+  styles: `
+    .card {
+      display: flex;
+      gap: 8px;
+      border: 1px solid var(--border);
+    }
+    .name { font-weight: 600 }
+  `,
+  onMount: (user) => div({ class: 'card' }, span({ class: 'name' }, user.name)),
+})
+```
+
+The CSS is compiled once per component — not per instance — and shared by every instance, so
+`styles` costs the same whether the component renders once or a thousand times. Invalid CSS fails
+fast, when the component is defined.
+
+What crosses the style boundary, and how:
+
+- **Custom properties inherit through.** Design tokens declared on `body` (`--accent`, `--text`, …)
+  are visible inside every component — that is the theming channel. A theme switch that updates
+  variables on `body` restyles every component consuming them.
+- **The host element itself** belongs to the parent's tree: page CSS can style the tag
+  (`my-app-user-card { grid-area: aside }`), and such rules win over the component's own `:host`
+  rules.
+- **Nothing else.** Class names, IDs, and element selectors are private to each component — two
+  components can both use `.card` without ever colliding, and no page rule needs a namespace.
+
+To share CSS between components, share strings — plain JS constants composed into `styles`:
+
+```js
+import { buttonStyles } from './theme.js'
+
+export const editor = component('my-app-editor', {
+  styles: `
+    ${buttonStyles}
+    .row { display: flex; gap: 8px }
+  `,
+  onMount: () => div({ class: 'row' }, button('save'), button('cancel')),
+})
+```
+
+Two platform boundaries to design around: form controls inside a component do not participate in a
+`<form>` outside it, and `label[for]` / ARIA id references cannot point across the boundary — keep a
+control, its label, and its form together inside one component.
 
 ## The lifecycle
 
@@ -250,11 +312,14 @@ export const taskBoard = component('my-app-task-board', {
 
 ## Practical notes
 
-- **Selectors cross component boundaries as descendants.** `#list li` finds a component-rendered
-  `li`; the child combinator `ul > li` will not, because the host tag sits in between. Prefer
-  descendant selectors around component edges.
+- **Component internals are private.** `document.querySelector` — like page CSS — stops at the
+  component boundary. When a parent needs a live handle on something a child shows — a container it
+  appends into, a field it reads — create that node yourself, keep the reference, and pass it as a
+  factory argument; the child renders it where it belongs.
+- **A component can find its own host** with `event.target.getRootNode().host` — the shadow-DOM
+  replacement for `closest('my-app-card')` in handlers that need the component element.
 - **Strict content models** (`<table>`, `<select>`): let one component render the whole structure
   rather than splitting rows or options into their own components — a host tag between `<table>` and
-  `<tr>` upsets assistive technology even though layout stays correct.
+  `<tr>` breaks the content model.
 - **Defining the same name twice** warns and keeps the first definition, so accidental double
   imports stay harmless.

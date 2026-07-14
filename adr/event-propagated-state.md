@@ -49,8 +49,8 @@ propagating to the setter.
 
 **Resolution bubbles up the real tree.** The provider listens for a `StateSubscription`
 `CustomEvent` on its own host element; `useState` dispatches that event (bubbling and composed, so
-it escapes shadow roots an embedder may have put the component in) from the asking component's host,
-and the nearest ancestor providing the name answers synchronously through
+it crosses the shadow roots every component now renders into, `shadow-dom-isolation.md`) from the
+asking component's host, and the nearest ancestor providing the name answers synchronously through
 `event.detail.subscribe(state, provider)`, stopping propagation. Called outside any component mount,
 both sides use `document` — the page-wide scope. Consequently a component may **shadow** an
 ancestor's (or the page's) state by initializing the same name; only re-initializing a name within

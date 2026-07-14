@@ -125,6 +125,8 @@ based on where you are.
 - **`maxLogEntries`** — how many of the most recent entries `imp start` keeps in its dev log file
   (`.imp/dev.log`). Defaults to 4000; older entries roll off once the limit is reached. See
   `imp start` below.
+- **`devServerPort`** — the port `imp start` listens on. Defaults to 4507; a `--port` flag on the
+  command line overrides it. See `imp start` below.
 
 That is the whole footprint: your repository contains your code, at most one `imp.json`, and the
 `dependencies/` folder holding your vendored dependencies — all of it source you commit. imp writes
@@ -217,8 +219,17 @@ imp start [file.html] [--port 4507]
 ```
 
 Serves the directory containing the given HTML file (default: `index.html` in the current directory)
-on the given port (default: `4507`). The command exits with an error if the file does not exist or
-is a directory. The entry file itself is reachable at `/`.
+on the given port. The command exits with an error if the file does not exist or is a directory. The
+entry file itself is reachable at `/`.
+
+The port is resolved in this order: the `--port` flag if given, otherwise the `devServerPort` set in
+`imp.json`, otherwise the default `4507`. Set a fixed port for a project without repeating the flag:
+
+```json
+{
+  "devServerPort": 9085
+}
+```
 
 Three things are injected into every served HTML document automatically — you never reference the
 imp library by path (injection is skipped for documents that already contain it):

@@ -322,6 +322,14 @@ Your whole module graph is available: relative imports, `imp`, and every vendore
 resolve exactly like they do under `imp start`. Each file gets its own DOM — tests in one file share
 it (reset what you need in `beforeEach`), separate files never see each other's state.
 
+Components render into shadow roots, so `document.querySelector` does not see their internals —
+reach in through the host's `shadowRoot`:
+
+```js
+const card = document.querySelector('my-app-card')
+card.shadowRoot.querySelector('button').click()
+```
+
 `document`, `window`, and the rest of the DOM are globals, so use them directly — just like in the
 browser. Unit test callbacks receive a context only when there's something that _isn't_ global to
 hand over, namely `clock` under [fake timers](#fake-timers).
@@ -415,6 +423,16 @@ test('increments on click', async ({ page }) => {
 `waitForSelector`, screenshots, everything Puppeteer offers. The page is already on your app when
 the first test runs; tests within a file share it, so a file reads as one user session: log in once
 in `beforeAll` (or your first test), then drive the flow step by step.
+
+Because components render into shadow roots, a plain CSS selector stops at the component boundary.
+Puppeteer's deep combinator `>>>` pierces it — put it in front of (or between) selector parts to
+search through every shadow root:
+
+```js
+await page.type('>>> #draft', 'ship it')
+await page.click('>>> #add')
+expect(await page.$eval('>>> #count', (el) => el.textContent)).toEqual('1 left')
+```
 
 While specs run, the browser stays connected to your terminal the same way `imp start` is:
 `console.*`, uncaught errors, and every network request stream in as `[browser:*]` and `[net]`

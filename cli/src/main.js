@@ -84,9 +84,10 @@ try {
     case 'start': {
       const { start } = await import('./start.js')
       notifyUpdate(rest)
+      const portFlag = flag(rest, 'port', null)
       await start({
         entry: positional(rest)[0] ?? 'index.html',
-        port: Number(flag(rest, 'port', 4507)),
+        port: portFlag === null ? null : Number(portFlag),
         env: flag(rest, 'env', null),
       })
       break

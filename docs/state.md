@@ -362,8 +362,9 @@ Under the hood the lookup travels as a DOM event (`StateSubscription`) that bubb
 component asking for the state; the nearest ancestor providing that name answers, and the document
 answers for page-wide states. Because the handshake rides the DOM rather than a JavaScript registry,
 independently loaded parts of a page (say, two separately built widgets) share state as long as they
-share the DOM — and the event crosses shadow roots, so an imp component embedded inside another
-library's shadow DOM still reaches the page's states.
+share the DOM — and the event crosses shadow roots, so it passes through the shadow roots imp
+components render into, at any depth, and still works for a component embedded inside another
+library's shadow DOM.
 
 ## Naming rule
 
