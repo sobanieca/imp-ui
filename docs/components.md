@@ -264,8 +264,8 @@ around a route's page, a third-party-backed widget, each card in a dashboard.
 ## Automatic cleanup
 
 Every state subscription created during `onMount` — `on(fn)`, `text()`, `view()`, `each()`, on
-regular and merged states alike — is tracked and unsubscribed when the component unmounts. Bindings
-nested inside a `view`/`each` render function are tracked too, per rebuild: each re-render
+regular and computed states alike — is tracked and unsubscribed when the component unmounts.
+Bindings nested inside a `view`/`each` render function are tracked too, per rebuild: each re-render
 unsubscribes the previous render's bindings before creating the new ones. Swap whole screens in and
 out; nothing leaks and there is nothing to unhook by hand. Two boundaries worth knowing:
 

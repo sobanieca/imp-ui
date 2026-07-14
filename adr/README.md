@@ -29,9 +29,9 @@ Conventions:
 
 ## State
 
-| ADR                                                 | Decision                                                                                             |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [event-propagated-state](event-propagated-state.md) | Named state via initState/useState — subtree-scoped by DOM-event bubbling, auto-cleanup, mergeStates |
+| ADR                                                 | Decision                                                                                          |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [event-propagated-state](event-propagated-state.md) | Named state via initState/useState — subtree-scoped by DOM-event bubbling, auto-cleanup, computed |
 
 ## CLI
 

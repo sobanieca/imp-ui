@@ -42,12 +42,12 @@ seed-loading delay change.
 8. **Open _recent activity_** to see a plain unkeyed `each` fed by actions across the app —
    including drops handled by the board columns.
 9. **Compare the two list bindings.** The main list and the _spotlight_ line below it show the same
-   data two ways. The list is a keyed `each` on one `mergeStates` of items + filter — flip the
-   filter and items that stay visible keep their DOM (notes text survives). The spotlight instead
-   _nests_ `items.each(…)` inside `filter.view(…)`: fully supported, inner subscriptions are
-   re-created and the old ones unsubscribed on every outer rebuild — but the whole inner region is
-   rebuilt whenever the outer state changes, so nothing inside it survives a filter flip. That is
-   why it holds display-only pills, never an input.
+   data two ways. The list is a keyed `each` on one `computed` of items + filter — flip the filter
+   and items that stay visible keep their DOM (notes text survives). The spotlight instead _nests_
+   `items.each(…)` inside `filter.view(…)`: fully supported, inner subscriptions are re-created and
+   the old ones unsubscribed on every outer rebuild — but the whole inner region is rebuilt whenever
+   the outer state changes, so nothing inside it survives a filter flip. That is why it holds
+   display-only pills, never an input.
 
 ## Feature map
 
@@ -74,11 +74,11 @@ Every imp feature, and where it lives in `app.js`:
 | `initState` (component-scoped)       | `todo.items` & friends in `todo-app`; `todo.stage` per column; `todo.cardTitle` & `todo.cardNote` per card |
 | `initState` (module scope, pagewide) | `todo.theme`                                                                                               |
 | `useState`                           | theme sync, card stage badge, column activity logging                                                      |
-| `get` / `set` / `update`             | throughout the handlers                                                                                    |
+| `get` / `set`                        | throughout the handlers                                                                                    |
 | `on()`                               | theme sync (headless component), driving the held `<meter>` node                                           |
 | `text(select?)`                      | card title, counts line, theme button label                                                                |
 | `view()`                             | filter chips, empty state, stage badge, clock toggle, tip retry region                                     |
 | `each()` keyed / unkeyed             | the quick list / the activity log                                                                          |
 | nested bindings                      | spotlight: `items.each(…)` inside `filter.view(…)`; tip box: component inside a `view`                     |
-| `mergeStates`                        | visible (filtered) list, counts line, completion ratio                                                     |
+| `computed`                           | visible (filtered) list, counts line, completion ratio                                                     |
 | `env`                                | footer label and seed delay from `imp.json` environments                                                   |

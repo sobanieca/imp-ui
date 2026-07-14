@@ -1,11 +1,11 @@
 # State — enhancements
 
 Named state (`initState`/`useState`, the subtree-scoped `StateSubscription` protocol, the
-`{ get, set, update, on, text, view, each }` helper with automatic unmount cleanup, and the
-`mergeStates` combinator) is implemented — see `adr/event-propagated-state.md`. This item collects
-the follow-ups that were deliberately left out. (Batching was considered here and then **rejected**
-— see `adr/event-propagated-state.md`; the docs cover the one-state and derived-display-state
-patterns instead.)
+`{ get, set, on, text, view, each }` helper with automatic unmount cleanup, and the `computed`
+combinator) is implemented — see `adr/event-propagated-state.md`. This item collects the follow-ups
+that were deliberately left out. (Batching was considered here and then **rejected** — see
+`adr/event-propagated-state.md`; the docs cover the one-state and derived-display-state patterns
+instead.)
 
 ## Reactive props
 

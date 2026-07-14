@@ -19,11 +19,12 @@ Shared state is **named, explicit, and scoped by the DOM**. A component initiali
 with `useState(name)`. Both return the same helper:
 
 - `get()` — current value.
-- `set(next)` — explicitly replaces the value (spread to update an object,
-  `set({ ...state.get(), name: 'x' })`, React-style); a `set` with an identical value (`Object.is`)
-  notifies nobody.
-- `update(produce)` — replaces the value with `produce(currentValue)`; the get-then-set idiom in one
-  call, with `set`'s identity rule.
+- `set(next)` — explicitly replaces the value. A function `next` is the updater form: it is called
+  with the current value and its result stored (`set((current) => ({ ...current, name: 'x' }))` —
+  the get-then-set idiom in one call, React's `setState` dispatch). A `set` resolving to an
+  identical value (`Object.is`) notifies nobody. The dispatch means a function can never be a state
+  value — accepted deliberately: state holds plain data (objects, arrays, primitives), which the
+  structural comparisons in keyed `each` and consumer rebinding assume anyway.
 - `on(fn)` — runs `fn(value)` now and after every `set`; returns an unsubscribe function.
 - `text(select?)` — returns a live `Text` node showing (a selection of) the value.
 - `view(render)` — returns a live region re-rendered from `render(value)` on every `set`, anchored
@@ -71,17 +72,16 @@ instead: the `imp/state-setup-before-await` lint rule flags them after an `await
 `onMount`. A `view`/`each` render function re-enters a scope of its own (with the owning component's
 host), so bindings nested in the render work on every re-render; they are owned by the region and
 unsubscribed when it next re-renders or when the component unmounts, whichever comes first. There is
-no fallback disposal path and no manually managed subscription. `get`, `set`, and `update` remain
-free to call anywhere; `on` returns its unsubscriber only for stopping early within a mounted
-period.
+no fallback disposal path and no manually managed subscription. `get` and `set` remain free to call
+anywhere; `on` returns its unsubscriber only for stopping early within a mounted period.
 
-**Composition is one combinator.** `mergeStates(states, merge)` returns a read-only state
-(`get`/`on`/`text`/`view`/`each`; `set` and `update` throw) whose value is `merge(...sourceValues)`.
-It notifies only when the merged outcome changes (`Object.is`), which also makes single-source
-merges the way to watch one part of a bigger state. It is built solely on the public `get`/`on` of
-its sources, so merged states compose and work across separately bundled islands. This is
-intentionally the entire composition story — no operators, no async, no schedulers; users are
-expected to design their source states well and merge display-ready outcomes at the edge.
+**Composition is one combinator.** `computed(states, compute)` returns a read-only state
+(`get`/`on`/`text`/`view`/`each`; `set` throws) whose value is `compute(...sourceValues)`. It
+notifies only when the computed outcome changes (`Object.is`), which also makes single-source
+computed states the way to watch one part of a bigger state. It is built solely on the public
+`get`/`on` of its sources, so computed states compose and work across separately bundled islands.
+This is intentionally the entire composition story — no operators, no async, no schedulers; users
+are expected to design their source states well and compute display-ready outcomes at the edge.
 
 **State names must be namespaced** — at least two non-empty dot-separated segments (`myapp.user`).
 Both helpers throw on non-conforming names at runtime, and the `imp/state-name-namespace` lint rule
@@ -89,8 +89,8 @@ flags literal names statically.
 
 ## Consequences
 
-- The whole model is seven small helpers plus one combinator; nothing to learn about tracking
-  scopes, effect timing, or disposal graphs — the DOM tree is the scope tree.
+- The whole model is six small helpers plus one combinator; nothing to learn about tracking scopes,
+  effect timing, or disposal graphs — the DOM tree is the scope tree.
 - Because the handshake travels through the DOM, provider and consumer only need to share the tree,
   not a module instance — separately bundled islands on one page interoperate.
 - Scoping falls out of bubbling: independent per-instance states, shadowing, and automatic release
@@ -100,9 +100,9 @@ flags literal names statically.
   holds wherever a mounted component currently sits.
 - Every subscription has exactly one owner and one deterministic end. The cost is that an async
   `onMount` must finish its state setup before its first `await` — enforced by the same throw.
-- A merged state recomputes per subscriber and per source change, and a `merge` returning a fresh
-  object re-notifies on every source change since `Object.is` never matches — acceptable for
-  display-edge merges, which is what the single combinator is for.
+- A computed state recomputes per subscriber and per source change, and a `compute` returning a
+  fresh object re-notifies on every source change since `Object.is` never matches — acceptable for
+  display-edge computed states, which is what the single combinator is for.
 - `view` and unkeyed `each` rebuild their whole region on any change — disposing the previous
   render's nested bindings first. A keyed `each` reconciles by key only: it decides per item whether
   to keep or re-render whole, never diffing inside an item, consistent with "no diffing"

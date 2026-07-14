@@ -14,14 +14,15 @@ wrap things in, and no re-rendering — state changes update exactly the DOM you
   makes the state page-wide and permanent.
 - Both calls return the **same helper object**. Whoever holds it can read, set, and react to the
   state.
-- Reading and writing (`get`/`set`/`update`) work anywhere; **subscribing**
-  (`on`/`text`/`view`/`each`) is a component activity — it happens inside `onMount` and ends when
-  the component unmounts.
-- Setting state is **explicit**: `set(next)` replaces the whole value. To change one field of an
-  object, spread the rest — exactly like React's `setState` with a new object;
-  `update((current) => next)` is the same replacement computed from the current value.
-- A value computed **from several states** is a merge: `mergeStates([a, b], fn)` returns a read-only
-  state that follows its sources.
+- Reading and writing (`get`/`set`) work anywhere; **subscribing** (`on`/`text`/`view`/`each`) is a
+  component activity — it happens inside `onMount` and ends when the component unmounts.
+- Setting state is **explicit**: `set(next)` replaces the whole value — pass the next value, or a
+  function computing it from the current one, exactly like React's `setState`. To change one field
+  of an object, spread the rest into a new object.
+- State holds **plain data**: plain objects, arrays, and primitives like strings, numbers, and
+  booleans. A function is never a state value — passing one to `set` always means the updater form.
+- A value computed **from several states** is a computed state: `computed([a, b], fn)` returns a
+  read-only state that follows its sources.
 
 ```js
 import { button, component, div, initState, useState } from 'imp'
@@ -48,10 +49,10 @@ export const app = component('my-app-root', {
 
 ## The state helper
 
-`initState(name, initialValue)` and `useState(name)` both return a helper with the seven entries
-below. `get`, `set`, and `update` can be called from anywhere; `on`, `text`, `view`, and `each`
-subscribe, and subscribing happens inside a component's `onMount` — the snippets below all live
-there (see _Cleanup_).
+`initState(name, initialValue)` and `useState(name)` both return a helper with the six entries
+below. `get` and `set` can be called from anywhere; `on`, `text`, `view`, and `each` subscribe, and
+subscribing happens inside a component's `onMount` — the snippets below all live there (see
+_Cleanup_).
 
 ### `get()`
 
@@ -59,32 +60,31 @@ Returns the current value.
 
 ### `set(next)`
 
-Replaces the value and notifies every subscriber, synchronously. Setting the identical value (same
-reference, `Object.is`) is a no-op — which is why object updates spread into a **new** object:
+Replaces the value and notifies every subscriber, synchronously. `next` is either the next value
+itself, or a **function** — then it is called with the current value and what it returns becomes the
+next value, the get-then-set idiom in a single call:
 
 ```js
-const cart = useState('myapp.cart')
-cart.set([...cart.get(), newItem])
-
 const user = useState('myapp.user')
 user.set({ ...user.get(), theme: 'light' })
-```
 
-### `update(produce)`
-
-Replaces the value with what `produce` returns for the current one — the get-then-set idiom in a
-single call:
-
-```js
 const count = useState('myapp.count')
-count.update((value) => value + 1)
+count.set((value) => value + 1)
 
 const todos = useState('myapp.todos')
-todos.update((items) => [...items, newTodo])
+todos.set((items) => [...items, newTodo])
 ```
 
-Like `set`, it notifies synchronously and is a no-op when the produced value is identical — so for
-object and array state, `produce` must return a **new** object or array.
+Use the plain form when the next value arrives from outside — a server response, a form field, a
+reset — and the updater form whenever the next value derives from the current one.
+
+Setting a value identical to the current one (same reference, `Object.is`) is a no-op, in both forms
+— which is why object and array updates spread into a **new** object or array.
+
+Because a function argument always means "compute the next value", a function can never itself be a
+state value. That is by design, not a corner case to work around: state holds **plain data** — plain
+objects, arrays, and primitives. Keep functions, DOM nodes, and class instances out of state; hold
+the data and derive everything else from it.
 
 ### `on(fn)`
 
@@ -187,64 +187,64 @@ per item and stable across sets: an `id` from your data, never the array index. 
 values element factories accept. `each` expects the state value to be an array (`null` and
 `undefined` count as an empty one); any other value logs an error and renders nothing.
 
-## Merging states
+## Computed states
 
 Sometimes a view needs one value computed from several states — a full name from two fields, a
-status line from two lists. `mergeStates(states, merge)` combines them:
+status line from two lists. `computed(states, compute)` combines them:
 
 ```js
-import { component, initState, mergeStates, span } from 'imp'
+import { component, computed, initState, span } from 'imp'
 
 const first = initState('myapp.first', 'Ada')
 const last = initState('myapp.last', 'Lovelace')
 
 export const nameBadge = component('my-app-name-badge', {
   onMount: () => {
-    const fullName = mergeStates([first, last], (f, l) => `${f} ${l}`)
+    const fullName = computed([first, last], (f, l) => `${f} ${l}`)
     return span(fullName.text())
   },
 })
 ```
 
 The result is a **read-only state**: it has `get()`, `on(fn)`, `text(select?)`, `view(render)`, and
-`each(renderItem)`, but calling `set` or `update` on it throws — to change it, set the source
-states. It notifies only when the merged outcome actually changes (`Object.is`), so merging a single
+`each(renderItem)`, but calling `set` on it throws — to change it, set the source states. It
+notifies only when the computed outcome actually changes (`Object.is`), so computing from a single
 state is also how you watch one part of a bigger state without reacting to unrelated changes:
 
 ```js
-const theme = mergeStates([user], (u) => u.theme)
+const theme = computed([user], (u) => u.theme)
 theme.on((value) => document.body.setAttribute('data-theme', value)) // runs only when the theme changes
 ```
 
-Merged states merge again if you need another step, and `each` works on them too — a derived list is
-one merge away:
+Computed states compute again if you need another step, and `each` works on them too — a derived
+list is one `computed` away:
 
 ```js
 const todos = initState('myapp.todos', [])
-const remaining = mergeStates([todos], (items) => items.filter((item) => !item.done))
+const remaining = computed([todos], (items) => items.filter((item) => !item.done))
 
 ul(remaining.each((todo) => li(todo.title)))
 ```
 
 Two things to know about the balance here:
 
-- A merged state is a **local value**, not a registered name — `useState` will not find it. Hold on
-  to it, pass it around, or simply re-create it where needed; merging is cheap.
+- A computed state is a **local value**, not a registered name — `useState` will not find it. Hold
+  on to it, pass it around, or simply re-create it where needed; computing is cheap.
 - Sources notify **one at a time**: setting two source states back to back recomputes and notifies
-  the merge twice, and the first notification sees the in-between combination. Values that must
-  always change together belong in **one** state object, set in one call — merge states that vary
-  independently.
+  the computed state twice, and the first notification sees the in-between combination. Values that
+  must always change together belong in **one** state object, set in one call — compute over states
+  that vary independently.
 - This is deliberately the **whole composition story** — there are no operators, no async pipelines,
-  no schedulers. If you find yourself stacking merges of merges, that is a sign to restructure the
-  source states; `mergeStates` is for computing a display-ready outcome at the edge, not for
-  building a dataflow graph.
+  no schedulers. If you find yourself stacking computed states on computed states, that is a sign to
+  restructure the source states; `computed` is for computing a display-ready outcome at the edge,
+  not for building a dataflow graph.
 
 ## Updating more than one state
 
 There is no `batch()` in imp — every `set` notifies immediately. That never paints a half-updated
 frame (the browser paints only after your code finishes), but between two back-to-back `set`s a
-merge or an `on` subscriber can observe the first change without the second, and a bound region
-rebuilds once per `set`. Three patterns cover this, in order of preference:
+computed state or an `on` subscriber can observe the first change without the second, and a bound
+region rebuilds once per `set`. Three patterns cover this, in order of preference:
 
 **Values that change together are one state.** If two values must stay consistent, they are one
 piece of data — one object, one `set`, one notification, and no in-between combination ever exists:
@@ -252,7 +252,7 @@ piece of data — one object, one `set`, one notification, and no in-between com
 ```js
 const list = initState('myapp.list', { items: [], selected: null })
 
-list.update((current) => ({ ...current, items: [], selected: null }))
+list.set((current) => ({ ...current, items: [], selected: null }))
 ```
 
 **Order the sets so every step is valid.** When two states really are independent, clear the
@@ -292,7 +292,7 @@ and reach for it only when the first two patterns don't fit.
 ## Cleanup
 
 Subscriptions are cleaned up **automatically** — and that works because every subscription has an
-owner. `on(fn)`, `text()`, `view()`, and `each()` (on regular and merged states alike) only work
+owner. `on(fn)`, `text()`, `view()`, and `each()` (on regular and computed states alike) only work
 while a component is mounting or inside a `view`/`each` render function: called anywhere else —
 module scope, an event handler, after an `await` in an async `onMount` — they throw. A subscription
 made in `onMount` belongs to the component and ends when it unmounts; one made inside a
@@ -300,9 +300,8 @@ made in `onMount` belongs to the component and ends when it unmounts; one made i
 unmounts, whichever comes first — see **[Components](components.md)**). Swap whole screens in and
 out; nothing leaks and there is nothing to unhook.
 
-Reading and writing are free: `get()`, `set(next)`, and `update(produce)` work anywhere, any time —
-event handlers, timers, code after an `await`. So in an async `onMount`, subscribe first and fill
-the data in later:
+Reading and writing are free: `get()` and `set(next)` work anywhere, any time — event handlers,
+timers, code after an `await`. So in an async `onMount`, subscribe first and fill the data in later:
 
 ```js
 const orderList = component('my-app-order-list', {

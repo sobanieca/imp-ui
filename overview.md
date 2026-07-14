@@ -10,8 +10,8 @@ fix that came out of it, and research into simplifying the design. Written 2026-
   so same-task moves don't remount, mount-scope stack for subscription ownership.
 - `lib/src/state.js` — named state: `initState(name, initial)` / `useState(name)` resolved by a
   bubbling `StateSubscription` DOM event (nearest ancestor provider answers; `document` for
-  page-wide). Helper: `get / set / update / on / text / view / each`, plus the read-only
-  `mergeStates(states, merge)` combinator.
+  page-wide). Helper: `get / set / on / text / view / each` (`set` takes a value or an updater
+  function), plus the read-only `computed(states, compute)` combinator.
 - Lint rules `imp/state-name-namespace` and `imp/component-name`, docs (`docs/state.md`,
   `docs/components.md`), ADRs (`adr/event-propagated-state.md`, `adr/web-component-lifecycle.md`),
   and test suites (`lib/test/state.test.js`, `lib/test/component.test.js`).
@@ -20,7 +20,7 @@ fix that came out of it, and research into simplifying the design. Written 2026-
 
 The design is coherent, small, and honest about trade-offs. Strong points: DOM-event resolution
 gives React-Context-style scoping with no registry; custom-element lifecycle gives deterministic
-subscription cleanup; the microtask move guard makes drag & drop safe; `mergeStates` deduping by
+subscription cleanup; the microtask move guard makes drag & drop safe; `computed` deduping by
 outcome doubles as a selector; ADR/docs discipline is excellent.
 
 ## Bug found and FIXED on this branch
@@ -53,9 +53,9 @@ now fixed — see _Second fix round_ at the end.
 1. **No error isolation in `set()`** — one throwing subscriber aborts notification of all remaining
    subscribers and propagates to the setter. Should catch-and-report per subscriber.
 2. **No batching → glitches** — consecutive `set`s expose inconsistent intermediate combinations to
-   `mergeStates` (e.g. new empty `items` with the old `selectedIndex`) and render them into the DOM.
+   `computed` (e.g. new empty `items` with the old `selectedIndex`) and render them into the DOM.
    Listed as an enhancement in `todo/state-enhancements.md`; is really a correctness prerequisite
-   for merges over co-updating states.
+   for computed states over co-updating states.
 3. **`useState` in event handlers** — resolves from `document` (no mount scope), so page-wide states
    resolve but component-scoped ones throw. Works-or-breaks depending on where the state was
    initialized; confusing.
@@ -74,9 +74,9 @@ now fixed — see _Second fix round_ at the end.
 
 ## Simplification research — do real apps need all this?
 
-**Conclusion: the reactive surface is fine; the plumbing is the complexity.** The seven helpers +
-`mergeStates` map exactly onto what small/medium SPAs need (text, conditional fragment, list,
-derived value, shared state, async load, no leaks). Nearly every user-facing rule traces back to two
+**Conclusion: the reactive surface is fine; the plumbing is the complexity.** The six helpers +
+`computed` map exactly onto what small/medium SPAs need (text, conditional fragment, list, derived
+value, shared state, async load, no leaks). Nearly every user-facing rule traces back to two
 architectural decisions:
 
 - **Decision A — named, DOM-event-resolved, subtree-scoped state** (`initState`/`useState`).
@@ -109,7 +109,8 @@ resolution.
   and make components optional — but trades for VanJS's documented gotchas (bindings in detached DOM
   collected if state changes before connect; async construction hazards; non-DOM `on(fn)` still
   needs manual disposal). Current ownership model is now sound and is imp's differentiator; keep.
-- **S3: trim helpers** — only `update` is pure sugar; negligible gain.
+- **S3: trim helpers** — done: `update` was folded into `set`, which now dispatches on a function
+  argument as the updater form.
 - **S4: no subscriptions, explicit `render()` calls** — what the old test app did; the floor, not
   recommended (focus loss, scattered manual calls).
 
@@ -151,9 +152,9 @@ Implemented on this branch after a follow-up review:
 - **`imp/state-setup-before-await` lint rule** — flags `initState`/`useState` placed after an
   `await` in an async `onMount`, the silent page-wide-state trap from issue list item 7.
 - **Docs hardening for newcomers** — keyed `each` guidance, the input-inside-a-region focus trap,
-  merge glitching and "co-changing values live in one state", the headless-component pattern for
-  non-UI subscribers, and passing helper objects to DOM rendered outside the provider's subtree (the
-  portal recipe, issue 4).
+  computed-state glitching and "co-changing values live in one state", the headless-component
+  pattern for non-UI subscribers, and passing helper objects to DOM rendered outside the provider's
+  subtree (the portal recipe, issue 4).
 
 Still open, deliberately: page-wide state lifetime (issue 6) and the S1 simplification decision.
 

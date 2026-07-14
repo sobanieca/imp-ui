@@ -31,11 +31,11 @@ current values, and pending async mount all ride along. What restarts is the sub
   unmount, and real removal tears down exactly as before — cleanups, `onUnmount`, placeholder, each
   step fault-isolated (`error-boundaries.md`).
 - **`useState` inside a mount returns a consumer.** It has the same helper surface, but holds the
-  resolved provider behind an indirection with one fan-out subscription; `get`/`set`/`update` always
-  target the currently bound provider. The host keeps a rebind registry — the mount scope registers
-  each consumer's rebind, and `view`/`each` render scopes register theirs per render, removed when
-  the region rebuilds. Outside any mount scope `useState` still returns the page-scoped state
-  directly; there is no position to rebind.
+  resolved provider behind an indirection with one fan-out subscription; `get`/`set` always target
+  the currently bound provider. The host keeps a rebind registry — the mount scope registers each
+  consumer's rebind, and `view`/`each` render scopes register theirs per render, removed when the
+  region rebuilds. Outside any mount scope `useState` still returns the page-scoped state directly;
+  there is no position to rebind.
 - **A rebind is a fresh lookup from the host.** Each registered rebind re-dispatches the
   subscription event from the component's own host, swaps to the provider that answers, and notifies
   the consumer's subscribers only when the newly resolved value differs from the last delivered one.

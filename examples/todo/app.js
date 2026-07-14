@@ -1,6 +1,7 @@
 import {
   button,
   component,
+  computed,
   details,
   div,
   el,
@@ -15,7 +16,6 @@ import {
   input,
   label,
   li,
-  mergeStates,
   mount,
   p,
   section,
@@ -172,7 +172,7 @@ const tipBox = component('todo-tip-box', {
       { class: 'tip' },
       strong('tip'),
       tipText(),
-      button({ class: 'ghost', events: { click: () => epoch.update((n) => n + 1) } }, 'next tip'),
+      button({ class: 'ghost', events: { click: () => epoch.set((n) => n + 1) } }, 'next tip'),
     )
   },
   onError: (error) => {
@@ -181,7 +181,7 @@ const tipBox = component('todo-tip-box', {
       { class: 'tip tip-error' },
       strong('tip'),
       span(error.message),
-      button({ class: 'ghost', events: { click: () => epoch.update((n) => n + 1) } }, 'retry'),
+      button({ class: 'ghost', events: { click: () => epoch.set((n) => n + 1) } }, 'retry'),
     )
   },
 })
@@ -261,7 +261,7 @@ const todoCard = component('todo-card', {
   onMount: ({ title = 'untitled', note = '', startEditing = false } = {}) => {
     const stage = useState('todo.stage')
     const activity = useState('todo.activity')
-    const logActivity = (entry) => activity.update((entries) => [entry, ...entries].slice(0, 6))
+    const logActivity = (entry) => activity.set((entries) => [entry, ...entries].slice(0, 6))
     const cardTitle = initState('todo.cardTitle', title)
     const cardNote = initState('todo.cardNote', note)
     const editing = initState('todo.editing', startEditing)
@@ -371,7 +371,7 @@ const boardColumn = component('todo-board-column', {
       event.currentTarget.classList.remove('drag-over')
       if (!draggedCard) return
       cards.append(draggedCard)
-      activity.update((log) => [`card moved to “${stageLabel}”`, ...log].slice(0, 6))
+      activity.set((log) => [`card moved to “${stageLabel}”`, ...log].slice(0, 6))
     }
     return div(
       {
@@ -590,7 +590,7 @@ const todoApp = component('todo-app', {
     const clockOn = initState('todo.clockOn', false)
     const tipEpoch = initState('todo.tipEpoch', 0)
 
-    const log = (entry) => activity.update((entries) => [entry, ...entries].slice(0, 6))
+    const log = (entry) => activity.set((entries) => [entry, ...entries].slice(0, 6))
 
     const cardSlots = Object.fromEntries(
       STAGES.map((stage) => [stage.id, div({ class: 'cards' })]),
@@ -598,12 +598,12 @@ const todoApp = component('todo-app', {
 
     const matchesFilter = (kind, item) => kind === 'all' || (kind === 'done') === item.done
 
-    const visible = mergeStates(
+    const visible = computed(
       [items, filter],
       (list, kind) => list.filter((item) => matchesFilter(kind, item)),
     )
 
-    const counts = mergeStates(
+    const counts = computed(
       [items],
       (list) =>
         `${list.filter((item) => !item.done).length} open · ${
@@ -611,7 +611,7 @@ const todoApp = component('todo-app', {
         } done`,
     )
 
-    const doneRatio = mergeStates(
+    const doneRatio = computed(
       [items],
       (list) => list.length === 0 ? 0 : list.filter((item) => item.done).length / list.length,
     )
@@ -631,24 +631,22 @@ const todoApp = component('todo-app', {
       event.preventDefault()
       const title = titleField.value.trim()
       if (!title) return
-      items.update((list) => [...list, { id: crypto.randomUUID(), title, done: false }])
+      items.set((list) => [...list, { id: crypto.randomUUID(), title, done: false }])
       log(`added “${title}”`)
       titleField.value = ''
       titleField.focus()
     }
 
     const toggleItem = (id) =>
-      items.update((list) =>
-        list.map((item) => item.id === id ? { ...item, done: !item.done } : item)
-      )
+      items.set((list) => list.map((item) => item.id === id ? { ...item, done: !item.done } : item))
 
     const removeItem = (item) => {
-      items.update((list) => list.filter((entry) => entry.id !== item.id))
+      items.set((list) => list.filter((entry) => entry.id !== item.id))
       log(`removed “${item.title}”`)
     }
 
     const promoteItem = (item, note) => {
-      items.update((list) => list.filter((entry) => entry.id !== item.id))
+      items.set((list) => list.filter((entry) => entry.id !== item.id))
       cardSlots.new.prepend(todoCard({ title: item.title, note }))
       log(`promoted “${item.title}” to the board`)
     }
@@ -704,7 +702,7 @@ const todoApp = component('todo-app', {
           {
             class: 'ghost',
             events: {
-              click: () => theme.update((current) => current === 'dark' ? 'light' : 'dark'),
+              click: () => theme.set((current) => current === 'dark' ? 'light' : 'dark'),
             },
           },
           theme.text((current) => current === 'dark' ? 'light mode' : 'dark mode'),
