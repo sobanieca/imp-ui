@@ -37,8 +37,8 @@ seed-loading delay change.
    re-creates the box: a fresh mount with a fresh error budget.
 6. **Toggle the session clock.** Off unmounts it (`onUnmount` clears its interval); on mounts a
    fresh instance counting from zero.
-7. **Flip the theme.** A headless component subscribes with `on` and syncs `body[data-theme]` plus
-   `localStorage` — reload and the choice sticks.
+7. **Flip the theme.** A headless component subscribes with `watch` and syncs `body[data-theme]`
+   plus `localStorage` — reload and the choice sticks.
 8. **Open _recent activity_** to see a plain unkeyed `each` fed by actions across the app —
    including drops handled by the board columns.
 9. **Compare the two list bindings.** The main list and the _spotlight_ line below it show the same
@@ -75,7 +75,7 @@ Every imp feature, and where it lives in `app.js`:
 | `initState` (module scope, pagewide) | `todo.theme`                                                                                               |
 | `useState`                           | theme sync, card stage badge, column activity logging                                                      |
 | `get` / `set`                        | throughout the handlers                                                                                    |
-| `on()`                               | theme sync (headless component), driving the held `<meter>` node                                           |
+| `watch()`                            | theme sync (headless component), driving the held `<meter>` node                                           |
 | `text(select?)`                      | card title, counts line, theme button label                                                                |
 | `view()`                             | filter chips, empty state, stage badge, clock toggle, tip retry region                                     |
 | `each()` keyed / unkeyed             | the quick list / the activity log                                                                          |

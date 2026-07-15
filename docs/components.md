@@ -263,14 +263,14 @@ around a route's page, a third-party-backed widget, each card in a dashboard.
 
 ## Automatic cleanup
 
-Every state subscription created during `onMount` — `on(fn)`, `text()`, `view()`, `each()`, on
+Every state subscription created during `onMount` — `watch(fn)`, `text()`, `view()`, `each()`, on
 regular and computed states alike — is tracked and unsubscribed when the component unmounts.
 Bindings nested inside a `view`/`each` render function are tracked too, per rebuild: each re-render
 unsubscribes the previous render's bindings before creating the new ones. Swap whole screens in and
 out; nothing leaks and there is nothing to unhook by hand. Two boundaries worth knowing:
 
 - State setup happens **before the first `await`** of an async `onMount`. Past it, the mount scope
-  is gone: `on`/`text`/`view`/`each` throw, and an `initState` creates page-wide state instead of
+  is gone: `watch`/`text`/`view`/`each` throw, and an `initState` creates page-wide state instead of
   component-scoped state. Initialize, subscribe, and bind first; then `await` your data and `set` it
   in — `set` and `get` work anywhere (see the pattern in **[State](state.md)**). The
   `imp/state-setup-before-await` lint rule flags setup placed after an `await` as you write it.

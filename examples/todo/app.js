@@ -98,7 +98,7 @@ const theme = initState('todo.theme', localStorage.getItem('imp-todo-theme') ?? 
 const themeSync = component('todo-theme-sync', {
   onMount: () => {
     const current = useState('todo.theme')
-    current.on((value) => {
+    current.watch((value) => {
       document.body.dataset.theme = value
       localStorage.setItem('imp-todo-theme', value)
     })
@@ -617,7 +617,7 @@ const todoApp = component('todo-app', {
     )
 
     const completionMeter = el('meter', { min: 0, max: 1, value: 0, 'aria-label': 'completion' })
-    doneRatio.on((ratio) => {
+    doneRatio.watch((ratio) => {
       completionMeter.value = ratio
     })
 

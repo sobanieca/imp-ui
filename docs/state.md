@@ -14,8 +14,8 @@ wrap things in, and no re-rendering — state changes update exactly the DOM you
   makes the state page-wide and permanent.
 - Both calls return the **same helper object**. Whoever holds it can read, set, and react to the
   state.
-- Reading and writing (`get`/`set`) work anywhere; **subscribing** (`on`/`text`/`view`/`each`) is a
-  component activity — it happens inside `onMount` and ends when the component unmounts.
+- Reading and writing (`get`/`set`) work anywhere; **subscribing** (`watch`/`text`/`view`/`each`) is
+  a component activity — it happens inside `onMount` and ends when the component unmounts.
 - Setting state is **explicit**: `set(next)` replaces the whole value — pass the next value, or a
   function computing it from the current one, exactly like React's `setState`. To change one field
   of an object, spread the rest into a new object.
@@ -50,8 +50,8 @@ export const app = component('my-app-root', {
 ## The state helper
 
 `initState(name, initialValue)` and `useState(name)` both return a helper with the six entries
-below. `get` and `set` can be called from anywhere; `on`, `text`, `view`, and `each` subscribe, and
-subscribing happens inside a component's `onMount` — the snippets below all live there (see
+below. `get` and `set` can be called from anywhere; `watch`, `text`, `view`, and `each` subscribe,
+and subscribing happens inside a component's `onMount` — the snippets below all live there (see
 _Cleanup_).
 
 ### `get()`
@@ -86,7 +86,7 @@ state value. That is by design, not a corner case to work around: state holds **
 objects, arrays, and primitives. Keep functions, DOM nodes, and class instances out of state; hold
 the data and derive everything else from it.
 
-### `on(fn)`
+### `watch(fn)`
 
 Reacts to the state: runs `fn(value)` immediately with the current value, then again after every
 `set`. This is the general-purpose hook — use it to mutate DOM you already hold, sync
@@ -96,7 +96,7 @@ Reacts to the state: runs `fn(value)` immediately with the current value, then a
 const themeWatcher = component('my-app-theme-watcher', {
   onMount: () => {
     const theme = useState('myapp.theme')
-    theme.on((value) => document.body.setAttribute('data-theme', value))
+    theme.watch((value) => document.body.setAttribute('data-theme', value))
   },
 })
 ```
@@ -106,7 +106,7 @@ and it is the pattern for reacting to state from non-UI code: syncing `localStor
 chart library, sending analytics. Mount it once anywhere in scope and the side effect runs for as
 long as it stays mounted.
 
-Like every subscription, `on` lives inside a component's `onMount` (see _Cleanup_ below) and ends
+Like every subscription, `watch` lives inside a component's `onMount` (see _Cleanup_ below) and ends
 with the component. It returns an unsubscribe function for the rare case you want to stop reacting
 while the component stays mounted. Subscribers are isolated from each other: one that throws is
 logged and skipped while the rest still run, and the `set` call itself succeeds. A subscriber may
@@ -206,14 +206,14 @@ export const nameBadge = component('my-app-name-badge', {
 })
 ```
 
-The result is a **read-only state**: it has `get()`, `on(fn)`, `text(select?)`, `view(render)`, and
-`each(renderItem)`, but calling `set` on it throws — to change it, set the source states. It
+The result is a **read-only state**: it has `get()`, `watch(fn)`, `text(select?)`, `view(render)`,
+and `each(renderItem)`, but calling `set` on it throws — to change it, set the source states. It
 notifies only when the computed outcome actually changes (`Object.is`), so computing from a single
 state is also how you watch one part of a bigger state without reacting to unrelated changes:
 
 ```js
 const theme = computed([user], (u) => u.theme)
-theme.on((value) => document.body.setAttribute('data-theme', value)) // runs only when the theme changes
+theme.watch((value) => document.body.setAttribute('data-theme', value)) // runs only when the theme changes
 ```
 
 Computed states compute again if you need another step, and `each` works on them too — a derived
@@ -243,7 +243,7 @@ Two things to know about the balance here:
 
 There is no `batch()` in imp — every `set` notifies immediately. That never paints a half-updated
 frame (the browser paints only after your code finishes), but between two back-to-back `set`s a
-computed state or an `on` subscriber can observe the first change without the second, and a bound
+computed state or a `watch` subscriber can observe the first change without the second, and a bound
 region rebuilds once per `set`. Three patterns cover this, in order of preference:
 
 **Values that change together are one state.** If two values must stay consistent, they are one
@@ -279,8 +279,8 @@ const chartFeed = component('my-app-chart-feed', {
         chartData.set(buildChartData(items.get(), filter.get()))
       })
     }
-    items.on(refresh)
-    filter.on(refresh)
+    items.watch(refresh)
+    filter.watch(refresh)
   },
 })
 ```
@@ -292,8 +292,8 @@ and reach for it only when the first two patterns don't fit.
 ## Cleanup
 
 Subscriptions are cleaned up **automatically** — and that works because every subscription has an
-owner. `on(fn)`, `text()`, `view()`, and `each()` (on regular and computed states alike) only work
-while a component is mounting or inside a `view`/`each` render function: called anywhere else —
+owner. `watch(fn)`, `text()`, `view()`, and `each()` (on regular and computed states alike) only
+work while a component is mounting or inside a `view`/`each` render function: called anywhere else —
 module scope, an event handler, after an `await` in an async `onMount` — they throw. A subscription
 made in `onMount` belongs to the component and ends when it unmounts; one made inside a
 `view`/`each` render belongs to that region and ends when the region re-renders (or the component
@@ -349,8 +349,8 @@ subscribes as usual.
 - **Init first, use after.** `useState(name)` throws if nothing in scope has initialized that name.
   Order follows mounting: a parent's `onMount` runs before its children mount, so children can
   always `useState` what their ancestors initialized.
-- **Init once per scope.** Calling `initState` again with a name the same scope already provides
-  warns, ignores the new initial value, and returns the existing state.
+- **Init once per scope.** Calling `initState` with a name the same scope already provides throws —
+  each scope initializes a name exactly once. Reach an existing state with `useState(name)` instead.
 - **Position decides, even after a move.** Moving a mounted component re-resolves its `useState`
   bindings against the ancestors at its new position, while states it initialized itself travel with
   it — see _Moving components_ in **[Components](components.md)**.

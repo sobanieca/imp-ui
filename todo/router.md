@@ -38,8 +38,10 @@ while a lazy chunk loads.
   component** (never module scope — a lazily imported module is evaluated once and page-wide state
   it creates is immortal), subscriptions live in mounts (enforced), and timers/sockets go through
   `onUnmount` (teardown is fault-isolated per `error-boundaries.md`, so one bad hook cannot leak the
-  rest). The docs' screen-scoping guidance (`docs/state.md`, _Scope and lifetime_) is written to
-  match; the router docs should restate it for route modules specifically.
+  rest). The planned `module` component (`module-component.md`) makes that root boundary a
+  first-class piece and adds enforcement (lint + import tripwire). The docs' screen-scoping guidance
+  (`docs/state.md`, _Scope and lifetime_) is written to match; the router docs should restate it for
+  route modules specifically.
 - **The outlet (or route root) is the error boundary.** A failed dynamic `import()` or a route page
   whose async `onMount` rejects routes to the nearest `onError` (`error-boundaries.md`) — the outlet
   should either define a default `onError` fallback or document that each route root should bring
