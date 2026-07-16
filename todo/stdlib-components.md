@@ -23,10 +23,23 @@ Group components the way the draft does, importable from imp itself (never a thi
   `component(name, …)` web components where a lifecycle is needed
   (`adr/web-component-lifecycle.md`), one naming rule (lint-enforced). Built entirely on the public
   kernel API, nothing privileged.
-- **Two-way binding by convention:** pass a `signal` as `value`/`checked` and the control reads it
-  reactively and writes back on input; pass a plain value for an uncontrolled initial. Extra props
-  (`placeholder`, `disabled`, `events`, …) flow through to the underlying element via the existing
-  type-based dispatch.
+- **Two-way binding by convention:** an input's `value`/`checked` prop accepts anything
+  **state-shaped** — an object with `get`/`watch`/`set`, whether it came from
+  `initState`/`useState`, `computed` (read-only controls), or user code implementing the same shape.
+  Pass a plain value instead for an uncontrolled initial. How this reaches **one field of a form
+  state** is open — see _Open questions_. Three rules make the binding sound, and every stdlib
+  control follows them uniformly:
+  - The control subscribes with `watch` and updates its own element **in place** — never through a
+    region rebuild — so focus and caret survive external `set`s.
+  - It writes back with `set` at the commit point that fits the control (`input` for free typing,
+    `change` for pickers, blur/debounce where that is the better default) — the control owns its
+    commit semantics instead of exposing modifier soup.
+  - It never emits a commit in response to a programmatic value assignment it made itself; together
+    with `set`'s `Object.is` dedup this keeps set → watch → set echo loops from forming.
+
+  The bind contract is **public and documented**, not a stdlib-internal convention: custom
+  components and third-party widget wrappers accept state-shaped values the same way, with the
+  stdlib as the reference implementation.
 - **Every component consumes `--imp-*` theme tokens** (`todo/theme-styling.md`) and styles with
   `css``` using **logical properties only**, so theming and RTL work for free.
 - **User-facing strings pipe through `t()`** and register defaults via `defineMessages` (the draft's
@@ -34,10 +47,12 @@ Group components the way the draft does, importable from imp itself (never a thi
 
 ## Dependencies
 
-This is the top of the stack: it needs the signal graph and structural primitives
-(`todo/reactivity-signals.md`),
-``css``` + theme tokens (``todo/theme-styling.md`), and the i18n`t()`/`defineMessages`layer. Some components (`toast`,`modal`,`drawer`) also use`portal`
-from the structural primitives. Land those first; the stdlib can grow group by group.
+This is the top of the stack. Named state is in place and considered complete
+(`adr/event-propagated-state.md`) — the one state-side question left is the field-binding contract
+above, which is this item's to answer. Still needed are the `css` tagged template + theme tokens
+(`todo/theme-styling.md`) and the i18n `t()`/`defineMessages` layer. Some components (`toast`,
+`modal`, `drawer`) also need a `portal` primitive for DOM rendered outside the owning subtree. Land
+those first; the stdlib can grow group by group.
 
 ## A showcase surface
 
@@ -48,12 +63,28 @@ direction. Scope it as its own todo if it grows beyond a thin dev-server view.
 ## ADR impact
 
 New ADR `standard-component-library.md`: what the stdlib guarantees (token-driven, i18n-piped,
-logical-properties-only, signal-bound-by-convention, lowercase-function components on the public
+logical-properties-only, state-bound-by-convention, lowercase-function components on the public
 API), and the deliberate 80% scope boundary (heavy data viz, native mobile, collaborative editing
 out of scope). Update the ADR table; document the component catalog in `docs/`.
 
 ## Open questions
 
+- **How a control binds one field of a form state.** The two-way contract above assumes a control
+  can be handed a single state-shaped value with `set` for its own field. Nothing in the kernel
+  produces one for a **nested** field: `computed([user], (u) => u.address.city)` reads it (and, with
+  structural comparison, notifies only when that field changes), but is read-only, and a write
+  function cannot be inverted out of it. Two ways out, to be decided while building the first
+  controls, not before:
+  - **Split the contract** — `value` takes a readable, and the control reports commits separately
+    (`textField({ value: computed(…), commit: (city) => user.set(…) })`). No kernel change; the
+    spread stays in app code, where it is explicit.
+  - **A path-addressed projection in the kernel** — a writable view built from a path rather than a
+    function, so imp can walk it to read and rebuild it to write. Spelled either as a new helper
+    entry (`user.field('address', 'city')`) or as a path form of `computed`. Prototyped and proven
+    to work on the public API alone; **rejected for now** as unearned without a consumer (see
+    `adr/event-propagated-state.md`). If the split contract turns out to be clumsy across the input
+    group, this is the fallback — the cost is one more way to address state, and, for the `computed`
+    spelling, a combinator that is writable or not depending on its argument type.
 - **Catalog scope for v1.** Which of the draft groups are must-have vs. later additions.
 - **Overlay management.** Shared stacking/focus-trap/escape handling for `modal`/`drawer`/`toast`
   rather than each rolling its own.

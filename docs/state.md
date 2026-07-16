@@ -14,8 +14,9 @@ wrap things in, and no re-rendering — state changes update exactly the DOM you
   makes the state page-wide and permanent.
 - Both calls return the **same helper object**. Whoever holds it can read, set, and react to the
   state.
-- Reading and writing (`get`/`set`) work anywhere; **subscribing** (`watch`/`text`/`view`/`each`) is
-  a component activity — it happens inside `onMount` and ends when the component unmounts.
+- Reading and writing (`get`/`set`) work anywhere; **subscribing** (`watch`/`text`/`view`/`each`,
+  and binding props) is a component activity — it happens inside `onMount` and ends when the
+  component unmounts.
 - Setting state is **explicit**: `set(next)` replaces the whole value — pass the next value, or a
   function computing it from the current one, exactly like React's `setState`. To change one field
   of an object, spread the rest into a new object.
@@ -52,7 +53,8 @@ export const app = component('my-app-root', {
 `initState(name, initialValue)` and `useState(name)` both return a helper with the six entries
 below. `get` and `set` can be called from anywhere; `watch`, `text`, `view`, and `each` subscribe,
 and subscribing happens inside a component's `onMount` — the snippets below all live there (see
-_Cleanup_).
+_Cleanup_). Beyond the six entries, the helper itself can be passed as an element **prop value** to
+keep that prop live — see _Binding props_ below.
 
 ### `get()`
 
@@ -187,6 +189,56 @@ per item and stable across sets: an `id` from your data, never the array index. 
 values element factories accept. `each` expects the state value to be an array (`null` and
 `undefined` count as an empty one); any other value logs an error and renders nothing.
 
+## Binding props
+
+The helper's entries render **content**. For element **props** — `class`, `style`, attributes,
+properties — pass a state itself as the prop value and the prop stays live: it is applied when the
+element is built and re-applied on every `set`:
+
+```js
+const busy = useState('myapp.busy')
+
+button('Save', { disabled: busy })
+```
+
+Every prop form keeps its usual meaning, just reactively — a bound `class` takes the same string,
+array, or object-of-toggles a static `class` takes, a bound attribute is removed when the value
+turns `null`/`undefined`, and so on:
+
+```js
+div({ class: theme })
+li({ 'aria-selected': isSelected })
+```
+
+More often the prop's value _derives_ from a state rather than being one — and deriving is what
+`computed` is for. A computed state binds exactly the same way:
+
+```js
+const theme = useState('myapp.theme')
+
+div({ class: computed([theme], (value) => `card card--${value}`) })
+
+const rowClass = computed([selection], (selected) => ({ row: true, selected }))
+tr({ class: rowClass }, ...cells)
+```
+
+A bound `class` or `style` **owns** that prop: each new value replaces the previous one whole, so a
+class name or style entry the new value no longer contains is removed. Don't split one element's
+`class` between a binding and other code mutating `classList` — put everything the class depends on
+into the bound value.
+
+Two boundaries to know:
+
+- Binding a prop is a subscription like any other: it needs a mounting component and ends with it
+  (see _Cleanup_). Building an element with a bound prop outside a mount throws.
+- The binding is strictly **one-way**, state → DOM. Binding `value` on an input shows the state; it
+  does not write keystrokes back. Set the state from an event when the value is committed, and let
+  the binding carry it the other way.
+
+One mistake imp catches for you: the state goes in as a **prop value**, not as an argument of its
+own — `div(count)` looks plausible but would be nonsense (render it with `count.text()` instead), so
+imp reports it and skips the value.
+
 ## Computed states
 
 Sometimes a view needs one value computed from several states — a full name from two fields, a
@@ -208,8 +260,10 @@ export const nameBadge = component('my-app-name-badge', {
 
 The result is a **read-only state**: it has `get()`, `watch(fn)`, `text(select?)`, `view(render)`,
 and `each(renderItem)`, but calling `set` on it throws — to change it, set the source states. It
-notifies only when the computed outcome actually changes (`Object.is`), so computing from a single
-state is also how you watch one part of a bigger state without reacting to unrelated changes:
+notifies only when the computed outcome actually changes, compared by **content** — so a `compute`
+that builds a fresh object or array each time stays quiet as long as what it built is the same.
+Computing from a single state is therefore how you watch one part of a bigger state without reacting
+to unrelated changes:
 
 ```js
 const theme = computed([user], (u) => u.theme)
@@ -225,6 +279,9 @@ const remaining = computed([todos], (items) => items.filter((item) => !item.done
 
 ul(remaining.each((todo) => li(todo.title)))
 ```
+
+`filter` builds a new array every time it runs, but the comparison is by content, so this list only
+reacts when the remaining todos really differ — editing a done todo leaves it untouched.
 
 Two things to know about the balance here:
 
@@ -292,13 +349,13 @@ and reach for it only when the first two patterns don't fit.
 ## Cleanup
 
 Subscriptions are cleaned up **automatically** — and that works because every subscription has an
-owner. `watch(fn)`, `text()`, `view()`, and `each()` (on regular and computed states alike) only
-work while a component is mounting or inside a `view`/`each` render function: called anywhere else —
-module scope, an event handler, after an `await` in an async `onMount` — they throw. A subscription
-made in `onMount` belongs to the component and ends when it unmounts; one made inside a
-`view`/`each` render belongs to that region and ends when the region re-renders (or the component
-unmounts, whichever comes first — see **[Components](components.md)**). Swap whole screens in and
-out; nothing leaks and there is nothing to unhook.
+owner. `watch(fn)`, `text()`, `view()`, `each()`, and state-bound props (on regular and computed
+states alike) only work while a component is mounting or inside a `view`/`each` render function:
+called anywhere else — module scope, an event handler, after an `await` in an async `onMount` — they
+throw. A subscription made in `onMount` belongs to the component and ends when it unmounts; one made
+inside a `view`/`each` render belongs to that region and ends when the region re-renders (or the
+component unmounts, whichever comes first — see **[Components](components.md)**). Swap whole screens
+in and out; nothing leaks and there is nothing to unhook.
 
 Reading and writing are free: `get()` and `set(next)` work anywhere, any time — event handlers,
 timers, code after an `await`. So in an async `onMount`, subscribe first and fill the data in later:
