@@ -46,33 +46,46 @@ const literalArgumentName = (argument) => {
   return { known: false }
 }
 
+const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
+
+const collectImpImports = (node, classify, locals, namespaceLocals) => {
+  if (node.source.value !== 'imp') return
+  for (const specifier of node.specifiers) {
+    if (specifier.type === 'ImportSpecifier') {
+      const classified = classify(importedName(specifier))
+      if (classified !== null) locals.set(specifier.local.name, classified)
+    } else if (specifier.type === 'ImportNamespaceSpecifier') {
+      namespaceLocals.add(specifier.local.name)
+    }
+  }
+}
+
+const namespaceCalleeName = (callee, namespaceLocals) =>
+  callee.type === 'MemberExpression' && !callee.computed &&
+    callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
+    callee.property.type === 'Identifier'
+    ? callee.property.name
+    : null
+
 const createLiteralNameRule = (helperNames, nameProblem) => ({
   create(context) {
-    const helperLocals = new Set()
+    const helperLocals = new Map()
     const namespaceLocals = new Set()
     const calls = []
 
-    const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
-
     const isHelperCall = (callee) => {
       if (callee.type === 'Identifier') return helperLocals.has(callee.name)
-      return callee.type === 'MemberExpression' && !callee.computed &&
-        callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
-        callee.property.type === 'Identifier' && helperNames.has(callee.property.name)
+      return helperNames.has(namespaceCalleeName(callee, namespaceLocals))
     }
 
     return {
       ImportDeclaration(node) {
-        if (node.source.value !== 'imp') return
-        for (const specifier of node.specifiers) {
-          if (specifier.type === 'ImportSpecifier') {
-            if (helperNames.has(importedName(specifier))) {
-              helperLocals.add(specifier.local.name)
-            }
-          } else if (specifier.type === 'ImportNamespaceSpecifier') {
-            namespaceLocals.add(specifier.local.name)
-          }
-        }
+        collectImpImports(
+          node,
+          (name) => helperNames.has(name) ? name : null,
+          helperLocals,
+          namespaceLocals,
+        )
       },
       CallExpression(node) {
         calls.push(node)
@@ -126,16 +139,10 @@ export default {
         const namespaceLocals = new Set()
         const calls = []
 
-        const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
-
         const factoryKind = (callee) => {
           if (callee.type === 'Identifier') return factoryLocals.get(callee.name) ?? null
-          if (
-            callee.type === 'MemberExpression' && !callee.computed &&
-            callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
-            callee.property.type === 'Identifier'
-          ) return classifyFactory(callee.property.name)
-          return null
+          const name = namespaceCalleeName(callee, namespaceLocals)
+          return name === null ? null : classifyFactory(name)
         }
 
         const factoryName = (callee) =>
@@ -143,15 +150,7 @@ export default {
 
         return {
           ImportDeclaration(node) {
-            if (node.source.value !== 'imp') return
-            for (const specifier of node.specifiers) {
-              if (specifier.type === 'ImportSpecifier') {
-                const kind = classifyFactory(importedName(specifier))
-                if (kind) factoryLocals.set(specifier.local.name, kind)
-              } else if (specifier.type === 'ImportNamespaceSpecifier') {
-                namespaceLocals.add(specifier.local.name)
-              }
-            }
+            collectImpImports(node, classifyFactory, factoryLocals, namespaceLocals)
           },
           CallExpression(node) {
             calls.push(node)
@@ -175,10 +174,7 @@ export default {
         }
       },
     },
-    'state-name-namespace': createLiteralNameRule(
-      new Set(['initState', 'useState']),
-      stateNameProblem,
-    ),
+    'state-name-namespace': createLiteralNameRule(STATE_SETUP_HELPERS, stateNameProblem),
     'state-setup-before-await': {
       create(context) {
         const helperLocals = new Map()
@@ -186,17 +182,10 @@ export default {
         const functions = []
         const candidates = []
 
-        const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
-
         const calledHelper = (callee) => {
           if (callee.type === 'Identifier') return helperLocals.get(callee.name) ?? null
-          if (
-            callee.type === 'MemberExpression' && !callee.computed &&
-            callee.object.type === 'Identifier' && namespaceLocals.has(callee.object.name) &&
-            callee.property.type === 'Identifier' &&
-            STATE_SETUP_HELPERS.has(callee.property.name)
-          ) return callee.property.name
-          return null
+          const name = namespaceCalleeName(callee, namespaceLocals)
+          return name !== null && STATE_SETUP_HELPERS.has(name) ? name : null
         }
 
         const isAsyncOnMount = (node) =>
@@ -215,16 +204,12 @@ export default {
 
         return {
           ImportDeclaration(node) {
-            if (node.source.value !== 'imp') return
-            for (const specifier of node.specifiers) {
-              if (specifier.type === 'ImportSpecifier') {
-                if (STATE_SETUP_HELPERS.has(importedName(specifier))) {
-                  helperLocals.set(specifier.local.name, importedName(specifier))
-                }
-              } else if (specifier.type === 'ImportNamespaceSpecifier') {
-                namespaceLocals.add(specifier.local.name)
-              }
-            }
+            collectImpImports(
+              node,
+              (name) => STATE_SETUP_HELPERS.has(name) ? name : null,
+              helperLocals,
+              namespaceLocals,
+            )
           },
           FunctionDeclaration: enterFunction,
           'FunctionDeclaration:exit': exitFunction,

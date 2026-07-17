@@ -34,9 +34,9 @@ On top of the base set, imp's own rules are always applied as errors:
 
 ### `imp/no-capital-component`
 
-imp components are lowercase functions — there is no framework component concept and no JSX, so a
-capitalized function name signals a habit from another framework. The rule flags function
-declarations and function-valued variables whose name starts with a capital letter:
+imp components are lowercase functions — element factories and `component()` factories alike — and
+there is no JSX, so a capitalized function name signals a habit from another framework. The rule
+flags function declarations and function-valued variables whose name starts with a capital letter:
 
 ```js
 const Widget = () => div('widget')

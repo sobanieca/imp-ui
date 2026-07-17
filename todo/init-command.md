@@ -46,7 +46,7 @@ Only the minimum to run. Do not generate more than this:
   so ignoring them would break the model.
 
 That is the complete file set — no `src/`, no example components, no README. Anything richer belongs
-in a separate example/showcase effort (`todo/example-todo-app.md`,
+in a separate example/showcase effort (the in-repo `examples/todo` app,
 `todo/example-showcase-repos.md`), not in `imp init`.
 
 ## PWA scaffolding — `imp init --pwa`

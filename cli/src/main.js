@@ -85,9 +85,13 @@ try {
       const { start } = await import('./start.js')
       notifyUpdate(rest)
       const portFlag = flag(rest, 'port', null)
+      const port = portFlag === null ? null : Number(portFlag)
+      if (port !== null && (!Number.isInteger(port) || port < 0 || port > 65535)) {
+        throw new Error(`--port must be an integer between 0 and 65535, got '${portFlag}'`)
+      }
       await start({
         entry: positional(rest)[0] ?? 'index.html',
-        port: portFlag === null ? null : Number(portFlag),
+        port,
         env: flag(rest, 'env', null),
       })
       break

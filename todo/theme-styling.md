@@ -27,10 +27,10 @@ arrays/objects) — a `css``` result is just a class string.
 ## Themable by default — `--imp-*` tokens
 
 Port `prev/experiment/imp/theme.js`. Design tokens (color, radius, shadow, spacing, typography) are
-`--imp-*` CSS custom properties on `:root`, driven by a reactive `theme` signal. Swapping the theme
-rewrites the variables in one pass, so every
-``css``` rule that references a token re-skins the whole
-app **instantly with no re-render** — depends on the signal graph in``todo/reactivity-signals.md`.
+`--imp-*` CSS custom properties on `:root`, driven by a page-wide `theme` state. Swapping the theme
+rewrites the variables in one pass, so every ``css``` rule that references a token re-skins the
+whole app **instantly with no re-render** — a headless component watching the state
+(`adr/event-propagated-state.md`).
 
 - `defineTheme(name, { mode, direction, tokens })` — starts from the built-in light/dark token set
   for its mode; `tokens` overrides individual entries (copy-and-tweak, no full list needed).

@@ -75,7 +75,8 @@ button(
   not yet exposed and falls back to an attribute, so define custom elements before constructing
   nodes that pass rich/`null` props to them.
 - **`class`**: `'card'` · `['card', extra]` (falsy entries dropped, joined) · `{ active: cond }`
-  (object — each truthy entry toggles its class on).
+  (object — the truthy entries' names become the class). Every form sets the class whole — what you
+  pass is what the element gets.
 - **`style`**: `'color:red'` · object (`camelCase` -> kebab, `--custom-props` kept verbatim).
 - **`events`**: `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` — native DOM event
   names, **no `on` prefix**. The optional second array element is `addEventListener` options.

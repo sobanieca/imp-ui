@@ -51,6 +51,8 @@ const TIPS = [
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+const logActivity = (activity, entry) => activity.set((entries) => [entry, ...entries].slice(0, 6))
+
 const baseStyles = `
   * { box-sizing: border-box }
 `
@@ -144,6 +146,14 @@ const tipText = component('todo-tip-text', {
   },
 })
 
+const tipRow = (epoch, content, actionLabel, errorClass) =>
+  div(
+    { class: ['tip', errorClass] },
+    strong('tip'),
+    content,
+    button({ class: 'ghost', events: { click: () => epoch.set((n) => n + 1) } }, actionLabel),
+  )
+
 const tipBox = component('todo-tip-box', {
   styles: `
     ${buttonStyles}
@@ -166,24 +176,8 @@ const tipBox = component('todo-tip-box', {
     .tip span { flex: 1 }
     .tip-error { border-color: #a84a4a }
   `,
-  onMount: () => {
-    const epoch = useState('todo.tipEpoch')
-    return div(
-      { class: 'tip' },
-      strong('tip'),
-      tipText(),
-      button({ class: 'ghost', events: { click: () => epoch.set((n) => n + 1) } }, 'next tip'),
-    )
-  },
-  onError: (error) => {
-    const epoch = useState('todo.tipEpoch')
-    return div(
-      { class: 'tip tip-error' },
-      strong('tip'),
-      span(error.message),
-      button({ class: 'ghost', events: { click: () => epoch.set((n) => n + 1) } }, 'retry'),
-    )
-  },
+  onMount: () => tipRow(useState('todo.tipEpoch'), tipText(), 'next tip'),
+  onError: (error) => tipRow(useState('todo.tipEpoch'), span(error.message), 'retry', 'tip-error'),
 })
 
 let draggedCard = null
@@ -261,7 +255,6 @@ const todoCard = component('todo-card', {
   onMount: ({ title = 'untitled', note = '', startEditing = false } = {}) => {
     const stage = useState('todo.stage')
     const activity = useState('todo.activity')
-    const logActivity = (entry) => activity.set((entries) => [entry, ...entries].slice(0, 6))
     const cardTitle = initState('todo.cardTitle', title)
     const cardNote = initState('todo.cardNote', note)
     const editing = initState('todo.editing', startEditing)
@@ -285,7 +278,7 @@ const todoCard = component('todo-card', {
       cardTitle.set(titleField.value.trim() || cardTitle.get())
       cardNote.set(noteField.value.trim())
       editing.set(false)
-      logActivity(`edited card “${cardTitle.get()}”`)
+      logActivity(activity, `edited card “${cardTitle.get()}”`)
     }
     const startDrag = (event) => {
       draggedCard = event.target.getRootNode().host
@@ -371,7 +364,7 @@ const boardColumn = component('todo-board-column', {
       event.currentTarget.classList.remove('drag-over')
       if (!draggedCard) return
       cards.append(draggedCard)
-      activity.set((log) => [`card moved to “${stageLabel}”`, ...log].slice(0, 6))
+      logActivity(activity, `card moved to “${stageLabel}”`)
     }
     return div(
       {
@@ -590,7 +583,7 @@ const todoApp = component('todo-app', {
     const clockOn = initState('todo.clockOn', false)
     const tipEpoch = initState('todo.tipEpoch', 0)
 
-    const log = (entry) => activity.set((entries) => [entry, ...entries].slice(0, 6))
+    const log = (entry) => logActivity(activity, entry)
 
     const cardSlots = Object.fromEntries(
       STAGES.map((stage) => [stage.id, div({ class: 'cards' })]),

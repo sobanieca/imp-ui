@@ -95,10 +95,10 @@ fire. imp ships no hard-coded event names beyond the `pageview` convention.
 
 ## Dependencies
 
-Builds on the signal graph and scope disposal (`todo/reactivity-signals.md`) for scoped sink cleanup
-and for state-change emits; pageview auto-instrumentation needs the router (`todo/router.md`);
-diagnostics route through the built-in logger (`todo/logger.md`). The `data-track` delegation is
-pure real DOM and needs none of them.
+Builds on the landed state layer and its scoped cleanup (`adr/event-propagated-state.md`) for scoped
+sink cleanup and for state-change emits; pageview auto-instrumentation needs the router
+(`todo/router.md`); diagnostics route through the built-in logger (`todo/logger.md`). The
+`data-track` delegation is pure real DOM and needs none of them.
 
 ## ADR impact
 
