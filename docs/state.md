@@ -20,8 +20,9 @@ wrap things in, and no re-rendering — state changes update exactly the DOM you
 - Setting state is **explicit**: `set(next)` replaces the whole value — pass the next value, or a
   function computing it from the current one, exactly like React's `setState`. To change one field
   of an object, spread the rest into a new object.
-- State holds **plain data**: plain objects, arrays, and primitives like strings, numbers, and
-  booleans. A function is never a state value — passing one to `set` always means the updater form.
+- State holds **plain data**: plain objects, arrays, dates (`Date` or any Temporal type), URLs,
+  regular expressions, and primitives like strings, numbers, and booleans. A function is never a
+  state value — passing one to `set` always means the updater form.
 - A value computed **from several states** is a computed state: `computed([a, b], fn)` returns a
   read-only state that follows its sources.
 
@@ -85,8 +86,21 @@ Setting a value identical to the current one (same reference, `Object.is`) is a 
 
 Because a function argument always means "compute the next value", a function can never itself be a
 state value. That is by design, not a corner case to work around: state holds **plain data** — plain
-objects, arrays, and primitives. Keep functions, DOM nodes, and class instances out of state; hold
-the data and derive everything else from it.
+objects, arrays, dates, and primitives. Keep functions, DOM nodes, and class instances out of state;
+hold the data and derive everything else from it.
+
+A few value-like types count as plain data too, and imp compares each by content, not by reference:
+dates — `Date` (by instant) and every Temporal type (`Temporal.PlainDate`, `Temporal.Instant`,
+`Temporal.ZonedDateTime`, `Temporal.Duration`, …) — plus `URL` (by its full href) and `RegExp` (by
+source and flags). Two different `Date` objects holding the same instant, or two `URL`s with the
+same href, count as unchanged wherever imp compares values.
+
+imp checks the plain-data rule: when an initial value or a value passed to `set` contains anything
+else — a `Map`, a class instance, a function — or references itself in a cycle, imp logs an error
+naming the state and the offending path (like `sessions[0].startedAt`). The value is still stored so
+the app keeps running, but such values compare by identity rather than by content, which silently
+breaks the content-based change detection `each`, `computed`, and provider switching rely on — treat
+the error as a bug to fix, not noise.
 
 ### `watch(fn)`
 

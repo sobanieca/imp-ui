@@ -23,8 +23,8 @@ with `useState(name)`. Both return the same helper:
   with the current value and its result stored (`set((current) => ({ ...current, name: 'x' }))` —
   the get-then-set idiom in one call, React's `setState` dispatch). A `set` resolving to an
   identical value (`Object.is`) notifies nobody. The dispatch means a function can never be a state
-  value — accepted deliberately: state holds plain data (objects, arrays, primitives), which the
-  structural comparisons in keyed `each` and consumer rebinding assume anyway.
+  value — accepted deliberately: state holds plain data, which the structural comparisons in keyed
+  `each` and consumer rebinding assume anyway (`state-plain-data-values.md`).
 - `watch(fn)` — runs `fn(value)` now and after every `set`; returns an unsubscribe function.
 - `text(select?)` — returns a live `Text` node showing (a selection of) the value.
 - `view(render)` — returns a live region re-rendered from `render(value)` on every `set`, anchored

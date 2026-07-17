@@ -188,9 +188,9 @@ Details worth knowing:
   Sorting libraries that live-move the element between containers while dragging produce a chain of
   moves; each one only rebinds, so nothing is rebuilt along the way.
 - **`view`/`each` regions re-render on a move only if their bound value changed** at the new
-  position — compared by content for plain objects and arrays, so two providers holding equal data
-  do not cost a rebuild; when the value did change, the region rebuilds exactly as it would on any
-  `set`.
+  position — compared by content for plain objects, arrays, and value types like dates and URLs, so
+  two providers holding equal data do not cost a rebuild; when the value did change, the region
+  rebuilds exactly as it would on any `set`.
 - **A missing state at the new position is an error.** If the component uses a state that nothing
   above its new position provides, imp logs an error and keeps the previous binding — initialize
   that name in an ancestor that spans every place the component can land.
