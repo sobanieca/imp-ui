@@ -453,3 +453,10 @@ library's shadow DOM.
 State names need a namespace: at least one dot, no empty segments — `myapp.user` is valid, `user`,
 `.user`, and `user.` are not. Runtime calls throw on bad names, and the `imp/state-name-namespace`
 lint rule catches literal names as you write them (see **[Linting](lint.md)**).
+
+## Debugging
+
+Set the `IMP_LOG_LEVEL` environment value to `debug` and imp traces state activity in the browser
+console — every read, every set (including sets skipped because the value was unchanged or
+structurally equal), every subscription attaching and detaching, and every notification. See
+**[Logging](logging.md)**.

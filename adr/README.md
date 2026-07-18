@@ -34,6 +34,12 @@ Conventions:
 | [event-propagated-state](event-propagated-state.md)   | Named state via initState/useState — subtree-scoped by DOM-event bubbling, auto-cleanup, computed |
 | [state-plain-data-values](state-plain-data-values.md) | Plain-data state values: fused validate+structural-compare on set, deep-frozen when stored        |
 
+## Library
+
+| ADR                                   | Decision                                              |
+| ------------------------------------- | ----------------------------------------------------- |
+| [built-in-logger](built-in-logger.md) | One console-backed logger, level from `IMP_LOG_LEVEL` |
+
 ## CLI
 
 | ADR                                                                   | Decision                                                       |
