@@ -17,8 +17,9 @@ log level can ride the same mechanism instead of introducing new configuration.
 - **Console is the only sink.** `debug` and `info` write through `console.log`, `warn` through
   `console.warn`, `error` through `console.error` — the browser console's severity filtering and
   stack traces keep working, and there is no transport abstraction to configure.
-- **Five ordered levels** — `debug`, `info`, `warn`, `error`, `silent` — with `info` as default: the
-  library's warnings and errors always show unless deliberately silenced, debug tracing is opt-in.
+- **Four ordered levels** — `debug`, `info`, `warn`, `error` — with `info` as default: the library's
+  warnings and errors always show, debug tracing is opt-in. There is deliberately no way to silence
+  errors.
 - **The level comes from the environment**: the `IMP_LOG_LEVEL` value in the selected environment
   file, read once at load from the injected `env` object; an unknown value warns and falls back to
   the default. `setLogLevel` overrides at runtime (usable from the browser console on a running

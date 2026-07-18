@@ -29,9 +29,9 @@ stack-trace handling keep working.
 
 ## Log levels
 
-Five levels, in order: `debug` < `info` < `warn` < `error` < `silent`. A message is written only
-when its level is at or above the active level. The default level is `info` — imp's warnings and
-errors show, debug tracing stays quiet.
+Four levels, in order: `debug` < `info` < `warn` < `error`. A message is written only when its level
+is at or above the active level. The default level is `info` — imp's warnings and errors show, debug
+tracing stays quiet.
 
 Set the level per environment through the `IMP_LOG_LEVEL` value in an environment file (see
 _Environments_ in **[CLI](cli.md)**) — debug tracing in dev, warnings and errors in prod:
@@ -70,4 +70,4 @@ binding updates too often, or not at all:
   subscriptions after a move.
 
 Everything at `warn` and `error` — invalid state values, failed subscribers, mount failures, and the
-like — shows at the default level; `silent` turns even those off.
+like — shows at the default level.
