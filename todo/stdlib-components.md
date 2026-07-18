@@ -35,7 +35,7 @@ Group components the way the draft does, importable from imp itself (never a thi
     `change` for pickers, blur/debounce where that is the better default) — the control owns its
     commit semantics instead of exposing modifier soup.
   - It never emits a commit in response to a programmatic value assignment it made itself; together
-    with `set`'s `Object.is` dedup this keeps set → watch → set echo loops from forming.
+    with `set`'s content-equality dedup this keeps set → watch → set echo loops from forming.
 
   The bind contract is **public and documented**, not a stdlib-internal convention: custom
   components and third-party widget wrappers accept state-shaped values the same way, with the

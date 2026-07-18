@@ -81,8 +81,18 @@ todos.set((items) => [...items, newTodo])
 Use the plain form when the next value arrives from outside — a server response, a form field, a
 reset — and the updater form whenever the next value derives from the current one.
 
-Setting a value identical to the current one (same reference, `Object.is`) is a no-op, in both forms
-— which is why object and array updates spread into a **new** object or array.
+Setting a value **structurally equal** to the current one is a no-op, in both forms. imp compares
+the next value against the current one by content — deep, field by field — so re-setting an
+unchanged value notifies no subscribers and repaints nothing, even when it is a brand-new object.
+That matters most at the edges of your app: a poll or socket payload deserialized into a fresh
+object, or a value rebuilt from inputs that did not actually change, stays quiet instead of tearing
+down and rebuilding the DOM bound to it.
+
+Every value you read from state is **frozen** — a base state's `get()` and a computed's result
+alike, and the same value handed to `watch`, `view`, and `each`. You cannot assign to its fields
+(doing so throws). This is why object and array updates spread into a **new** object or array:
+mutating the value in place is both blocked and, because imp keeps no separate copy of the previous
+value to compare against, would otherwise be silently lost.
 
 Because a function argument always means "compute the next value", a function can never itself be a
 state value. That is by design, not a corner case to work around: state holds **plain data** — plain
@@ -99,8 +109,8 @@ imp checks the plain-data rule: when an initial value or a value passed to `set`
 else — a `Map`, a class instance, a function — or references itself in a cycle, imp logs an error
 naming the state and the offending path (like `sessions[0].startedAt`). The value is still stored so
 the app keeps running, but such values compare by identity rather than by content, which silently
-breaks the content-based change detection `each`, `computed`, and provider switching rely on — treat
-the error as a bug to fix, not noise.
+breaks the content-based change detection `set`, `each`, `computed`, and provider switching rely on
+— treat the error as a bug to fix, not noise.
 
 ### `watch(fn)`
 
@@ -273,11 +283,13 @@ export const nameBadge = component('my-app-name-badge', {
 ```
 
 The result is a **read-only state**: it has `get()`, `watch(fn)`, `text(select?)`, `view(render)`,
-and `each(renderItem)`, but calling `set` on it throws — to change it, set the source states. It
-notifies only when the computed outcome actually changes, compared by **content** — so a `compute`
-that builds a fresh object or array each time stays quiet as long as what it built is the same.
-Computing from a single state is therefore how you watch one part of a bigger state without reacting
-to unrelated changes:
+and `each(renderItem)`, but calling `set` on it throws — to change it, set the source states. Write
+`compute` as a pure function of the values it receives: imp calls it when a source changes and
+reuses the result in between, so anything it reads beyond its arguments can go stale. It notifies
+only when the computed outcome actually changes, compared by **content** — so a `compute` that
+builds a fresh object or array each time stays quiet as long as what it built is the same. Computing
+from a single state is therefore how you watch one part of a bigger state without reacting to
+unrelated changes:
 
 ```js
 const theme = computed([user], (u) => u.theme)

@@ -43,10 +43,10 @@ current values, and pending async mount all ride along. What restarts is the sub
   arrays are compared by content, everything else (class instances, functions, Dates) by `Object.is`
   — when equality cannot be established, the binding re-fires. So bindings update in place and a
   `view`/`each` region re-renders on move only when its value actually changed; a move between
-  providers holding equal plain data leaves the region's DOM untouched. The structural walk runs
-  only on rebinds — gesture-frequency events — while `set` keeps its documented `Object.is` rule
-  (`event-propagated-state.md`). If nothing at the new position provides the name, an error is
-  logged and the previous binding is kept.
+  providers holding equal plain data leaves the region's DOM untouched. On a move the structural
+  walk runs only on rebinds — gesture-frequency events — and is the same `valuesEqual` comparison
+  `set` and `computed` use (`state-plain-data-values.md`). If nothing at the new position provides
+  the name, an error is logged and the previous binding is kept.
 
 ## Consequences
 

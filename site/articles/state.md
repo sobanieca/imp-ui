@@ -85,9 +85,13 @@ count.set((value) => value + 1) // updater form
 todos.set((items) => [...items, newTodo]) // spread into a new array
 ```
 
-Setting an identical value is a no-op, so nobody downstream does wasted work. And because a function
-argument always means "compute the next value," state holds **plain data** — objects, arrays,
-primitives. No class instances, no functions, no surprises when things get compared.
+Setting a value equal to the current one is a no-op — imp compares **by content**, field by field,
+not by reference — so a poll or socket payload that came back unchanged does zero downstream work,
+even though it is a brand-new object. The value you read back is **frozen**: try to mutate it and
+imp throws instead of silently dropping the change, which is exactly why updates spread into a fresh
+object. And because a function argument always means "compute the next value," state holds **plain
+data** — objects, arrays, primitives. No class instances, no functions, no surprises when things get
+compared.
 
 ### `watch(fn)` — react to it
 

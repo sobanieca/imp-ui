@@ -21,10 +21,11 @@ with `useState(name)`. Both return the same helper:
 - `get()` — current value.
 - `set(next)` — explicitly replaces the value. A function `next` is the updater form: it is called
   with the current value and its result stored (`set((current) => ({ ...current, name: 'x' }))` —
-  the get-then-set idiom in one call, React's `setState` dispatch). A `set` resolving to an
-  identical value (`Object.is`) notifies nobody. The dispatch means a function can never be a state
-  value — accepted deliberately: state holds plain data, which the structural comparisons in keyed
-  `each` and consumer rebinding assume anyway (`state-plain-data-values.md`).
+  the get-then-set idiom in one call, React's `setState` dispatch). A `set` resolving to a
+  structurally equal value notifies nobody — the comparison is the same content walk keyed `each`
+  and consumer rebinding use (`state-plain-data-values.md`). The dispatch means a function can never
+  be a state value — accepted deliberately: state holds plain data, which those structural
+  comparisons assume anyway.
 - `watch(fn)` — runs `fn(value)` now and after every `set`; returns an unsubscribe function.
 - `text(select?)` — returns a live `Text` node showing (a selection of) the value.
 - `view(render)` — returns a live region re-rendered from `render(value)` on every `set`, anchored
