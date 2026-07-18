@@ -7,15 +7,81 @@ draft set lives in `prev/experiment/stdlib/`.
 
 ## What ships
 
-Group components the way the draft does, importable from imp itself (never a third-party package):
+Group components the way the draft does, importable from imp itself (never a third-party package).
+The catalog targets rough parity with the mainstream sets (antd, shadcn/ui) inside the 80% scope.
+Entries marked _(later)_ are fast-follow tier — listed now so the shape of the full set is fixed up
+front, built after the core lands. Names keep the draft's rule of never shadowing a bare element
+helper (`formBox`, `selectBox`, `switchToggle`); new entries follow suit.
 
-- **Layout** — `stack`, `row`, `grid`, `spacer`, `container`.
-- **Inputs** — `textField`, `textArea`, `selectBox`, `checkbox`, `radioGroup`, `switchToggle`,
-  `slider`, `datePicker`, `formBox` (SPA-default `submit` with `preventDefault`).
-- **Display** — `card`, `badge`, `avatar`, `tag`, `tooltip`.
-- **Feedback** — `spinner`, `progressBar`, `alert`, `toast`, `modal`, `drawer`.
-- **Navigation** — `tabs`, `menuList`, `breadcrumbs`, `pagination`.
-- **Data** — `dataTable`, `listView`, `tree`.
+- **General** — `pushButton` (primary/default/ghost/danger variants, sizes, loading + disabled
+  states), `iconBox`, `heading`, `textBlock`, `textLink`.
+- **Layout** — `stack`, `row`, `grid`, `spacer`, `container`, `divider`, `appShell`, `scrollArea`,
+  `splitPane` _(later)_, `aspectBox` _(later)_ — placement details in _Layout & placement_ below.
+- **Inputs** — `textField`, `textArea`, `numberField`, `passwordField`, `searchField`, `selectBox`,
+  `comboBox` (autocomplete), `checkbox`, `radioGroup`, `switchToggle`, `slider`, `datePicker`,
+  `dateRangePicker`, `timePicker`, `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_,
+  `colorPicker` _(later)_, `rating` _(later)_, `otpField` _(later)_, `cascader` _(later)_,
+  `treeSelect` _(later)_, plus `formBox` and the form layer — details in _Form handling_ below.
+- **Display** — `card`, `badge`, `avatar`, `tag`, `tooltip`, `popover`, `accordion`,
+  `descriptionList`, `statistic`, `emptyState`, `timeline` _(later)_, `carousel` _(later)_,
+  `imageView` (preview/zoom) _(later)_, `calendarView` _(later)_, `qrCode` _(later)_.
+- **Feedback** — `spinner`, `progressBar`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
+  `popconfirm`, `resultView` _(later)_.
+- **Navigation** — `tabs`, `menuList`, `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`,
+  `commandPalette` _(later)_, `anchorNav` _(later)_, `floatButton` _(later)_.
+- **Data** — `dataTable` (sorting, filtering, pagination, row selection), `listView`, `tree`,
+  `virtualList` _(later)_, `transferList` _(later)_.
+
+## Layout & placement
+
+The layout group is the antd-style placement toolkit — child positioning is expressed through layout
+parents, not per-component positioning props:
+
+- **`stack` / `row`** carry the flex placement surface: `justify`, `align`, `gap`, `wrap`,
+  `direction` — enough that app code almost never writes raw flex CSS.
+- **`grid`** is the antd Row/Col model: a 24-column grid where children declare `span`, `offset`,
+  and `order`, with per-breakpoint values for each (see _Responsive & mobile_). Also a plain
+  CSS-grid mode (`columns`, `areas`) for dashboard-style placement.
+- **`appShell`** is the page-level frame (antd Layout): header, sider, content, footer slots with
+  sticky header and collapsible sider built in.
+- **`spacer`, `divider`, `container`, `scrollArea`** round out spacing, separation, max-width
+  centering, and overflow control; `splitPane` adds user-resizable panes _(later)_.
+- All spacing values come off the theme's spacing scale (`--imp-*` tokens), not free-form pixels, so
+  layouts stay consistent across an app.
+
+## Form handling
+
+`formBox` grows from an SPA-default `submit` wrapper into a proper form layer (what antd `Form`
+provides), still built entirely on named state:
+
+- **A form is a state object.** `formBox` accepts the form's state; fields bind to it through the
+  two-way contract below — no separate form-value store to sync. This makes the form layer the first
+  real consumer of the field-binding open question, which gets decided here.
+- **`formField`** wraps a control with label, required marker, help text, and an error slot, with
+  the antd layout variants (vertical, horizontal with aligned labels, inline) driven by the form's
+  layout prop and logical properties only.
+- **Validation is declarative per field** — `required`, min/max, pattern, custom sync/async
+  validators — evaluated at the control's commit point and again on submit. Errors live in state, so
+  error display is reactive like everything else; default messages route through `t()`.
+- **Submit** keeps the SPA default (`preventDefault`), gates on validity, wires the submit button's
+  loading/disabled state, and surfaces form-level (non-field) errors.
+- **Touched/dirty tracking and `reset`** to initial values come with the form state.
+
+## Responsive & mobile
+
+Mobile layout is first-class, not a separate component set:
+
+- **Breakpoint scale as theme tokens** (`xs`–`xl`), shared by every component and overridable per
+  theme.
+- **Responsive prop convention:** every layout-affecting prop accepts a per-breakpoint object —
+  `grid` spans/offsets (`span: { xs: 24, md: 12 }`), `stack`/`row` direction and gap, visibility
+  (`hideBelow`/`hideAbove`). One spelling, used uniformly across the stdlib.
+- **Components adapt below the breakpoints they care about:** `appShell` collapses the sider into a
+  `drawer` behind a menu button; `dataTable` switches to stacked cards or horizontal scroll; `modal`
+  goes full-screen; `drawer` becomes a bottom sheet; pickers render touch-appropriate panels.
+- **Touch targets** meet a minimum size taken from the theme tokens.
+- **A state-shaped `breakpoint` value** (readable + watchable) is public API, so app code can branch
+  on viewport the same way the stdlib does internally.
 
 ## Conventions (keep from the draft)
 
@@ -85,7 +151,12 @@ out of scope). Update the ADR table; document the component catalog in `docs/`.
     `adr/event-propagated-state.md`). If the split contract turns out to be clumsy across the input
     group, this is the fallback — the cost is one more way to address state, and, for the `computed`
     spelling, a combinator that is writable or not depending on its argument type.
-- **Catalog scope for v1.** Which of the draft groups are must-have vs. later additions.
+- **Catalog scope for v1.** A core vs. _(later)_ split is drafted in the catalog above; confirm or
+  reshuffle it while building — the tier markers are a starting bid, not a commitment.
+- **Responsive prop mechanics.** Whether per-breakpoint props compile to pure CSS (media/container
+  queries generated by the component) or resolve in JS via the `breakpoint` state — CSS is likely
+  the default for layout, with the JS path reserved for structural swaps like `dataTable`'s card
+  mode.
 - **Overlay management.** Shared stacking/focus-trap/escape handling for `modal`/`drawer`/`toast`
   rather than each rolling its own.
 - **Accessibility baseline.** The ARIA/keyboard contract every interactive component must meet.
