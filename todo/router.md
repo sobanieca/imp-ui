@@ -23,10 +23,11 @@ while a lazy chunk loads.
 ## Pieces (port from the draft)
 
 - `route(pattern, factory)` — registers a pattern; `:param` segments and a `*` wildcard fallback.
-- `currentRoute` — a page-wide state of `{ path, query }` (`initState` at module scope); the outlet
-  re-renders when it changes.
-- `navigate(path, { replace })` — `pushState`/`replaceState` + sets the state; `popstate` keeps it
-  in sync with back/forward.
+- `currentRoute` — an app-lifetime state of `{ path, query }`, initialized by the outlet in its
+  `onMount` (the outlet is the app-wide root that owns routing; there is no module scope to hold it,
+  `adr/event-propagated-state.md`). The outlet keeps the handle and re-renders when it changes.
+- `navigate(path, { replace })` — `pushState`/`replaceState` + `set`s the state through the handle
+  the outlet closes over (`get`/`set` work anywhere); `popstate` keeps it in sync with back/forward.
 - `router()` — the **outlet**, naturally an imp component (`adr/web-component-lifecycle.md`): it
   subscribes to `currentRoute` in `onMount` and swaps the matched factory's output in. Because route
   pages are components too, swapping the DOM unmounts the old page — its scoped state and
@@ -35,13 +36,13 @@ while a lazy chunk loads.
 - **Route modules must leave nothing behind.** Everything a route creates has to be released when
   the route is swapped out, which the component lifecycle already guarantees — provided the module
   plays by scope rules: every route-lifetime state is an `initState` in the route's **root
-  component** (never module scope — a lazily imported module is evaluated once and page-wide state
-  it creates is immortal), subscriptions live in mounts (enforced), and timers/sockets go through
-  `onUnmount` (teardown is fault-isolated per `error-boundaries.md`, so one bad hook cannot leak the
-  rest). The planned `module` component (`module-component.md`) makes that root boundary a
-  first-class piece and adds enforcement (lint + import tripwire). The docs' screen-scoping guidance
-  (`docs/state.md`, _Scope and lifetime_) is written to match; the router docs should restate it for
-  route modules specifically.
+  component** (state is owned by its component — a mounting-component `initState` is the only form
+  there is, so route state is released when the route root unmounts), subscriptions live in mounts
+  (enforced), and timers/sockets go through `onUnmount` (teardown is fault-isolated per
+  `error-boundaries.md`, so one bad hook cannot leak the rest). The planned `module` component
+  (`module-component.md`) makes that root boundary a first-class piece and adds enforcement (lint +
+  import tripwire). The docs' screen-scoping guidance (`docs/state.md`, _Scope and lifetime_) is
+  written to match; the router docs should restate it for route modules specifically.
 - **The outlet (or route root) is the error boundary.** A failed dynamic `import()` or a route page
   whose async `onMount` rejects routes to the nearest `onError` (`error-boundaries.md`) — the outlet
   should either define a default `onError` fallback or document that each route root should bring
@@ -60,9 +61,9 @@ copying.
 ## ADR impact
 
 New ADR `client-side-router.md` recording: explicit registration (file-based routing rejected and
-why), the current location as page-wide state, the outlet as a component, lazy routes via dynamic
-`import()` with no build step, and real-anchor `link`. Update the ADR table; document usage in
-`docs/`.
+why), the current location as app-lifetime state owned by the outlet, the outlet as a component,
+lazy routes via dynamic `import()` with no build step, and real-anchor `link`. Update the ADR table;
+document usage in `docs/`.
 
 ## Open questions
 

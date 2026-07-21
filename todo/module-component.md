@@ -1,37 +1,38 @@
-# `module` component — scoped "globals" for router modules
+# `module` component — a lifetime boundary for router modules
 
 Give modules (the units the router swaps between, `router.md`) a dedicated root component,
-`module(...)`, that owns everything the module treats as global — instead of letting that land on
-`document`.
+`module(...)`, that owns everything the module treats as module-lifetime — its state and any real
+globals it touches — so the router releases all of it on switch through the ordinary component
+lifecycle.
 
-## Why `document` cannot hold module globals
+## Why module-lifetime state needs a root component
 
-- Page-wide state (`initState` at module top level) attaches to `document` and lives for the page
-  (`adr/event-propagated-state.md`).
+- State is **owned by the component that initializes it** (`adr/event-propagated-state.md`); there
+  is no page-wide scope, and `initState` outside a mounting component throws. So a module cannot
+  reach for a "module global" at top level — it has nothing to attach to, and the call fails.
 - ES modules evaluate **once per page**: a lazily imported module's top-level code runs on first
-  navigation and never again. The router therefore cannot "clean up" a module's page-wide state on
-  switch — navigating back would reuse the cached module without re-running `initState`, and every
-  `useState` in it would throw. Module-lifetime globals must come from something that re-runs on
-  every entry: a component mount.
-- `document` stays reserved for app-lifetime state that deliberately survives module switches
-  (session, theme, cart) — the router must never touch those.
+  navigation and never again. Even if a module-scope helper existed, navigating back would reuse the
+  cached module without re-running it. Module-lifetime state must therefore come from something that
+  re-runs on every entry: a component mount — which is exactly what the `module` root provides.
+- App-lifetime state (session, theme, cart) lives in the **app's root component**, which sits above
+  the outlet and never unmounts; the router swaps modules below it and never touches those.
 
 ## The `module` component
 
-- A thin root wrapper the router mounts as the module's boundary. Module-lifetime "globals" are
-  `initState` calls inside its mount, so they attach to the module's host element — nearest-provider
-  resolution gives every descendant the module's state before any page-wide one, and the existing
-  mount cleanup releases all of it when the router swaps the module out. No new teardown machinery.
+- A thin root wrapper the router mounts as the module's boundary. Module-lifetime state is
+  `initState` calls inside its mount, so it attaches to the module's host element — nearest-provider
+  resolution gives every descendant the module's state (and, above it, the app root's), and the
+  existing mount cleanup releases all of it when the router swaps the module out. No new teardown
+  machinery.
 - Natural home for the module's error boundary (`adr/error-boundaries.md`) and for whatever
   module-level lifecycle the router needs (enter/leave hooks, lazy-load placeholder).
 
 ## Keeping modules honest
 
-- **Lint**: flag module-top-level `initState` outside the app's declared entry files (rule
-  infrastructure exists in `imp lint`; entries could be declared in `imp.json`).
-- **Router tripwire**: page-wide registrations all pass through one code path, so the router can
-  snapshot them around a lazy `import()` and `console.error` when module evaluation created
-  page-wide state, pointing at the `module` component instead.
+- Module-top-level `initState`/`useState` already throw at runtime (no mounting component), so the
+  wrong-lifetime mistake fails loudly on its own. A lint rule could still surface it earlier — flag
+  module-top-level state helpers outside the app's declared entry files (rule infrastructure exists
+  in `imp lint`; entries could be declared in `imp.json`) — but it is a nicety, not a safety net.
 
 ## `onRelease` — user cleanup for globals the module touched
 
@@ -81,5 +82,6 @@ on module unmount. Deliberately deferred — needs design around proxy identity 
 
 ## ADR impact
 
-When implemented, record the decision (module boundary is a DOM boundary; `document` is app-lifetime
-only) as a new ADR or fold it into `client-side-router.md` (planned in `router.md`).
+When implemented, record the decision (module boundary is a DOM boundary; app-lifetime state lives
+in the app root above the outlet) as a new ADR or fold it into `client-side-router.md` (planned in
+`router.md`).

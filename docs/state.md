@@ -8,15 +8,16 @@ wrap things in, and no re-rendering — state changes update exactly the DOM you
 
 - State is **named**: every state has a dot-namespaced name like `myapp.user`. The namespace is
   mandatory (at least two dot-separated segments) — `imp lint` enforces it.
-- State is **scoped to who initializes it**. `initState(name, initialValue)` inside a component's
-  `onMount` ties the state to that component: its descendants reach it with `useState(name)`, and it
-  lives as long as the component stays mounted. `initState` at module scope (outside any component)
-  makes the state page-wide and permanent.
+- State is **owned by a component**. `initState(name, initialValue)` inside a component's `onMount`
+  ties the state to that component: its descendants reach it with `useState(name)`, and it lives as
+  long as the component stays mounted. There is no global scope — app-lifetime state belongs in your
+  root component, and calling `initState` outside a mounting component throws.
 - Both calls return the **same helper object**. Whoever holds it can read, set, and react to the
   state.
-- Reading and writing (`get`/`set`) work anywhere; **subscribing** (`watch`/`text`/`view`/`each`,
-  and binding props) is a component activity — it happens inside `onMount` and ends when the
-  component unmounts.
+- Reading and writing (`get`/`set`) work anywhere. The DOM bindings — `text`/`view`/`each` and
+  state-bound props — can be **built** anywhere too: they stay inert until the DOM they belong to is
+  mounted, go live at that moment, and end when the component that contains them unmounts. `watch`
+  is the one subscription without DOM, so it runs inside a mounting component.
 - Setting state is **explicit**: `set(next)` replaces the whole value — pass the next value, or a
   function computing it from the current one, exactly like React's `setState`. To change one field
   of an object, spread the rest into a new object.
@@ -51,11 +52,12 @@ export const app = component('my-app-root', {
 
 ## The state helper
 
-`initState(name, initialValue)` and `useState(name)` both return a helper with the six entries
-below. `get` and `set` can be called from anywhere; `watch`, `text`, `view`, and `each` subscribe,
-and subscribing happens inside a component's `onMount` — the snippets below all live there (see
-_Cleanup_). Beyond the six entries, the helper itself can be passed as an element **prop value** to
-keep that prop live — see _Binding props_ below.
+`initState(name, initialValue)` and `useState(name)` both return the same helper with the six
+entries below. `get` and `set` can be called from anywhere. `text`, `view`, and `each` return live
+DOM — build it wherever you like; it activates when a component (or `mount`) places it on the page.
+`watch` subscribes directly and lives inside a component's `onMount` (see _Cleanup_). Beyond the six
+entries, the helper itself can be passed as an element **prop value** to keep that prop live — see
+_Binding props_ below.
 
 ### `get()`
 
@@ -132,12 +134,13 @@ and it is the pattern for reacting to state from non-UI code: syncing `localStor
 chart library, sending analytics. Mount it once anywhere in scope and the side effect runs for as
 long as it stays mounted.
 
-Like every subscription, `watch` lives inside a component's `onMount` (see _Cleanup_ below) and ends
-with the component. It returns an unsubscribe function for the rare case you want to stop reacting
-while the component stays mounted. Subscribers are isolated from each other: one that throws is
-logged and skipped while the rest still run, and the `set` call itself succeeds. A subscriber may
-also set other states — that is how changes chain — but a loop of states endlessly setting each
-other is cut off with an error instead of hanging the page.
+Unlike the DOM bindings below, `watch` subscribes the moment you call it, so it lives inside a
+component's `onMount` (see _Cleanup_ below) and ends with the component. It returns an unsubscribe
+function for the rare case you want to stop reacting while the component stays mounted. Subscribers
+are isolated from each other: one that throws is logged and skipped while the rest still run, and
+the `set` call itself succeeds. A subscriber may also set other states — that is how changes chain —
+but a loop of states endlessly setting each other is cut off with an error instead of hanging the
+page.
 
 ### `text(select?)`
 
@@ -253,8 +256,9 @@ into the bound value.
 
 Two boundaries to know:
 
-- Binding a prop is a subscription like any other: it needs a mounting component and ends with it
-  (see _Cleanup_). Building an element with a bound prop outside a mount throws.
+- Binding a prop is a subscription like the DOM bindings: build the element wherever you like — the
+  binding goes live when the element mounts and ends with the component that contains it (see
+  _Cleanup_).
 - The binding is strictly **one-way**, state → DOM. Binding `value` on an input shows the state; it
   does not write keystrokes back. Set the state from an event when the value is committed, and let
   the binding carry it the other way.
@@ -375,48 +379,61 @@ and reach for it only when the first two patterns don't fit.
 ## Cleanup
 
 Subscriptions are cleaned up **automatically** — and that works because every subscription has an
-owner. `watch(fn)`, `text()`, `view()`, `each()`, and state-bound props (on regular and computed
-states alike) only work while a component is mounting or inside a `view`/`each` render function:
-called anywhere else — module scope, an event handler, after an `await` in an async `onMount` — they
-throw. A subscription made in `onMount` belongs to the component and ends when it unmounts; one made
-inside a `view`/`each` render belongs to that region and ends when the region re-renders (or the
-component unmounts, whichever comes first — see **[Components](components.md)**). Swap whole screens
-in and out; nothing leaks and there is nothing to unhook.
+owner, decided by **where its DOM lands**. `text()`, `view()`, `each()`, and state-bound props (on
+regular and computed states alike) are inert when you build them: they subscribe the moment imp
+mounts the DOM they belong to — as a component's output, or through `mount(...)` — and the component
+that contains them owns them. One that lands in `onMount` output ends when the component unmounts;
+one rendered inside a `view`/`each` region belongs to that region and ends when the region
+re-renders (or the component unmounts, whichever comes first — see **[Components](components.md)**);
+one mounted with `mount(...)` ends when you call the function `mount` returned. Swap whole screens
+in and out; nothing leaks and there is nothing to unhook. The flip side of inertness: DOM you insert
+into the page yourself, without imp, never activates its bindings — let a component or `mount(...)`
+place it.
 
-Reading and writing are free: `get()` and `set(next)` work anywhere, any time — event handlers,
-timers, code after an `await`. So in an async `onMount`, subscribe first and fill the data in later:
+`watch(fn)` is the exception, because it has no DOM to land in: it subscribes immediately and needs
+a mounting component to own it — call it in `onMount` before any `await`, or in a `view`/`each`
+render. Called anywhere else — module scope, an event handler, after an `await` — it throws.
+
+Reading and writing are free: `get()` and `set(next)` work anywhere, any time. So the natural way to
+write an async `onMount` needs no ceremony — resolve states first, `await`, then build:
 
 ```js
 const orderList = component('my-app-order-list', {
+  placeholder: () => div('loading orders…'),
   onMount: async ({ id }) => {
     const orders = initState('myapp.orders', [])
-    const view = ul(orders.each((order) => li(order.title), (order) => order.id))
     orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
-    return view
+    return ul(orders.each((order) => li(order.title), (order) => order.id))
   },
 })
 ```
 
-The `imp/state-setup-before-await` lint rule flags `initState`/`useState` calls placed after an
-`await` in an async `onMount` as you write them, before anything runs (see **[Linting](lint.md)**).
+The bindings built after the `await` go live when the resolved DOM mounts. Only **resolution** is
+position-sensitive: `initState` and `useState` (and `watch`) belong before the first `await` — past
+it the mounting component is out of reach and all three throw. An ordinary closure carries the
+resolved handles across any number of `await`s. The `imp/state-setup-before-await` lint rule flags
+resolution — and a `watch` on a state handle — placed after an `await` as you write it, before
+anything runs (see **[Linting](lint.md)**).
 
 ## Scope and lifetime
 
-Where you call `initState` decides who sees the state and how long it lives:
+Every state belongs to the component that initializes it — which component you initialize in decides
+who sees the state and how long it lives:
 
-- **Inside a component's `onMount`** — the state belongs to that component. Components mounted in
-  its subtree find it with `useState`; components elsewhere on the page do not. When the component
-  unmounts, the state is released with it, and a later remount starts over from the initial value.
-  Two instances of the same component each own an **independent** state under the same name — a
-  gallery of widgets needs no name juggling.
-- **At module scope** (outside any component) — the state is page-wide and lives for the page, no
-  matter which components come and go.
+- The state's **subtree** is its audience: components mounted under the initializing component find
+  it with `useState`; components elsewhere on the page do not. When the component unmounts, the
+  state is released with it, and a later remount starts over from the initial value. Two instances
+  of the same component each own an **independent** state under the same name — a gallery of widgets
+  needs no name juggling.
+- **App-lifetime state** — the session, the theme — is simply state initialized in your **root
+  component**, the one that spans the whole app and never unmounts. There is no separate global
+  scope to learn or to leak into: one rule covers everything, and `initState` outside a mounting
+  component throws.
 
 Aim every state at the **narrowest scope that spans its readers**, and give each screen-sized piece
 of your app a root component that owns the screen's states. Swapping screens — replacing one subtree
 with another — then releases everything the old screen created: its states, every subscription, and
-(through `onUnmount`) timers and connections. Reserve page-wide state for true app-lifetime data —
-the session, the theme — because it is never released.
+(through `onUnmount`) timers and connections.
 
 A component may also initialize a name an ancestor already provides: its subtree then sees the
 nearer state, shadowing the ancestor's — the same way a nested CSS rule wins over an outer one.
@@ -438,15 +455,15 @@ subscribes as usual.
   bindings against the ancestors at its new position, while states it initialized itself travel with
   it — see _Moving components_ in **[Components](components.md)**.
 - **Namespace anyway.** Scoping keeps unrelated states apart, but a clear prefix (`myapp.…`) keeps
-  names honest between your own components — and page-wide names have nothing else protecting them.
+  names honest between your own components — root-component names span the whole app and have
+  nothing else protecting them.
 
 Under the hood the lookup travels as a DOM event (`StateSubscription`) that bubbles up from the
-component asking for the state; the nearest ancestor providing that name answers, and the document
-answers for page-wide states. Because the handshake rides the DOM rather than a JavaScript registry,
-independently loaded parts of a page (say, two separately built widgets) share state as long as they
-share the DOM — and the event crosses shadow roots, so it passes through the shadow roots imp
-components render into, at any depth, and still works for a component embedded inside another
-library's shadow DOM.
+component asking for the state, and the nearest ancestor providing that name answers. Because the
+handshake rides the DOM rather than a JavaScript registry, independently loaded parts of a page
+(say, two separately built widgets) share state as long as they share the DOM — and the event
+crosses shadow roots, so it passes through the shadow roots imp components render into, at any
+depth, and still works for a component embedded inside another library's shadow DOM.
 
 ## Naming rule
 

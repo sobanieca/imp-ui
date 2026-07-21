@@ -65,31 +65,41 @@ propagating to the setter.
 `CustomEvent` on its own host element; `useState` dispatches that event (bubbling and composed, so
 it crosses the shadow roots every component now renders into, `shadow-dom-isolation.md`) from the
 asking component's host, and the nearest ancestor providing the name answers synchronously through
-`event.detail.subscribe(state, provider)`, stopping propagation. Called outside any component mount,
-both sides use `document` — the page-wide scope. Consequently a component may **shadow** an
-ancestor's (or the page's) state by initializing the same name; re-initializing a name within the
-same scope throws — a scope initializes each name exactly once, and an accidental collision (two
-independent initializers picking one name at one scope) fails loudly instead of silently sharing
-state. Inside a mount, `useState` returns a consumer helper wrapping the resolved provider; when its
-component moves, the helper rebinds to the provider at the new position
-(`component-moves-rebind.md`).
+`event.detail.subscribe(state, provider)`, stopping propagation. There is **no page-wide scope**:
+`document` never provides, and `initState`/`useState` called outside a mounting component throw —
+considered and rejected as a second concept to learn and a scope that is never released;
+app-lifetime state is instead ordinary component state initialized in the app's root component,
+which spans the tree and never unmounts. Consequently a component may **shadow** an ancestor's state
+by initializing the same name; re-initializing a name within the same scope throws — a scope
+initializes each name exactly once, and an accidental collision (two independent initializers
+picking one name at one scope) fails loudly instead of silently sharing state. `useState` returns a
+consumer helper wrapping the resolved provider; when its component moves, the helper rebinds to the
+provider at the new position (`component-moves-rebind.md`).
 
-**State lifetime follows its scope.** Component-scoped state is released when its component unmounts
-(the host listener is removed with the mount's cleanups) and a remount reinitializes it; sibling
-instances own independent states under one name. Module-scope state lives for the page.
+**State lifetime follows its owner.** A state is released when its component unmounts (the host
+listener is removed with the mount's cleanups) and a remount reinitializes it; sibling instances own
+independent states under one name.
 
-**Mounts are the only place subscriptions exist.** `watch`, `text`, `view`, `each`, and state-bound
-props require an active mount scope (`web-component-lifecycle.md`): they register their unsubscriber
-with it and are unsubscribed deterministically on unmount, and called without one — module scope, an
-event handler, after an `await` in an async `onMount` — they throw. `initState`/`useState` cannot
-throw there (no-scope calls are the legitimate page-wide form), so the post-`await` hazard is caught
-statically instead: the `imp/state-setup-before-await` lint rule flags them after an `await` in an
-async `onMount`. A `view`/`each` render function re-enters a scope of its own (with the owning
-component's host), so bindings nested in the render work on every re-render; they are owned by the
-region and unsubscribed when it next re-renders or when the component unmounts, whichever comes
-first. There is no fallback disposal path and no manually managed subscription. `get` and `set`
-remain free to call anywhere; `watch` returns its unsubscriber only for stopping early within a
-mounted period.
+**Subscriptions activate at insertion, owned by containment.** `text`, `view`, `each`, and
+state-bound props are inert descriptors when built: each registers a pending activator on its node,
+and imp activates every subtree it places — a component's output into its shadow root
+(`web-component-lifecycle.md`), DOM handed to `mount`, a region's render output. Activation
+subscribes the binding and registers its unsubscriber with the placing scope, so the component that
+mounts the DOM owns its bindings and unsubscribes them deterministically on unmount. That makes
+binding construction position-free: DOM built after an `await` in an async `onMount` goes live when
+the resolved output mounts, with no ambient context — the DOM containment relation answers "whose
+binding is this?" where no runtime mechanism could attribute the constructing call. A `view`/`each`
+region runs its render function in a scope of its own (with the owning component's host, so nested
+`useState` resolves) and activates the nodes it inserts; nested bindings are owned by the region and
+unsubscribed when it next re-renders or when the component unmounts, whichever comes first. `watch`
+has no node to land on, so like `initState`/`useState` it requires an active mount scope and throws
+without one — module scope, an event handler, after an `await` in an async `onMount`; the whole
+position-sensitive surface fails loudly at runtime, and the `imp/state-setup-before-await` lint rule
+flags it earlier, at write time — `initState`/`useState` calls by imported name, `watch` by tracking
+handles the file assigned from `initState`/`useState`/`computed` (so unrelated third-party
+`.watch()` methods are not reported). There is no fallback disposal path and no manually managed
+subscription. `get` and `set` remain free to call anywhere; `watch` returns its unsubscriber only
+for stopping early within a mounted period.
 
 **Composition is one combinator.** `computed(states, compute)` returns a read-only state
 (`get`/`watch`/`text`/`view`/`each`; `set` throws) whose value is `compute(...sourceValues)`. It
@@ -148,11 +158,28 @@ flags literal names statically.
   not a module instance — separately bundled islands on one page interoperate.
 - Scoping falls out of bubbling: independent per-instance states, shadowing, and automatic release
   on unmount all come from where the provider listens, not from extra machinery.
+- There is one scope concept, not two: every state is owned by a component, and app-lifetime state
+  is just state owned by the app's root component. Dropping the page-wide (`document`) scope costs
+  app-wide state one enclosing root component instead of a bare module-scope call, and in exchange
+  removes a second lifetime to learn, the never-released scope it created, and the silent
+  post-`await` failure mode where a stranded `initState` used to fall back to page-wide. `initState`
+  and `useState` now throw without a mounting component, so the whole resolution surface fails
+  loudly and uniformly.
 - Resolution happens at mount and re-runs on move: a moved component's `useState` helpers rebind to
   the providers at its new position (`component-moves-rebind.md`), so the nearest-provider rule
   holds wherever a mounted component currently sits.
-- Every subscription has exactly one owner and one deterministic end. The cost is that an async
-  `onMount` must finish its state setup before its first `await` — enforced by the same throw.
+- Every subscription has exactly one owner and one deterministic end, at the cost of a one-time
+  activation walk over each subtree imp places. The remaining restriction is that an async `onMount`
+  must resolve its states (`initState`/`useState`) and call `watch` before its first `await` — a
+  platform gap, not a design choice: past an `await` no runtime mechanism can attribute those calls
+  to the mounting component (the gap the unshipped TC39 AsyncContext proposal targets; if it lands,
+  the restriction can be lifted transparently). Closures bridge it — handles resolved before the
+  `await` work anywhere after it — and insertion-time activation already frees the DOM side
+  entirely.
+- A binding placed without imp — DOM inserted by hand rather than through a component's output or
+  `mount` — stays silently inert, where eager subscription used to fail loudly at construction.
+  Accepted: imp placement is the documented path, and an inert binding beats the eager alternative's
+  failure mode (a subscription attached with no owner, leaking past removal).
 - A computed state costs one recompute and one structural comparison of the result per source set,
   independent of how many subscribers it has — paid to keep freshly built results (the normal case)
   from re-notifying. Deep-equal outcomes are free downstream: no rebuild, no re-applied prop.

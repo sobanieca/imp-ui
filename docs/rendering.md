@@ -82,9 +82,9 @@ button(
   names, **no `on` prefix**. The optional second array element is `addEventListener` options.
 - **State-valued props.** Any prop value may be a state (from `initState`/`useState`/`computed`) —
   the prop then stays **live**, re-applied on every change, with each form keeping its usual meaning
-  (`div({ class: theme })`, `input({ disabled: busy })`). This is a subscription, so it needs a
-  mounting component; a state passed as a standalone argument instead of a prop value is reported
-  and skipped. See **[State](state.md)** — _Binding props_.
+  (`div({ class: theme })`, `input({ disabled: busy })`). The binding goes live when a component (or
+  `mount`) places the element and ends with it; a state passed as a standalone argument instead of a
+  prop value is reported and skipped. See **[State](state.md)** — _Binding props_.
 
 ## Mounting
 

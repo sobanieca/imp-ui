@@ -68,9 +68,9 @@ the object literals after it are counted.
 
 ### `imp/state-name-namespace`
 
-State names are page-wide, so they must carry a namespace: at least two non-empty dot-separated
-segments, like `myapp.user` (see **[State](state.md)**). The rule checks every `initState`/
-`useState` call whose name is written literally:
+State names must carry a namespace: at least two non-empty dot-separated segments, like `myapp.user`
+(see **[State](state.md)**). The rule checks every `initState`/`useState` call whose name is written
+literally:
 
 ```js
 const user = initState('user', { name: 'Ada' })
@@ -86,28 +86,37 @@ same validation then happens at runtime, where a bad name throws.
 
 ### `imp/state-setup-before-await`
 
-In an async `onMount`, state setup must happen **before the first `await`** (see
-**[State](state.md)**). Past it, the mounting context is gone: `initState` would create page-wide
-state that outlives the component, and `useState` would no longer see the component's ancestors. The
-rule flags `initState`/`useState` calls placed after an `await` in an async `onMount`:
+In an async `onMount`, state resolution must happen **before the first `await`** (see
+**[State](state.md)**). Past it, the mounting component is out of reach and `initState`, `useState`,
+and `watch` all throw at runtime — this rule catches them earlier, as you write them. It flags
+`initState`/`useState` calls placed after an `await` in an async `onMount`, and `watch` called there
+on a handle the file created with `initState`, `useState`, or `computed` (tracking the handle keeps
+unrelated third-party `.watch()` methods out of the reports):
 
 ```js
 const orders = component('my-app-orders', {
   onMount: async () => {
+    const totals = initState('myapp.totals', [])
     const data = await fetch('/api/orders').then((response) => response.json())
     const orders = initState('myapp.orders', data)
+    totals.watch((current) => console.log(current))
     return ul(orders.each((order) => li(order.title), (order) => order.id))
   },
 })
 ```
 
 ```
-error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await it creates page-wide state that outlives the component; do state setup before the first await
- --> src/orders.js:4:20
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
+ --> src/orders.js:5:20
+
+error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
+ --> src/orders.js:6:5
 ```
 
-Initialize the state with an empty value first, `await` the data, then `set` it in — reads and
-writes are allowed anywhere, only setup is position-sensitive.
+Initialize the state with an empty value first, `await` the data, then `set` it in — the handle
+lives on in the closure, and reads and writes are allowed anywhere. Only resolution and `watch` are
+position-sensitive: the DOM you build from the handles (`text`/`view`/`each`, bound props) can come
+after the `await` and goes live when the component mounts it.
 
 ### `imp/component-name`
 

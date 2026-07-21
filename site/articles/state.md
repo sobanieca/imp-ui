@@ -218,13 +218,16 @@ The classic problem: the cart badge in the header, the cart page, the "add to ca
 product cards, and the checkout summary all need the same data. In React that's a context or a
 store; in Angular, an injected service with an observable; in Vue, a Pinia store.
 
-In imp, it's one line at module scope:
+In imp, it's one line in your root component — the component that spans the app and never unmounts:
 
 ```js
-export const cart = initState('shop.cart', [])
+const cart = initState('shop.cart', [])
 ```
 
-The header badge is a text node that updates in place — the header never re-renders:
+Every component under it reaches the same state with `useState('shop.cart')` — there is no store
+object to define and no separate "global" concept: app-lifetime state is just state owned by the
+component with app-lifetime. The header badge is a text node that updates in place — the header
+never re-renders:
 
 ```js
 span({ class: 'badge' }, cart.text((items) => items.length))
@@ -259,24 +262,28 @@ there.
 ### The SaaS dashboard: async data without the ceremony
 
 Load orders from an API, show them keyed, and never leak a subscription when the user navigates
-away. Subscribe first, fill the data in later:
+away. Resolve the state, `await`, build:
 
 ```js
 const orderList = component('my-app-order-list', {
+  placeholder: () => div('loading orders…'),
   onMount: async ({ id }) => {
     const orders = initState('myapp.orders', [])
-    const view = ul(orders.each((order) => li(order.title), (order) => order.id))
     orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
-    return view
+    return ul(orders.each((order) => li(order.title), (order) => order.id))
   },
 })
 ```
 
-The list renders empty immediately, then updates surgically when the data lands. When several states
-feed one expensive rendering edge — say a chart that redraws from both a dataset and a filter — the
-documented pattern is a **headless component**: a component that renders nothing and only reacts,
-coalescing bursts of changes into one display update per microtask. It's a pattern built from the
-primitives you already know, not a fourth API to learn.
+The bindings built after the `await` are inert DOM until the component mounts them — then they go
+live, owned by the component that placed them, and end with it. Only the `initState` call is
+position-sensitive (it has to know which component is initializing), and an ordinary closure carries
+its handle across the `await`. No ambient async-context machinery needed.
+
+When several states feed one expensive rendering edge — say a chart that redraws from both a dataset
+and a filter — the documented pattern is a **headless component**: a component that renders nothing
+and only reacts, coalescing bursts of changes into one display update per microtask. It's a pattern
+built from the primitives you already know, not a fourth API to learn.
 
 ### The theme switcher: a headless component in five lines
 
@@ -328,9 +335,10 @@ your code ever runs:
   loudly at the call site, not silently three components away.
 - **Init once per scope.** Two independent initializers colliding on one name is an error, not a
   silent merge.
-- **Subscriptions need an owner.** Subscribing outside a mount — module scope, an event handler,
-  after an `await` — throws immediately, and the `imp/state-setup-before-await` lint rule catches
-  the async case before anything runs.
+- **Every subscription has an owner.** DOM bindings go live when a component mounts them and end
+  when it unmounts; a `watch` outside a mount — module scope, an event handler, after an `await` —
+  throws immediately. The `imp/state-setup-before-await` lint rule catches state resolution, and a
+  stranded `watch` on a state handle, after an `await` before anything runs.
 - **Faults are contained.** A subscriber that throws is logged and skipped while the rest still run;
   a cycle of states setting each other is cut off with an error instead of hanging the page.
 

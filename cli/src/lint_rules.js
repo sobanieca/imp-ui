@@ -7,6 +7,8 @@ const ELEMENT_FACTORIES = new Set(TAGS)
 
 const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
 
+const STATE_HANDLE_CREATORS = new Set(['initState', 'useState', 'computed'])
+
 const classifyFactory = (importedName) => {
   if (importedName === 'el') return 'el'
   if (ELEMENT_FACTORIES.has(importedName)) return 'tag'
@@ -177,16 +179,27 @@ export default {
     'state-name-namespace': createLiteralNameRule(STATE_SETUP_HELPERS, stateNameProblem),
     'state-setup-before-await': {
       create(context) {
-        const helperLocals = new Map()
+        const creatorLocals = new Map()
         const namespaceLocals = new Set()
+        const handleNames = new Set()
         const functions = []
         const candidates = []
 
-        const calledHelper = (callee) => {
-          if (callee.type === 'Identifier') return helperLocals.get(callee.name) ?? null
+        const calledCreator = (callee) => {
+          if (callee.type === 'Identifier') return creatorLocals.get(callee.name) ?? null
           const name = namespaceCalleeName(callee, namespaceLocals)
-          return name !== null && STATE_SETUP_HELPERS.has(name) ? name : null
+          return name !== null && STATE_HANDLE_CREATORS.has(name) ? name : null
         }
+
+        const isHandleCall = (expression) =>
+          expression?.type === 'CallExpression' && calledCreator(expression.callee) !== null
+
+        const watchedHandleName = (callee) =>
+          callee.type === 'MemberExpression' && !callee.computed &&
+            callee.property.type === 'Identifier' && callee.property.name === 'watch' &&
+            callee.object.type === 'Identifier' && handleNames.has(callee.object.name)
+            ? callee.object.name
+            : null
 
         const isAsyncOnMount = (node) =>
           node.async && node.parent?.type === 'Property' && !node.parent.computed &&
@@ -206,10 +219,22 @@ export default {
           ImportDeclaration(node) {
             collectImpImports(
               node,
-              (name) => STATE_SETUP_HELPERS.has(name) ? name : null,
-              helperLocals,
+              (name) => STATE_HANDLE_CREATORS.has(name) ? name : null,
+              creatorLocals,
               namespaceLocals,
             )
+          },
+          VariableDeclarator(node) {
+            if (node.id.type === 'Identifier' && isHandleCall(node.init)) {
+              handleNames.add(node.id.name)
+            }
+          },
+          AssignmentExpression(node) {
+            if (
+              node.operator === '=' && node.left.type === 'Identifier' && isHandleCall(node.right)
+            ) {
+              handleNames.add(node.left.name)
+            }
           },
           FunctionDeclaration: enterFunction,
           'FunctionDeclaration:exit': exitFunction,
@@ -231,16 +256,23 @@ export default {
           },
           'Program:exit'() {
             for (const node of candidates) {
-              const helper = calledHelper(node.callee)
-              if (!helper) continue
-              const consequence = helper === 'initState'
-                ? 'creates page-wide state that outlives the component'
-                : 'can no longer see this component and resolves page-wide'
-              context.report({
-                node,
-                message:
-                  `'${helper}' runs after an await in an async onMount — past the first await it ${consequence}; do state setup before the first await`,
-              })
+              const creator = calledCreator(node.callee)
+              if (creator !== null && STATE_SETUP_HELPERS.has(creator)) {
+                context.report({
+                  node,
+                  message:
+                    `'${creator}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
+                })
+                continue
+              }
+              const handleName = watchedHandleName(node.callee)
+              if (handleName !== null) {
+                context.report({
+                  node,
+                  message:
+                    `'${handleName}.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
+                })
+              }
             }
           },
         }

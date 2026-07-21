@@ -53,32 +53,32 @@ seed-loading delay change.
 
 Every imp feature, and where it lives in `app.js`:
 
-| Feature                              | Where                                                                                                      |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| element factories / `el()`           | everywhere; `el('meter', …)` builds the completion meter                                                   |
-| type-based argument dispatch         | `button('add', { … })` and `button({ … }, 'save')` both work — order is irrelevant                         |
-| array children, flattening           | `STAGES.map(…)` columns, filter chips                                                                      |
-| conditional children skipped         | `list.length === 0 && p(…)` empty state, `on && sessionClock()`                                            |
-| `class` string / array / object      | most elements / stage badge / list items & filter chips                                                    |
-| `style` object & string              | column accent via `--accent` custom property / clock face                                                  |
-| `events`, incl. options form         | handlers throughout; `[fn, { once: true }]` on the intro's _got it_ button                                 |
-| property-first props                 | `checked`, `value`, `draggable`; `data-id` and `aria-label` land as attributes                             |
-| `mount` and its unmount function     | `mount('#app', …)`; dismissing the intro calls the function `mount('#intro', …)` returned                  |
-| `html()`                             | the intro banner's copy                                                                                    |
-| `component()` + factory args         | all seven `todo-*` components; `todoCard({ title, note })`, `boardColumn({ …stage, cards })`               |
-| `styles` (component-scoped CSS)      | every visible component carries its own CSS; shared strings (`buttonStyles`, `fieldStyles`) compose them   |
-| `placeholder` + async `onMount`      | the app skeleton while seeds load; the tip text                                                            |
-| `onUnmount`                          | the session clock clearing its interval                                                                    |
-| `onError` boundary + remount retry   | the tip box; every fourth tip fails on purpose                                                             |
-| move semantics                       | dragging cards between columns — DOM, input text, and own state travel; `useState` rebinds                 |
-| `initState` (component-scoped)       | `todo.items` & friends in `todo-app`; `todo.stage` per column; `todo.cardTitle` & `todo.cardNote` per card |
-| `initState` (module scope, pagewide) | `todo.theme`                                                                                               |
-| `useState`                           | theme sync, card stage badge, column activity logging                                                      |
-| `get` / `set`                        | throughout the handlers                                                                                    |
-| `watch()`                            | theme sync (headless component), driving the held `<meter>` node                                           |
-| `text(select?)`                      | card title, counts line, theme button label                                                                |
-| `view()`                             | filter chips, empty state, stage badge, clock toggle, tip retry region                                     |
-| `each()` keyed / unkeyed             | the quick list / the activity log                                                                          |
-| nested bindings                      | spotlight: `items.each(…)` inside `filter.view(…)`; tip box: component inside a `view`                     |
-| `computed`                           | visible (filtered) list, counts line, completion ratio                                                     |
-| `env`                                | footer label and seed delay from `imp.json` environments                                                   |
+| Feature                             | Where                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| element factories / `el()`          | everywhere; `el('meter', …)` builds the completion meter                                                   |
+| type-based argument dispatch        | `button('add', { … })` and `button({ … }, 'save')` both work — order is irrelevant                         |
+| array children, flattening          | `STAGES.map(…)` columns, filter chips                                                                      |
+| conditional children skipped        | `list.length === 0 && p(…)` empty state, `on && sessionClock()`                                            |
+| `class` string / array / object     | most elements / stage badge / list items & filter chips                                                    |
+| `style` object & string             | column accent via `--accent` custom property / clock face                                                  |
+| `events`, incl. options form        | handlers throughout; `[fn, { once: true }]` on the intro's _got it_ button                                 |
+| property-first props                | `checked`, `value`, `draggable`; `data-id` and `aria-label` land as attributes                             |
+| `mount` and its unmount function    | `mount('#app', …)`; dismissing the intro calls the function `mount('#intro', …)` returned                  |
+| `html()`                            | the intro banner's copy                                                                                    |
+| `component()` + factory args        | all seven `todo-*` components; `todoCard({ title, note })`, `boardColumn({ …stage, cards })`               |
+| `styles` (component-scoped CSS)     | every visible component carries its own CSS; shared strings (`buttonStyles`, `fieldStyles`) compose them   |
+| `placeholder` + async `onMount`     | the app skeleton while seeds load; the tip text                                                            |
+| `onUnmount`                         | the session clock clearing its interval                                                                    |
+| `onError` boundary + remount retry  | the tip box; every fourth tip fails on purpose                                                             |
+| move semantics                      | dragging cards between columns — DOM, input text, and own state travel; `useState` rebinds                 |
+| `initState` (component-scoped)      | `todo.items` & friends in `todo-app`; `todo.stage` per column; `todo.cardTitle` & `todo.cardNote` per card |
+| `initState` (app-lifetime, in root) | `todo.theme` — initialized in `todo-app`, the root that never unmounts                                     |
+| `useState`                          | theme sync, card stage badge, column activity logging                                                      |
+| `get` / `set`                       | throughout the handlers                                                                                    |
+| `watch()`                           | theme sync (headless component), driving the held `<meter>` node                                           |
+| `text(select?)`                     | card title, counts line, theme button label                                                                |
+| `view()`                            | filter chips, empty state, stage badge, clock toggle, tip retry region                                     |
+| `each()` keyed / unkeyed            | the quick list / the activity log                                                                          |
+| nested bindings                     | spotlight: `items.each(…)` inside `filter.view(…)`; tip box: component inside a `view`                     |
+| `computed`                          | visible (filtered) list, counts line, completion ratio                                                     |
+| `env`                               | footer label and seed delay from `imp.json` environments                                                   |

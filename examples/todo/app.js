@@ -95,8 +95,6 @@ const fieldStyles = `
   }
 `
 
-const theme = initState('todo.theme', localStorage.getItem('imp-todo-theme') ?? 'dark')
-
 const themeSync = component('todo-theme-sync', {
   onMount: () => {
     const current = useState('todo.theme')
@@ -577,6 +575,7 @@ const todoApp = component('todo-app', {
   `,
   placeholder: () => div({ class: 'skeleton' }, 'loading todos…'),
   onMount: async () => {
+    const theme = initState('todo.theme', localStorage.getItem('imp-todo-theme') ?? 'dark')
     const items = initState('todo.items', [])
     const filter = initState('todo.filter', 'all')
     const activity = initState('todo.activity', [])

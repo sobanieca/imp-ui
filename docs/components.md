@@ -220,6 +220,22 @@ If the component is unmounted while the promise is pending, the late result is d
 promise rejects, the nearest error boundary shows its fallback (below) — without one, the error is
 logged and the placeholder stays.
 
+When the loaded data should live in state, resolve the state **before** the `await` — the handle
+stays in the closure — then `set` the awaited data into it and build the DOM; the bindings go live
+when the resolved DOM mounts (see **[State](state.md)**):
+
+```js
+export const orders = component('my-app-orders', {
+  placeholder: () => div({ class: 'skeleton' }, 'loading orders…'),
+  onMount: async ({ customerId }) => {
+    const orders = initState('myapp.orders', [])
+    const response = await fetch(`/api/customers/${customerId}/orders`)
+    orders.set(await response.json())
+    return ul(orders.each((order) => li(order.title), (order) => order.id))
+  },
+})
+```
+
 ## Error boundaries
 
 Give a component an `onError` entry and it becomes an error boundary: when a component **in its
@@ -263,19 +279,21 @@ around a route's page, a third-party-backed widget, each card in a dashboard.
 
 ## Automatic cleanup
 
-Every state subscription created during `onMount` — `watch(fn)`, `text()`, `view()`, `each()`, and
-state-bound props, on regular and computed states alike — is tracked and unsubscribed when the
-component unmounts. Bindings nested inside a `view`/`each` render function are tracked too, per
-rebuild: each re-render unsubscribes the previous render's bindings before creating the new ones.
-Swap whole screens in and out; nothing leaks and there is nothing to unhook by hand. Two boundaries
-worth knowing:
+Every state subscription a component ends up owning — each `watch(fn)` made in its `onMount`, and
+every `text()`, `view()`, `each()`, and state-bound prop in the DOM it mounts, on regular and
+computed states alike — is tracked and unsubscribed when the component unmounts. The DOM bindings go
+live the moment the component's output is placed, so ownership follows containment: whichever
+component mounts the DOM owns its bindings. Bindings nested inside a `view`/`each` render function
+are tracked too, per rebuild: each re-render unsubscribes the previous render's bindings before
+creating the new ones. Swap whole screens in and out; nothing leaks and there is nothing to unhook
+by hand. Two boundaries worth knowing:
 
-- State setup happens **before the first `await`** of an async `onMount`. Past it, the mount scope
-  is gone: `watch`/`text`/`view`/`each` and state-bound props throw, and an `initState` creates
-  page-wide state instead of component-scoped state. Initialize, subscribe, and bind first; then
-  `await` your data and `set` it in — `set` and `get` work anywhere (see the pattern in
-  **[State](state.md)**). The `imp/state-setup-before-await` lint rule flags setup placed after an
-  `await` as you write it.
+- State **resolution** happens before the first `await` of an async `onMount`: past it the mounting
+  component is out of reach, and `initState`, `useState`, and `watch` all throw. Everything else is
+  position-free — `get`/`set` work anywhere, and `text`/`view`/`each` and state-bound props go live
+  when the returned DOM mounts, wherever they were built (see the patterns in
+  **[State](state.md)**). The `imp/state-setup-before-await` lint rule flags resolution placed after
+  an `await` as you write it.
 - `onUnmount` is only for resources imp cannot see — clearing intervals, closing connections,
   destroying non-imp widgets.
 
@@ -288,9 +306,9 @@ hook cannot turn a screen swap into a leak.
 Components are also **state scopes**. `initState` called inside `onMount` ties the state to that
 component: descendants reach it with `useState`, siblings and outsiders cannot, and when the
 component unmounts the state is released with it — remounting starts over from the initial value.
-Two instances of the same component each own an independent state under the same name. State
-initialized at module scope (outside any component) is page-wide and lives forever instead. The full
-rules live in **[State](state.md)**.
+Two instances of the same component each own an independent state under the same name. Every state
+is owned by a component — app-lifetime state simply lives in your root component, the one that never
+unmounts. The full rules live in **[State](state.md)**.
 
 ```js
 const filterButtons = component('my-app-filter-buttons', {

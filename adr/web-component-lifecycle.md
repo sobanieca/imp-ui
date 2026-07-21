@@ -22,11 +22,13 @@ callbacks drive everything:
 
 - **`onMount(...args)`** (required) is the component's whole logic. It runs in `connectedCallback` —
   parents before children, synchronously on insertion — receives the factory-call arguments
-  verbatim, and returns the component's DOM, which fills the host's shadow root. An async `onMount`
-  keeps the placeholder visible until it resolves; a mount-generation counter discards output that
-  resolves after unmount or remount, and mount errors — sync throws and still-current rejections —
-  route to the nearest error boundary (`error-boundaries.md`), falling back to a logged error with
-  the placeholder left in place.
+  verbatim, and returns the component's DOM, which fills the host's shadow root; imp then activates
+  the state bindings the output contains, making the component their owner
+  (`event-propagated-state.md`). An async `onMount` keeps the placeholder visible until it resolves;
+  a mount-generation counter discards output that resolves after unmount or remount, and mount
+  errors — sync throws, still-current rejections, and binding-activation failures — route to the
+  nearest error boundary (`error-boundaries.md`), falling back to a logged error with the
+  placeholder left in place.
 - **`placeholder(...args)`** (optional) renders the shadow root's initial content at factory-call
   time and is restored after unmount. Synchronous mounts replace it before paint; it is user-visible
   only during async mounts — the built-in skeleton/loading story.

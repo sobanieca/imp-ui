@@ -5,11 +5,17 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/state-setup-before-await]: 'useState' runs after an await in an async onMount — past the first await it can no longer see this component and resolves page-wide; do state setup before the first await
- --> app.js:12:18
+error[imp/state-setup-before-await]: 'useState' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
+ --> app.js:15:18
 
-error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await it creates page-wide state that outlives the component; do state setup before the first await
- --> app.js:13:5
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
+ --> app.js:16:5
 
-Found 2 problems
+error[imp/state-setup-before-await]: 'orders.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
+ --> app.js:18:5
+
+error[imp/state-setup-before-await]: 'summary.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
+ --> app.js:19:5
+
+Found 4 problems
 Checked 1 file
