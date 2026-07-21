@@ -57,6 +57,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-multiple-props-objects', ['lint', 'app.js'], fixture('lint-props'))
   await test('lint-state-name-namespace', ['lint', 'app.js'], fixture('lint-state'))
   await test('lint-state-setup-before-await', ['lint', 'app.js'], fixture('lint-state-async'))
+  await test('lint-no-root-query-in-mount', ['lint', 'app.js'], fixture('lint-root-query'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
   await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))

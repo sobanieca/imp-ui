@@ -13,6 +13,7 @@ const IMP_RULES = {
   'imp/single-props-object': 'error',
   'imp/state-name-namespace': 'error',
   'imp/state-setup-before-await': 'error',
+  'imp/no-root-query-in-mount': 'error',
   'imp/component-name': 'error',
 }
 

@@ -278,6 +278,68 @@ export default {
         }
       },
     },
+    'no-root-query-in-mount': {
+      create(context) {
+        const queryMethods = new Set(['querySelector', 'querySelectorAll', 'getElementById'])
+        const frames = []
+
+        const isOnMount = (node) =>
+          node.parent?.type === 'Property' && !node.parent.computed &&
+          node.parent.value === node &&
+          (node.parent.key.name === 'onMount' || node.parent.key.value === 'onMount')
+
+        const rootSpecOf = (node) => {
+          const first = node.params[0]
+          if (!first) return null
+          if (first.type === 'Identifier') return { kind: 'param', name: first.name }
+          if (first.type === 'ObjectPattern') {
+            for (const property of first.properties) {
+              if (
+                property.type === 'Property' && !property.computed &&
+                property.key.type === 'Identifier' && property.key.name === 'root' &&
+                property.value.type === 'Identifier'
+              ) {
+                return { kind: 'binding', name: property.value.name }
+              }
+            }
+          }
+          return null
+        }
+
+        const isRootExpression = (expression, spec) =>
+          spec.kind === 'binding'
+            ? expression.type === 'Identifier' && expression.name === spec.name
+            : expression.type === 'MemberExpression' && !expression.computed &&
+              expression.property.type === 'Identifier' && expression.property.name === 'root' &&
+              expression.object.type === 'Identifier' && expression.object.name === spec.name
+
+        const enterFunction = (node) => frames.push(isOnMount(node) ? rootSpecOf(node) : null)
+        const exitFunction = () => frames.pop()
+
+        return {
+          FunctionExpression: enterFunction,
+          'FunctionExpression:exit': exitFunction,
+          ArrowFunctionExpression: enterFunction,
+          'ArrowFunctionExpression:exit': exitFunction,
+          CallExpression(node) {
+            const spec = frames.at(-1)
+            if (!spec) return
+            const callee = node.callee
+            if (
+              callee.type === 'MemberExpression' && !callee.computed &&
+              callee.property.type === 'Identifier' && queryMethods.has(callee.property.name) &&
+              isRootExpression(callee.object, spec)
+            ) {
+              context.report({
+                node,
+                message:
+                  `the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or defer the query (queueMicrotask for a sync onMount, requestAnimationFrame/setTimeout for an async one)`,
+              })
+            }
+          },
+        }
+      },
+    },
     'component-name': createLiteralNameRule(new Set(['component']), componentNameProblem),
     'exact-dependency-versions': {
       create(context) {

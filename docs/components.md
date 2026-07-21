@@ -116,6 +116,77 @@ Because imp uses real DOM (no virtual DOM), the element factories you call — `
 DOM is simply to keep the node in a variable and mutate it. `instance.root` is for when you need the
 mounted subtree as a whole rather than one node you built.
 
+### `onMount` runs _before_ its DOM is placed
+
+There is one timing rule that trips people up: **while `onMount` is running, the DOM it returns is
+not in the shadow root yet.** imp inserts your output _after_ `onMount` returns — and for an
+**async** `onMount`, that means after the returned promise resolves, i.e. after every `await`. Until
+then the shadow root still holds the placeholder. So this does **not** work:
+
+```js
+const card = component('my-app-card', {
+  onMount: async (instance) => {
+    const box = div(span({ class: 'label' }, 'hi'))
+    await loadData()
+    // ✗ the content is not placed yet — this finds the placeholder (or null), not your span
+    instance.root.querySelector('.label').textContent = 'ready'
+    return box
+  },
+})
+```
+
+The `imp/no-root-query-in-mount` lint rule flags querying `instance.root` inside `onMount` for this
+reason. There are two right ways to do it:
+
+- **Hold the node and mutate it directly** — the imp-idiomatic answer, and always correct. The node
+  you built is a live element whether or not it is in the document yet:
+
+  ```js
+  const card = component('my-app-card', {
+    onMount: async (instance) => {
+      const label = span('hi')
+      await loadData()
+      label.textContent = 'ready' // ✓ it is the real node
+      return div(label)
+    },
+  })
+  ```
+
+- **Defer the query until after placement**, when you genuinely need the mounted subtree (to measure
+  it, move focus, or hand a connected node to a third-party library). For a **synchronous**
+  `onMount`, a `queueMicrotask` runs after imp has placed the DOM:
+
+  ```js
+  const search = component('my-app-search', {
+    onMount: (instance) => {
+      const field = input()
+      queueMicrotask(() => instance.root.querySelector('input').focus()) // ✓ placed by now
+      return div(field)
+    },
+  })
+  ```
+
+  For an **async** `onMount`, a microtask is not enough — a microtask scheduled inside `onMount`
+  still runs before imp inserts your DOM. Use a macrotask (`requestAnimationFrame` or `setTimeout`),
+  which runs after placement:
+
+  ```js
+  const search = component('my-app-search', {
+    onMount: async (instance) => {
+      const field = input()
+      await loadData()
+      requestAnimationFrame(() => instance.root.querySelector('input').focus()) // ✓
+      return div(field)
+    },
+  })
+  ```
+
+Querying `instance.root` is also fine anywhere that runs _after_ mount — an event handler, a `watch`
+callback, or `onUnmount`. `onUnmount` is not subject to this rule: when it runs, your mounted
+content is still in the shadow root (imp restores the placeholder only afterward), so
+`instance.root` there reaches the real DOM — the natural place to read a final scroll position or
+selection before the component goes away.
+
 The instance is also a plain object you can **write to**, and that is the clean way to pass a
 resource from `onMount` to `onUnmount`. Anything you assign in `onMount` is on the same instance
 `onUnmount` receives:

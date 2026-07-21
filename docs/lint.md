@@ -118,6 +118,34 @@ lives on in the closure, and reads and writes are allowed anywhere. Only resolut
 position-sensitive: the DOM you build from the handles (`text`/`view`/`each`, bound props) can come
 after the `await` and goes live when the component mounts it.
 
+### `imp/no-root-query-in-mount`
+
+While `onMount` runs, the DOM it returns is **not in the shadow root yet** — imp inserts it after
+`onMount` returns, and after the resolved promise for an async `onMount` (see
+**[Components](components.md)**). Querying `instance.root` there finds the placeholder, not your
+content. This rule flags `querySelector`, `querySelectorAll`, and `getElementById` called directly
+on the instance's `root` in an `onMount` body (it does not flag deferred access inside an event
+handler, `queueMicrotask`, or other callback, nor the same query in `onUnmount`, where the mounted
+DOM is still present):
+
+```js
+const card = component('my-app-card', {
+  onMount: (instance) => {
+    const box = div(span({ class: 'label' }, 'hi'))
+    instance.root.querySelector('.label').textContent = 'ready'
+    return box
+  },
+})
+```
+
+```
+error[imp/no-root-query-in-mount]: the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or defer the query (queueMicrotask for a sync onMount, requestAnimationFrame/setTimeout for an async one)
+ --> src/card.js:4:5
+```
+
+Keep a reference to the node you build and mutate it directly, or defer the query until after the
+DOM is placed — the fixes are spelled out under _The instance_ in **[Components](components.md)**.
+
 ### `imp/component-name`
 
 Component names become real element tags, so they must be lowercase with at least one dash, like
