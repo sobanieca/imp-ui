@@ -105,8 +105,6 @@ const themeSync = component('todo-theme-sync', {
   },
 })
 
-let clockInterval = null
-
 const sessionClock = component('todo-session-clock', {
   styles: `
     .clock {
@@ -116,15 +114,15 @@ const sessionClock = component('todo-session-clock', {
       gap: 6px;
     }
   `,
-  onMount: () => {
+  onMount: (instance) => {
     const startedAt = Date.now()
     const face = span({ class: 'clock-face', style: 'font-variant-numeric: tabular-nums' }, '0s')
-    clockInterval = setInterval(() => {
+    instance.timer = setInterval(() => {
       face.textContent = `${Math.round((Date.now() - startedAt) / 1000)}s`
     }, 1000)
     return span({ class: 'clock' }, 'this mount: ', face)
   },
-  onUnmount: () => clearInterval(clockInterval),
+  onUnmount: (instance) => clearInterval(instance.timer),
 })
 
 let tipCursor = 0
@@ -250,7 +248,7 @@ const todoCard = component('todo-card', {
       line-height: 1;
     }
   `,
-  onMount: ({ title = 'untitled', note = '', startEditing = false } = {}) => {
+  onMount: (_instance, { title = 'untitled', note = '', startEditing = false } = {}) => {
     const stage = useState('todo.stage')
     const activity = useState('todo.activity')
     const cardTitle = initState('todo.cardTitle', title)
@@ -354,7 +352,7 @@ const boardColumn = component('todo-board-column', {
       .cards { min-height: 0 }
     }
   `,
-  onMount: ({ label: stageLabel, accent, cards }) => {
+  onMount: (_instance, { label: stageLabel, accent, cards }) => {
     initState('todo.stage', stageLabel)
     const activity = useState('todo.activity')
     const acceptCard = (event) => {

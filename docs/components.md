@@ -56,12 +56,13 @@ from outside always win for the host element itself.
 
 `component(name, definition)` takes the name and an object with up to five entries:
 
-### `onMount(...args)` — required
+### `onMount(instance, ...args)` — required
 
-The component's whole logic. It receives, verbatim, whatever arguments the factory call was given
-(`profile({ id: 42 })` → `onMount({ id: 42 })`) and returns the component's DOM — a node, a string,
-an array of children, or nothing. It runs when the component is **connected to the document**,
-parents before children, so everything an ancestor set up (like state) is already there.
+The component's whole logic. Its first parameter is the component's **instance** (see _The instance_
+below); after that it receives, verbatim, whatever arguments the factory call was given
+(`profile({ id: 42 })` → `onMount(instance, { id: 42 })`). It returns the component's DOM — a node,
+a string, an array of children, or nothing. It runs when the component is **connected to the
+document**, parents before children, so everything an ancestor set up (like state) is already there.
 
 `onMount` may also be `async` — see _Loading states_ below.
 
@@ -82,11 +83,14 @@ const card = component('my-app-card', {
 
 Keep placeholders static — plain DOM, no state subscriptions.
 
-### `onUnmount(...args)` — optional
+### `onUnmount(instance, ...args)` — optional
 
 Runs after the component is removed from the document, for teardown imp cannot do for you: timers,
-sockets, third-party widgets. You rarely need it — state subscriptions are cleaned up automatically
-(see _Automatic cleanup_ below).
+sockets, third-party widgets. It receives the **same instance** its `onMount` was given, followed by
+the factory-call arguments — so anything `onMount` stashed on the instance (a timer handle, a
+socket, a third-party widget) is right there to tear down. You rarely need it — state subscriptions
+are cleaned up automatically (see _Automatic cleanup_ below). `onUnmount` may be `async`; imp awaits
+it, and a rejection is logged without breaking the rest of teardown.
 
 ### `onError(error, ...args)` — optional
 
@@ -97,6 +101,48 @@ output replaces the component's content — see _Error boundaries_ below.
 ### `styles` — optional
 
 The component's own CSS, as a string. It applies only inside this component — see _Styling_ below.
+
+## The instance
+
+`onMount` and `onUnmount` both receive an **instance** as their first argument — one object per
+mounted component, created fresh each time the component mounts. It gives you two things:
+
+- **`instance.host`** — the component's own element (the `<my-app-profile>` tag in the document).
+- **`instance.root`** — the shadow root your output renders into. After mount you can query it,
+  measure it, or hand a node to a third-party library.
+
+Because imp uses real DOM (no virtual DOM), the element factories you call — `div(...)`,
+`span(...)`, `input(...)` — already return **live DOM nodes**, so the usual way to touch your own
+DOM is simply to keep the node in a variable and mutate it. `instance.root` is for when you need the
+mounted subtree as a whole rather than one node you built.
+
+The instance is also a plain object you can **write to**, and that is the clean way to pass a
+resource from `onMount` to `onUnmount`. Anything you assign in `onMount` is on the same instance
+`onUnmount` receives:
+
+```js
+const clock = component('my-app-clock', {
+  onMount: (instance) => {
+    const face = span('0s')
+    const startedAt = Date.now()
+    instance.timer = setInterval(() => {
+      face.textContent = `${Math.round((Date.now() - startedAt) / 1000)}s`
+    }, 1000)
+    return span('elapsed: ', face)
+  },
+  onUnmount: (instance) => clearInterval(instance.timer),
+})
+```
+
+Each mounted component gets its **own** instance, so a list of a hundred clocks each clears its own
+timer — nothing is shared between them. This is why the instance is the right home for per-component
+resources: a module-level variable or a property on the definition would be shared across every
+instance and clobbered. You only need to name the `instance` parameter when you use it; components
+that do not can keep writing `onMount: () => …`.
+
+The instance **travels with the component**. Because a moved component is not remounted (see _Moving
+components_), its instance — and everything you stashed on it — survives the move; only a genuine
+unmount ends it.
 
 ## Styling
 
@@ -114,7 +160,7 @@ export const userCard = component('my-app-user-card', {
     }
     .name { font-weight: 600 }
   `,
-  onMount: (user) => div({ class: 'card' }, span({ class: 'name' }, user.name)),
+  onMount: (instance, user) => div({ class: 'card' }, span({ class: 'name' }, user.name)),
 })
 ```
 
@@ -208,7 +254,7 @@ with no extra machinery:
 ```js
 export const orders = component('my-app-orders', {
   placeholder: () => div({ class: 'skeleton' }, 'loading orders…'),
-  onMount: async ({ customerId }) => {
+  onMount: async (instance, { customerId }) => {
     const response = await fetch(`/api/customers/${customerId}/orders`)
     const list = await response.json()
     return ul(list.map((order) => li(order.title)))
@@ -227,7 +273,7 @@ when the resolved DOM mounts (see **[State](state.md)**):
 ```js
 export const orders = component('my-app-orders', {
   placeholder: () => div({ class: 'skeleton' }, 'loading orders…'),
-  onMount: async ({ customerId }) => {
+  onMount: async (instance, { customerId }) => {
     const orders = initState('myapp.orders', [])
     const response = await fetch(`/api/customers/${customerId}/orders`)
     orders.set(await response.json())
@@ -295,11 +341,14 @@ by hand. Two boundaries worth knowing:
   **[State](state.md)**). The `imp/state-setup-before-await` lint rule flags resolution placed after
   an `await` as you write it.
 - `onUnmount` is only for resources imp cannot see — clearing intervals, closing connections,
-  destroying non-imp widgets.
+  destroying non-imp widgets. It receives the component's instance, so the resources `onMount`
+  stashed there are in reach, and it may be `async` when teardown needs to await (closing a
+  connection, flushing a buffer) — imp awaits it before the component is considered fully torn down.
 
-Teardown is also **fault-tolerant**: a cleanup step or `onUnmount` that throws is logged and skipped
-without stopping the rest — every other subscription and resource is still released, so one broken
-hook cannot turn a screen swap into a leak.
+Teardown is also **fault-tolerant**: a cleanup step or an `onUnmount` that throws — or an async
+`onUnmount` that rejects — is logged and skipped without stopping the rest, so every other
+subscription and resource is still released and one broken hook cannot turn a screen swap into a
+leak.
 
 ## Components and state
 

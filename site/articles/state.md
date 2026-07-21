@@ -267,7 +267,7 @@ away. Resolve the state, `await`, build:
 ```js
 const orderList = component('my-app-order-list', {
   placeholder: () => div('loading orders…'),
-  onMount: async ({ id }) => {
+  onMount: async (instance, { id }) => {
     const orders = initState('myapp.orders', [])
     orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
     return ul(orders.each((order) => li(order.title), (order) => order.id))
