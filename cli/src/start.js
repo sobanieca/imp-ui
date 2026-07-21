@@ -9,6 +9,8 @@ import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './p
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
 
+const DEFAULT_DEV_SERVER_PORT = 4507
+
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -121,6 +123,7 @@ export async function loadApp(entryPath, { envAlias = null } = {}) {
   const env = await resolveEnvironment({ root, config: imp, requestedAlias: envAlias })
   const headInjection = buildHeadInjection(dependencies, pwa, env)
   const maxLogEntries = imp.maxLogEntries ?? DEFAULT_MAX_LOG_ENTRIES
+  const devServerPort = imp.devServerPort ?? null
   const missingDependencies = []
   for (const alias of Object.keys(dependencies)) {
     try {
@@ -129,7 +132,7 @@ export async function loadApp(entryPath, { envAlias = null } = {}) {
       missingDependencies.push(alias)
     }
   }
-  return { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries }
+  return { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries, devServerPort }
 }
 
 export function createRequestHandler({ root, entryName, headInjection, clients, pwa = null }) {
@@ -203,7 +206,7 @@ export function createRequestHandler({ root, entryName, headInjection, clients, 
   }
 }
 
-export async function start({ entry = 'index.html', port = 4507, env = null } = {}) {
+export async function start({ entry = 'index.html', port = null, env = null } = {}) {
   const entryPath = resolve(entry)
   let entryStat
   try {
@@ -217,10 +220,12 @@ export async function start({ entry = 'index.html', port = 4507, env = null } = 
     Deno.exit(1)
   }
 
-  const { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries } = await loadApp(
-    entryPath,
-    { envAlias: env },
-  )
+  const { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries, devServerPort } =
+    await loadApp(
+      entryPath,
+      { envAlias: env },
+    )
+  const listenPort = port ?? devServerPort ?? DEFAULT_DEV_SERVER_PORT
   const clients = new Set()
 
   const devLog = await createDevLog({ root, maxEntries: maxLogEntries })
@@ -253,7 +258,7 @@ export async function start({ entry = 'index.html', port = 4507, env = null } = 
   })()
 
   const server = Deno.serve({
-    port,
+    port: listenPort,
     onListen: ({ port }) => {
       logger.info(`imp start serving ${entryName} from ${root}`)
       console.log(`  → http://localhost:${port}/`)

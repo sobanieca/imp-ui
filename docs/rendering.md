@@ -4,15 +4,19 @@ How imp turns element-factory calls into real DOM. imp is buildless: no compile 
 JavaScript ES modules that run directly in the browser. Everything is imported from the bare `imp`
 specifier (mapped automatically by `imp start`).
 
-> Scope: this page covers building DOM from factory calls. Styling, theming, i18n, routing, and web
-> components are not covered here yet.
+> Scope: this page covers building DOM from factory calls. Components with a lifecycle (mount,
+> loading, unmount) are covered in **[Components](components.md)**; styling, theming, i18n, and
+> routing are not covered here yet.
 
 ## Mental model
 
-- A **component** is a lowercase function that returns a real DOM node:
-  `card({ title }) -> div(...)`. No framework component concept, no JSX.
-- `el()` and the tag factories return actual `Node`s. You hold the reference and mutate it with
-  normal DOM APIs — there is no virtual DOM and no diffing.
+- `el()` and the tag factories are **eager**: they return actual `Node`s the moment you call them.
+  You hold the reference and mutate it with normal DOM APIs — there is no virtual DOM and no
+  diffing.
+- Plain helper functions that bundle up elements (`card({ title }) -> div(...)`) are just functions
+  — lowercase, no JSX, no framework concept. When a piece of UI needs a lifecycle or state, promote
+  it to a **component** (`component('my-app-card', …)`, see **[Components](components.md)**); its
+  factory is called the same way.
 - Arguments are dispatched by **type**, not position.
 - Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) — no
   aliases.
@@ -71,10 +75,16 @@ button(
   not yet exposed and falls back to an attribute, so define custom elements before constructing
   nodes that pass rich/`null` props to them.
 - **`class`**: `'card'` · `['card', extra]` (falsy entries dropped, joined) · `{ active: cond }`
-  (object — each truthy entry toggles its class on).
+  (object — the truthy entries' names become the class). Every form sets the class whole — what you
+  pass is what the element gets.
 - **`style`**: `'color:red'` · object (`camelCase` -> kebab, `--custom-props` kept verbatim).
 - **`events`**: `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` — native DOM event
   names, **no `on` prefix**. The optional second array element is `addEventListener` options.
+- **State-valued props.** Any prop value may be a state (from `initState`/`useState`/`computed`) —
+  the prop then stays **live**, re-applied on every change, with each form keeping its usual meaning
+  (`div({ class: theme })`, `input({ disabled: busy })`). The binding goes live when a component (or
+  `mount`) places the element and ends with it; a state passed as a standalone argument instead of a
+  prop value is reported and skipped. See **[State](state.md)** — _Binding props_.
 
 ## Mounting
 

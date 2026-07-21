@@ -23,29 +23,47 @@ while a lazy chunk loads.
 ## Pieces (port from the draft)
 
 - `route(pattern, factory)` — registers a pattern; `:param` segments and a `*` wildcard fallback.
-- `currentRoute` — a signal of `{ path, query }`; the outlet re-renders when it changes.
-- `navigate(path, { replace })` — `pushState`/`replaceState` + updates the signal; `popstate` keeps
-  it in sync with back/forward.
-- `router()` — a **marker-slot outlet** built exactly like the `when`/`each` structural primitives
-  (`todo/reactivity-signals.md`): it runs the matched factory in a fresh child scope and disposes
-  the previous one on every navigation, so a route's listeners/effects/fetches are torn down
-  automatically. Lazy loads are guarded by a nav token so a slow chunk can't clobber a newer route.
+- `currentRoute` — an app-lifetime state of `{ path, query }`, initialized by the outlet in its
+  `onMount` (the outlet is the app-wide root that owns routing; there is no module scope to hold it,
+  `adr/event-propagated-state.md`). The outlet keeps the handle and re-renders when it changes.
+- `navigate(path, { replace })` — `pushState`/`replaceState` + `set`s the state through the handle
+  the outlet closes over (`get`/`set` work anywhere); `popstate` keeps it in sync with back/forward.
+- `router()` — the **outlet**, naturally an imp component (`adr/web-component-lifecycle.md`): it
+  subscribes to `currentRoute` in `onMount` and swaps the matched factory's output in. Because route
+  pages are components too, swapping the DOM unmounts the old page — its scoped state and
+  subscriptions are torn down automatically; `placeholder` covers lazy-chunk loading, and a nav
+  token guards a slow chunk from clobbering a newer route.
+- **Route modules must leave nothing behind.** Everything a route creates has to be released when
+  the route is swapped out, which the component lifecycle already guarantees — provided the module
+  plays by scope rules: every route-lifetime state is an `initState` in the route's **root
+  component** (state is owned by its component — a mounting-component `initState` is the only form
+  there is, so route state is released when the route root unmounts), subscriptions live in mounts
+  (enforced), and timers/sockets go through `onUnmount` (teardown is fault-isolated per
+  `error-boundaries.md`, so one bad hook cannot leak the rest). The planned `module` component
+  (`module-component.md`) makes that root boundary a first-class piece and adds enforcement (lint +
+  import tripwire). The docs' screen-scoping guidance (`docs/state.md`, _Scope and lifetime_) is
+  written to match; the router docs should restate it for route modules specifically.
+- **The outlet (or route root) is the error boundary.** A failed dynamic `import()` or a route page
+  whose async `onMount` rejects routes to the nearest `onError` (`error-boundaries.md`) — the outlet
+  should either define a default `onError` fallback or document that each route root should bring
+  one, so a broken lazy chunk degrades to declared UI instead of a stuck placeholder.
 - `link(...)` — a **real `<a href>`** (middle-click, copy-link, and SEO all work) that intercepts
   plain left-clicks and navigates client-side; modifier/target/external/`mailto:` clicks fall
-  through to the browser. Listener is bound with the scope's `scopeSignal()` so it auto-detaches.
+  through to the browser.
 
 ## Dependencies
 
-Builds directly on the signal graph, scope/disposal, and the marker-slot pattern from
-`todo/reactivity-signals.md` (the draft imports `signal`/`effect`/`untrack`, the scope module, and
-the `a` factory). Land reactivity first.
+Builds directly on the component lifecycle (`adr/web-component-lifecycle.md`) and scoped state
+(`adr/event-propagated-state.md`) — both landed. The `prev/` draft predates them (it imports the
+rejected signal-graph modules), so porting means re-expressing the outlet on components, not
+copying.
 
 ## ADR impact
 
 New ADR `client-side-router.md` recording: explicit registration (file-based routing rejected and
-why), the current location as a signal, the outlet as a scoped marker-slot primitive, lazy routes
-via dynamic `import()` with no build step, and real-anchor `link`. Update the ADR table; document
-usage in `docs/`.
+why), the current location as app-lifetime state owned by the outlet, the outlet as a component,
+lazy routes via dynamic `import()` with no build step, and real-anchor `link`. Update the ADR table;
+document usage in `docs/`.
 
 ## Open questions
 

@@ -22,6 +22,23 @@ Conventions:
 | [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates       |
 | [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback |
 | [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events     |
+| [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; onMount lifecycle |
+| [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry      |
+| [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind       |
+| [error-boundaries](error-boundaries.md)                         | onError boundaries via events; isolated teardown  |
+
+## State
+
+| ADR                                                   | Decision                                                                                          |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [event-propagated-state](event-propagated-state.md)   | Named state via initState/useState — subtree-scoped by DOM-event bubbling, auto-cleanup, computed |
+| [state-plain-data-values](state-plain-data-values.md) | Plain-data state values: fused validate+structural-compare on set, deep-frozen when stored        |
+
+## Library
+
+| ADR                                   | Decision                                              |
+| ------------------------------------- | ----------------------------------------------------- |
+| [built-in-logger](built-in-logger.md) | One console-backed logger, level from `IMP_LOG_LEVEL` |
 
 ## CLI
 

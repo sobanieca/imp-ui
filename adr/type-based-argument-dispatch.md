@@ -40,3 +40,7 @@ and `list?.length && ...` drop out cleanly without wrapper syntax.
   symmetric; a literal `"true"` string is still text.
 - Anything unrecognized at child position is dropped silently rather than throwing, keeping render
   resilient to stray values.
+- Dispatch extends one level into props: a **state-shaped prop value** (`get` + `watch` functions —
+  `event-propagated-state.md`) means a live binding rather than a literal value. Because a state
+  helper is itself a plain object, a state passed as a standalone argument would be mistaken for a
+  props object — that case is detected first, reported, and skipped.

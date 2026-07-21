@@ -22,14 +22,14 @@ stdlib feedback components so request state renders without wiring:
   it settles.
 
 This means the client exposes observable request state (pending/failed/settled) the components can
-bind to reactively (`todo/reactivity-signals.md`), rather than each call site plumbing loading and
-error state by hand.
+bind to reactively through the landed state layer (`adr/event-propagated-state.md`), rather than
+each call site plumbing loading and error state by hand.
 
 ## Dependencies
 
 - Standalone for the core factory (retries + timeouts) — can land on its own.
-- The stdlib integration depends on `todo/stdlib-components.md` and the signal graph
-  (`todo/reactivity-signals.md`).
+- The stdlib integration depends on `todo/stdlib-components.md`; the state layer it binds through is
+  already in place (`adr/event-propagated-state.md`).
 
 ## ADR impact
 

@@ -1,0 +1,4 @@
+{
+  "APP_ENV": "development",
+  "SEED_DELAY_MS": 900
+}

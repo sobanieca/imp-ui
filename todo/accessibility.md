@@ -31,8 +31,8 @@ open question left in `todo/stdlib-components.md`):
   question), not re-rolled per component.
 - **State wiring.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
   `aria-invalid`, `aria-busy`, `aria-live` for feedback (`alert`, `toast`, `spinner`) reflect the
-  component's reactive state automatically — they bind to the same signals that drive the visuals
-  (`todo/reactivity-signals.md`), so they can never drift from what is shown.
+  component's reactive state automatically — they bind to the same states that drive the visuals
+  (`adr/event-propagated-state.md`), so they can never drift from what is shown.
 - **Labels & descriptions.** Inputs associate a `<label>` (or `aria-label`/`aria-labelledby`);
   icon-only controls require an accessible name; error/help text links via `aria-describedby`.
 - **Visible focus & motion.** A visible focus indicator built from `--imp-*` tokens
@@ -62,8 +62,9 @@ components as part of `imp test` is an open question.
 - The core contract depends on the standard component library (`todo/stdlib-components.md`) — it is
   the surface being made accessible — and is best defined **alongside** it rather than bolted on
   after, so every component ships accessible from its first version.
-- State wiring binds to the signal graph (`todo/reactivity-signals.md`); focus indicators use theme
-  tokens (`todo/theme-styling.md`); route focus management depends on the router (`todo/router.md`).
+- State wiring binds to the landed state layer (`adr/event-propagated-state.md`); focus indicators
+  use theme tokens (`todo/theme-styling.md`); route focus management depends on the router
+  (`todo/router.md`).
 - Labels and announcements route user-facing strings through `t()` (`todo/i18n.md`) like the rest of
   the stdlib.
 

@@ -183,5 +183,12 @@ export async function loadImpConfig(startDir) {
   ) {
     throw new Error(`invalid ${name} — 'maxLogEntries' must be a positive integer`)
   }
+  if (
+    config.devServerPort !== undefined &&
+    (!Number.isInteger(config.devServerPort) ||
+      config.devServerPort < 1 || config.devServerPort > 65535)
+  ) {
+    throw new Error(`invalid ${name} — 'devServerPort' must be an integer between 1 and 65535`)
+  }
   return config
 }

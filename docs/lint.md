@@ -34,9 +34,9 @@ On top of the base set, imp's own rules are always applied as errors:
 
 ### `imp/no-capital-component`
 
-imp components are lowercase functions — there is no framework component concept and no JSX, so a
-capitalized function name signals a habit from another framework. The rule flags function
-declarations and function-valued variables whose name starts with a capital letter:
+imp components are lowercase functions — element factories and `component()` factories alike — and
+there is no JSX, so a capitalized function name signals a habit from another framework. The rule
+flags function declarations and function-valued variables whose name starts with a capital letter:
 
 ```js
 const Widget = () => div('widget')
@@ -65,6 +65,105 @@ error[imp/single-props-object]: multiple props objects passed to 'div' — pass 
 
 Merge the properties into one object instead. For `el`, the leading tag argument is ignored, so only
 the object literals after it are counted.
+
+### `imp/state-name-namespace`
+
+State names must carry a namespace: at least two non-empty dot-separated segments, like `myapp.user`
+(see **[State](state.md)**). The rule checks every `initState`/`useState` call whose name is written
+literally:
+
+```js
+const user = initState('user', { name: 'Ada' })
+```
+
+```
+error[imp/state-name-namespace]: state name 'user' must include a namespace — use dot-separated segments like 'myapp.user'
+ --> src/app.js:1:24
+```
+
+Names built dynamically (a variable, a template with expressions) are not checked statically — the
+same validation then happens at runtime, where a bad name throws.
+
+### `imp/state-setup-before-await`
+
+In an async `onMount`, state resolution must happen **before the first `await`** (see
+**[State](state.md)**). Past it, the mounting component is out of reach and `initState`, `useState`,
+and `watch` all throw at runtime — this rule catches them earlier, as you write them. It flags
+`initState`/`useState` calls placed after an `await` in an async `onMount`, and `watch` called there
+on a handle the file created with `initState`, `useState`, or `computed` (tracking the handle keeps
+unrelated third-party `.watch()` methods out of the reports):
+
+```js
+const orders = component('my-app-orders', {
+  onMount: async () => {
+    const totals = initState('myapp.totals', [])
+    const data = await fetch('/api/orders').then((response) => response.json())
+    const orders = initState('myapp.orders', data)
+    totals.watch((current) => console.log(current))
+    return ul(orders.each((order) => li(order.title), (order) => order.id))
+  },
+})
+```
+
+```
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
+ --> src/orders.js:5:20
+
+error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
+ --> src/orders.js:6:5
+```
+
+Initialize the state with an empty value first, `await` the data, then `set` it in — the handle
+lives on in the closure, and reads and writes are allowed anywhere. Only resolution and `watch` are
+position-sensitive: the DOM you build from the handles (`text`/`view`/`each`, bound props) can come
+after the `await` and goes live when the component mounts it.
+
+### `imp/no-root-query-in-mount`
+
+While `onMount` runs, the DOM it returns is **not in the shadow root yet** — imp inserts it after
+`onMount` returns, and after the resolved promise for an async `onMount` (see
+**[Components](components.md)**). Querying `instance.root` there finds the placeholder, not your
+content. This rule flags `querySelector`, `querySelectorAll`, and `getElementById` called directly
+on the instance's `root` in an `onMount` body (it does not flag deferred access inside an event
+handler, `queueMicrotask`, or other callback, nor the same query in `onUnmount`, where the mounted
+DOM is still present):
+
+```js
+const card = component('my-app-card', {
+  onMount: (instance) => {
+    const box = div(span({ class: 'label' }, 'hi'))
+    instance.root.querySelector('.label').textContent = 'ready'
+    return box
+  },
+})
+```
+
+```
+error[imp/no-root-query-in-mount]: the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or defer the query (queueMicrotask for a sync onMount, requestAnimationFrame/setTimeout for an async one)
+ --> src/card.js:4:5
+```
+
+Keep a reference to the node you build and mutate it directly, or defer the query until after the
+DOM is placed — the fixes are spelled out under _The instance_ in **[Components](components.md)**.
+
+### `imp/component-name`
+
+Component names become real element tags, so they must be lowercase with at least one dash, like
+`my-app-profile` (see **[Components](components.md)**) — that is what makes them valid custom
+element names, and the leading segment doubles as your app's namespace. The rule checks every
+`component` call whose name is written literally:
+
+```js
+export const profile = component('profile', { onMount: () => div('…') })
+```
+
+```
+error[imp/component-name]: component name 'profile' must be lowercase with at least one dash — like 'my-app-profile'
+ --> src/profile.js:1:34
+```
+
+A handful of names reserved by the HTML standard (`font-face`, `missing-glyph`, …) are also
+rejected. Dynamically built names are validated at runtime instead, where a bad name throws.
 
 ### `imp/exact-dependency-versions`
 

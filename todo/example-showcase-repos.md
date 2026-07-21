@@ -12,7 +12,8 @@ Initial set:
 - **Grafana-like admin panel** — dashboards, charts, tables, filters, and dense data-heavy layouts;
   exercises stdlib components, theming, and refresh/polling patterns.
 - **E-commerce shop with SSR** — server-rendered product pages hydrated with islands, cart, and
-  reviews; the full-scale successor to `examples/ssr`.
+  reviews; the full-scale successor to the SSR-islands example that used to live in-repo under
+  `examples/ssr`.
 
 Each repo should track imp's published version so the examples stay runnable as imp evolves, and
 link back to the main imp repo and docs.
