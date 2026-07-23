@@ -333,7 +333,7 @@ export default {
               context.report({
                 node,
                 message:
-                  `the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or defer the query (queueMicrotask for a sync onMount, requestAnimationFrame/setTimeout for an async one)`,
+                  `the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page`,
               })
             }
           },

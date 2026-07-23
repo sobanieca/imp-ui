@@ -638,9 +638,12 @@ never a range), which is what makes them reproducible.
 - **`imp update <version>`** pins a specific version instead of the latest.
 - **`imp update --check`** reports whether a newer release exists and changes nothing.
 
-When you run imp interactively and a newer release is available, imp also prints a one-line hint
-suggesting `imp update` (checked at most once a day, never blocking the command). Silence it with
-the `--no-update-check` flag or by setting `IMP_NO_UPDATE_CHECK`.
+When you run imp interactively in a project that has **not** pinned a `"version"` in its `imp.json`,
+and a newer release is available, imp also prints a one-line hint suggesting `imp update` (checked
+at most once a day, never blocking the command). If your `imp.json` pins a version, imp assumes you
+chose it on purpose and stays silent — move the pin yourself with `imp update` when you want a newer
+release. Silence the hint for unpinned projects with the `--no-update-check` flag or by setting
+`IMP_NO_UPDATE_CHECK`.
 
 If a pinned version cannot be obtained — you are offline, or the release was removed — imp stops
 with a clear error naming the version rather than silently running a different one; a pin that isn't

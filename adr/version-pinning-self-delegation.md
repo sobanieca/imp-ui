@@ -38,8 +38,11 @@ shims, no PATH manipulation: the launcher logic ships inside every binary.
 - **Update awareness.** On interactive terminals, imp checks (at most once a day, cached under
   `~/.imp/update-check.json`) whether a newer release exists and, if so, prints a one-line
   `imp update` hint after the command. The check is best-effort and non-blocking — any failure is
-  swallowed — and is suppressed when stdout is not a terminal, with `--no-update-check`, or with
-  `IMP_NO_UPDATE_CHECK`, so it never affects scripts, CI, or captured output.
+  swallowed — and is suppressed when stdout is not a terminal, with `--no-update-check`, with
+  `IMP_NO_UPDATE_CHECK`, or when the project's `imp.json` pins a `"version"` — a pinned project has
+  deliberately chosen its version and moves it with `imp update`, so an unsolicited hint would be
+  noise. The hint is thus limited to unpinned projects, where no version is enforced. This keeps it
+  from ever affecting scripts, CI, or captured output.
 - **Fail fast, never fall back.** If a pinned version cannot be obtained (offline, removed release),
   imp exits non-zero with an error naming the version — a pin that is not enforced is not a pin —
   and points at the `IMP_VERSION=system` escape hatch.

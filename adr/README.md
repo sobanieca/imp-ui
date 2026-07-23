@@ -15,17 +15,18 @@ Conventions:
 
 ## Rendering phase
 
-| ADR                                                             | Decision                                          |
-| --------------------------------------------------------------- | ------------------------------------------------- |
-| [real-dom-no-virtual-dom](real-dom-no-virtual-dom.md)           | Real DOM, no virtual DOM                          |
-| [type-based-argument-dispatch](type-based-argument-dispatch.md) | Type-based argument dispatch                      |
-| [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates       |
-| [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback |
-| [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events     |
-| [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; onMount lifecycle |
-| [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry      |
-| [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind       |
-| [error-boundaries](error-boundaries.md)                         | onError boundaries via events; isolated teardown  |
+| ADR                                                             | Decision                                            |
+| --------------------------------------------------------------- | --------------------------------------------------- |
+| [real-dom-no-virtual-dom](real-dom-no-virtual-dom.md)           | Real DOM, no virtual DOM                            |
+| [type-based-argument-dispatch](type-based-argument-dispatch.md) | Type-based argument dispatch                        |
+| [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates         |
+| [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback   |
+| [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events       |
+| [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; onMount lifecycle   |
+| [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry        |
+| [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind         |
+| [error-boundaries](error-boundaries.md)                         | onError boundaries via events; isolated teardown    |
+| [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components |
 
 ## State
 

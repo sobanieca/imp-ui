@@ -43,9 +43,10 @@ open question left in `todo/stdlib-components.md`):
 
 Some a11y concerns live below the component layer and pair with other items:
 
-- **Route focus & scroll.** On navigation, move focus to the new view and reset scroll — the "Scroll
-  restoration & focus management" open question in `todo/router.md`. A route change with no focus
-  move strands keyboard and screen-reader users on the old page.
+- **Route focus & scroll.** The router already resets scroll to the top on push navigation
+  (`adr/client-side-router.md`); the remaining a11y gap is moving focus to the new view on
+  navigation. A route change with no focus move strands keyboard and screen-reader users on the old
+  page.
 - **Live-region announcements** for route changes and toast/alert feedback, so assistive tech is
   told what changed without a full-page reload cue.
 
@@ -63,8 +64,8 @@ components as part of `imp test` is an open question.
   the surface being made accessible — and is best defined **alongside** it rather than bolted on
   after, so every component ships accessible from its first version.
 - State wiring binds to the landed state layer (`adr/event-propagated-state.md`); focus indicators
-  use theme tokens (`todo/theme-styling.md`); route focus management depends on the router
-  (`todo/router.md`).
+  use theme tokens (`todo/theme-styling.md`); route focus management builds on the router
+  (`adr/client-side-router.md`).
 - Labels and announcements route user-facing strings through `t()` (`todo/i18n.md`) like the rest of
   the stdlib.
 

@@ -54,9 +54,9 @@ imp turns two things into `track()` calls with no per-component callbacks:
 
   Delegation sidesteps the `events` same-name-clobber gotcha (a user `events: { input }` would
   otherwise override a component's own binding) and covers nodes added later by `each`/`router`.
-- **Pageviews.** Subscribe to `currentRoute` (`todo/router.md`) and emit
-  `track('pageview', { path })` on navigation. Opt-in so apps that don't want route analytics pay
-  nothing.
+- **Pageviews.** Subscribe to the route state via `useRoute()` (`adr/client-side-router.md`) and
+  emit `track('pageview', { path })` on navigation. Opt-in so apps that don't want route analytics
+  pay nothing.
 
 Both are conveniences layered on the same `track`/`onAnalytics` core — an app can ignore them and
 call `track()` by hand.
@@ -96,8 +96,8 @@ fire. imp ships no hard-coded event names beyond the `pageview` convention.
 ## Dependencies
 
 Builds on the landed state layer and its scoped cleanup (`adr/event-propagated-state.md`) for scoped
-sink cleanup and for state-change emits; pageview auto-instrumentation needs the router
-(`todo/router.md`); diagnostics route through the built-in logger (`todo/logger.md`). The
+sink cleanup and for state-change emits; pageview auto-instrumentation builds on the router
+(`adr/client-side-router.md`); diagnostics route through the built-in logger (`todo/logger.md`). The
 `data-track` delegation is pure real DOM and needs none of them.
 
 ## ADR impact

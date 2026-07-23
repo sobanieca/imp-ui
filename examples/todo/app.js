@@ -1,4 +1,5 @@
 import {
+  area,
   button,
   component,
   computed,
@@ -16,14 +17,19 @@ import {
   input,
   label,
   li,
+  main,
   mount,
+  nav,
+  navigate,
   p,
+  router,
   section,
   small,
   span,
   strong,
   summary,
   ul,
+  useRoute,
   useState,
 } from 'imp'
 
@@ -49,9 +55,22 @@ const TIPS = [
   'switch themes — a headless component syncs body[data-theme] and localStorage',
 ]
 
+const cardSlots = Object.fromEntries(
+  STAGES.map((stage) => [stage.id, div({ class: 'cards' })]),
+)
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const logActivity = (activity, entry) => activity.set((entries) => [entry, ...entries].slice(0, 6))
+
+const navTab = (path, label) =>
+  button(
+    {
+      class: computed([useRoute()], (current) => current.path === path ? 'tab active' : 'tab'),
+      events: { click: () => navigate(path) },
+    },
+    label,
+  )
 
 const baseStyles = `
   * { box-sizing: border-box }
@@ -92,6 +111,23 @@ const fieldStyles = `
   input:focus {
     outline: none;
     border-color: var(--focus);
+  }
+`
+
+const panelStyles = `
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
   }
 `
 
@@ -386,67 +422,14 @@ const boardColumn = component('todo-board-column', {
   },
 })
 
-const todoApp = component('todo-app', {
+const matchesFilter = (kind, item) => kind === 'all' || (kind === 'done') === item.done
+
+const listScreen = component('todo-list-screen', {
   styles: `
     ${baseStyles}
     ${buttonStyles}
     ${fieldStyles}
-    .app {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-    .skeleton {
-      max-width: 1040px;
-      margin: 40px auto;
-      padding: 40px 24px;
-      border: 1px dashed var(--border);
-      border-radius: 12px;
-      text-align: center;
-      color: var(--muted);
-    }
-    .toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 24px 0 16px;
-    }
-    .toolbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .clock-toggle {
-      color: var(--muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .panel h2 {
-      margin: 0 0 12px;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-    }
-    .panel-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .panel-head h2 { margin: 0 }
+    ${panelStyles}
     .add-form {
       display: flex;
       gap: 8px;
@@ -530,36 +513,9 @@ const todoApp = component('todo-app', {
       text-decoration: line-through;
       color: var(--muted);
     }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      align-items: start;
-    }
-    .activity {
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-    .activity summary { cursor: pointer }
-    .activity ul { margin: 8px 0 0 }
-    .app-footer {
-      color: var(--muted);
-      padding: 8px 0 32px;
-    }
     .muted { color: var(--muted) }
     @media (max-width: 720px) {
-      .app { padding: 0 16px }
-      .toolbar {
-        flex-wrap: wrap;
-        gap: 12px;
-        padding: 16px 0 12px;
-      }
-      .toolbar-actions {
-        flex-wrap: wrap;
-        gap: 10px;
-      }
       .list-tools { flex-wrap: wrap }
-      .board { grid-template-columns: 1fr }
       .item { flex-wrap: wrap }
       .item .notes {
         order: 1;
@@ -571,22 +527,12 @@ const todoApp = component('todo-app', {
       .add-form input { flex: 1 1 100% }
     }
   `,
-  placeholder: () => div({ class: 'skeleton' }, 'loading todos…'),
-  onMount: async () => {
-    const theme = initState('todo.theme', localStorage.getItem('imp-todo-theme') ?? 'dark')
-    const items = initState('todo.items', [])
-    const filter = initState('todo.filter', 'all')
-    const activity = initState('todo.activity', [])
-    const clockOn = initState('todo.clockOn', false)
-    const tipEpoch = initState('todo.tipEpoch', 0)
+  onMount: () => {
+    const items = useState('todo.items')
+    const filter = useState('todo.filter')
+    const activity = useState('todo.activity')
 
     const log = (entry) => logActivity(activity, entry)
-
-    const cardSlots = Object.fromEntries(
-      STAGES.map((stage) => [stage.id, div({ class: 'cards' })]),
-    )
-
-    const matchesFilter = (kind, item) => kind === 'all' || (kind === 'done') === item.done
 
     const visible = computed(
       [items, filter],
@@ -639,6 +585,7 @@ const todoApp = component('todo-app', {
       items.set((list) => list.filter((entry) => entry.id !== item.id))
       cardSlots.new.prepend(todoCard({ title: item.title, note }))
       log(`promoted “${item.title}” to the board`)
+      navigate('/board')
     }
 
     const listItem = (item) => {
@@ -674,33 +621,7 @@ const todoApp = component('todo-app', {
       )
     }
 
-    const toolbar = header(
-      { class: 'toolbar' },
-      h1('imp todo'),
-      div(
-        { class: 'toolbar-actions' },
-        clockOn.view((on) => on && sessionClock()),
-        label(
-          { class: 'clock-toggle' },
-          input({
-            type: 'checkbox',
-            events: { change: (event) => clockOn.set(event.currentTarget.checked) },
-          }),
-          'session clock',
-        ),
-        button(
-          {
-            class: 'ghost',
-            events: {
-              click: () => theme.set((current) => current === 'dark' ? 'light' : 'dark'),
-            },
-          },
-          theme.text((current) => current === 'dark' ? 'light mode' : 'dark mode'),
-        ),
-      ),
-    )
-
-    const listSection = section(
+    return section(
       { class: 'panel' },
       h2('quick list'),
       form(
@@ -741,8 +662,34 @@ const todoApp = component('todo-app', {
         )
       ),
     )
+  },
+})
 
-    const boardSection = section(
+const boardScreen = component('todo-board-screen', {
+  styles: `
+    ${baseStyles}
+    ${buttonStyles}
+    ${panelStyles}
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .panel-head h2 { margin: 0 }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 720px) {
+      .board { grid-template-columns: 1fr }
+    }
+  `,
+  onMount: () => {
+    const activity = useState('todo.activity')
+    return section(
       { class: 'panel' },
       div(
         { class: 'panel-head' },
@@ -753,7 +700,7 @@ const todoApp = component('todo-app', {
             events: {
               click: () => {
                 cardSlots.new.prepend(todoCard({ startEditing: true }))
-                log('added a card to the board')
+                logActivity(activity, 'added a card to the board')
               },
             },
           },
@@ -764,6 +711,155 @@ const todoApp = component('todo-app', {
         { class: 'board' },
         STAGES.map((stage) => boardColumn({ ...stage, cards: cardSlots[stage.id] })),
       ),
+    )
+  },
+})
+
+const notFoundScreen = component('todo-not-found', {
+  styles: `
+    ${buttonStyles}
+    ${panelStyles}
+    .not-found { text-align: center }
+    .not-found p {
+      color: var(--muted);
+      margin: 8px 0 16px;
+    }
+  `,
+  onMount: () =>
+    section(
+      { class: ['panel', 'not-found'] },
+      h2('not found'),
+      p('no screen lives at this URL.'),
+      button({ class: 'primary', events: { click: () => navigate('/') } }, 'back to the list'),
+    ),
+})
+
+const todoShell = component('todo-shell', {
+  styles: `
+    ${baseStyles}
+    ${buttonStyles}
+    ${fieldStyles}
+    .app {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .skeleton {
+      max-width: 1040px;
+      margin: 40px auto;
+      padding: 40px 24px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0 16px;
+    }
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .clock-toggle {
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      background: transparent;
+      border-color: transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+    }
+    .tab:hover {
+      color: var(--text);
+      border-color: var(--border-2);
+    }
+    .tab.active {
+      color: var(--focus);
+      background: var(--panel);
+      border-color: var(--border-2);
+    }
+    main { display: block }
+    .activity {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .activity summary { cursor: pointer }
+    .activity ul { margin: 8px 0 0 }
+    .app-footer {
+      color: var(--muted);
+      padding: 8px 0 32px;
+    }
+    @media (max-width: 720px) {
+      .app { padding: 0 16px }
+      .toolbar {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px 0 12px;
+      }
+      .toolbar-actions {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+    }
+  `,
+  placeholder: () => div({ class: 'skeleton' }, 'loading todos…'),
+  onMount: async () => {
+    const theme = initState('todo.theme', localStorage.getItem('imp-todo-theme') ?? 'dark')
+    const items = initState('todo.items', [])
+    initState('todo.filter', 'all')
+    const activity = initState('todo.activity', [])
+    const clockOn = initState('todo.clockOn', false)
+    const tipEpoch = initState('todo.tipEpoch', 0)
+
+    const toolbar = header(
+      { class: 'toolbar' },
+      h1('imp todo'),
+      div(
+        { class: 'toolbar-actions' },
+        clockOn.view((on) => on && sessionClock()),
+        label(
+          { class: 'clock-toggle' },
+          input({
+            type: 'checkbox',
+            events: { change: (event) => clockOn.set(event.currentTarget.checked) },
+          }),
+          'session clock',
+        ),
+        button(
+          {
+            class: 'ghost',
+            events: {
+              click: () => theme.set((current) => current === 'dark' ? 'light' : 'dark'),
+            },
+          },
+          theme.text((current) => current === 'dark' ? 'light mode' : 'dark mode'),
+        ),
+      ),
+    )
+
+    const tabs = nav(
+      { class: 'tabs' },
+      navTab('/', 'quick list'),
+      navTab('/board', 'board'),
+      navTab('/guide', 'guide'),
     )
 
     const activitySection = details(
@@ -781,8 +877,17 @@ const todoApp = component('todo-app', {
       { class: 'app' },
       themeSync(),
       toolbar,
-      listSection,
-      boardSection,
+      tabs,
+      main(router({
+        routes: {
+          '/': () => listScreen(),
+          '/board': () => boardScreen(),
+          '/guide': area(() => import('./guide.js')),
+        },
+        placeholder: () => div({ style: 'color: var(--muted); padding: 20px 0' }, 'loading…'),
+        onError: (error) => div({ style: 'color: #e07777; padding: 20px 0' }, error.message),
+        onNotFound: () => notFoundScreen(),
+      })),
       tipEpoch.view(() => tipBox()),
       activitySection,
       appFooter,
@@ -790,7 +895,7 @@ const todoApp = component('todo-app', {
 
     await delay(Number(env.SEED_DELAY_MS ?? 700))
     items.set(SEED_TODOS)
-    log(`loaded ${SEED_TODOS.length} seed todos`)
+    logActivity(activity, `loaded ${SEED_TODOS.length} seed todos`)
     return view
   },
 })
@@ -806,4 +911,4 @@ const dismissIntro = mount(
   ),
 )
 
-mount('#app', todoApp())
+mount('#app', todoShell())

@@ -1,9 +1,8 @@
 # Make the imp library tree-shakeable
 
 **Do this last** — scheduled after all standard library components (`stdlib-components.md`) and the
-other library growth items (`router.md`) are implemented, so the shakeable export pattern and the
-size checks are applied once, over the complete library surface, instead of being reworked with
-every addition.
+other library growth items are implemented, so the shakeable export pattern and the size checks are
+applied once, over the complete library surface, instead of being reworked with every addition.
 
 `imp build` tree-shakes the whole graph (esbuild dead-code elimination,
 `adr/production-bundling.md`), and app modules shake perfectly — but the imp library itself is

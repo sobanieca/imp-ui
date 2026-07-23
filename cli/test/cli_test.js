@@ -820,6 +820,15 @@ Deno.test('imp start', async (t) => {
     await get('start-directory-redirect', '/assets', { redirect: 'manual' })
     await get('start-not-found', '/missing.js')
 
+    await t.step('start-history-fallback', async () => {
+      const path = '/todos/42'
+      const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+        headers: { accept: 'text/html' },
+      })
+      const body = normalize((await response.text()).replace(CLIENT_JS, '\n[imp client script]\n'))
+      await assertSnapshot('start-history-fallback', responseTranscript(path, response, body))
+    })
+
     await t.step('start-path-traversal', async () => {
       const statusLine = await rawRequestStatusLine(port, '/../secret.txt')
       await assertSnapshot(

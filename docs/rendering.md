@@ -5,8 +5,8 @@ JavaScript ES modules that run directly in the browser. Everything is imported f
 specifier (mapped automatically by `imp start`).
 
 > Scope: this page covers building DOM from factory calls. Components with a lifecycle (mount,
-> loading, unmount) are covered in **[Components](components.md)**; styling, theming, i18n, and
-> routing are not covered here yet.
+> loading, unmount) are covered in **[Components](components.md)**; mapping URLs to screens is
+> covered in **[Routing](routing.md)**; styling, theming, and i18n are not covered here yet.
 
 ## Mental model
 

@@ -140,19 +140,19 @@ try {
       if (jobsArg !== null && !(Number(jobsArg) > 0)) {
         throw new Error(`--jobs must be a positive integer, got '${jobsArg}'`)
       }
-      Deno.exit(
-        await runTests({
-          root: Deno.cwd(),
-          paths: positional(args),
-          list: rest.includes('--list'),
-          unit: rest.includes('--unit'),
-          e2e: rest.includes('--e2e'),
-          jobs: jobsArg === null ? null : Math.floor(Number(jobsArg)),
-          filter: flag(rest, 'filter', null),
-          screenshotDir: flag(rest, 'screenshots', null),
-          videoDir: flag(rest, 'video', null),
-        }),
-      )
+      const code = await runTests({
+        root: Deno.cwd(),
+        paths: positional(args),
+        list: rest.includes('--list'),
+        unit: rest.includes('--unit'),
+        e2e: rest.includes('--e2e'),
+        jobs: jobsArg === null ? null : Math.floor(Number(jobsArg)),
+        filter: flag(rest, 'filter', null),
+        screenshotDir: flag(rest, 'screenshots', null),
+        videoDir: flag(rest, 'video', null),
+      })
+      await notifyUpdate(rest)
+      Deno.exit(code)
       break
     }
     case 'resize': {
@@ -192,20 +192,25 @@ try {
       const { lint } = await import('./lint.js')
       const fix = rest.includes('--fix')
       const args = rest.filter((arg) => arg !== '--fix')
-      Deno.exit(await lint({ root: Deno.cwd(), paths: positional(args), fix }))
+      const code = await lint({ root: Deno.cwd(), paths: positional(args), fix })
+      await notifyUpdate(rest)
+      Deno.exit(code)
       break
     }
     case 'fmt': {
       const { fmt } = await import('./fmt.js')
       const check = rest.includes('--check')
       const args = rest.filter((arg) => arg !== '--check')
-      Deno.exit(await fmt({ root: Deno.cwd(), paths: positional(args), check }))
+      const code = await fmt({ root: Deno.cwd(), paths: positional(args), check })
+      await notifyUpdate(rest)
+      Deno.exit(code)
       break
     }
     default:
       console.log(HELP)
       if (command && command !== 'help' && command !== '--help') Deno.exit(1)
   }
+  if (command !== 'update') await notifyUpdate(rest)
 } catch (error) {
   const { logger } = await import('./logger.js')
   logger.error(error.message)

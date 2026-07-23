@@ -83,6 +83,14 @@ const card = component('my-app-card', {
 
 Keep placeholders static — plain DOM, no state subscriptions.
 
+Because a synchronous `onMount` swaps the placeholder out before paint, pairing one with a
+`placeholder` is almost always a mistake — the placeholder can never be seen. imp warns when it
+spots this: a component with a `placeholder` whose `onMount` returns synchronously logs a one-time
+warning telling you to make `onMount` async (or return a promise) if you want the placeholder shown,
+or to drop it. A `placeholder` is only worthwhile when `onMount` returns a promise — whether it is
+written `async` or just returns one (for example `onMount: () => loadCard().then(renderCard)`), both
+keep the placeholder up until the promise settles and neither warns.
+
 ### `onUnmount(instance, ...args)` — optional
 
 Runs after the component is removed from the document, for teardown imp cannot do for you: timers,
@@ -105,11 +113,14 @@ The component's own CSS, as a string. It applies only inside this component — 
 ## The instance
 
 `onMount` and `onUnmount` both receive an **instance** as their first argument — one object per
-mounted component, created fresh each time the component mounts. It gives you two things:
+mounted component, created fresh each time the component mounts. It gives you three things:
 
 - **`instance.host`** — the component's own element (the `<my-app-profile>` tag in the document).
 - **`instance.root`** — the shadow root your output renders into. After mount you can query it,
   measure it, or hand a node to a third-party library.
+- **`instance.afterMount(callback)`** — schedules `callback` to run once your returned DOM is on the
+  page and the browser has laid it out, so focus, measurement, `scrollIntoView`, and animation setup
+  are all safe (see _Running code after the DOM is placed_ below).
 
 Because imp uses real DOM (no virtual DOM), the element factories you call — `div(...)`,
 `span(...)`, `input(...)` — already return **live DOM nodes**, so the usual way to touch your own
@@ -136,56 +147,76 @@ const card = component('my-app-card', {
 ```
 
 The `imp/no-root-query-in-mount` lint rule flags querying `instance.root` inside `onMount` for this
-reason. There are two right ways to do it:
+reason. The imp-idiomatic answer is to **hold the node and mutate it directly** — always correct,
+because the node you built is a live element whether or not it is in the document yet:
 
-- **Hold the node and mutate it directly** — the imp-idiomatic answer, and always correct. The node
-  you built is a live element whether or not it is in the document yet:
-
-  ```js
-  const card = component('my-app-card', {
-    onMount: async (instance) => {
-      const label = span('hi')
-      await loadData()
-      label.textContent = 'ready' // ✓ it is the real node
-      return div(label)
-    },
-  })
-  ```
-
-- **Defer the query until after placement**, when you genuinely need the mounted subtree (to measure
-  it, move focus, or hand a connected node to a third-party library). For a **synchronous**
-  `onMount`, a `queueMicrotask` runs after imp has placed the DOM:
-
-  ```js
-  const search = component('my-app-search', {
-    onMount: (instance) => {
-      const field = input()
-      queueMicrotask(() => instance.root.querySelector('input').focus()) // ✓ placed by now
-      return div(field)
-    },
-  })
-  ```
-
-  For an **async** `onMount`, a microtask is not enough — a microtask scheduled inside `onMount`
-  still runs before imp inserts your DOM. Use a macrotask (`requestAnimationFrame` or `setTimeout`),
-  which runs after placement:
-
-  ```js
-  const search = component('my-app-search', {
-    onMount: async (instance) => {
-      const field = input()
-      await loadData()
-      requestAnimationFrame(() => instance.root.querySelector('input').focus()) // ✓
-      return div(field)
-    },
-  })
-  ```
+```js
+const card = component('my-app-card', {
+  onMount: async (instance) => {
+    const label = span('hi')
+    await loadData()
+    label.textContent = 'ready' // ✓ it is the real node
+    return div(label)
+  },
+})
+```
 
 Querying `instance.root` is also fine anywhere that runs _after_ mount — an event handler, a `watch`
 callback, or `onUnmount`. `onUnmount` is not subject to this rule: when it runs, your mounted
 content is still in the shadow root (imp restores the placeholder only afterward), so
 `instance.root` there reaches the real DOM — the natural place to read a final scroll position or
 selection before the component goes away.
+
+### Running code after the DOM is placed
+
+Mutating a node covers most cases, but some things only work once the element is **on the page and
+laid out**: moving focus, measuring size or position, `scrollIntoView`, or starting an animation.
+For those, call **`instance.afterMount(callback)`**. imp runs your callback on the next animation
+frame after it has placed your DOM — so the element is connected and the browser has done layout —
+and you never touch a microtask, a `requestAnimationFrame`, or an unmount check yourself:
+
+```js
+export const userCard = component('my-app-user-card', {
+  placeholder: () => div({ class: 'card' }, 'Loading…'),
+  onMount: async (instance, { id }) => {
+    const user = await fetch(`/api/users/${id}`).then((r) => r.json())
+    const field = input({ value: user.name })
+    instance.afterMount(() => {
+      field.focus()
+      field.select()
+    })
+    return div({ class: 'card' }, field)
+  },
+})
+```
+
+Because `afterMount` is a method on the instance — not an imported helper — you can call it
+**anywhere in `onMount`, including after an `await`**. That matters: the node you want to focus
+often only exists after the fetch that produced its data, and here you build it, register the
+callback right next to it, and return — no ref system, no element declared early just to assign it
+later. The callback is a plain closure over the variables you already have.
+
+Details worth knowing:
+
+- **It fires after layout, not just after insertion**, so measurements and `scrollIntoView` are safe
+  — not only `focus()`.
+- **It is cancellation-safe.** If the component unmounts before the frame (or is remounted, or its
+  async mount was discarded), the callback does not run — you never guard against a torn-down
+  component by hand.
+- **It takes one callback per mount.** `afterMount` runs once, so it accepts a single function and
+  throws if you call it a second time. When you have several things to do after placement — focus a
+  field _and_ scroll it into view — do them inside that one callback:
+
+  ```js
+  instance.afterMount(() => {
+    field.focus()
+    field.scrollIntoView()
+  })
+  ```
+
+- **A throw is a mount failure.** `afterMount` is the last step of mounting, so if the callback
+  throws, the error goes to the nearest error boundary (see _Error boundaries_ below) — the same
+  place a failed async `onMount` lands — instead of being swallowed.
 
 The instance is also a plain object you can **write to**, and that is the clean way to pass a
 resource from `onMount` to `onUnmount`. Anything you assign in `onMount` is on the same instance
@@ -387,9 +418,10 @@ How errors travel:
   component keeps its placeholder.
 
 Boundaries catch **mount failures** — which includes failed lazy loads and data fetches in async
-`onMount`, the common case. They do not catch errors thrown later in event handlers or state
-subscribers; those are isolated and logged where they happen, so one bad handler cannot take down
-the page (see **[State](state.md)**).
+`onMount`, the common case, and a throw from an `instance.afterMount` callback, the tail of
+mounting. They do not catch errors thrown later in event handlers or state subscribers; those are
+isolated and logged where they happen, so one bad handler cannot take down the page (see
+**[State](state.md)**).
 
 Put a boundary wherever a subtree can fail independently and the rest of the page should survive it:
 around a route's page, a third-party-backed widget, each card in a dashboard.

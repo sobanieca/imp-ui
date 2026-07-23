@@ -6,6 +6,7 @@ import { formatSize } from './file_size.js'
 
 const REPO = 'sobanieca/imp-ui'
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
+const UPDATE_CHECK_TIMEOUT = 2000
 const STALE_AFTER = 30 * 24 * 60 * 60 * 1000
 
 const PLATFORM_SLUGS = {
@@ -156,9 +157,9 @@ export async function ensureVersion(version) {
   return downloaded
 }
 
-export async function resolveLatestVersion() {
+export async function resolveLatestVersion(signal) {
   const url = `https://api.github.com/repos/${REPO}/releases/latest`
-  const response = await fetch(url, { headers: { accept: 'application/vnd.github+json' } })
+  const response = await fetch(url, { headers: { accept: 'application/vnd.github+json' }, signal })
   if (!response.ok) {
     await response.body?.cancel()
     throw new Error(
@@ -344,7 +345,7 @@ async function latestReleaseThrottled() {
   } catch {
     // no usable cache — fall through to a fresh check
   }
-  const latest = await resolveLatestVersion()
+  const latest = await resolveLatestVersion(AbortSignal.timeout(UPDATE_CHECK_TIMEOUT))
   try {
     await Deno.mkdir(impHome(), { recursive: true })
     await Deno.writeTextFile(cachePath, JSON.stringify({ latest, checkedAt: now }))
@@ -361,6 +362,7 @@ export async function notifyUpdate(args) {
     if (Deno.env.get('IMP_VERSION') === 'system') return
     if (isDevMode()) return
     if (!Deno.stdout.isTerminal()) return
+    if (await readPin(Deno.cwd())) return
     const latest = await latestReleaseThrottled()
     if (isNewer(latest, VERSION)) {
       console.log(

@@ -38,6 +38,23 @@ callbacks drive everything:
   its position is fixed regardless of a component's own arity, and so it works with arrow-function
   hooks (a bound `this` would not). It survives moves: the move path leaves it untouched, so
   anything stashed on it travels with the element (`component-moves-rebind.md`).
+- **`instance.afterMount(callback)`** registers a single callback to run once the returned DOM is
+  attached and the browser has laid it out — imp flushes it on the next animation frame after
+  placement, so measurements, `scrollIntoView`, focus, and animation setup are all safe. It is a
+  method on the instance rather than an ambient imported helper deliberately: the sync mount-scope
+  stack that scopes `initState`/`useState`/`watch` cannot survive an `await`, but the instance is a
+  closure-carried object, so `afterMount` is callable anywhere in `onMount` — crucially _after_ the
+  fetch that builds the very nodes the callback touches, with no early-declared `let`. No ref system
+  is needed: the node built imperatively in `onMount` is a live element, and the closure carries it
+  into the callback. It accepts **one** callback per mount and throws on a second call — post-mount
+  work is one step conceptually, so a caller composes multiple actions inside that one function
+  rather than registering a list imp would have to order and reason about. Cancellation is guarded
+  twice — the async placement path already discards a resolved mount whose generation moved, and the
+  frame callback re-checks the mount generation and connectedness, since a component can unmount in
+  the gap between placement and the next frame. `afterMount` is the tail of mounting, so a throw
+  from the callback is a **mount failure**: it routes to the nearest error boundary through the same
+  `ComponentError` channel as a sync throw or an async rejection (`error-boundaries.md`), rather
+  than being logged in isolation the way a later event-handler or subscriber error is.
 - **`placeholder(...args)`** (optional) renders the shadow root's initial content at factory-call
   time and is restored after unmount. Synchronous mounts replace it before paint; it is user-visible
   only during async mounts — the built-in skeleton/loading story. It runs outside a live mount, so
@@ -71,9 +88,10 @@ cleanup.
 
 ## Consequences
 
-- Component code runs connected: it can subscribe to scoped state, dispatch bubbling events,
-  measure, and focus. Mount order is top-down, so ancestors' `initState` always precedes
-  descendants' `useState`.
+- Component code runs connected: it can subscribe to scoped state, dispatch bubbling events, and —
+  through `instance.afterMount` — measure and focus its laid-out DOM without hand-scheduling a
+  `requestAnimationFrame` or re-checking for a mid-frame unmount. Mount order is top-down, so
+  ancestors' `initState` always precedes descendants' `useState`.
 - Loading states cost nothing extra — `placeholder` plus an async `onMount`.
 - Cleanup is deterministic: state subscriptions exist only inside a mount and end at unmount —
   outside one they throw (`event-propagated-state.md`). `onUnmount` covers timers and sockets.

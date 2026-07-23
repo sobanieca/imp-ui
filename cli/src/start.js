@@ -202,8 +202,18 @@ export function createRequestHandler({ root, entryName, headInjection, clients, 
       return serveFromDir(root, '/' + entryName, { headInjection })
     }
 
-    return serveFromDir(root, url.pathname, { headInjection })
+    const response = await serveFromDir(root, url.pathname, { headInjection })
+    if (response.status === 404 && isClientRouteRequest(req, url)) {
+      return serveFromDir(root, '/' + entryName, { headInjection })
+    }
+    return response
   }
+}
+
+function isClientRouteRequest(req, url) {
+  if (req.method !== 'GET') return false
+  if (extname(url.pathname)) return false
+  return (req.headers.get('accept') ?? '').includes('text/html')
 }
 
 export async function start({ entry = 'index.html', port = null, env = null } = {}) {
