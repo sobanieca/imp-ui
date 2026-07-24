@@ -123,10 +123,10 @@ mode reuses them (`adr/two-level-testing.md`):
 The whole point of rendering "proper HTML" through the real server is that cross-cutting concerns
 render too. As those features land, the preview chrome grows controls that drive their signals:
 
-- **Theme** — once `todo/theme-styling.md` ships, a theme/mode/direction switcher in the preview
-  chrome calls `setTheme` / `setMode` / `setDirection`, so a component can be checked in light,
-  dark, and RTL from one page. This is a headline reason to render real HTML rather than a static
-  snapshot.
+- **Theme** — the theming engine has shipped (`adr/themable-by-default-tokens.md`), so a theme
+  switcher in the preview chrome calls `applyTheme` with each discovered theme module, so a
+  component can be checked under light, dark, and any custom theme from one page. This is a headline
+  reason to render real HTML rather than a static snapshot. (Direction is deferred to i18n, below.)
 - **i18n** — once `todo/i18n.md` ships, a locale switcher drives the `locale` signal so the same
   preview re-localizes live (the fine-grained no-re-render path), letting a developer verify every
   locale and catch layout breakage from long translations.

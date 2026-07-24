@@ -37,7 +37,14 @@ callbacks drive everything:
   definition property or module variable would. It is a leading rather than trailing parameter so
   its position is fixed regardless of a component's own arity, and so it works with arrow-function
   hooks (a bound `this` would not). It survives moves: the move path leaves it untouched, so
-  anything stashed on it travels with the element (`component-moves-rebind.md`).
+  anything stashed on it travels with the element (`component-moves-rebind.md`). It also carries
+  **`instance.abortSignal`**, an `AbortSignal` scoped to the one mounted lifetime: imp creates its
+  controller at mount and aborts it either when a remount supersedes the instance or at the tail of
+  a permanent teardown, after `onUnmount` has run. The single signal serves both hooks — `onMount`
+  hands it to `fetch`/`addEventListener` to cancel work when the component goes away, and
+  `onUnmount` reads its `aborted` flag to detect a superseding remount (below) — because the two
+  abort points never overlap: a permanent teardown's `onUnmount` sees it unaborted (abort follows),
+  a superseded teardown's sees it aborted (the remount aborted it first).
 - **`instance.afterMount(callback)`** registers a single callback to run once the returned DOM is
   attached and the browser has laid it out — imp flushes it on the next animation frame after
   placement, so measurements, `scrollIntoView`, focus, and animation setup are all safe. It is a
@@ -56,19 +63,36 @@ callbacks drive everything:
   `ComponentError` channel as a sync throw or an async rejection (`error-boundaries.md`), rather
   than being logged in isolation the way a later event-handler or subscriber error is.
 - **`placeholder(...args)`** (optional) renders the shadow root's initial content at factory-call
-  time and is restored after unmount. Synchronous mounts replace it before paint; it is user-visible
+  time, and again at the **front of a remount's `connectedCallback`** — a connect whose element has
+  already been through a mount cycle. Synchronous mounts replace it before paint; it is user-visible
   only during async mounts — the built-in skeleton/loading story. It runs outside a live mount, so
-  it takes no instance.
+  it takes no instance. **Rendering it on remount is what returns the host to a clean at-rest
+  state** before the new `onMount` runs: without it a re-inserted host would keep displaying the
+  dead mount's DOM until the new async `onMount` resolved. A first mount skips it because the
+  factory already populated the shadow at call time, so the placeholder is built exactly once per
+  mount that can show it, and never for a mount that is discarded. **Teardown does not render the
+  placeholder** — it empties the shadow root, dropping the outgoing subtree for collection without
+  building a throwaway skeleton a permanently-removed host would never paint. For a component with
+  no `placeholder` a remount simply starts from that emptied shadow root, so this is one rule, not a
+  special case.
 - **`onUnmount(instance, ...args)`** (optional) runs on removal for resources imp cannot track,
   receiving the same instance its mount was given. It may be async; imp awaits it, and a
   mount-generation guard after the await keeps a component re-inserted mid-teardown from being
-  overwritten by the outgoing teardown's placeholder.
+  overwritten by the outgoing teardown. That guard protects only imp's own post-await step, not the
+  user's `onUnmount` body — which has already run — so the teardown also exposes the mount's
+  **`instance.abortSignal`**: a fresh `connectedCallback` aborts the outgoing mount's controller
+  before it starts the new mount, so an async `onUnmount` that touches **module-scoped or otherwise
+  shared** resources — a shared socket, a document-level listener, a global timer — checks
+  `instance.abortSignal.aborted` after its `await` and bails, so a slow teardown cannot close a
+  handle the next mount just reopened. Per-instance resources need no guard: a fresh instance is
+  created each mount, so a teardown that only touches `instance.*` can never reach the new mount's
+  state.
 - **`onError(error, ...args)`** (optional) makes the component an error boundary for its own and its
   subtree's mount failures (`error-boundaries.md`).
 - **Removal is detected with a microtask guard**: `disconnectedCallback` defers and re-checks
   `isConnected`, so a same-task move keeps the component mounted — DOM intact, subscriptions rebound
   to the new position (`component-moves-rebind.md`) — while a real removal runs cleanup: tracked
-  state unsubscriptions, then the awaited `onUnmount`, then the restored placeholder.
+  state unsubscriptions, then the awaited `onUnmount`, then an emptied shadow root.
 - **A mount-scope stack** tracks the currently mounting host. State helpers register their
   unsubscribers with it (`event-propagated-state.md`), and it is what gives `initState` a host to
   scope state to.
@@ -93,6 +117,14 @@ cleanup.
   `requestAnimationFrame` or re-checking for a mid-frame unmount. Mount order is top-down, so
   ancestors' `initState` always precedes descendants' `useState`.
 - Loading states cost nothing extra — `placeholder` plus an async `onMount`.
+- **A remounted component resets to its at-rest content**, where the comparable web-component
+  libraries leave it alone: Lit keeps a disconnected element's shadow root intact, so reconnecting
+  shows the previous render immediately. That is safe there because a reactive re-render corrects
+  stale output; imp has no re-render — `onMount` builds DOM once, imperatively — so nothing would
+  ever overwrite a stale subtree except the next mount, which is exactly what the user is waiting
+  on. imp resets by rendering the placeholder at the front of the remount rather than on the way
+  out, so the cost lands on the rare path that needs it: a host discarded for good pays only an
+  emptied shadow root, never a rebuilt skeleton it would never paint.
 - Cleanup is deterministic: state subscriptions exist only inside a mount and end at unmount —
   outside one they throw (`event-propagated-state.md`). `onUnmount` covers timers and sockets.
 - The host tag stays in the tree and its output sits behind a shadow boundary: component boundaries

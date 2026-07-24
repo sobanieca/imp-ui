@@ -106,8 +106,16 @@ Mobile layout is first-class, not a separate component set:
   The bind contract is **public and documented**, not a stdlib-internal convention: custom
   components and third-party widget wrappers accept state-shaped values the same way, with the
   stdlib as the reference implementation.
-- **Every component consumes `--imp-*` theme tokens** (`todo/theme-styling.md`) and styles with
-  `css``` using **logical properties only**, so theming and RTL work for free.
+- **Every component consumes `--imp-*` theme tokens** (`adr/themable-by-default-tokens.md`) and
+  styles through its component `styles` entry using **logical properties only**, so theming and RTL
+  work for free.
+- **Add the theme-completeness check once the token surface is final.** The token list grows one
+  component at a time, so there is no canonical set to validate against yet. When all components
+  have landed and the full `--imp-*` token list is settled, freeze that list and have `applyTheme`
+  warn (through `createLogger('imp')`, non-fatal — the app still runs) when an applied theme is
+  missing any known token key. This is the runtime check the theming ADR
+  (`adr/themable-by-default-tokens.md`) defers: it only becomes meaningful with the complete list in
+  hand, and the built-in light / dark themes must define every key on it.
 - **User-facing strings pipe through `t()`** and register defaults via `defineMessages` (the draft's
   `stdlib/index.js` seeds `imp.close`, `imp.loading`, etc.) — gated on the future i18n item.
 
@@ -115,10 +123,10 @@ Mobile layout is first-class, not a separate component set:
 
 This is the top of the stack. Named state is in place and considered complete
 (`adr/event-propagated-state.md`) — the one state-side question left is the field-binding contract
-above, which is this item's to answer. Still needed are the `css` tagged template + theme tokens
-(`todo/theme-styling.md`) and the i18n `t()`/`defineMessages` layer. Some components (`toast`,
-`modal`, `drawer`) also need a `portal` primitive for DOM rendered outside the owning subtree. Land
-those first; the stdlib can grow group by group.
+above, which is this item's to answer. Still needed are the `--imp-*` theme tokens
+(`adr/themable-by-default-tokens.md`) and the i18n `t()`/`defineMessages` layer. Some components
+(`toast`, `modal`, `drawer`) also need a `portal` primitive for DOM rendered outside the owning
+subtree. Land those first; the stdlib can grow group by group.
 
 ## A showcase surface
 

@@ -36,8 +36,8 @@ open question left in `todo/stdlib-components.md`):
 - **Labels & descriptions.** Inputs associate a `<label>` (or `aria-label`/`aria-labelledby`);
   icon-only controls require an accessible name; error/help text links via `aria-describedby`.
 - **Visible focus & motion.** A visible focus indicator built from `--imp-*` tokens
-  (`todo/theme-styling.md`) that survives theming, and `prefers-reduced-motion` respected by any
-  component that animates.
+  (`adr/themable-by-default-tokens.md`) that survives theming, and `prefers-reduced-motion`
+  respected by any component that animates.
 
 ## Router & app-level concerns
 
@@ -64,8 +64,8 @@ components as part of `imp test` is an open question.
   the surface being made accessible — and is best defined **alongside** it rather than bolted on
   after, so every component ships accessible from its first version.
 - State wiring binds to the landed state layer (`adr/event-propagated-state.md`); focus indicators
-  use theme tokens (`todo/theme-styling.md`); route focus management builds on the router
-  (`adr/client-side-router.md`).
+  use theme tokens (`adr/themable-by-default-tokens.md`); route focus management builds on the
+  router (`adr/client-side-router.md`).
 - Labels and announcements route user-facing strings through `t()` (`todo/i18n.md`) like the rest of
   the stdlib.
 

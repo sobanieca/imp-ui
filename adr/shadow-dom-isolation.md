@@ -16,7 +16,7 @@ routing both dispatch `composed: true` custom events (`event-propagated-state.md
 
 **Every component host attaches an open shadow root, and everything the component renders lives
 there.** The root is attached in the host's constructor; the placeholder, the mount output, error
-fallbacks, and the placeholder restored after unmount all render into the shadow root — the host's
+fallbacks, and the placeholder re-rendered on remount all render into the shadow root — the host's
 light DOM stays empty and untouched.
 
 - **Styling is per component via a `styles` definition entry** — an optional CSS string next to

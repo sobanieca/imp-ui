@@ -98,8 +98,8 @@ home page ship.
 
 - **Markdown renderer choice** that satisfies the in-process / vendored-wasm constraint and covers
   code highlighting.
-- **Styling/theming** — reuse the app theming direction (`todo/theme-styling.md`) so the site and
-  imp apps share one look, or a standalone site theme?
+- **Styling/theming** — reuse the app theming system (`adr/themable-by-default-tokens.md`) so the
+  site and imp apps share one look, or a standalone site theme?
 - **Where the site lives** — a `site/` app in this repo built with imp, versus a separate repo like
   the showcase repos (`todo/example-showcase-repos.md`).
 - **Versioned docs** — publish docs per imp version, or always latest to start?

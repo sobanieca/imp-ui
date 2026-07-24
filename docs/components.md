@@ -68,11 +68,20 @@ document**, parents before children, so everything an ancestor set up (like stat
 
 ### `placeholder(...args)` — optional
 
-Returns what the component shows **before its real content exists**: it is rendered into the host
-immediately when you call the factory, and stays there until `onMount`'s output replaces it. For a
-synchronous `onMount` the swap happens before the browser paints, so the placeholder is never seen —
-it only becomes visible when `onMount` is async and takes real time. That makes it the natural home
-for a loading skeleton:
+Returns what the component shows **whenever its real content is not there**. It is the host's
+content at rest rather than a loading prop, and it covers three moments in the component's life:
+
+1. **Before mounting** — it is rendered into the host the instant you call the factory, so a
+   component you compose into a detached tree is never an empty box.
+2. **While an async `onMount` runs** — it stays up until the promise resolves and `onMount`'s output
+   replaces it. This is the one you will reach for most: the built-in loading skeleton.
+3. **When a removed host is mounted again** — if the same element is re-inserted after being taken
+   out of the document, imp renders the placeholder first, so the remount starts from the same
+   at-rest content it began with rather than the previous mount's stale DOM. (Removing a component
+   for good just empties its content; the placeholder is only rebuilt for a host that comes back.)
+
+It receives the factory-call arguments but no instance — it runs outside a live mount, so there is
+no instance to give it. Keep it static: plain DOM, no state subscriptions.
 
 ```js
 const card = component('my-app-card', {
@@ -81,7 +90,9 @@ const card = component('my-app-card', {
 })
 ```
 
-Keep placeholders static — plain DOM, no state subscriptions.
+This is imp's own definition key and is unrelated to the HTML `placeholder` attribute you pass to a
+text field as `input({ placeholder: 'what needs doing?' })`. The two never collide: that one is a
+string among an element's props, this one is a function among a component's definition entries.
 
 Because a synchronous `onMount` swaps the placeholder out before paint, pairing one with a
 `placeholder` is almost always a mistake — the placeholder can never be seen. imp warns when it
@@ -100,6 +111,12 @@ socket, a third-party widget) is right there to tear down. You rarely need it �
 are cleaned up automatically (see _Automatic cleanup_ below). `onUnmount` may be `async`; imp awaits
 it, and a rejection is logged without breaking the rest of teardown.
 
+One edge case, only if the same host may be **re-mounted**: an `async onUnmount` that tears down a
+**shared** resource (a socket, a document-level listener, a global timer) should check
+`instance.abortSignal.aborted` after each `await` before touching it — a remount may have already
+re-acquired it (see _The instance_ below). Resources stashed on the instance itself never need this
+— each mount gets its own.
+
 ### `onError(error, ...args)` — optional
 
 Makes the component an **error boundary**: when its own mount fails, or a component anywhere in its
@@ -113,7 +130,7 @@ The component's own CSS, as a string. It applies only inside this component — 
 ## The instance
 
 `onMount` and `onUnmount` both receive an **instance** as their first argument — one object per
-mounted component, created fresh each time the component mounts. It gives you three things:
+mounted component, created fresh each time the component mounts. It gives you four things:
 
 - **`instance.host`** — the component's own element (the `<my-app-profile>` tag in the document).
 - **`instance.root`** — the shadow root your output renders into. After mount you can query it,
@@ -121,6 +138,13 @@ mounted component, created fresh each time the component mounts. It gives you th
 - **`instance.afterMount(callback)`** — schedules `callback` to run once your returned DOM is on the
   page and the browser has laid it out, so focus, measurement, `scrollIntoView`, and animation setup
   are all safe (see _Running code after the DOM is placed_ below).
+- **`instance.abortSignal`** — a standard
+  [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) tied to this one
+  mounted lifetime; imp aborts it when the component unmounts, or the moment a remount supersedes
+  it. It's an edge-case tool for components you **remove and later re-insert**: hand it to
+  `fetch`/`addEventListener` in `onMount` to cancel that work when the component goes away, or check
+  `instance.abortSignal.aborted` in an async `onUnmount` before tearing down a _shared_ resource a
+  remount may have re-acquired. Most components never touch it.
 
 Because imp uses real DOM (no virtual DOM), the element factories you call — `div(...)`,
 `span(...)`, `input(...)` — already return **live DOM nodes**, so the usual way to touch your own
@@ -163,9 +187,9 @@ const card = component('my-app-card', {
 
 Querying `instance.root` is also fine anywhere that runs _after_ mount — an event handler, a `watch`
 callback, or `onUnmount`. `onUnmount` is not subject to this rule: when it runs, your mounted
-content is still in the shadow root (imp restores the placeholder only afterward), so
-`instance.root` there reaches the real DOM — the natural place to read a final scroll position or
-selection before the component goes away.
+content is still in the shadow root (imp empties it only afterward), so `instance.root` there
+reaches the real DOM — the natural place to read a final scroll position or selection before the
+component goes away.
 
 ### Running code after the DOM is placed
 
@@ -272,9 +296,9 @@ fast, when the component is defined.
 
 What crosses the style boundary, and how:
 
-- **Custom properties inherit through.** Design tokens declared on `body` (`--accent`, `--text`, …)
+- **Custom properties inherit through.** Design tokens declared on `:root` (`--accent`, `--text`, …)
   are visible inside every component — that is the theming channel. A theme switch that updates
-  variables on `body` restyles every component consuming them.
+  variables on `:root` restyles every component consuming them.
 - **The host element itself** belongs to the parent's tree: page CSS can style the tag
   (`my-app-user-card { grid-area: aside }`), and such rules win over the component's own `:host`
   rules.
@@ -307,7 +331,8 @@ control, its label, and its form together inside one component.
 2. **Mount** — the moment the host lands in the document (via `mount(...)`, or any DOM insertion),
    `onMount` runs and its output replaces the placeholder. Parents mount before children, top-down.
 3. **Unmount** — when the host leaves the document (and is not re-inserted in the same breath), imp
-   unsubscribes every state subscription the mount created, then calls `onUnmount`.
+   unsubscribes every state subscription the mount created, calls `onUnmount`, and then puts the
+   placeholder back — the host returns to the same at-rest content it was created with.
 4. **Remount** — a removed component that is later re-inserted starts a fresh cycle: placeholder,
    `onMount`, new subscriptions. Each mounted period is one clean mount/cleanup pair.
 
