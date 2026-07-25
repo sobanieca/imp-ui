@@ -1,4 +1,6 @@
-import { component, computed, div, initState, li, ul, useState } from 'imp'
+import { component } from 'imp'
+import { div, li, ul } from 'imp/html'
+import { computed, initState, useState } from 'imp/state'
 
 export const orders = component('demo-orders', {
   onMount: async () => {

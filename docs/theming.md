@@ -39,7 +39,8 @@ is just a module you import.
 At your entry point (the file that calls `mount()`), import a theme and apply it:
 
 ```js
-import { applyTheme, mount } from 'imp'
+import { mount } from 'imp'
+import { applyTheme } from 'imp/theme'
 import light from './light.js'
 import dark from './dark.js'
 
@@ -65,7 +66,9 @@ replaces the last; start from a built-in theme (below) and every token is alread
 in sync. Import it to read or react to whichever theme is currently applied:
 
 ```js
-import { component, div, theme } from 'imp'
+import { component } from 'imp'
+import { div } from 'imp/html'
+import { theme } from 'imp/theme'
 
 const badge = component('my-app-theme-badge', {
   onMount: () => div(theme.text((t) => t.name)),
@@ -83,7 +86,7 @@ imp ships a built-in light and dark theme so your app renders sensibly before yo
 There is nothing to import: pass the name instead of an object.
 
 ```js
-import { applyTheme } from 'imp'
+import { applyTheme } from 'imp/theme'
 
 applyTheme('default-light')
 // or
@@ -101,7 +104,7 @@ To start from a built-in instead of spelling out every value, apply it and read 
 editing them in place:
 
 ```js
-import { applyTheme, theme } from 'imp'
+import { applyTheme, theme } from 'imp/theme'
 
 applyTheme('default-dark')
 
@@ -121,7 +124,8 @@ call, and stays flexible. To remember a choice, save `theme.get().name` (for exa
 before you `mount()` avoids a flash of the wrong theme.
 
 ```js
-import { applyTheme, mount } from 'imp'
+import { mount } from 'imp'
+import { applyTheme } from 'imp/theme'
 import light from './light.js'
 import dark from './dark.js'
 

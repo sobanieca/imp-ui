@@ -23,13 +23,18 @@ export function defaultAlias({ name, subpath }) {
 export const VALID_ALIAS = /^[A-Za-z0-9._-]+$/
 
 export const IMP_SUBPATH_MODULES = {
+  'imp/html': 'api/html.js',
+  'imp/state': 'api/state.js',
+  'imp/router': 'api/router.js',
+  'imp/theme': 'api/theme.js',
+  'imp/log': 'api/log.js',
   'imp/std': 'std/index.js',
 }
 
 const knownImpSubpaths = () => [
   "'imp'",
-  "'imp/test'",
   ...Object.keys(IMP_SUBPATH_MODULES).map((subpath) => `'${subpath}'`),
+  "'imp/test'",
 ]
 
 export const isImpSubpath = (specifier) => Object.hasOwn(IMP_SUBPATH_MODULES, specifier)

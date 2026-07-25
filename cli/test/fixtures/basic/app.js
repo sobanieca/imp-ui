@@ -1,6 +1,7 @@
 import mitt from 'mitt'
 import { greeting } from './lib.js'
-import { div, mount } from 'imp'
+import { mount } from 'imp'
+import { div } from 'imp/html'
 
 const emitter = mitt()
 emitter.on('ready', () => mount('#app', () => div(greeting)))

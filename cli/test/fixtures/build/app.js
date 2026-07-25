@@ -1,5 +1,5 @@
 import mitt from 'mitt'
-import { isPlainObject } from 'imp'
+import { logLevel } from 'imp/log'
 import { greeting } from './lib.js'
 
 const emitter = mitt()
@@ -10,7 +10,7 @@ emitter.on('ready', (value) => {
 emitter.emit('ready', greeting)
 
 export const message = delivered
-export const propsAreObjects = isPlainObject({})
+export const impLogLevel = logLevel()
 export const loadShout = async () => {
   const { shout } = await import('./lazy.js')
   return shout()

@@ -1,4 +1,5 @@
-import { button, div, mount } from 'imp'
+import { mount } from 'imp'
+import { button, div } from 'imp/html'
 import { beforeEach, expect, test } from 'imp/test'
 
 let clicks

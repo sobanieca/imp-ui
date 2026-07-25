@@ -1,8 +1,16 @@
 # imp-ui — Rendering
 
 How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX — plain
-JavaScript ES modules that run directly in the browser. Everything is imported from the bare `imp`
-specifier (mapped automatically by `imp start`).
+JavaScript ES modules that run directly in the browser. The element factories come from
+**`imp/html`** and `mount` comes from **`imp`**, both bare specifiers imp resolves for you (see
+**[Imports](imports.md)** for the full map):
+
+```js
+import { mount } from 'imp'
+import { div, h1 } from 'imp/html'
+
+mount('#app', div(h1('Hello')))
+```
 
 > Scope: this page covers building DOM from factory calls. Components with a lifecycle (mount,
 > loading, unmount) are covered in **[Components](components.md)**; mapping URLs to screens is
@@ -27,6 +35,8 @@ specifier (mapped automatically by `imp start`).
 el(tag, ...args) -> Node            // the one primitive
 div, p, span, h1..h6, ul, li, button, input, form, table, ...  // ~80 tag factories
 ```
+
+Both live in `imp/html`; tags outside the factory list are built with `el('tag', …)`.
 
 Argument dispatch by **type**, order irrelevant:
 

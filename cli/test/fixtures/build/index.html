@@ -5,8 +5,8 @@
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/styles.css">
     <script type="module">
-      import { isPlainObject } from 'imp'
-      console.log('inline module sees imp:', isPlainObject({}))
+      import { logLevel } from 'imp/log'
+      console.log('inline module sees imp:', logLevel())
     </script>
   </head>
   <body>

@@ -49,9 +49,10 @@ Conventions:
 
 ## Library
 
-| ADR                                   | Decision                                              |
-| ------------------------------------- | ----------------------------------------------------- |
-| [built-in-logger](built-in-logger.md) | One console-backed logger, level from `IMP_LOG_LEVEL` |
+| ADR                                                       | Decision                                                                         |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [built-in-logger](built-in-logger.md)                     | One console-backed logger, level from `IMP_LOG_LEVEL`                            |
+| [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/log |
 
 ## CLI
 

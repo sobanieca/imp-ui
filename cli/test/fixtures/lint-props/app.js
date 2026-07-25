@@ -1,4 +1,4 @@
-import { div, el } from 'imp'
+import { div, el } from 'imp/html'
 
 export const card = () => div({ class: 'card' }, { onclick: open }, 'Open')
 

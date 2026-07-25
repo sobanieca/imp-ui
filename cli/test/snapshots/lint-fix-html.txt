@@ -17,7 +17,8 @@ Checked 1 file
   <body>
     <div id="app"></div>
     <script type="module">
-      import { div, mount } from 'imp'
+      import { mount } from 'imp'
+      import { div } from 'imp/html'
 
       const label = (on) => div(on ? 'on' : 'off')
 

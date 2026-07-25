@@ -4,7 +4,8 @@ imp ships a component library in the box, imported from **`imp/std`** — there 
 add, no CSS file to include, and no build step to configure:
 
 ```js
-import { mount, section } from 'imp'
+import { mount } from 'imp'
+import { section } from 'imp/html'
 import { button, heading, text } from 'imp/std'
 
 mount(
@@ -23,8 +24,8 @@ leaks out onto your page.
 
 ## Where components come from
 
-`imp` is the framework — element factories, `component`, state, routing, theming. `imp/std` is the
-component library, split by group:
+`imp` and its subpaths are the framework — element factories, `component`, state, routing, theming
+(see **[Imports](imports.md)**). `imp/std` is the component library, split by group:
 
 | Import            | What it holds                                      |
 | ----------------- | -------------------------------------------------- |
@@ -32,11 +33,11 @@ component library, split by group:
 | `imp/std/<group>` | The rest, group by group, as they land             |
 
 Components take the obvious names, and a few of them match an element factory — `button` is both a
-plain `<button>` from `imp` and the styled component from `imp/std`. They never collide, because
-they arrive through different imports. In the rare file that wants both, alias one:
+plain `<button>` from `imp/html` and the styled component from `imp/std`. They never collide,
+because they arrive through different imports. In the rare file that wants both, alias one:
 
 ```js
-import { button } from 'imp'
+import { button } from 'imp/html'
 import { button as styledButton } from 'imp/std'
 ```
 

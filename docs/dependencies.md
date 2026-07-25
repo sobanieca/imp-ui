@@ -139,14 +139,14 @@ large is worth committing, or a prompt to look for a lighter alternative.
 ## Packages built with imp
 
 A component published from another imp project built for an imp host (see **[the CLI docs](cli.md)**
-on `targetImpHost`) contains bare `import { div } from 'imp'` statements, deliberately left
+on `targetImpHost`) contains bare `import { div } from 'imp/html'` statements, deliberately left
 unresolved so the component shares the application's copy of imp instead of carrying its own.
 
-`imp install` honors that contract: a bare `imp` import is the one specifier never resolved against
-a registry — it always means the imp library your toolchain ships, never an npm package that happens
-to be called `imp`. The import is kept bare in the vendored bundle, and your app provides it the
-same way it provides it to your own code: through the import map in development, and through your
-own `imp build` in production.
+`imp install` honors that contract: a bare `imp` or `imp/…` import is the one specifier never
+resolved against a registry — it always means the imp library your toolchain ships, never an npm
+package that happens to be called `imp`. The import is kept bare in the vendored bundle, and your
+app provides it the same way it provides it to your own code: through the import map in development,
+and through your own `imp build` in production.
 
 Everything else a package imports is bundled in at install time from the package's own dependency
 graph, exactly as declared by its author — your `imp.json` aliases play no part in how a package's

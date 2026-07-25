@@ -15,7 +15,9 @@ you place, one table you write, and no new ideas.
 Here's a complete routed app:
 
 ```js
-import { button, component, div, h1, mount, nav, navigate, router } from 'imp'
+import { component, mount } from 'imp'
+import { button, div, h1, nav } from 'imp/html'
+import { navigate, router } from 'imp/router'
 
 const home = component('app-home', { onMount: () => h1('Welcome') })
 const about = component('app-about', { onMount: () => h1('About') })

@@ -167,6 +167,29 @@ error[imp/component-name]: component name 'profile' must be lowercase with at le
 A handful of names reserved by the HTML standard (`font-face`, `missing-glyph`, …) are also
 rejected. Dynamically built names are validated at runtime instead, where a bad name throws.
 
+### `imp/import-source`
+
+imp's library is split by subject — `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
+`imp/log` (see **[Imports](imports.md)**) — and each name has exactly one home. Importing a name
+from a sibling specifier would fail at runtime with a missing-export error that says nothing about
+where to look, so the rule names the right specifier instead:
+
+```js
+import { component, div } from 'imp'
+```
+
+```
+error[imp/import-source]: 'div' is not exported by 'imp' — it comes from 'imp/html': import { div } from 'imp/html'
+ --> src/app.js:1:21
+```
+
+`imp lint --fix` repairs it for you: the name is moved to an import of the right specifier, merged
+into one you already have if it is there, and the line it came from disappears when nothing is left
+on it.
+
+Only imp's own specifiers are checked, so a name your app or a dependency happens to share with an
+imp export is never flagged.
+
 ### `imp/exact-dependency-versions`
 
 Dependencies are vendored: declared under `dependencies` in `imp.json` and bundled into your
@@ -196,8 +219,7 @@ dependency can appear:
   ```
 
 - **Bare imports must be declared.** A bare specifier (anything that is not relative, absolute, a
-  URL, or part of imp itself — `imp`, `imp/test`, `imp/std` and its groups) must match a declared
-  dependency alias:
+  URL, or part of imp itself — `imp` and its subpaths) must match a declared dependency alias:
 
   ```js
   import confetti from 'canvas-confetti'
@@ -212,7 +234,7 @@ dependency can appear:
   available ones listed:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/test', 'imp/std'
+  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/log', 'imp/std', 'imp/test'
    --> src/app.js:2:23
   ```
 

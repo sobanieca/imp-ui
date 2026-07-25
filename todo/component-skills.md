@@ -12,7 +12,7 @@ A component declares its skill by exporting a string named `skill` from its modu
 component itself:
 
 ```js
-import { button, div } from 'imp'
+import { button, div } from 'imp/html'
 
 export const skill = `
 Counter — a self-contained increment/decrement widget.

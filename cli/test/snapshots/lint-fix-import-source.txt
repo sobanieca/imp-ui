@@ -1,0 +1,55 @@
+$ imp lint --fix app.js  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Fixed 1 file
+Checked 1 file
+
+--- fixed file ---
+import { component, mount } from 'imp'
+import { useState } from 'imp/state'
+import { div } from 'imp/html'
+import { navigate } from 'imp/router'
+import { applyTheme } from 'imp/theme'
+import { button } from 'imp/std'
+
+export const panel = component('demo-panel', {
+  onMount: () => {
+    const open = useState('demo.open')
+    applyTheme('default-light')
+    return div(button({ events: { click: () => navigate('/next') } }, open.text()))
+  },
+})
+
+mount('#app', panel)
+
+--- second run (idempotent) ---
+$ imp lint --fix app.js  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Checked 1 file
+
+--- file after second run ---
+import { component, mount } from 'imp'
+import { useState } from 'imp/state'
+import { div } from 'imp/html'
+import { navigate } from 'imp/router'
+import { applyTheme } from 'imp/theme'
+import { button } from 'imp/std'
+
+export const panel = component('demo-panel', {
+  onMount: () => {
+    const open = useState('demo.open')
+    applyTheme('default-light')
+    return div(button({ events: { click: () => navigate('/next') } }, open.text()))
+  },
+})
+
+mount('#app', panel)

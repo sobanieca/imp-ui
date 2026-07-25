@@ -6,16 +6,16 @@ exit code: 1
 
 --- stderr ---
 error[imp/state-name-namespace]: state name 'user' must include a namespace — use dot-separated segments like 'myapp.user'
- --> app.js:4:26
-
-error[imp/state-name-namespace]: state name 'theme' must include a namespace — use dot-separated segments like 'myapp.user'
  --> app.js:5:26
 
+error[imp/state-name-namespace]: state name 'theme' must include a namespace — use dot-separated segments like 'myapp.user'
+ --> app.js:6:26
+
 error[imp/state-name-namespace]: state name 'count' must include a namespace — use dot-separated segments like 'myapp.user'
- --> app.js:6:27
+ --> app.js:7:27
 
 error[imp/state-name-namespace]: state name 'myapp.settings.' must include a namespace — use dot-separated segments like 'myapp.user'
- --> app.js:7:30
+ --> app.js:8:30
 
 Found 4 problems
 Checked 1 file

@@ -1,4 +1,5 @@
-import { div, initState, useState } from 'imp'
+import { div } from 'imp/html'
+import { initState, useState } from 'imp/state'
 
 export const app = () => {
   const user = initState('user', { name: 'Ada' })

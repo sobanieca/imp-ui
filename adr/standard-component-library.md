@@ -19,17 +19,18 @@ own taxonomy (`general`, `layout`, `inputs`, `display`, `feedback`, `navigation`
 folders, docs sections and catalog entries stay one-to-one. Nothing in `std/` is privileged: it
 imports the same surface an app does.
 
-- **The library is a separate import namespace, split by group.** `imp` stays the kernel — element
-  factories, `component`, state, router, theming. The base group is **`imp/std`**; every other group
-  is **`imp/std/<group>`** (`imp/std/layout`, `imp/std/inputs`, …). Groups are registered as
-  subpaths when they land, and an unknown subpath fails with an imp-branded error listing the ones
-  that exist — in the bundler, the dev server's import map and the `imp lint` specifier check alike,
-  from one shared table. Splitting by group keeps a growing catalog from flooding one namespace and
-  makes an import line say which part of the library a file leans on.
+- **The library is a separate import namespace, split by group.** The kernel is `imp` and its
+  per-subject specifiers — `imp/html`, `imp/state`, `imp/router`, `imp/theme`, `imp/log`
+  (`library-import-namespaces.md`). The base group is **`imp/std`**; every other group is
+  **`imp/std/<group>`** (`imp/std/layout`, `imp/std/inputs`, …). Groups are registered as subpaths
+  when they land, and an unknown subpath fails with an imp-branded error listing the ones that exist
+  — in the bundler, the dev server's import map and the `imp lint` specifier check alike, from one
+  shared table. Splitting by group keeps a growing catalog from flooding one namespace and makes an
+  import line say which part of the library a file leans on.
 - **Names are the natural ones** — `button`, `text`, `link`, `form`, `select` — precisely because
-  the namespace is separate: a std component may shadow a bare element factory, since the two never
-  arrive through the same specifier. A file needing both aliases one at the import. The only hard
-  limit is JS reserved words, which cannot be import bindings.
+  the namespace is separate: a std component may shadow a bare element factory from `imp/html`,
+  since the two never arrive through the same specifier. A file needing both aliases one at the
+  import. The only hard limit is JS reserved words, which cannot be import bindings.
 
 - **Every standard component is a `component()`**, not a bare helper function — including lifeless
   ones like `text`. A themed control needs hover, focus and disabled rules, and a component's

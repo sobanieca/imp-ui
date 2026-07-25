@@ -6,6 +6,9 @@ analytics store of their choice — Google Analytics, PostHog, Plausible, an int
 `console`, whatever. imp never bundles or knows about any specific analytics provider; it only owns
 the emit-and-subscribe plumbing.
 
+**Import home: `imp/analytics`.** The emit-and-subscribe surface lands as its own specifier
+(`adr/library-import-namespaces.md`), so an app's analytics wiring is visible in its import lines.
+
 ## Why imp owns this
 
 Attaching analytics is possible today with raw DOM (real-DOM bubbling + `data-*` + a root delegated

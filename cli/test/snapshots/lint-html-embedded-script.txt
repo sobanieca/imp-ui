@@ -6,10 +6,10 @@ exit code: 1
 
 --- stderr ---
 error[imp/no-capital-component]: 'Header' starts with a capital letter — imp components are lowercase functions (write 'header')
- --> index.html:12:16
+ --> index.html:13:16
 
 error[no-unused-vars]: 'unused' is assigned a value but never used.
- --> index.html:16:13
+ --> index.html:17:13
 
 Found 2 problems
 Checked 1 file

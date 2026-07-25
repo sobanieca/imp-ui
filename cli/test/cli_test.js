@@ -59,6 +59,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-state-setup-before-await', ['lint', 'app.js'], fixture('lint-state-async'))
   await test('lint-no-root-query-in-mount', ['lint', 'app.js'], fixture('lint-root-query'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
+  await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
   await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))
   await test('lint-imports-removed', ['lint', 'app.js'], fixture('legacy-imports'))
@@ -140,6 +141,25 @@ Deno.test('imp commands', async (t) => {
     await Deno.remove(dir, { recursive: true })
     await assertSnapshot(
       'lint-fix-writes-file',
+      `${
+        commandTranscript('imp lint --fix app.js  (cwd: <tmp>)', result)
+      }\n--- fixed file ---\n${fixed}\n--- second run (idempotent) ---\n${
+        commandTranscript('imp lint --fix app.js  (cwd: <tmp>)', again)
+      }\n--- file after second run ---\n${afterSecondRun}`,
+    )
+  })
+
+  await t.step('lint-fix-import-source', async () => {
+    const dir = await Deno.makeTempDir()
+    const file = join(dir, 'app.js')
+    await Deno.copyFile(join(fixture('lint-import-source'), 'app.js'), file)
+    const result = await runImp(['lint', '--fix', 'app.js'], dir)
+    const fixed = await Deno.readTextFile(file)
+    const again = await runImp(['lint', '--fix', 'app.js'], dir)
+    const afterSecondRun = await Deno.readTextFile(file)
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'lint-fix-import-source',
       `${
         commandTranscript('imp lint --fix app.js  (cwd: <tmp>)', result)
       }\n--- fixed file ---\n${fixed}\n--- second run (idempotent) ---\n${
@@ -466,7 +486,7 @@ Deno.test('imp build', async (t) => {
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
       const module = await import(toFileUrl(join(dir, 'dist', 'app.js')).href)
       const usage =
-        `[bundled module: message='${module.message}', propsAreObjects=${module.propsAreObjects}, lazy loadShout()='${await module
+        `[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, lazy loadShout()='${await module
           .loadShout()}']`
       await assertSnapshot(
         'build-app',
@@ -1104,7 +1124,7 @@ Deno.test('bundleDependency keeps bare imp imports external', async () => {
   const entry = join(dir, 'component.js')
   await Deno.writeTextFile(
     entry,
-    "import { div } from 'imp'\nexport const box = (text) => div(text)\n",
+    "import { div } from 'imp/html'\nexport const box = (text) => div(text)\n",
   )
   try {
     const { files, packages, impImports } = await bundleDependency({

@@ -1,3 +1,3 @@
-import { isPlainObject } from 'imp'
+import { logLevel } from 'imp/log'
 
-export const ready = isPlainObject({})
+export const ready = logLevel()

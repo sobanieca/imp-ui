@@ -9,7 +9,7 @@ browser console honors one log level — set per environment, without touching c
 Import the ready-made `logger`, or create a named one that prefixes every message:
 
 ```js
-import { createLogger, logger } from 'imp'
+import { createLogger, logger } from 'imp/log'
 
 logger.info('checkout opened')
 
@@ -47,7 +47,7 @@ The level can also be changed at runtime — handy from the browser console whil
 app:
 
 ```js
-import { logLevel, setLogLevel } from 'imp'
+import { logLevel, setLogLevel } from 'imp/log'
 
 setLogLevel('debug')
 logLevel() // 'debug'

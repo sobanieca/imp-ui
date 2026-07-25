@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-import-source)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/import-source]: 'div' is not exported by 'imp' — it comes from 'imp/html': import { div } from 'imp/html'
+ --> app.js:1:21
+
+error[imp/import-source]: 'useState' is not exported by 'imp' — it comes from 'imp/state': import { useState } from 'imp/state'
+ --> app.js:1:26
+
+error[imp/import-source]: 'mount' is not exported by 'imp/router' — it comes from 'imp': import { mount } from 'imp'
+ --> app.js:2:10
+
+Found 3 problems
+Checked 1 file

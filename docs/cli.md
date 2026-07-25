@@ -234,16 +234,18 @@ The port is resolved in this order: the `--port` flag if given, otherwise the `d
 Three things are injected into every served HTML document automatically — you never reference the
 imp library by path (injection is skipped for documents that already contain it):
 
-- **Import map.** `imp` resolves to the served library, so pages import by bare specifier:
+- **Import map.** `imp` and its subpaths resolve to the served library, so pages import by bare
+  specifier (see **[Imports](imports.md)**):
 
   ```js
-  import { div, h1, mount } from 'imp'
+  import { mount } from 'imp'
+  import { div, h1 } from 'imp/html'
   mount('#app', () => div(h1('hello')))
   ```
 
-  The library source is served under `/@imp/` (`/@imp/imp.js`, `/@imp/render.js`, …). A bare
-  specifier is used instead of injecting globals because tag factories include names like `a`, `b`,
-  `i`, `p`, `time`, and `menu` that would collide on `window`.
+  The library source is served under `/@imp/` (`/@imp/imp.js`, `/@imp/api/html.js`, …). Bare
+  specifiers are used instead of injecting globals because tag factories include names like `a`,
+  `b`, `i`, `p`, `time`, and `menu` that would collide on `window`.
 
 - **Console + error telemetry.** A small inline script forwards `console.*`, uncaught errors, and
   unhandled rejections to the terminal, prefixed `[browser:*]` — you (or an LLM coding assistant
@@ -312,10 +314,10 @@ alongside the bundled code, not just the bundles themselves.
 Given an HTML page (default: `index.html`, the same entry `imp start` serves), imp finds the page's
 module scripts and bundles each one into minified, self-contained JavaScript:
 
-- **Same resolution as development.** `import { div } from 'imp'` and every vendored dependency
-  alias resolve exactly as they do under `imp start` — `imp` to the built-in library, each alias to
-  the bundle in your `dependencies/` folder. The build runs fully offline; what you tested in
-  development is what ships.
+- **Same resolution as development.** `import { div } from 'imp/html'` and every vendored dependency
+  alias resolve exactly as they do under `imp start` — every `imp` specifier to the built-in
+  library, each alias to the bundle in your `dependencies/` folder. The build runs fully offline;
+  what you tested in development is what ships.
 - **Paths are preserved.** Each `<script type="module" src="…">` keeps its URL — the bundled file is
   written to the same relative path the source file had — so the HTML works unchanged. Inline
   `<script type="module">` blocks are bundled too and re-inlined, minified with their imports
@@ -345,12 +347,12 @@ without pulling in imp or any other runtime.
 By default a JS-entry bundle carries everything it needs, including imp itself. If what you are
 building is a component meant to run inside another imp application — an application that already
 has imp — set `targetImpHost: true` in `imp.json`: bundling a JS entry then leaves every
-`import … from 'imp'` in the output as a bare import for the host to resolve, and only your code and
-your dependencies are compiled in. Nothing changes in development — the dev server's import map
-resolves `imp` exactly as before — and nothing changes for your other dependencies, which are always
-bundled in with the versions you pinned.
+`import … from 'imp'` (and `'imp/…'`) in the output as a bare import for the host to resolve, and
+only your code and your dependencies are compiled in. Nothing changes in development — the dev
+server's import map resolves `imp` exactly as before — and nothing changes for your other
+dependencies, which are always bundled in with the versions you pinned.
 
-Inside an imp application the bare `imp` import is already resolvable: in development through the
+Inside an imp application the bare `imp` imports are already resolvable: in development through the
 import map the dev server injects, and in production because the host's own `imp build` resolves it
 when it builds. The host page then holds a **single copy** of imp shared by the app and your
 component, instead of one copy each. The same contract holds when your component is published to a

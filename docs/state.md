@@ -28,7 +28,9 @@ wrap things in, and no re-rendering — state changes update exactly the DOM you
   read-only state that follows its sources.
 
 ```js
-import { button, component, div, initState, useState } from 'imp'
+import { component } from 'imp'
+import { button, div } from 'imp/html'
+import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
   onMount: () => {
@@ -273,7 +275,9 @@ Sometimes a view needs one value computed from several states — a full name fr
 status line from two lists. `computed(states, compute)` combines them:
 
 ```js
-import { component, computed, initState, span } from 'imp'
+import { component } from 'imp'
+import { span } from 'imp/html'
+import { computed, initState } from 'imp/state'
 
 const first = initState('myapp.first', 'Ada')
 const last = initState('myapp.last', 'Lovelace')

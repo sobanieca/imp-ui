@@ -1,40 +1,29 @@
-# Make the imp library tree-shakeable
-
-**Do this last** — scheduled after all standard library components (`stdlib-components.md`) and the
-other library growth items are implemented, so the shakeable export pattern and the size checks are
-applied once, over the complete library surface, instead of being reworked with every addition.
+# Make the rest of the imp library tree-shakeable
 
 `imp build` tree-shakes the whole graph (esbuild dead-code elimination,
-`adr/production-bundling.md`), and app modules shake perfectly — but the imp library itself is
-all-or-nothing. Measured: an entry importing only `isPlainObject` gets a 3.2 kB imp chunk; one
-importing `div`, `h1`, `html`, and `mount` gets 3.6 kB. Importing anything from `imp` ships
-essentially everything.
+`adr/production-bundling.md`), and app modules shake perfectly. Two of the three obstacles on the
+library side are gone: per-subject specifiers (`adr/library-import-namespaces.md`) mean an app never
+pays for a subject it does not import, and `imp/html` now declares one analyzable export per tag, so
+an entry using two tags builds 3.8 kB against 6.1 kB for one using all seventy-seven.
 
-The cause is the tag-factory export in `src/render.js`:
+What is left is everything a subject's module pulls in wholesale once you import **anything** from
+it: state, the router, theming and the std groups are each all-or-nothing, because their exports
+reach shared internals and, in places, run work at module scope.
 
-```js
-export const { div, p, span, ... } = Object.fromEntries(TAGS.map((t) => [t, (...args) => el(t, ...args)]))
-```
-
-esbuild cannot prove the `Object.fromEntries(...)` call side-effect-free, and destructured bindings
-from one initializer are kept or dropped together — so every factory (and everything they reach)
-survives any import of the module.
+**Schedule this after the standard library components land** (`stdlib-components.md`), so the
+remaining audit is done once over the complete surface rather than reworked with every addition.
 
 ## Work
 
-- Replace the destructured export with individually analyzable exports, one per tag
-  (`export const div = (...args) => el('div', ...args)` and so on). Repetitive, but statically
-  shakeable; a small generator script could emit the block if maintaining it by hand grates.
-- Audit the rest of `imp.js`/`render.js` for top-level expressions that pin code into every bundle
-  (module-scope calls, shared mutable setup) and keep new library code side-effect-free at module
-  scope as a rule.
-- Verify with a bundle-size check: an entry importing a single helper must not pull the tag
-  factories; consider asserting rough chunk-size expectations in the bundle tests so regressions
-  surface.
-- Public API must not change — same names, same `import { div } from 'imp'` shape
-  (`adr/element-factory-syntax.md`).
+- Audit every module for top-level expressions that pin code into a bundle — module-scope calls
+  (`createState` at import time in `theme.js` is one), shared mutable setup — and keep new library
+  code side-effect-free at module scope as a rule.
+- Check the `api/` barrels stay pure re-exports so importing one name from a subject cannot drag the
+  rest of it in.
+- Verify with bundle-size assertions in the CLI tests: an entry importing one helper from a subject
+  must not carry the whole subject, and the tag-shaking result above must not regress.
+- Public API must not change — same names, same specifiers (`adr/element-factory-syntax.md`,
+  `adr/library-import-namespaces.md`).
 
-At ~3.2 kB minified the current cost is negligible; it becomes real as the library grows — signals,
-the router, and the stdlib components would otherwise all ride along into every production bundle.
-In the meantime, new library code should still avoid module-scope side effects so the eventual
-conversion stays mechanical.
+The cost is small today and grows with the library: without this, the router, theming and every std
+component ride along into a production bundle that touched one export from their module.

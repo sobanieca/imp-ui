@@ -1,4 +1,5 @@
-import { button, div, mount, span } from 'imp'
+import { mount } from 'imp'
+import { button, div, span } from 'imp/html'
 
 let count = 0
 

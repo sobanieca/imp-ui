@@ -5,16 +5,19 @@ load rarely-visited sections on demand — with no build step, no route-scanning
 config file. You describe your routes as one plain-data table and hand it to a router you drop into
 your layout.
 
-Everything is imported from the bare `imp` specifier:
+Everything routing-related is imported from **`imp/router`** (see **[Imports](imports.md)** for the
+full map):
 
 ```js
-import { area, areaRoutes, navigate, router, useRoute } from 'imp'
+import { area, areaRoutes, navigate, router, useRoute } from 'imp/router'
 ```
 
 ## The whole thing in one screen
 
 ```js
-import { button, component, div, h1, mount, nav, navigate, router } from 'imp'
+import { component, mount } from 'imp'
+import { button, div, h1, nav } from 'imp/html'
+import { navigate, router } from 'imp/router'
 
 const home = component('app-home', { onMount: () => h1('Welcome') })
 const about = component('app-about', { onMount: () => h1('About us') })
@@ -205,7 +208,7 @@ router({
 That module exports the section's routes as a table, written **relative** to the prefix:
 
 ```js
-import { areaRoutes } from 'imp'
+import { areaRoutes } from 'imp/router'
 
 export default areaRoutes({
   '/': () => adminHome(), //            /admin

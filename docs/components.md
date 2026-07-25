@@ -17,14 +17,17 @@ built exactly this way; see **[Standard components](std-components.md)**.
 
 imp renders with two layers, each doing one thing:
 
-- **Element factories** (`div`, `span`, `button`, …) are eager, single-use functions that return
-  plain DOM nodes the moment you call them. No lifecycle, no magic — they are how you _build_ DOM
-  (see **[Rendering](rendering.md)**).
+- **Element factories** (`div`, `span`, `button`, …), imported from `imp/html`, are eager,
+  single-use functions that return plain DOM nodes the moment you call them. No lifecycle, no magic
+  — they are how you _build_ DOM (see **[Rendering](rendering.md)**).
 - **Components** own _time_: mounting, loading, unmounting. You define one with
-  `component(name, definition)` and get back a factory you call like any other function.
+  `component(name, definition)` — imported from `imp` — and get back a factory you call like any
+  other function.
 
 ```js
-import { component, div, span, useState } from 'imp'
+import { component } from 'imp'
+import { div, span } from 'imp/html'
+import { useState } from 'imp/state'
 
 export const profile = component('my-app-profile', {
   onMount: () => {

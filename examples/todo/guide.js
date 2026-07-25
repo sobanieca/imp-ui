@@ -1,4 +1,6 @@
-import { areaRoutes, article, button, component, h2, li, navigate, ul } from 'imp'
+import { component } from 'imp'
+import { article, button, h2, li, ul } from 'imp/html'
+import { areaRoutes, navigate } from 'imp/router'
 
 const guideScreen = component('todo-guide', {
   styles: `

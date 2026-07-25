@@ -5,6 +5,10 @@ hand-rolling `fetch` wrappers. `httpClientFactory` produces a configured, named 
 cross-cutting concerns baked in — the app calls the client, imp handles retries, timeouts, caching,
 request-state, and (in local dev) mocking.
 
+**Import home: `imp/http`.** The client factory is a subject of its own, so it lands as a new row in
+the shared subpath table rather than in any existing specifier (`adr/library-import-namespaces.md`):
+`import { httpClientFactory } from 'imp/http'`.
+
 ## Shape
 
 ```js

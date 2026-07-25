@@ -1,4 +1,5 @@
-import { component, div } from 'imp'
+import { component } from 'imp'
+import { div } from 'imp/html'
 
 export const profile = component('profile', {
   onMount: () => div('profile'),

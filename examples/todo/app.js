@@ -1,37 +1,30 @@
+import { component, env, mount } from 'imp'
 import {
-  area,
   button,
-  component,
-  computed,
   details,
   div,
   el,
-  env,
   footer,
   form,
   h1,
   h2,
   header,
   html,
-  initState,
   input,
   label,
   li,
   main,
-  mount,
   nav,
-  navigate,
   p,
-  router,
   section,
   small,
   span,
   strong,
   summary,
   ul,
-  useRoute,
-  useState,
-} from 'imp'
+} from 'imp/html'
+import { computed, initState, useState } from 'imp/state'
+import { area, navigate, router, useRoute } from 'imp/router'
 
 const STAGES = [
   { id: 'new', label: 'new', accent: '#7fb1ff' },

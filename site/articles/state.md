@@ -14,7 +14,9 @@ the DOM you bound to it. Nothing re-renders. Nothing diffs. Nothing leaks.
 Here's the whole thing in one screen:
 
 ```js
-import { button, component, div, initState, useState } from 'imp'
+import { component } from 'imp'
+import { button, div } from 'imp/html'
+import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
   onMount: () => {

@@ -5,7 +5,7 @@ component.js
 (empty)
 
 --- imp imports kept bare ---
-imp
+imp/html
 
 --- component.js ---
-import{div as r}from"imp";var i=o=>r(o);export{i as box};
+import{div as r}from"imp/html";var i=o=>r(o);export{i as box};

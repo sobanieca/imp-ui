@@ -300,7 +300,8 @@ Unit test files run in-process with a fresh simulated browser environment per fi
 render and behave like they do in a page — without starting one:
 
 ```js
-import { button, div, mount } from 'imp'
+import { mount } from 'imp'
+import { button, div } from 'imp/html'
 import { beforeEach, expect, test } from 'imp/test'
 
 let clicks = 0

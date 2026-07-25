@@ -6,11 +6,33 @@ import {
   isImpSubpath,
   parseSpecifier,
 } from './specifiers.js'
-import { TAGS } from '../../lib/src/render.js'
 import { stateNameProblem } from '../../lib/src/state.js'
 import { componentNameProblem } from '../../lib/src/component.js'
+import * as impModule from '../../lib/src/imp.js'
+import * as htmlModule from '../../lib/src/api/html.js'
+import * as stateModule from '../../lib/src/api/state.js'
+import * as routerModule from '../../lib/src/api/router.js'
+import * as themeModule from '../../lib/src/api/theme.js'
+import * as logModule from '../../lib/src/api/log.js'
 
-const ELEMENT_FACTORIES = new Set(TAGS)
+const EXPORTS_BY_SPECIFIER = {
+  'imp': impModule,
+  'imp/html': htmlModule,
+  'imp/state': stateModule,
+  'imp/router': routerModule,
+  'imp/theme': themeModule,
+  'imp/log': logModule,
+}
+
+const EXPORT_HOMES = new Map(
+  Object.entries(EXPORTS_BY_SPECIFIER).flatMap(([specifier, module]) =>
+    Object.keys(module).map((name) => [name, specifier])
+  ),
+)
+
+const ELEMENT_FACTORIES = new Set(
+  Object.keys(htmlModule).filter((name) => name !== 'el' && name !== 'html'),
+)
 
 const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
 
@@ -57,8 +79,11 @@ const literalArgumentName = (argument) => {
 
 const importedName = (specifier) => specifier.imported.name ?? specifier.imported.value
 
-const collectImpImports = (node, classify, locals, namespaceLocals) => {
-  if (node.source.value !== 'imp') return
+const sortsAfter = (existing, added) =>
+  existing.toLowerCase().localeCompare(added.toLowerCase()) > 0
+
+const collectImpImports = (node, source, classify, locals, namespaceLocals) => {
+  if (node.source.value !== source) return
   for (const specifier of node.specifiers) {
     if (specifier.type === 'ImportSpecifier') {
       const classified = classify(importedName(specifier))
@@ -76,7 +101,7 @@ const namespaceCalleeName = (callee, namespaceLocals) =>
     ? callee.property.name
     : null
 
-const createLiteralNameRule = (helperNames, nameProblem) => ({
+const createLiteralNameRule = (source, helperNames, nameProblem) => ({
   create(context) {
     const helperLocals = new Map()
     const namespaceLocals = new Set()
@@ -91,6 +116,7 @@ const createLiteralNameRule = (helperNames, nameProblem) => ({
       ImportDeclaration(node) {
         collectImpImports(
           node,
+          source,
           (name) => helperNames.has(name) ? name : null,
           helperLocals,
           namespaceLocals,
@@ -159,7 +185,7 @@ export default {
 
         return {
           ImportDeclaration(node) {
-            collectImpImports(node, classifyFactory, factoryLocals, namespaceLocals)
+            collectImpImports(node, 'imp/html', classifyFactory, factoryLocals, namespaceLocals)
           },
           CallExpression(node) {
             calls.push(node)
@@ -183,7 +209,11 @@ export default {
         }
       },
     },
-    'state-name-namespace': createLiteralNameRule(STATE_SETUP_HELPERS, stateNameProblem),
+    'state-name-namespace': createLiteralNameRule(
+      'imp/state',
+      STATE_SETUP_HELPERS,
+      stateNameProblem,
+    ),
     'state-setup-before-await': {
       create(context) {
         const creatorLocals = new Map()
@@ -226,6 +256,7 @@ export default {
           ImportDeclaration(node) {
             collectImpImports(
               node,
+              'imp/state',
               (name) => STATE_HANDLE_CREATORS.has(name) ? name : null,
               creatorLocals,
               namespaceLocals,
@@ -347,7 +378,94 @@ export default {
         }
       },
     },
-    'component-name': createLiteralNameRule(new Set(['component']), componentNameProblem),
+    'component-name': createLiteralNameRule('imp', new Set(['component']), componentNameProblem),
+    'import-source': {
+      meta: { fixable: 'code' },
+      create(context) {
+        const sourceCode = context.sourceCode ?? context.getSourceCode()
+        const declarations = []
+        const misplaced = []
+
+        const namedOnly = (declaration) =>
+          declaration.specifiers.length > 0 &&
+          declaration.specifiers.every((specifier) => specifier.type === 'ImportSpecifier')
+
+        const homeDeclaration = (home, exclude) =>
+          declarations.find((declaration) =>
+            declaration !== exclude && declaration.source.value === home && namedOnly(declaration)
+          ) ?? null
+
+        const indentationOf = (declaration) => {
+          const text = sourceCode.getText()
+          const lineStart = text.lastIndexOf('\n', declaration.range[0] - 1) + 1
+          const prefix = text.slice(lineStart, declaration.range[0])
+          return /^[ \t]*$/.test(prefix) ? prefix : ''
+        }
+
+        const endOfLine = (declaration) => {
+          const text = sourceCode.getText()
+          let end = declaration.range[1]
+          while (text[end] === ' ' || text[end] === '\t') end++
+          return text[end] === '\n' ? end + 1 : end
+        }
+
+        const insertIntoDeclaration = (fixer, declaration, text, name) => {
+          const follower = declaration.specifiers.find((specifier) =>
+            sortsAfter(importedName(specifier), name)
+          )
+          return follower
+            ? fixer.insertTextBefore(follower, `${text}, `)
+            : fixer.insertTextAfter(declaration.specifiers.at(-1), `, ${text}`)
+        }
+
+        const moveSpecifier = (fixer, { declaration, specifier, name, home }) => {
+          const text = sourceCode.getText(specifier)
+          const target = homeDeclaration(home, declaration)
+          const remaining = declaration.specifiers.filter((other) => other !== specifier)
+          if (remaining.length === 0 && !target) {
+            return fixer.replaceText(declaration, `import { ${text} } from '${home}'`)
+          }
+          const removal = remaining.length === 0
+            ? fixer.removeRange([declaration.range[0], endOfLine(declaration)])
+            : fixer.replaceTextRange(
+              [declaration.specifiers[0].range[0], declaration.specifiers.at(-1).range[1]],
+              remaining.map((other) => sourceCode.getText(other)).join(', '),
+            )
+          const addition = target
+            ? insertIntoDeclaration(fixer, target, text, name)
+            : fixer.insertTextAfter(
+              declaration,
+              `\n${indentationOf(declaration)}import { ${text} } from '${home}'`,
+            )
+          return [removal, addition]
+        }
+
+        return {
+          ImportDeclaration(node) {
+            declarations.push(node)
+            const source = node.source.value
+            if (!Object.hasOwn(EXPORTS_BY_SPECIFIER, source)) return
+            for (const specifier of node.specifiers) {
+              if (specifier.type !== 'ImportSpecifier') continue
+              const name = importedName(specifier)
+              const home = EXPORT_HOMES.get(name)
+              if (!home || home === source) continue
+              misplaced.push({ declaration: node, specifier, name, home, source })
+            }
+          },
+          'Program:exit'() {
+            for (const [index, entry] of misplaced.entries()) {
+              context.report({
+                node: entry.specifier,
+                message:
+                  `'${entry.name}' is not exported by '${entry.source}' — it comes from '${entry.home}': import { ${entry.name} } from '${entry.home}'`,
+                fix: index === 0 ? (fixer) => moveSpecifier(fixer, entry) : undefined,
+              })
+            }
+          },
+        }
+      },
+    },
     'exact-dependency-versions': {
       create(context) {
         const aliases = new Set(context.settings?.imp?.dependencyAliases ?? [])

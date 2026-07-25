@@ -2,7 +2,8 @@
 
 A todo app in two halves — a classic quick list and a Trello-style board — built to exercise every
 feature of the imp UI library in one buildless JavaScript file. No bundler, no install step:
-`app.js` imports from the bare `imp` specifier, which `imp start` resolves for you.
+`app.js` imports from the bare `imp` specifiers (`imp`, `imp/html`, `imp/state`, …), which
+`imp start` resolves for you.
 
 The two halves are **routed screens**: the quick list lives at `/`, the board at `/board`, and a
 lazily-loaded guide at `/guide`. A persistent shell — the toolbar, the tabs, the tip box, and the

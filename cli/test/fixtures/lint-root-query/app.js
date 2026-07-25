@@ -1,4 +1,5 @@
-import { button, component, div, span } from 'imp'
+import { component } from 'imp'
+import { button, div, span } from 'imp/html'
 
 export const flagged = component('demo-flagged', {
   onMount: (instance) => {
