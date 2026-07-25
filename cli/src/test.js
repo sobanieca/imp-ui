@@ -14,6 +14,7 @@ import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 import { runEsbuild, shutdownBundler } from './deps.js'
+import { IMP_SUBPATH_MODULES, impSubpathProblem, isImpSubpath } from './specifiers.js'
 import { createRequestHandler, loadApp } from './start.js'
 import { createClock } from './test_clock.js'
 import { encodeGif, resolveVideoOptions, startScreencast, stopScreencast } from './test_video.js'
@@ -340,6 +341,13 @@ function testResolverPlugin({ root, dependencies, mocks }) {
         path: TEST_LIBRARY_URL,
         namespace: 'imp-library',
       }))
+      build.onResolve({ filter: /^imp\// }, ({ path }) =>
+        isImpSubpath(path)
+          ? {
+            path: new URL(IMP_SUBPATH_MODULES[path], IMP_LIBRARY_URL).href,
+            namespace: 'imp-library',
+          }
+          : { errors: [{ text: impSubpathProblem(path) }] })
       build.onResolve({ filter: /.*/, namespace: 'imp-library' }, (args) => ({
         path: new URL(args.path, args.importer).href,
         namespace: 'imp-library',

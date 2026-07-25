@@ -16,6 +16,7 @@ import { loadImpConfig } from './config.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { formatSize } from './file_size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
+import { IMP_SUBPATH_MODULES, impSubpathProblem, isImpSubpath } from './specifiers.js'
 import {
   APPLE_TOUCH_ICON,
   buildManifest,
@@ -81,6 +82,13 @@ function impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHos
           path: IMP_LIBRARY_URL,
           namespace: 'imp-library',
         }))
+        build.onResolve({ filter: /^imp\// }, ({ path }) =>
+          isImpSubpath(path)
+            ? {
+              path: new URL(IMP_SUBPATH_MODULES[path], IMP_LIBRARY_URL).href,
+              namespace: 'imp-library',
+            }
+            : { errors: [{ text: impSubpathProblem(path) }] })
         build.onResolve({ filter: /.*/, namespace: 'imp-library' }, (args) => ({
           path: new URL(args.path, args.importer).href,
           namespace: 'imp-library',
@@ -126,7 +134,7 @@ async function buildEntryPoints(
         denoPlugin(),
       ],
       entryPoints,
-      external: impProvidedByHost ? ['imp'] : [],
+      external: impProvidedByHost ? ['imp', 'imp/*'] : [],
       bundle: true,
       splitting: true,
       minify: true,

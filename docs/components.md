@@ -10,6 +10,9 @@ Every component renders into its own **shadow root**, so its DOM and CSS are ful
 happens inside a component stays inside, and everything that crosses the boundary — state, errors,
 theming variables — does so through an explicit channel.
 
+This page is about writing your own. imp also ships ready-made ones — buttons, headings, text —
+built exactly this way; see **[Standard components](std-components.md)**.
+
 ## Two layers
 
 imp renders with two layers, each doing one thing:

@@ -6,6 +6,7 @@ import { dim, green, red } from './colors.js'
 import { addLogSink, logger } from './logger.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev_log.js'
 import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './pwa.js'
+import { IMP_SUBPATH_MODULES } from './specifiers.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
 
@@ -56,11 +57,22 @@ function dependencyImports(dependencies) {
   )
 }
 
+const impSubpathImports = () =>
+  Object.fromEntries(
+    Object.entries(IMP_SUBPATH_MODULES).map(([subpath, module]) => [subpath, `/@imp/${module}`]),
+  )
+
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
 function buildHeadInjection(dependencies, pwa, env) {
-  const importMap = { imports: { imp: '/@imp/imp.js', ...dependencyImports(dependencies) } }
+  const importMap = {
+    imports: {
+      imp: '/@imp/imp.js',
+      ...impSubpathImports(),
+      ...dependencyImports(dependencies),
+    },
+  }
   const pwaTags = pwa
     ? '\n' + pwaHeadTags({
       manifestHref: DEV_MANIFEST_PATH,

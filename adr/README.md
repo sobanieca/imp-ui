@@ -41,6 +41,12 @@ Conventions:
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` — `--imp-*` vars on :root |
 
+## Components
+
+| ADR                                                         | Decision                                                                         |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [standard-component-library](standard-component-library.md) | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props |
+
 ## Library
 
 | ADR                                   | Decision                                              |

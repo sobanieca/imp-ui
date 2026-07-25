@@ -153,7 +153,20 @@ own CSS with a fallback so styles still hold up before a theme is applied:
 ```
 
 The set of tokens grows as imp's component library grows: each component brings the tokens it needs
-into the built-in themes, so every name arrives with something that actually uses it.
+into the built-in themes, so every name arrives with something that actually uses it. These are the
+tokens the built-in themes ship today — a theme of your own is expected to define all of them:
+
+| Group      | Tokens                                                                                                                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography | `font-family`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal` |
+| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                     |
+| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`                                                                                |
+| Metrics    | `space-1` … `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `duration-fast`, `disabled-opacity`                                                                                                         |
+
+`color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
+theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone —
+secondary text, de-emphasized links. See **[Standard components](std-components.md)** for the
+components that consume them.
 
 ## Writing styles that adapt
 

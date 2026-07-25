@@ -21,3 +21,18 @@ export function defaultAlias({ name, subpath }) {
 }
 
 export const VALID_ALIAS = /^[A-Za-z0-9._-]+$/
+
+export const IMP_SUBPATH_MODULES = {
+  'imp/std': 'std/index.js',
+}
+
+const knownImpSubpaths = () => [
+  "'imp'",
+  "'imp/test'",
+  ...Object.keys(IMP_SUBPATH_MODULES).map((subpath) => `'${subpath}'`),
+]
+
+export const isImpSubpath = (specifier) => Object.hasOwn(IMP_SUBPATH_MODULES, specifier)
+
+export const impSubpathProblem = (specifier) =>
+  `'${specifier}' is not part of the imp library — import ${knownImpSubpaths().join(', ')}`

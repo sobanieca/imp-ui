@@ -196,7 +196,8 @@ dependency can appear:
   ```
 
 - **Bare imports must be declared.** A bare specifier (anything that is not relative, absolute, a
-  URL, `imp` itself, or `imp/test`) must match a declared dependency alias:
+  URL, or part of imp itself — `imp`, `imp/test`, `imp/std` and its groups) must match a declared
+  dependency alias:
 
   ```js
   import confetti from 'canvas-confetti'
@@ -205,6 +206,14 @@ dependency can appear:
   ```
   error[imp/exact-dependency-versions]: 'canvas-confetti' is not a declared dependency — run 'imp install canvas-confetti' to vendor it and add it to 'dependencies' in imp.json
    --> src/app.js:1:22
+  ```
+
+  An `imp/…` specifier that is not part of the library is called out for what it is, with the
+  available ones listed:
+
+  ```
+  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/test', 'imp/std'
+   --> src/app.js:2:23
   ```
 
 The rule checks static imports, re-exports, and dynamic `import()` calls with a literal specifier.

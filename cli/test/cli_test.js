@@ -493,6 +493,37 @@ Deno.test('imp build', async (t) => {
       )
     })
 
+    await t.step('build-imp-subpath', async () => {
+      const entry = join(dir, 'std-entry.js')
+      await Deno.writeTextFile(
+        entry,
+        "import { mount } from 'imp'\nimport { button } from 'imp/std'\n\n" +
+          "export const render = () => mount('#app', button('Save'))\n",
+      )
+      const resolved = await runImp(['build', 'std-entry.js', '--outdir', 'std'], dir)
+      const code = await Deno.readTextFile(join(dir, 'std', 'std-entry.js'))
+      await Deno.writeTextFile(
+        entry,
+        "import { stack } from 'imp/std/layout'\n\nexport const shell = stack\n",
+      )
+      const unknown = await runImp(['build', 'std-entry.js', '--outdir', 'std'], dir)
+      await Deno.remove(entry)
+      await Deno.remove(join(dir, 'std'), { recursive: true })
+      await assertSnapshot(
+        'build-imp-subpath',
+        mask(
+          `${
+            commandTranscript('imp build std-entry.js --outdir std  (cwd: <tmp>)', resolved)
+          }\n[bundle defines the element: ${code.includes('imp-button')}]\n\n${
+            commandTranscript(
+              'imp build std-entry.js --outdir std  (cwd: <tmp>, unknown subpath)',
+              unknown,
+            )
+          }\n`,
+        ),
+      )
+    })
+
     const writeImpJson = (config) =>
       Deno.writeTextFile(join(dir, 'imp.json'), JSON.stringify(config, null, 2) + '\n')
 

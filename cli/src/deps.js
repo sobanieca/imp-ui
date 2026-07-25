@@ -58,7 +58,7 @@ export async function bundleDependency({ specifier, alias }) {
   const result = await runEsbuild({
     plugins: [denoPlugin()],
     entryPoints: [specifier],
-    external: ['imp'],
+    external: ['imp', 'imp/*'],
     bundle: true,
     minify: true,
     format: 'esm',
