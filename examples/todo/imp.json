@@ -1,8 +1,0 @@
-{
-  "devServerPort": 9085,
-  "environments": {
-    "default": "env/dev.json",
-    "dev": "env/dev.json",
-    "prod": "env/prod.json"
-  }
-}

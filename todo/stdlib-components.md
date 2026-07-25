@@ -1,16 +1,15 @@
 # Standard component library
 
 Ship a batteries-included component library so an app can be built without assembling a component
-stack or pulling third-party UI dependencies (essence #5/#6 in `prev/essence.md`: imp is an
-all-in-one toolkit targeting the 80% — dashboards, CRUD, internal tools, product UIs). A fleshed-out
-draft set lives in `prev/experiment/stdlib/`.
+stack or pulling third-party UI dependencies — imp is an all-in-one toolkit targeting the 80%
+(dashboards, CRUD, internal tools, product UIs).
 
 ## What ships
 
-Group components the way the draft does, importable from imp itself (never a third-party package).
-The catalog targets rough parity with the mainstream sets (antd, shadcn/ui) inside the 80% scope.
-Entries marked _(later)_ are fast-follow tier — listed now so the shape of the full set is fixed up
-front, built after the core lands.
+Components are importable from imp itself (never a third-party package). The catalog targets rough
+parity with the mainstream sets (antd, shadcn/ui) inside the 80% scope. Entries marked _(later)_ are
+fast-follow tier — listed now so the shape of the full set is fixed up front, built after the core
+lands.
 
 **Imports are grouped by subpath** (`adr/standard-component-library.md`): the base group is
 `imp/std`, every other group is `imp/std/<group>` — `imp/std/layout`, `imp/std/inputs`, and so on. A
@@ -128,8 +127,8 @@ fallbacks, logical properties, no outer margins — is settled and recorded in
   missing any known token key. This is the runtime check the theming ADR
   (`adr/themable-by-default-tokens.md`) defers: it only becomes meaningful with the complete list in
   hand, and the built-in light / dark themes must define every key on it.
-- **User-facing strings pipe through `t()`** and register defaults via `defineMessages` (the draft's
-  `stdlib/index.js` seeds `imp.close`, `imp.loading`, etc.) — gated on the future i18n item.
+- **User-facing strings pipe through `t()`** and register defaults via `defineMessages` (seeding
+  `imp.close`, `imp.loading`, etc.) — gated on the future i18n item.
 
 ## Dependencies
 

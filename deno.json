@@ -21,12 +21,12 @@
     "esbuild-wasm/": "npm:/esbuild-wasm@0.28.1/"
   },
   "lint": {
-    "exclude": ["prev/", "cli/test/fixtures/", "cli/src/vendor/"]
+    "exclude": ["cli/test/fixtures/", "cli/src/vendor/"]
   },
   "fmt": {
     "semiColons": false,
     "singleQuote": true,
     "lineWidth": 100,
-    "exclude": ["prev/", "cli/test/fixtures/", "cli/test/snapshots/", "cli/src/vendor/"]
+    "exclude": ["cli/test/fixtures/", "cli/test/snapshots/", "cli/src/vendor/"]
   }
 }

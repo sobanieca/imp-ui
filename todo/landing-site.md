@@ -85,8 +85,8 @@ is so smooth, not a caveat bolted on at the end.
 
 Everything on the site follows the `docs/` rules in `CLAUDE.md`: written for an external reader, no
 references to `adr/`, `todo/`, or repo internals, no Deno surfaced (imp-branded commands only). The
-generator must not leak `prev/`, `adr/`, or `todo/` into the published output — only `docs/` and the
-home page ship.
+generator must not leak `adr/` or `todo/` into the published output — only `docs/` and the home page
+ship.
 
 ## ADR impact
 
