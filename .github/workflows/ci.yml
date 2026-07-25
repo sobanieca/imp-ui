@@ -1,4 +1,4 @@
-name: Release
+name: CI
 
 on:
   push:
@@ -8,19 +8,54 @@ on:
 
 jobs:
   check:
+    name: Format and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+          cache: true
       - name: Format check
         run: deno fmt --check
       - name: Lint
         run: deno lint
 
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+      - name: Compile imp
+        run: deno task compile
+      - name: Library unit tests
+        run: deno task test:lib
+      - name: Library e2e tests
+        run: deno task test:lib:e2e
+      - name: CLI tests
+        run: deno task test:cli
+
+  size:
+    name: Binary size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+      - name: Compile imp
+        run: deno task compile
+      - name: Check binary size against limit
+        run: deno task size
+
   release:
-    needs: check
+    name: Release
+    needs: [check, test, size]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
