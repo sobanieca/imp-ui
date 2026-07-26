@@ -170,9 +170,9 @@ rejected. Dynamically built names are validated at runtime instead, where a bad 
 ### `imp/import-source`
 
 imp's library is split by subject — `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
-`imp/log` (see **[Imports](imports.md)**) — and each name has exactly one home. Importing a name
-from a sibling specifier would fail at runtime with a missing-export error that says nothing about
-where to look, so the rule names the right specifier instead:
+`imp/i18n`, `imp/log` (see **[Imports](imports.md)**) — and each name has exactly one home.
+Importing a name from a sibling specifier would fail at runtime with a missing-export error that
+says nothing about where to look, so the rule names the right specifier instead:
 
 ```js
 import { component, div } from 'imp'
@@ -234,7 +234,7 @@ dependency can appear:
   available ones listed:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/log', 'imp/std', 'imp/test'
+  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/std', 'imp/test'
    --> src/app.js:2:23
   ```
 

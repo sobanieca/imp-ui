@@ -9,7 +9,7 @@ Everything routing-related is imported from **`imp/router`** (see **[Imports](im
 full map):
 
 ```js
-import { area, areaRoutes, navigate, router, useRoute } from 'imp/router'
+import { area, navigate, router, useRoute } from 'imp/router'
 ```
 
 ## The whole thing in one screen
@@ -99,9 +99,8 @@ router({
 })
 ```
 
-The `routes:` option is a plain object like this. (There's one named helper, `areaRoutes(...)`, but
-it's only for exporting an **area's** table from its own file — see _Areas_ — not something you
-reach for here.)
+The `routes:` option is a plain object like this. (There's one named helper, `area({ routes })`, but
+it's only for exporting an **area's** own file — see _Areas_ — not something you reach for here.)
 
 **A screen factory builds its screen right away** — it returns DOM, and imp renders it. It isn't the
 place to `await` anything: don't fetch a screen's data there (load it in the screen component's
@@ -189,7 +188,7 @@ because it isn't a path; it's the single fallback for everything unmatched.
 
 When a whole section of your app lives under a URL prefix — `/admin`, `/shop` — you can give it its
 own route table instead of listing every URL in one central map. An **area** is a table entry that
-points a URL prefix at _another table_, loaded on demand — an area is always lazy, wrapped in
+points a URL prefix at _another table_, loaded on demand — an area is always lazy, pointed at with
 `area(() => import(...))`. This is also how you code-split: an area is the unit of on-demand
 loading, and it needs no bundler, because the browser loads the module itself.
 
@@ -198,23 +197,30 @@ router({
   routes: {
     '/': () => home(),
     '/login': () => login(),
-    '/admin': area(() => import('./admin/routes.js')), // a lazily-loaded area
-    '/shop': area(() => import('./shop/routes.js')),
+    '/admin': area(() => import('./admin/area.js')), // a lazily-loaded area
+    '/shop': area(() => import('./shop/area.js')),
   },
   onNotFound: () => notFound(),
 })
 ```
 
-That module exports the section's routes as a table, written **relative** to the prefix:
+That module declares the section with `area()`: its routes, written **relative** to the prefix, and
+optionally the translations the section needs (see **[Translations](i18n.md)**):
 
 ```js
-import { areaRoutes } from 'imp/router'
+import { area } from 'imp/router'
 
-export default areaRoutes({
-  '/': () => adminHome(), //            /admin
-  '/users': () => usersList(), //       /admin/users
-  '/users/:id': ({ params }) => userDetail(params.id), // /admin/users/:id
-  '/billing': () => billing(), //       /admin/billing
+export default area({
+  routes: {
+    '/': () => adminHome(), //            /admin
+    '/users': () => usersList(), //       /admin/users
+    '/users/:id': ({ params }) => userDetail(params.id), // /admin/users/:id
+    '/billing': () => billing(), //       /admin/billing
+  },
+  translations: {
+    en: () => import('./locales/en.js'),
+    pl: () => import('./locales/pl.js'),
+  },
 })
 ```
 
@@ -222,10 +228,15 @@ Visiting `/admin/users` matches the `/admin` prefix, loads the section's module 
 renders its `/users` screen — its code ships as one on-demand module.
 
 **Areas are always lazy — and they're the only lazy thing.** `area(() => import('./…'))` is the only
-way to write one: its code loads the first time someone enters the section, and never ships to users
-who never do. There is no eager form and no lazy-screen form — a table entry is either a screen
-factory, which renders immediately, or an `area()` marker, which loads on demand. So "does this URL
+way to point at one: its code loads the first time someone enters the section, and never ships to
+users who never do. There is no eager form and no lazy-screen form — a table entry is either a
+screen factory, which renders immediately, or an `area()`, which loads on demand. So "does this URL
 cost a download?" has a one-word answer you can read off the table.
+
+`area()` is one name doing both halves of the job, and which half you get depends on what you hand
+it: **a function** is the pointer you put in the parent table, **an object** is the area's own
+definition in its own file. They never appear in the same place, so there is one name to remember
+and the argument says which is which.
 
 While the module downloads there is no screen yet, so the router's `placeholder` shows; set it and
 every area gets a loader during download, leave it off and the router is simply blank until the code
@@ -238,14 +249,14 @@ screen; reach for an area precisely when you want that section's code loaded on 
 rarely-visited screen is worth an area of its own — a one-entry table is a perfectly ordinary area:
 
 ```js
-'/admin-report': area(() => import('./report/routes.js')),
-// report/routes.js: export default areaRoutes({ '/': () => reportScreen() })
+'/admin-report': area(() => import('./report/area.js')),
+// report/area.js: export default area({ routes: { '/': () => reportScreen() } })
 ```
 
 A prefix can capture params too, and they flow into the section's screens:
 
 ```js
-'/org/:orgId': area(() => import('./org/routes.js')),
+'/org/:orgId': area(() => import('./org/area.js')),
 // a screen in that table sees { params: { orgId, …tail params } }
 ```
 
@@ -273,12 +284,14 @@ itself have an `area()` entry.
 > loaded a module it keeps it for the page's lifetime, and there is no API on the platform to evict
 > one (this is true of every framework's code splitting, not just imp's). Lazy areas save you from
 > loading code for sections nobody visits; they don't reclaim code for sections already visited. An
-> area is about **code organization and code-splitting**, not freeing loaded code.
+> area is about **code organization and code-splitting**, not freeing loaded code. The same is true
+> of an area's `translations`: leaving unregisters them, so its keys stop resolving, but the module
+> holding them stays loaded like any other; see **[Translations](i18n.md)**.
 
-Why the `area()` marker rather than just an `import()`? Because a pattern that names an area matches
-as a **prefix** — everything under it — while every other pattern matches exactly. `area()` is how
-you say "this prefix loads a table, match the rest of the URL against it," which is the one thing
-the router can't guess from a bare import.
+Why wrap the `import()` at all? Because a pattern that names an area matches as a **prefix** —
+everything under it — while every other pattern matches exactly. `area()` is how you say "this
+prefix loads a table, match the rest of the URL against it," which is the one thing the router can't
+guess from a bare import.
 
 ## Navigating
 
@@ -448,14 +461,14 @@ still 404s — so deep links and refresh just work while you build.
 
 ## API summary
 
-| Export                         | Returns            | What it does                                                                                        |
-| ------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------- |
-| `router(options)`              | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `onError`, `onNotFound`. |
-| `areaRoutes(table)`            | a validated table  | Validates and brands an area's route table, for its `export default` (see _Areas_).                 |
-| `area(() => import(...))`      | an area marker     | Marks a prefix entry as a lazily-loaded sub-table (an area) — the one on-demand unit.               |
-| `navigate(path, { replace? })` | —                  | Navigates programmatically; `replace` swaps the current history entry.                              |
-| `useRoute()`                   | a read-only route  | The live `{ path, query }` — `get`/`watch`/`text`/`view`/`each`, no `set`.                          |
-| `url(path)`                    | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for your anchor hrefs.                               |
+| Export                           | Returns            | What it does                                                                                        |
+| -------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `router(options)`                | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `onError`, `onNotFound`. |
+| `area({ routes, translations })` | an area definition | Declares an area's own table and the translations it loads, for its `export default` (see _Areas_). |
+| `area(() => import(...))`        | an area marker     | Marks a prefix entry as a lazily-loaded area — the one on-demand unit.                              |
+| `navigate(path, { replace? })`   | —                  | Navigates programmatically; `replace` swaps the current history entry.                              |
+| `useRoute()`                     | a read-only route  | The live `{ path, query }` — `get`/`watch`/`text`/`view`/`each`, no `set`.                          |
+| `url(path)`                      | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for your anchor hrefs.                               |
 
 ### Patterns
 

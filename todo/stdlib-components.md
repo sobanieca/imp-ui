@@ -127,16 +127,18 @@ fallbacks, logical properties, no outer margins — is settled and recorded in
   missing any known token key. This is the runtime check the theming ADR
   (`adr/themable-by-default-tokens.md`) defers: it only becomes meaningful with the complete list in
   hand, and the built-in light / dark themes must define every key on it.
-- **User-facing strings pipe through `t()`** and register defaults via `defineMessages` (seeding
-  `imp.close`, `imp.loading`, etc.) — gated on the future i18n item.
+- **User-facing strings pipe through `t()`, bound through `lang`**
+  (`lang.text(() => t('imp.close'))` rather than a bare `t()`), so a std component re-localizes in
+  place on a language switch without a reload. Defaults ship in imp's own translations (`imp.close`,
+  `imp.loading`, etc. — `adr/translatable-by-default.md`).
 
 ## Dependencies
 
 This is the top of the stack. Named state is in place and considered complete
 (`adr/event-propagated-state.md`) — the one state-side question left is the field-binding contract
 above, which is this item's to answer. Theming is in place (`adr/themable-by-default-tokens.md`),
-and each group extends the `--imp-*` token surface as it lands. Still needed is the i18n
-`t()`/`defineMessages` layer, and some components (`toast`, `modal`, `drawer`) need a `portal`
+and each group extends the `--imp-*` token surface as it lands. Translations are in place
+(`adr/translatable-by-default.md`); some components (`toast`, `modal`, `drawer`) need a `portal`
 primitive for DOM rendered outside the owning subtree. The stdlib grows group by group; a group that
 needs a missing dependency waits for it.
 
@@ -164,9 +166,9 @@ direction. Scope it as its own todo if it grows beyond a thin dev-server view.
 ## ADR impact
 
 `adr/standard-component-library.md` records what the stdlib guarantees and landed with the General
-group. Still to add to it as the catalog fills out: the i18n piping rule once `t()` exists, and the
-deliberate 80% scope boundary (heavy data viz, native mobile, collaborative editing out of scope).
-Each group extends `docs/std-components.md` with its own section as it lands.
+group. Still to add to it as the catalog fills out: the i18n piping rule, and the deliberate 80%
+scope boundary (heavy data viz, native mobile, collaborative editing out of scope). Each group
+extends `docs/std-components.md` with its own section as it lands.
 
 ## Open questions
 

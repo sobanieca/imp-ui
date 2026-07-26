@@ -21,19 +21,23 @@ The library is **split by subject, one bare specifier per subject**, each backed
 module in `lib/src/api/` (`imp` itself stays `lib/src/imp.js`) that re-exports exactly the public
 names — implementation modules stay internal and are no longer reachable from app code.
 
-| Specifier    | Exports                                                       |
-| ------------ | ------------------------------------------------------------- |
-| `imp`        | `component`, `mount`, `env`                                   |
-| `imp/html`   | `el`, `html`, one factory per HTML tag                        |
-| `imp/state`  | `initState`, `useState`, `computed`                           |
-| `imp/router` | `router`, `navigate`, `useRoute`, `area`, `areaRoutes`, `url` |
-| `imp/theme`  | `theme`, `applyTheme`                                         |
-| `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel`           |
-| `imp/std`    | The standard component library, split by group                |
-| `imp/test`   | The test library                                              |
+| Specifier    | Exports                                             |
+| ------------ | --------------------------------------------------- |
+| `imp`        | `component`, `mount`, `init`, `env`                 |
+| `imp/html`   | `el`, `html`, one factory per HTML tag              |
+| `imp/state`  | `initState`, `useState`, `computed`                 |
+| `imp/router` | `router`, `navigate`, `useRoute`, `area`, `url`     |
+| `imp/theme`  | `theme`, `applyTheme`                               |
+| `imp/i18n`   | `t`, `lang`, `setLang`                              |
+| `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel` |
+| `imp/std`    | The standard component library, split by group      |
+| `imp/test`   | The test library                                    |
 
 - **`imp` keeps what defines an app rather than a subject**: `component` (the framework's
-  centerpiece), `mount` (the entry point) and `env`. Everything with a subject of its own moves out.
+  centerpiece), `mount` and `init` (the entry point) and `env`. Everything with a subject of its own
+  moves out. `init` reaches into theming and i18n to apply what an app is configured with, so both
+  of those modules keep their state lazily initialized — an app that never calls `init` does not pay
+  for either in its bundle.
 - **One name, one home, no aliases.** Nothing is re-exported from a second specifier: there is one
   right import line for every name, which is what keeps generated code consistent.
 - **A new lint rule, `imp/import-source`, names the home and repairs the line.** Importing a name

@@ -13,6 +13,7 @@ import * as htmlModule from '../../lib/src/api/html.js'
 import * as stateModule from '../../lib/src/api/state.js'
 import * as routerModule from '../../lib/src/api/router.js'
 import * as themeModule from '../../lib/src/api/theme.js'
+import * as i18nModule from '../../lib/src/api/i18n.js'
 import * as logModule from '../../lib/src/api/log.js'
 
 const EXPORTS_BY_SPECIFIER = {
@@ -21,6 +22,7 @@ const EXPORTS_BY_SPECIFIER = {
   'imp/state': stateModule,
   'imp/router': routerModule,
   'imp/theme': themeModule,
+  'imp/i18n': i18nModule,
   'imp/log': logModule,
 }
 

@@ -78,8 +78,8 @@ saving.set(true) // the button is now busy — no re-render
 
 **They are themed, not styled by you.** Every component reads its colors, spacing, radii and type
 from the `--imp-*` design tokens (see **[Theming](theming.md)**), so applying a theme re-skins the
-whole library at once. They also use CSS logical properties throughout, so they mirror correctly for
-right-to-left languages.
+whole library at once. They also use CSS logical properties throughout, so they mirror correctly
+when the document's `dir` is right-to-left.
 
 **No outer margins.** No standard component adds margin around itself. Spacing between things is the
 job of whatever lays them out, which keeps rhythm consistent instead of fighting collapsing margins.

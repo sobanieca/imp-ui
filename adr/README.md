@@ -41,6 +41,12 @@ Conventions:
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` — `--imp-*` vars on :root |
 
+## Internationalization
+
+| ADR                                                   | Decision                                                                    |
+| ----------------------------------------------------- | --------------------------------------------------------------------------- |
+| [translatable-by-default](translatable-by-default.md) | `<html lang>` is the language; declared per-language messages, `t()` lookup |
+
 ## Components
 
 | ADR                                                         | Decision                                                                         |
@@ -49,10 +55,10 @@ Conventions:
 
 ## Library
 
-| ADR                                                       | Decision                                                                         |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [built-in-logger](built-in-logger.md)                     | One console-backed logger, level from `IMP_LOG_LEVEL`                            |
-| [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/log |
+| ADR                                                       | Decision                                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [built-in-logger](built-in-logger.md)                     | One console-backed logger, level from `IMP_LOG_LEVEL`                                      |
+| [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/i18n, imp/log |
 
 ## CLI
 

@@ -14,7 +14,8 @@ mount('#app', div(h1('Hello')))
 
 > Scope: this page covers building DOM from factory calls. Components with a lifecycle (mount,
 > loading, unmount) are covered in **[Components](components.md)**; mapping URLs to screens is
-> covered in **[Routing](routing.md)**; styling, theming, and i18n are not covered here yet.
+> covered in **[Routing](routing.md)**; theming is covered in **[Theming](theming.md)** and
+> translated text in **[Translations](i18n.md)**.
 
 ## Mental model
 

@@ -85,10 +85,11 @@ so every `--imp-*` name lands with a real consumer. Once referenced, a name is p
 built-in themes currently carry only `color-primary` and `color-secondary`; the surface grows with
 the stdlib.
 
-**Direction (RTL/LTR) is not part of a theme.** It is deferred to i18n: the entry point will import
-a language catalog and i18n sets the document `dir` from the locale, while the stdlib's
-logical-properties styling rule (`margin-inline-*`, `inset-inline-*`, `text-align: start/end`)
-mirrors layouts for free. Until then imp touches direction not at all.
+**Direction (RTL/LTR) is not part of a theme.** It belongs with language, not palette
+(`translatable-by-default.md`), and imp does not resolve it yet: nothing in the framework writes the
+document's `dir`, so an app that needs right-to-left sets it itself. The stdlib's logical-properties
+styling rule (`margin-inline-*`, `inset-inline-*`, `text-align: start/end`) mirrors layouts for free
+once it is set. The theme engine touches direction not at all.
 
 ## Consequences
 
@@ -112,4 +113,4 @@ mirrors layouts for free. Until then imp touches direction not at all.
 - A malformed theme or an unknown built-in name fails loudly at the call site; suspicious-but-usable
   input is logged through the imp logger and applied anyway, consistent with the log-and-continue
   posture of the rest of the library.
-- Direction is left to i18n behind a small seam, so theming ships first without an RTL dependency.
+- Direction is left out of theming entirely, so it carries no RTL dependency.

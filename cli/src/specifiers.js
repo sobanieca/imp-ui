@@ -27,6 +27,7 @@ export const IMP_SUBPATH_MODULES = {
   'imp/state': 'api/state.js',
   'imp/router': 'api/router.js',
   'imp/theme': 'api/theme.js',
+  'imp/i18n': 'api/i18n.js',
   'imp/log': 'api/log.js',
   'imp/std': 'std/index.js',
 }

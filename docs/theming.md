@@ -191,5 +191,5 @@ components that consume them.
 
 When you write your own component styles, prefer CSS **logical properties** — `margin-inline-*`,
 `inset-inline-*`, and `text-align: start / end` rather than their left/right counterparts. Layouts
-written this way mirror automatically for right-to-left languages when imp gains language support,
-with no extra work on your part.
+written this way mirror automatically once the document's `dir` is right-to-left, with no extra work
+on your part. imp does not set `dir` for you — set it yourself if your app has an RTL language.

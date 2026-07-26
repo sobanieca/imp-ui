@@ -23,8 +23,8 @@ declared in one place**, not a side effect executed from anywhere.
 ## Decision
 
 **The router is a component-shaped element you drop into your layout, fed a declarative route table
-as data.** The public surface is `router`, `areaRoutes`, `area`, `navigate`, `useRoute`, and `url` —
-no new lifecycle or scheduler; a screen cleans up through the ordinary component `onUnmount`.
+as data.** The public surface is `router`, `area`, `navigate`, `useRoute`, and `url` — no new
+lifecycle or scheduler; a screen cleans up through the ordinary component `onUnmount`.
 
 - **`router({ routes, placeholder, onError, onNotFound })` renders the matched screen.** It is the
   slot the current screen appears in — everything around it (header, sidebar, footer) persists
@@ -40,20 +40,32 @@ no new lifecycle or scheduler; a screen cleans up through the ordinary component
   params. **First match wins, in the table's declaration order** — object key order is the priority
   order, so a static path listed before a param path shadows it. There is no `*` wildcard; the
   fallback for unmatched URLs is `onNotFound`, keeping "the 404" a single named concept.
-  `areaRoutes(table)` is a validating builder that brands a table; it exists for one use — an area's
-  `export default` from its own file (below) — so its name reads at that site. The top-level
-  `routes:` option is written as a plain object.
+  `area({ routes, translations })` is a validating builder that brands a table and carries the
+  section's translations; it exists for one use — an area's `export default` from its own file
+  (below). The top-level `routes:` option is written as a plain object.
 
 - **An area is a table entry whose target is another table, and it is always lazy.** A section of
   the app that owns a group of routes under a URL prefix (`/admin`, `/shop`) is expressed by mapping
   the prefix to an `area()` marker rather than a screen factory
   (`'/admin': area(() => import('./admin/area.js'))`), whose module exports
-  `export default areaRoutes({ … })`. There is **no eager form** — a prefix's target is never a
-  plain nested object; an area exists precisely to code-split a section behind a dynamic `import()`,
-  so every area loads on demand. Sub-routes are written **relative** to the prefix. Because a table
-  nests, hierarchical routing falls out of the same data model with no global scope registry and no
-  separate boundary primitive — each area owns its routing surface in its own file, and the
-  composition root names every area in one place.
+  `export default area({ routes, translations })`. **One name covers both halves, dispatched by
+  argument type** (`type-based-argument-dispatch.md`): a function is the parent's pointer at a
+  chunk, an object is that chunk's own declaration of what it contains. The two never appear in the
+  same position, so there is nothing to disambiguate by eye — and an area definition placed directly
+  in a table is rejected with the wrapped form spelled out. There is **no eager form** — a prefix's
+  target is never a plain nested object; an area exists precisely to code-split a section behind a
+  dynamic `import()`, so every area loads on demand. Sub-routes are written **relative** to the
+  prefix. Because a table nests, hierarchical routing falls out of the same data model with no
+  global scope registry and no separate boundary primitive — each area owns its routing surface in
+  its own file, and the composition root names every area in one place.
+
+- **An area declares the translations it needs, and the router owns their lifetime.** `translations`
+  on an area definition is a map of language code to loader (`translatable-by-default.md`). The
+  router loads the entry for the current language **before** rendering the area's first screen, so
+  the section never paints untranslated, and drops it through the route page's own cleanup when the
+  user leaves the area — the same unmount that releases the section's DOM, state and subscriptions.
+  Navigating **within** an area keeps the section mounted, so its messages load once per visit, not
+  once per screen.
 
 - **A table has exactly two kinds of target: a screen that renders immediately, or an area that
   loads on demand.** A screen factory is a function returning DOM synchronously; an area is an

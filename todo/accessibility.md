@@ -66,8 +66,8 @@ components as part of `imp test` is an open question.
 - State wiring binds to the landed state layer (`adr/event-propagated-state.md`); focus indicators
   use theme tokens (`adr/themable-by-default-tokens.md`); route focus management builds on the
   router (`adr/client-side-router.md`).
-- Labels and announcements route user-facing strings through `t()` (`todo/i18n.md`) like the rest of
-  the stdlib.
+- Labels and announcements route user-facing strings through `t()`
+  (`adr/translatable-by-default.md`) like the rest of the stdlib.
 
 ## ADR impact
 
