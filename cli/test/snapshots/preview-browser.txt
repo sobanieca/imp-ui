@@ -1,0 +1,12 @@
+scenarios: zero, startsAtFive, lazy
+rendered values: 0, 5, 9
+state rows: demo.count=0, demo.count=5, demo.count=9
+resize handles per stage: 3
+after setting demo.count to 42: 42
+invalid JSON rejected: true
+theme options: brand, imp-light, imp-dark (selected brand)
+imp-dark surface token: #0f172a
+brand surface token: #fdf7ff
+?scenario=lazy panels: 1 (lazy)
+mocked todos: Buy milk, Ship imp
+mocked todos state row: demo.todos

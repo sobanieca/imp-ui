@@ -1,0 +1,37 @@
+GET /
+status: 200
+content-type: text/html; charset=utf-8
+cache-control: no-store
+
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+[imp client script]
+</script>
+<script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/log":"/@imp/api/log.js","imp/std":"/@imp/std/index.js"}}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>imp preview</title>
+</head>
+<body>
+<style>
+body { margin: 0; padding: 32px 24px; background: #0f1115; color: #e6e8ec;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+h1 { font-size: 16px; margin: 0 0 4px; }
+p { color: #9aa4b8; font-size: 13px; margin: 0 0 20px; }
+ul { list-style: none; padding: 0; margin: 0; max-width: 640px; }
+li { border-top: 1px solid #262b36; }
+li:last-child { border-bottom: 1px solid #262b36; }
+a { display: block; padding: 10px 4px; color: #7c9cff; text-decoration: none; font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+a:hover { background: #171a21; }
+</style>
+<h1>imp preview</h1>
+<p>2 previews in this project</p>
+<ul>
+<li><a href="/preview/components/counter.preview.js">components/counter.preview.js</a></li>
+<li><a href="/preview/components/todos.preview.js">components/todos.preview.js</a></li>
+</ul>
+</body>
+</html>

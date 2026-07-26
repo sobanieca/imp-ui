@@ -353,6 +353,18 @@ Deno.test('imp test', async (t) => {
   await test('test-not-a-test-file', ['test', 'app.js'], fixture('basic'))
   await test('test-no-files', ['test'], fixture('with-config'))
   await test('test-missing-entry', ['test', 'login.spec.js'], fixture('test-list'))
+  await test('preview-list', ['preview', '--list'], fixture('preview'))
+  await test('preview-list-json', ['preview', '--list', '--json'], fixture('preview'))
+  await test(
+    'preview-list-inferred-sibling',
+    ['preview', 'components/counter.js', '--list'],
+    fixture('preview'),
+  )
+  await test('preview-not-a-preview-file', ['preview', 'http.js'], fixture('preview'))
+  await test('preview-path-not-found', ['preview', 'missing.preview.js'], fixture('preview'))
+  await test('preview-none-found', ['preview'], fixture('basic'))
+  await test('preview-theme-not-found', ['preview'], fixture('preview-bad-theme'))
+  await test('preview-bad-port', ['preview', '--port', 'abc'], fixture('preview'))
 })
 
 const isTelemetryLine = (line) => line.startsWith('[BROWSER:') || line.startsWith('[HTTP]')
@@ -760,9 +772,9 @@ Deno.test('imp build --pwa', async (t) => {
   }
 })
 
-async function startServer(cwd, extraArgs = []) {
+async function startServer(cwd, extraArgs = [], command = ['start', 'index.html']) {
   const child = new Deno.Command(IMP, {
-    args: ['start', 'index.html', '--port', '0', ...extraArgs],
+    args: [...command, '--port', '0', ...extraArgs],
     cwd,
     stdin: 'null',
     stdout: 'piped',
@@ -888,6 +900,152 @@ Deno.test('imp start', async (t) => {
       )
     })
   } finally {
+    await server.stop()
+  }
+})
+
+const startPreviewServer = (cwd, extraArgs = []) => startServer(cwd, extraArgs, ['preview'])
+
+Deno.test('imp preview', async (t) => {
+  const server = await startPreviewServer(fixture('preview'))
+  const { port } = server
+
+  const get = async (name, path, { maskBody = null } = {}) => {
+    await t.step(name, async () => {
+      const response = await fetch(`http://127.0.0.1:${port}${path}`)
+      const text = await response.text()
+      const body = maskBody ? maskBody(text) : normalize(text)
+      await assertSnapshot(name, responseTranscript(path, response, body))
+    })
+  }
+
+  try {
+    await t.step('preview-banner', async () => {
+      const banner = normalize(server.banner).replaceAll(`:${port}`, ':<port>')
+      await assertSnapshot('preview-banner', banner)
+    })
+
+    await get('preview-index', '/', {
+      maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
+    })
+    await get('preview-page', '/preview/components/counter.preview.js', {
+      maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
+    })
+    await get('preview-unknown-page', '/preview/components/missing.preview.js')
+    await get('preview-bundle', '/@imp/preview/components/todos.preview.js', {
+      maskBody: (body) =>
+        [
+          `[preview bundle: ${body.length > 10000 ? 'imp library inlined' : 'unexpectedly small'}]`,
+          `defines the component: ${/component\(["']demo-todos["']/.test(body)}`,
+          `mocked fixture inlined: ${body.includes('Buy milk')}`,
+          `real http.js excluded: ${!body.includes("fetch('/api/todos')")}`,
+          `starts the preview chrome: ${body.includes('startPreview(scenarios')}`,
+        ].join('\n'),
+    })
+  } finally {
+    await server.stop()
+  }
+})
+
+Deno.test('imp preview renders scenarios in a browser', async () => {
+  const server = await startPreviewServer(fixture('preview'))
+  const { resolveBrowser } = await import('../src/test_browser.js')
+  const { default: puppeteer } = await import('../src/vendor/puppeteer_core.js')
+  const args = ['--disable-dev-shm-usage']
+  try {
+    if (Deno.uid() === 0) args.push('--no-sandbox')
+  } catch { /* not available on this platform */ }
+  const browser = await puppeteer.launch({
+    executablePath: await resolveBrowser(),
+    headless: true,
+    args,
+  })
+  const base = `http://127.0.0.1:${server.port}`
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${base}/preview/components/counter.preview.js`, { waitUntil: 'load' })
+    await page.waitForFunction(
+      () => document.querySelectorAll('.imp-preview__row textarea:not([disabled])').length === 3,
+    )
+    const counter = await page.evaluate(() => {
+      const scenarios = [...document.querySelectorAll('.imp-preview__scenario')]
+      const read = (scenario) =>
+        scenario.querySelector('demo-counter').shadowRoot.querySelector('#value').textContent
+      return {
+        names: scenarios.map((scenario) => scenario.querySelector('h2').textContent),
+        rendered: scenarios.map(read),
+        states: scenarios.map((scenario) =>
+          `${scenario.querySelector('.imp-preview__name').textContent}=${
+            scenario.querySelector('textarea').value
+          }`
+        ),
+        handles: scenarios[0].querySelectorAll('.imp-preview__handle').length,
+      }
+    })
+    const edited = await page.evaluate(() => {
+      const scenario = document.querySelector('.imp-preview__scenario')
+      scenario.querySelector('textarea').value = '42'
+      scenario.querySelector('.imp-preview__row button').click()
+      return scenario.querySelector('demo-counter').shadowRoot.querySelector('#value').textContent
+    })
+    const rejected = await page.evaluate(() => {
+      const scenario = document.querySelector('.imp-preview__scenario')
+      scenario.querySelector('textarea').value = '{ not json'
+      scenario.querySelector('.imp-preview__row button').click()
+      return scenario.querySelector('.imp-preview__message').classList
+        .contains('imp-preview__message--error')
+    })
+    const themed = await page.evaluate(() => {
+      const picker = document.querySelector('.imp-preview__select')
+      const apply = (value) => {
+        picker.value = value
+        picker.dispatchEvent(new Event('change'))
+        return getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
+      }
+      return {
+        options: [...picker.options].map((option) => option.value),
+        selected: picker.value,
+        dark: apply('imp-dark'),
+        custom: apply('brand'),
+      }
+    })
+
+    await page.goto(`${base}/preview/components/counter.preview.js?scenario=lazy`, {
+      waitUntil: 'load',
+    })
+    await page.waitForFunction(() => document.querySelector('demo-counter')?.shadowRoot?.children)
+    const isolated = await page.evaluate(() => ({
+      panels: document.querySelectorAll('.imp-preview__scenario').length,
+      name: document.querySelector('h2').textContent,
+    }))
+
+    await page.goto(`${base}/preview/components/todos.preview.js`, { waitUntil: 'load' })
+    await page.waitForFunction(() =>
+      document.querySelector('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
+    )
+    const todos = await page.evaluate(() => ({
+      items: [...document.querySelector('demo-todos').shadowRoot.querySelectorAll('.todo')]
+        .map((item) => item.textContent),
+      state: document.querySelector('.imp-preview__name').textContent,
+    }))
+
+    const report = [
+      `scenarios: ${counter.names.join(', ')}`,
+      `rendered values: ${counter.rendered.join(', ')}`,
+      `state rows: ${counter.states.join(', ')}`,
+      `resize handles per stage: ${counter.handles}`,
+      `after setting demo.count to 42: ${edited}`,
+      `invalid JSON rejected: ${rejected}`,
+      `theme options: ${themed.options.join(', ')} (selected ${themed.selected})`,
+      `imp-dark surface token: ${themed.dark}`,
+      `brand surface token: ${themed.custom}`,
+      `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,
+      `mocked todos: ${todos.items.join(', ')}`,
+      `mocked todos state row: ${todos.state}`,
+    ].join('\n')
+    await assertSnapshot('preview-browser', `${report}\n`)
+  } finally {
+    await browser.close().catch(() => {})
     await server.stop()
   }
 })

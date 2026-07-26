@@ -18,6 +18,10 @@ USAGE
                                         and an offline service worker (needs a
                                         "pwa" block in imp.json)
                      [--env <name>]     select an "environments" entry from imp.json
+  imp preview [path] [--port 4517]      preview components in isolation: each *.preview.js
+                     [--env <name>]     file renders its named exports as labeled, drag-resizable
+                     [--list] [--json]  stages with a live state editor (no path: every preview,
+                                        listed on an index page · --list prints what was found)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -48,6 +52,16 @@ USAGE
 function flag(args, name, fallback) {
   const index = args.indexOf('--' + name)
   return index !== -1 && args[index + 1] ? args[index + 1] : fallback
+}
+
+function portFlag(args) {
+  const raw = flag(args, 'port', null)
+  if (raw === null) return null
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 0 || value > 65535) {
+    throw new Error(`--port must be an integer between 0 and 65535, got '${raw}'`)
+  }
+  return value
 }
 
 function positional(args) {
@@ -84,15 +98,25 @@ try {
     case 'start': {
       const { start } = await import('./start.js')
       notifyUpdate(rest)
-      const portFlag = flag(rest, 'port', null)
-      const port = portFlag === null ? null : Number(portFlag)
-      if (port !== null && (!Number.isInteger(port) || port < 0 || port > 65535)) {
-        throw new Error(`--port must be an integer between 0 and 65535, got '${portFlag}'`)
-      }
       await start({
         entry: positional(rest)[0] ?? 'index.html',
-        port,
+        port: portFlag(rest),
         env: flag(rest, 'env', null),
+      })
+      break
+    }
+    case 'preview': {
+      const { preview } = await import('./preview.js')
+      notifyUpdate(rest)
+      const booleanFlags = ['--list', '--json']
+      const args = rest.filter((arg) => !booleanFlags.includes(arg))
+      await preview({
+        root: await projectRoot(Deno.cwd()),
+        paths: positional(args),
+        port: portFlag(rest),
+        env: flag(rest, 'env', null),
+        list: rest.includes('--list'),
+        json: rest.includes('--json'),
       })
       break
     }

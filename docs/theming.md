@@ -80,7 +80,7 @@ const badge = component('my-app-theme-badge', {
 of your app never needs this — the re-skin happens through the CSS variables — but it is there for
 the rare component that must branch on the active theme, and for building a theme switcher.
 
-## Built-in starter themes — `applyTheme('default-light' | 'default-dark')`
+## Built-in starter themes — `applyTheme('imp-light' | 'imp-dark')`
 
 imp ships a built-in light and dark theme so your app renders sensibly before you write your own.
 There is nothing to import: pass the name instead of an object.
@@ -88,16 +88,16 @@ There is nothing to import: pass the name instead of an object.
 ```js
 import { applyTheme } from 'imp/theme'
 
-applyTheme('default-light')
+applyTheme('imp-light')
 // or
-applyTheme('default-dark')
+applyTheme('imp-dark')
 ```
 
-`'default-light'` and `'default-dark'` are the only names `applyTheme` accepts — any other string
-throws. The `default-` prefix keeps them out of your way: your own themes are free to be called
-`light` and `dark`, and there is never a question of whose theme a name refers to. Everything else
-works exactly as with a theme object: the tokens land as `--imp-*` custom properties, `colorScheme`
-is set to match, and the `theme` state updates.
+`'imp-light'` and `'imp-dark'` are the only names `applyTheme` accepts — any other string throws.
+The `imp-` prefix keeps them out of your way: your own themes are free to be called `light` and
+`dark`, and there is never a question of whose theme a name refers to. Everything else works exactly
+as with a theme object: the tokens land as `--imp-*` custom properties, `colorScheme` is set to
+match, and the `theme` state updates.
 
 To start from a built-in instead of spelling out every value, apply it and read it back through the
 `theme` state. An applied theme is frozen, so copy the tokens into your own object rather than
@@ -106,7 +106,7 @@ editing them in place:
 ```js
 import { applyTheme, theme } from 'imp/theme'
 
-applyTheme('default-dark')
+applyTheme('imp-dark')
 
 applyTheme({
   name: 'midnight',
@@ -140,8 +140,23 @@ If you only use the built-ins, there is no map to keep — the stored name goes 
 
 ```js
 const saved = localStorage.getItem('theme')
-applyTheme(saved === 'default-dark' ? 'default-dark' : 'default-light')
+applyTheme(saved === 'imp-dark' ? 'imp-dark' : 'imp-light')
 ```
+
+## Checking a theme without your app
+
+`imp preview` renders one component at a time on a generated page with a theme switcher in its top
+bar, so you can flip a component between your themes and the built-ins without booting the app. List
+your theme files in `imp.json` and they join the switcher:
+
+```json
+{
+  "preview": { "themes": ["src/theme/light.js", "src/theme/brand-dark.js"] }
+}
+```
+
+Nothing about the theme file changes — the switcher applies the same module your entry point does,
+and editing it reloads the page with the new tokens. See **[`imp preview`](cli.md#imp-preview)**.
 
 ## Token names
 

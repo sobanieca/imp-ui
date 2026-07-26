@@ -484,8 +484,8 @@ export default {
             return
           }
           if (
-            specifier === 'imp' || specifier === 'imp/test' || isImpSubpath(specifier) ||
-            isRelativeOrUrl(specifier) || aliases.has(specifier)
+            specifier === 'imp' || specifier === 'imp/test' || specifier === 'imp/preview' ||
+            isImpSubpath(specifier) || isRelativeOrUrl(specifier) || aliases.has(specifier)
           ) return
           if (specifier.startsWith('imp/') && !aliases.has(specifier)) {
             context.report({ node, message: impSubpathProblem(specifier) })

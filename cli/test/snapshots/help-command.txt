@@ -17,6 +17,10 @@ USAGE
                                         and an offline service worker (needs a
                                         "pwa" block in imp.json)
                      [--env <name>]     select an "environments" entry from imp.json
+  imp preview [path] [--port 4517]      preview components in isolation: each *.preview.js
+                     [--env <name>]     file renders its named exports as labeled, drag-resizable
+                     [--list] [--json]  stages with a live state editor (no path: every preview,
+                                        listed on an index page · --list prints what was found)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency

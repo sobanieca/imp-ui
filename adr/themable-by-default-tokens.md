@@ -23,8 +23,8 @@ which module is applied.
 
 `applyTheme(themeOrBuiltInName)` is the single entry point and the **only writer** of the reactive
 `theme` state (DOM side-effect and signal update always travel together). It accepts either a theme
-object or the **name of a built-in theme** as a string (`'default-light'` | `'default-dark'`), which
-it resolves to the matching built-in and then treats identically. It:
+object or the **name of a built-in theme** as a string (`'imp-light'` | `'imp-dark'`), which it
+resolves to the matching built-in and then treats identically. It:
 
 - writes each token as an `--imp-`-prefixed custom property on `:root` (`document.documentElement`),
   where it inherits into body, every component's shadow root, and anything a `portal` appends to the
@@ -67,16 +67,16 @@ re-apply a choice on load.
 
 imp ships a built-in light and dark theme so an app renders sensibly before any theme editor exists
 and so a future editor has a baseline to seed from. They are **not exported as objects** —
-`applyTheme('default-light')` / `applyTheme('default-dark')` is the whole API, keeping the common
-case a single call with no import to add and no name to learn beyond `applyTheme` itself. The names
-carry a **`default-` prefix** so imp's built-ins never collide conceptually with an app's own
-`light` / `dark` theme modules: a bare name always means the app's theme, a `default-` name always
-means imp's. The resolved object is still reachable through `theme.get()` for anything that needs to
-seed from it, so hiding the exports costs nothing: the state layer deep-freezes every value it
-holds, so an applied built-in cannot be edited in place by one app corner and silently change what a
-later `applyTheme('default-dark')` produces — seeding copies the tokens instead. Theming adds no
-freezing of its own. Stdlib components reference tokens with fallbacks
-(`var(--imp-color-primary, …)`) so they render standalone before any theme is applied.
+`applyTheme('imp-light')` / `applyTheme('imp-dark')` is the whole API, keeping the common case a
+single call with no import to add and no name to learn beyond `applyTheme` itself. The names carry
+an **`imp-` prefix** so imp's built-ins never collide conceptually with an app's own `light` /
+`dark` theme modules: a bare name always means the app's theme, an `imp-` name always means imp's.
+The resolved object is still reachable through `theme.get()` for anything that needs to seed from
+it, so hiding the exports costs nothing: the state layer deep-freezes every value it holds, so an
+applied built-in cannot be edited in place by one app corner and silently change what a later
+`applyTheme('imp-dark')` produces — seeding copies the tokens instead. Theming adds no freezing of
+its own. Stdlib components reference tokens with fallbacks (`var(--imp-color-primary, …)`) so they
+render standalone before any theme is applied.
 
 The **token naming scheme is fixed** — semantic color roles, numeric scales (`space-*`, `radius-*`,
 `shadow-*`, `font-size-*`, …), and font families — but the **exact list is not enumerated up
@@ -104,9 +104,9 @@ mirrors layouts for free. Until then imp touches direction not at all.
 - Apps that want to remember a theme store the name and re-apply the matching module on load,
   controlling ordering to avoid a wrong-theme flash; imp neither persists nor reloads it.
 - Getting a sensible light or dark app is one call with nothing to import
-  (`applyTheme('default-dark')`), while custom themes stay plain modules and keep the obvious
-  `light` / `dark` names for themselves; the built-in palettes are imp's to evolve because no app
-  can hold a mutable reference to them.
+  (`applyTheme('imp-dark')`), while custom themes stay plain modules and keep the obvious `light` /
+  `dark` names for themselves; the built-in palettes are imp's to evolve because no app can hold a
+  mutable reference to them.
 - The `--imp-*` token surface is public API that grows one consumer at a time; the built-ins ship a
   minimal palette (`color-primary`, `color-secondary`) and expand as stdlib components need tokens.
 - A malformed theme or an unknown built-in name fails loudly at the call site; suspicious-but-usable

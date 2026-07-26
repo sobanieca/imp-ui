@@ -45,6 +45,8 @@ Confirm the install with `imp --version`, which prints the version the binary ru
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
 imp build [file.html] [--outdir dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
+imp preview [path] [--port 4517]      preview components in isolation, one page per
+            [--list] [--json]         *.preview.js file (no path: an index of all of them)
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
@@ -110,6 +112,9 @@ based on where you are.
   top.
 - **`test`** — testing options for `imp test` (`entry`, `browser`, `exclude`, and a `video` block
   for recording e2e specs as GIFs). See **[Testing](testing.md)**.
+- **`preview`** — options for `imp preview`; `exclude` is an array of paths whose `*.preview.js`
+  files are left out of discovery, and `themes` is an array of paths to your own theme modules to
+  offer in the preview theme switcher. See `imp preview` below.
 - **`pwa`** — describes your app as a Progressive Web App: `name` and `icon` (required), plus
   optional `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and `scope`. It
   drives the manifest and icons injected automatically in `imp start`, and the full offline PWA
@@ -519,6 +524,132 @@ double-check its behaviour and look and feel. Recording is off by default; a `te
 
 See **[Testing](testing.md)** for the full runner API, the assertion reference, browser resolution,
 recording, and the CI parallelization pattern.
+
+## `imp preview`
+
+```
+imp preview [path] [--port 4517] [--env <name>]
+imp preview --list [--json]
+```
+
+Builds one component at a time, in isolation. `imp preview` serves each of your **preview files** as
+its own page: every named export becomes a labeled panel holding that component, centered in a stage
+you can drag to any size, with a state editor beside it. No app boot, no backend, no navigating to
+the right screen — you edit the component, the page reloads, and you see it.
+
+It is the same dev server as `imp start` underneath, so the browser's console and network activity
+still stream to your terminal, and saving any file reloads the page.
+
+### The preview file
+
+A component in `todos.js` gets a sibling `todos.preview.js`. It is ordinary imp code: import the
+component and export one instance per state worth looking at.
+
+```js
+import { todoList } from './todos.js'
+
+export const empty = todoList({ todos: [] })
+export const populated = todoList({ todos: [{ id: 1, title: 'Buy milk' }] })
+export const busy = todoList({ loading: true })
+```
+
+Each **named export is a scenario**, and the export name is the panel label — the code is the only
+place a scenario is named, so there is nothing to keep in sync. Panels appear in the order you wrote
+them. A scenario is just the component pre-filled, built with the same call you would write at a
+real call site, so there is no story format to learn; arguments dispatch by type exactly as they do
+in your app. Export a function instead of an instance when a scenario needs setting up at render
+time (`export const lazy = () => todoList(buildFixture())`) — imp calls it when it renders the
+panel.
+
+### Mocking what the component imports
+
+The point of an isolated preview is that a component with hard dependencies still renders on its
+own. Replace any module it imports with `mockModule`, exactly as you would in a test:
+
+```js
+import { mockModule } from 'imp/preview'
+import { todoList } from './todos.js'
+
+mockModule('./http.js', ({ spy }) => ({
+  fetchTodos: spy(async () => [{ id: 1, title: 'Buy milk', done: false }]),
+}))
+
+export const populated = todoList()
+```
+
+`mockModule(specifier, factory)` behaves the same here as in `imp test`: the specifier is a path
+relative to the preview file or a dependency alias from `imp.json`; the factory returns the module's
+exports and receives `{ spy, orig }`; every import of that module — from the component and from
+anything it imports, at any depth — resolves to what you returned, and `orig()` keeps the rest of it
+real. See **[Mocking modules](testing.md#mocking-modules--mockmodule)** for the full behavior. Mocks
+are plain objects you write and they live next to the component, so a reviewer sees the fixture and
+the component in one diff.
+
+A mock applies to the whole preview file, so scenarios that need different data differ by the
+arguments you pass them.
+
+### The stage
+
+Each panel holds its component in a stage you resize by **dragging its right, bottom, or corner
+handle** with a mouse or a finger. The component re-lays-out live at every width, which is the
+quickest way to find the breakpoint where it breaks — no device emulation to open. A readout shows
+the current size, and `phone`, `tablet`, and `desktop` buttons jump to common viewports; `fit`
+returns the stage to the full page width.
+
+### The state editor
+
+Beside each stage is a form listing the state the component manages, found by reading your source
+for `initState` and `useState` names. Values are shown as JSON: edit one, apply it (or press
+`Ctrl`/`Cmd`+`Enter`), and the component updates through imp's normal fine-grained path — no
+re-mount, no reload. The form also follows the state, so clicking around in the component shows the
+new value.
+
+Each panel gets its own form bound to its own instance, so `empty` and `populated` are poked
+independently on the same page. This discovery is a convenience, not a rule about how you write
+components: a state name that is computed at runtime or built behind a helper simply won't be
+listed, and a value that isn't JSON data is shown read-only.
+
+### Themes
+
+A theme switcher in the top bar applies a theme to the whole page, so you can check the component
+under each of your themes without touching code. Your choice is remembered across reloads. The
+built-in `imp-light` and `imp-dark` are always offered.
+
+List your own theme files in `preview.themes` to add them to the switcher:
+
+```json
+{
+  "preview": { "themes": ["src/theme/light.js", "src/theme/brand-dark.js"] }
+}
+```
+
+Each path is a module that default-exports a theme — the same file your app passes to `applyTheme`,
+nothing preview-specific about it. The label in the switcher is the theme's `name` (the file path if
+it has none, or if two themes share a name). Your themes are listed first and the first one is
+selected by default, so a preview opens looking like your app rather than like the starter theme.
+Editing a theme file reloads the page with the new tokens applied, so a preview page is also the
+fastest way to iterate on a theme. See **[Theming](theming.md)**.
+
+### Finding and opening previews
+
+With no path, imp discovers every `*.preview.js` file in the project and `/` lists them all. Pass a
+path to narrow it: a preview file opens straight to it, a component path opens its sibling preview
+(`imp preview components/todos.js` finds `components/todos.preview.js`), and a folder limits
+discovery to that folder. Add `?scenario=<name>` to a preview URL — or click **isolate** on a panel
+— to render just that one scenario.
+
+`imp preview --list` prints the discovered preview files, one per line, and `--list --json` prints
+them as a JSON array for tooling. `--port` chooses the port (default 4517) and `--env` selects an
+environment entry from `imp.json`, exactly like `imp start`. Keep a folder out of discovery with a
+`preview.exclude` array in `imp.json`:
+
+```json
+{
+  "preview": { "exclude": ["vendor-demos"] }
+}
+```
+
+Preview files are never part of your app: nothing imports them, so `imp build` never sees them.
 
 ## `imp resize`
 

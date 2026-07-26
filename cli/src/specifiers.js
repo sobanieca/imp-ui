@@ -35,6 +35,7 @@ const knownImpSubpaths = () => [
   "'imp'",
   ...Object.keys(IMP_SUBPATH_MODULES).map((subpath) => `'${subpath}'`),
   "'imp/test'",
+  "'imp/preview'",
 ]
 
 export const isImpSubpath = (specifier) => Object.hasOwn(IMP_SUBPATH_MODULES, specifier)

@@ -14,7 +14,7 @@ $ imp build std-entry.js --outdir std  (cwd: <tmp>, unknown subpath)
 exit code: 1
 
 --- stdout ---
-✘ [ERROR] 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/log', 'imp/std', 'imp/test' [plugin imp]
+✘ [ERROR] 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/log', 'imp/std', 'imp/test', 'imp/preview' [plugin imp]
 
     <tmp>/std-entry.js:1:22:
       1 │ import { stack } from 'imp/std/layout'
@@ -22,5 +22,5 @@ exit code: 1
 
 --- stderr ---
 [ERROR] Build failed with 1 error:
-<tmp>/std-entry.js:1:22: ERROR: [plugin: imp] 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/log', 'imp/std', 'imp/test'
+<tmp>/std-entry.js:1:22: ERROR: [plugin: imp] 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/log', 'imp/std', 'imp/test', 'imp/preview'
 

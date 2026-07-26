@@ -89,7 +89,7 @@ export async function loadImpConfig(startDir) {
       `invalid ${name} — 'imports' has been replaced by 'dependencies'; run 'imp install <package>' to declare each dependency`,
     )
   }
-  for (const key of ['dependencies', 'fmt', 'lint', 'test', 'pwa', 'environments']) {
+  for (const key of ['dependencies', 'fmt', 'lint', 'test', 'preview', 'pwa', 'environments']) {
     if (config[key] !== undefined && !isPlainObject(config[key])) {
       throw new Error(`invalid ${name} — '${key}' must be an object`)
     }
@@ -131,6 +131,22 @@ export async function loadImpConfig(startDir) {
       config.test.exclude.some((entry) => typeof entry !== 'string'))
   ) {
     throw new Error(`invalid ${name} — 'test.exclude' must be an array of strings`)
+  }
+  if (
+    config.preview?.exclude !== undefined &&
+    (!Array.isArray(config.preview.exclude) ||
+      config.preview.exclude.some((entry) => typeof entry !== 'string'))
+  ) {
+    throw new Error(`invalid ${name} — 'preview.exclude' must be an array of strings`)
+  }
+  if (
+    config.preview?.themes !== undefined &&
+    (!Array.isArray(config.preview.themes) ||
+      config.preview.themes.some((entry) => typeof entry !== 'string'))
+  ) {
+    throw new Error(
+      `invalid ${name} — 'preview.themes' must be an array of paths to theme modules`,
+    )
   }
   if (config.test?.video !== undefined) {
     if (!isPlainObject(config.test.video)) {

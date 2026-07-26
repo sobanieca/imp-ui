@@ -147,7 +147,9 @@ export async function loadApp(entryPath, { envAlias = null } = {}) {
   return { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries, devServerPort }
 }
 
-export function createRequestHandler({ root, entryName, headInjection, clients, pwa = null }) {
+export function createRequestHandler(
+  { root, entryName, headInjection, clients, pwa = null, historyFallback = true },
+) {
   let iconSet = null
   const devIcons = () => (iconSet ??= renderIconSet({ root, pwa }))
   return async (req) => {
@@ -215,7 +217,7 @@ export function createRequestHandler({ root, entryName, headInjection, clients, 
     }
 
     const response = await serveFromDir(root, url.pathname, { headInjection })
-    if (response.status === 404 && isClientRouteRequest(req, url)) {
+    if (response.status === 404 && historyFallback && isClientRouteRequest(req, url)) {
       return serveFromDir(root, '/' + entryName, { headInjection })
     }
     return response
@@ -226,6 +228,30 @@ function isClientRouteRequest(req, url) {
   if (req.method !== 'GET') return false
   if (extname(url.pathname)) return false
   return (req.headers.get('accept') ?? '').includes('text/html')
+}
+
+export function createBroadcaster(clients) {
+  return (message) => {
+    const payload = new TextEncoder().encode(`data: ${message}\n\n`)
+    for (const controller of clients) {
+      try {
+        controller.enqueue(payload)
+      } catch {
+        clients.delete(controller)
+      }
+    }
+  }
+}
+
+export function watchForChanges(root, onChange) {
+  ;(async () => {
+    let timer = null
+    for await (const event of Deno.watchFs(root)) {
+      if (event.paths.every((p) => /[/\\](\.git|node_modules|dist|\.imp)[/\\]/.test(p))) continue
+      clearTimeout(timer)
+      timer = setTimeout(onChange, 80)
+    }
+  })()
 }
 
 export async function start({ entry = 'index.html', port = null, env = null } = {}) {
@@ -257,27 +283,11 @@ export async function start({ entry = 'index.html', port = null, env = null } = 
     logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
   }
 
-  const broadcast = (message) => {
-    const payload = new TextEncoder().encode(`data: ${message}\n\n`)
-    for (const controller of clients) {
-      try {
-        controller.enqueue(payload)
-      } catch {
-        clients.delete(controller)
-      }
-    }
-  }
-  ;(async () => {
-    let timer = null
-    for await (const event of Deno.watchFs(root)) {
-      if (event.paths.every((p) => /[/\\](\.git|node_modules|dist|\.imp)[/\\]/.test(p))) continue
-      clearTimeout(timer)
-      timer = setTimeout(() => {
-        logger.debug('change detected → reload')
-        broadcast('reload')
-      }, 80)
-    }
-  })()
+  const broadcast = createBroadcaster(clients)
+  watchForChanges(root, () => {
+    logger.debug('change detected → reload')
+    broadcast('reload')
+  })
 
   const server = Deno.serve({
     port: listenPort,

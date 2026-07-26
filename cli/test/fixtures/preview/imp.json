@@ -1,0 +1,6 @@
+{
+  "preview": {
+    "exclude": ["ignored"],
+    "themes": ["theme/brand.js"]
+  }
+}

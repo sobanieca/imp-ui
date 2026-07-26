@@ -83,7 +83,7 @@ unblocks agents immediately. A project-wide view can follow once the single-file
 
 ## Relationship to `imp preview`
 
-`imp preview` (`todo/component-preview.md`) shows a component's visual states to a **human**; a
+`imp preview` (`adr/component-preview.md`) shows a component's visual states to a **human**; a
 component skill describes a component's usage to an **agent**. They are complementary and share the
 "a component is a self-describing unit" framing: a well-published component has a `.preview.js` for
 eyeballing and a `skill` export for agents. Keep them independent — neither depends on the other —

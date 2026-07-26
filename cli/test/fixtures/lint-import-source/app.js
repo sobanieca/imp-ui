@@ -6,7 +6,7 @@ import { button } from 'imp/std'
 export const panel = component('demo-panel', {
   onMount: () => {
     const open = useState('demo.open')
-    applyTheme('default-light')
+    applyTheme('imp-light')
     return div(button({ events: { click: () => navigate('/next') } }, open.text()))
   },
 })

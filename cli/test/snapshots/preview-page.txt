@@ -1,0 +1,20 @@
+GET /preview/components/counter.preview.js
+status: 200
+content-type: text/html; charset=utf-8
+cache-control: no-store
+
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+[imp client script]
+</script>
+<script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/log":"/@imp/api/log.js","imp/std":"/@imp/std/index.js"}}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>imp preview — components/counter.preview.js</title>
+</head>
+<body>
+<script type="module" src="/@imp/preview/components/counter.preview.js"></script>
+</body>
+</html>

@@ -68,6 +68,7 @@ Conventions:
 | [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome          |
 | [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                |
 | [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg    |
+| [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios on a synthesized page      |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                     |
 | [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES        |
 | [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                 |
