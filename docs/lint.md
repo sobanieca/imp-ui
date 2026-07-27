@@ -50,9 +50,10 @@ error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp c
 ### `imp/single-props-object`
 
 An element takes at most one props object; everything else you pass is a child. Passing a second
-object literal to an element factory is almost always a mistake — at runtime the objects are merged
-and later keys silently win. The rule flags any call to a built-in element factory (`div`, `span`,
-…, and the generic `el`) that receives more than one object literal:
+object literal is almost always a mistake — at runtime the objects are merged and later keys
+silently win. The rule flags any call to a built-in element factory (`div`, `span`, …, and the
+generic `el`) or a standard component (`button`, `emptyState`, …) that receives more than one object
+literal:
 
 ```js
 div({ class: 'card' }, { onclick: open }, 'Open')
@@ -234,7 +235,7 @@ dependency can appear:
   available ones listed:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/std', 'imp/test'
+  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/std', 'imp/std/display', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 

@@ -9,7 +9,7 @@ cache-control: no-store
 <script>
 [imp client script]
 </script>
-<script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/i18n":"/@imp/api/i18n.js","imp/log":"/@imp/api/log.js","imp/std":"/@imp/std/index.js"}}</script>
+<script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/i18n":"/@imp/api/i18n.js","imp/log":"/@imp/api/log.js","imp/std":"/@imp/std/index.js","imp/std/display":"/@imp/std/display/index.js"}}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>imp preview — components/counter.preview.js</title>

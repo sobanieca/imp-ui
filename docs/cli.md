@@ -113,8 +113,9 @@ based on where you are.
 - **`test`** — testing options for `imp test` (`entry`, `browser`, `exclude`, and a `video` block
   for recording e2e specs as GIFs). See **[Testing](testing.md)**.
 - **`preview`** — options for `imp preview`; `exclude` is an array of paths whose `*.preview.js`
-  files are left out of discovery, and `themes` is an array of paths to your own theme modules to
-  offer in the preview theme switcher. See `imp preview` below.
+  files are left out of discovery, `themes` is an array of paths to your own theme modules to offer
+  in the preview theme switcher, and `translations` maps a language code to one of your translation
+  files to offer in the preview language switcher. See `imp preview` below.
 - **`pwa`** — describes your app as a Progressive Web App: `name` and `icon` (required), plus
   optional `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and `scope`. It
   drives the manifest and icons injected automatically in `imp start`, and the full offline PWA
@@ -629,6 +630,35 @@ it has none, or if two themes share a name). Your themes are listed first and th
 selected by default, so a preview opens looking like your app rather than like the starter theme.
 Editing a theme file reloads the page with the new tokens applied, so a preview page is also the
 fastest way to iterate on a theme. See **[Theming](theming.md)**.
+
+### Language and text direction
+
+Next to the theme switcher are a **language** picker and a **direction** picker, so you can see a
+component the way a reader of another language sees it without changing a line of code. Both choices
+are remembered across reloads.
+
+The language picker sets the page's language, which re-localizes everything bound through `lang` —
+your own messages and the reserved `imp.` ones the standard components ask for alike. It lists the
+languages you point it at, so tell it where your translation files are under `preview.translations`:
+
+```json
+{
+  "preview": { "translations": { "en": "./locales/en.js", "pl": "./locales/pl.js" } }
+}
+```
+
+Each path is a module that default-exports your messages — the same file your app passes to `init`.
+The first one is selected by default, so a preview opens reading like your app, and editing a
+translation file reloads the page with the new wording. Declare none and the picker is left out
+entirely; the direction picker still works.
+
+The direction picker has three settings. **auto** takes the direction from the language, which is
+what your app does — pick Arabic or Hebrew and the component lays out right to left. **ltr** and
+**rtl** pin it, so you can check a right-to-left layout while reading English text, which is the
+quickest way to catch a hardcoded `margin-left`.
+
+Only the component is affected: the preview's own toolbar and panels stay left to right whatever you
+pick, so the controls do not move around underneath you. See **[Translations](i18n.md)**.
 
 ### Finding and opening previews
 

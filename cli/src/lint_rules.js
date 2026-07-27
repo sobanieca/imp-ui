@@ -15,6 +15,13 @@ import * as routerModule from '../../lib/src/api/router.js'
 import * as themeModule from '../../lib/src/api/theme.js'
 import * as i18nModule from '../../lib/src/api/i18n.js'
 import * as logModule from '../../lib/src/api/log.js'
+import * as stdModule from '../../lib/src/std/index.js'
+import * as stdDisplayModule from '../../lib/src/std/display/index.js'
+
+const STD_EXPORTS_BY_SPECIFIER = {
+  'imp/std': stdModule,
+  'imp/std/display': stdDisplayModule,
+}
 
 const EXPORTS_BY_SPECIFIER = {
   'imp': impModule,
@@ -36,13 +43,19 @@ const ELEMENT_FACTORIES = new Set(
   Object.keys(htmlModule).filter((name) => name !== 'el' && name !== 'html'),
 )
 
+const STD_COMPONENTS = new Set(
+  Object.values(STD_EXPORTS_BY_SPECIFIER).flatMap((module) => Object.keys(module)),
+)
+
+const PROPS_DISPATCHING_SPECIFIERS = ['imp/html', ...Object.keys(STD_EXPORTS_BY_SPECIFIER)]
+
 const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
 
 const STATE_HANDLE_CREATORS = new Set(['initState', 'useState', 'computed'])
 
 const classifyFactory = (importedName) => {
   if (importedName === 'el') return 'el'
-  if (ELEMENT_FACTORIES.has(importedName)) return 'tag'
+  if (ELEMENT_FACTORIES.has(importedName) || STD_COMPONENTS.has(importedName)) return 'tag'
   return null
 }
 
@@ -187,7 +200,9 @@ export default {
 
         return {
           ImportDeclaration(node) {
-            collectImpImports(node, 'imp/html', classifyFactory, factoryLocals, namespaceLocals)
+            for (const specifier of PROPS_DISPATCHING_SPECIFIERS) {
+              collectImpImports(node, specifier, classifyFactory, factoryLocals, namespaceLocals)
+            }
           },
           CallExpression(node) {
             calls.push(node)

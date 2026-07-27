@@ -1,6 +1,7 @@
 {
   "preview": {
     "exclude": ["ignored"],
-    "themes": ["theme/brand.js"]
+    "themes": ["theme/brand.js"],
+    "translations": { "en": "locales/en.js", "pl": "locales/pl.js", "ar": "locales/ar.js" }
   }
 }

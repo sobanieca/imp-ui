@@ -53,8 +53,19 @@ found the way a test file is.
   `preview.themes` in `imp.json`: each listed module is imported by the generated entry and its
   default export is passed to `applyTheme` as an object, so a theme file stays an ordinary module
   with nothing preview-specific in it and needs no name registry. Project themes are listed before
-  the built-ins and the first is applied by default, so a preview opens in the app's own skin. The
-  same seam is where a locale switcher goes when i18n lands.
+  the built-ins and the first is applied by default, so a preview opens in the app's own skin.
+- **Language and direction are chrome controls on the same seam.** A language picker calls `setLang`
+  and a direction picker writes `<html dir>` (`translatable-by-default.md`), so a component is
+  checked in another language, and right to left, without editing code; both selections are
+  remembered like the theme. The languages offered are the ones the project lists in
+  `preview.translations` — a code-to-file map, imported by the generated entry and handed to `init`
+  as loaders, so a translations file stays an ordinary module; a project that lists none gets no
+  language picker, since imp has no languages of its own to offer (`translatable-by-default.md`).
+  The direction picker offers `auto`, which re-derives from the language, alongside `ltr` and `rtl`,
+  which pin it: pinning is how a right-to-left layout is checked while still reading English. **The
+  chrome itself is pinned `ltr` and the direction is applied to the stage element**, so the toolbar
+  and panels never mirror underneath the person using them — the preview page is the one place where
+  imp's own UI and the previewed component need different directions at once.
 - **Routes:** `/` is the generated index of discovered previews, `/preview/<path>` renders one
   file's scenarios, `?scenario=<name>` isolates one, and `/@imp/preview/<path>` serves that file's
   bundle. A build failure is served as a module that renders the error into the page and is also
@@ -63,8 +74,9 @@ found the way a test file is.
 - **`imp preview [path]`** with no path serves everything; a `*.preview.js` path, a component path
   whose sibling preview is inferred, or a folder narrows it. `--list` prints what was discovered
   (`--json` for tooling), `--port` defaults to 4517 so a preview server and `imp start` can run side
-  by side, and `preview.exclude` in `imp.json` keeps folders out of discovery. A `preview.themes`
-  path that resolves to no file fails the command at startup rather than degrading silently.
+  by side, and `preview.exclude` in `imp.json` keeps folders out of discovery. A `preview.themes` or
+  `preview.translations` path that resolves to no file fails the command at startup rather than
+  degrading silently.
 
 ## Consequences
 

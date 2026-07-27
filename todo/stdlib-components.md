@@ -34,8 +34,9 @@ is impossible as an import binding, so that component is `toggle` — which sits
   `colorPicker` _(later)_, `rating` _(later)_, `otpField` _(later)_, `cascader` _(later)_,
   `treeSelect` _(later)_, plus `form` and the form layer — details in _Form handling_ below.
 - **Display** — `card`, `badge`, `avatar`, `tag`, `tooltip`, `popover`, `accordion`,
-  `descriptionList`, `statistic`, `emptyState`, `timeline` _(later)_, `carousel` _(later)_, `image`
-  (preview/zoom) _(later)_, `calendar` _(later)_, `qrCode` _(later)_.
+  `descriptionList`, `statistic`, `timeline` _(later)_, `carousel` _(later)_, `image` (preview/zoom)
+  _(later)_, `calendar` _(later)_, `qrCode` _(later)_. `emptyState` has landed, opening the
+  `imp/std/display` subpath and fixing the wording convention (`adr/translatable-by-default.md`).
 - **Feedback** — `spinner`, `progress`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
   `popconfirm`, `result` _(later)_.
 - **Navigation** — `tabs`, `menu`, `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`,
@@ -127,10 +128,12 @@ fallbacks, logical properties, no outer margins — is settled and recorded in
   missing any known token key. This is the runtime check the theming ADR
   (`adr/themable-by-default-tokens.md`) defers: it only becomes meaningful with the complete list in
   hand, and the built-in light / dark themes must define every key on it.
-- **User-facing strings pipe through `t()`, bound through `lang`**
-  (`lang.text(() => t('imp.close'))` rather than a bare `t()`), so a std component re-localizes in
-  place on a language switch without a reload. Defaults ship in imp's own translations (`imp.close`,
-  `imp.loading`, etc. — `adr/translatable-by-default.md`).
+- **Nothing is open on wording.** Strings pipe through `t()` under an `imp.` key, bound through
+  `lang`, and each component declares its own English default with `defaultMessages` beside its
+  `component()` call — settled in `adr/standard-component-library.md` and
+  `adr/translatable-by-default.md`, and first exercised by `emptyState`. A component that needs a
+  new word adds the key and its wording to its own file, and the docs table for that component in
+  the same change.
 
 ## Dependencies
 
@@ -165,10 +168,10 @@ direction. Scope it as its own todo if it grows beyond a thin dev-server view.
 
 ## ADR impact
 
-`adr/standard-component-library.md` records what the stdlib guarantees and landed with the General
-group. Still to add to it as the catalog fills out: the i18n piping rule, and the deliberate 80%
-scope boundary (heavy data viz, native mobile, collaborative editing out of scope). Each group
-extends `docs/std-components.md` with its own section as it lands.
+`adr/standard-component-library.md` records what the stdlib guarantees; it landed with the General
+group and now carries the i18n piping rule too. Still to add to it as the catalog fills out: the
+deliberate 80% scope boundary (heavy data viz, native mobile, collaborative editing out of scope).
+Each group extends `docs/std-components.md` with its own section as it lands.
 
 ## Open questions
 

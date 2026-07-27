@@ -16,14 +16,23 @@ import {
   textarea,
 } from 'imp/html'
 import { applyTheme } from 'imp/theme'
+import { init } from 'imp'
+import { lang, setLang } from 'imp/i18n'
 import { asNodes } from '../../lib/src/nodes.js'
 import { runInMountScope } from '../../lib/src/component.js'
 import { findStateFrom } from '../../lib/src/state.js'
 
 const THEME_STORAGE_KEY = 'imp.preview.theme'
+const LANGUAGE_STORAGE_KEY = 'imp.preview.lang'
+const DIRECTION_STORAGE_KEY = 'imp.preview.dir'
 const BUILT_IN_THEMES = ['imp-light', 'imp-dark']
+const DIRECTIONS = ['auto', 'ltr', 'rtl']
 
 const themes = new Map()
+
+const languages = []
+
+const stages = []
 
 const PRESETS = [
   { label: 'phone', width: 375, height: 667 },
@@ -128,31 +137,64 @@ const registerThemes = (customThemes) => {
 
 const defaultThemeName = () => themes.keys().next().value
 
-const readStoredTheme = () => {
-  const fallback = defaultThemeName()
+const readStored = (key, isKnown, fallback) => {
   try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    return themes.has(stored) ? stored : fallback
+    const stored = localStorage.getItem(key)
+    return isKnown(stored) ? stored : fallback
   } catch {
     return fallback
   }
 }
 
-const rememberTheme = (name) => {
+const remember = (key, value) => {
   try {
-    localStorage.setItem(THEME_STORAGE_KEY, name)
+    localStorage.setItem(key, value)
   } catch { /* storage is unavailable — the choice just does not survive a reload */ }
+}
+
+const readStoredTheme = () =>
+  readStored(THEME_STORAGE_KEY, (name) => themes.has(name), defaultThemeName())
+
+const readStoredLanguage = () =>
+  readStored(LANGUAGE_STORAGE_KEY, (code) => languages.includes(code), languages[0])
+
+const readStoredDirection = () =>
+  readStored(DIRECTION_STORAGE_KEY, (value) => DIRECTIONS.includes(value), 'auto')
+
+const registerLanguages = (previewTranslations) => {
+  languages.length = 0
+  for (const { code } of previewTranslations) {
+    if (!languages.includes(code)) languages.push(code)
+  }
+}
+
+const applyStageDirection = () => {
+  const choice = readStoredDirection()
+  if (choice !== 'auto') document.documentElement.dir = choice
+  const direction = document.documentElement.dir || 'ltr'
+  for (const stage of stages) stage.dir = direction
+}
+
+const applyLanguage = async (code) => {
+  await setLang(code ?? lang.get())
+  applyStageDirection()
+}
+
+const switchTo = (code) => {
+  applyLanguage(code).catch((error) => {
+    console.error(`imp preview: could not switch to '${code}'`, error)
+  })
 }
 
 const themeControl = () => {
   const current = readStoredTheme()
   const picker = select(
     {
-      class: 'imp-preview__select',
+      class: 'imp-preview__select imp-preview__select--theme',
       events: {
         change: (event) => {
           applyTheme(themes.get(event.target.value))
-          rememberTheme(event.target.value)
+          remember(THEME_STORAGE_KEY, event.target.value)
         },
       },
     },
@@ -161,12 +203,48 @@ const themeControl = () => {
   return label({ class: 'imp-preview__control' }, 'theme', picker)
 }
 
+const languageControl = () => {
+  const current = readStoredLanguage()
+  const picker = select(
+    {
+      class: 'imp-preview__select imp-preview__select--language',
+      events: {
+        change: (event) => {
+          remember(LANGUAGE_STORAGE_KEY, event.target.value)
+          switchTo(event.target.value)
+        },
+      },
+    },
+    languages.map((code) => option({ value: code, selected: code === current }, code)),
+  )
+  return label({ class: 'imp-preview__control' }, 'language', picker)
+}
+
+const directionControl = () => {
+  const current = readStoredDirection()
+  const picker = select(
+    {
+      class: 'imp-preview__select imp-preview__select--direction',
+      events: {
+        change: (event) => {
+          remember(DIRECTION_STORAGE_KEY, event.target.value)
+          switchTo(readStoredLanguage())
+        },
+      },
+    },
+    DIRECTIONS.map((value) => option({ value, selected: value === current }, value)),
+  )
+  return label({ class: 'imp-preview__control' }, 'direction', picker)
+}
+
 const chromeBar = (file, isolated) =>
   header(
-    { class: 'imp-preview__bar' },
+    { class: 'imp-preview__bar', dir: 'ltr' },
     span({ class: 'imp-preview__brand' }, 'imp preview'),
     code({ class: 'imp-preview__file' }, file),
     span({ class: 'imp-preview__spacer' }),
+    languages.length ? languageControl() : null,
+    directionControl(),
     themeControl(),
     isolated ? a({ class: 'imp-preview__link', href: location.pathname }, 'all scenarios') : null,
     a({ class: 'imp-preview__link', href: '/' }, 'all previews'),
@@ -202,6 +280,7 @@ const dragHandle = (kind, frame) => {
 
 const stageColumn = (nodes) => {
   const stage = div({ class: 'imp-preview__stage' }, nodes)
+  stages.push(stage)
   const frame = div({ class: 'imp-preview__stage-frame' }, stage)
   frame.append(...['right', 'bottom', 'corner'].map((kind) => dragHandle(kind, frame)))
   const readout = span({ class: 'imp-preview__readout' })
@@ -380,7 +459,7 @@ const scenarioPanel = (name, scenario, declarations) => {
     console.error(`imp preview: scenario '${name}' failed to build`, error)
   }
   return section(
-    { class: 'imp-preview__scenario' },
+    { class: 'imp-preview__scenario', dir: 'ltr' },
     header(
       { class: 'imp-preview__scenario-head' },
       h2(name),
@@ -405,12 +484,24 @@ const scenarioOrder = (scenarios, order) => {
   return [...written, ...exported.filter((name) => !written.includes(name))]
 }
 
-export function startPreview(scenarios, meta, customThemes = []) {
+export async function startPreview(scenarios, meta, customThemes = [], previewTranslations = []) {
   const styles = document.createElement('style')
   styles.textContent = CHROME_STYLES
   document.head.append(styles)
   registerThemes(customThemes)
   applyTheme(themes.get(readStoredTheme()))
+  registerLanguages(previewTranslations)
+
+  await init(
+    previewTranslations.length
+      ? {
+        translations: Object.fromEntries(
+          previewTranslations.map(({ code, module }) => [code, () => module]),
+        ),
+      }
+      : {},
+  )
+  await applyLanguage(readStoredLanguage())
 
   const names = scenarioOrder(scenarios, meta.order)
   const requested = new URLSearchParams(location.search).get('scenario')
@@ -421,10 +512,11 @@ export function startPreview(scenarios, meta, customThemes = []) {
     chromeBar(meta.file, isolated),
     ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta.states)) : [
       p(
-        { class: 'imp-preview__empty' },
+        { class: 'imp-preview__empty', dir: 'ltr' },
         `${meta.file} has no named exports — export one instance per scenario, like ` +
           `export const empty = myComponent()`,
       ),
     ]),
   )
+  applyStageDirection()
 }

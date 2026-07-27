@@ -13,7 +13,7 @@ The library is split by subject, so an import line says which part of imp a file
 | `imp/state`  | `initState`, `useState`, `computed`                                  | [State](state.md)                        |
 | `imp/router` | `router`, `navigate`, `useRoute`, `area`, `url`                      | [Routing](routing.md)                    |
 | `imp/theme`  | `theme`, `applyTheme`                                                | [Theming](theming.md)                    |
-| `imp/i18n`   | `t`, `lang`, `setLang` (declared with `init` / `area`)               | [Translations](i18n.md)                  |
+| `imp/i18n`   | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`  | [Translations](i18n.md)                  |
 | `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel`                  | [Logging](logging.md)                    |
 | `imp/std`    | The standard component library, split by group                       | [Standard components](std-components.md) |
 | `imp/test`   | `test`, `expect`, `spy`, `mockModule`, and the hooks                 | [Testing](testing.md)                    |

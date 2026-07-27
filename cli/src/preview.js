@@ -172,17 +172,43 @@ export async function resolvePreviewThemes(root, themes) {
   return resolved
 }
 
-function previewEntryPlugin({ file, meta, root, themes }) {
+export async function resolvePreviewTranslations(root, translations) {
+  if (!translations || typeof translations !== 'object' || Array.isArray(translations)) {
+    throw new Error(
+      "'preview.translations' must map a language code to a translations file, like " +
+        '{ "pl": "./locales/pl.js" }',
+    )
+  }
+  const resolved = []
+  for (const [code, entry] of Object.entries(translations)) {
+    const file = await resolveModuleFile(resolve(root, entry))
+    if (!file) {
+      throw new Error(`translations not found: ${entry} — listed in 'preview.translations.${code}'`)
+    }
+    resolved.push({ code, source: entry, file })
+  }
+  return resolved
+}
+
+function previewEntryPlugin({ file, meta, root, themes, translations }) {
   const themeBinding = (index) => `customTheme${index}`
+  const translationBinding = (index) => `previewTranslations${index}`
   const contents = [
     `import * as scenarios from ${JSON.stringify(toFileUrl(file).href)}`,
     ...themes.map((theme, index) =>
       `import * as ${themeBinding(index)} from ${JSON.stringify(toFileUrl(theme.file).href)}`
     ),
+    ...translations.map((entry, index) =>
+      `import * as ${translationBinding(index)} from ${JSON.stringify(toFileUrl(entry.file).href)}`
+    ),
     `import { startPreview } from '${RUNTIME_SPECIFIER}'`,
     `startPreview(scenarios, ${JSON.stringify(meta)}, [${
       themes.map((theme, index) =>
         `{ source: ${JSON.stringify(theme.source)}, module: ${themeBinding(index)} }`
+      ).join(', ')
+    }], [${
+      translations.map((entry, index) =>
+        `{ code: ${JSON.stringify(entry.code)}, module: ${translationBinding(index)} }`
       ).join(', ')
     }])`,
   ].join('\n') + '\n'
@@ -206,7 +232,7 @@ function previewEntryPlugin({ file, meta, root, themes }) {
   }
 }
 
-export async function bundlePreview(file, { root, dependencies, themes = [] }) {
+export async function bundlePreview(file, { root, dependencies, themes = [], translations = [] }) {
   const meta = {
     file: relative(root, file).replaceAll('\\', '/'),
     order: extractExportOrder(await Deno.readTextFile(file)),
@@ -215,7 +241,7 @@ export async function bundlePreview(file, { root, dependencies, themes = [] }) {
   const mocks = await collectMocks(file, { root, dependencies })
   const result = await runEsbuild({
     plugins: [
-      previewEntryPlugin({ file, meta, root, themes }),
+      previewEntryPlugin({ file, meta, root, themes, translations }),
       impResolverPlugin({ root, dependencies, mocks }),
       denoPlugin(),
     ],
@@ -315,7 +341,7 @@ const scriptResponse = (body) =>
   })
 
 export function createPreviewHandler(
-  { app, clients, listPreviews, dependencies, bundles, themes = [] },
+  { app, clients, listPreviews, dependencies, bundles, themes = [], translations = [] },
 ) {
   const serveApp = createRequestHandler({ ...app, clients, historyFallback: false })
 
@@ -327,6 +353,7 @@ export function createPreviewHandler(
             root: app.root,
             dependencies,
             themes,
+            translations,
           }),
         })
       } catch (error) {
@@ -386,6 +413,7 @@ export async function preview(
   }
 
   const themes = await resolvePreviewThemes(root, imp.preview?.themes ?? [])
+  const translations = await resolvePreviewTranslations(root, imp.preview?.translations ?? {})
   const app = await loadApp(resolve(root, 'index.html'), { envAlias: env })
   const listenPort = port ?? DEFAULT_PREVIEW_PORT
   const clients = new Set()
@@ -424,6 +452,11 @@ export async function preview(
             dim(`  themes → ${themes.map(({ source }) => source).join(', ')} + built-ins`),
           )
         }
+        if (translations.length) {
+          console.log(
+            dim(`  languages → ${translations.map(({ code }) => code).join(', ')}`),
+          )
+        }
         console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
       },
     },
@@ -434,6 +467,7 @@ export async function preview(
       dependencies,
       bundles,
       themes,
+      translations,
     }),
   )
 

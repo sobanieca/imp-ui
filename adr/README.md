@@ -43,9 +43,9 @@ Conventions:
 
 ## Internationalization
 
-| ADR                                                   | Decision                                                                    |
-| ----------------------------------------------------- | --------------------------------------------------------------------------- |
-| [translatable-by-default](translatable-by-default.md) | `<html lang>` is the language; declared per-language messages, `t()` lookup |
+| ADR                                                   | Decision                                                                                                                          |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [translatable-by-default](translatable-by-default.md) | `<html lang>` is the language and `<html dir>` follows it; declared per-language messages, `t()` lookup, app-supplied `imp.` keys |
 
 ## Components
 

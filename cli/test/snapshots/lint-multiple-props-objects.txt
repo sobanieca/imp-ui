@@ -6,10 +6,16 @@ exit code: 1
 
 --- stderr ---
 error[imp/single-props-object]: multiple props objects passed to 'div' — pass a single props object; later keys win
- --> app.js:3:50
+ --> app.js:5:50
 
 error[imp/single-props-object]: multiple props objects passed to 'el' — pass a single props object; later keys win
- --> app.js:5:55
+ --> app.js:7:55
 
-Found 2 problems
+error[imp/single-props-object]: multiple props objects passed to 'button' — pass a single props object; later keys win
+ --> app.js:9:68
+
+error[imp/single-props-object]: multiple props objects passed to 'emptyState' — pass a single props object; later keys win
+ --> app.js:11:61
+
+Found 4 problems
 Checked 1 file

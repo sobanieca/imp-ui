@@ -364,6 +364,7 @@ Deno.test('imp test', async (t) => {
   await test('preview-path-not-found', ['preview', 'missing.preview.js'], fixture('preview'))
   await test('preview-none-found', ['preview'], fixture('basic'))
   await test('preview-theme-not-found', ['preview'], fixture('preview-bad-theme'))
+  await test('preview-translations-not-found', ['preview'], fixture('preview-bad-translations'))
   await test('preview-bad-port', ['preview', '--port', 'abc'], fixture('preview'))
 })
 
@@ -995,8 +996,40 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       return scenario.querySelector('.imp-preview__message').classList
         .contains('imp-preview__message--error')
     })
+    const localized = await page.evaluate(async () => {
+      const languages = document.querySelector('.imp-preview__select--language')
+      const directions = document.querySelector('.imp-preview__select--direction')
+      const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
+      const stage = () => document.querySelector('.imp-preview__stage')
+      const pick = async (picker, value) => {
+        picker.value = value
+        picker.dispatchEvent(new Event('change'))
+        await settle()
+        return `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
+      }
+      const chrome = () => document.querySelector('.imp-preview__bar').dir
+      const words = () => {
+        const shadow = document.querySelector('demo-counter').shadowRoot
+        return `${shadow.querySelector('#label').textContent}/${
+          shadow.querySelector('#cancel').textContent
+        }`
+      }
+      return {
+        languages: [...languages.options].map((option) => option.value),
+        directions: [...directions.options].map((option) => option.value),
+        english: words(),
+        polish: await pick(languages, 'pl') && words(),
+        arabic: await pick(languages, 'ar'),
+        arabicWords: words(),
+        arabicChrome: chrome(),
+        pinnedLtr: await pick(directions, 'ltr'),
+        backToAuto: await pick(directions, 'auto'),
+        backToEnglish: await pick(languages, 'en'),
+      }
+    })
+
     const themed = await page.evaluate(() => {
-      const picker = document.querySelector('.imp-preview__select')
+      const picker = document.querySelector('.imp-preview__select--theme')
       const apply = (value) => {
         picker.value = value
         picker.dispatchEvent(new Event('change'))
@@ -1036,6 +1069,16 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `resize handles per stage: ${counter.handles}`,
       `after setting demo.count to 42: ${edited}`,
       `invalid JSON rejected: ${rejected}`,
+      `language options: ${localized.languages.join(', ')}`,
+      `direction options: ${localized.directions.join(', ')}`,
+      `app + imp words in en: ${localized.english}`,
+      `app + imp words in pl: ${localized.polish}`,
+      `app + imp words in ar: ${localized.arabicWords}`,
+      `lang/dir/stage after picking ar: ${localized.arabic}`,
+      `chrome direction while previewing ar: ${localized.arabicChrome}`,
+      `lang/dir/stage after pinning ltr: ${localized.pinnedLtr}`,
+      `lang/dir/stage back on auto: ${localized.backToAuto}`,
+      `lang/dir/stage back on en: ${localized.backToEnglish}`,
       `theme options: ${themed.options.join(', ')} (selected ${themed.selected})`,
       `imp-dark surface token: ${themed.dark}`,
       `brand surface token: ${themed.custom}`,

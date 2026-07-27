@@ -4,6 +4,16 @@ state rows: demo.count=0, demo.count=5, demo.count=9
 resize handles per stage: 3
 after setting demo.count to 42: 42
 invalid JSON rejected: true
+language options: en, pl, ar
+direction options: auto, ltr, rtl
+app + imp words in en: Total/Cancel
+app + imp words in pl: Razem/Anuluj
+app + imp words in ar: الإجمالي/إلغاء
+lang/dir/stage after picking ar: ar/rtl/rtl
+chrome direction while previewing ar: ltr
+lang/dir/stage after pinning ltr: ar/ltr/ltr
+lang/dir/stage back on auto: ar/rtl/rtl
+lang/dir/stage back on en: en/ltr/ltr
 theme options: brand, imp-light, imp-dark (selected brand)
 imp-dark surface token: #0f172a
 brand surface token: #fdf7ff

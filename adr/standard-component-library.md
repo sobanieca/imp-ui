@@ -44,15 +44,17 @@ imports the same surface an app does.
   a memoized factory, and calls `component()` inside the exported function. Module scope stays free
   of calls and therefore of side effects, so no app pays for a component it never renders, and
   `todo/tree-shakeable-library.md` can make the library shakeable without reworking `std/`.
-- **The call shape is `(props?, ...children)`** — an optional plain-object first argument,
-  everything after it is content. It mirrors the element factories closely enough to be predictable,
-  but is stricter: only the first argument is props, since a component's arguments are its own
-  contract rather than the factories' free-form dispatch (`type-based-argument-dispatch.md`).
+- **Components dispatch their arguments by type, exactly as the element factories do**
+  (`type-based-argument-dispatch.md`) — a plain object is props wherever it sits, everything else is
+  content, and a state passed as a standalone argument is reported and skipped. `splitArgs` in
+  `std/shared/args.js` delegates to the same `splitArgsByType` that `el` uses, so there is one
+  dispatch rule to learn for the whole library rather than one per import. What the components add
+  on top is validation, not a different call shape.
 - **Props are a closed, documented set per component.** Standard components do not forward arbitrary
-  props onto an inner element: the boundary is the point. An unknown prop, a value outside a prop's
-  allowed list, or a props object passed after the children is **logged through
-  `createLogger('imp')` and the component continues** with its default — consistent with the
-  log-and-continue posture of the rest of the library, and never fatal for a cosmetic mistake.
+  props onto an inner element: the boundary is the point. An unknown prop, or a value outside a
+  prop's allowed list, is **logged through `createLogger('imp')` and the component continues** with
+  its default — consistent with the log-and-continue posture of the rest of the library, and never
+  fatal for a cosmetic mistake.
 - **Props documented as _live_ accept a state-shaped value** (anything with `get`/`watch`) as well
   as a plain one. The component subscribes with `watch` and updates the single element property in
   place, never through a region rebuild, so focus and caret survive. This is the readable half of
@@ -64,6 +66,15 @@ imports the same surface an app does.
 - **No standard component carries an outer margin.** Spacing between components belongs to the
   layout parents of the `layout` group, so an app never fights collapsing margins or per-component
   spacing props.
+- **Every word a component shows goes through `t()` under an `imp.` key, bound through `lang`**
+  (`lang.text(() => t('imp.state.empty'))` rather than a bare `t()`), so a language switch
+  re-localizes it in place. The component **declares its own English wording** for the keys it reads
+  by calling `defaultMessages` next to its `component()` call — inside the memoized factory, so
+  module scope stays free of calls — and an app's translation of the key shadows it, exactly as a
+  theme's token overrides the fallback in `var(--imp-color-text, #0f172a)`
+  (`translatable-by-default.md`). Wording therefore lives in the file that renders it: adding a key
+  is one line in one component. Text the **app** passes in (a `title` prop, children) is the app's
+  to translate; a component never translates values handed to it.
 
 `link` additionally hands plain left-clicks on in-app hrefs to `navigate()`
 (`client-side-router.md`), rendering a real anchor so the URL, middle-click and copy-link behave

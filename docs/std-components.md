@@ -30,6 +30,7 @@ leaks out onto your page.
 | Import            | What it holds                                      |
 | ----------------- | -------------------------------------------------- |
 | `imp/std`         | The base set — `button`, `heading`, `text`, `link` |
+| `imp/std/display` | `emptyState`                                       |
 | `imp/std/<group>` | The rest, group by group, as they land             |
 
 Components take the obvious names, and a few of them match an element factory — `button` is both a
@@ -49,15 +50,18 @@ never turns into a mysterious missing module.
 A handful of conventions hold for every component in the library, so once you have used one you can
 predict the rest.
 
-**Props first, children after.** Each component takes an optional props object as its **first**
-argument; everything after it is content — text, elements, other components:
+**Props and children are told apart by type, exactly as on an element.** A plain object is props;
+strings, elements and other components are content. Arguments are matched by what they are, not
+where they sit, so a component call reads the same way `div()` does:
 
 ```js
 button({ variant: 'danger' }, 'Delete') // props, then content
 button('Delete') // content only
 ```
 
-A props object passed anywhere else renders nothing and is reported in the console.
+One props object per call. A second one is merged with later keys winning, reported in the console,
+and caught statically by the `imp/single-props-object` lint rule (see **[Linting](lint.md)**) — so
+compose props into a single object before the call.
 
 **Only the documented props.** Standard components accept a fixed, documented set of props rather
 than forwarding anything you hand them to some inner element. An unrecognized prop, or a prop set to
@@ -80,6 +84,13 @@ saving.set(true) // the button is now busy — no re-render
 from the `--imp-*` design tokens (see **[Theming](theming.md)**), so applying a theme re-skins the
 whole library at once. They also use CSS logical properties throughout, so they mirror correctly
 when the document's `dir` is right-to-left.
+
+**Their words are translatable, and already written.** Text that belongs to a component rather than
+to you — an empty table's **No results**, a dialog's **Cancel** — works the way the tokens do: the
+component looks the word up under an `imp.` key and ships the English wording as its fallback. So a
+component reads properly in an app with no translation files at all, and the moment you write one of
+those keys in your own translations your wording takes over, re-localizing in place when the
+language changes. See **[Translations](i18n.md)**.
 
 **No outer margins.** No standard component adds margin around itself. Spacing between things is the
 job of whatever lays them out, which keeps rhythm consistent instead of fighting collapsing margins.
@@ -195,6 +206,44 @@ In-app navigation is handed to the router (see **[Routing](routing.md)**), so `h
 same way you would write it for `navigate()` — a path like `/settings`, without your app's base
 path. imp adds that for you. Clicks are left to the browser whenever the user means it: a
 middle-click, a modifier-click, an `external` link, or an absolute URL pointing off-site.
+
+## `emptyState` — from `imp/std/display`
+
+The placeholder for a list, table or search result with nothing in it: a line saying so, optional
+explanation, and whatever action gets the user out of it.
+
+```js
+import { emptyState } from 'imp/std/display'
+import { button } from 'imp/std'
+
+emptyState()
+emptyState({ variant: 'noResults' })
+emptyState(
+  { title: 'No invoices', description: 'Invoices appear here once you send one.' },
+  button({ variant: 'primary', events: { click: newInvoice } }, 'New invoice'),
+)
+```
+
+| Prop          | Values                   | Default   |                                               |
+| ------------- | ------------------------ | --------- | --------------------------------------------- |
+| `variant`     | `'empty'`, `'noResults'` | `'empty'` | Which of the two situations this is           |
+| `title`       | string — **live**        | see below | The line saying there is nothing              |
+| `description` | string — **live**        | —         | One sentence of explanation; omitted if unset |
+
+Children are the actions, laid out in a centered row under the text.
+
+**It has words already.** Left without a `title`, the component reads its own message key — so it
+says something sensible before you have written any translations:
+
+| `variant`     | Key                   | Falls back to    |
+| ------------- | --------------------- | ---------------- |
+| `'empty'`     | `imp.state.empty`     | Nothing here yet |
+| `'noResults'` | `imp.state.noResults` | No results       |
+
+Translate those keys in your own files to put it in your own words and every language you support
+(see **[Translations](i18n.md)**), or pass `title` when this one empty state needs to say something
+specific. A `title` you pass is text like any other — imp does not translate it for you, so reach
+for `computed([lang], () => t('invoices.empty'))` if it needs to follow the language.
 
 ## Custom elements next to yours
 

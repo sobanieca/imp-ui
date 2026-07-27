@@ -2,4 +2,5 @@
   → http://localhost:<port>/
   logs → <root>/test/fixtures/preview/.imp/dev.log
   themes → theme/brand.js + built-ins
+  languages → en, pl, ar
   imp auto-injected · live reload · console + network telemetry

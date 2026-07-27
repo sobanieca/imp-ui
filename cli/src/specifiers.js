@@ -30,6 +30,7 @@ export const IMP_SUBPATH_MODULES = {
   'imp/i18n': 'api/i18n.js',
   'imp/log': 'api/log.js',
   'imp/std': 'std/index.js',
+  'imp/std/display': 'std/display/index.js',
 }
 
 const knownImpSubpaths = () => [
