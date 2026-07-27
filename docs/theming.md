@@ -80,24 +80,38 @@ const badge = component('my-app-theme-badge', {
 of your app never needs this — the re-skin happens through the CSS variables — but it is there for
 the rare component that must branch on the active theme, and for building a theme switcher.
 
-## Built-in starter themes — `applyTheme('imp-light' | 'imp-dark')`
+## Built-in starter themes
 
-imp ships a built-in light and dark theme so your app renders sensibly before you write your own.
-There is nothing to import: pass the name instead of an object.
+imp ships four built-in themes so your app renders sensibly before you write your own. There is
+nothing to import: pass the name instead of an object.
 
 ```js
 import { applyTheme } from 'imp/theme'
 
 applyTheme('imp-light')
-// or
 applyTheme('imp-dark')
+applyTheme('imp-high-contrast-light')
+applyTheme('imp-high-contrast-dark')
 ```
 
-`'imp-light'` and `'imp-dark'` are the only names `applyTheme` accepts — any other string throws.
-The `imp-` prefix keeps them out of your way: your own themes are free to be called `light` and
-`dark`, and there is never a question of whose theme a name refers to. Everything else works exactly
-as with a theme object: the tokens land as `--imp-*` custom properties, `colorScheme` is set to
-match, and the `theme` state updates.
+| Name                      | For                                                   |
+| ------------------------- | ----------------------------------------------------- |
+| `imp-light`               | the default light palette                             |
+| `imp-dark`                | the default dark palette                              |
+| `imp-high-contrast-light` | black on white, for readers who need maximum contrast |
+| `imp-high-contrast-dark`  | white on black, the same at the other polarity        |
+
+The high-contrast pair does more than darken the text. Borders and the focus ring get wider
+(`border-width`, `focus-ring-width`), hover states move in bigger steps so they stay visible, and
+every foreground/background pair is chosen well past the WCAG AA threshold. Because they are
+ordinary themes, applying one re-skins the whole app in a single custom-property write, exactly like
+switching between light and dark.
+
+These four names are the only strings `applyTheme` accepts — any other throws. The `imp-` prefix
+keeps them out of your way: your own themes are free to be called `light` and `dark`, and there is
+never a question of whose theme a name refers to. Everything else works exactly as with a theme
+object: the tokens land as `--imp-*` custom properties, `colorScheme` is set to match, and the
+`theme` state updates.
 
 To start from a built-in instead of spelling out every value, apply it and read it back through the
 `theme` state. An applied theme is frozen, so copy the tokens into your own object rather than
@@ -114,6 +128,25 @@ applyTheme({
   tokens: { ...theme.get().tokens, 'color-primary': '#a78bfa' },
 })
 ```
+
+### Following the reader's contrast preference
+
+imp does not pick a theme for you — there is no built-in mode axis, for contrast any more than for
+light and dark. If you want to follow the reader's system setting, watch the media query and apply
+the matching theme yourself:
+
+```js
+const wantsMoreContrast = matchMedia('(prefers-contrast: more)')
+
+const pickTheme = () =>
+  applyTheme(wantsMoreContrast.matches ? 'imp-high-contrast-light' : 'imp-light')
+
+pickTheme()
+wantsMoreContrast.addEventListener('change', pickTheme)
+```
+
+This is separate from Windows Contrast Themes and similar OS-level modes, which replace your colors
+with the system palette outright — see [Forced colors](#forced-colors) below.
 
 ## Remembering a choice
 
@@ -180,12 +213,56 @@ tokens the built-in themes ship today — a theme of your own is expected to def
 | Typography | `font-family`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal` |
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                     |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`                                                                                |
-| Metrics    | `space-1` … `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `duration-fast`, `disabled-opacity`                                                                                                         |
+| Metrics    | `space-1` … `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `border-width`, `focus-ring-width`, `duration-fast`, `disabled-opacity`                                                                     |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
 theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone —
 secondary text, de-emphasized links. See **[Standard components](std-components.md)** for the
 components that consume them.
+
+`border-width` and `focus-ring-width` exist so that contrast is not purely a matter of color. A
+theme that only swapped colors could never make a hairline border or a thin focus ring easier to
+see; routing those two widths through tokens is what lets the high-contrast themes strengthen the
+affordances themselves. Use them in your own styles the same way:
+
+```css
+.panel {
+  border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+}
+```
+
+## Forced colors
+
+Windows Contrast Themes — and equivalent OS-level modes elsewhere — do not read your tokens at all.
+They replace the page's colors with the reader's own system palette, and no theme you write can
+override that. This is deliberate: a reader who has chosen a system palette wants it applied
+everywhere, not overridden by each site.
+
+Standard components already handle it, so you get correct behavior for free. When you write your own
+styles, three rules keep them working in that mode:
+
+- **Never let color be the only difference between two things.** Two buttons distinguished purely by
+  background color become identical once both backgrounds are forced to the same system color. Give
+  them a border, an icon, or different text.
+- **Build focus rings from `outline`, not `box-shadow`.** Shadows are dropped in forced-colors mode;
+  outlines survive. imp's focus ring is an outline for exactly this reason.
+- **Restore borders you set to `transparent`.** `transparent` is preserved rather than forced, so an
+  invisible placeholder border stays invisible. Bring it back with a system color keyword:
+
+```css
+@media (forced-colors: active) {
+  .panel {
+    border-color: ButtonBorder;
+  }
+  .panel:disabled {
+    color: GrayText;
+  }
+}
+```
+
+The system color keywords worth knowing are `Canvas` / `CanvasText` for page background and text,
+`ButtonFace` / `ButtonText` / `ButtonBorder` for controls, `LinkText` for links, `Highlight` /
+`HighlightText` for selection, `Field` / `FieldText` for inputs, and `GrayText` for disabled.
 
 ## Writing styles that adapt
 

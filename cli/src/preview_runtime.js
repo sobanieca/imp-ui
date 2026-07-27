@@ -25,7 +25,12 @@ import { findStateFrom } from '../../lib/src/state.js'
 const THEME_STORAGE_KEY = 'imp.preview.theme'
 const LANGUAGE_STORAGE_KEY = 'imp.preview.lang'
 const DIRECTION_STORAGE_KEY = 'imp.preview.dir'
-const BUILT_IN_THEMES = ['imp-light', 'imp-dark']
+const BUILT_IN_THEMES = [
+  'imp-light',
+  'imp-dark',
+  'imp-high-contrast-light',
+  'imp-high-contrast-dark',
+]
 const DIRECTIONS = ['auto', 'ltr', 'rtl']
 
 const themes = new Map()

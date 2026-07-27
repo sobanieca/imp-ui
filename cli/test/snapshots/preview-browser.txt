@@ -14,7 +14,7 @@ chrome direction while previewing ar: ltr
 lang/dir/stage after pinning ltr: ar/ltr/ltr
 lang/dir/stage back on auto: ar/rtl/rtl
 lang/dir/stage back on en: en/ltr/ltr
-theme options: brand, imp-light, imp-dark (selected brand)
+theme options: brand, imp-light, imp-dark, imp-high-contrast-light, imp-high-contrast-dark (selected brand)
 imp-dark surface token: #0f172a
 brand surface token: #fdf7ff
 ?scenario=lazy panels: 1 (lazy)

@@ -81,3 +81,39 @@ template literals over string concatenation; destructuring, `for...of`, optional
 nullish coalescing (`??`), `async`/`await`, and other current language features. This applies to
 browser-targeted code too, including scripts emitted as strings (e.g. injected client and service
 worker code).
+
+## Accessibility
+
+**imp supports accessibility out of the box.** An app built from standard components clears the
+common WCAG bar without the app author wiring ARIA, focus, or keyboard handling by hand —
+accessibility is a property of the components imp ships, not something each app re-implements. Treat
+it as a shipping requirement of every component, never a follow-up pass. The full contract and its
+open questions live in `todo/accessibility.md`.
+
+When building or changing a standard component:
+
+- **Render the native element wherever one exists** (`button`, `a[href]`, `input`, `<dialog>`) so
+  roles, states and keyboard behaviour come from the platform. Add ARIA roles only where no native
+  element fits. ARIA changes what is _announced_, never what an element _does_ — a `role` on a `div`
+  buys nothing until the focus and key handling are written by hand as well.
+- **Keep ARIA id references inside a single component.** `aria-labelledby`, `aria-describedby`,
+  `aria-controls`, `aria-activedescendant`, `aria-errormessage` and `label[for]` resolve by id and
+  **cannot cross a shadow root** (`adr/shadow-dom-isolation.md`). Two elements that need a reference
+  between them must be rendered by the same component, so this decides where the component boundary
+  falls — settle it while designing the props, not after, because it is the one accessibility
+  decision that cannot be retrofitted without breaking the public API. Prefer a data-driven prop
+  (`tabs({ items })`) over a compositional one wherever an internal reference exists; `aria-label`
+  is a plain string and crosses boundaries freely, so it is how a control is named from outside.
+- **Every pointer interaction has a keyboard equivalent** — Tab order, Enter/Space activation, arrow
+  keys for composite widgets, Escape to dismiss overlays.
+- **Bind ARIA state to the same state that drives the visuals**, so `aria-expanded`,
+  `aria-selected`, `aria-checked` and `aria-busy` can never drift from what is shown. A state
+  attribute written once at mount and never updated is worse than none — it actively lies.
+- **Every interactive element needs an accessible name.** Icon-only controls take an explicit label
+  prop, and user-facing strings route through `t()` (`adr/translatable-by-default.md`).
+- **Styling:** a `:focus-visible` ring from the shared `focusRing`, contrast-carrying widths from
+  `--imp-border-width` / `--imp-focus-ring-width` rather than hardcoded values, the shared
+  `forcedColors` block wherever colour alone distinguishes two things, and `prefers-reduced-motion`
+  respected by anything that animates.
+- **Interactive components ship with a test** asserting role, accessible name and keyboard
+  operability. The baseline is a test-backed guarantee, not a best-effort convention.
