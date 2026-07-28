@@ -23,6 +23,10 @@ both the raw element and the component aliases one of them at the import
 is impossible as an import binding, so that component is `toggle` — which sits awkwardly next to
 `toggleGroup`, to be revisited when the inputs group lands.
 
+**A component is not done until it ships a skill** — a `<module>.skill.md` file next to it, printed
+by `imp skill std/<name>` and registered in `cli/src/skill.js` (`adr/agent-skills.md`). A test fails
+when a component reaches a barrel without one, so this is enforced rather than remembered.
+
 - **General** — `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.

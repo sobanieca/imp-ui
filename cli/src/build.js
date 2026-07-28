@@ -17,6 +17,7 @@ import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { formatSize } from './file_size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { IMP_SUBPATH_MODULES, impSubpathProblem, isImpSubpath } from './specifiers.js'
+import { SKILL_SUFFIX, skillFileFor } from './skill.js'
 import {
   APPLE_TOUCH_ICON,
   buildManifest,
@@ -71,7 +72,49 @@ const withoutExtension = (path) => path.slice(0, path.length - extname(path).len
 
 const asPosix = (path) => path.replaceAll('\\', '/')
 
-function impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost }) {
+const DECLARES_IMP_SKILL = /^\s*export\s+(?:const|let|var)\s+impSkill\b/m
+
+const IMP_SKILL_INITIALIZER =
+  /(\bexport\s+(?:const|let|var)\s+impSkill\s*=\s*)(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`)/g
+
+const EXPORT_CLAUSE = /\bexport\s*\{([^{}]*)\}/g
+
+const exportedName = (specifier) => {
+  const renamed = specifier.split(/\s+as\s+/)
+  return (renamed[1] ?? renamed[0]).trim()
+}
+
+function withoutComponentSkill(source) {
+  if (!source.includes('impSkill')) return source
+  return source
+    .replace(IMP_SKILL_INITIALIZER, '$1""')
+    .replace(EXPORT_CLAUSE, (clause, specifiers) => {
+      if (!specifiers.includes('impSkill')) return clause
+      const kept = specifiers.split(',')
+        .filter((specifier) => specifier.trim() && exportedName(specifier) !== 'impSkill')
+      return `export{${kept.join(',')}}`
+    })
+}
+
+async function withComponentSkill(path) {
+  const source = await Deno.readTextFile(path)
+  let skill
+  try {
+    skill = await Deno.readTextFile(skillFileFor(path))
+  } catch {
+    return source
+  }
+  if (DECLARES_IMP_SKILL.test(source)) {
+    throw new Error(
+      `${basename(path)} exports impSkill itself — a component's skill belongs in ${
+        basename(skillFileFor(path))
+      } next to it`,
+    )
+  }
+  return `${source}\nexport const impSkill = ${JSON.stringify(skill.trimEnd())}\n`
+}
+
+function impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost, isHtmlEntry }) {
   const aliases = Object.keys(dependencies)
   const escapeForRegExp = (text) => text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
   return {
@@ -120,17 +163,23 @@ function impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHos
         contents: inlineSources[Number(args.path.match(INLINE_MODULE_PATH)[1])],
         loader: 'js',
       }))
+      build.onLoad({ filter: /\.js$/, namespace: 'file' }, async (args) => ({
+        contents: isHtmlEntry
+          ? withoutComponentSkill(await Deno.readTextFile(args.path))
+          : await withComponentSkill(args.path),
+        loader: 'js',
+      }))
     },
   }
 }
 
 async function buildEntryPoints(
-  { root, entryPoints, dependencies, inlineSources, outdir, impProvidedByHost },
+  { root, entryPoints, dependencies, inlineSources, outdir, impProvidedByHost, isHtmlEntry },
 ) {
   try {
     return await runEsbuild({
       plugins: [
-        impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost }),
+        impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost, isHtmlEntry }),
         denoPlugin(),
       ],
       entryPoints,
@@ -193,6 +242,7 @@ async function copyStaticFiles({ root, outdir, skipFiles, written }) {
         await copy(path, `${prefix}${entry.name}/`)
       } else if (entry.isFile) {
         if (!prefix && skippedRootFiles.has(entry.name)) continue
+        if (entry.name.endsWith(SKILL_SUFFIX)) continue
         if (skipFiles.has(normalize(path))) continue
         const target = join(outdir, prefix, entry.name)
         await Deno.mkdir(dirname(target), { recursive: true })
@@ -278,6 +328,7 @@ export async function build(
     inlineSources,
     outdir: outdirPath,
     impProvidedByHost,
+    isHtmlEntry,
   })
 
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})

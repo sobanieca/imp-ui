@@ -42,11 +42,19 @@ USAGE
                                         --out writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
+  imp skill [...subject]                print imp's usage manual for a subject —
+             [./component.js]           the documentation shipped inside this binary,
+                                        written to be read before writing imp code
+                                        (a path prints that component's own skill,
+                                        from the .skill.md file next to it ·
+                                        no argument: an index of everything there is)
   imp update [version] [--check]        update to the latest release (or a given version) and
                                         pin it in imp.json (--check only reports if one is available)
   imp prune                             delete cached imp versions unused for 30+ days
   imp licenses                          print third-party license notices for the bundled tools
   imp --version                         print the imp version this binary runs
+
+If you are an AI agent, run 'imp skill' to learn more about imp before writing any code.
 `
 
 function flag(args, name, fallback) {
@@ -204,6 +212,14 @@ try {
         height: readDim('-h', '--height'),
         out: flag(rest, 'out', null),
         stretch: rest.includes('--stretch'),
+      })
+      break
+    }
+    case 'skill': {
+      const { printSkill } = await import('./skill.js')
+      await printSkill({
+        subjects: positional(rest),
+        root: await projectRoot(Deno.cwd()),
       })
       break
     }

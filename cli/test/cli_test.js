@@ -1,10 +1,11 @@
-import { fromFileUrl, join, toFileUrl } from '@std/path'
+import { dirname, fromFileUrl, join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { CLIENT_JS } from '../src/client.js'
 import { bundleDependency, shutdownBundler } from '../src/deps.js'
 import { injectImp } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
+import { COMPONENT_SKILLS, findSkill, skillFileFor, skillIndex, SKILLS } from '../src/skill.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
 const REPO_ROOT = fromFileUrl(new URL('../..', import.meta.url))
@@ -51,6 +52,11 @@ Deno.test('imp commands', async (t) => {
   await test('help', [])
   await test('help-command', ['help'])
   await test('unknown-command', ['bogus'])
+  await test('skill-index', ['skill'])
+  await test('skill-unknown-subject', ['skill', 'bogus'])
+  await test('skill-std-component', ['skill', 'std/button'])
+  await test('skill-project-component', ['skill', './counter.js'], fixture('skill-project'))
+  await test('skill-missing-component', ['skill', './widget.js'], fixture('skill-project'))
   await test('lint-clean', ['lint', 'app.js'], fixture('with-config'))
   await test('lint-vendored-imports', ['lint', 'app.js'], fixture('basic'))
   await test('lint-capital-component', ['lint', 'components.js'], fixture('lint-bad'))
@@ -574,6 +580,110 @@ Deno.test('imp build', async (t) => {
             commandTranscript('imp build app.js --outdir shared  (cwd: <tmp>)', result)
           }\n${await outputTree('shared')}\n\n${section('shared/app.js', code)}\n`,
         ),
+      )
+    })
+
+    await t.step('build-component-skill', async () => {
+      const marker = 'WIDGETSKILLMARKER'
+      const project = await Deno.makeTempDir()
+      const write = (name, text) => Deno.writeTextFile(join(project, name), text)
+      await write('eager.js', "export const eager = () => 'eager'\n")
+      await write('eager.skill.md', `# eager — ${marker} a statically imported component\n`)
+      await write('lazy.js', "export const lazy = () => 'lazy'\n")
+      await write('lazy.skill.md', `# lazy — ${marker} a lazily imported component\n`)
+      await write(
+        'app.js',
+        "import { eager } from './eager.js'\n\n" +
+          "export const boot = async () => eager() + (await import('./lazy.js')).lazy()\n",
+      )
+      await write('index.html', '<!doctype html>\n<script type="module" src="app.js"></script>\n')
+      const componentOut = await Deno.makeTempDir()
+      const component = await runImp(['build', 'eager.js', '--outdir', componentOut], project)
+      const { impSkill } = await import(toFileUrl(join(componentOut, 'eager.js')).href)
+      const app = await runImp(['build', '--outdir', 'app'], project)
+      const appFiles = []
+      const walkOutput = async (directory, prefix) => {
+        for await (const entry of Deno.readDir(directory)) {
+          const path = join(directory, entry.name)
+          if (entry.isDirectory) await walkOutput(path, `${prefix}${entry.name}/`)
+          else appFiles.push({ name: prefix + entry.name, text: await Deno.readTextFile(path) })
+        }
+      }
+      await walkOutput(join(project, 'app'), '')
+      appFiles.sort((one, other) => one.name.localeCompare(other.name))
+      const carrying = appFiles.filter((file) => file.text.includes(marker)).map((file) =>
+        file.name
+      )
+      const bundled = appFiles.filter((file) => file.name.endsWith('.js')).map((file) => file.name)
+      await Deno.remove(project, { recursive: true })
+      await Deno.remove(componentOut, { recursive: true })
+      const maskOutdir = (text) => text.replace(/→ \.\.[/\\]\S+[/\\]/g, '→ <component-out>/')
+      await assertSnapshot(
+        'build-component-skill',
+        maskOutdir(mask(
+          `${
+            commandTranscript(
+              'imp build eager.js --outdir <component-out>  (cwd: <tmp>, component build)',
+              component,
+            )
+          }\n${section('impSkill exported by the component bundle', String(impSkill))}\n\n${
+            commandTranscript('imp build --outdir app  (cwd: <tmp>, app build)', app)
+          }\n${
+            section(
+              'app bundles (eager imported statically, lazy dynamically)',
+              bundled.join('\n'),
+            )
+          }\n\n[app files carrying skill text: ${carrying.join(', ') || 'none'}]\n` +
+            `[skill files copied into the app output: ${
+              appFiles.some((file) => file.name.endsWith('.skill.md'))
+            }]\n`,
+        )),
+      )
+    })
+
+    await t.step('build-app-strips-existing-skills', async () => {
+      const marker = 'PREBUILTSKILLMARKER'
+      const project = await Deno.makeTempDir()
+      const write = (name, text) => Deno.writeTextFile(join(project, name), text)
+      await Deno.mkdir(join(project, 'dependencies', 'widget'), { recursive: true })
+      await write(
+        join('dependencies', 'widget', 'widget.js'),
+        `var s="# widget — ${marker} a published component";var w=()=>"widget";` +
+          'export{s as impSkill,w as widget};\n',
+      )
+      await write('imp.json', '{ "dependencies": { "widget": "npm:widget@1.0.0" } }\n')
+      await write(
+        'hand.js',
+        `export const impSkill = "# hand — ${marker} written into the module by hand"\n` +
+          "export const hand = () => 'hand'\n",
+      )
+      await write(
+        'app.js',
+        'export const boot = async () =>\n' +
+          "  (await import('widget')).widget() + (await import('./hand.js')).hand()\n",
+      )
+      await write('index.html', '<!doctype html>\n<script type="module" src="app.js"></script>\n')
+      const result = await runImp(['build'], project)
+      const chunks = []
+      for await (const entry of Deno.readDir(join(project, 'dist', 'chunks'))) {
+        chunks.push({
+          name: entry.name,
+          text: await Deno.readTextFile(join(project, 'dist', 'chunks', entry.name)),
+        })
+      }
+      chunks.sort((one, other) => one.name.localeCompare(other.name))
+      const carrying = chunks.filter((chunk) => chunk.text.includes(marker)).map((c) => c.name)
+      const transcript = `${commandTranscript('imp build  (cwd: <tmp>, app build)', result)}\n` +
+        `${
+          section(
+            'lazy chunks (a vendored pre-built component and a hand-written impSkill)',
+            chunks.map((chunk) => chunk.text.trim()).join('\n'),
+          )
+        }\n\n[chunks carrying skill text: ${carrying.join(', ') || 'none'}]\n`
+      await Deno.remove(project, { recursive: true })
+      await assertSnapshot(
+        'build-app-strips-existing-skills',
+        mask(transcript).replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js'),
       )
     })
 
@@ -1366,4 +1476,123 @@ Deno.test('parseSpecifier', async () => {
     })
     .join('\n')
   await assertSnapshot('parse-specifiers', transcript + '\n')
+})
+
+Deno.test('imp skill', async (t) => {
+  const check = (condition, message) => {
+    if (!condition) throw new Error(message)
+  }
+
+  await t.step('every docs page is registered as a subject', async () => {
+    const pages = []
+    for await (const entry of Deno.readDir(join(REPO_ROOT, 'docs'))) {
+      if (entry.isFile && entry.name.endsWith('.md')) pages.push(entry.name)
+    }
+    const registered = SKILLS.map((skill) => skill.doc)
+    for (const page of pages) {
+      check(
+        registered.includes(page),
+        `docs/${page} has no subject in cli/src/skill.js — every docs page is an imp skill`,
+      )
+    }
+    for (const doc of registered) {
+      check(pages.includes(doc), `subject points at a missing docs/${doc}`)
+    }
+  })
+
+  await t.step('every subject prints its manual out of the binary', async () => {
+    for (const skill of SKILLS) {
+      const { code, stdout, stderr } = await runImp(['skill', skill.name])
+      check(code === 0, `imp skill ${skill.name} exited ${code}: ${stderr}`)
+      check(stderr === '', `imp skill ${skill.name} wrote to stderr: ${stderr}`)
+      check(
+        stdout.startsWith(`imp skill: ${skill.name} — ${skill.summary}`),
+        `imp skill ${skill.name} is missing its banner`,
+      )
+      check(stdout.split('\n').length > 20, `imp skill ${skill.name} printed no manual`)
+      const danglingLink = stdout.match(/\]\([\w-]+\.md[^)]*\)/)
+      check(
+        danglingLink === null,
+        `imp skill ${skill.name} still links to a docs file: ${danglingLink?.[0]}`,
+      )
+    }
+  })
+
+  await t.step('every std component has a skill file next to it', async () => {
+    const exported = []
+    for (const barrel of ['general', 'display']) {
+      const path = join(REPO_ROOT, 'lib', 'src', 'std', barrel, 'index.js')
+      const source = await Deno.readTextFile(path)
+      for (const match of source.matchAll(/export\s*{\s*(\w+)\s*}\s*from\s*'\.\/([\w.]+)'/g)) {
+        exported.push({ name: match[1], module: join(dirname(path), match[2]) })
+      }
+    }
+    check(exported.length > 0, 'no std components found in the barrels')
+    for (const { name, module } of exported) {
+      const registered = COMPONENT_SKILLS.find((skill) => skill.name === `std/${name}`)
+      check(registered !== undefined, `std/${name} has no entry in COMPONENT_SKILLS`)
+      const expected = skillFileFor(module)
+      const actual = join(REPO_ROOT, 'lib', 'src', registered.file)
+      check(actual === expected, `std/${name} skill should be ${expected}, registered ${actual}`)
+      const exists = await Deno.stat(expected).then(() => true).catch(() => false)
+      check(exists, `missing ${expected} — every std component ships a skill file`)
+    }
+  })
+
+  await t.step('a std component prints its skill file verbatim', async () => {
+    for (const component of COMPONENT_SKILLS) {
+      const file = join(REPO_ROOT, 'lib', 'src', component.file)
+      const source = (await Deno.readTextFile(file)).trimEnd()
+      const { code, stdout } = await runImp(['skill', component.name])
+      check(code === 0, `imp skill ${component.name} exited ${code}`)
+      check(stdout.trimEnd() === source, `imp skill ${component.name} did not print ${file}`)
+    }
+  })
+
+  await t.step('subjects resolve by alias, specifier and file name', () => {
+    for (const skill of SKILLS) {
+      for (const alias of [skill.name, ...skill.aliases]) {
+        check(findSkill(alias)?.name === skill.name, `'${alias}' does not resolve to ${skill.name}`)
+      }
+    }
+    check(findSkill('imp/State')?.name === 'state', 'subject lookup is not case-insensitive')
+    check(findSkill('state.md')?.name === 'state', 'a docs file name does not resolve')
+    check(findSkill('button')?.name === 'std/button', "'button' does not resolve to std/button")
+    check(
+      findSkill('imp/std/emptyState')?.name === 'std/emptyState',
+      'an imp/std specifier does not resolve to its component',
+    )
+    check(findSkill('bogus') === null, 'an unknown subject resolved to something')
+  })
+
+  await t.step('the index lists every subject once', async () => {
+    const index = await skillIndex()
+    for (const skill of [...SKILLS, ...COMPONENT_SKILLS]) {
+      const lines = index.split('\n').filter((line) => line.startsWith(`  ${skill.name} `))
+      check(lines.length === 1, `${skill.name} appears ${lines.length} times in the index`)
+    }
+  })
+
+  await t.step('the index lists the components of the project it runs in', async () => {
+    const { stdout } = await runImp(['skill'], fixture('skill-project'))
+    check(stdout.includes('THIS PROJECT'), 'the index has no project section')
+    check(
+      /\n {2}\.\/counter\.js\s+counter — a self-contained/.test(stdout),
+      'the project component is missing from the index',
+    )
+    check(
+      stdout.includes('read: imp skill ./path/to/component.js'),
+      'the index does not say how to read a component by path',
+    )
+    check(
+      stdout.includes('imp skill std/button'),
+      'the index does not say how to read a standard component',
+    )
+  })
+
+  await t.step('a project with no skill files still explains the convention', async () => {
+    const { stdout } = await runImp(['skill'], fixture('basic'))
+    check(stdout.includes('THIS PROJECT'), 'the project section is missing when nothing is found')
+    check(stdout.includes('counter.skill.md'), 'the empty project section names no file to write')
+  })
 })

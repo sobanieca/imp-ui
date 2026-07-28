@@ -53,6 +53,8 @@ await run(
   '--include',
   'lib/src',
   '--include',
+  'docs',
+  '--include',
   'THIRD_PARTY_LICENSES.md',
   '-o',
   'imp',

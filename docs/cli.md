@@ -60,6 +60,8 @@ imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in p
                                       and size, plus a recommended resize command)
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
+imp skill [...subject]                print imp's manual for a subject, for an AI agent to
+                                      read (no subject: the index of every subject)
 imp update [version] [--check]        update to the latest release and pin it in imp.json
 imp prune                             delete cached imp versions unused for 30+ days
 imp licenses                          print third-party license notices for bundled tools
@@ -68,7 +70,8 @@ imp help                              show usage
 ```
 
 Running `imp` with no arguments, `imp help`, or `imp --help` prints usage. An unknown command prints
-usage and exits with code 1.
+usage and exits with code 1. The usage text ends with a line addressed to AI agents, pointing them
+at `imp skill` — the manuals imp carries for exactly that reader.
 
 ## Configuration — `imp.json`
 
@@ -340,6 +343,14 @@ Given a JavaScript module instead of a page, `imp build` emits that module as a 
 self-contained file: imp itself and every dependency are compiled in, so the result — say, a web
 component authored with imp — can be dropped into any application, whatever framework it uses,
 without pulling in imp or any other runtime.
+
+**A JS build carries its skills; a page build strips them.** A module entry is something other
+developers program against, so if a `counter.skill.md` file sits next to it, imp folds that text
+into the output as an `impSkill` export and it travels with the component to whoever installs it. An
+HTML entry is a finished app that nobody writes code against, so imp adds no skill text, copies no
+skill file into the output, and removes any `impSkill` it finds on the way in — from a pre-built
+component you installed as much as from your own modules, and from lazily loaded chunks as much as
+from the main bundle. See **[Components](components.md)**.
 
 ### Targeting an imp host — sharing the host's imp
 
@@ -775,6 +786,48 @@ Options (line width, quotes, semicolons, …) come from the `fmt` block of `imp.
 
 See **[Formatting](fmt.md)** for supported languages, all options and their defaults, ignore
 directives, and check mode.
+
+## `imp skill` — the manuals, for an AI agent
+
+```
+imp skill                        the index: every subject with a one-line summary
+imp skill <subject>              one subject's manual, in full
+imp skill state routing          several manuals in one call
+imp skill std/button             one standard component's skill
+imp skill ./components/counter.js   one of your own components' skills
+```
+
+imp assumes a lot of app code is written by an AI coding agent, and an agent cannot browse a
+documentation site while it works. `imp skill` prints imp's documentation — these very pages —
+straight out of the binary: offline, with no network call, and at the exact version of imp the
+project runs, so what the agent reads is what the project executes.
+
+With no argument it prints an **index**: one line per subject with a short summary, grouped into
+what you need to write an app (imports, rendering, components, state, routing, theming,
+translations, logging), what you need to work in the project (the CLI, testing, dependencies,
+linting, formatting), one line per standard component — and, last, every component **in your
+project** that has a skill file next to it. An index is cheap to read, so an agent spends one call
+finding out what exists and one more learning the part it needs.
+
+With one or more subjects it prints those manuals in full. Skill text is the only thing written to
+standard output — every diagnostic goes to standard error — so `imp skill state > state.md` captures
+exactly the manual and nothing else. There are no flags: running the command and reading the output
+is the whole interface.
+
+Subjects answer to the names you are most likely to have in hand already. The import specifier works
+(`imp skill imp/state`, `imp skill imp/std/button`), so does the plain subject (`state`,
+`rendering`, `button`), and so does a page name (`state.md`), all case-insensitively. An unknown
+subject prints the list of real ones to standard error and exits with code 1. Cross-references
+between manuals are printed as the command that fetches them — "Rendering (imp skill rendering)" —
+so an agent can always follow one manual to the next without guessing at a file path or a URL.
+
+**Components are asked for by file.** `imp skill ./components/counter.js` prints the skill file
+sitting next to that module — `counter.skill.md` — and naming that file directly works too. It is
+the same convention imp's own components follow, so `imp skill std/button` and
+`imp skill ./components/counter.js` are one operation on two different components. A component with
+no skill file exits with code 1 and names the file to write, so a tool can tell "no skill yet" apart
+from a real failure. See **[Components](components.md)** for how to write one and what happens to it
+at build time.
 
 ## `imp update` — pinning the imp version
 

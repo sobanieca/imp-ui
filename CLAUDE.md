@@ -51,6 +51,20 @@ The docs will be published on a public site, so:
   it inline in plain language.
 - No maintainer notes or TODO markers in docs — planned work belongs in `todo/`.
 
+`docs/` has a second reader: every page ships inside the binary and is what `imp skill <subject>`
+prints for an AI agent (`adr/agent-skills.md`). So a page is also read as plain text in a terminal —
+keep it concrete and self-contained, and avoid anything that only works on a website. Adding a page
+means registering it as a subject in `cli/src/skill.js`; a test fails if the two ever disagree.
+
+## Skills (`*.skill.md`)
+
+Every component ships an agent-facing manual as a markdown file next to it — `button.js` →
+`button.skill.md` — and standard components register theirs in `cli/src/skill.js`, which a test
+enforces against the `imp/std` barrels. Keep a skill shorter and more mechanical than `docs/`: the
+import, the call shape, a prop table, the rules an agent gets wrong, one or two examples. Its first
+line is its summary, so start it with the component name. The same file is what `imp build` folds
+into a JS-entry bundle as `impSkill`, so it is the only place a component's skill is written.
+
 ## After making changes
 
 After completing a batch of code changes, always run `deno lint` and `deno fmt` and address any
