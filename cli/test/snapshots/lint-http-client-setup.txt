@@ -1,0 +1,21 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-http-client)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/http-client-name-namespace]: http client name 'sync' must include a namespace — use dot-separated segments like 'myapp.api'
+ --> app.js:5:40
+
+error[imp/http-client-name-namespace]: http client name 'api' must include a namespace — use dot-separated segments like 'myapp.api'
+ --> app.js:9:32
+
+error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
+ --> app.js:15:18
+
+error[imp/http-client-setup-before-await]: 'initHttpClient' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
+ --> app.js:16:5
+
+Found 4 problems
+Checked 1 file

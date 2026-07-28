@@ -21,17 +21,18 @@ The library is **split by subject, one bare specifier per subject**, each backed
 module in `lib/src/api/` (`imp` itself stays `lib/src/imp.js`) that re-exports exactly the public
 names — implementation modules stay internal and are no longer reachable from app code.
 
-| Specifier    | Exports                                             |
-| ------------ | --------------------------------------------------- |
-| `imp`        | `component`, `mount`, `init`, `env`                 |
-| `imp/html`   | `el`, `html`, one factory per HTML tag              |
-| `imp/state`  | `initState`, `useState`, `computed`                 |
-| `imp/router` | `router`, `navigate`, `useRoute`, `area`, `url`     |
-| `imp/theme`  | `theme`, `applyTheme`                               |
-| `imp/i18n`   | `t`, `lang`, `setLang`                              |
-| `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel` |
-| `imp/std`    | The standard component library, split by group      |
-| `imp/test`   | The test library                                    |
+| Specifier    | Exports                                                                    |
+| ------------ | -------------------------------------------------------------------------- |
+| `imp`        | `component`, `mount`, `init`, `env`                                        |
+| `imp/html`   | `el`, `html`, one factory per HTML tag                                     |
+| `imp/state`  | `initState`, `useState`, `computed`                                        |
+| `imp/router` | `router`, `navigate`, `useRoute`, `area`, `url`                            |
+| `imp/theme`  | `theme`, `applyTheme`                                                      |
+| `imp/i18n`   | `t`, `lang`, `setLang`                                                     |
+| `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel`                        |
+| `imp/http`   | `initHttpClient`, `useHttpClient`, `createHttpClient`, `mock`, `HttpError` |
+| `imp/std`    | The standard component library, split by group                             |
+| `imp/test`   | The test library                                                           |
 
 - **`imp` keeps what defines an app rather than a subject**: `component` (the framework's
   centerpiece), `mount` and `init` (the entry point) and `env`. Everything with a subject of its own

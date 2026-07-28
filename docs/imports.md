@@ -6,17 +6,18 @@ There is nothing to install and nothing to configure.
 
 The library is split by subject, so an import line says which part of imp a file leans on:
 
-| Specifier    | What it holds                                                        | Page                                     |
-| ------------ | -------------------------------------------------------------------- | ---------------------------------------- |
-| `imp`        | `component`, `mount`, `init`, `env`                                  | [Components](components.md)              |
-| `imp/html`   | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`) | [Rendering](rendering.md)                |
-| `imp/state`  | `initState`, `useState`, `computed`                                  | [State](state.md)                        |
-| `imp/router` | `router`, `navigate`, `useRoute`, `area`, `url`                      | [Routing](routing.md)                    |
-| `imp/theme`  | `theme`, `applyTheme`                                                | [Theming](theming.md)                    |
-| `imp/i18n`   | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`  | [Translations](i18n.md)                  |
-| `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel`                  | [Logging](logging.md)                    |
-| `imp/std`    | The standard component library, split by group                       | [Standard components](std-components.md) |
-| `imp/test`   | `test`, `expect`, `spy`, `mockModule`, and the hooks                 | [Testing](testing.md)                    |
+| Specifier    | What it holds                                                              | Page                                     |
+| ------------ | -------------------------------------------------------------------------- | ---------------------------------------- |
+| `imp`        | `component`, `mount`, `init`, `env`                                        | [Components](components.md)              |
+| `imp/html`   | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`)       | [Rendering](rendering.md)                |
+| `imp/state`  | `initState`, `useState`, `computed`                                        | [State](state.md)                        |
+| `imp/router` | `router`, `navigate`, `useRoute`, `area`, `url`                            | [Routing](routing.md)                    |
+| `imp/theme`  | `theme`, `applyTheme`                                                      | [Theming](theming.md)                    |
+| `imp/i18n`   | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`        | [Translations](i18n.md)                  |
+| `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel`                        | [Logging](logging.md)                    |
+| `imp/http`   | `initHttpClient`, `useHttpClient`, `createHttpClient`, `mock`, `HttpError` | [HTTP](http.md)                          |
+| `imp/std`    | The standard component library, split by group                             | [Standard components](std-components.md) |
+| `imp/test`   | `test`, `expect`, `spy`, `mockModule`, and the hooks                       | [Testing](testing.md)                    |
 
 A typical screen imports from the two or three of them it actually uses:
 

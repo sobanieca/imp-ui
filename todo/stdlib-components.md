@@ -145,6 +145,13 @@ and each group extends the `--imp-*` token surface as it lands. Translations are
 primitive for DOM rendered outside the owning subtree. The stdlib grows group by group; a group that
 needs a missing dependency waits for it.
 
+**The feedback group owes the HTTP client its wiring** (`adr/http-client.md`). A client publishes
+state-shaped `pending` and `lastError`, so `spinner`/`progress` should accept a client (or its name,
+resolved with `useHttpClient` from the component's own position) and show while its calls are in
+flight, and `alert`/`toast` should raise a standard failure banner from `lastError` — including the
+per-request handles a call opts into with `track`. It is ordinary reactive binding through the
+landed state layer, so the work is deciding the prop spelling, not building a coupling mechanism.
+
 **Native form semantics are deliberately not used.** A control inside its own shadow root does not
 participate in an outside `<form>`, so native submit, `FormData` collection and constraint
 validation cannot reach std components. Rather than adding form-associated custom elements

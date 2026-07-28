@@ -7,6 +7,7 @@ import {
   parseSpecifier,
 } from './specifiers.js'
 import { stateNameProblem } from '../../lib/src/state.js'
+import { httpClientNameProblem } from '../../lib/src/http.js'
 import { componentNameProblem } from '../../lib/src/component.js'
 import * as impModule from '../../lib/src/imp.js'
 import * as htmlModule from '../../lib/src/api/html.js'
@@ -15,6 +16,7 @@ import * as routerModule from '../../lib/src/api/router.js'
 import * as themeModule from '../../lib/src/api/theme.js'
 import * as i18nModule from '../../lib/src/api/i18n.js'
 import * as logModule from '../../lib/src/api/log.js'
+import * as httpModule from '../../lib/src/api/http.js'
 import * as stdModule from '../../lib/src/std/index.js'
 import * as stdDisplayModule from '../../lib/src/std/display/index.js'
 
@@ -31,6 +33,7 @@ const EXPORTS_BY_SPECIFIER = {
   'imp/theme': themeModule,
   'imp/i18n': i18nModule,
   'imp/log': logModule,
+  'imp/http': httpModule,
 }
 
 const EXPORT_HOMES = new Map(
@@ -52,6 +55,10 @@ const PROPS_DISPATCHING_SPECIFIERS = ['imp/html', ...Object.keys(STD_EXPORTS_BY_
 const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
 
 const STATE_HANDLE_CREATORS = new Set(['initState', 'useState', 'computed'])
+
+const HTTP_SETUP_HELPERS = new Set(['initHttpClient', 'useHttpClient'])
+
+const HTTP_CLIENT_HELPERS = new Set(['createHttpClient', 'initHttpClient', 'useHttpClient'])
 
 const classifyFactory = (importedName) => {
   if (importedName === 'el') return 'el'
@@ -153,6 +160,102 @@ const createLiteralNameRule = (source, helperNames, nameProblem) => ({
   },
 })
 
+const createSetupBeforeAwaitRule = (
+  { source, setupHelpers, handleCreators, setupMessage, watchMessage },
+) => ({
+  create(context) {
+    const creatorLocals = new Map()
+    const namespaceLocals = new Set()
+    const handleNames = new Set()
+    const functions = []
+    const candidates = []
+
+    const calledCreator = (callee) => {
+      if (callee.type === 'Identifier') return creatorLocals.get(callee.name) ?? null
+      const name = namespaceCalleeName(callee, namespaceLocals)
+      return name !== null && handleCreators.has(name) ? name : null
+    }
+
+    const isHandleCall = (expression) =>
+      expression?.type === 'CallExpression' && calledCreator(expression.callee) !== null
+
+    const watchedHandleName = (callee) =>
+      callee.type === 'MemberExpression' && !callee.computed &&
+        callee.property.type === 'Identifier' && callee.property.name === 'watch' &&
+        callee.object.type === 'Identifier' && handleNames.has(callee.object.name)
+        ? callee.object.name
+        : null
+
+    const isAsyncOnMount = (node) =>
+      node.async && node.parent?.type === 'Property' && !node.parent.computed &&
+      node.parent.value === node &&
+      (node.parent.key.name === 'onMount' || node.parent.key.value === 'onMount')
+
+    const enterFunction = (node) =>
+      functions.push({ tracked: isAsyncOnMount(node), firstAwaitEnd: null })
+    const exitFunction = () => functions.pop()
+
+    const markAwait = (position) => {
+      const current = functions.at(-1)
+      if (current && current.firstAwaitEnd === null) current.firstAwaitEnd = position
+    }
+
+    return {
+      ImportDeclaration(node) {
+        collectImpImports(
+          node,
+          source,
+          (name) => handleCreators.has(name) ? name : null,
+          creatorLocals,
+          namespaceLocals,
+        )
+      },
+      VariableDeclarator(node) {
+        if (node.id.type === 'Identifier' && isHandleCall(node.init)) {
+          handleNames.add(node.id.name)
+        }
+      },
+      AssignmentExpression(node) {
+        if (node.operator === '=' && node.left.type === 'Identifier' && isHandleCall(node.right)) {
+          handleNames.add(node.left.name)
+        }
+      },
+      FunctionDeclaration: enterFunction,
+      'FunctionDeclaration:exit': exitFunction,
+      FunctionExpression: enterFunction,
+      'FunctionExpression:exit': exitFunction,
+      ArrowFunctionExpression: enterFunction,
+      'ArrowFunctionExpression:exit': exitFunction,
+      AwaitExpression(node) {
+        markAwait(node.range[1])
+      },
+      'ForOfStatement[await=true]'(node) {
+        markAwait(node.range[0])
+      },
+      CallExpression(node) {
+        const current = functions.at(-1)
+        if (!current?.tracked || current.firstAwaitEnd === null) return
+        if (node.range[0] < current.firstAwaitEnd) return
+        candidates.push(node)
+      },
+      'Program:exit'() {
+        for (const node of candidates) {
+          const creator = calledCreator(node.callee)
+          if (creator !== null && setupHelpers.has(creator)) {
+            context.report({ node, message: setupMessage(creator) })
+            continue
+          }
+          if (!watchMessage) continue
+          const handleName = watchedHandleName(node.callee)
+          if (handleName !== null) {
+            context.report({ node, message: watchMessage(handleName) })
+          }
+        }
+      },
+    }
+  },
+})
+
 export default {
   rules: {
     'no-capital-component': {
@@ -231,108 +334,28 @@ export default {
       STATE_SETUP_HELPERS,
       stateNameProblem,
     ),
-    'state-setup-before-await': {
-      create(context) {
-        const creatorLocals = new Map()
-        const namespaceLocals = new Set()
-        const handleNames = new Set()
-        const functions = []
-        const candidates = []
-
-        const calledCreator = (callee) => {
-          if (callee.type === 'Identifier') return creatorLocals.get(callee.name) ?? null
-          const name = namespaceCalleeName(callee, namespaceLocals)
-          return name !== null && STATE_HANDLE_CREATORS.has(name) ? name : null
-        }
-
-        const isHandleCall = (expression) =>
-          expression?.type === 'CallExpression' && calledCreator(expression.callee) !== null
-
-        const watchedHandleName = (callee) =>
-          callee.type === 'MemberExpression' && !callee.computed &&
-            callee.property.type === 'Identifier' && callee.property.name === 'watch' &&
-            callee.object.type === 'Identifier' && handleNames.has(callee.object.name)
-            ? callee.object.name
-            : null
-
-        const isAsyncOnMount = (node) =>
-          node.async && node.parent?.type === 'Property' && !node.parent.computed &&
-          node.parent.value === node &&
-          (node.parent.key.name === 'onMount' || node.parent.key.value === 'onMount')
-
-        const enterFunction = (node) =>
-          functions.push({ tracked: isAsyncOnMount(node), firstAwaitEnd: null })
-        const exitFunction = () => functions.pop()
-
-        const markAwait = (position) => {
-          const current = functions.at(-1)
-          if (current && current.firstAwaitEnd === null) current.firstAwaitEnd = position
-        }
-
-        return {
-          ImportDeclaration(node) {
-            collectImpImports(
-              node,
-              'imp/state',
-              (name) => STATE_HANDLE_CREATORS.has(name) ? name : null,
-              creatorLocals,
-              namespaceLocals,
-            )
-          },
-          VariableDeclarator(node) {
-            if (node.id.type === 'Identifier' && isHandleCall(node.init)) {
-              handleNames.add(node.id.name)
-            }
-          },
-          AssignmentExpression(node) {
-            if (
-              node.operator === '=' && node.left.type === 'Identifier' && isHandleCall(node.right)
-            ) {
-              handleNames.add(node.left.name)
-            }
-          },
-          FunctionDeclaration: enterFunction,
-          'FunctionDeclaration:exit': exitFunction,
-          FunctionExpression: enterFunction,
-          'FunctionExpression:exit': exitFunction,
-          ArrowFunctionExpression: enterFunction,
-          'ArrowFunctionExpression:exit': exitFunction,
-          AwaitExpression(node) {
-            markAwait(node.range[1])
-          },
-          'ForOfStatement[await=true]'(node) {
-            markAwait(node.range[0])
-          },
-          CallExpression(node) {
-            const current = functions.at(-1)
-            if (!current?.tracked || current.firstAwaitEnd === null) return
-            if (node.range[0] < current.firstAwaitEnd) return
-            candidates.push(node)
-          },
-          'Program:exit'() {
-            for (const node of candidates) {
-              const creator = calledCreator(node.callee)
-              if (creator !== null && STATE_SETUP_HELPERS.has(creator)) {
-                context.report({
-                  node,
-                  message:
-                    `'${creator}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
-                })
-                continue
-              }
-              const handleName = watchedHandleName(node.callee)
-              if (handleName !== null) {
-                context.report({
-                  node,
-                  message:
-                    `'${handleName}.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
-                })
-              }
-            }
-          },
-        }
-      },
-    },
+    'state-setup-before-await': createSetupBeforeAwaitRule({
+      source: 'imp/state',
+      setupHelpers: STATE_SETUP_HELPERS,
+      handleCreators: STATE_HANDLE_CREATORS,
+      setupMessage: (helper) =>
+        `'${helper}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
+      watchMessage: (handle) =>
+        `'${handle}.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
+    }),
+    'http-client-name-namespace': createLiteralNameRule(
+      'imp/http',
+      HTTP_CLIENT_HELPERS,
+      httpClientNameProblem,
+    ),
+    'http-client-setup-before-await': createSetupBeforeAwaitRule({
+      source: 'imp/http',
+      setupHelpers: HTTP_SETUP_HELPERS,
+      handleCreators: HTTP_CLIENT_HELPERS,
+      setupMessage: (helper) =>
+        `'${helper}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
+      watchMessage: null,
+    }),
     'no-root-query-in-mount': {
       create(context) {
         const queryMethods = new Set(['querySelector', 'querySelectorAll', 'getElementById'])

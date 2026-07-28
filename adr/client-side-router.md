@@ -40,9 +40,9 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   params. **First match wins, in the table's declaration order** — object key order is the priority
   order, so a static path listed before a param path shadows it. There is no `*` wildcard; the
   fallback for unmatched URLs is `onNotFound`, keeping "the 404" a single named concept.
-  `area({ routes, translations })` is a validating builder that brands a table and carries the
-  section's translations; it exists for one use — an area's `export default` from its own file
-  (below). The top-level `routes:` option is written as a plain object.
+  `area({ routes, root, translations })` is a validating builder that brands a table and carries the
+  section's root component and translations; it exists for one use — an area's `export default` from
+  its own file (below). The top-level `routes:` option is written as a plain object.
 
 - **An area is a table entry whose target is another table, and it is always lazy.** A section of
   the app that owns a group of routes under a URL prefix (`/admin`, `/shop`) is expressed by mapping
@@ -58,6 +58,21 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   prefix. Because a table nests, hierarchical routing falls out of the same data model with no
   global scope registry and no separate boundary primitive — each area owns its routing surface in
   its own file, and the composition root names every area in one place.
+
+- **An area may declare a `root`, the one component that outlives the section's screens.** `root` is
+  a factory returning the component the section's screens render inside; the area's screens render
+  into a `router()` call written **without a table** somewhere in that component's tree. The area's
+  route page provides its table, its consumed prefix depth and its prefix params through the shared
+  provider seam (`event-propagated-state.md`, the same DOM lookup state and the HTTP client use, on
+  its own `kind`), and a table-less `router()` resolves the nearest one — so the slot is written
+  where the layout wants it, without the area threading anything into its own components. This is
+  the only way to hold something for exactly one section: a root is keyed with the area, so it
+  survives navigation _between_ the section's screens and unmounts when the user leaves the prefix,
+  which a layout wrapped around each screen factory cannot do (it remounts on every navigation, and
+  a section-scoped state or HTTP client with it). `root` is optional and its absence is the previous
+  behaviour exactly — the area's route page renders the nested router itself. It receives the same
+  `{ params, query }` a screen factory does, so a prefix param reaches the shell, and a table-less
+  `router()` outside an area throws with both fixes named.
 
 - **An area declares the translations it needs, and the router owns their lifetime.** `translations`
   on an area definition is a map of language code to loader (`translatable-by-default.md`). The
@@ -104,11 +119,12 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   with no placeholder flash. An area renders through the same wrapper: the area's factory awaits its
   `area()` loader for the table and returns a **nested `router` bound to the tail** (the parent
   prefix stripped, prefix params merged in), so an area is simply "a screen that is itself a nested
-  router" — and the async branch of the wrapper exists for that one case, not for screens. Nesting
-  to any depth falls out of this recursion with no special cascade logic — unmounting a parent area
-  unmounts its nested router, which unmounts its sub-screens. The mount-generation counter is the
-  navigation token: a slow chunk that resolves after the user has navigated away is discarded
-  because its generation is stale.
+  router" — or, when the area has a `root`, that root component with the same nested router built by
+  the `router()` call inside it. The async branch of the wrapper exists for that one case, not for
+  screens. Nesting to any depth falls out of this recursion with no special cascade logic —
+  unmounting a parent area unmounts its nested router, which unmounts its sub-screens. The
+  mount-generation counter is the navigation token: a slow chunk that resolves after the user has
+  navigated away is discarded because its generation is stale.
 
 - **Per-router options travel with each screen; nothing about a router lives in module state.** The
   `placeholder`, `onError`, and `onNotFound` a router is given are passed down to every `imp-route`
@@ -116,10 +132,10 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   would make the router a singleton in disguise and couple a nested area's rendering to whichever
   router was constructed last. A nested area router inherits its parent router's options, so an
   unmatched tail inside an area falls through to the app's `onNotFound` and an area's download shows
-  the app's `placeholder` — shared layout/404 for an area is plain function composition, not a
-  router feature. Nothing in the implementation prevents two routers coexisting on a page, but that
-  is a consequence of instance-scoped options rather than a promoted feature; the documented shape
-  is one router per app.
+  the app's `placeholder`; a table-less `router()` in an area's `root` inherits the same way and may
+  override any of the three for that section. Nothing in the implementation prevents two routers
+  coexisting on a page, but that is a consequence of instance-scoped options rather than a promoted
+  feature; the documented shape is one router per app.
 
 - **`onError` is a route-level error boundary; `onNotFound` is the single 404.** Because
   `ComponentError` is a bubbling, composed event a handling component cancels, a failure in a screen

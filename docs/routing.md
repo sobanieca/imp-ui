@@ -162,7 +162,8 @@ div(
 ```
 
 Shared layout that wraps several screens is just a plain function you call from each factory — no
-special "layout route" concept:
+special "layout route" concept (a layout that must stay mounted _across_ those screens is an area's
+`root`, below):
 
 ```js
 const withChrome = (content) => div({ class: 'page' }, breadcrumb(), content)
@@ -243,6 +244,41 @@ every area gets a loader during download, leave it off and the router is simply 
 arrives. If the user navigates away before a slow chunk lands, imp discards it — a late-arriving
 section never replaces a newer screen. Once the section's screen mounts, its own async `onMount` (if
 it has one) shows the **screen's** `placeholder` while data loads.
+
+### A root component for the whole section
+
+An area can name a `root` — a component every screen in the section renders inside:
+
+```js
+// admin/area.js
+const shell = component('admin-shell', {
+  onMount: () => div(adminNav(), router()),
+})
+
+export default area({
+  root: () => shell(),
+  routes: {
+    '/': () => adminHome(), //      /admin
+    '/users': () => usersList(), // /admin/users
+  },
+})
+```
+
+`router()` with no table is the slot the section's screens render into: it matches the tail of the
+URL against the area's own routes, the same table it would match without a root. It inherits the
+parent router's `placeholder`, `onError` and `onNotFound`, and any of them can be overridden for the
+section alone — `router({ onNotFound: () => adminNotFound() })`.
+
+What a root buys you over wrapping each screen by hand (`'/users': () => shell(usersList())`) is
+**lifetime**: the root stays mounted while the user moves between the section's screens, and
+unmounts when they leave the section. So it is the place for whatever the whole section shares and
+nothing outside it should see — a state scoped to the section, an [HTTP client](http.md) for its
+backend, a layout that keeps its scroll position — none of it rebuilt on every navigation inside the
+section.
+
+The root receives the same `{ params, query }` a screen factory gets, so a prefix param is there for
+the shell too (`root: ({ params }) => orgShell(params.orgId)`). A prefix param that changes remounts
+the area, root included.
 
 When you don't want to code-split, keep the section's routes in your top-level table like any other
 screen; reach for an area precisely when you want that section's code loaded on demand. A single
@@ -461,14 +497,15 @@ still 404s — so deep links and refresh just work while you build.
 
 ## API summary
 
-| Export                           | Returns            | What it does                                                                                        |
-| -------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
-| `router(options)`                | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `onError`, `onNotFound`. |
-| `area({ routes, translations })` | an area definition | Declares an area's own table and the translations it loads, for its `export default` (see _Areas_). |
-| `area(() => import(...))`        | an area marker     | Marks a prefix entry as a lazily-loaded area — the one on-demand unit.                              |
-| `navigate(path, { replace? })`   | —                  | Navigates programmatically; `replace` swaps the current history entry.                              |
-| `useRoute()`                     | a read-only route  | The live `{ path, query }` — `get`/`watch`/`text`/`view`/`each`, no `set`.                          |
-| `url(path)`                      | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for your anchor hrefs.                               |
+| Export                                   | Returns            | What it does                                                                                                                                  |
+| ---------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `router(options)`                        | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `onError`, `onNotFound`.                                           |
+| `router()`                               | a live router slot | Inside an area's `root`, renders the section's own routes; inherits the parent router's options.                                              |
+| `area({ routes, root?, translations? })` | an area definition | Declares an area's own table, the component its screens render inside, and the translations it loads, for its `export default` (see _Areas_). |
+| `area(() => import(...))`                | an area marker     | Marks a prefix entry as a lazily-loaded area — the one on-demand unit.                                                                        |
+| `navigate(path, { replace? })`           | —                  | Navigates programmatically; `replace` swaps the current history entry.                                                                        |
+| `useRoute()`                             | a read-only route  | The live `{ path, query }` — `get`/`watch`/`text`/`view`/`each`, no `set`.                                                                    |
+| `url(path)`                              | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for your anchor hrefs.                                                                         |
 
 ### Patterns
 

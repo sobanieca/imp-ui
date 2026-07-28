@@ -59,6 +59,7 @@ Conventions:
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | [built-in-logger](built-in-logger.md)                     | One console-backed logger, level from `IMP_LOG_LEVEL`                                      |
 | [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/i18n, imp/log |
+| [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, env-selected mocks                    |
 
 ## CLI
 
