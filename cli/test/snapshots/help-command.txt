@@ -9,6 +9,9 @@ USAGE
                      [--env <name>]     live reload, console + network → terminal
                                         (--env selects an "environments" entry
                                         from imp.json, exposed as import { env })
+                     [--mock]           answer requests from the *.mock.js files in
+                     [--no-mock]        the "mocks" folder instead of the network
+                                        (--no-mock forces a run against the real API)
   imp build [file.html] [--outdir dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -20,7 +23,8 @@ USAGE
   imp preview [path] [--port 4517]      preview components in isolation: each *.preview.js
                      [--env <name>]     file renders its named exports as labeled, drag-resizable
                      [--list] [--json]  stages with a live state editor (no path: every preview,
-                                        listed on an index page · --list prints what was found)
+                     [--mock]           listed on an index page · --list prints what was found ·
+                     [--no-mock]        --mock serves the "mocks" folder to previewed components)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -32,7 +36,8 @@ USAGE
                                         (--jobs <n> caps parallelism · --filter <text> ·
                                         --list prints the selected files as JSON ·
                                         --screenshots <dir> saves a screenshot per failed e2e test ·
-                                        --video <dir> records each e2e spec as an animated GIF)
+                                        --video <dir> records each e2e spec as an animated GIF ·
+                                        --mock / --no-mock: serve the "mocks" folder to e2e specs)
   imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
                      [--out <path>]     keeping aspect ratio (-w & -h: fit within that box ·
                      [--stretch]        --stretch: exact -w×-h, may distort ·

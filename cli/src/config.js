@@ -70,6 +70,12 @@ export async function updateConfigFile(path, changes) {
   await Deno.writeTextFile(path, text)
 }
 
+export function mocksSetting(config) {
+  const declared = config.mocks
+  if (declared === undefined) return null
+  return { folder: declared.folder, enabled: declared.enabled }
+}
+
 export async function loadImpConfig(startDir) {
   const found = await findConfigFile(startDir)
   if (!found) return {}
@@ -170,6 +176,23 @@ export async function loadImpConfig(startDir) {
     }
     if (typeof specifier !== 'string') {
       throw new Error(`invalid ${name} — dependency '${alias}' must be a string specifier`)
+    }
+  }
+  if (config.mocks !== undefined) {
+    if (!isPlainObject(config.mocks)) {
+      throw new Error(
+        `invalid ${name} — 'mocks' must be an object naming the folder and whether it serves, like { "folder": "mocks", "enabled": true }`,
+      )
+    }
+    if (typeof config.mocks.folder !== 'string') {
+      throw new Error(
+        `invalid ${name} — 'mocks.folder' must be a string path to the folder holding your *.mock.js files`,
+      )
+    }
+    if (typeof config.mocks.enabled !== 'boolean') {
+      throw new Error(
+        `invalid ${name} — 'mocks.enabled' must be true or false, so every project says outright whether it develops against mocks (--mock and --no-mock override it per run)`,
+      )
     }
   }
   if (config.version !== undefined && typeof config.version !== 'string') {

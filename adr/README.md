@@ -59,7 +59,7 @@ Conventions:
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | [built-in-logger](built-in-logger.md)                     | One console-backed logger, level from `IMP_LOG_LEVEL`                                      |
 | [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/i18n, imp/log |
-| [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, env-selected mocks                    |
+| [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, bindable request state                |
 
 ## CLI
 
@@ -73,6 +73,7 @@ Conventions:
 | [raster-image-pipeline](raster-image-pipeline.md)                     | resvg decode+resize, format-preserving encode, no new codec    |
 | [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design                  |
 | [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome          |
+| [dev-server-mocks](dev-server-mocks.md)                               | Mocks from *.mock.js files, answered by the dev service worker |
 | [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                |
 | [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg    |
 | [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios on a synthesized page      |

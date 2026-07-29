@@ -5,11 +5,11 @@
 is that no bundler can see through it: code an app gates behind an environment flag is inert in
 production but still shipped.
 
-The case that made this visible is the HTTP client's mock handlers (`adr/http-client.md`):
-`mock: env.MOCK && { … }` never runs in production, yet the handler map is bundled, because
-`env.MOCK` is a property read rather than a literal. Today the workaround is the thunk form
-(`mock: env.MOCK && (() => import('./mocks.js'))`), which esbuild splits into a chunk that is never
-fetched — the fixtures leave the main bundle, but the gate itself stays.
+A feature flag is the plain case: `env.FEATURE_ANALYTICS && startAnalytics()` never runs in a target
+whose environment leaves the flag off, yet everything it reaches is bundled, because `env.X` is a
+property read rather than a literal. The workaround today is a dynamic `import()` behind the gate,
+which esbuild splits into a chunk that is never fetched — the code leaves the main bundle, but the
+gate itself stays.
 
 The fix the environments ADR already anticipates: an esbuild `define` layer over `env` in
 `imp build`, substituting each selected key as a literal so the branch folds away and dead code is

@@ -10,6 +10,9 @@ USAGE
                      [--env <name>]     live reload, console + network → terminal
                                         (--env selects an "environments" entry
                                         from imp.json, exposed as import { env })
+                     [--mock]           answer requests from the *.mock.js files in
+                     [--no-mock]        the "mocks" folder instead of the network
+                                        (--no-mock forces a run against the real API)
   imp build [file.html] [--outdir dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -21,7 +24,8 @@ USAGE
   imp preview [path] [--port 4517]      preview components in isolation: each *.preview.js
                      [--env <name>]     file renders its named exports as labeled, drag-resizable
                      [--list] [--json]  stages with a live state editor (no path: every preview,
-                                        listed on an index page · --list prints what was found)
+                     [--mock]           listed on an index page · --list prints what was found ·
+                     [--no-mock]        --mock serves the "mocks" folder to previewed components)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -33,7 +37,8 @@ USAGE
                                         (--jobs <n> caps parallelism · --filter <text> ·
                                         --list prints the selected files as JSON ·
                                         --screenshots <dir> saves a screenshot per failed e2e test ·
-                                        --video <dir> records each e2e spec as an animated GIF)
+                                        --video <dir> records each e2e spec as an animated GIF ·
+                                        --mock / --no-mock: serve the "mocks" folder to e2e specs)
   imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
                      [--out <path>]     keeping aspect ratio (-w & -h: fit within that box ·
                      [--stretch]        --stretch: exact -w×-h, may distort ·
@@ -62,6 +67,17 @@ function portFlag(args) {
     throw new Error(`--port must be an integer between 0 and 65535, got '${raw}'`)
   }
   return value
+}
+
+const MOCK_FLAGS = ['--mock', '--no-mock']
+
+function mockFlag(args) {
+  let chosen = null
+  for (const arg of args) {
+    if (arg === '--mock') chosen = true
+    else if (arg === '--no-mock') chosen = false
+  }
+  return chosen
 }
 
 function positional(args) {
@@ -99,16 +115,17 @@ try {
       const { start } = await import('./start.js')
       notifyUpdate(rest)
       await start({
-        entry: positional(rest)[0] ?? 'index.html',
+        entry: positional(rest.filter((arg) => !MOCK_FLAGS.includes(arg)))[0] ?? 'index.html',
         port: portFlag(rest),
         env: flag(rest, 'env', null),
+        mocks: mockFlag(rest),
       })
       break
     }
     case 'preview': {
       const { preview } = await import('./preview.js')
       notifyUpdate(rest)
-      const booleanFlags = ['--list', '--json']
+      const booleanFlags = ['--list', '--json', ...MOCK_FLAGS]
       const args = rest.filter((arg) => !booleanFlags.includes(arg))
       await preview({
         root: await projectRoot(Deno.cwd()),
@@ -117,6 +134,7 @@ try {
         env: flag(rest, 'env', null),
         list: rest.includes('--list'),
         json: rest.includes('--json'),
+        mocks: mockFlag(rest),
       })
       break
     }
@@ -158,7 +176,7 @@ try {
     }
     case 'test': {
       const { runTests } = await import('./test.js')
-      const booleanFlags = ['--list', '--unit', '--e2e']
+      const booleanFlags = ['--list', '--unit', '--e2e', ...MOCK_FLAGS]
       const args = rest.filter((arg) => !booleanFlags.includes(arg))
       const jobsArg = flag(rest, 'jobs', null)
       if (jobsArg !== null && !(Number(jobsArg) > 0)) {
@@ -174,6 +192,7 @@ try {
         filter: flag(rest, 'filter', null),
         screenshotDir: flag(rest, 'screenshots', null),
         videoDir: flag(rest, 'video', null),
+        mocks: mockFlag(rest),
       })
       await notifyUpdate(rest)
       Deno.exit(code)

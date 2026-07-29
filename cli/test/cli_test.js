@@ -1,6 +1,7 @@
 import { fromFileUrl, join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
-import { CLIENT_JS } from '../src/client.js'
+import { clientScript } from '../src/client.js'
+import { createMockBundler } from '../src/mocks.js'
 import { bundleDependency, shutdownBundler } from '../src/deps.js'
 import { injectImp } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
@@ -852,7 +853,8 @@ Deno.test('imp start', async (t) => {
     })
 
     await get('start-injected-html', '/', {
-      maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
+      maskBody: (body) =>
+        normalize(body.replace(clientScript({ mocks: false }), '\n[imp client script]\n')),
     })
     await get('start-serves-module-verbatim', '/app.js')
 
@@ -890,7 +892,9 @@ Deno.test('imp start', async (t) => {
       const response = await fetch(`http://127.0.0.1:${port}${path}`, {
         headers: { accept: 'text/html' },
       })
-      const body = normalize((await response.text()).replace(CLIENT_JS, '\n[imp client script]\n'))
+      const body = normalize(
+        (await response.text()).replace(clientScript({ mocks: false }), '\n[imp client script]\n'),
+      )
       await assertSnapshot('start-history-fallback', responseTranscript(path, response, body))
     })
 
@@ -904,6 +908,200 @@ Deno.test('imp start', async (t) => {
   } finally {
     await server.stop()
   }
+})
+
+function runServiceWorker(source) {
+  const listeners = {}
+  const telemetry = []
+  const scope = {
+    addEventListener: (type, handler) => {
+      listeners[type] = handler
+    },
+    skipWaiting: () => {},
+    clients: { claim: () => {} },
+  }
+  const network = (input, init) => {
+    if (input === '/@imp/log') {
+      telemetry.push(...JSON.parse(init.body))
+      return Promise.resolve(new Response('ok'))
+    }
+    return Promise.resolve(
+      new Response('from the network', { headers: { 'content-type': 'text/plain' } }),
+    )
+  }
+  new Function('self', 'fetch', source)(scope, network)
+
+  const send = async (path, init) => {
+    let answered
+    listeners.fetch({
+      request: new Request(`http://app.test${path}`, init),
+      respondWith: (value) => answered = value,
+    })
+    const started = Date.now()
+    try {
+      const response = await answered
+      const type = response.headers.get('content-type') ?? '(none)'
+      const slow = Date.now() - started >= 20 ? ' after the declared delay' : ''
+      return `${init?.method ?? 'GET'} ${path} → ${response.status} ${type} ${await response
+        .text()}${slow}`
+    } catch (error) {
+      return `${init?.method ?? 'GET'} ${path} → rejected: ${error.message}`
+    }
+  }
+
+  return { registered: scope.__impMocks.map((entry) => entry.source), send, telemetry }
+}
+
+Deno.test('imp start serves mocks through the service worker', async (t) => {
+  const server = await startServer(fixture('start-mocks'))
+  const { port } = server
+
+  try {
+    await t.step('start-mocks-banner', async () => {
+      const banner = normalize(server.banner).replaceAll(`:${port}`, ':<port>')
+      await assertSnapshot('start-mocks-banner', banner)
+    })
+
+    await t.step('start-mocks-injected-html', async () => {
+      const response = await fetch(`http://127.0.0.1:${port}/`)
+      const html = normalize(
+        (await response.text()).replace(clientScript({ mocks: true }), '\n[imp client script]\n'),
+      )
+      await assertSnapshot(
+        'start-mocks-injected-html',
+        responseTranscript('/', response, html),
+      )
+    })
+
+    await t.step('start-mocks-service-worker', async () => {
+      const response = await fetch(`http://127.0.0.1:${port}/@imp/sw.js`)
+      const worker = runServiceWorker(await response.text())
+      const transcript = [
+        ...worker.registered,
+        '',
+        await worker.send('/api/users'),
+        await worker.send('/api/users', {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Alan' }),
+          headers: { 'content-type': 'application/json' },
+        }),
+        await worker.send('/api/reports?name=q3'),
+        await worker.send('/api/flaky'),
+        await worker.send('/api/flaky'),
+        await worker.send('/api/unmocked'),
+      ]
+      await assertSnapshot(
+        'start-mocks-service-worker',
+        `${section('registered mocks and what they answer', transcript.join('\n'))}\n`,
+      )
+    })
+  } finally {
+    await server.stop()
+  }
+})
+
+const mockedRequest = async (port) => {
+  const worker = runServiceWorker(
+    await (await fetch(`http://127.0.0.1:${port}/@imp/sw.js`)).text(),
+  )
+  return `${worker.registered.length} mock(s) registered · ${await worker.send('/api/users')}`
+}
+
+Deno.test('--mock and --no-mock decide whether the mocks folder is served', async (t) => {
+  const disabled = await Deno.makeTempDir()
+  await copyDirectory(fixture('start-mocks'), disabled)
+  await Deno.writeTextFile(
+    join(disabled, 'imp.json'),
+    '{\n  "mocks": { "folder": "mocks", "enabled": false }\n}\n',
+  )
+
+  const runs = [
+    { label: '"enabled": true', cwd: fixture('start-mocks'), args: [] },
+    { label: '"enabled": true with --no-mock', cwd: fixture('start-mocks'), args: ['--no-mock'] },
+    { label: '"enabled": false', cwd: disabled, args: [] },
+    { label: '"enabled": false with --mock', cwd: disabled, args: ['--mock'] },
+  ]
+
+  const lines = []
+  for (const run of runs) {
+    const server = await startServer(run.cwd, run.args)
+    try {
+      lines.push(`${run.label} → ${await mockedRequest(server.port)}`)
+    } finally {
+      await server.stop()
+    }
+  }
+  await Deno.remove(disabled, { recursive: true })
+
+  await t.step('mocks-flag-decides', async () => {
+    await assertSnapshot('mocks-flag-decides', `${section('imp start', lines.join('\n'))}\n`)
+  })
+})
+
+Deno.test('an incomplete mocks config is reported', async () => {
+  const dir = await Deno.makeTempDir()
+  await Deno.writeTextFile(join(dir, 'index.html'), '<!doctype html>\n<div id="app"></div>\n')
+  const reported = []
+  for (const declared of ['"mocks": "mocks"', '"mocks": { "folder": "mocks" }', '"mocks": {}']) {
+    await Deno.writeTextFile(join(dir, 'imp.json'), `{\n  ${declared}\n}\n`)
+    const { stderr } = await runImp(['lint', 'index.html'], dir)
+    reported.push(`{ ${declared} }\n${stderr.trim()}`)
+  }
+  await Deno.remove(dir, { recursive: true })
+
+  await assertSnapshot('mocks-config-problems', `${reported.join('\n\n')}\n`)
+})
+
+Deno.test('imp build leaves the mocks folder behind', async () => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('start-mocks'), dir)
+  const result = await runImp(['build'], dir)
+  const built = []
+  const walk = async (directory, prefix) => {
+    for await (const entry of Deno.readDir(directory)) {
+      if (entry.isDirectory) await walk(join(directory, entry.name), `${prefix}${entry.name}/`)
+      else built.push(prefix + entry.name)
+    }
+  }
+  await walk(join(dir, 'dist'), 'dist/')
+  built.sort()
+  await Deno.remove(dir, { recursive: true })
+
+  await assertSnapshot(
+    'build-omits-mocks',
+    `${
+      commandTranscript('imp build  (cwd: <tmp>)', {
+        ...result,
+        stdout: result.stdout.replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)'),
+      })
+    }\n${section('output files', built.join('\n'))}\n`,
+  )
+})
+
+Deno.test('mock bundling reports a file it cannot build', async () => {
+  const root = await Deno.makeTempDir()
+  const directory = join(root, 'mocks')
+  await Deno.mkdir(directory)
+  await Deno.writeTextFile(join(directory, 'broken.mock.js'), 'export const mocks = [\n')
+  const build = createMockBundler({ root, directory })
+  const broken = await build()
+  await Deno.writeTextFile(
+    join(directory, 'broken.mock.js'),
+    'export const mocks = [{ match: () => true, handler: () => ({ body: "ok" }) }]\n',
+  )
+  const repaired = await build()
+  const missing = await createMockBundler({ root, directory: join(root, 'absent') })()
+  await Deno.remove(root, { recursive: true })
+
+  await assertSnapshot(
+    'mocks-build-problem',
+    [
+      `broken: ${broken.problem}`,
+      `repaired: ${repaired.problem} (${repaired.files.length} file, changed: ${repaired.changed})`,
+      `missing directory: ${missing.problem}`,
+      '',
+    ].join('\n'),
+  )
 })
 
 const startPreviewServer = (cwd, extraArgs = []) => startServer(cwd, extraArgs, ['preview'])
@@ -928,10 +1126,12 @@ Deno.test('imp preview', async (t) => {
     })
 
     await get('preview-index', '/', {
-      maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
+      maskBody: (body) =>
+        normalize(body.replace(clientScript({ mocks: false }), '\n[imp client script]\n')),
     })
     await get('preview-page', '/preview/components/counter.preview.js', {
-      maskBody: (body) => normalize(body.replace(CLIENT_JS, '\n[imp client script]\n')),
+      maskBody: (body) =>
+        normalize(body.replace(clientScript({ mocks: false }), '\n[imp client script]\n')),
     })
     await get('preview-unknown-page', '/preview/components/missing.preview.js')
     await get('preview-bundle', '/@imp/preview/components/todos.preview.js', {

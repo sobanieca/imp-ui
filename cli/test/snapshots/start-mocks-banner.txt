@@ -1,0 +1,5 @@
+[INFO] mocks — 2 file(s) from mocks/ serving through the browser
+[INFO] imp start serving index.html from <root>/test/fixtures/start-mocks
+  → http://localhost:<port>/
+  logs → <root>/test/fixtures/start-mocks/.imp/dev.log
+  imp auto-injected · live reload · console + network telemetry

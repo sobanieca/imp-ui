@@ -1,4 +1,4 @@
-# DOM-scoped HTTP client, with env-selected mocks and bindable request state
+# DOM-scoped HTTP client, with retries, interceptors and bindable request state
 
 ## Context
 
@@ -9,11 +9,12 @@ written once per app, differently each time, and its failure modes (a retried `P
 leaves the request running) are the ones nobody tests. For an all-in-one toolkit the network layer
 is not an app concern to be rediscovered; it is a shipped part, like the router or the theme.
 
-Two things imp already ships decide the shape. Named environments (`environments.md`) give a
-build/serve-time selector and a frozen `env` object, so "run against mocks" can be a configuration
-choice rather than a code edit. Named state (`event-propagated-state.md`) gives a `get`/`watch`
+Named state (`event-propagated-state.md`) decides part of the shape: it gives a `get`/`watch`
 contract that the renderer duck-types at prop position, so a client can expose its own request state
 without inventing a second reactive mechanism — and without the client needing to be a component.
+Running the app with no backend is deliberately _not_ part of this decision: mocks are declared
+outside the app and answered by the dev server's service worker (`dev-server-mocks.md`), so the
+client has one code path and never learns whether an answer was mocked.
 
 ## Decision
 
@@ -113,21 +114,12 @@ and logging are hooks, not bespoke options; **imp ships no token-refresh helper*
 single-flight refresh is ten lines of app code over this substrate and the policy behind it (refresh
 once, retry once, log out when) is not imp's to choose.
 
-**Mock handlers are code; selecting them is configuration.** Handlers are declared at construction
-as a `mock` map of `'METHOD /path/:param'` routes to functions receiving
-`{ params, query, body, headers, method, url }`; whether they are active comes from the selected
-environment (`mock: env.MOCK && { … }`), so `imp start --env mock` runs the whole app with no
-backend and no source change. A handler returns the body, a `mock.response` (with `status`,
-`headers` and `latency`), a `mock.error(status, body)`, or a `Response`. An unmatched request 404s
-or falls through to the network (`mockFallback`), so a partial mock set is viable while a backend is
-half-built. The falsy env flag makes the handlers **inert** in production, but it does not remove
-them from the bundle: `env` is read from an injected global at runtime (`environments.md`), so
-esbuild cannot fold the branch away. Keeping fixtures out of the shipped bundle is therefore the
-thunk's job — `mock` also accepts a function (`() => import('./mocks.js')`), which esbuild splits
-into a chunk that is never fetched when mocking is off. Dropping the dead branch outright waits on
-an `env` substitution layer (`todo/env-build-time-substitution.md`). **Mocks answer with a real
-`Response` fed into the same pipeline** — a mocked `503` retries, a mocked `latency` drives the
-spinner, and mock and network paths cannot drift.
+**The client knows nothing about mocks.** Running with no backend is a dev-server capability
+(`dev-server-mocks.md`): mock handlers live in `*.mock.js` files outside the app and answer from the
+service worker, so what reaches the client is an ordinary `Response` over an ordinary `fetch`.
+Nothing is configured on the client, nothing is branched on in app code, and nothing about mocking
+travels in a production bundle — which also means a mocked `503` retries and a mocked latency drives
+the spinner, not by design but because the client cannot tell the difference.
 
 **Request state is state, not a new mechanism.** Each client exposes read-only, state-shaped
 `pending` (the number of calls in flight) and `lastError`, so a `computed` over `api.pending` binds
@@ -140,12 +132,9 @@ costs one name and every other call costs nothing.
 
 ## Consequences
 
-- An app configures its network layer once and calls it. Retry, timeout and mocking are declarative
-  options rather than code each app rewrites, and the sharp cases (a retried `POST`, a timeout that
-  does not abort) are decided by imp's defaults.
-- Backend-less development is a flag, not a branch: `imp start --env mock`. The cost is that route
-  patterns are strings matched against the path as written at the call site — a hook that rewrites
-  the URL does not change which mock answers.
+- An app configures its network layer once and calls it. Retry and timeout are declarative options
+  rather than code each app rewrites, and the sharp cases (a retried `POST`, a timeout that does not
+  abort) are decided by imp's defaults.
 - Everything an app might want to intercept is reachable, so imp does not need an option per
   concern; the cost is that hooks are ordinary functions with no sandbox — a hook that throws fails
   the call (which is also how a hook aborts one deliberately).
@@ -164,8 +153,8 @@ costs one name and every other call costs nothing.
   forgotten is one that will be. `close()` exists only on the client you asked to own, where
   forgetting it is a decision you made rather than a default you inherited.
 - A client can outlive the DOM, so imp works in a worker: `createHttpClient` needs no document, and
-  the request pipeline (retries, mocks, hooks) is DOM-free. What does not follow it there is the
-  reactive half of request state — `watch`/`text`/`view`/`each` need a mounting component, while
+  the request pipeline (retries, hooks) is DOM-free. What does not follow it there is the reactive
+  half of request state — `watch`/`text`/`view`/`each` need a mounting component, while
   `pending.get()` and `lastError.get()` work anywhere — which costs a worker nothing, having no DOM
   to bind to.
 - The cost is that a client is no longer importable: a plain helper module that used to

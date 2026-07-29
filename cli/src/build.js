@@ -182,14 +182,17 @@ function replaceInlineScripts(html, inlineOutputs) {
   })
 }
 
-async function copyStaticFiles({ root, outdir, skipFiles, written }) {
-  const skippedDirectories = new Set(['.git', 'node_modules'])
+async function copyStaticFiles({ root, outdir, skipFiles, skipDirectories, written }) {
+  const skippedDirectories = new Set(['.git', 'node_modules', '.imp'])
   const skippedRootFiles = new Set(['imp.json', 'imp.lock'])
   const copy = async (directory, prefix) => {
     for await (const entry of Deno.readDir(directory)) {
       const path = join(directory, entry.name)
       if (entry.isDirectory) {
-        if (skippedDirectories.has(entry.name) || normalize(path) === normalize(outdir)) continue
+        if (
+          skippedDirectories.has(entry.name) || normalize(path) === normalize(outdir) ||
+          skipDirectories.has(normalize(path))
+        ) continue
         await copy(path, `${prefix}${entry.name}/`)
       } else if (entry.isFile) {
         if (!prefix && skippedRootFiles.has(entry.name)) continue
@@ -298,12 +301,14 @@ export async function build(
   for (const envFile of Object.values(imp.environments ?? {})) {
     skipFiles.add(normalize(resolve(root, envFile)))
   }
+  const mocksDirectory = imp.mocks ? normalize(resolve(root, imp.mocks)) : null
+  const skipDirectories = new Set(mocksDirectory ? [mocksDirectory] : [])
   if (isHtmlEntry) {
     let builtHtml = replaceInlineScripts(html, inlineOutputs)
     const envTag = envInjectionScript(resolvedEnv)
     if (envTag) builtHtml = injectHead(builtHtml, envTag)
     skipFiles.add(normalize(entryPath))
-    await copyStaticFiles({ root, outdir: outdirPath, skipFiles, written })
+    await copyStaticFiles({ root, outdir: outdirPath, skipFiles, skipDirectories, written })
     if (pwa) {
       for (const icon of await renderIconSet({ root, pwa: impPwa })) {
         const path = join(outdirPath, icon.file)
@@ -345,6 +350,9 @@ export async function build(
   }
 
   console.log(`built ${entryName} → ${relative(Deno.cwd(), outdirPath) || '.'}/`)
+  if (mocksDirectory && isHtmlEntry) {
+    console.log(`  ${asPosix(relative(root, mocksDirectory))}/ left out — mocks serve in imp start`)
+  }
   if (pwa) {
     console.log('  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker')
     console.log('  installable — name, 192 + 512 icons, display, start_url all present')

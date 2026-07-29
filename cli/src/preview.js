@@ -390,7 +390,7 @@ export function createPreviewHandler(
 }
 
 export async function preview(
-  { root, paths = [], port = null, env = null, list = false, json = false } = {},
+  { root, paths = [], port = null, env = null, list = false, json = false, mocks = null } = {},
 ) {
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
@@ -414,7 +414,7 @@ export async function preview(
 
   const themes = await resolvePreviewThemes(root, imp.preview?.themes ?? [])
   const translations = await resolvePreviewTranslations(root, imp.preview?.translations ?? {})
-  const app = await loadApp(resolve(root, 'index.html'), { envAlias: env })
+  const app = await loadApp(resolve(root, 'index.html'), { envAlias: env, mocks })
   const listenPort = port ?? DEFAULT_PREVIEW_PORT
   const clients = new Set()
   const bundles = new Map()

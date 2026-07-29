@@ -3,7 +3,7 @@
 A configured HTTP client, so your app talks to its backend without hand-rolling `fetch` wrappers.
 You describe the network layer once — base URL, headers, retries, timeouts — and call it everywhere.
 Loading and error state come with it, ready to bind to the DOM, and the whole app can run against
-mock responses with no backend at all.
+[mock responses](cli.md#mock-responses--mockjs) with no backend at all.
 
 ```js
 import { component } from 'imp'
@@ -61,7 +61,8 @@ const profile = component('user-profile', {
   and overridden on a single call.
 - **Requests and responses are plain data** — `{ method, url, headers, body, signal, meta }` in,
   `{ status, statusText, ok, url, method, headers, body }` out, with header names lower-cased. That
-  is what interceptors read and rewrite.
+  is what interceptors read and rewrite. An interceptor may be an `async` function, so it can await
+  work — refreshing a token, reading from storage — before the call continues.
 
 ## Where a client lives
 
@@ -210,8 +211,8 @@ await api.get('/users') // x-request-id: 2f5a3c1e-9d84-4a17-b0f2-6c1de0b3a7e4
 - **An id you set yourself wins.** Put the header in the client's `headers` or the call's and imp
   leaves it alone, which is how you carry an id you already have — one a server-rendered page handed
   you, or a trace id from elsewhere in your system.
-- **Interceptors and mocks see it** like any other header, so `onRequest` can log it and a mock
-  handler can echo it back.
+- **Interceptors and mock handlers see it** like any other header, so `onRequest` can log it and a
+  mock can echo it back.
 
 ## When a call fails
 
@@ -249,13 +250,27 @@ const api = initHttpClient('myapp.api', {
 - **`attempts`** counts total tries, not extra ones (`3` means at most three requests). `retry: 3`
   is shorthand for `{ attempts: 3 }`.
 - **`backoff`** is `'exponential'` (doubling from `delay`) or `'fixed'`, capped by `maxDelay` (30
-  seconds). Jitter spreads retries out so a recovering server is not hit by a synchronized wave —
-  turn it off with `jitter: false` when you want exact timing in a test.
+  seconds).
+- **`jitter`** is on by default and randomizes every wait to somewhere between half the computed
+  backoff and all of it — a `delay` of `300` waits 150–300 ms before the second attempt, 300–600 ms
+  before the third.
+
+  It exists because an outage is rarely yours alone. When a backend goes down for a few seconds,
+  every browser talking to it fails at roughly the same instant, and without jitter every one of
+  them retries on exactly the same schedule: a wave at 300 ms, another at 600 ms, another at 1.2 s.
+  The server comes back up into a synchronized spike — the "thundering herd" — and falls over again,
+  which re-syncs everyone for the next round. Randomizing each client's wait smears that spike into
+  a trickle the recovering server can absorb, and the more clients share the failure (a deploy, a
+  rate limit, a dropped connection) the more it matters. The same applies within one page: several
+  components that failed on mount will otherwise retry in lockstep.
+
+  Turn it off with `jitter: false` when you want exact, reproducible timing — a test asserting
+  _when_ a retry fires, or a measurement where the randomness is just noise.
 - **`retryOn`** is a list of statuses, or a function deciding from
   `{ status, error, attempt, request }`. Left out, imp retries `408`, `429`, `500`, `502`, `503`,
   `504`, plus network failures and timeouts.
 - **`Retry-After`** on a `429` or `503` is honoured over the computed backoff, in seconds or as a
-  date.
+  date. It is used as given — no jitter — since the server has named the moment it wants you back.
 - **Only idempotent verbs retry.** `get`, `head`, `put`, and `delete` follow the client's policy;
   `post` and `patch` are sent once unless that call passes `retry` itself:
 
@@ -334,49 +349,26 @@ const api = initHttpClient('myapp.api', {
 
 ## Running without a backend
 
-A client can answer from **mock handlers**, so the UI runs before (or without) its backend. The
-handlers are code; whether they are used is configuration — an
-[environment](cli.md#environments--per-target-config) value:
+Nothing on the client. You describe mock answers in `*.mock.js` files and point `imp.json` at the
+folder holding them; `imp start` answers matching requests itself:
 
 ```js
-import { initHttpClient, mock } from 'imp/http'
-
-const api = initHttpClient('myapp.api', {
-  baseUrl: env.API_URL,
-  mock: env.MOCK && {
-    'GET /users': () => [{ id: 'u1', name: 'Ada' }],
-    'GET /users/:id': ({ params }) => ({ id: params.id, name: 'Ada' }),
-    'POST /users': ({ body }) => mock.response({ id: 'new', ...body }, { status: 201 }),
-    'GET /flaky': () => mock.error(503),
-    'GET /slow': () => mock.response([], { latency: 1500 }),
+// mocks/users.mock.js
+export const mocks = [
+  {
+    match: (request) => request.method === 'GET' && request.path === '/api/users',
+    delay: 800,
+    handler: () => ({ status: 200, body: [{ id: 'u1', name: 'Ada' }] }),
   },
-})
+]
 ```
 
-With `"mock": "env/mock.json"` in your `imp.json` environments and `MOCK: true` in that file,
-`imp start --env mock` runs the whole app against the handlers. No source changes, no branches in
-your components.
-
-- **Routes** read `'METHOD /path'`, with `:name` for a parameter and `*` for the rest of a path.
-  They match the path you call, so they read exactly like the call sites.
-- **Handlers** receive `{ params, query, body, headers, method, url }` — `body` arrives parsed when
-  it was sent as JSON — and return the response body, a `mock.response` (with `status`, `headers`
-  and `latency`), a `mock.error(status, body)`, or a `Response` of your own.
-- **Unmatched requests 404** by default, so a missing route is obvious. `mockFallback: 'network'`
-  lets them through to the real backend instead, which is how you mock the half of an API that does
-  not exist yet.
-- **Mocks take the same path as the network.** A mocked `503` retries, a mocked `latency` keeps the
-  spinner up, and a mocked response passes through your interceptors — mock and real behave the same
-  because they _are_ the same code path.
-- **Mocks stay asleep in production.** `env.MOCK` is falsy there, so the client never consults a
-  handler. The map itself still travels in the bundle, though — environment values are read when the
-  page loads, not baked in at build time, so the bundler cannot tell the branch is dead. To keep
-  fixtures out of the bundle, pass a function instead of a map: imp only calls it when mocking is
-  on, and `imp build` puts the module in a chunk of its own that is never fetched otherwise.
-
-  ```js
-  mock: env.MOCK && (() => import('./mocks.js'))
-  ```
+Your client keeps its real `baseUrl` and your components keep their real calls — nothing in your
+source knows about it, and nothing about mocking ships. Which mode a run is in is decided when you
+start the server (`imp start --mock`, `imp start --no-mock`, or the default in your `imp.json`).
+Because the answers arrive as ordinary responses, everything on this page still applies to them: a
+mocked `503` retries, a `delay` keeps `pending` up, and your interceptors run. See
+**[Mock responses](cli.md#mock-responses--mockjs)** for the full format.
 
 ## Request state
 
@@ -407,9 +399,9 @@ const status = component('api-status', {
 For one spinner on one request, name that call:
 
 ```js
-await api.get('/users', { track: 'users.list' })
+await api.patch(`/users/${id}`, { body: changes, track: 'users.save' })
 
-const { pending, lastError } = api.tracked('users.list')
+const { pending, lastError } = api.tracked('users.save')
 ```
 
 `tracked` returns the same pair for that name; untracked calls cost nothing.
@@ -457,11 +449,11 @@ A client is owned by a component, so a test mounts a small host to initialize it
 one-liner works for every test in the file, and removing the host from the DOM is how you test that
 unmounting cancels what was in flight.
 
-A client configured with `mock` handlers needs no `fetch` stub at all — point the test at the same
-handler map your `--env mock` run uses.
+End-to-end specs run against the served app, so they get your `*.mock.js` files without a stub of
+any kind — see **[Mock responses](cli.md#mock-responses--mockjs)**.
 
 ## Debugging
 
-Set `IMP_LOG_LEVEL` to `debug` and the client traces itself in the console: which mock route
-answered, every retry with the delay before it, and where a client was resolved from. See
-**[Logging](logging.md)**.
+Set `IMP_LOG_LEVEL` to `debug` and the client traces itself in the console: every retry with the
+delay before it, and where a client was resolved from. Mocked answers are reported in the terminal
+by the file that produced them. See **[Logging](logging.md)**.

@@ -1,6 +1,16 @@
-import { basename, dirname, extname, fromFileUrl, join, normalize, resolve } from '@std/path'
-import { CLIENT_JS, SERVICE_WORKER_JS } from './client.js'
-import { loadImpConfig } from './config.js'
+import {
+  basename,
+  dirname,
+  extname,
+  fromFileUrl,
+  join,
+  normalize,
+  relative,
+  resolve,
+} from '@std/path'
+import { clientScript, serviceWorkerScript } from './client.js'
+import { loadImpConfig, mocksSetting } from './config.js'
+import { createMockBundler } from './mocks.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { dim, green, red } from './colors.js'
 import { addLogSink, logger } from './logger.js'
@@ -43,7 +53,8 @@ function printEntry(entry) {
       : entry.status >= 400
       ? red(entry.status)
       : green(entry.status)
-    logger.http(`${entry.method} ${entry.url} → ${status} ${dim(entry.ms + 'ms')}`)
+    const from = entry.mock ? dim(` (mock: ${entry.mock})`) : ''
+    logger.http(`${entry.method} ${entry.url} → ${status} ${dim(entry.ms + 'ms')}${from}`)
   }
 }
 
@@ -65,7 +76,7 @@ const impSubpathImports = () =>
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
-function buildHeadInjection(dependencies, pwa, env) {
+function buildHeadInjection(dependencies, pwa, env, mocks) {
   const importMap = {
     imports: {
       imp: '/@imp/imp.js',
@@ -81,9 +92,9 @@ function buildHeadInjection(dependencies, pwa, env) {
     })
     : ''
   const envTag = envInjectionScript(env)
-  return `<script>${CLIENT_JS}</script>\n${envTag ? envTag + '\n' : ''}<script type="importmap">${
-    JSON.stringify(importMap)
-  }</script>${pwaTags}`
+  return `<script>${clientScript({ mocks })}</script>\n${
+    envTag ? envTag + '\n' : ''
+  }<script type="importmap">${JSON.stringify(importMap)}</script>${pwaTags}`
 }
 
 export function injectImp(html, headInjection) {
@@ -126,14 +137,25 @@ async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
   return new Response(bytes, { headers: { 'content-type': type } })
 }
 
-export async function loadApp(entryPath, { envAlias = null } = {}) {
+export async function loadApp(entryPath, { envAlias = null, mocks = null } = {}) {
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
   const pwa = imp.pwa ?? null
   const env = await resolveEnvironment({ root, config: imp, requestedAlias: envAlias })
-  const headInjection = buildHeadInjection(dependencies, pwa, env)
+  const declaredMocks = mocksSetting(imp)
+  const mockingOn = Boolean(declaredMocks) && (mocks ?? declaredMocks.enabled)
+  const mocksDirectory = mockingOn ? resolve(root, declaredMocks.folder) : null
+  const headInjection = buildHeadInjection(dependencies, pwa, env, mockingOn)
+  const buildMocks = mocksDirectory
+    ? createMockBundler({ root, directory: mocksDirectory, dependencies })
+    : null
+  if (declaredMocks && !mockingOn) {
+    logger.info(
+      `mocks — ${declaredMocks.folder}/ is declared but off for this run; pass --mock to serve it`,
+    )
+  }
   const maxLogEntries = imp.maxLogEntries ?? DEFAULT_MAX_LOG_ENTRIES
   const devServerPort = imp.devServerPort ?? null
   const missingDependencies = []
@@ -144,11 +166,42 @@ export async function loadApp(entryPath, { envAlias = null } = {}) {
       missingDependencies.push(alias)
     }
   }
-  return { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries, devServerPort }
+  return {
+    root,
+    entryName,
+    headInjection,
+    missingDependencies,
+    pwa,
+    maxLogEntries,
+    devServerPort,
+    mocksDirectory,
+    buildMocks,
+  }
+}
+
+export function reportMocks(state, { root, directory }) {
+  if (!state.changed) return
+  const where = relative(root, directory).replaceAll('\\', '/')
+  if (state.problem) {
+    logger.error(`mocks — ${state.problem}`)
+  } else if (state.files.length) {
+    logger.info(`mocks — ${state.files.length} file(s) from ${where}/ serving through the browser`)
+  } else {
+    logger.warn(`mocks — no *.mock.js files under ${where}/`)
+  }
 }
 
 export function createRequestHandler(
-  { root, entryName, headInjection, clients, pwa = null, historyFallback = true },
+  {
+    root,
+    entryName,
+    headInjection,
+    clients,
+    pwa = null,
+    historyFallback = true,
+    mocksDirectory = null,
+    buildMocks = null,
+  },
 ) {
   let iconSet = null
   const devIcons = () => (iconSet ??= renderIconSet({ root, pwa }))
@@ -199,7 +252,13 @@ export function createRequestHandler(
     }
 
     if (url.pathname === '/@imp/sw.js') {
-      return new Response(SERVICE_WORKER_JS, {
+      let mockBundle = ''
+      if (buildMocks) {
+        const state = await buildMocks()
+        reportMocks(state, { root, directory: mocksDirectory })
+        mockBundle = state.source
+      }
+      return new Response(serviceWorkerScript({ mockBundle }), {
         headers: {
           'content-type': CONTENT_TYPES['.js'],
           'service-worker-allowed': '/',
@@ -254,7 +313,7 @@ export function watchForChanges(root, onChange) {
   })()
 }
 
-export async function start({ entry = 'index.html', port = null, env = null } = {}) {
+export async function start({ entry = 'index.html', port = null, env = null, mocks = null } = {}) {
   const entryPath = resolve(entry)
   let entryStat
   try {
@@ -268,11 +327,17 @@ export async function start({ entry = 'index.html', port = null, env = null } = 
     Deno.exit(1)
   }
 
-  const { root, entryName, headInjection, missingDependencies, pwa, maxLogEntries, devServerPort } =
-    await loadApp(
-      entryPath,
-      { envAlias: env },
-    )
+  const {
+    root,
+    entryName,
+    headInjection,
+    missingDependencies,
+    pwa,
+    maxLogEntries,
+    devServerPort,
+    mocksDirectory,
+    buildMocks,
+  } = await loadApp(entryPath, { envAlias: env, mocks })
   const listenPort = port ?? devServerPort ?? DEFAULT_DEV_SERVER_PORT
   const clients = new Set()
 
@@ -283,21 +348,34 @@ export async function start({ entry = 'index.html', port = null, env = null } = 
     logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
   }
 
+  if (buildMocks) reportMocks(await buildMocks(), { root, directory: mocksDirectory })
+
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, () => {
     logger.debug('change detected → reload')
     broadcast('reload')
   })
 
-  const server = Deno.serve({
-    port: listenPort,
-    onListen: ({ port }) => {
-      logger.info(`imp start serving ${entryName} from ${root}`)
-      console.log(`  → http://localhost:${port}/`)
-      console.log(dim(`  logs → ${devLog.path}`))
-      console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
+  const server = Deno.serve(
+    {
+      port: listenPort,
+      onListen: ({ port }) => {
+        logger.info(`imp start serving ${entryName} from ${root}`)
+        console.log(`  → http://localhost:${port}/`)
+        console.log(dim(`  logs → ${devLog.path}`))
+        console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
+      },
     },
-  }, createRequestHandler({ root, entryName, headInjection, clients, pwa }))
+    createRequestHandler({
+      root,
+      entryName,
+      headInjection,
+      clients,
+      pwa,
+      mocksDirectory,
+      buildMocks,
+    }),
+  )
 
   try {
     await server.finished

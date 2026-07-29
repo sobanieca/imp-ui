@@ -1,0 +1,11 @@
+$ imp build  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] Path must be a string, received "{"folder":"mocks","enabled":true}"
+
+--- output files ---
+dist/app.js

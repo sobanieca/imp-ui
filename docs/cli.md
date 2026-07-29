@@ -43,10 +43,12 @@ Confirm the install with `imp --version`, which prints the version the binary ru
 
 ```
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
+          [--mock | --no-mock]        answer from the mocks folder, or from the real API
 imp build [file.html] [--outdir dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
 imp preview [path] [--port 4517]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
+            [--mock | --no-mock]
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
@@ -123,6 +125,10 @@ based on where you are.
 - **`environments`** — named configuration sets you select with `--env`, each mapping an alias to a
   JSON file of values. Lets the same source ship against a different API URL or feature flags per
   target without code edits. See **Environments** below.
+- **`mocks`** — where your `*.mock.js` files live, and whether they answer by default: both `folder`
+  and `enabled` are required, so a project always says outright which one it develops against.
+  `--mock` / `--no-mock` override `enabled` for a single run, and `imp build` never copies the
+  folder either way. See **Mock responses** under `imp start` below.
 - **`maxFileSize`** — the largest size, in bytes, any single committed file may reach before
   `imp lint` errors and `imp install` warns. Defaults to 200 kB (`204800`). See `imp lint` and
   `imp install` below.
@@ -289,6 +295,123 @@ directory are rejected.
 
 Internal endpoints (reserved, not part of your app): `/@imp/events` (reload stream), `/@imp/log`
 (telemetry sink), `/@imp/sw.js` (the service worker), and `/@imp/*` (library source).
+
+### Mock responses — `*.mock.js`
+
+Point `imp.json` at a folder and the dev server answers matching requests itself, so the app runs
+before — or entirely without — its backend:
+
+```json
+{
+  "mocks": { "folder": "mocks", "enabled": true }
+}
+```
+
+Both keys are required: `folder` says where the files are, `enabled` says whether they answer by
+default. There is no way to declare mocks ambiguously — every project states which one it develops
+against, and every run can override it.
+
+Every `*.mock.js` file under that folder (nested folders included) exports a `mocks` array. Each
+entry decides what it answers with `match`, and answers with `handler`:
+
+```js
+// mocks/users.mock.js
+export const mocks = [
+  {
+    match: (request) => request.method === 'GET' && request.path === '/api/users',
+    delay: 800,
+    handler: () => ({
+      status: 200,
+      body: [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }],
+    }),
+  },
+  {
+    match: (request) => request.method === 'POST' && request.path === '/api/users',
+    handler: (request) => ({ status: 201, body: { id: 3, ...request.body } }),
+  },
+]
+```
+
+Split them however your app is split — one file per resource, a folder per feature — and start the
+server as usual. Nothing in your app changes: your client keeps its real base URL, your components
+keep their real calls, and `imp build` leaves the folder out of production entirely.
+
+- **`match(request)`** returns true when this entry should answer. The request it receives is
+  `{ method, url, path, query, headers, body }` — `path` and `query` are the URL's, `body` arrives
+  parsed when it was sent as JSON. **The first match wins**, in file-path order.
+- **`handler(request)`** receives the same object and returns `{ status, headers, body }`. `status`
+  defaults to `200`, and a `body` that is not a string is sent as JSON. Return a `Response` of your
+  own when you need full control. Handlers may be async.
+- **`delay`** is milliseconds of simulated latency, so you can see your spinners work.
+- **Unmatched requests go to the real network**, which is how you mock the half of an API that does
+  not exist yet while the rest keeps hitting your backend.
+- **Throwing simulates a failed connection.** The request fails in the page exactly as it would with
+  the server unreachable — not a `500`, an actual network error.
+- **Mock files are ordinary modules.** They can import shared fixtures and any dependency you have
+  installed, and each file is evaluated once, so a closure is how a mock keeps state between
+  requests:
+
+  ```js
+  const flaky = () => {
+    let calls = 0
+    return () => {
+      calls++
+      if (calls % 2 === 0) throw new Error(`simulated network error on attempt ${calls}`)
+      return { status: 200, body: { message: 'Success!' } }
+    }
+  }
+
+  export const mocks = [
+    { match: (request) => request.path === '/api/flaky', delay: 300, handler: flaky() },
+  ]
+  ```
+
+#### Turning mocks on and off
+
+A project usually has both days: one against fixtures, one against the running backend. Which one a
+run gets is decided by `imp.json`, and overridden per run by a flag:
+
+```
+imp start              # what imp.json says
+imp start --mock       # this run answers from the mocks folder
+imp start --no-mock    # this run goes to the real API
+```
+
+`"enabled": true` is the setting while the backend does not exist yet — plain `imp start` develops
+against fixtures. Once there is a backend to work with, keep the files and flip the default, so
+`imp start` is a real run and mocking is the thing you ask for:
+
+```json
+{
+  "mocks": { "folder": "mocks", "enabled": false }
+}
+```
+
+The same two flags work on **`imp preview`** (fixtures for previewed components) and **`imp test`**
+(fixtures for your e2e specs), so `imp test --e2e --mock` runs the suite with no backend at all.
+When mocks are on, the server says so as it starts:
+
+```
+[INFO] mocks — 2 file(s) from mocks/ serving through the browser
+```
+
+Mocked answers are real responses arriving over the network layer of the browser, so everything
+downstream behaves normally: an [HTTP client](http.md) retries a mocked `503`, a `delay` keeps
+`pending` up, and your interceptors run. Every mocked request is reported in the terminal like any
+other, tagged with the file and entry that answered it:
+
+```
+[HTTP] GET http://localhost:4507/api/users → 200 802ms (mock: mocks/users.mock.js #1)
+```
+
+Editing a mock file reloads the browser like any other change. A file that cannot be built is
+reported in the terminal with its line, and the rest of the app keeps running.
+
+Mocking works through a service worker that `imp start` registers for you, which means it covers
+_every_ request the page makes — `fetch`, `XMLHttpRequest`, a third-party SDK — not just the ones
+imp issues. It also means mock code runs outside the page: there is no `document` and no access to
+your app's state in a `*.mock.js` file. `imp preview` and the e2e server used by `imp test` are the
+same dev server, so your mocks apply there too.
 
 ### Dependencies
 
@@ -529,7 +652,7 @@ recording, and the CI parallelization pattern.
 ## `imp preview`
 
 ```
-imp preview [path] [--port 4517] [--env <name>]
+imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
 ```
 
