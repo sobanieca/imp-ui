@@ -75,151 +75,23 @@ at `imp skill` — the manuals imp carries for exactly that reader.
 
 ## Configuration — `imp.json`
 
-The only config file you author is `imp.json` at your project root; it is optional — every command
-works without it.
+The only config file you author is `imp.json` at your project root, and it is optional — every
+command works without it. It holds your imp version pin, your vendored dependencies, per-command
+options (`fmt`, `lint`, `test`, `preview`, `pwa`), and the named environments you select with
+`--env`:
 
 ```json
 {
   "version": "1.2.3",
   "dependencies": { "mitt": "npm:mitt@3.0.1" },
+  "devServerPort": 9085,
   "fmt": { "lineWidth": 100 }
 }
 ```
 
-You can annotate the file freely: `//` line and `/* … */` block comments and trailing commas are
-accepted even though strict JSON forbids them. If you prefer, name the file `imp.jsonc` instead —
-imp looks for `imp.json` first and falls back to `imp.jsonc` in the same directory. Commands that
-edit the file for you (`imp install`, `imp uninstall`, and the version pin written by `imp update`)
-change only the keys they touch and leave your comments and formatting in place. When no config file
-exists yet, these commands create `imp.json`.
-
-Commands find the config by searching upward from the directory you run them in, stopping at your
-repository root, so they work from any subfolder of a project — and in a monorepo, each app folder
-carries its own `imp.json` (or `imp.jsonc`) and its own `dependencies/`, discovered independently
-based on where you are.
-
-- **`version`** — the exact imp version this project is built against. When set, any imp binary
-  transparently runs the project on that version, downloading it once if needed — so everyone
-  working on the project uses the same imp regardless of which one they installed. Set it with
-  `imp update`; see **[Pinning the imp version](#imp-update--pinning-the-imp-version)** below.
-- **`dependencies`** — the dependencies vendored into your project, one entry per package mapping a
-  bare import alias to the exact version installed. Written and updated by `imp install` /
-  `imp uninstall`; you normally never edit it by hand. Each alias is exposed to the browser through
-  the injected import map, so you write `import mitt from 'mitt'`. See
-  **[Managing dependencies](dependencies.md)**.
-- **`targetImpHost`** — set to `true` when what you build is meant to run inside another imp
-  application: `imp build` then keeps `imp` imports bare for that host to provide instead of
-  compiling its own copy in. See **Targeting an imp host** under `imp build` below.
-- **`fmt`** — formatting options for `imp fmt` (defaults listed under `imp fmt` below).
-- **`lint`** — extra lint configuration (`rules`, `exclude`); the imp rule set is always applied on
-  top.
-- **`test`** — testing options for `imp test` (`entry`, `browser`, `exclude`, and a `video` block
-  for recording e2e specs as GIFs). See **[Testing](testing.md)**.
-- **`preview`** — options for `imp preview`; `exclude` is an array of paths whose `*.preview.js`
-  files are left out of discovery, `themes` is an array of paths to your own theme modules to offer
-  in the preview theme switcher, and `translations` maps a language code to one of your translation
-  files to offer in the preview language switcher. See `imp preview` below.
-- **`pwa`** — describes your app as a Progressive Web App: `name` and `icon` (required), plus
-  optional `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and `scope`. It
-  drives the manifest and icons injected automatically in `imp start`, and the full offline PWA
-  emitted by `imp build --pwa`. See **Progressive Web App** under `imp build` below.
-- **`environments`** — named configuration sets you select with `--env`, each mapping an alias to a
-  JSON file of values. Lets the same source ship against a different API URL or feature flags per
-  target without code edits. See **Environments** below.
-- **`maxFileSize`** — the largest size, in bytes, any single committed file may reach before
-  `imp lint` errors and `imp install` warns. Defaults to 200 kB (`204800`). See `imp lint` and
-  `imp install` below.
-- **`maxFileSizeIgnore`** — an array of repo-relative paths exempt from `maxFileSize`; a file (or
-  everything under a listed folder) never triggers the size check.
-- **`maxLogEntries`** — how many of the most recent entries `imp start` keeps in its dev log file
-  (`.imp/dev.log`). Defaults to 4000; older entries roll off once the limit is reached. See
-  `imp start` below.
-- **`devServerPort`** — the port `imp start` listens on. Defaults to 4507; a `--port` flag on the
-  command line overrides it. See `imp start` below.
-
-That is the whole footprint: your repository contains your code, at most one `imp.json`, and the
-`dependencies/` folder holding your vendored dependencies — all of it source you commit. imp writes
-no lock file, no cache folder, and no generated config into your project; registry downloads are
-cached per-user, outside the project.
-
-Instead of a lock file, reproducibility comes from what is committed: `imp.json` pins exact versions
-(`npm:mitt@3.0.1`, never `npm:mitt@3`) and the committed bundle in `dependencies/` is the frozen
-result of resolving that pin. `imp lint` enforces the model — see the `exact-dependency-versions`
-rule under `imp lint`.
-
-### Environments — per-target config
-
-When the same app needs different configuration per target — a different API URL in dev and prod, a
-feature flag on in staging — declare named environments in `imp.json` and select one when you serve
-or build. Each alias points at a file holding that environment's values:
-
-```json
-{
-  "environments": {
-    "dev": "env/dev.json",
-    "prod": "env/prod.json",
-    "default": "env/dev.json"
-  }
-}
-```
-
-Each referenced file may be either JSON or a `.env` file. A JSON file is a flat object of string,
-number, and boolean values:
-
-```json
-{
-  "API_URL": "https://api.example.com",
-  "STRIPE_PUBLISHABLE_KEY": "$env.STRIPE_PUBLISHABLE_KEY",
-  "FEATURE_ANALYTICS": true
-}
-```
-
-A `.env` file (any path named `.env`, ending in `.env`, or starting with `.env.`) uses the familiar
-`KEY=VALUE` syntax, with `#` comments, an optional `export` prefix, and single- or double-quoted
-values. Every value in a `.env` file is a string:
-
-```
-API_URL=https://api.example.com
-STRIPE_PUBLISHABLE_KEY=$env.STRIPE_PUBLISHABLE_KEY
-# analytics stays a string here
-FEATURE_ANALYTICS=true
-```
-
-A value written as `$env.NAME` — in either format — is read from the shell environment when you
-serve or build; every other string is a literal. Referencing a shell variable that is not set stops
-the command with an error naming the environment, the key, and the missing variable — a
-half-configured build never starts. Keep files that hold `$env.` secrets or per-developer values out
-of the repo by adding them to `.gitignore` (a fresh `imp init` project already ignores `.env`
-files).
-
-Select an environment with `--env` on `imp start` or `imp build`:
-
-```
-imp start --env dev
-imp build --env prod
-```
-
-With no `--env`, imp uses an alias literally named `default` if you defined one, or the `IMP_ENV`
-shell variable if it is set (handy in CI, where `--env` always takes precedence over it); otherwise
-it serves and builds with no environment at all. An alias you never declared stops the command and
-lists the ones you did.
-
-Read the selected values in your app through the `env` object exported by imp — the same code works
-in development and production:
-
-```js
-import { env } from 'imp'
-
-fetch(`${env.API_URL}/users`)
-```
-
-`env` is a frozen object; it is empty when no environment was selected.
-
-**Environment values are not secret.** Everything you put in an environment ships to the browser and
-is fully readable by any visitor — `$env.` only keeps a value out of your repository, it does not
-make it private. Put only publishable keys and public configuration here (the same rule other
-frontend toolchains express with their `VITE_` / `NEXT_PUBLIC_` prefixes); never a server-side
-secret or a private API key.
+Every key, what reads it, and the environment files behind `--env` are covered in
+**[Configuration](config.md)**. The rest of this page describes the commands themselves and points
+at the keys each one honours.
 
 ## `imp start`
 
@@ -798,9 +670,14 @@ imp skill ./components/counter.js   one of your own components' skills
 ```
 
 imp assumes a lot of app code is written by an AI coding agent, and an agent cannot browse a
-documentation site while it works. `imp skill` prints imp's documentation — these very pages —
-straight out of the binary: offline, with no network call, and at the exact version of imp the
-project runs, so what the agent reads is what the project executes.
+documentation site while it works. `imp skill` prints a manual straight out of the binary: offline,
+with no network call, and at the exact version of imp the project runs, so what the agent reads is
+what the project executes.
+
+These manuals are written **for an agent**, not for you: they carry the same subjects as these pages
+— the call shapes, the prop and option tables, and the mistakes the API invites — stripped of the
+narrative a person reads a guide for. So `imp skill state` is not this documentation reflowed for a
+terminal; it is the short, mechanical version of it, and the two are written and updated together.
 
 With no argument it prints an **index**: one line per subject with a short summary, grouped into
 what you need to write an app (imports, rendering, components, state, routing, theming,
@@ -818,8 +695,9 @@ Subjects answer to the names you are most likely to have in hand already. The im
 (`imp skill imp/state`, `imp skill imp/std/button`), so does the plain subject (`state`,
 `rendering`, `button`), and so does a page name (`state.md`), all case-insensitively. An unknown
 subject prints the list of real ones to standard error and exits with code 1. Cross-references
-between manuals are printed as the command that fetches them — "Rendering (imp skill rendering)" —
-so an agent can always follow one manual to the next without guessing at a file path or a URL.
+between manuals are printed as the command that fetches them — "Rendering (imp skill rendering)",
+plus a `Related:` line at the foot of the page — so an agent can always follow one manual to the
+next without guessing at a file path or a URL.
 
 **Components are asked for by file.** `imp skill ./components/counter.js` prints the skill file
 sitting next to that module — `counter.skill.md` — and naming that file directly works too. It is

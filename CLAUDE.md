@@ -51,19 +51,39 @@ The docs will be published on a public site, so:
   it inline in plain language.
 - No maintainer notes or TODO markers in docs — planned work belongs in `todo/`.
 
-`docs/` has a second reader: every page ships inside the binary and is what `imp skill <subject>`
-prints for an AI agent (`adr/agent-skills.md`). So a page is also read as plain text in a terminal —
-keep it concrete and self-contained, and avoid anything that only works on a website. Adding a page
-means registering it as a subject in `cli/src/skill.js`; a test fails if the two ever disagree.
+Docs are for a person. The agent-facing text for the same subject lives in `skills/` — see below.
 
-## Skills (`*.skill.md`)
+## Agent skills (`skills/` and `*.skill.md`)
 
-Every component ships an agent-facing manual as a markdown file next to it — `button.js` →
-`button.skill.md` — and standard components register theirs in `cli/src/skill.js`, which a test
-enforces against the `imp/std` barrels. Keep a skill shorter and more mechanical than `docs/`: the
-import, the call shape, a prop table, the rules an agent gets wrong, one or two examples. Its first
-line is its summary, so start it with the component name. The same file is what `imp build` folds
-into a JS-entry bundle as `impSkill`, so it is the only place a component's skill is written.
+`skills/` is the corpus `imp skill <subject>` prints for an AI agent (`adr/agent-skills.md`). It is
+the **only** documentation compiled into the binary; `docs/` is the public site's source and is
+never read at runtime. One page per subject, registered in `cli/src/skill.js` with its summary,
+group and aliases; a test asserts the folder and the registry match exactly.
+
+The two corpora are **independent**. They serve different readers through different channels, so
+neither dictates the other's structure: a subject may be one skills page and part of a docs page, or
+the reverse, and an agent-only page with no docs counterpart is fine. Page names happen to line up
+today; nothing enforces that.
+
+A skill page is the same subject as its docs page, written for a different reader: an agent that
+needs to write correct code now and pays for every token it reads. So it is short and mechanical —
+the imports, the call shapes, API/prop/option tables, **the rules an agent gets wrong**, one worked
+example — and it drops the narrative, the rationale, and the reassurance a person reads a guide for.
+It is read as plain text in a terminal, so keep it self-contained; a link to a sibling page
+(`[state](state.md)`) is rewritten into `state (imp skill state)` when it prints, and every target
+is listed again on a `Related:` line at the foot of the page. Since the rewrite adds parentheses of
+its own, never wrap a link in yours: write `see [state](state.md)`, not `([state](state.md))`, which
+prints as the doubled `(state (imp skill state))`.
+
+Every component also ships an agent-facing manual next to it — `button.js` → `button.skill.md` — and
+standard components register theirs in `cli/src/skill.js`, which a test enforces against the
+`imp/std` barrels. Its first line is its summary, so start it with the component name. The same file
+is what `imp build` folds into a JS-entry bundle as `impSkill`, so it is the only place a
+component's skill is written.
+
+**Changing a feature means updating both audiences in the same change**: its `docs/` page for the
+reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check
+this — a page can be present and stale — so it is on whoever makes the change.
 
 ## After making changes
 

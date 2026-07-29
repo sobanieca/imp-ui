@@ -407,7 +407,8 @@ the cleanup and leaving the route runs it.
 ## Base path (serving under a sub-directory)
 
 If your app is served under a sub-path (say `https://example.com/app/`), set the **`IMP_BASEPATH`**
-environment value — the same way you set any other imp environment value (see the CLI docs):
+environment value — the same way you set any other imp environment value (see
+**[Configuration](config.md)**):
 
 ```json
 {

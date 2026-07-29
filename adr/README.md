@@ -77,7 +77,7 @@ Conventions:
 | [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios on a synthesized page      |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                     |
 | [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES        |
-| [agent-skills](agent-skills.md)                                       | imp skill: docs + *.skill.md sidecars as agent manuals         |
+| [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals      |
 | [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                 |
 | [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary            |
 | [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits    |

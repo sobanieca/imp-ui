@@ -27,11 +27,18 @@ WRITING AN APP
   logging         the built-in logger and the per-environment log level
 
 WORKING IN AN IMP PROJECT
-  cli             every command, imp.json configuration, the dev server and the production build
+  cli             every command, and which skill covers it
+  config          the imp.json file key by key, and the --env environment files
+  start           the dev server: injected imports, live reload and the .imp/dev.log to grep
+  build           the production build, JS entries for publishing, and the offline PWA output
+  preview         rendering components in isolation from a *.preview.js file
   testing         unit tests in-process and e2e specs against a real browser
   dependencies    vendoring packages into dependencies/ and importing them
   lint            the imp lint rules, what each one prevents, and how to apply fixes
   fmt             formatting every file type in the project with one command
+  resize          downscaling an oversized PNG or JPEG asset in place
+  skill           reading these manuals, and writing a *.skill.md for a component
+  update          pinning the imp version, pruning cached ones, and the license notices
 
 STANDARD COMPONENTS — imported from 'imp/std' · read: imp skill std/button
   std/button      button — the standard button, rendered as a real `<button>`

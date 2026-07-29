@@ -2,7 +2,7 @@ import { basename, dirname, join, relative, resolve } from '@std/path'
 import { VERSION } from './version.js'
 import { collectFiles } from './walk.js'
 
-const DOCS = new URL('../../docs/', import.meta.url)
+const SUBJECT_SKILLS = new URL('../../skills/', import.meta.url)
 const LIBRARY = new URL('../../lib/src/', import.meta.url)
 
 export const SKILL_SUFFIX = '.skill.md'
@@ -25,101 +25,150 @@ const NO_PROJECT_SKILLS =
 export const SKILLS = [
   {
     name: 'imports',
-    doc: 'imports.md',
+    file: 'imports.md',
     group: 'app',
     aliases: ['imp', 'specifiers'],
     summary: 'every bare specifier imp resolves, and what each one exports',
   },
   {
     name: 'rendering',
-    doc: 'rendering.md',
+    file: 'rendering.md',
     group: 'app',
     aliases: ['html', 'imp/html', 'elements'],
     summary: 'element factories, props objects, children, and mount',
   },
   {
     name: 'components',
-    doc: 'components.md',
+    file: 'components.md',
     group: 'app',
     aliases: ['component'],
     summary: 'custom elements with an onMount lifecycle: instance, styles, cleanup',
   },
   {
     name: 'state',
-    doc: 'state.md',
+    file: 'state.md',
     group: 'app',
     aliases: ['imp/state'],
     summary: 'named reactive state shared down the tree and bound straight to the DOM',
   },
   {
     name: 'routing',
-    doc: 'routing.md',
+    file: 'routing.md',
     group: 'app',
     aliases: ['router', 'imp/router'],
     summary: 'client-side routes as one plain-data table, with lazily loaded sections',
   },
   {
     name: 'std',
-    doc: 'std-components.md',
+    file: 'std-components.md',
     group: 'app',
     aliases: ['imp/std', 'std-components', 'imp/std/display'],
     summary: 'the built-in component library: button, heading, text, link, emptyState',
   },
   {
     name: 'theming',
-    doc: 'theming.md',
+    file: 'theming.md',
     group: 'app',
     aliases: ['theme', 'imp/theme', 'tokens'],
     summary: 'themes as plain token modules, applied at the entry point and swappable',
   },
   {
     name: 'i18n',
-    doc: 'i18n.md',
+    file: 'i18n.md',
     group: 'app',
     aliases: ['imp/i18n', 'translations'],
     summary: 't() lookups, per-language messages, and the lang attribute that drives them',
   },
   {
     name: 'logging',
-    doc: 'logging.md',
+    file: 'logging.md',
     group: 'app',
     aliases: ['log', 'imp/log', 'logger'],
     summary: 'the built-in logger and the per-environment log level',
   },
   {
     name: 'cli',
-    doc: 'cli.md',
+    file: 'cli.md',
     group: 'toolkit',
-    aliases: ['commands', 'config', 'imp.json', 'start', 'build', 'preview'],
-    summary: 'every command, imp.json configuration, the dev server and the production build',
+    aliases: ['commands', 'help'],
+    summary: 'every command, and which skill covers it',
+  },
+  {
+    name: 'config',
+    file: 'config.md',
+    group: 'toolkit',
+    aliases: ['imp.json', 'imp.jsonc', 'environments', 'env'],
+    summary: 'the imp.json file key by key, and the --env environment files',
+  },
+  {
+    name: 'start',
+    file: 'start.md',
+    group: 'toolkit',
+    aliases: ['serve', 'dev', 'dev-server', 'dev.log'],
+    summary: 'the dev server: injected imports, live reload and the .imp/dev.log to grep',
+  },
+  {
+    name: 'build',
+    file: 'build.md',
+    group: 'toolkit',
+    aliases: ['bundle', 'pwa', 'dist', 'targetimphost'],
+    summary: 'the production build, JS entries for publishing, and the offline PWA output',
+  },
+  {
+    name: 'preview',
+    file: 'preview.md',
+    group: 'toolkit',
+    aliases: ['previews', 'preview.js', 'imp/preview', 'scenarios'],
+    summary: 'rendering components in isolation from a *.preview.js file',
   },
   {
     name: 'testing',
-    doc: 'testing.md',
+    file: 'testing.md',
     group: 'toolkit',
     aliases: ['test', 'imp/test'],
     summary: 'unit tests in-process and e2e specs against a real browser',
   },
   {
     name: 'dependencies',
-    doc: 'dependencies.md',
+    file: 'dependencies.md',
     group: 'toolkit',
     aliases: ['deps', 'install', 'uninstall'],
     summary: 'vendoring packages into dependencies/ and importing them',
   },
   {
     name: 'lint',
-    doc: 'lint.md',
+    file: 'lint.md',
     group: 'toolkit',
     aliases: ['rules'],
     summary: 'the imp lint rules, what each one prevents, and how to apply fixes',
   },
   {
     name: 'fmt',
-    doc: 'fmt.md',
+    file: 'fmt.md',
     group: 'toolkit',
     aliases: ['format', 'formatting'],
     summary: 'formatting every file type in the project with one command',
+  },
+  {
+    name: 'resize',
+    file: 'resize.md',
+    group: 'toolkit',
+    aliases: ['image', 'images'],
+    summary: 'downscaling an oversized PNG or JPEG asset in place',
+  },
+  {
+    name: 'skill',
+    file: 'skill.md',
+    group: 'toolkit',
+    aliases: ['skills', 'skill.md'],
+    summary: 'reading these manuals, and writing a *.skill.md for a component',
+  },
+  {
+    name: 'update',
+    file: 'update.md',
+    group: 'toolkit',
+    aliases: ['version', 'pin', 'prune', 'licenses'],
+    summary: 'pinning the imp version, pruning cached ones, and the license notices',
   },
 ]
 
@@ -142,13 +191,13 @@ const componentSubjects = COMPONENT_SKILLS.map((component) => {
   }
 })
 
-const docSubjects = SKILLS.map((skill) => ({
+const subjectSkills = SKILLS.map((skill) => ({
   ...skill,
-  kind: 'doc',
-  url: new URL(skill.doc, DOCS),
+  kind: 'subject',
+  url: new URL(skill.file, SUBJECT_SKILLS),
 }))
 
-const SUBJECTS = [...docSubjects, ...componentSubjects]
+const SUBJECTS = [...subjectSkills, ...componentSubjects]
 
 const normalize = (subject) =>
   subject.trim().toLowerCase().replace(/^\.?\//, '').replace(/\.md$/, '')
@@ -158,11 +207,11 @@ for (const subject of SUBJECTS) {
   for (const name of [subject.name, ...subject.aliases]) byName.set(normalize(name), subject)
 }
 
-const nameByDoc = new Map(SKILLS.map((skill) => [skill.doc, skill.name]))
+const nameByFile = new Map(SKILLS.map((skill) => [skill.file, skill.name]))
 
 export const findSkill = (subject) => byName.get(normalize(subject)) ?? null
 
-const DOC_LINK = /\[([^\]]+)\]\(([\w-]+)\.md(?:#[^)]*)?\)/g
+const SUBJECT_LINK = /\[([^\]]+)\]\(([\w-]+)\.md(?:#[^)]*)?\)/g
 const FENCE = /^\s*(`{3,})(.*)$/
 const TABLE_ROW = /^\s*\|.*\|\s*$/
 const SEPARATOR_CELL = /^:?-+:?$/
@@ -211,8 +260,8 @@ function retargetLinks(text) {
   const fenced = fencedLines(original)
   const lines = original.map((line, index) => {
     if (fenced[index]) return line
-    return line.replaceAll(DOC_LINK, (match, label, file) => {
-      const name = nameByDoc.get(`${file}.md`)
+    return line.replaceAll(SUBJECT_LINK, (match, label, file) => {
+      const name = nameByFile.get(`${file}.md`)
       if (!name) return match
       related.add(name)
       return `${label} (imp skill ${name})`

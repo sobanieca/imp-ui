@@ -1483,20 +1483,20 @@ Deno.test('imp skill', async (t) => {
     if (!condition) throw new Error(message)
   }
 
-  await t.step('every docs page is registered as a subject', async () => {
+  await t.step('every skills page is registered as a subject', async () => {
     const pages = []
-    for await (const entry of Deno.readDir(join(REPO_ROOT, 'docs'))) {
+    for await (const entry of Deno.readDir(join(REPO_ROOT, 'skills'))) {
       if (entry.isFile && entry.name.endsWith('.md')) pages.push(entry.name)
     }
-    const registered = SKILLS.map((skill) => skill.doc)
+    const registered = SKILLS.map((skill) => skill.file)
     for (const page of pages) {
       check(
         registered.includes(page),
-        `docs/${page} has no subject in cli/src/skill.js — every docs page is an imp skill`,
+        `skills/${page} has no subject in cli/src/skill.js — every skills page is an imp skill`,
       )
     }
-    for (const doc of registered) {
-      check(pages.includes(doc), `subject points at a missing docs/${doc}`)
+    for (const file of registered) {
+      check(pages.includes(file), `subject points at a missing skills/${file}`)
     }
   })
 
@@ -1513,7 +1513,7 @@ Deno.test('imp skill', async (t) => {
       const danglingLink = stdout.match(/\]\([\w-]+\.md[^)]*\)/)
       check(
         danglingLink === null,
-        `imp skill ${skill.name} still links to a docs file: ${danglingLink?.[0]}`,
+        `imp skill ${skill.name} still links to a markdown file: ${danglingLink?.[0]}`,
       )
     }
   })
