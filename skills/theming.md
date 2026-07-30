@@ -62,7 +62,7 @@ applyTheme({
 | Typography | `font-family`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal` |
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                     |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`                                                                                |
-| Metrics    | `space-1` … `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `border-width`, `focus-ring-width`, `duration-fast`, `disabled-opacity`                                                                     |
+| Metrics    | `space-1` … `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `border-width`, `focus-ring-width`, `duration-fast`, `disabled-opacity`, `container-sm` … `container-xl`                                    |
 
 `color-on-primary` / `color-on-danger` are the text colors that sit **on** those backgrounds.
 `color-secondary` is the muted tone. `border-width` and `focus-ring-width` exist so contrast is not

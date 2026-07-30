@@ -100,6 +100,16 @@ component's skill is written.
 reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check
 this — a page can be present and stale — so it is on whoever makes the change.
 
+## Running the tests
+
+**Always go through the `deno task` scripts — never invoke the compiled `./imp` binary directly to
+run the library tests.** `deno task test:lib` and `test:lib:e2e` run the CLI from source
+(`cli/src/main.js`), which resolves the library straight out of `lib/src`, so they can never test
+stale code. Running `../../imp test` from `lib/test` uses the **compiled** binary with the library
+baked in, so every edit to `lib/src` is invisible until `deno task compile` runs again — a green run
+there proves nothing about the code you just wrote. `deno task test:cli` compiles first on purpose,
+because the compiled binary is what it tests.
+
 ## After making changes
 
 After completing a batch of code changes, always run `deno lint` and `deno fmt` and address any

@@ -8,8 +8,8 @@
     "test": "deno task test:lib && deno task test:lib:e2e && deno task test:cli",
     "test:cli": "deno task compile && deno test -A cli/test/cli_test.js",
     "test:cli:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update",
-    "test:lib": "deno task compile && cd lib/test && ../../imp test --unit",
-    "test:lib:e2e": "deno task compile && cd lib/test && ../../imp test --e2e"
+    "test:lib": "cd lib/test && deno run -A ../../cli/src/main.js test --unit",
+    "test:lib:e2e": "cd lib/test && deno run -A ../../cli/src/main.js test --e2e"
   },
   "imports": {
     "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",

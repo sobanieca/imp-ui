@@ -65,7 +65,9 @@ imports the same surface an app does.
   when its first consumer lands. Styling uses **logical properties only**.
 - **No standard component carries an outer margin.** Spacing between components belongs to the
   layout parents of the `layout` group, so an app never fights collapsing margins or per-component
-  spacing props.
+  spacing props. That group also fixes how a prop varies by viewport, for the whole library: every
+  layout-affecting prop takes a per-breakpoint object as readily as a single value
+  (`responsive-layout-props.md`).
 - **Every word a component shows goes through `t()` under an `imp.` key, bound through `lang`**
   (`lang.text(() => t('imp.state.empty'))` rather than a bare `t()`), so a language switch
   re-localizes it in place. The component **declares its own English wording** for the keys it reads

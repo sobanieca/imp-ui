@@ -52,6 +52,8 @@ Conventions:
 | ADR                                                         | Decision                                                                         |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md) | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props |
+| [responsive-layout-props](responsive-layout-props.md)       | Per-breakpoint prop values resolved into CSS custom properties; fixed scale      |
+| [state-driven-forms](state-driven-forms.md)                 | Form values are named state; controls bind one field by dot path                 |
 
 ## Library
 

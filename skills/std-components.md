@@ -3,10 +3,11 @@
 Imported from `imp/std` and its groups. Nothing to install, no CSS to include. Each component is a
 real imp component rendering as its own element (`<imp-button>`, …) with its styles sealed inside.
 
-| Import            | Exports                             | Per-component skill                                           |
-| ----------------- | ----------------------------------- | ------------------------------------------------------------- |
-| `imp/std`         | `button`, `heading`, `text`, `link` | `imp skill std/button`, `std/heading`, `std/text`, `std/link` |
-| `imp/std/display` | `emptyState`                        | `imp skill std/emptyState`                                    |
+| Import            | Exports                                                                        | Per-component skill                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `imp/std`         | `button`, `heading`, `text`, `link`                                            | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                            |
+| `imp/std/layout`  | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` | `imp skill std/stack`, `std/row`, `std/grid`, `std/item`, `std/container`, `std/spacer`, `std/divider`, `std/scrollArea` |
+| `imp/std/display` | `emptyState`                                                                   | `imp skill std/emptyState`                                                                                               |
 
 Read the component's own skill before using it — this page is only the shared contract and a summary
 of the props.
@@ -125,3 +126,134 @@ Children are the actions, in a centered row under the text. With no `title` it r
 `imp.state.empty` → "Nothing here yet", `imp.state.noResults` → "No results". A `title` you pass is
 not translated for you — use `computed([lang], () => t('invoices.empty'))` if it must follow the
 language.
+
+## Layout — from `imp/std/layout`
+
+Everything below takes a **responsive value**: either one value, or a per-breakpoint object
+`{ xs, sm, md, lg, xl }` whose values apply from that width upward. Breakpoints are fixed at `xs` 0,
+`sm` 40rem, `md` 48rem, `lg` 64rem, `xl` 80rem — a theme cannot change them, because CSS cannot read
+a custom property inside a media query. A breakpoint you skip **inherits the nearest one below it**,
+so `{ md: 'row' }` is the default under `md` and a row from `md` up.
+
+Spacing props (`gap`, `padding`, `spacing`, `size` on `spacer`) take a **step `0`–`6`** from the
+theme scale — `gap: 4` means `--imp-space-4`. Pixels warn and fall back.
+
+Every layout component also takes `hideBelow` and `hideAbove` (`'sm'`–`'xl'`), which hide it under
+or from that width and remove it from the accessibility tree with it.
+
+```js
+import { container, grid, item, row, stack } from 'imp/std/layout'
+
+container(
+  stack(
+    { gap: 5 },
+    row({ justify: 'between', align: 'center' }, heading('Invoices'), button('New')),
+    grid({ minItemWidth: '18rem', gap: 4 }, ...cards),
+    row(
+      { direction: { xs: 'column', sm: 'row' }, gap: 2 },
+      item({ grow: true }, search()),
+      button('Go'),
+    ),
+  ),
+)
+```
+
+| Component    | What it is                                | Key props                                                               |
+| ------------ | ----------------------------------------- | ----------------------------------------------------------------------- |
+| `stack`      | Flex container, column by default         | `direction`, `gap`, `justify`, `align`, `wrap`                          |
+| `row`        | The same, row by default                  | as `stack`                                                              |
+| `grid`       | CSS grid of equal columns                 | `columns` (1–12), `minItemWidth`, `gap`, `align`, `justify`             |
+| `item`       | Placement wrapper for **one** child       | `grow`, `span` (1–12 or `'full'`), `start`, `rowSpan`, `order`, `align` |
+| `container`  | Centers content, caps its width           | `size` (`'sm'`–`'xl'`, `'full'`), `padding`                             |
+| `spacer`     | Empty space in a stack or row             | `size` — omit it to absorb the leftover space                           |
+| `divider`    | A rule, optionally labelled by children   | `orientation`, `spacing`                                                |
+| `scrollArea` | A region that scrolls instead of the page | `axis`, `maxHeight`, `maxWidth`, `label`                                |
+
+Rules an agent gets wrong:
+
+- **A layout parent cannot make a child grow.** `grow` on a `row` warns as an unknown prop — wrap
+  the child: `row(item({ grow: true }, field()), button('Go'))`. The same is true of `span` in a
+  `grid`. Only wrap the children that need placement.
+- **Reach for `grid({ minItemWidth })` before a `columns` ladder** — it reflows from one column to
+  as many as fit with no breakpoints written at all.
+- **`columns` is a count, not a track template.** There is no `'1fr 2fr'`; uneven layouts are
+  `item({ span })` inside a bigger count.
+- **A `row` does not wrap** unless you pass `wrap: true`.
+- **`spacer` only works inside a `stack` or `row`** — it sizes along the parent's main axis.
+- **A vertical `divider` needs a `row`** to stretch against, and takes no label.
+- **`scrollArea` scrolls nothing without a `maxHeight`** (or a bounded parent), and wants a `label`
+  because it is keyboard-focusable.
+- **`item({ order })` moves the box, not the tab order** — reading and focus order stay in DOM
+  order.
+- Spacing is `gap` on the parent, never margins on the children: no std component has an outer
+  margin.
+
+## Forms — from `imp/std/inputs`
+
+**A form's values are ordinary state.** `form({ initialValues })` calls
+`initState('imp.form', initialValues ?? null)` on itself; a control names the field it owns with a
+**dot path**, resolves the form from its own position, and reads and writes that one path. It works
+at any depth, so layout components in between change nothing.
+
+```js
+import { form, select, submitButton, textField } from 'imp/std/inputs'
+
+form(
+  { initialValues: { user: { firstName: 'Ada' }, plan: 'pro' }, onSubmit: save },
+  textField({ field: 'user.firstName', label: 'First name', required: true }),
+  select({ field: 'plan', label: 'Plan', options: ['free', 'pro'] }),
+  submitButton('Save'),
+)
+```
+
+Every control takes the same binding and labelling props:
+
+| Prop        | Values                         | Notes                                     |
+| ----------- | ------------------------------ | ----------------------------------------- |
+| `field`     | dot path, e.g. `'user.email'`  | Binds one path of the surrounding form    |
+| `value`     | a state, or a plain value      | Standalone use, when there is no form     |
+| `label`     | string, or a state holding one | A real `<label>`, rendered by the control |
+| `ariaLabel` | string                         | Names it when there is no visible label   |
+| `help`      | string, or a state holding one | Hint under the control                    |
+| `required`  | boolean                        | Marks it and validates it is filled in    |
+| `disabled`  | boolean, or a state — **live** | Blocks interaction                        |
+
+Validation props: `required`, `minLength`, `maxLength`, `min`, `max`, `pattern`, and `validate`
+(returns a message, or `null` when fine). Built-in messages live under `imp.form.*`. `validateAsync`
+returns a **promise** of a message or `null` and runs only on blur and submit — submit waits for it,
+a sync failure skips it, and a rejected promise blocks with `imp.form.checkFailed`.
+
+| Component       | What it binds                | Its own props                                     |
+| --------------- | ---------------------------- | ------------------------------------------------- |
+| `form`          | Owns `imp.form`              | `initialValues`, `onSubmit`, `layout`, `gap`      |
+| `textField`     | A string                     | `type`, `placeholder`, `readonly`, `autocomplete` |
+| `passwordField` | A string, masked             | `placeholder`, `autocomplete`                     |
+| `searchField`   | A string                     | `placeholder`, `autocomplete`                     |
+| `textArea`      | A multi-line string          | `rows`, `placeholder`, `readonly`                 |
+| `numberField`   | A **number**                 | `step`, `placeholder`, `readonly`                 |
+| `select`        | One value from `options`     | `options`, `placeholder`                          |
+| `checkbox`      | A boolean                    | —                                                 |
+| `toggle`        | A boolean, drawn as a switch | —                                                 |
+| `radioGroup`    | One value from `options`     | `options`, `orientation`                          |
+| `submitButton`  | —                            | `variant`, `size`, `disabled`                     |
+| `resetButton`   | —                            | `variant`, `size`, `disabled`                     |
+
+Rules an agent gets wrong:
+
+- **There is no native form submit.** No `type: 'submit'` button, no `events: { submit }` — put the
+  handler in the form's `onSubmit` and render `submitButton()`. Enter in a single-line field submits
+  too; Enter in a `textArea` does not.
+- **A `field` with no `form` around it is an error**, and so is a path that is not dot-separated.
+- **`field` and `value` are alternatives.** Both together warns and `field` wins.
+- **Labels belong to the control, not around it.** `label[for]` cannot cross a shadow root, so pass
+  `label` as a prop; wrapping a control in your own `<label>` names nothing.
+- **`select` and `radioGroup` take their choices in `options`, never as children.**
+- **`numberField` commits a number**; an empty one commits `undefined`.
+- **Errors stay hidden until a field is left or submit is attempted** — do not add your own "show
+  errors" flag.
+- **Return the promise from an async `onSubmit`** so the submit button's spinner and the
+  double-submit guard work.
+- **`validate` is synchronous and `validateAsync` is the promise one.** Returning a promise from
+  `validate` does not work — it is truthy, so every value looks invalid. Async checks run on blur
+  and submit only, never per keystroke; debounce yourself if you need more.
+- Read the values anywhere in the subtree with `useState('imp.form')`.

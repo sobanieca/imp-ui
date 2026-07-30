@@ -30,13 +30,17 @@ when a component reaches a barrel without one, so this is enforced rather than r
 - **General** — `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
-- **Layout** — `stack`, `row`, `grid`, `spacer`, `container`, `divider`, `appShell`, `scrollArea`,
-  `splitPane` _(later)_, `aspectBox` _(later)_ — placement details in _Layout & placement_ below.
-- **Inputs** — `textField`, `textArea`, `numberField`, `passwordField`, `searchField`, `select`,
-  `comboBox` (autocomplete), `checkbox`, `radioGroup`, `toggle`, `slider`, `datePicker`,
-  `dateRangePicker`, `timePicker`, `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_,
-  `colorPicker` _(later)_, `rating` _(later)_, `otpField` _(later)_, `cascader` _(later)_,
-  `treeSelect` _(later)_, plus `form` and the form layer — details in _Form handling_ below.
+- **Layout** — `appShell`, `splitPane` _(later)_, `aspectBox` _(later)_ — placement details in
+  _Layout & placement_ below. `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider` and
+  `scrollArea` have landed, opening the `imp/std/layout` subpath and fixing the responsive prop
+  convention for the whole library (`adr/responsive-layout-props.md`).
+- **Inputs** — `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
+  `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
+  _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
+  layer have landed with `textField`, `passwordField`, `searchField`, `textArea`, `numberField`,
+  `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton` and `resetButton`, opening the
+  `imp/std/inputs` subpath and settling the field-binding contract (`adr/state-driven-forms.md`) —
+  details in _Form handling_ below.
 - **Display** — `card`, `badge`, `avatar`, `tag`, `tooltip`, `popover`, `accordion`,
   `descriptionList`, `statistic`, `timeline` _(later)_, `carousel` _(later)_, `image` (preview/zoom)
   _(later)_, `calendar` _(later)_, `qrCode` _(later)_. `emptyState` has landed, opening the
@@ -50,55 +54,119 @@ when a component reaches a barrel without one, so this is enforced rather than r
 
 ## Layout & placement
 
-The layout group is the antd-style placement toolkit — child positioning is expressed through layout
-parents, not per-component positioning props:
+The layout group is the placement toolkit — child positioning is expressed through layout parents
+and a placement wrapper, not per-component positioning props. What landed:
 
-- **`stack` / `row`** carry the flex placement surface: `justify`, `align`, `gap`, `wrap`,
-  `direction` — enough that app code almost never writes raw flex CSS.
-- **`grid`** is the antd Row/Col model: a 24-column grid where children declare `span`, `offset`,
-  and `order`, with per-breakpoint values for each (see _Responsive & mobile_). Also a plain
-  CSS-grid mode (`columns`, `areas`) for dashboard-style placement.
-- **`appShell`** is the page-level frame (antd Layout): header, sider, content, footer slots with
-  sticky header and collapsible sider built in.
+- **`stack` / `row`** carry the flex placement surface: `direction`, `gap`, `justify`, `align`,
+  `wrap` — enough that app code almost never writes raw flex CSS. They are one component with
+  opposite default directions.
+- **`grid`** is a count of equal columns (`columns`, 1–12) plus `minItemWidth` for the auto-fitting
+  case, not a track template. The antd Row/Col model was **dropped**: a 24-column grid with `offset`
+  on the children buys nothing over `columns` + `item({ span, start })`, and a percentage `offset`
+  is the one placement that cannot be expressed cleanly on an auto-placed grid item. Named-area
+  templates (`areas`) were left out too — add them when something needs one.
+- **`item`** is the placement wrapper: `grow`, `span`, `start`, `rowSpan`, `order`, `align`. Per-
+  child placement has to live on a wrapper because `:host { display: contents }` means a child
+  component's own root — inside its shadow — is the real flex or grid item, and no selector from the
+  parent can reach it (`adr/responsive-layout-props.md`).
 - **`spacer`, `divider`, `container`, `scrollArea`** round out spacing, separation, max-width
-  centering, and overflow control; `splitPane` adds user-resizable panes _(later)_.
-- All spacing values come off the theme's spacing scale (`--imp-*` tokens), not free-form pixels, so
+  centering, and overflow control. `container` widths are theme tokens (`--imp-container-sm` …
+  `-xl`); `splitPane` adds user-resizable panes _(later)_.
+- All spacing values come off the theme's spacing scale as a step `0`–`6`, not free-form pixels, so
   layouts stay consistent across an app.
+
+Still open in this group:
+
+- **`appShell`** is the page-level frame (antd Layout): header, sider, content, footer slots with
+  sticky header and collapsible sider built in. **Deferred until the feedback group lands** — its
+  responsive behaviour is to collapse the sider into a `drawer`, so building it first would mean
+  inventing a throwaway collapse and redoing it.
 
 ## Form handling
 
 `form` grows from an SPA-default `submit` wrapper into a proper form layer (what antd `Form`
 provides), still built entirely on named state:
 
-- **A form is a state object.** `form` accepts the form's state; fields bind to it through the
-  two-way contract below — no separate form-value store to sync. This makes the form layer the first
-  real consumer of the field-binding open question, which gets decided here.
-- **`formField`** wraps a control with label, required marker, help text, and an error slot, with
-  the antd layout variants (vertical, horizontal with aligned labels, inline) driven by the form's
-  layout prop and logical properties only.
-- **Validation is declarative per field** — `required`, min/max, pattern, custom sync/async
-  validators — evaluated at the control's commit point and again on submit. Errors live in state, so
-  error display is reactive like everything else; default messages route through `t()`.
-- **Submit runs from a handler, not a native submit event** (see _Dependencies_): `form` gates on
-  validity, wires the submit button's loading/disabled state, surfaces form-level (non-field)
-  errors, and provides implicit submission itself.
-- **Touched/dirty tracking and `reset`** to initial values come with the form state.
+- **A form is a state object, and fields address it by path.** `form` takes an `initialValues` prop
+  — a plain object — and internally calls `initState('imp.form', initialValues ?? null)`, so the
+  form's values are ordinary named state living at the form's own position in the tree. There is no
+  separate form-value store to sync and nothing for the app to wire: dropping a `form` into a view
+  creates the state, and unmounting it disposes it with the rest of the subtree.
+
+  A control inside that form names the field it owns with a **dot-separated path** rather than being
+  handed a state handle:
+
+  ```js
+  form(
+    { initialValues: { user: { firstName: 'Ada' }, plan: 'pro' } },
+    textField({ field: 'user.firstName', label: 'First name' }),
+    select({ field: 'plan', options: PLANS }),
+  )
+  ```
+
+  The control resolves `imp.form` from its own position (the same `useState` lookup every other
+  component does), reads its field by walking the path, and writes back by rebuilding the object
+  along that path. This is what makes nested fields work without a writable projection in the
+  kernel: the path is data the control can walk in both directions, where `computed(…)` is a
+  function that can only be walked one way. It also keeps the call site free of plumbing — a field
+  is a string, which is exactly the shape an agent gets right.
+
+  Consequences to work through when the group is built:
+  - **A control with `field` must be inside a `form`.** Resolving `imp.form` from outside one is an
+    imp-branded error naming the offending field, not a silent no-op.
+  - **`field` and `value` are alternatives, not partners.** `value` (a state-shaped value or a plain
+    one) stays the way a control is used standalone; `field` is the in-form spelling. Passing both
+    is logged and `field` wins.
+  - **Path writes rebuild, they do not mutate** — `set` gets a new object so content-equality dedup
+    and structural comparison keep behaving.
+  - Validation rules, `touched`/`dirty` and `reset` all key off the same paths, so the form layer
+    has one addressing scheme end to end.
+
+  **The names are settled: `textField` and friends**, chosen over `textInput` / `inputText`.
+- **There is no `formField` wrapper component.** `label[for]`, `aria-describedby` and `aria-invalid`
+  resolve by id and cannot cross a shadow root, so a wrapper could never label the control it wraps.
+  Every control renders its own label, required marker, help text and error instead, taking `label`,
+  `ariaLabel`, `help` and `required` as props; `radioGroup` renders a `<fieldset>`/`<legend>` for
+  the same reason. The antd layout variants (vertical, horizontal, inline) are driven by the form's
+  `layout` prop through inherited custom properties.
+- **Validation is declarative per field** — `required`, `minLength`/`maxLength`, `min`/`max`,
+  `pattern` and a custom `validate` — evaluated at the control's commit point and again on submit.
+  Errors live in `imp.form.errors` as a message key plus params, so a language switch re-renders
+  them in place. `validateAsync` covers checks that need the network: it runs on blur and submit
+  only, tracks in-flight checks in `imp.form.validating`, and submit waits on that state emptying.
+- **Submit runs from a handler, not a native submit event**: `form` gates on validity, and
+  `submitButton` / `resetButton` find their form through a composed bubbling event and read
+  `imp.form.submitting` to drive their own spinner. Implicit submission (Enter in a single-line
+  field) is implemented by `form`.
+- **Touched tracking and `reset`** to initial values come with the form state; an error is shown
+  only once its field is touched or a submit has been attempted.
+
+Still owed by this group:
+
+- **`dirty` tracking** (values differing from `initialValues`) is not implemented; `touched` is.
+- **Form-level errors** — a submit failure that belongs to no single field — have no home yet.
 
 ## Responsive & mobile
 
 Mobile layout is first-class, not a separate component set:
 
-- **Breakpoint scale as theme tokens** (`xs`–`xl`), shared by every component and overridable per
-  theme.
-- **Responsive prop convention:** every layout-affecting prop accepts a per-breakpoint object —
-  `grid` spans/offsets (`span: { xs: 24, md: 12 }`), `stack`/`row` direction and gap, visibility
-  (`hideBelow`/`hideAbove`). One spelling, used uniformly across the stdlib.
+- **Settled with the layout group** (`adr/responsive-layout-props.md`): the `xs`–`xl` scale, the
+  per-breakpoint object every layout-affecting prop accepts
+  (`direction: { xs: 'column', md: 'row' }`), inherit-from-below semantics, `hideBelow`/`hideAbove`,
+  and resolution into per-instance CSS custom properties consumed by static media queries. Every
+  group after this one follows the same spelling.
+- **The breakpoint scale is _not_ theme tokens**, contrary to the original plan here: a media query
+  cannot read a custom property, so themeable widths would force JS-resolved layout and a wrong
+  first paint. The widths are fixed and documented as such; do not add `--imp-breakpoint-*` tokens
+  that would silently do nothing.
 - **Components adapt below the breakpoints they care about:** `appShell` collapses the sider into a
   `drawer` behind a menu button; `table` switches to stacked cards or horizontal scroll; `modal`
   goes full-screen; `drawer` becomes a bottom sheet; pickers render touch-appropriate panels.
 - **Touch targets** meet a minimum size taken from the theme tokens.
-- **A state-shaped `breakpoint` value** (readable + watchable) is public API, so app code can branch
-  on viewport the same way the stdlib does internally.
+- **A state-shaped `breakpoint` value** (readable + watchable) is still owed, for the structural
+  swaps CSS cannot express — `table`'s card mode is the first real consumer, so it lands with the
+  data group rather than being invented ahead of one. Pure-CSS responsiveness covers the layout
+  group completely without it.
 
 ## Conventions
 
@@ -111,9 +179,9 @@ fallbacks, logical properties, no outer margins — is settled and recorded in
   **state-shaped** — an object with `get`/`watch`/`set`, whether it came from
   `initState`/`useState`, `computed` (read-only controls), or user code implementing the same shape.
   Pass a plain value instead for an uncontrolled initial. The readable half is already in place (the
-  ADR's _live props_); the writable half, and how it reaches **one field of a form state**, is open
-  — see _Open questions_. Three rules make the binding sound, and every stdlib control follows them
-  uniformly:
+  ADR's _live props_); the writable half is the `set` call below, and reaching **one field of a form
+  state** is the `field` path contract in _Form handling_. Three rules make the binding sound, and
+  every stdlib control follows them uniformly:
   - The control subscribes with `watch` and updates its own element **in place** — never through a
     region rebuild — so focus and caret survive external `set`s.
   - It writes back with `set` at the commit point that fits the control (`input` for free typing,
@@ -142,12 +210,12 @@ fallbacks, logical properties, no outer margins — is settled and recorded in
 ## Dependencies
 
 This is the top of the stack. Named state is in place and considered complete
-(`adr/event-propagated-state.md`) — the one state-side question left is the field-binding contract
-above, which is this item's to answer. Theming is in place (`adr/themable-by-default-tokens.md`),
-and each group extends the `--imp-*` token surface as it lands. Translations are in place
-(`adr/translatable-by-default.md`); some components (`toast`, `modal`, `drawer`) need a `portal`
-primitive for DOM rendered outside the owning subtree. The stdlib grows group by group; a group that
-needs a missing dependency waits for it.
+(`adr/event-propagated-state.md`) and needs no addition for the form layer — `field` paths are
+walked by the form components on the public API. Theming is in place
+(`adr/themable-by-default-tokens.md`), and each group extends the `--imp-*` token surface as it
+lands. Translations are in place (`adr/translatable-by-default.md`); some components (`toast`,
+`modal`, `drawer`) need a `portal` primitive for DOM rendered outside the owning subtree. The stdlib
+grows group by group; a group that needs a missing dependency waits for it.
 
 **The feedback group owes the HTTP client its wiring** (`adr/http-client.md`). A client publishes
 state-shaped `pending` and `lastError`, so `spinner`/`progress` should accept a client (or its name,
@@ -186,27 +254,16 @@ Each group extends `docs/std-components.md` with its own section as it lands.
 
 ## Open questions
 
-- **How a control binds one field of a form state.** The two-way contract above assumes a control
-  can be handed a single state-shaped value with `set` for its own field. Nothing in the kernel
-  produces one for a **nested** field: `computed([user], (u) => u.address.city)` reads it (and, with
-  structural comparison, notifies only when that field changes), but is read-only, and a write
-  function cannot be inverted out of it. Two ways out, to be decided while building the first
-  controls, not before:
-  - **Split the contract** — `value` takes a readable, and the control reports commits separately
-    (`textField({ value: computed(…), commit: (city) => user.set(…) })`). No kernel change; the
-    spread stays in app code, where it is explicit.
-  - **A path-addressed projection in the kernel** — a writable view built from a path rather than a
-    function, so imp can walk it to read and rebuild it to write. Spelled either as a new helper
-    entry (`user.field('address', 'city')`) or as a path form of `computed`. Prototyped and proven
-    to work on the public API alone; **rejected for now** as unearned without a consumer (see
-    `adr/event-propagated-state.md`). If the split contract turns out to be clumsy across the input
-    group, this is the fallback — the cost is one more way to address state, and, for the `computed`
-    spelling, a combinator that is writable or not depending on its argument type.
+- **Whether path addressing stays inside the form layer.** The `field: 'user.firstName'` contract
+  above lives in the form components: they walk and rebuild the path themselves, on the public state
+  API, with no kernel change. The alternative — a writable path projection in the kernel
+  (`user.field('address', 'city')`, or a path form of `computed`) — was prototyped and works, but
+  stays **rejected** as unearned while the form layer needs no help (see
+  `adr/event-propagated-state.md`). Revisit only if something outside forms wants the same thing;
+  the cost would be one more way to address state, and a combinator that is writable or not
+  depending on its argument type.
 - **Catalog scope for v1.** A core vs. _(later)_ split is drafted in the catalog above; confirm or
   reshuffle it while building — the tier markers are a starting bid, not a commitment.
-- **Responsive prop mechanics.** Whether per-breakpoint props compile to pure CSS (media/container
-  queries generated by the component) or resolve in JS via the `breakpoint` state — CSS is likely
-  the default for layout, with the JS path reserved for structural swaps like `table`'s card mode.
 - **Overlay management.** Shared stacking/focus-trap/escape handling for `modal`/`drawer`/`toast`
   rather than each rolling its own.
 - **Accessibility baseline.** The ARIA/keyboard contract every interactive component must meet. The

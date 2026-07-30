@@ -631,7 +631,7 @@ Deno.test('imp build', async (t) => {
       const code = await Deno.readTextFile(join(dir, 'std', 'std-entry.js'))
       await Deno.writeTextFile(
         entry,
-        "import { stack } from 'imp/std/layout'\n\nexport const shell = stack\n",
+        "import { table } from 'imp/std/data'\n\nexport const shell = table\n",
       )
       const unknown = await runImp(['build', 'std-entry.js', '--outdir', 'std'], dir)
       await Deno.remove(entry)
@@ -2040,7 +2040,7 @@ Deno.test('imp skill', async (t) => {
 
   await t.step('every std component has a skill file next to it', async () => {
     const exported = []
-    for (const barrel of ['general', 'display']) {
+    for (const barrel of ['general', 'display', 'layout', 'inputs']) {
       const path = join(REPO_ROOT, 'lib', 'src', 'std', barrel, 'index.js')
       const source = await Deno.readTextFile(path)
       for (const match of source.matchAll(/export\s*{\s*(\w+)\s*}\s*from\s*'\.\/([\w.]+)'/g)) {
