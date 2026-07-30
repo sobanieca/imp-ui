@@ -22,8 +22,8 @@ scripts whose `type` is neither a JavaScript type nor `module`.
 Code is linted as modern browser code: ES modules, current JavaScript syntax, and browser globals
 (`document`, `fetch`, `localStorage`, …) are all recognized.
 
-Directories named `.git`, `node_modules`, and `dist` are always skipped. Additional paths can be
-skipped with `exclude` (see _Configuration_ below).
+Directories named `.git`, `node_modules`, `dist`, and `.imp` are always skipped. Additional paths
+can be skipped with `exclude` (see _Configuration_ below).
 
 ## The rule set
 
@@ -119,6 +119,46 @@ lives on in the closure, and reads and writes are allowed anywhere. Only resolut
 position-sensitive: the DOM you build from the handles (`text`/`view`/`each`, bound props) can come
 after the `await` and goes live when the component mounts it.
 
+### `imp/http-client-name-namespace`
+
+HTTP client names follow the same rule as state names — at least two non-empty dot-separated
+segments, like `myapp.api` (see **[HTTP](http.md)**). The rule checks every
+`initHttpClient`/`useHttpClient`/`createHttpClient` call whose name is written literally:
+
+```js
+const api = initHttpClient('api', { baseUrl: '/api' })
+```
+
+```
+error[imp/http-client-name-namespace]: http client name 'api' must include a namespace — use dot-separated segments like 'myapp.api'
+ --> src/app.js:1:31
+```
+
+### `imp/http-client-setup-before-await`
+
+An HTTP client is owned by the component that initializes it, so — exactly like state — it must be
+resolved **before the first `await`** of an async `onMount`:
+
+```js
+const orders = component('my-app-orders', {
+  onMount: async () => {
+    const api = useHttpClient('myapp.api')
+    const data = await api.get('/orders')
+    const reports = useHttpClient('myapp.reports')
+    return ul(data.map((order) => li(order.title)))
+  },
+})
+```
+
+```
+error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
+ --> src/orders.js:5:21
+```
+
+Resolve every client you need up front; the handles work anywhere afterwards, including in event
+handlers and after any number of `await`s. `createHttpClient` is not flagged — a client you own
+yourself needs no mounting component and can be built anywhere.
+
 ### `imp/no-root-query-in-mount`
 
 While `onMount` runs, the DOM it returns is **not in the shadow root yet** — imp inserts it after
@@ -171,9 +211,9 @@ rejected. Dynamically built names are validated at runtime instead, where a bad 
 ### `imp/import-source`
 
 imp's library is split by subject — `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
-`imp/i18n`, `imp/log` (see **[Imports](imports.md)**) — and each name has exactly one home.
-Importing a name from a sibling specifier would fail at runtime with a missing-export error that
-says nothing about where to look, so the rule names the right specifier instead:
+`imp/i18n`, `imp/log`, `imp/http` (see **[Imports](imports.md)**) — and each name has exactly one
+home. Importing a name from a sibling specifier would fail at runtime with a missing-export error
+that says nothing about where to look, so the rule names the right specifier instead:
 
 ```js
 import { component, div } from 'imp'
@@ -235,7 +275,7 @@ dependency can appear:
   available ones listed:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/std', 'imp/std/display', 'imp/test', 'imp/preview'
+  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 

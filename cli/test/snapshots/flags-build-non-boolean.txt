@@ -1,0 +1,8 @@
+$ imp build --env broken  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] flag 'NEW_NAV' must be true or false in the selected environment, not "maybe"

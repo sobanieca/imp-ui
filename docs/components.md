@@ -513,6 +513,79 @@ export const taskBoard = component('my-app-task-board', {
 })
 ```
 
+## Teaching an agent to use it — `counter.skill.md`
+
+A component is only reusable if whoever writes the next screen knows how to call it, and in an imp
+project that reader is usually an AI agent. So a component documents itself in a **skill file**: a
+markdown file with the same name as the module, sitting next to it.
+
+```
+components/counter.js
+components/counter.skill.md
+```
+
+Write what an agent needs to call it right the first time — the import, the call shape, a prop
+table, the events it emits, and the mistakes it invites — and keep it shorter and more mechanical
+than a guide for a person:
+
+````md
+# counter — a self-contained increment/decrement widget
+
+```js
+import { counter } from './counter.js'
+
+counter({ start: 0, step: 1 })
+```
+
+| Prop    | Values | Default | Notes                                 |
+| ------- | ------ | ------- | ------------------------------------- |
+| `start` | number | `0`     | The value it counts from              |
+| `step`  | number | `1`     | How much each press adds or subtracts |
+
+Emits a `change` event with the new value in `event.detail`.
+````
+
+The first line is the summary, so start it with the component name and one clause saying what it is.
+
+That file is the whole convention, and it is the same one imp's own components follow — every
+standard component has a skill file next to its implementation, which is what `imp skill std/button`
+prints. Anyone (or anything) can read yours with:
+
+```
+imp skill ./components/counter.js     # or ./components/counter.skill.md
+imp skill                             # lists every component in the project that has one
+```
+
+**Publishing a component takes its skill along; shipping an app leaves it behind.** When you build a
+module — `imp build counter.js` — the result is something other developers program against, so imp
+folds the skill file into the bundle as an `impSkill` export and it travels to whoever installs your
+component, with no second file to distribute and nothing to configure. When you build a page —
+`imp build` on your `index.html` — the result is a finished app that nobody writes code against, so
+imp adds no skill text, copies no skill file into the output, and **removes any skill text already
+there**: a component you installed pre-built with its skill inside, or an `impSkill` written into a
+module by hand, is stripped out of the app — including out of lazily loaded chunks. Your users
+download your app, not your documentation.
+
+That split is by entry, not by configuration: a JS entry is a component, an HTML entry is an app.
+
+**Publishing more than one component.** The skill that travels is the one belonging to the **entry
+module you build**. If you publish a barrel that re-exports several components:
+
+```js
+export * from './alpha.js'
+export * from './beta.js'
+```
+
+then `alpha.skill.md` and `beta.skill.md` do not survive the bundle — two modules each exporting
+`impSkill` through a `export *` makes the name ambiguous, and JavaScript drops ambiguous star
+exports. Only `index.skill.md`, next to the barrel itself, comes through. So either write the
+package-level skill next to your entry and describe the components in it, or publish each component
+as its own entry (`imp build alpha.js`, `imp build beta.js`), which gives each one its own skill.
+
+Together with a `*.preview.js` file, which shows the component's states to a human (see
+**[the CLI](cli.md#imp-preview)**), a skill file is the second half of shipping a component someone
+else can pick up.
+
 ## Practical notes
 
 - **Component internals are private.** `document.querySelector` — like page CSS — stops at the

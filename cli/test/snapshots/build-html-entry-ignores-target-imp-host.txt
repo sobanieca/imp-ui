@@ -9,13 +9,7 @@ built index.html → dist/
   chunks/chunk-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
-  component/app.js (<size>)
-  component/chunks/chunk-<hash>.js (<size>)
-  component/chunks/lazy-<hash>.js (<size>)
   index.html (<size>)
-  shared/app.js (<size>)
-  shared/chunks/chunk-<hash>.js (<size>)
-  shared/chunks/lazy-<hash>.js (<size>)
   styles.css (<size>)
 
 --- stderr ---

@@ -1,0 +1,9 @@
+$ imp build --env prod  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+✘ [ERROR] app.js — flag() takes one string literal flag name, so the build can fold it away: flag('CHECKOUT_V2') [plugin imp]
+
+--- stderr ---
+[ERROR] Build failed with 1 error:
+error: app.js — flag() takes one string literal flag name, so the build can fold it away: flag('CHECKOUT_V2')

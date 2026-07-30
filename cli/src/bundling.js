@@ -175,7 +175,7 @@ export function extractCalls(source, functionName) {
         if (source[cursor] === '(') {
           const call = parseCallArguments(source, cursor)
           if (call) {
-            calls.push(call)
+            calls.push({ ...call, start: index })
             index = call.end
             continue
           }

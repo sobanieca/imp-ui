@@ -1,0 +1,30 @@
+$ imp lint  (cwd: <tmp>/app)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Checked 5 files
+
+$ imp fmt --check  (cwd: <tmp>/app)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Checked 7 files
+
+$ imp test --unit  (cwd: <tmp>/app)
+exit code: 0
+
+--- stdout ---
+imp test: running 1 file in parallel
+
+✓ test/app.test.js
+
+imp test: 1 passed (1 file, *ms)
+
+--- stderr ---
+(empty)

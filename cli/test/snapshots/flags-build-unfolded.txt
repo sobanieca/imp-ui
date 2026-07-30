@@ -1,0 +1,8 @@
+$ imp build --env prod  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] app.js still reads a feature flag at runtime — every flag must be called as flag('NAME') with a literal name, from a module that imports flag from 'imp', so the build can fold it away

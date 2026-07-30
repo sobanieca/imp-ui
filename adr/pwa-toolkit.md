@@ -48,12 +48,16 @@ With `--pwa` on an HTML entry, the build additionally:
   edits.
 - **Writes an offline service worker (`sw.js`) whose precache list is derived from the build
   graph,** not globbed: exactly the files this build emitted (hashed scripts, chunks, assets) plus
-  the HTML entry, manifest, and icons. The cache name is keyed to a content hash of that list, so
-  each deploy is a new cache that the worker reconciles on `activate` (fetch what changed, delete
-  what's gone) — deploys are never stuck stale. The caching strategy is a small opinionated default,
-  not a configurable strategy zoo: navigations are network-first with a cached-app-shell fallback
-  (deep links work offline), precached assets are cache-first, and cross-origin/opaque responses,
-  non-`GET` requests, and error responses are never cached.
+  the HTML entry, manifest, icons, and the copied `public/` files. Every URL it emits — the manifest
+  link, icon links, registration, `start_url`, `scope`, precache entries and the shell — is
+  root-absolute and carries the `IMP_BASEPATH` prefix (`public-folder-static-assets.md`), because a
+  relative URL would resolve against the current document and break on a deep link. The cache name
+  is keyed to a content hash of that list, so each deploy is a new cache that the worker reconciles
+  on `activate` (fetch what changed, delete what's gone) — deploys are never stuck stale. The
+  caching strategy is a small opinionated default, not a configurable strategy zoo: navigations are
+  network-first with a cached-app-shell fallback (deep links work offline), precached assets are
+  cache-first, and cross-origin/opaque responses, non-`GET` requests, and error responses are never
+  cached.
 
 Installability in development is automatic and needs no flag: when a `pwa` block is present,
 `imp start` injects the manifest/theme-color/apple-touch-icon tags and serves a generated manifest

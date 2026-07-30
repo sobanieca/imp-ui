@@ -1,0 +1,3 @@
+--- injected globals ---
+globalThis.__IMP_ENV__ = {"API_URL":"https://dev.example.com"}
+globalThis.__IMP_FLAGS__ = {"CHECKOUT_V2":true,"NEW_NAV":true}

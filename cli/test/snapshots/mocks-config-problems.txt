@@ -1,0 +1,8 @@
+{ "mocks": "mocks" }
+[ERROR] invalid imp.json — 'mocks' must be an object naming the folder and whether it serves, like { "folder": "mocks", "enabled": true }
+
+{ "mocks": { "folder": "mocks" } }
+[ERROR] invalid imp.json — 'mocks.enabled' must be true or false, so every project says outright whether it develops against mocks (--mock and --no-mock override it per run)
+
+{ "mocks": {} }
+[ERROR] invalid imp.json — 'mocks.folder' must be a string path to the folder holding your *.mock.js files

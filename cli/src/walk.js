@@ -1,6 +1,9 @@
 import { join, relative, resolve, SEPARATOR } from '@std/path'
 
-const DEFAULT_EXCLUDES = new Set(['.git', 'node_modules', 'dist'])
+const ALWAYS_SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules', 'dist', '.imp'])
+
+export const isSkippedPath = (path) =>
+  path.split(/[/\\]/).some((segment) => ALWAYS_SKIPPED_DIRECTORIES.has(segment))
 
 const extensionOf = (name) => {
   const dot = name.lastIndexOf('.')
@@ -13,7 +16,7 @@ export async function collectFiles({ root, paths, extensions, exclude = [] }) {
   const excluded = (path) => {
     const relativePath = relative(root, path)
     const segments = relativePath.split(SEPARATOR)
-    if (segments.some((segment) => DEFAULT_EXCLUDES.has(segment))) return true
+    if (segments.some((segment) => ALWAYS_SKIPPED_DIRECTORIES.has(segment))) return true
     return exclude.some((entry) => {
       const prefix = entry.replace(/\/+$/, '')
       return relativePath === prefix || relativePath.startsWith(prefix + SEPARATOR)

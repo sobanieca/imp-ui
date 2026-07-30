@@ -390,6 +390,7 @@ export async function runTests(
     filter = null,
     screenshotDir = null,
     videoDir = null,
+    mocks = null,
   },
 ) {
   const imp = await loadImpConfig(root)
@@ -468,7 +469,7 @@ export async function runTests(
         `e2e entry not found: ${entry} — each *.spec.js runs against your served app; set "test": { "entry": "<page>.html" } in imp.json if it is not index.html`,
       )
     }
-    const app = await loadApp(entryPath)
+    const app = await loadApp(entryPath, { mocks })
     for (const alias of app.missingDependencies) {
       logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
     }

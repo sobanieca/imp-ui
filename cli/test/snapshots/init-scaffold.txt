@@ -1,0 +1,162 @@
+$ imp init app  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+Created a new imp project in app.
+
+  imp.json            the one config file — pins imp <version>
+  index.html          the page imp serves
+  src/main.js         entry point: applies the theme, mounts the app
+  src/app.js          the app's components
+  test/app.test.js    unit test, runs in-process
+  test/app.spec.js    e2e spec, runs in a real browser
+  public/favicon.svg  published at the site root — replace it with your own mark
+  .gitignore          dist/, .imp/ and every .env file
+
+Next steps:
+  cd app
+  imp start        serve the app with live reload
+  imp test --unit  run the unit test (--e2e for the browser spec)
+  imp skill        read imp's manuals — an AI agent starts here
+
+Now point your AI agent at `imp skill` and start building!
+
+--- stderr ---
+(empty)
+
+--- files ---
+.gitignore
+imp.json
+index.html
+public/favicon.svg
+src/app.js
+src/main.js
+test/app.spec.js
+test/app.test.js
+
+--- .gitignore ---
+# imp writes these — never commit them
+dist/
+.imp/
+
+# environment files hold secrets and per-developer values
+.env
+.env.*
+
+# dependencies/ is committed on purpose: vendored packages are part of the repo
+
+# Node.js and general JS tooling, for the parts of your workflow that use it
+node_modules/
+*.log
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+--- imp.json ---
+{
+  "version": "<version>"
+}
+
+--- index.html ---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App</title>
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+
+--- src/app.js ---
+import { component } from 'imp'
+import { div, p } from 'imp/html'
+import { initState } from 'imp/state'
+import { button, heading, text } from 'imp/std'
+
+export const app = component('app-root', {
+  onMount: () => {
+    const clicks = initState('app.clicks', 0)
+    return div(
+      heading('Hello from imp'),
+      text('Edit src/app.js and the page reloads itself.'),
+      text(
+        'Now point your AI agent at ',
+        text({ inline: true, weight: 'bold' }, 'imp skill'),
+        ' and start building!',
+      ),
+      p({ id: 'clicks' }, clicks.text((value) => `Clicks: ${value}`)),
+      button(
+        { variant: 'primary', events: { click: () => clicks.set((value) => value + 1) } },
+        'Click me',
+      ),
+    )
+  },
+})
+
+--- src/main.js ---
+import { init, mount } from 'imp'
+import { app } from './app.js'
+
+await init({ theme: 'imp-light' })
+
+mount('#app', app())
+
+--- test/app.spec.js ---
+import { expect, test } from 'imp/test'
+
+const clicks = (page) => page.$eval('>>> #clicks', (node) => node.textContent)
+
+test('renders the app', async ({ page }) => {
+  expect(await page.$eval('>>> h1', (node) => node.textContent)).toEqual('Hello from imp')
+  expect(await clicks(page)).toEqual('Clicks: 0')
+})
+
+test('counts a click', async ({ page }) => {
+  await page.click('>>> imp-button >>> button')
+  expect(await clicks(page)).toEqual('Clicks: 1')
+})
+
+--- test/app.test.js ---
+import { mount } from 'imp'
+import { beforeEach, expect, test } from 'imp/test'
+import { app } from '../src/app.js'
+
+const inside = (node, selector) => node.shadowRoot.querySelector(selector)
+
+const render = () => {
+  mount(document.body, app())
+  return document.querySelector('app-root')
+}
+
+beforeEach(() => {
+  document.body.replaceChildren()
+})
+
+test('starts at zero clicks', () => {
+  expect(inside(render(), '#clicks').textContent).toEqual('Clicks: 0')
+})
+
+test('counts every click', () => {
+  const root = render()
+  const control = inside(inside(root, 'imp-button'), 'button')
+  control.click()
+  control.click()
+  expect(inside(root, '#clicks').textContent).toEqual('Clicks: 2')
+})
+
+$ imp init  (cwd: <tmp>/app)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] imp init writes imp.json, index.html, src/main.js, src/app.js, test/app.test.js, test/app.spec.js, public/favicon.svg, which already exist here — nothing was written. Scaffold into an empty directory instead ('imp init <dir>'), or move those files aside.

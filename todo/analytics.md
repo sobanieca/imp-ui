@@ -38,8 +38,9 @@ listener) and with signal subscriptions, but every app re-invents the wiring. Ce
   )
   ```
 
-- A sink that throws is reported through the built-in logger (`todo/logger.md`) and skipped — one
-  bad forwarder must never break dispatch to the others, and analytics must never crash the app.
+- A sink that throws is reported through the built-in logger (`adr/built-in-logger.md`) and skipped
+  — one bad forwarder must never break dispatch to the others, and analytics must never crash the
+  app.
 
 ## Automatic instrumentation (convention, opt-in)
 
@@ -100,8 +101,8 @@ fire. imp ships no hard-coded event names beyond the `pageview` convention.
 
 Builds on the landed state layer and its scoped cleanup (`adr/event-propagated-state.md`) for scoped
 sink cleanup and for state-change emits; pageview auto-instrumentation builds on the router
-(`adr/client-side-router.md`); diagnostics route through the built-in logger (`todo/logger.md`). The
-`data-track` delegation is pure real DOM and needs none of them.
+(`adr/client-side-router.md`); diagnostics route through the built-in logger
+(`adr/built-in-logger.md`). The `data-track` delegation is pure real DOM and needs none of them.
 
 ## ADR impact
 

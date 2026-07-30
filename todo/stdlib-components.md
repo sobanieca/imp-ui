@@ -23,6 +23,10 @@ both the raw element and the component aliases one of them at the import
 is impossible as an import binding, so that component is `toggle` — which sits awkwardly next to
 `toggleGroup`, to be revisited when the inputs group lands.
 
+**A component is not done until it ships a skill** — a `<module>.skill.md` file next to it, printed
+by `imp skill std/<name>` and registered in `cli/src/skill.js` (`adr/agent-skills.md`). A test fails
+when a component reaches a barrel without one, so this is enforced rather than remembered.
+
 - **General** — `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
@@ -145,6 +149,13 @@ and each group extends the `--imp-*` token surface as it lands. Translations are
 primitive for DOM rendered outside the owning subtree. The stdlib grows group by group; a group that
 needs a missing dependency waits for it.
 
+**The feedback group owes the HTTP client its wiring** (`adr/http-client.md`). A client publishes
+state-shaped `pending` and `lastError`, so `spinner`/`progress` should accept a client (or its name,
+resolved with `useHttpClient` from the component's own position) and show while its calls are in
+flight, and `alert`/`toast` should raise a standard failure banner from `lastError` — including the
+per-request handles a call opts into with `track`. It is ordinary reactive binding through the
+landed state layer, so the work is deciding the prop spelling, not building a coupling mechanism.
+
 **Native form semantics are deliberately not used.** A control inside its own shadow root does not
 participate in an outside `<form>`, so native submit, `FormData` collection and constraint
 validation cannot reach std components. Rather than adding form-associated custom elements
@@ -203,4 +214,4 @@ Each group extends `docs/std-components.md` with its own section as it lands.
   `:focus-visible` ring from `--imp-color-focus-ring`, and state mirrored into ARIA (`aria-busy` on
   a loading button) — but the full contract (labelling, roving focus, escape/dismiss) is still open.
 - **`console.warn` paths** (e.g. duplicate-key warnings surfaced from `each`) route through the
-  built-in logger (`todo/logger.md`).
+  built-in logger (`adr/built-in-logger.md`).

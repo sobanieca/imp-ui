@@ -34,7 +34,8 @@ is at or above the active level. The default level is `info` — imp's warnings 
 tracing stays quiet.
 
 Set the level per environment through the `IMP_LOG_LEVEL` value in an environment file (see
-_Environments_ in **[CLI](cli.md)**) — debug tracing in dev, warnings and errors in prod:
+_Environments_ in **[Configuration](config.md)**) — debug tracing in dev, warnings and errors in
+prod:
 
 ```json
 {

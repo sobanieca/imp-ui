@@ -61,20 +61,23 @@ is logged and skipped while the rest run (`error-boundaries.md`) — and a notif
 cuts off a cycle of states setting each other after 100 nested updates, with that error alone
 propagating to the setter.
 
-**Resolution bubbles up the real tree.** The provider listens for a `StateSubscription`
-`CustomEvent` on its own host element; `useState` dispatches that event (bubbling and composed, so
-it crosses the shadow roots every component now renders into, `shadow-dom-isolation.md`) from the
-asking component's host, and the nearest ancestor providing the name answers synchronously through
-`event.detail.subscribe(state, provider)`, stopping propagation. There is **no page-wide scope**:
-`document` never provides, and `initState`/`useState` called outside a mounting component throw —
-considered and rejected as a second concept to learn and a scope that is never released;
-app-lifetime state is instead ordinary component state initialized in the app's root component,
-which spans the tree and never unmounts. Consequently a component may **shadow** an ancestor's state
-by initializing the same name; re-initializing a name within the same scope throws — a scope
-initializes each name exactly once, and an accidental collision (two independent initializers
-picking one name at one scope) fails loudly instead of silently sharing state. `useState` returns a
-consumer helper wrapping the resolved provider; when its component moves, the helper rebinds to the
-provider at the new position (`component-moves-rebind.md`).
+**Resolution bubbles up the real tree.** The provider listens for a provider-lookup `CustomEvent` on
+its own host element; `useState` dispatches that event (bubbling and composed, so it crosses the
+shadow roots every component now renders into, `shadow-dom-isolation.md`) from the asking
+component's host, and the nearest ancestor providing the name answers synchronously with its state,
+stopping propagation. The lookup is keyed by a **kind** as well as a name, so it is the one
+resolution mechanism for every DOM-scoped resource imp owns rather than state's alone — the HTTP
+client (`http-client.md`) resolves through the same seam, and a future one costs a kind, not a
+second mechanism. There is **no page-wide scope**: `document` never provides, and
+`initState`/`useState` called outside a mounting component throw — considered and rejected as a
+second concept to learn and a scope that is never released; app-lifetime state is instead ordinary
+component state initialized in the app's root component, which spans the tree and never unmounts.
+Consequently a component may **shadow** an ancestor's state by initializing the same name;
+re-initializing a name within the same scope throws — a scope initializes each name exactly once,
+and an accidental collision (two independent initializers picking one name at one scope) fails
+loudly instead of silently sharing state. `useState` returns a consumer helper wrapping the resolved
+provider; when its component moves, the helper rebinds to the provider at the new position
+(`component-moves-rebind.md`).
 
 **State lifetime follows its owner.** A state is released when its component unmounts (the host
 listener is removed with the mount's cleanups) and a remount reinitializes it; sibling instances own

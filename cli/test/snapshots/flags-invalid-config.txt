@@ -1,0 +1,17 @@
+$ imp build --env prod  (flags: "CHECKOUT_V2")
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] invalid imp.json — 'flags' must be an array of flag names, like ["CHECKOUT_V2"]
+
+$ imp build --env prod  (flags: ["IMP_BASEPATH"])
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] invalid imp.json — flag 'IMP_BASEPATH' must not start with IMP_, which is reserved for imp's own environment values

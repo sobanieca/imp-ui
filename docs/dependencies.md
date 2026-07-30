@@ -173,6 +173,11 @@ components that expect it.
 that dependency's self-contained bundle plus any assets the package needs — a `.wasm` binary, CSS,
 images, fonts — emitted as sibling files, so removing the folder removes the dependency completely.
 
+An asset a package **imports** is carried into the production build automatically, content-hashed
+under `assets/`. An asset a package instead loads by URL at runtime is not something the build can
+see: copy it into your `public/` folder so it ships (see
+**[The `public/` folder](cli.md#the-public-folder)**).
+
 **Commit this folder.** It is deliberately cheap to keep in git: unlike a `node_modules` tree, it
 stores only the code that is actually reachable from your imports, already bundled and minified —
 one small file per dependency, not thousands. In exchange you get:

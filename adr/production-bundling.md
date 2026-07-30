@@ -36,11 +36,9 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   unchanged; inline module scripts are bundled as additional entries and re-inlined. Lazily loaded
   modules (`import()`) and code shared between entry points split into content-hashed files under
   `chunks/`.
-- **Unbundled files ship verbatim.** Every file the bundler consumed as an input (module sources,
-  vendored bundles) is omitted from the output; everything else in the project — stylesheets,
-  images, other assets, including vendored dependency assets referenced by runtime URL — is copied
-  through unchanged, minus `imp.json` and internal folders. The output directory (default `dist/`,
-  replaced on each run) is the complete uploadable site.
+- **Static assets ship from `public/`**, whose contents are copied to the output root unchanged and
+  are the only files copied — see `public-folder-static-assets.md`. The output directory (default
+  `dist/`, replaced on each run) is the complete uploadable site.
 - **A JS entry emits a self-contained module**: imp and all dependencies compiled in, so an imp
   component can be dropped into any application without a runtime. No files are copied in this mode.
 - **`targetImpHost: true` in `imp.json` (JS entries only) keeps `imp` imports out of the bundle** as

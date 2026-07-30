@@ -1,0 +1,8 @@
+$ imp skill bogus
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] unknown skill 'bogus' — run 'imp skill' for the index · subjects: imports, rendering, components, state, http, routing, std, theming, i18n, logging, feature-flags, cli, init, config, start, build, mocks, preview, testing, dependencies, lint, fmt, resize, skill, update, std/button, std/heading, std/text, std/link, std/emptyState · for a component of this project pass its path: imp skill ./path/to/component.js

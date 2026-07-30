@@ -45,6 +45,12 @@ import { button as styledButton } from 'imp/std'
 Importing a group that does not exist yet is an error that tells you what does exist, so a typo
 never turns into a mysterious missing module.
 
+Every component here also ships a **skill** — the short, mechanical version of this page for one
+component: call shape, prop table, and the mistakes it invites. `imp skill std/button` prints it, so
+an AI agent writing against the library can check a component before it uses it. Your own components
+publish theirs the same way, by putting a `counter.skill.md` file next to the module (see
+**[Components](components.md)**).
+
 ## The shared rules
 
 A handful of conventions hold for every component in the library, so once you have used one you can

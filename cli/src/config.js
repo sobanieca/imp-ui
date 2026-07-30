@@ -1,4 +1,4 @@
-import { dirname, join } from '@std/path'
+import { dirname, join, resolve } from '@std/path'
 import { applyEdits, modify, parse as parseJsonc, printParseErrorCode } from './vendor/jsonc.js'
 
 const isPlainObject = (value) =>
@@ -70,6 +70,18 @@ export async function updateConfigFile(path, changes) {
   await Deno.writeTextFile(path, text)
 }
 
+export function mocksSetting(config) {
+  const declared = config.mocks
+  if (declared === undefined) return null
+  return { folder: declared.folder, enabled: declared.enabled }
+}
+
+const RESERVED_FLAG_PREFIX = 'IMP_'
+
+const PUBLIC_FOLDER = 'public'
+
+export const publicDirectory = (root) => resolve(root, PUBLIC_FOLDER)
+
 export async function loadImpConfig(startDir) {
   const found = await findConfigFile(startDir)
   if (!found) return {}
@@ -97,6 +109,22 @@ export async function loadImpConfig(startDir) {
   for (const [alias, path] of Object.entries(config.environments ?? {})) {
     if (typeof path !== 'string') {
       throw new Error(`invalid ${name} — environment '${alias}' must be a string path`)
+    }
+  }
+  if (config.flags !== undefined) {
+    if (
+      !Array.isArray(config.flags) ||
+      config.flags.some((flag) => typeof flag !== 'string' || flag === '')
+    ) {
+      throw new Error(
+        `invalid ${name} — 'flags' must be an array of flag names, like ["CHECKOUT_V2"]`,
+      )
+    }
+    const reserved = config.flags.find((flag) => flag.startsWith(RESERVED_FLAG_PREFIX))
+    if (reserved !== undefined) {
+      throw new Error(
+        `invalid ${name} — flag '${reserved}' must not start with ${RESERVED_FLAG_PREFIX}, which is reserved for imp's own environment values`,
+      )
     }
   }
   if (config.pwa !== undefined) {
@@ -170,6 +198,23 @@ export async function loadImpConfig(startDir) {
     }
     if (typeof specifier !== 'string') {
       throw new Error(`invalid ${name} — dependency '${alias}' must be a string specifier`)
+    }
+  }
+  if (config.mocks !== undefined) {
+    if (!isPlainObject(config.mocks)) {
+      throw new Error(
+        `invalid ${name} — 'mocks' must be an object naming the folder and whether it serves, like { "folder": "mocks", "enabled": true }`,
+      )
+    }
+    if (typeof config.mocks.folder !== 'string') {
+      throw new Error(
+        `invalid ${name} — 'mocks.folder' must be a string path to the folder holding your *.mock.js files`,
+      )
+    }
+    if (typeof config.mocks.enabled !== 'boolean') {
+      throw new Error(
+        `invalid ${name} — 'mocks.enabled' must be true or false, so every project says outright whether it develops against mocks (--mock and --no-mock override it per run)`,
+      )
     }
   }
   if (config.version !== undefined && typeof config.version !== 'string') {

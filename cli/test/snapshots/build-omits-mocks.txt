@@ -1,0 +1,15 @@
+$ imp build  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built index.html → dist/
+  mocks/ left out — mocks serve in imp start
+  app.js (<size>)
+  index.html (<size>)
+
+--- stderr ---
+(empty)
+
+--- output files ---
+dist/app.js
+dist/index.html

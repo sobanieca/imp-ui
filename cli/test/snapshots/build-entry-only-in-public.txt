@@ -1,0 +1,9 @@
+$ imp build  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] file not found: <tmp>/index.html
+        public/index.html exists — move it to the project root: public/ ships verbatim, while the entry page is the one imp bundles, injects environment values into and adds PWA tags to

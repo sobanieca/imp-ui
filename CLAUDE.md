@@ -1,5 +1,20 @@
 # CLAUDE.md
 
+## imp is unreleased — do not preserve backward compatibility
+
+Until imp ships a `1.` version or higher, **treat it as never having been released**: there are no
+existing users, no installed apps, and nothing in the wild to break. So when a better design shows
+up, take it outright — rename or remove an export, change a config key, change what a command
+prints, change the shape of anything.
+
+- **Never add a compatibility shim, a deprecated alias, a fallback path, or a migration note.** Fix
+  every call site in this repo, update the docs and skills to describe only the new design, and
+  delete the old one.
+- **Never let the old design survive in prose.** Docs, skills and ADRs describe what imp does now;
+  they are not a changelog, and they must not mention what a key or an export used to be called.
+- Reconsider this only when the version reaches `1.0.0` — from then on, a breaking change is a real
+  cost to weigh.
+
 ## Hide Deno from the user
 
 imp uses Deno as its underlying runtime and toolchain, but **this must stay an implementation
@@ -50,6 +65,40 @@ The docs will be published on a public site, so:
 - Do not reference `adr/` or `todo/` from docs. When a design rationale helps the reader, summarize
   it inline in plain language.
 - No maintainer notes or TODO markers in docs — planned work belongs in `todo/`.
+
+Docs are for a person. The agent-facing text for the same subject lives in `skills/` — see below.
+
+## Agent skills (`skills/` and `*.skill.md`)
+
+`skills/` is the corpus `imp skill <subject>` prints for an AI agent (`adr/agent-skills.md`). It is
+the **only** documentation compiled into the binary; `docs/` is the public site's source and is
+never read at runtime. One page per subject, registered in `cli/src/skill.js` with its summary,
+group and aliases; a test asserts the folder and the registry match exactly.
+
+The two corpora are **independent**. They serve different readers through different channels, so
+neither dictates the other's structure: a subject may be one skills page and part of a docs page, or
+the reverse, and an agent-only page with no docs counterpart is fine. Page names happen to line up
+today; nothing enforces that.
+
+A skill page is the same subject as its docs page, written for a different reader: an agent that
+needs to write correct code now and pays for every token it reads. So it is short and mechanical —
+the imports, the call shapes, API/prop/option tables, **the rules an agent gets wrong**, one worked
+example — and it drops the narrative, the rationale, and the reassurance a person reads a guide for.
+It is read as plain text in a terminal, so keep it self-contained; a link to a sibling page
+(`[state](state.md)`) is rewritten into `state (imp skill state)` when it prints, and every target
+is listed again on a `Related:` line at the foot of the page. Since the rewrite adds parentheses of
+its own, never wrap a link in yours: write `see [state](state.md)`, not `([state](state.md))`, which
+prints as the doubled `(state (imp skill state))`.
+
+Every component also ships an agent-facing manual next to it — `button.js` → `button.skill.md` — and
+standard components register theirs in `cli/src/skill.js`, which a test enforces against the
+`imp/std` barrels. Its first line is its summary, so start it with the component name. The same file
+is what `imp build` folds into a JS-entry bundle as `impSkill`, so it is the only place a
+component's skill is written.
+
+**Changing a feature means updating both audiences in the same change**: its `docs/` page for the
+reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check
+this — a page can be present and stale — so it is on whoever makes the change.
 
 ## After making changes
 

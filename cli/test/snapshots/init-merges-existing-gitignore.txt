@@ -1,0 +1,87 @@
+--- existing .gitignore ---
+# my stuff
+node_modules
+*.log
+.env*
+/dist
+.DS_Store
+
+$ imp init  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+Created a new imp project here.
+
+  imp.json            the one config file — pins imp <version>
+  index.html          the page imp serves
+  src/main.js         entry point: applies the theme, mounts the app
+  src/app.js          the app's components
+  test/app.test.js    unit test, runs in-process
+  test/app.spec.js    e2e spec, runs in a real browser
+  public/favicon.svg  published at the site root — replace it with your own mark
+  .gitignore          kept yours — appended the 4 entries it was missing
+
+[WARN] .gitignore already existed — appended .imp/, Thumbs.db, *.swp, .idea/ to it and left everything else in it untouched
+
+Next steps:
+  imp start        serve the app with live reload
+  imp test --unit  run the unit test (--e2e for the browser spec)
+  imp skill        read imp's manuals — an AI agent starts here
+
+Now point your AI agent at `imp skill` and start building!
+
+--- stderr ---
+(empty)
+
+--- merged .gitignore ---
+# my stuff
+node_modules
+*.log
+.env*
+/dist
+.DS_Store
+
+# added by imp init
+.imp/
+Thumbs.db
+*.swp
+.idea/
+
+$ imp init  (cwd: <tmp2>, already covered)
+exit code: 0
+
+--- stdout ---
+Created a new imp project here.
+
+  imp.json            the one config file — pins imp <version>
+  index.html          the page imp serves
+  src/main.js         entry point: applies the theme, mounts the app
+  src/app.js          the app's components
+  test/app.test.js    unit test, runs in-process
+  test/app.spec.js    e2e spec, runs in a real browser
+  public/favicon.svg  published at the site root — replace it with your own mark
+  .gitignore          left as it was — it already covers all of these
+
+Next steps:
+  imp start        serve the app with live reload
+  imp test --unit  run the unit test (--e2e for the browser spec)
+  imp skill        read imp's manuals — an AI agent starts here
+
+Now point your AI agent at `imp skill` and start building!
+
+--- stderr ---
+(empty)
+
+--- .gitignore after the second run (unchanged) ---
+# my stuff
+node_modules
+*.log
+.env*
+/dist
+.DS_Store
+
+# added by imp init
+.imp/
+Thumbs.db
+*.swp
+.idea/

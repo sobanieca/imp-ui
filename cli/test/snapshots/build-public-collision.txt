@@ -1,0 +1,8 @@
+$ imp build  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] public file would overwrite a generated file: app.js

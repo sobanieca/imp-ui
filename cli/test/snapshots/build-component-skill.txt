@@ -1,0 +1,31 @@
+$ imp build eager.js --outdir <component-out>  (cwd: <tmp>, component build)
+exit code: 0
+
+--- stdout ---
+built eager.js → <component-out>/
+  eager.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- impSkill exported by the component bundle ---
+# eager — WIDGETSKILLMARKER a statically imported component
+
+$ imp build --outdir app  (cwd: <tmp>, app build)
+exit code: 0
+
+--- stdout ---
+built index.html → app/
+  app.js (<size>)
+  chunks/lazy-<hash>.js (<size>)
+  index.html (<size>)
+
+--- stderr ---
+(empty)
+
+--- app bundles (eager imported statically, lazy dynamically) ---
+app.js
+chunks/lazy-<hash>.js
+
+[app files carrying skill text: none]
+[skill files copied into the app output: false]

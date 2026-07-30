@@ -8,6 +8,7 @@ imp test --unit --jobs 4   cap how many files run at once (default: your CPU cou
 imp test --e2e --filter x  run only tests whose name contains <text>
 imp test --unit --list     print the selected files as JSON (for a CI matrix)
 imp test --e2e --video vid record each e2e spec as an animated GIF into ./vid
+imp test --e2e --mock      answer the specs' requests from your *.mock.js files
 ```
 
 `imp test` is imp's built-in test runner. It covers two levels of testing through one command and
@@ -32,7 +33,7 @@ To run a whole level, name it and imp does the fan-out for you: `imp test --unit
 `*.test.js` file and `imp test --e2e` every `*.spec.js` file, then runs each one in **its own
 process, in parallel**. Passing files collapse to a single `✓ <file>` line; a failing file prints
 its full output so you see exactly what broke (see _Reading results_). The command exits `1` if any
-file failed. (`.git`, `node_modules`, and `dist` are always skipped during discovery.)
+file failed. (`.git`, `node_modules`, `dist`, and `.imp` are always skipped during discovery.)
 
 A bare `imp test` with no level and more than one candidate file won't guess — it asks you to pick
 `--unit`, `--e2e`, or a single file, runs nothing, and **exits non-zero**. This keeps imp from ever
@@ -52,6 +53,9 @@ Flags:
   `--unit`/`--e2e` to feed a CI matrix — see _One job per spec in CI_).
 - `--video <dir>` — record each e2e spec's browser session as an animated GIF into `<dir>` (see
   _Recording a spec as a GIF_).
+- `--mock` / `--no-mock` — serve your project's [mock responses](cli.md#mock-responses--mockjs) to
+  e2e specs, or force them at the real API. Without either flag, specs follow the default in your
+  `imp.json`.
 
 ## Writing tests
 
@@ -447,6 +451,12 @@ If your app's entry page is not `index.html`, set it in `imp.json`:
   "test": { "entry": "app.html" }
 }
 ```
+
+Specs run against the same server `imp start` runs, so a project with
+**[mock responses](cli.md#mock-responses--mockjs)** can point them at fixtures instead of a backend:
+`imp test --e2e --mock` makes the `*.mock.js` files answer your app's requests during the spec, with
+no stub and no configuration in the test. `--no-mock` forces a run against the real API, and with
+neither flag the suite follows the default in your `imp.json`.
 
 ### Recording a spec as a GIF
 

@@ -1,0 +1,44 @@
+$ imp build  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built index.html → dist/
+  base path /my-imp-app — root-absolute urls prefixed for a sub-path deployment
+  app.js (<size>)
+  assets/note.txt (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/chunk-<hash>.js (<size>)
+  chunks/lazy-<hash>.js (<size>)
+  index.html (<size>)
+  styles.css (<size>)
+
+--- stderr ---
+(empty)
+
+--- output files ---
+dist/app.js
+dist/assets/note.txt
+dist/chunks/chunk-<hash>.js
+dist/chunks/chunk-<hash>.js
+dist/chunks/lazy-<hash>.js
+dist/index.html
+dist/styles.css
+
+--- dist/index.html ---
+<!doctype html>
+<html lang="en">
+  <head>
+<script>globalThis.__IMP_ENV__ = {"IMP_BASEPATH":"/my-imp-app"}</script>
+    <meta charset="utf-8">
+    <title>bundle fixture</title>
+    <link rel="stylesheet" href="/my-imp-app/styles.css">
+    <script type="module">
+import{a as e}from"./chunks/chunk-<hash>.js";console.log("inline module sees imp:",e());
+</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/my-imp-app/app.js"></script>
+    <script type="module" src="https://example.com/external.js"></script>
+  </body>
+</html>

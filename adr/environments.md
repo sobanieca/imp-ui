@@ -44,12 +44,15 @@ Two constraints shaped the mechanism:
   touches the global directly.
 - **Env files stay out of the build output.** Every file referenced by `environments` is excluded
   from the static copy into the build output directory — it is build-time config, like `imp.json`.
+- **A value that switches a feature on or off is a flag, not an env value.** Names listed in
+  `imp.json`'s `flags` are removed from the injected `env` object and read through `flag()` instead,
+  which `imp build` resolves and folds away; see `adr/feature-flags.md`.
 
 ## Consequences
 
 - One authoring API and one behavior across `imp start` and `imp build`; no bundler-vs-dev-server
-  skew. If tree-shaking unused env keys out of production ever matters, an esbuild `define` layer
-  can be added on top of the global without changing `import { env }`.
+  skew. `env` values are always read at runtime — nothing about them is folded or tree-shaken, which
+  is why anything meant to remove code from a production build goes through `flag()` instead.
 - Env values ship to the browser and are fully readable by any visitor. `$env.` keeps values out of
   the repo; it does not make them private. Only publishable keys and public config belong here.
 - Env files holding `$env.` secrets or per-developer values should be git-ignored; they are read at

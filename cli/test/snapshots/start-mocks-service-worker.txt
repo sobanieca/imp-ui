@@ -1,0 +1,12 @@
+--- registered mocks and what they answer ---
+mocks/admin/reports.mock.js #1
+mocks/users.mock.js #1
+mocks/users.mock.js #2
+mocks/users.mock.js #3
+
+GET /api/users → 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay
+POST /api/users → 201 application/json {"id":"u3","name":"Alan"}
+GET /api/reports?name=q3 → 200 application/json {"report":"q3"}
+GET /api/flaky → 200 application/json {"calls":1}
+GET /api/flaky → rejected: simulated network error on attempt 2
+GET /api/unmocked → 200 text/plain from the network
