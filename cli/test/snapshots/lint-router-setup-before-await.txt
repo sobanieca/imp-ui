@@ -1,0 +1,15 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-router-async)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/router-setup-before-await]: 'route.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead
+ --> app.js:14:5
+
+error[imp/router-setup-before-await]: 'router' runs after an await in an async onMount — past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
+ --> app.js:16:20
+
+Found 2 problems
+Checked 1 file

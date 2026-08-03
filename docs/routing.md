@@ -280,6 +280,26 @@ The root receives the same `{ params, query }` a screen factory gets, so a prefi
 the shell too (`root: ({ params }) => orgShell(params.orgId)`). A prefix param that changes remounts
 the area, root included.
 
+A root that loads something before it renders needs one thing in the right order. `router()` with no
+table finds its area through the component that is mounting, exactly as `useState` and
+`useHttpClient` find theirs — so in an **async** root it has to be called before the first `await`:
+
+```js
+const shell = component('admin-shell', {
+  onMount: async () => {
+    const api = useHttpClient('myapp.admin')
+    const screens = router() //                    resolve the slot first…
+    const settings = await api.get('/settings') // …then await
+    return div(adminNav(settings), screens)
+  },
+})
+```
+
+Called after the `await`, it cannot see the area any more and fails with `'routes' is required` —
+which reads as if the table were missing rather than as a matter of ordering. The
+`imp/router-setup-before-await` rule of **[Linting](lint.md)** catches it before you run the app. A
+`router({ routes })` with its own table looks nothing up and can be built anywhere.
+
 When you don't want to code-split, keep the section's routes in your top-level table like any other
 screen; reach for an area precisely when you want that section's code loaded on demand. A single
 rarely-visited screen is worth an area of its own — a one-entry table is a perfectly ordinary area:
@@ -477,6 +497,13 @@ a({ href: url('/todos') }, 'All todos')
   and right when it is — only your screens know which. A screen that should take focus can focus its
   own heading in `instance.afterMount`, or you can maintain a shared visually-hidden live region and
   update it from `useRoute().watch(...)`.
+- **Doing it once for every screen** is usually the better shape: give the element your router slot
+  renders into a `tabindex` of `-1`, and focus it from `useRoute().watch(...)` whenever the path
+  changes. Compare the path rather than the whole route, so a query-string change never pulls focus
+  out of the input the reader is typing in, and skip the first call — it fires with the route the
+  page loaded on, where there is nothing to move focus away from. Style that element's `:focus` with
+  `outline: none`: the focus is programmatic, so the browser would otherwise ring the whole screen
+  on arrival.
 
 ## Deploying: deep links and refresh
 

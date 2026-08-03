@@ -64,6 +64,24 @@ const HTTP_SETUP_HELPERS = new Set(['initHttpClient', 'useHttpClient'])
 
 const HTTP_CLIENT_HELPERS = new Set(['createHttpClient', 'initHttpClient', 'useHttpClient'])
 
+const ROUTER_SETUP_HELPERS = new Set(['router'])
+
+const ROUTE_HANDLE_CREATORS = new Set(['router', 'useRoute'])
+
+const isRoutesKey = (property) =>
+  !property.computed &&
+  ((property.key.type === 'Identifier' && property.key.name === 'routes') ||
+    (property.key.type === 'Literal' && property.key.value === 'routes'))
+
+const rendersEnclosingArea = (node) => {
+  const [options] = node.arguments
+  if (options === undefined) return true
+  if (options.type !== 'ObjectExpression') return false
+  return !options.properties.some((property) =>
+    property.type === 'SpreadElement' || isRoutesKey(property)
+  )
+}
+
 const classifyFactory = (importedName) => {
   if (importedName === 'el') return 'el'
   if (ELEMENT_FACTORIES.has(importedName) || STD_COMPONENTS.has(importedName)) return 'tag'
@@ -165,7 +183,7 @@ const createLiteralNameRule = (source, helperNames, nameProblem) => ({
 })
 
 const createSetupBeforeAwaitRule = (
-  { source, setupHelpers, handleCreators, setupMessage, watchMessage },
+  { source, setupHelpers, handleCreators, setupMessage, watchMessage, appliesTo = () => true },
 ) => ({
   create(context) {
     const creatorLocals = new Map()
@@ -245,7 +263,7 @@ const createSetupBeforeAwaitRule = (
       'Program:exit'() {
         for (const node of candidates) {
           const creator = calledCreator(node.callee)
-          if (creator !== null && setupHelpers.has(creator)) {
+          if (creator !== null && setupHelpers.has(creator) && appliesTo(node)) {
             context.report({ node, message: setupMessage(creator) })
             continue
           }
@@ -359,6 +377,16 @@ export default {
       setupMessage: (helper) =>
         `'${helper}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
       watchMessage: null,
+    }),
+    'router-setup-before-await': createSetupBeforeAwaitRule({
+      source: 'imp/router',
+      setupHelpers: ROUTER_SETUP_HELPERS,
+      handleCreators: ROUTE_HANDLE_CREATORS,
+      appliesTo: rendersEnclosingArea,
+      setupMessage: () =>
+        `'router' runs after an await in an async onMount — past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable`,
+      watchMessage: (handle) =>
+        `'${handle}.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead`,
     }),
     'no-root-query-in-mount': {
       create(context) {

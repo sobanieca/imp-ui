@@ -15,6 +15,7 @@ const IMP_RULES = {
   'imp/state-setup-before-await': 'error',
   'imp/http-client-name-namespace': 'error',
   'imp/http-client-setup-before-await': 'error',
+  'imp/router-setup-before-await': 'error',
   'imp/no-root-query-in-mount': 'error',
   'imp/component-name': 'error',
   'imp/import-source': 'error',

@@ -159,6 +159,34 @@ Resolve every client you need up front; the handles work anywhere afterwards, in
 handlers and after any number of `await`s. `createHttpClient` is not flagged — a client you own
 yourself needs no mounting component and can be built anywhere.
 
+### `imp/router-setup-before-await`
+
+A `router()` with no `routes` renders the routes of the **area around it**, which it finds through
+the mounting component — so in an area's `root` it is position-sensitive in exactly the way state
+and clients are (see **[Routing](routing.md)**). Called after the first `await`, it cannot see the
+area and reports the misleading `'routes' is required` instead:
+
+```js
+const shell = component('admin-shell', {
+  onMount: async () => {
+    const api = useHttpClient('myapp.admin')
+    const settings = await api.get('/settings')
+    return div(adminNav(settings), router())
+  },
+})
+```
+
+```
+error[imp/router-setup-before-await]: 'router' runs after an await in an async onMount — past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
+ --> src/admin/shell.js:5:34
+```
+
+Build the slot first and use it afterwards — `const screens = router()` above the `await`, then
+`div(adminNav(settings), screens)`. A `router({ routes })` with its own table is **not** flagged: it
+looks nothing up, so it can be built anywhere. The rule also flags `watch` on a `useRoute()` handle
+after the first `await`, which needs a mounting component to own the subscription — bind the route
+to DOM with `text`/`view`/`each` instead, or watch it before the `await`.
+
 ### `imp/no-root-query-in-mount`
 
 While `onMount` runs, the DOM it returns is **not in the shadow root yet** — imp inserts it after

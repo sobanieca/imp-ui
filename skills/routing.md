@@ -69,6 +69,11 @@ would also match. Trailing slashes are ignored.
   pattern pointing at an area matches as a **prefix**; every other pattern matches exactly.
 - **An area's own routes are written relative to the prefix** (`'/users'` inside `/admin` serves
   `/admin/users`).
+- **A table-less `router()` is position-sensitive like `useState`** — it finds its area through the
+  mounting component, so in an async `root` it must be called **before the first `await`**; keep the
+  slot in a variable and use it after. Past the await it throws `'routes' is required`, which reads
+  as if the table were missing. Lint rule `imp/router-setup-before-await`. A `router({ routes })`
+  looks nothing up and can be built anywhere.
 - **A query-only change keeps the current screen mounted** — read the live query from `useRoute()`,
   not from the factory's `query`, on a screen whose query can change while it stays up. Changing the
   pattern or a `:param` mounts a fresh screen and unmounts the old one.
@@ -131,6 +136,10 @@ state above the router.
 
 Scroll is managed for you (top on forward navigation, restored on back/forward). **Focus is yours**:
 focus a heading in `instance.afterMount`, or announce via a live region from `useRoute().watch(…)`.
+Do it once for all screens by giving the element the router slot renders into `tabindex: -1` and
+focusing it from `useRoute().watch(…)` when the **path** changes — compare paths (a query change
+must not steal focus from an input), skip the first call (it fires with the loaded route), and style
+that element `:focus { outline: none }` or the browser rings the whole screen on arrival.
 
 Serving under a sub-path: set the `IMP_BASEPATH` environment value of [config](config.md) and keep
 writing app-root paths (`/todos`). imp strips and re-adds it. Only an `href` you build yourself

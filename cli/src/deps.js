@@ -85,5 +85,9 @@ export async function bundleDependency({ specifier, alias }) {
 }
 
 export async function shutdownBundler() {
-  if (esbuildReady) await esbuild.stop()
+  if (!esbuildReady) return
+  const ready = esbuildReady
+  esbuildReady = null
+  await ready
+  await esbuild.stop()
 }

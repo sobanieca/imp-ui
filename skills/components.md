@@ -70,11 +70,12 @@ Re-inserting in a later task is a real remount (also the way to force one).
   it, or use `instance.afterMount`.
 - **A `placeholder` with a synchronous `onMount` is never seen** and warns. Pair it with an async
   `onMount` (or one returning a promise), or drop it.
-- **Resolve state and http clients before the first `await`.** `initState`, `useState`, `watch`,
-  `initHttpClient` and `useHttpClient` throw past it, under the `imp/state-setup-before-await` and
-  `imp/http-client-setup-before-await` rules of [lint](lint.md). `get`/`set`, calls through a client
-  handle, and DOM built from either work anywhere — the full rules are in [state](state.md) and
-  [http](http.md).
+- **Resolve state, http clients and an area's `router()` before the first `await`.** `initState`,
+  `useState`, `watch`, `initHttpClient`, `useHttpClient` and a table-less `router()` throw past it,
+  under the `imp/state-setup-before-await`, `imp/http-client-setup-before-await` and
+  `imp/router-setup-before-await` rules of [lint](lint.md). `get`/`set`, calls through a client
+  handle, and DOM built from any of them work anywhere — the full rules are in [state](state.md),
+  [http](http.md) and [routing](routing.md).
 - **Never store per-mount resources at module scope** — use the instance; every mount gets its own.
 - **Component internals are private.** `document.querySelector` and page CSS stop at the boundary.
   For a live handle on something a child shows, build the node in the parent and pass it in.
