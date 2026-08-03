@@ -42,7 +42,8 @@ bundler, and assertions all still run in-process.
 
 - The binary is fully self-contained and works offline: no toolchain downloads, no ambient `deno`,
   no version skew between imp and its tools — an imp release pins its formatter and linter behavior.
-  Dev mode (`deno task imp`) and the compiled binary share one code path.
+  `deno task imp` in this repo runs that same compiled binary, so there is no second code path that
+  could drift from it.
 - `imp fmt` formats CSS/HTML/YAML out of the box (stock `deno fmt` gates these behind unstable
   flags) and `imp lint` covers inline scripts in HTML, which `deno lint` cannot.
 - Lint rule names follow ESLint conventions, and new imp rules are written against ESLint's plugin
@@ -50,7 +51,7 @@ bundler, and assertions all still run in-process.
   imp targets, with oxlint available as a future drop-in if that changes.
 - The wasm plugins add ~10 MB and the pre-bundled ESLint ~1.3 MB to the binary
   (`prebundled-npm-dependencies.md`). `deno run -A tools/download_fmt_plugins.js` and
-  `deno run -A tools/prebundle_npm_deps.js` must run before compiling or testing (wired into the
-  `compile` task, which the `test` task runs first).
+  `deno run -A tools/prebundle_npm_deps.js` must run before compiling (wired into the `compile`
+  task, which every task that invokes imp goes through).
 - User-supplied lint plugins (dynamic import of user JS inside a compiled binary) are not supported
   until verified separately.

@@ -100,15 +100,29 @@ component's skill is written.
 reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check
 this — a page can be present and stale — so it is on whoever makes the change.
 
-## Running the tests
+## Everything runs the compiled binary
 
-**Always go through the `deno task` scripts — never invoke the compiled `./imp` binary directly to
-run the library tests.** `deno task test:lib` and `test:lib:e2e` run the CLI from source
-(`cli/src/main.js`), which resolves the library straight out of `lib/src`, so they can never test
-stale code. Running `../../imp test` from `lib/test` uses the **compiled** binary with the library
-baked in, so every edit to `lib/src` is invisible until `deno task compile` runs again — a green run
-there proves nothing about the code you just wrote. `deno task test:cli` compiles first on purpose,
-because the compiled binary is what it tests.
+**Every `deno task` that invokes imp runs the compiled `./imp`, never `cli/src/main.js`.** One imp,
+the same one users get — there is no second "from source" mode that could behave differently.
+
+Each one is `deno task compile && ./imp …`. `compile` rebuilds only when the binary is older than
+some git-visible file, so any edit to `cli/src` or `lib/src` forces a rebuild before the command
+runs — a green test run can never be about stale code — while an unchanged tree costs one
+`git ls-files` and prints that it skipped.
+
+**Always go through the tasks — never invoke `./imp` by hand** (`../../imp test` from `lib/test`,
+say). A bare `./imp` skips the freshness check and silently runs whatever was compiled last.
+
+## Previewing the standard components
+
+`deno task preview` serves every `*.preview.js` under `lib/src/std` on <http://localhost:4517/> —
+the working surface for developing a standard component.
+
+**Editing a component mid-session does not reach the page: restart the task.** The dev server
+reloads on save and rebuilds the preview page, but a preview's `import { button } from 'imp/std'`
+resolves to the library embedded in the running binary, so the page comes back byte-identical.
+Preview files themselves are read from disk, so edits to a `*.preview.js` do live-reload. The loop
+for a component edit is Ctrl-C and `deno task preview` again, which recompiles first.
 
 ## After making changes
 

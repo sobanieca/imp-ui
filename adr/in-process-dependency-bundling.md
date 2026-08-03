@@ -42,13 +42,13 @@ the dependency's vendor folder.
 ## Consequences
 
 - The compiled binary is self-contained for bundling: no ambient `deno`, no `node_modules`, no
-  subprocess. Dev mode (`deno task imp`) and the compiled binary share one code path. This removes
-  the last subprocess dependency the CLI had, fully satisfying `in-process-toolchain.md`.
+  subprocess. This removes the last subprocess dependency the CLI had, fully satisfying
+  `in-process-toolchain.md`.
 - Unlike fmt and lint, `imp install` needs the network: it fetches packages from the npm and jsr
   registries. Downloads land in Deno's per-user global cache (`DENO_DIR`), never inside the project;
   the only project-visible output is the vendored bundle (`vendored-dependencies.md`).
 - wasm esbuild is roughly an order of magnitude slower than native esbuild; that cost is paid once
   per `imp install`, never while serving or in CI.
 - Resolution semantics match Deno's own, since the plugin uses Deno's resolver crates — the same
-  behavior apps get under `deno task imp`. The engine and resolver are reused by `imp build`
+  behavior apps get from imp. The engine and resolver are reused by `imp build`
   (`production-bundling.md`).

@@ -44,9 +44,9 @@ of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
 - New runtime npm dependencies must be routed through `tools/prebundle_npm_deps.js` rather than
   imported directly from source that ships in the binary — a direct npm import silently re-adds a
   whole package tree.
-- Running `imp lint` or `imp test` from source (`deno task imp`) requires the vendor bundles to
-  exist, exactly as `imp fmt` already requires the vendored wasm plugins — `deno task compile` (or
-  the prebundle tool alone) produces them.
+- The vendor bundles must exist before the binary can be compiled, exactly as `imp fmt` already
+  requires the vendored wasm plugins — `deno task compile` runs the prebundle tool first, and every
+  task that invokes imp compiles through it, so this is never a manual step.
 - Dependency bumps are manual: edit the version pins in `tools/prebundle_npm_deps.js` — these
   packages are invisible to `deno outdated`. The next compile detects the version banner mismatch
   and re-bundles automatically.
