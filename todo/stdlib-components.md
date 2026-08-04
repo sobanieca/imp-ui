@@ -47,8 +47,10 @@ when a component reaches a barrel without one, so this is enforced rather than r
   `imp/std/display` subpath and fixing the wording convention (`adr/translatable-by-default.md`).
 - **Feedback** — `spinner`, `progress`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
   `popconfirm`, `result` _(later)_.
-- **Navigation** — `tabs`, `menu`, `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`,
-  `commandPalette` _(later)_, `anchorNav` _(later)_, `floatButton` _(later)_.
+- **Navigation** — `menu`, `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `commandPalette`
+  _(later)_, `anchorNav` _(later)_, `floatButton` _(later)_. `tabs` has landed, opening the
+  `imp/std/navigation` subpath and fixing the data-driven shape every composite widget with internal
+  ARIA id references follows (`adr/component-preview.md` is its first consumer).
 - **Data** — `table` (sorting, filtering, pagination, row selection), `list`, `tree`, `virtualList`
   _(later)_, `transferList` _(later)_.
 

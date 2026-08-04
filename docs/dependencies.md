@@ -189,6 +189,10 @@ one small file per dependency, not thousands. In exchange you get:
 - **Reviewable updates.** A dependency change shows up in code review as a change to its pin in
   `imp.json` and to its bundle.
 
+Committed does not mean maintained by you: `imp lint` and `imp fmt` skip the folder, so a package's
+minified bundle never reports findings against your code or gets reformatted under you. The one
+check that still looks at it is the file-size limit, since the bundle lands in git.
+
 ## Choosing dependencies well
 
 Each dependency is bundled independently and self-contained, so two packages that share an internal

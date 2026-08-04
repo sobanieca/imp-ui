@@ -1,7 +1,14 @@
 scenarios: zero, startsAtFive, lazy
 rendered values: 0, 5, 9
 state rows: demo.count=0, demo.count=5, demo.count=9
+tabs per scenario: Preview, Code
 resize handles per stage: 3
+after picking the code tab: false/true (panels hidden/shown)
+code shown for zero:
+import { counter } from './counter.js'
+
+counter()
+highlighted tokens for zero: keyword:import punctuation:{ punctuation:} keyword:from string:'./counter.js' punctuation:()
 after setting demo.count to 42: 42
 invalid JSON rejected: true
 language options: en, pl, ar

@@ -15,6 +15,7 @@ import {
   textField,
 } from 'imp/std/inputs'
 import { PRIORITIES } from '../todos.js'
+import { markdownNote } from '../components/markdown_note.js'
 import { message, words } from '../panels.js'
 
 export const priorityOptions = () =>
@@ -53,7 +54,13 @@ export const newTodoScreen = component('todo-app-new', {
             validateAsync: (value) =>
               Promise.resolve(value && isTaken(value) ? t('todo.form.taken') : null),
           }),
-          textArea({ field: 'notes', label: message('todo.form.notes'), rows: 3 }),
+          textArea({
+            field: 'notes',
+            label: message('todo.form.notes'),
+            help: message('todo.form.notesHelp'),
+            rows: 3,
+          }),
+          markdownNote({ field: 'notes', label: words('todo.form.notesPreview') }),
           row(
             { gap: 3, wrap: true },
             item(

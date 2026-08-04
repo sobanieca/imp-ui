@@ -7,8 +7,9 @@ imp lint --fix [...paths]    apply every available autofix
 
 Checks `.js`, `.mjs`, `.cjs`, and inline `<script>` blocks in `.html` (reported at their real line;
 `src` scripts and non-JS types are skipped). Code is linted as modern browser ES modules with
-browser globals. `.git`, `node_modules` and `dist` are always skipped. Exits `1` when any **error**
-remains, `0` for warnings only. **Run `imp lint` and `imp fmt` after every batch of edits.**
+browser globals. `.git`, `node_modules`, `dist` and the vendored `dependencies/` folder are always
+skipped. Exits `1` when any **error** remains, `0` for warnings only. **Run `imp lint` and `imp fmt`
+after every batch of edits.**
 
 The base is a standard recommended JavaScript rule set with ESLint's rule names. On top of it, imp's
 own rules are always applied as errors and cannot be reconfigured.

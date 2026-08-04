@@ -170,20 +170,22 @@ test('debounce fires once', async ({ clock }) => {
 
 Each spec file gets its own server, port, browser and page; tests in a file share the page, so a
 file reads as one user session. Each test receives `{ page, browser, baseUrl }`; `page` is a
-Puppeteer page.
+Puppeteer page whose selectors pierce shadow roots.
 
 ```js
 test('increments on click', async ({ page }) => {
-  await page.click('>>> #inc')
-  expect(await page.$eval('>>> #count', (el) => el.textContent)).toEqual('1')
+  await page.click('#inc')
+  expect(await page.$eval('#count', (el) => el.textContent)).toEqual('1')
 })
 ```
 
 The e2e server is the dev server, so `--mock` (or `mocks.enabled` in `imp.json`) feeds the whole
 suite from your `*.mock.js` files with no stub of any kind — see [mocks](mocks.md).
 
-**Use Puppeteer's deep combinator `>>>`** in every selector that reaches inside a component — a
-plain CSS selector stops at the shadow boundary. The page is already on your app before the first
+**Write plain CSS selectors — they already reach inside components.** Never prefix a selector with
+`>>>`; the search is deep from the page down. Use `>>>` only _between_ parts to disambiguate when a
+selector would match in more than one component, one per boundary crossed:
+`imp-submit-button >>> imp-button >>> button`. The page is already on your app before the first
 test; browser console and network stream to the terminal, and a failing test saves a screenshot
 under `.imp/screenshots/`. Set a different entry page with `test.entry` in `imp.json` (see
 [config](config.md)).

@@ -15,6 +15,7 @@ import {
   textArea,
   textField,
 } from 'imp/std/inputs'
+import { markdownNote } from '../components/markdown_note.js'
 import { loadingPanel, message, messagePanel, words } from '../panels.js'
 import { priorityOptions } from './new_todo.js'
 
@@ -56,7 +57,13 @@ export const todoScreen = component('todo-app-detail', {
             required: true,
             maxLength: 80,
           }),
-          textArea({ field: 'notes', label: message('todo.form.notes'), rows: 3 }),
+          textArea({
+            field: 'notes',
+            label: message('todo.form.notes'),
+            help: message('todo.form.notesHelp'),
+            rows: 3,
+          }),
+          markdownNote({ field: 'notes', label: words('todo.form.notesPreview') }),
           row(
             { gap: 3, wrap: true },
             item(

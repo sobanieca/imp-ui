@@ -22,7 +22,12 @@
     "esbuild-wasm/": "npm:/esbuild-wasm@0.28.1/"
   },
   "lint": {
-    "exclude": ["cli/test/fixtures/", "cli/src/vendor/", ".claude/worktrees/"]
+    "exclude": [
+      "cli/test/fixtures/",
+      "cli/src/vendor/",
+      "examples/todo/dependencies/",
+      ".claude/worktrees/"
+    ]
   },
   "fmt": {
     "semiColons": false,
@@ -32,6 +37,7 @@
       "cli/test/fixtures/",
       "cli/test/snapshots/",
       "cli/src/vendor/",
+      "examples/todo/dependencies/",
       ".claude/worktrees/"
     ]
   }

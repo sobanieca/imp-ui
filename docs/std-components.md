@@ -27,12 +27,14 @@ leaks out onto your page.
 `imp` and its subpaths are the framework — element factories, `component`, state, routing, theming
 (see **[Imports](imports.md)**). `imp/std` is the component library, split by group:
 
-| Import            | What it holds                                                                  |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `imp/std`         | The base set — `button`, `heading`, `text`, `link`                             |
-| `imp/std/layout`  | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` |
-| `imp/std/display` | `emptyState`                                                                   |
-| `imp/std/<group>` | The rest, group by group, as they land                                         |
+| Import               | What it holds                                                                  |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `imp/std`            | The base set — `button`, `heading`, `text`, `link`                             |
+| `imp/std/layout`     | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` |
+| `imp/std/inputs`     | `form` and the controls that bind to it                                        |
+| `imp/std/display`    | `emptyState`                                                                   |
+| `imp/std/navigation` | `tabs`                                                                         |
+| `imp/std/<group>`    | The rest, group by group, as they land                                         |
 
 Components take the obvious names, and a few of them match an element factory — `button` is both a
 plain `<button>` from `imp/html` and the styled component from `imp/std`. They never collide,
@@ -519,6 +521,65 @@ searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search�
 ```
 
 Use `field` inside a form and `value` outside one; passing both is a mistake imp reports.
+
+## `tabs` — from `imp/std/navigation`
+
+One strip of tabs over a set of panels. You describe the tabs as data and imp renders both halves —
+the strip and the panels — wired to each other:
+
+```js
+import { tabs } from 'imp/std/navigation'
+
+tabs({
+  label: 'Account sections',
+  items: [
+    { id: 'overview', label: 'Overview', content: overviewPanel() },
+    { id: 'usage', label: 'Usage', content: usagePanel() },
+    { id: 'billing', label: 'Billing', content: billingPanel() },
+  ],
+})
+```
+
+| Prop          | Values                                      | Default            |                                           |
+| ------------- | ------------------------------------------- | ------------------ | ----------------------------------------- |
+| `items`       | array of `{ id, label, content, disabled }` | `[]`               | The tabs and their panels                 |
+| `selected`    | an item's `id` — **live**                   | first enabled item | Which panel is showing                    |
+| `orientation` | `'horizontal'`, `'vertical'`                | `'horizontal'`     | Vertical puts the strip beside the panels |
+| `label`       | string — **live**                           | —                  | Names the strip for a screen reader       |
+| `events`      | `{ select }`                                | —                  | Fires with `detail: { id, index }`        |
+
+**Why the panels are data rather than children.** A tab and its panel point at each other by id —
+`aria-controls` one way, `aria-labelledby` the other — and an id reference cannot cross a shadow
+boundary. If you passed the panels as children of one component and the tabs as children of another,
+those references would silently resolve to nothing and a screen reader would announce a tab that
+controls nothing. Keeping both halves inside one component is what makes the wiring real, so the API
+takes one `items` array.
+
+The keyboard behaviour comes with it: arrow keys move along the strip (mirrored automatically under
+`dir="rtl"`), `Home` and `End` jump to the ends, disabled items are skipped, and selection follows
+focus. Exactly one tab is in the tab order at a time, so `Tab` takes you past the strip into the
+panel rather than through every tab.
+
+Left alone, `tabs` remembers its own selection. Pass `selected` to open on a particular panel, and
+pass a **state** when the selection is something your app owns — a route, say:
+
+```js
+const openTab = initState('settings.tab', 'profile')
+
+tabs({
+  label: 'Settings',
+  selected: openTab,
+  items: [
+    { id: 'profile', label: 'Profile', content: profileForm() },
+    { id: 'security', label: 'Security', content: securityForm() },
+  ],
+  events: { select: (event) => openTab.set(event.detail.id) },
+})
+```
+
+That pair cannot loop: `select` fires only for a choice the user made, never for a change your state
+drove. Every panel is built at mount and hidden when it is not showing, so whatever is inside one —
+a half-filled form, a scroll position — is still there when you come back to it.
 
 ## Custom elements next to yours
 

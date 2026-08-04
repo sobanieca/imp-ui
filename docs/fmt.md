@@ -12,8 +12,8 @@ a team never disagrees about formatting because of tool versions.
 
 Given paths (files or directories) are formatted in place; with no paths, the whole project is. The
 command exits with an error if a given path does not exist. Directories named `.git`,
-`node_modules`, `dist`, and `.imp` are always skipped; additional paths can be skipped with
-`exclude` (see _Options_ below).
+`node_modules`, `dist`, and `.imp` are always skipped, as is the vendored `dependencies/` folder;
+additional paths can be skipped with `exclude` (see _Options_ below).
 
 ## Supported languages
 

@@ -21,12 +21,14 @@ import * as stdModule from '../../lib/src/std/index.js'
 import * as stdDisplayModule from '../../lib/src/std/display/index.js'
 import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
+import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
 
 const STD_EXPORTS_BY_SPECIFIER = {
   'imp/std': stdModule,
   'imp/std/display': stdDisplayModule,
   'imp/std/layout': stdLayoutModule,
   'imp/std/inputs': stdInputsModule,
+  'imp/std/navigation': stdNavigationModule,
 }
 
 const EXPORTS_BY_SPECIFIER = {

@@ -62,7 +62,8 @@ installed micromark (npm:micromark@4.0.2)
 
 A bundle over `maxFileSize` (200 kB default) warns, because it lands in git. Raise `maxFileSize` or
 list the folder in `maxFileSizeIgnore` in `imp.json` to accept it — the same limit `imp lint`
-enforces.
+enforces. Apart from that limit, `dependencies/` is skipped by everything that walks the tree, so
+`imp lint` and `imp fmt` never report or rewrite a package's bundle.
 
 ## Trade-offs to design around
 

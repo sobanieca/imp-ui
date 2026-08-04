@@ -52,7 +52,10 @@ light DOM stays empty and untouched.
   component do not participate in outside `<form>`s, and `label[for]`/ARIA id references cannot
   point across the boundary — a component must keep such pairs inside itself.
 - Reading a component's rendered text or DOM from outside requires piercing: `host.textContent` is
-  empty by design; unit tests walk `shadowRoot`, e2e selectors use deep combinators (`>>>`).
+  empty by design, and unit tests walk `shadowRoot`. Because that would otherwise put a deep
+  combinator in front of every e2e selector — in an imp app there is no other kind — the page handed
+  to a spec pierces shadow roots by default, leaving `>>>` for naming a path when a selector is
+  ambiguous.
 - `onMount` code reaching for page-wide DOM (`document.querySelector`) only sees light DOM; the
   idioms are held references passed as args, `getRootNode().host` for a component's own host, and
   state for anything shared.

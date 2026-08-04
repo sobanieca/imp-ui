@@ -3,11 +3,12 @@
 Imported from `imp/std` and its groups. Nothing to install, no CSS to include. Each component is a
 real imp component rendering as its own element (`<imp-button>`, …) with its styles sealed inside.
 
-| Import            | Exports                                                                        | Per-component skill                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `imp/std`         | `button`, `heading`, `text`, `link`                                            | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                            |
-| `imp/std/layout`  | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` | `imp skill std/stack`, `std/row`, `std/grid`, `std/item`, `std/container`, `std/spacer`, `std/divider`, `std/scrollArea` |
-| `imp/std/display` | `emptyState`                                                                   | `imp skill std/emptyState`                                                                                               |
+| Import               | Exports                                                                        | Per-component skill                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `imp/std`            | `button`, `heading`, `text`, `link`                                            | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                            |
+| `imp/std/layout`     | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` | `imp skill std/stack`, `std/row`, `std/grid`, `std/item`, `std/container`, `std/spacer`, `std/divider`, `std/scrollArea` |
+| `imp/std/display`    | `emptyState`                                                                   | `imp skill std/emptyState`                                                                                               |
+| `imp/std/navigation` | `tabs`                                                                         | `imp skill std/tabs`                                                                                                     |
 
 Read the component's own skill before using it — this page is only the shared contract and a summary
 of the props.
@@ -39,7 +40,7 @@ section(
 - **No outer margins.** Spacing is the job of whatever lays them out.
 - **The `imp-` element prefix is reserved.** Name your own components `my-app-*`.
 - **Content lives in a shadow root**: `host.textContent` is empty by design. Unit tests walk
-  `shadowRoot`; e2e selectors use Puppeteer's `>>>` combinator. See [testing](testing.md).
+  `shadowRoot`; e2e selectors pierce shadow roots on their own. See [testing](testing.md).
 - A component that is never called never defines its element or compiles its styles.
 
 ## button
@@ -257,3 +258,32 @@ Rules an agent gets wrong:
   `validate` does not work — it is truthy, so every value looks invalid. Async checks run on blur
   and submit only, never per keystroke; debounce yourself if you need more.
 - Read the values anywhere in the subtree with `useState('imp.form')`.
+
+## Navigation — from `imp/std/navigation`
+
+```js
+import { tabs } from 'imp/std/navigation'
+
+tabs({
+  label: 'Account sections',
+  items: [
+    { id: 'overview', label: 'Overview', content: overviewPanel() },
+    { id: 'billing', label: 'Billing', content: billingPanel(), disabled: false },
+  ],
+})
+```
+
+| Component | Props                                                        |
+| --------- | ------------------------------------------------------------ |
+| `tabs`    | `items`, `selected` (live), `orientation`, `label`, `events` |
+
+Rules an agent gets wrong:
+
+- **Panels go in `items`, never as children** — a tab and its panel reference each other by id, and
+  ids cannot cross a shadow root, so one component must render both.
+- **`selected` is optional.** Without it `tabs` picks the first enabled item and manages selection
+  itself; pass a state when the app owns the selection, and listen with `events: { select }`.
+- **`select` fires only for a user's choice**, so a state bound both ways cannot loop.
+- Arrow keys, `Home`/`End` and RTL mirroring come with it — write no key handling.
+
+Full manual: `imp skill std/tabs`.

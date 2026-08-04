@@ -4,7 +4,11 @@ const todos = [
   {
     id: 't1',
     title: 'Read the imp skills',
-    notes: 'Start with imp skill state, then imp skill components.',
+    notes: `Start with \`imp skill state\`, then \`imp skill components\`.
+
+- **state** — named state, computed values, keyed lists
+- **components** — \`component()\`, props, the shadow root
+`,
     priority: 'high',
     estimate: 1,
     pinned: true,
@@ -13,7 +17,10 @@ const todos = [
   {
     id: 't2',
     title: 'Wire up the http client',
-    notes: 'One client in the root component, resolved from every screen below it.',
+    notes: `One client in the **root** component, resolved from every screen below it.
+
+> \`useHttpClient()\` runs before the first \`await\`.
+`,
     priority: 'normal',
     estimate: 2,
     pinned: false,
@@ -22,7 +29,9 @@ const todos = [
   {
     id: 't3',
     title: 'Translate the app into Polish',
-    notes: 'locales/pl.js — the built-in form messages are translated there too.',
+    notes:
+      'See [the imp docs](https://github.com/sobanieca/imp-ui) — `locales/pl.js` translates the ' +
+      'built-in form messages too.',
     priority: 'low',
     estimate: 0.5,
     pinned: false,

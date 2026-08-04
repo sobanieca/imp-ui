@@ -34,6 +34,7 @@ export const IMP_SUBPATH_MODULES = {
   'imp/std/display': 'std/display/index.js',
   'imp/std/layout': 'std/layout/index.js',
   'imp/std/inputs': 'std/inputs/index.js',
+  'imp/std/navigation': 'std/navigation/index.js',
 }
 
 const knownImpSubpaths = () => [

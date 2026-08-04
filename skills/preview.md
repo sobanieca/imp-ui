@@ -5,10 +5,11 @@ imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
 ```
 
-Serves each **preview file** as its own page: one labelled panel per named export, each holding the
-component in a resizable stage with a state editor beside it. No app boot, no backend, no navigating
-to the right screen. It is the same dev server as [start](start.md) underneath — terminal telemetry
-and reload on save included.
+Serves each **preview file** as its own page: one labelled panel per named export, under a
+**Preview** tab holding the component in a resizable stage with a state editor beside it, and a
+**Code** tab showing the call that built it. No app boot, no backend, no navigating to the right
+screen. It is the same dev server as [start](start.md) underneath — terminal telemetry and reload on
+save included.
 
 ## The preview file
 
@@ -62,11 +63,16 @@ preview file**, so scenarios that need different data differ by the arguments yo
 - **State editor** — the state the component manages, as JSON. Edit and apply (or `Ctrl`/`Cmd`+
   `Enter`) and the component updates through imp's normal fine-grained path — no remount, no reload.
   Each panel is bound to its own instance.
+- **Code tab** — the scenario's own call plus the preview file's import lines, syntax-highlighted in
+  the current theme's colours and ready to copy. It is read out of the file, so it cannot drift from
+  what rendered. Only exports written as `export const name = …` have one; a re-export through
+  `export { … }` shows a note instead.
 - **Theme, language and direction switchers** — fed by `preview.themes` and `preview.translations`
   in `imp.json`, see [config](config.md); choices survive reloads. Direction has **auto** (follows
   the language), **ltr** and **rtl** — pinning it while reading English is the quickest way to catch
-  a hardcoded `margin-left`. Only the component is affected, never the toolbar. See
-  [theming](theming.md) and [i18n](i18n.md).
+  a hardcoded `margin-left`. Direction applies to the component only, never the toolbar, so the
+  controls stay put; the theme applies to the whole page, because the page is itself built from
+  `imp/std`. See [theming](theming.md) and [i18n](i18n.md).
 
 ## Finding previews
 

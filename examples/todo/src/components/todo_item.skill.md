@@ -29,8 +29,8 @@ Rules an agent gets wrong:
 - **Render it inside a keyed `each`** —
   `items.each((todo) => todoItem({ todo }), (todo) => todo.id)` — so an unchanged row keeps its DOM
   and its switch.
-- **Its content is in a shadow root.** Unit tests walk `shadowRoot`; e2e selectors need Puppeteer's
-  `>>>`. The card carries `id="todo-<id>"`, which is what the specs select.
+- **Its content is in a shadow root.** Unit tests walk `shadowRoot`; e2e selectors pierce it on
+  their own. The card carries `id="todo-<id>"`, which is what the specs select.
 - The switch's accessible name is the todo's title, so a page full of rows still reads correctly.
 
 ```js

@@ -1,23 +1,13 @@
-import {
-  a,
-  aside,
-  button,
-  code,
-  div,
-  h2,
-  h3,
-  header,
-  label,
-  option,
-  p,
-  section,
-  select,
-  span,
-  textarea,
-} from 'imp/html'
+import { component, init, mount } from 'imp'
+import { a, code as codeTag, div, el, h2, pre, span } from 'imp/html'
+import { initState } from 'imp/state'
 import { applyTheme } from 'imp/theme'
-import { init } from 'imp'
 import { lang, setLang } from 'imp/i18n'
+import { button, text } from 'imp/std'
+import { row } from 'imp/std/layout'
+import { select, textArea } from 'imp/std/inputs'
+import { tabs } from 'imp/std/navigation'
+import { tokenizeJs } from './preview_highlight.js'
 import { asNodes } from '../../lib/src/nodes.js'
 import { runInMountScope } from '../../lib/src/component.js'
 import { findStateFrom } from '../../lib/src/state.js'
@@ -25,12 +15,19 @@ import { findStateFrom } from '../../lib/src/state.js'
 const THEME_STORAGE_KEY = 'imp.preview.theme'
 const LANGUAGE_STORAGE_KEY = 'imp.preview.lang'
 const DIRECTION_STORAGE_KEY = 'imp.preview.dir'
+
+const THEME_STATE = 'imp.preview.theme'
+const LANGUAGE_STATE = 'imp.preview.lang'
+const DIRECTION_STATE = 'imp.preview.dir'
+const DRAFT_STATE = 'imp.preview.draft'
+
 const BUILT_IN_THEMES = [
   'imp-light',
   'imp-dark',
   'imp-high-contrast-light',
   'imp-high-contrast-dark',
 ]
+const BASE_THEME_FOR = { light: 'imp-light', dark: 'imp-dark' }
 const DIRECTIONS = ['auto', 'ltr', 'rtl']
 
 const themes = new Map()
@@ -49,69 +46,298 @@ const MIN_STAGE_SIZE = 80
 const STATE_LOOKUP_ATTEMPTS = 30
 const STATE_LOOKUP_INTERVAL = 100
 const MAX_SCANNED_ELEMENTS = 500
+const COPIED_FEEDBACK_MS = 1200
 
-const CHROME_STYLES = `
-body { margin: 0; background: #0f1115; color: #e6e8ec;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-.imp-preview__bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
-  background: #171a21; border-bottom: 1px solid #262b36; position: sticky; top: 0; z-index: 10; }
-.imp-preview__brand { font-weight: 600; font-size: 14px; }
-.imp-preview__file { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
-  color: #9aa4b8; }
-.imp-preview__spacer { flex: 1; }
-.imp-preview__link { color: #7c9cff; text-decoration: none; font-size: 13px; }
-.imp-preview__link:hover { text-decoration: underline; }
-.imp-preview__control { display: flex; align-items: center; gap: 6px; font-size: 13px;
-  color: #9aa4b8; }
-.imp-preview__select { background: #0f1115; color: #e6e8ec; border: 1px solid #2c3342;
-  border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 13px; }
-.imp-preview__scenario { border-bottom: 1px solid #1e2230; padding: 20px 16px 28px; }
-.imp-preview__scenario-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.imp-preview__scenario-head h2 { margin: 0; font-size: 15px; color: #f2f4f8;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.imp-preview__panel { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-.imp-preview__stage-wrap { flex: 1 1 480px; min-width: 280px; display: flex;
-  flex-direction: column; gap: 8px; }
-.imp-preview__stage-bar { display: flex; align-items: center; gap: 8px; font-size: 12px;
-  color: #9aa4b8; }
-.imp-preview__readout { margin-left: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.imp-preview__button { background: #212734; color: #e6e8ec; border: 1px solid #2c3342;
-  border-radius: 6px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer; }
-.imp-preview__button:hover { background: #2a3140; }
-.imp-preview__button[disabled] { opacity: 0.5; cursor: not-allowed; }
-.imp-preview__stage-frame { position: relative; box-sizing: border-box; width: 100%;
-  max-width: 100%; margin: 0 auto; }
-.imp-preview__stage { box-sizing: border-box; width: 100%; height: 100%; min-height: 80px;
-  overflow: auto; padding: 16px; border: 1px solid #2c3342; border-radius: 8px;
-  background: var(--imp-color-surface, #ffffff); color: var(--imp-color-text, #0f172a); }
-.imp-preview__handle { position: absolute; touch-action: none; }
-.imp-preview__handle--right { top: 0; right: -5px; width: 10px; height: 100%; cursor: ew-resize; }
-.imp-preview__handle--bottom { left: 0; bottom: -5px; height: 10px; width: 100%;
-  cursor: ns-resize; }
-.imp-preview__handle--corner { right: -5px; bottom: -5px; width: 14px; height: 14px;
-  cursor: nwse-resize; border-right: 3px solid #4b556b; border-bottom: 3px solid #4b556b;
-  border-bottom-right-radius: 7px; }
-.imp-preview__handle:hover { background: rgba(124, 156, 255, 0.25); }
-.imp-preview__editor { flex: 0 1 320px; min-width: 260px; box-sizing: border-box;
-  background: #171a21; border: 1px solid #262b36; border-radius: 8px; padding: 12px 14px; }
-.imp-preview__editor h3 { margin: 0; font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.08em; color: #9aa4b8; }
-.imp-preview__hint { margin: 6px 0 0; font-size: 12px; color: #7b8497; line-height: 1.5; }
-.imp-preview__row { margin-top: 12px; }
-.imp-preview__row-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.imp-preview__name { flex: 1; font-size: 12px; color: #cfd6e4;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.imp-preview__field { width: 100%; box-sizing: border-box; background: #0f1115; color: #e6e8ec;
-  border: 1px solid #2c3342; border-radius: 6px; padding: 6px 8px; font-size: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
-.imp-preview__field[disabled] { opacity: 0.6; }
-.imp-preview__message { margin: 4px 0 0; font-size: 11px; color: #8b94a8; }
-.imp-preview__message--error { color: #ff9b9b; }
-.imp-preview__failure { margin: 0; padding: 12px 14px; border-radius: 8px; font-size: 13px;
-  background: #2a1618; border: 1px solid #57282c; color: #ffb4b4; white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.imp-preview__empty { padding: 40px 16px; color: #9aa4b8; }
+const DOCUMENT_STYLES = `
+body {
+  margin: 0;
+  background: var(--imp-color-surface-hover, #f1f5f9);
+  font-family: var(--imp-font-family, system-ui, sans-serif);
+}
+`
+
+const surface = `
+  background: var(--imp-color-surface, #ffffff);
+  border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+  border-radius: var(--imp-radius-lg, 10px);
+`
+
+const PAGE_STYLES = `
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--imp-space-3, 12px);
+    padding-block: var(--imp-space-2, 8px);
+    padding-inline: var(--imp-space-4, 16px);
+    background: var(--imp-color-surface, #ffffff);
+    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+  }
+
+  .brand {
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-bold, 700);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .file {
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .control {
+    display: flex;
+    align-items: center;
+    gap: var(--imp-space-2, 8px);
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  a {
+    color: var(--imp-color-link, #2563eb);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    text-decoration: none;
+    border-radius: var(--imp-radius-sm, 4px);
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  a:focus-visible {
+    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
+    outline-offset: 2px;
+  }
+
+  .scenario {
+    padding-block: var(--imp-space-5, 24px);
+    padding-inline: var(--imp-space-4, 16px);
+    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+  }
+
+  .scenario-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--imp-space-3, 12px);
+    margin-block-end: var(--imp-space-2, 8px);
+  }
+
+  .scenario-head h2 {
+    margin: 0;
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-md, 1rem);
+  }
+
+  .failure,
+  .empty {
+    margin: 0;
+    padding: var(--imp-space-3, 12px);
+    border-radius: var(--imp-radius-md, 6px);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    white-space: pre-wrap;
+  }
+
+  .failure {
+    background: var(--imp-color-surface, #ffffff);
+    border: var(--imp-border-width, 1px) solid var(--imp-color-danger, #dc2626);
+    color: var(--imp-color-danger, #dc2626);
+  }
+
+  .empty {
+    color: var(--imp-color-secondary, #64748b);
+    padding-block: var(--imp-space-6, 32px);
+    padding-inline: var(--imp-space-4, 16px);
+  }
+`
+
+const STAGE_STYLES = `
+  :host {
+    display: block;
+    flex: 1 1 480px;
+    min-inline-size: 280px;
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--imp-space-2, 8px);
+    margin-block-end: var(--imp-space-2, 8px);
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .readout {
+    margin-inline-start: auto;
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+  }
+
+  .frame {
+    position: relative;
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+  }
+
+  .stage {
+    box-sizing: border-box;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 80px;
+    overflow: auto;
+    padding: var(--imp-space-4, 16px);
+    ${surface}
+    color: var(--imp-color-text, #0f172a);
+  }
+
+  .handle {
+    position: absolute;
+    touch-action: none;
+    border-radius: var(--imp-radius-sm, 4px);
+  }
+
+  .handle--right {
+    inset-block-start: 0;
+    inset-inline-end: -5px;
+    inline-size: 10px;
+    block-size: 100%;
+    cursor: ew-resize;
+  }
+
+  .handle--bottom {
+    inset-inline-start: 0;
+    inset-block-end: -5px;
+    block-size: 10px;
+    inline-size: 100%;
+    cursor: ns-resize;
+  }
+
+  .handle--corner {
+    inset-inline-end: -5px;
+    inset-block-end: -5px;
+    inline-size: 14px;
+    block-size: 14px;
+    cursor: nwse-resize;
+    border-inline-end: 3px solid var(--imp-color-border, #cbd5e1);
+    border-block-end: 3px solid var(--imp-color-border, #cbd5e1);
+  }
+
+  .handle:hover {
+    background: var(--imp-color-primary, #2563eb);
+    opacity: 0.25;
+  }
+`
+
+const EDITOR_STYLES = `
+  :host {
+    display: block;
+    flex: 0 1 320px;
+    min-inline-size: 260px;
+  }
+
+  .editor {
+    box-sizing: border-box;
+    padding: var(--imp-space-3, 12px);
+    ${surface}
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .row {
+    margin-block-start: var(--imp-space-3, 12px);
+  }
+
+  .row-head {
+    display: flex;
+    align-items: center;
+    gap: var(--imp-space-2, 8px);
+    margin-block-end: var(--imp-space-1, 4px);
+  }
+
+  .name {
+    flex: 1;
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .message {
+    display: block;
+    margin-block-start: var(--imp-space-1, 4px);
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-normal, 1.6);
+  }
+
+  .message--error {
+    color: var(--imp-color-danger, #dc2626);
+  }
+`
+
+const CODE_STYLES = `
+  :host {
+    display: block;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-block-end: var(--imp-space-2, 8px);
+  }
+
+  pre {
+    margin: 0;
+    box-sizing: border-box;
+    overflow: auto;
+    padding: var(--imp-space-3, 12px);
+    ${surface}
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-normal, 1.6);
+    tab-size: 2;
+  }
+
+  .token--keyword {
+    color: var(--imp-color-primary, #2563eb);
+    font-weight: var(--imp-font-weight-bold, 700);
+  }
+
+  .token--string,
+  .token--number,
+  .token--regexp {
+    color: var(--imp-color-danger, #dc2626);
+  }
+
+  .token--comment {
+    color: var(--imp-color-secondary, #64748b);
+    font-style: italic;
+  }
+
+  .token--punctuation {
+    color: var(--imp-color-secondary, #64748b);
+  }
 `
 
 const isThemeDefinition = (value) =>
@@ -138,6 +364,15 @@ const registerThemes = (customThemes) => {
     themes.set(customThemeLabel(source, definition), definition)
   }
   for (const name of BUILT_IN_THEMES) themes.set(name, name)
+}
+
+const applySelectedTheme = (definition) => {
+  if (typeof definition === 'string') {
+    applyTheme(definition)
+    return
+  }
+  applyTheme(BASE_THEME_FOR[definition?.colorScheme] ?? 'imp-light')
+  applyTheme(definition)
 }
 
 const defaultThemeName = () => themes.keys().next().value
@@ -191,139 +426,12 @@ const switchTo = (code) => {
   })
 }
 
-const themeControl = () => {
-  const current = readStoredTheme()
-  const picker = select(
-    {
-      class: 'imp-preview__select imp-preview__select--theme',
-      events: {
-        change: (event) => {
-          applyTheme(themes.get(event.target.value))
-          remember(THEME_STORAGE_KEY, event.target.value)
-        },
-      },
-    },
-    [...themes.keys()].map((name) => option({ value: name, selected: name === current }, name)),
+const picker = (kind, ariaLabel, values, choice) =>
+  div(
+    { class: `control control--${kind}` },
+    span(kind),
+    select({ ariaLabel, value: choice, options: values }),
   )
-  return label({ class: 'imp-preview__control' }, 'theme', picker)
-}
-
-const languageControl = () => {
-  const current = readStoredLanguage()
-  const picker = select(
-    {
-      class: 'imp-preview__select imp-preview__select--language',
-      events: {
-        change: (event) => {
-          remember(LANGUAGE_STORAGE_KEY, event.target.value)
-          switchTo(event.target.value)
-        },
-      },
-    },
-    languages.map((code) => option({ value: code, selected: code === current }, code)),
-  )
-  return label({ class: 'imp-preview__control' }, 'language', picker)
-}
-
-const directionControl = () => {
-  const current = readStoredDirection()
-  const picker = select(
-    {
-      class: 'imp-preview__select imp-preview__select--direction',
-      events: {
-        change: (event) => {
-          remember(DIRECTION_STORAGE_KEY, event.target.value)
-          switchTo(readStoredLanguage())
-        },
-      },
-    },
-    DIRECTIONS.map((value) => option({ value, selected: value === current }, value)),
-  )
-  return label({ class: 'imp-preview__control' }, 'direction', picker)
-}
-
-const chromeBar = (file, isolated) =>
-  header(
-    { class: 'imp-preview__bar', dir: 'ltr' },
-    span({ class: 'imp-preview__brand' }, 'imp preview'),
-    code({ class: 'imp-preview__file' }, file),
-    span({ class: 'imp-preview__spacer' }),
-    languages.length ? languageControl() : null,
-    directionControl(),
-    themeControl(),
-    isolated ? a({ class: 'imp-preview__link', href: location.pathname }, 'all scenarios') : null,
-    a({ class: 'imp-preview__link', href: '/' }, 'all previews'),
-  )
-
-const dragHandle = (kind, frame) => {
-  const handle = div({ class: `imp-preview__handle imp-preview__handle--${kind}` })
-  handle.addEventListener('pointerdown', (event) => {
-    event.preventDefault()
-    const rect = frame.getBoundingClientRect()
-    const startX = event.clientX
-    const startY = event.clientY
-    try {
-      handle.setPointerCapture(event.pointerId)
-    } catch { /* the pointer is already gone */ }
-    const resize = (moveEvent) => {
-      if (kind !== 'bottom') {
-        const width = rect.width + moveEvent.clientX - startX
-        frame.style.width = `${Math.round(Math.max(MIN_STAGE_SIZE, width))}px`
-      }
-      if (kind !== 'right') {
-        const height = rect.height + moveEvent.clientY - startY
-        frame.style.height = `${Math.round(Math.max(MIN_STAGE_SIZE, height))}px`
-      }
-    }
-    const stop = () => handle.removeEventListener('pointermove', resize)
-    handle.addEventListener('pointermove', resize)
-    handle.addEventListener('pointerup', stop, { once: true })
-    handle.addEventListener('pointercancel', stop, { once: true })
-  })
-  return handle
-}
-
-const stageColumn = (nodes) => {
-  const stage = div({ class: 'imp-preview__stage' }, nodes)
-  stages.push(stage)
-  const frame = div({ class: 'imp-preview__stage-frame' }, stage)
-  frame.append(...['right', 'bottom', 'corner'].map((kind) => dragHandle(kind, frame)))
-  const readout = span({ class: 'imp-preview__readout' })
-  const updateReadout = () => {
-    const rect = frame.getBoundingClientRect()
-    readout.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`
-  }
-  new ResizeObserver(updateReadout).observe(frame)
-  const setSize = (width, height) => {
-    frame.style.width = width === null ? '' : `${width}px`
-    frame.style.height = height === null ? '' : `${height}px`
-  }
-  const presetButtons = PRESETS.map((preset) =>
-    button(
-      {
-        class: 'imp-preview__button',
-        type: 'button',
-        events: { click: () => setSize(preset.width, preset.height) },
-      },
-      preset.label,
-    )
-  )
-  const bar = div(
-    { class: 'imp-preview__stage-bar' },
-    span('size'),
-    presetButtons,
-    button(
-      {
-        class: 'imp-preview__button',
-        type: 'button',
-        events: { click: () => setSize(null, null) },
-      },
-      'fit',
-    ),
-    readout,
-  )
-  return div({ class: 'imp-preview__stage-wrap' }, bar, frame)
-}
 
 const elementsInTree = (nodes) => {
   const elements = []
@@ -362,48 +470,120 @@ const describeValue = (value) => {
   return { text, editable: true, note: '' }
 }
 
-const stateRow = (nodes, declaration) => {
-  const field = textarea({ class: 'imp-preview__field', rows: 2, spellcheck: false })
-  const message = p({ class: 'imp-preview__message' }, 'looking for this state…')
+const stageDefinition = {
+  styles: STAGE_STYLES,
+  onMount: (_instance, nodes) => {
+    const stage = div({ class: 'stage' }, nodes)
+    stages.push(stage)
+    const frame = div({ class: 'frame' }, stage)
+    const dragHandle = (kind) => {
+      const handle = div({ class: `handle handle--${kind}` })
+      handle.addEventListener('pointerdown', (event) => {
+        event.preventDefault()
+        const rect = frame.getBoundingClientRect()
+        const startX = event.clientX
+        const startY = event.clientY
+        try {
+          handle.setPointerCapture(event.pointerId)
+        } catch { /* the pointer is already gone */ }
+        const resize = (moveEvent) => {
+          if (kind !== 'bottom') {
+            const width = rect.width + moveEvent.clientX - startX
+            frame.style.width = `${Math.round(Math.max(MIN_STAGE_SIZE, width))}px`
+          }
+          if (kind !== 'right') {
+            const height = rect.height + moveEvent.clientY - startY
+            frame.style.height = `${Math.round(Math.max(MIN_STAGE_SIZE, height))}px`
+          }
+        }
+        const stop = () => handle.removeEventListener('pointermove', resize)
+        handle.addEventListener('pointermove', resize)
+        handle.addEventListener('pointerup', stop, { once: true })
+        handle.addEventListener('pointercancel', stop, { once: true })
+      })
+      return handle
+    }
+    frame.append(...['right', 'bottom', 'corner'].map(dragHandle))
+    const readout = span({ class: 'readout' })
+    const updateReadout = () => {
+      const rect = frame.getBoundingClientRect()
+      readout.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`
+    }
+    new ResizeObserver(updateReadout).observe(frame)
+    const setSize = (width, height) => {
+      frame.style.width = width === null ? '' : `${width}px`
+      frame.style.height = height === null ? '' : `${height}px`
+    }
+    const sizeButton = (label, width, height) =>
+      button(
+        { size: 'sm', variant: 'ghost', events: { click: () => setSize(width, height) } },
+        label,
+      )
+    const bar = div(
+      { class: 'bar' },
+      span('size'),
+      ...PRESETS.map(({ label, width, height }) => sizeButton(label, width, height)),
+      sizeButton('fit', null, null),
+      readout,
+    )
+    return div(bar, frame)
+  },
+}
+
+let createStage = null
+
+const stagePanel = (nodes) => {
+  createStage ??= component('imp-preview-stage', stageDefinition)
+  return createStage(nodes)
+}
+
+const negated = (source) => ({
+  name: source.name,
+  get: () => !source.get(),
+  watch: (subscriber) => source.watch((value) => subscriber(!value)),
+})
+
+const stateRow = (nodes, declaration, index) => {
+  const draft = initState(`${DRAFT_STATE}.${index}`, declaration.initial ?? '')
+  const editable = initState(`${DRAFT_STATE}.${index}.editable`, false)
+  const messageText = document.createTextNode('looking for this state…')
+  const message = span({ class: 'message' }, messageText)
+  const field = textArea({
+    ariaLabel: `${declaration.name} value as JSON`,
+    value: draft,
+    rows: 2,
+    disabled: negated(editable),
+  })
   let state = null
 
-  const setMessage = (text, isError) => {
-    message.textContent = text
-    message.classList.toggle('imp-preview__message--error', isError === true)
+  const setMessage = (content, isError = false) => {
+    messageText.data = content
+    message.classList.toggle('message--error', isError)
   }
 
   const apply = () => {
     if (!state) return
     let parsed
     try {
-      parsed = JSON.parse(field.value)
+      parsed = JSON.parse(draft.get())
     } catch (error) {
       setMessage(error.message, true)
       return
     }
     state.set(parsed)
-    setMessage('', false)
+    setMessage('')
   }
 
   const applyButton = button(
-    {
-      class: 'imp-preview__button',
-      type: 'button',
-      disabled: true,
-      events: { click: apply },
-    },
+    { size: 'sm', disabled: negated(editable), events: { click: apply } },
     'apply',
   )
 
-  field.disabled = true
-  if (declaration.initial !== null) field.value = declaration.initial
-
   const show = (value) => {
     const described = describeValue(value)
-    if (document.activeElement !== field) field.value = described.text
-    field.disabled = !described.editable
-    applyButton.disabled = !described.editable
-    setMessage(described.note, false)
+    if (!field.matches(':focus-within')) draft.set(described.text)
+    editable.set(described.editable)
+    setMessage(described.note)
   }
 
   const lookForState = (attemptsLeft) => {
@@ -414,7 +594,7 @@ const stateRow = (nodes, declaration) => {
       return
     }
     if (attemptsLeft <= 0) {
-      setMessage('not initialized in this scenario', false)
+      setMessage('not initialized in this scenario')
       return
     }
     setTimeout(() => lookForState(attemptsLeft - 1), STATE_LOOKUP_INTERVAL)
@@ -426,36 +606,89 @@ const stateRow = (nodes, declaration) => {
   })
 
   return div(
-    { class: 'imp-preview__row' },
-    div(
-      { class: 'imp-preview__row-head' },
-      span({ class: 'imp-preview__name' }, declaration.name),
-      applyButton,
-    ),
+    { class: 'row' },
+    div({ class: 'row-head' }, span({ class: 'name' }, declaration.name), applyButton),
     field,
     message,
   )
 }
 
-const stateEditor = (nodes, declarations) =>
-  aside(
-    { class: 'imp-preview__editor' },
-    h3('state'),
-    declarations.length
-      ? [
-        p(
-          { class: 'imp-preview__hint' },
-          'Values are JSON. Edit one and apply it (or press Ctrl+Enter) to drive the component.',
+const editorDefinition = {
+  styles: EDITOR_STYLES,
+  onMount: (_instance, nodes, declarations) =>
+    div(
+      { class: 'editor' },
+      el('h3', 'state'),
+      declarations.length
+        ? [
+          text(
+            { tone: 'secondary', size: 'sm' },
+            'Values are JSON. Edit one and apply it (or press Ctrl+Enter) to drive the component.',
+          ),
+          ...declarations.map((declaration, index) => stateRow(nodes, declaration, index)),
+        ]
+        : text(
+          { tone: 'secondary', size: 'sm' },
+          'No state declarations were found in the sources this preview imports.',
         ),
-        declarations.map((declaration) => stateRow(nodes, declaration)),
-      ]
-      : p(
-        { class: 'imp-preview__hint' },
-        'No state declarations were found in the sources this preview imports.',
-      ),
+    ),
+}
+
+let createEditor = null
+
+const stateEditor = (nodes, declarations) => {
+  createEditor ??= component('imp-preview-state', editorDefinition)
+  return createEditor(nodes, declarations)
+}
+
+const highlighted = (snippet) =>
+  tokenizeJs(snippet).map(({ kind, text }) =>
+    kind === 'plain' ? text : span({ class: `token token--${kind}` }, text)
   )
 
-const scenarioPanel = (name, scenario, declarations) => {
+const codeDefinition = {
+  styles: CODE_STYLES,
+  onMount: (_instance, snippet) => {
+    const label = document.createTextNode('copy')
+    const copy = button(
+      {
+        size: 'sm',
+        variant: 'ghost',
+        events: {
+          click: async () => {
+            try {
+              await navigator.clipboard.writeText(snippet)
+              label.data = 'copied'
+            } catch {
+              label.data = 'could not copy'
+            }
+            setTimeout(() => {
+              label.data = 'copy'
+            }, COPIED_FEEDBACK_MS)
+          },
+        },
+      },
+      label,
+    )
+    return div(div({ class: 'head' }, copy), pre(codeTag(highlighted(snippet))))
+  },
+}
+
+let createCode = null
+
+const codePanel = (snippet) => {
+  createCode ??= component('imp-preview-code', codeDefinition)
+  return createCode(snippet)
+}
+
+const snippetFor = (name, meta) => {
+  const source = meta.sources?.[name]
+  if (!source) return null
+  const imports = (meta.imports ?? []).join('\n')
+  return imports ? `${imports}\n\n${source}\n` : `${source}\n`
+}
+
+const scenarioPanel = (name, scenario, meta) => {
   let nodes
   try {
     nodes = asNodes(typeof scenario === 'function' ? scenario() : scenario)
@@ -463,23 +696,49 @@ const scenarioPanel = (name, scenario, declarations) => {
     nodes = null
     console.error(`imp preview: scenario '${name}' failed to build`, error)
   }
-  return section(
-    { class: 'imp-preview__scenario', dir: 'ltr' },
-    header(
-      { class: 'imp-preview__scenario-head' },
-      h2(name),
-      a(
-        { class: 'imp-preview__link', href: `?scenario=${encodeURIComponent(name)}` },
-        'isolate',
-      ),
-    ),
-    nodes
-      ? div(
-        { class: 'imp-preview__panel' },
-        stageColumn(nodes),
-        stateEditor(nodes, declarations),
-      )
-      : p({ class: 'imp-preview__failure' }, `${name} failed to build — see the terminal`),
+  const head = div(
+    { class: 'scenario-head' },
+    h2(name),
+    a({ href: `?scenario=${encodeURIComponent(name)}` }, 'isolate'),
+  )
+  if (!nodes) {
+    return el(
+      'section',
+      { class: 'scenario', dir: 'ltr' },
+      head,
+      pre({ class: 'failure' }, `${name} failed to build — see the terminal`),
+    )
+  }
+  const snippet = snippetFor(name, meta)
+  return el(
+    'section',
+    { class: 'scenario', dir: 'ltr' },
+    head,
+    tabs({
+      label: `${name} views`,
+      items: [
+        {
+          id: 'preview',
+          label: 'Preview',
+          content: row(
+            { gap: 4, align: 'start', wrap: true },
+            stagePanel(nodes),
+            stateEditor(nodes, meta.states),
+          ),
+        },
+        {
+          id: 'code',
+          label: 'Code',
+          content: snippet === null
+            ? text(
+              { tone: 'secondary', size: 'sm' },
+              `imp could not read the code behind '${name}' — only exports written as ` +
+                `'export const ${name} = …' in the preview file are shown here.`,
+            )
+            : codePanel(snippet),
+        },
+      ],
+    }),
   )
 }
 
@@ -489,12 +748,70 @@ const scenarioOrder = (scenarios, order) => {
   return [...written, ...exported.filter((name) => !written.includes(name))]
 }
 
+const pageDefinition = {
+  styles: PAGE_STYLES,
+  onMount: (_instance, scenarios, meta) => {
+    const themeChoice = initState(THEME_STATE, readStoredTheme())
+    const directionChoice = initState(DIRECTION_STATE, readStoredDirection())
+    const languageChoice = languages.length ? initState(LANGUAGE_STATE, readStoredLanguage()) : null
+
+    themeChoice.watch((name) => {
+      if (!themes.has(name)) return
+      remember(THEME_STORAGE_KEY, name)
+      applySelectedTheme(themes.get(name))
+    })
+    languageChoice?.watch((codeName) => {
+      remember(LANGUAGE_STORAGE_KEY, codeName)
+      switchTo(codeName)
+    })
+    directionChoice.watch((value) => {
+      remember(DIRECTION_STORAGE_KEY, value)
+      switchTo(readStoredLanguage())
+    })
+
+    const names = scenarioOrder(scenarios, meta.order)
+    const requested = new URLSearchParams(location.search).get('scenario')
+    const isolated = requested !== null && names.includes(requested)
+    const shown = isolated ? [requested] : names
+
+    const bar = div(
+      { class: 'bar', dir: 'ltr' },
+      span({ class: 'brand' }, 'imp preview'),
+      span({ class: 'file' }, meta.file),
+      span({ class: 'spacer' }),
+      languageChoice ? picker('language', 'Language', languages, languageChoice) : null,
+      picker('direction', 'Text direction', DIRECTIONS, directionChoice),
+      picker('theme', 'Theme', [...themes.keys()], themeChoice),
+      isolated ? a({ href: location.pathname }, 'all scenarios') : null,
+      a({ href: '/' }, 'all previews'),
+    )
+
+    return div(
+      bar,
+      ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta)) : [
+        pre(
+          { class: 'empty', dir: 'ltr' },
+          `${meta.file} has no named exports — export one instance per scenario, like ` +
+            `export const empty = myComponent()`,
+        ),
+      ]),
+    )
+  },
+}
+
+let createPage = null
+
+const previewPage = (scenarios, meta) => {
+  createPage ??= component('imp-preview-page', pageDefinition)
+  return createPage(scenarios, meta)
+}
+
 export async function startPreview(scenarios, meta, customThemes = [], previewTranslations = []) {
   const styles = document.createElement('style')
-  styles.textContent = CHROME_STYLES
+  styles.textContent = DOCUMENT_STYLES
   document.head.append(styles)
   registerThemes(customThemes)
-  applyTheme(themes.get(readStoredTheme()))
+  applySelectedTheme(themes.get(readStoredTheme()))
   registerLanguages(previewTranslations)
 
   await init(
@@ -508,20 +825,6 @@ export async function startPreview(scenarios, meta, customThemes = [], previewTr
   )
   await applyLanguage(readStoredLanguage())
 
-  const names = scenarioOrder(scenarios, meta.order)
-  const requested = new URLSearchParams(location.search).get('scenario')
-  const isolated = requested !== null && names.includes(requested)
-  const shown = isolated ? [requested] : names
-
-  document.body.append(
-    chromeBar(meta.file, isolated),
-    ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta.states)) : [
-      p(
-        { class: 'imp-preview__empty', dir: 'ltr' },
-        `${meta.file} has no named exports — export one instance per scenario, like ` +
-          `export const empty = myComponent()`,
-      ),
-    ]),
-  )
+  mount(document.body, previewPage(scenarios, meta))
   applyStageDirection()
 }

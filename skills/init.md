@@ -55,7 +55,8 @@ export const app = component('app-root', {
 ```
 
 A namespaced state name, a live text node instead of a re-render, and a standard component. The e2e
-spec crosses two shadow boundaries with one `>>>` each — `>>> imp-button >>> button`.
+spec selects `#clicks` plainly, and names `imp-button >>> button` only to pick one button out of the
+page.
 
 ## Next
 

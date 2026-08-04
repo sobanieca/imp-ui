@@ -32,8 +32,8 @@ environment files, in [config](config.md).
 
 - **Running `imp` with no arguments, `imp help`, or `imp --help` prints usage**; an unknown command
   prints usage and exits `1`. The usage text ends with a line pointing an AI agent at `imp skill`.
-- **Paths default to the whole project** for `imp lint` and `imp fmt`; `.git`, `node_modules` and
-  `dist` are always skipped by anything that walks the tree.
+- **Paths default to the whole project** for `imp lint` and `imp fmt`; `.git`, `node_modules`,
+  `dist` and the vendored `dependencies/` folder are always skipped by anything that walks the tree.
 - **`--env <name>`** selects an environment on `imp start`, `imp build` and `imp preview`; with no
   flag imp uses an alias named `default`, else `IMP_ENV`, else no environment. See
   [config](config.md).

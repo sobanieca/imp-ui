@@ -6,6 +6,7 @@ import { bundleDependency, shutdownBundler } from '../src/deps.js'
 import { injectImp } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
+import { tokenizeJs } from '../src/preview_highlight.js'
 import { COMPONENT_SKILLS, findSkill, skillFileFor, skillIndex, SKILLS } from '../src/skill.js'
 import { VERSION } from '../src/version.js'
 
@@ -1410,52 +1411,108 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
   const base = `http://127.0.0.1:${server.port}`
   try {
     const page = await browser.newPage()
+    await page.evaluateOnNewDocument(() => {
+      globalThis.impRoot = () => document.querySelector('imp-preview-page')?.shadowRoot ?? null
+      globalThis.impAll = (name, from) => {
+        const found = []
+        const walk = (root) => {
+          for (const element of root.querySelectorAll('*')) {
+            if (element.localName === name) found.push(element)
+            if (element.shadowRoot) walk(element.shadowRoot)
+          }
+        }
+        const start = from ?? globalThis.impRoot()
+        if (start) {
+          walk(start)
+          if (start.shadowRoot) walk(start.shadowRoot)
+        }
+        return found
+      }
+      globalThis.impOne = (name, from) => globalThis.impAll(name, from)[0] ?? null
+      globalThis.impPicker = (kind) =>
+        globalThis.impRoot().querySelector(`.control--${kind} imp-select`)
+          .shadowRoot.querySelector('select')
+      globalThis.impTextareas = (editor) =>
+        [...editor.shadowRoot.querySelectorAll('imp-text-area')]
+          .map((host) => host.shadowRoot.querySelector('textarea'))
+    })
     await page.goto(`${base}/preview/components/counter.preview.js`, { waitUntil: 'load' })
-    await page.waitForFunction(
-      () => document.querySelectorAll('.imp-preview__row textarea:not([disabled])').length === 3,
+    await page.waitForFunction(() =>
+      globalThis.impRoot() &&
+      globalThis.impAll('imp-preview-state')
+          .flatMap((editor) => globalThis.impTextareas(editor))
+          .filter((field) => !field.disabled).length === 3
     )
     const counter = await page.evaluate(() => {
-      const scenarios = [...document.querySelectorAll('.imp-preview__scenario')]
+      const scenarios = [...globalThis.impRoot().querySelectorAll('.scenario')]
       const read = (scenario) =>
-        scenario.querySelector('demo-counter').shadowRoot.querySelector('#value').textContent
+        globalThis.impOne('demo-counter', scenario).shadowRoot.querySelector('#value').textContent
       return {
         names: scenarios.map((scenario) => scenario.querySelector('h2').textContent),
         rendered: scenarios.map(read),
-        states: scenarios.map((scenario) =>
-          `${scenario.querySelector('.imp-preview__name').textContent}=${
-            scenario.querySelector('textarea').value
+        states: scenarios.map((scenario) => {
+          const editor = globalThis.impOne('imp-preview-state', scenario)
+          return `${editor.shadowRoot.querySelector('.name').textContent}=${
+            globalThis.impTextareas(editor)[0].value
           }`
-        ),
-        handles: scenarios[0].querySelectorAll('.imp-preview__handle').length,
+        }),
+        tabs: [
+          ...globalThis.impOne('imp-tabs', scenarios[0]).shadowRoot
+            .querySelectorAll('[role="tab"]'),
+        ].map((tab) => tab.textContent),
+        handles: globalThis.impOne('imp-preview-stage', scenarios[0])
+          .shadowRoot.querySelectorAll('.handle').length,
+      }
+    })
+    const coded = await page.evaluate(() => {
+      const scenario = globalThis.impRoot().querySelector('.scenario')
+      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
+      strip.querySelectorAll('[role="tab"]')[1].click()
+      const panels = [...strip.querySelectorAll('[role="tabpanel"]')]
+      const pre = globalThis.impOne('imp-preview-code', scenario).shadowRoot.querySelector('pre')
+      return {
+        selected: [...strip.querySelectorAll('[role="tab"]')]
+          .map((tab) => tab.getAttribute('aria-selected')).join('/'),
+        shown: panels.map((panel) => (panel.hidden ? 'hidden' : 'shown')).join('/'),
+        source: pre.textContent,
+        highlighted: [...pre.querySelectorAll('span')]
+          .map((token) => `${token.classList[1].replace('token--', '')}:${token.textContent}`)
+          .join(' '),
       }
     })
     const edited = await page.evaluate(() => {
-      const scenario = document.querySelector('.imp-preview__scenario')
-      scenario.querySelector('textarea').value = '42'
-      scenario.querySelector('.imp-preview__row button').click()
-      return scenario.querySelector('demo-counter').shadowRoot.querySelector('#value').textContent
+      const scenario = globalThis.impRoot().querySelector('.scenario')
+      const editor = globalThis.impOne('imp-preview-state', scenario)
+      const field = globalThis.impTextareas(editor)[0]
+      field.value = '42'
+      field.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+      globalThis.impOne('imp-button', editor).shadowRoot.querySelector('button').click()
+      return globalThis.impOne('demo-counter', scenario)
+        .shadowRoot.querySelector('#value').textContent
     })
     const rejected = await page.evaluate(() => {
-      const scenario = document.querySelector('.imp-preview__scenario')
-      scenario.querySelector('textarea').value = '{ not json'
-      scenario.querySelector('.imp-preview__row button').click()
-      return scenario.querySelector('.imp-preview__message').classList
-        .contains('imp-preview__message--error')
+      const scenario = globalThis.impRoot().querySelector('.scenario')
+      const editor = globalThis.impOne('imp-preview-state', scenario)
+      const field = globalThis.impTextareas(editor)[0]
+      field.value = '{ not json'
+      field.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+      globalThis.impOne('imp-button', editor).shadowRoot.querySelector('button').click()
+      return editor.shadowRoot.querySelector('.message').classList.contains('message--error')
     })
     const localized = await page.evaluate(async () => {
-      const languages = document.querySelector('.imp-preview__select--language')
-      const directions = document.querySelector('.imp-preview__select--direction')
+      const languages = globalThis.impPicker('language')
+      const directions = globalThis.impPicker('direction')
       const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
-      const stage = () => document.querySelector('.imp-preview__stage')
+      const stage = () => globalThis.impOne('imp-preview-stage').shadowRoot.querySelector('.stage')
       const pick = async (picker, value) => {
         picker.value = value
         picker.dispatchEvent(new Event('change'))
         await settle()
         return `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
       }
-      const chrome = () => document.querySelector('.imp-preview__bar').dir
+      const chrome = () => globalThis.impRoot().querySelector('.bar').dir
       const words = () => {
-        const shadow = document.querySelector('demo-counter').shadowRoot
+        const shadow = globalThis.impOne('demo-counter').shadowRoot
         return `${shadow.querySelector('#label').textContent}/${
           shadow.querySelector('#cancel').textContent
         }`
@@ -1475,7 +1532,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
 
     const themed = await page.evaluate(() => {
-      const picker = document.querySelector('.imp-preview__select--theme')
+      const picker = globalThis.impPicker('theme')
       const apply = (value) => {
         picker.value = value
         picker.dispatchEvent(new Event('change'))
@@ -1492,27 +1549,34 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     await page.goto(`${base}/preview/components/counter.preview.js?scenario=lazy`, {
       waitUntil: 'load',
     })
-    await page.waitForFunction(() => document.querySelector('demo-counter')?.shadowRoot?.children)
+    await page.waitForFunction(() =>
+      globalThis.impRoot() && globalThis.impOne('demo-counter')?.shadowRoot?.children
+    )
     const isolated = await page.evaluate(() => ({
-      panels: document.querySelectorAll('.imp-preview__scenario').length,
-      name: document.querySelector('h2').textContent,
+      panels: globalThis.impRoot().querySelectorAll('.scenario').length,
+      name: globalThis.impRoot().querySelector('h2').textContent,
     }))
 
     await page.goto(`${base}/preview/components/todos.preview.js`, { waitUntil: 'load' })
     await page.waitForFunction(() =>
-      document.querySelector('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
+      globalThis.impRoot() &&
+      globalThis.impOne('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
     )
     const todos = await page.evaluate(() => ({
-      items: [...document.querySelector('demo-todos').shadowRoot.querySelectorAll('.todo')]
+      items: [...globalThis.impOne('demo-todos').shadowRoot.querySelectorAll('.todo')]
         .map((item) => item.textContent),
-      state: document.querySelector('.imp-preview__name').textContent,
+      state: globalThis.impOne('imp-preview-state').shadowRoot.querySelector('.name').textContent,
     }))
 
     const report = [
       `scenarios: ${counter.names.join(', ')}`,
       `rendered values: ${counter.rendered.join(', ')}`,
       `state rows: ${counter.states.join(', ')}`,
+      `tabs per scenario: ${counter.tabs.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
+      `after picking the code tab: ${coded.selected} (panels ${coded.shown})`,
+      `code shown for zero:\n${coded.source.trimEnd()}`,
+      `highlighted tokens for zero: ${coded.highlighted}`,
       `after setting demo.count to 42: ${edited}`,
       `invalid JSON rejected: ${rejected}`,
       `language options: ${localized.languages.join(', ')}`,
@@ -1976,6 +2040,27 @@ Deno.test('bundleDependency keeps bare imp imports external', async () => {
   }
 })
 
+Deno.test('tokenizeJs', async () => {
+  const sources = [
+    "import { button } from 'imp/std'\n\nexport const primary = () => button({ variant: 'primary' }, t('Save'))\n",
+    'const label = `${count} of ${total} — ${done ? `${done} done` : "none"}`\n',
+    '// a line comment\n/* a block\n   comment */\nconst rate = 0.5e3 + 0xff + 12_000n\n',
+    'const clean = value.replace(/[a-z/]+/gi, "") / total\n',
+    'const flags = { on: true, off: false, missing: null, unset: undefined }\n',
+  ]
+  const transcript = sources
+    .map((source) => {
+      const tokens = tokenizeJs(source)
+      const roundTrips = tokens.map(({ text }) => text).join('') === source
+      const body = tokens
+        .map(({ kind, text }) => `  ${kind}: ${JSON.stringify(text)}`)
+        .join('\n')
+      return `=== ${JSON.stringify(source)} ===\nround-trips: ${roundTrips}\n${body}`
+    })
+    .join('\n\n')
+  await assertSnapshot('tokenize-js', transcript + '\n')
+})
+
 Deno.test('parseSpecifier', async () => {
   const inputs = [
     'mitt',
@@ -2041,7 +2126,7 @@ Deno.test('imp skill', async (t) => {
 
   await t.step('every std component has a skill file next to it', async () => {
     const exported = []
-    for (const barrel of ['general', 'display', 'layout', 'inputs']) {
+    for (const barrel of ['general', 'display', 'layout', 'inputs', 'navigation']) {
       const path = join(REPO_ROOT, 'lib', 'src', 'std', barrel, 'index.js')
       const source = await Deno.readTextFile(path)
       for (const match of source.matchAll(/export\s*{\s*(\w+)\s*}\s*from\s*'\.\/([\w.]+)'/g)) {

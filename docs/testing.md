@@ -425,18 +425,27 @@ test('increments on click', async ({ page }) => {
 ```
 
 `page` is a [Puppeteer](https://pptr.dev) page — `goto`, `click`, `type`, `$eval`,
-`waitForSelector`, screenshots, everything Puppeteer offers. The page is already on your app when
-the first test runs; tests within a file share it, so a file reads as one user session: log in once
-in `beforeAll` (or your first test), then drive the flow step by step.
+`waitForSelector`, screenshots, everything Puppeteer offers — with one difference: **its selectors
+see through shadow roots.** The page is already on your app when the first test runs; tests within a
+file share it, so a file reads as one user session: log in once in `beforeAll` (or your first test),
+then drive the flow step by step.
 
-Because components render into shadow roots, a plain CSS selector stops at the component boundary.
-Puppeteer's deep combinator `>>>` pierces it — put it in front of (or between) selector parts to
-search through every shadow root:
+Components render into shadow roots, so a plain CSS selector would normally stop at the component
+boundary. imp searches through them for you, and an ordinary selector finds an element wherever it
+lives:
 
 ```js
-await page.type('>>> #draft', 'ship it')
-await page.click('>>> #add')
-expect(await page.$eval('>>> #count', (el) => el.textContent)).toEqual('1 left')
+await page.type('#draft', 'ship it')
+await page.click('#add')
+expect(await page.$eval('#count', (el) => el.textContent)).toEqual('1 left')
+```
+
+The search is deep, so a selector that matches in more than one component is ambiguous. Name the
+path with `>>>` between the parts to say exactly which one you mean — each `>>>` crosses one
+component boundary:
+
+```js
+await page.click('imp-submit-button >>> imp-button >>> button')
 ```
 
 While specs run, the browser stays connected to your terminal the same way `imp start` is:

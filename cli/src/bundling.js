@@ -31,9 +31,9 @@ export const DATAURL_ASSET_LOADERS = Object.fromEntries(
     .map((extension) => [extension, 'dataurl']),
 )
 
-const isIdentChar = (char) => /[\w$]/.test(char ?? '')
+export const isIdentChar = (char) => /[\w$]/.test(char ?? '')
 
-function skipStringLiteral(source, index) {
+export function skipStringLiteral(source, index) {
   const quote = source[index]
   index++
   while (index < source.length) {

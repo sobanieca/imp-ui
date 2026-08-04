@@ -69,8 +69,15 @@ export const SKILLS = [
     name: 'std',
     file: 'std-components.md',
     group: 'app',
-    aliases: ['imp/std', 'std-components', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs'],
-    summary: 'the built-in component library: text, layout, forms and empty states',
+    aliases: [
+      'imp/std',
+      'std-components',
+      'imp/std/display',
+      'imp/std/layout',
+      'imp/std/inputs',
+      'imp/std/navigation',
+    ],
+    summary: 'the built-in component library: text, layout, forms, navigation and empty states',
   },
   {
     name: 'theming',
@@ -226,6 +233,7 @@ export const COMPONENT_SKILLS = [
   { name: 'std/radioGroup', file: 'std/inputs/radio_group.skill.md' },
   { name: 'std/submitButton', file: 'std/inputs/submit_button.skill.md' },
   { name: 'std/resetButton', file: 'std/inputs/reset_button.skill.md' },
+  { name: 'std/tabs', file: 'std/navigation/tabs.skill.md' },
 ]
 
 const componentSubjects = COMPONENT_SKILLS.map((component) => {

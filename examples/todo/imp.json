@@ -1,4 +1,7 @@
 {
+  "dependencies": {
+    "micromark": "npm:micromark@4.0.2"
+  },
   "version": "0.1.0",
   "environments": {
     "default": "env/dev.json",

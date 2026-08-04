@@ -8,9 +8,11 @@ import {
   DATAURL_ASSET_LOADERS,
   extractCalls,
   impResolverPlugin,
+  isIdentChar,
   LIBRARY_NAMESPACE,
   parseStringLiteral,
   resolveModuleFile,
+  skipStringLiteral,
   splitFirstArgument,
 } from './bundling.js'
 import {
@@ -108,23 +110,240 @@ function extractStateDeclarations(source) {
   return declarations
 }
 
-const EXPORTED_NAMES =
-  /export\s+(?:async\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)|export\s*\{([^}]*)\}/g
+const EXPRESSION_CONTINUES = new Set([...'.?+-*/%<>=&|^:`'])
 
-export function extractExportOrder(source) {
-  const names = []
-  for (const [, declared, group] of source.matchAll(EXPORTED_NAMES)) {
-    if (declared) {
-      names.push(declared)
+function skipTrivia(source, index) {
+  while (index < source.length) {
+    const char = source[index]
+    if (/\s/.test(char)) {
+      index++
       continue
     }
-    for (const entry of (group ?? '').split(',')) {
-      const parts = entry.trim().split(/\s+as\s+/)
-      const name = (parts.at(-1) ?? '').trim()
-      if (name) names.push(name)
+    if (char === '/' && source[index + 1] === '/') {
+      while (index < source.length && source[index] !== '\n') index++
+      continue
     }
+    if (char === '/' && source[index + 1] === '*') {
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
+      index += 2
+      continue
+    }
+    return index
   }
-  return names
+  return index
+}
+
+function readWord(source, index) {
+  let end = index
+  while (end < source.length && isIdentChar(source[end])) end++
+  return { word: source.slice(index, end), end }
+}
+
+function readExpressionEnd(source, start) {
+  let index = start
+  let depth = 0
+  while (index < source.length) {
+    const char = source[index]
+    if (char === '/' && source[index + 1] === '/') {
+      while (index < source.length && source[index] !== '\n') index++
+      continue
+    }
+    if (char === '/' && source[index + 1] === '*') {
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
+      index += 2
+      continue
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      index = skipStringLiteral(source, index)
+      continue
+    }
+    if ('([{'.includes(char)) {
+      depth++
+      index++
+      continue
+    }
+    if (')]}'.includes(char)) {
+      if (depth === 0) return index
+      depth--
+      index++
+      continue
+    }
+    if (depth === 0 && (char === ';' || char === ',')) return index
+    if (depth === 0 && char === '\n') {
+      const next = skipTrivia(source, index)
+      if (next >= source.length || !EXPRESSION_CONTINUES.has(source[next])) return index
+      index = next
+      continue
+    }
+    index++
+  }
+  return source.length
+}
+
+function readBlockEnd(source, start) {
+  let index = start
+  let depth = 0
+  while (index < source.length) {
+    const char = source[index]
+    if (char === '/' && source[index + 1] === '/') {
+      while (index < source.length && source[index] !== '\n') index++
+      continue
+    }
+    if (char === '/' && source[index + 1] === '*') {
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
+      index += 2
+      continue
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      index = skipStringLiteral(source, index)
+      continue
+    }
+    if (char === '{') depth++
+    else if (char === '}') {
+      depth--
+      if (depth === 0) return index + 1
+    }
+    index++
+  }
+  return source.length
+}
+
+function readGroupedExport(source, start, scenarios) {
+  const close = source.indexOf('}', start)
+  const end = close === -1 ? source.length : close
+  for (const entry of source.slice(start + 1, end).split(',')) {
+    const parts = entry.trim().split(/\s+as\s+/)
+    const name = (parts.at(-1) ?? '').trim()
+    if (name) scenarios.push({ name, source: null })
+  }
+  return end + 1
+}
+
+function readDeclaredExport(source, start, scenarios) {
+  let cursor = start
+  while (cursor < source.length) {
+    const declared = readWord(source, cursor)
+    if (!declared.word) return cursor
+    const afterName = skipTrivia(source, declared.end)
+    if (source[afterName] !== '=') {
+      scenarios.push({ name: declared.word, source: null })
+      return afterName
+    }
+    const valueStart = skipTrivia(source, afterName + 1)
+    const valueEnd = readExpressionEnd(source, valueStart)
+    scenarios.push({ name: declared.word, source: source.slice(valueStart, valueEnd).trim() })
+    cursor = skipTrivia(source, valueEnd)
+    if (source[cursor] !== ',') return cursor
+    cursor = skipTrivia(source, cursor + 1)
+  }
+  return cursor
+}
+
+function readFunctionExport(source, start, scenarios) {
+  let cursor = skipTrivia(source, start)
+  if (source[cursor] === '*') cursor = skipTrivia(source, cursor + 1)
+  const named = readWord(source, cursor)
+  if (!named.word) return named.end
+  const bodyStart = source.indexOf('{', named.end)
+  if (bodyStart === -1) return named.end
+  const bodyEnd = readBlockEnd(source, bodyStart)
+  scenarios.push({ name: named.word, source: source.slice(start, bodyEnd).trim() })
+  return bodyEnd
+}
+
+function readExportStatement(source, afterKeyword, scenarios) {
+  const start = skipTrivia(source, afterKeyword)
+  if (source[start] === '{') return readGroupedExport(source, start, scenarios)
+  const first = readWord(source, start)
+  if (first.word === 'default') return first.end
+  let keyword = first
+  if (first.word === 'async') keyword = readWord(source, skipTrivia(source, first.end))
+  if (keyword.word === 'function' || keyword.word === 'class') {
+    return readFunctionExport(source, keyword.end, scenarios)
+  }
+  if (keyword.word === 'const' || keyword.word === 'let' || keyword.word === 'var') {
+    return readDeclaredExport(source, skipTrivia(source, keyword.end), scenarios)
+  }
+  return keyword.end
+}
+
+export function extractScenarioSources(source) {
+  const scenarios = []
+  let index = 0
+  while (index < source.length) {
+    const char = source[index]
+    if (char === '/' && source[index + 1] === '/') {
+      while (index < source.length && source[index] !== '\n') index++
+      continue
+    }
+    if (char === '/' && source[index + 1] === '*') {
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
+      index += 2
+      continue
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      index = skipStringLiteral(source, index)
+      continue
+    }
+    if (isIdentChar(char) && !isIdentChar(source[index - 1])) {
+      const { word, end } = readWord(source, index)
+      if (word === 'export' && source[index - 1] !== '.') {
+        index = readExportStatement(source, end, scenarios)
+        continue
+      }
+      index = end
+      continue
+    }
+    index++
+  }
+  return scenarios
+}
+
+export function extractImportLines(source) {
+  const lines = []
+  let index = 0
+  while (index < source.length) {
+    const char = source[index]
+    if (char === '/' && source[index + 1] === '/') {
+      while (index < source.length && source[index] !== '\n') index++
+      continue
+    }
+    if (char === '/' && source[index + 1] === '*') {
+      index += 2
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
+      index += 2
+      continue
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      index = skipStringLiteral(source, index)
+      continue
+    }
+    if (isIdentChar(char) && !isIdentChar(source[index - 1])) {
+      const { word, end } = readWord(source, index)
+      if (word !== 'import' || source[index - 1] === '.') {
+        index = end
+        continue
+      }
+      const next = skipTrivia(source, end)
+      if (source[next] === '(' || source[next] === '.') {
+        index = end
+        continue
+      }
+      let cursor = next
+      while (cursor < source.length && !`'"\``.includes(source[cursor])) cursor++
+      if (cursor >= source.length) break
+      const statementEnd = skipStringLiteral(source, cursor)
+      lines.push(source.slice(index, statementEnd))
+      index = statementEnd
+      continue
+    }
+    index++
+  }
+  return lines
 }
 
 function relativeImports(source) {
@@ -233,9 +452,15 @@ function previewEntryPlugin({ file, meta, root, themes, translations }) {
 }
 
 export async function bundlePreview(file, { root, dependencies, themes = [], translations = [] }) {
+  const text = await Deno.readTextFile(file)
+  const scenarios = extractScenarioSources(text)
   const meta = {
     file: relative(root, file).replaceAll('\\', '/'),
-    order: extractExportOrder(await Deno.readTextFile(file)),
+    order: scenarios.map(({ name }) => name),
+    sources: Object.fromEntries(
+      scenarios.filter(({ source }) => source !== null).map(({ name, source }) => [name, source]),
+    ),
+    imports: extractImportLines(text),
     states: await collectStateDeclarations(file),
   }
   const mocks = await collectMocks(file, { root, dependencies })

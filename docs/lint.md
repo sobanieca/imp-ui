@@ -22,8 +22,9 @@ scripts whose `type` is neither a JavaScript type nor `module`.
 Code is linted as modern browser code: ES modules, current JavaScript syntax, and browser globals
 (`document`, `fetch`, `localStorage`, …) are all recognized.
 
-Directories named `.git`, `node_modules`, `dist`, and `.imp` are always skipped. Additional paths
-can be skipped with `exclude` (see _Configuration_ below).
+Directories named `.git`, `node_modules`, `dist`, and `.imp` are always skipped, and so is the
+vendored `dependencies/` folder — the code in it is a package's, not yours. Additional paths can be
+skipped with `exclude` (see _Configuration_ below).
 
 ## The rule set
 

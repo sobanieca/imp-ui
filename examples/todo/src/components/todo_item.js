@@ -12,7 +12,7 @@ const log = createLogger('todo.item')
 
 const details = (todo) => {
   const parts = [t('todo.item.estimate', { hours: todo.estimate ?? 0 })]
-  if (todo.notes) parts.push(todo.notes)
+  if (todo.notes) parts.push(t('todo.item.hasNotes'))
   return parts.join(' · ')
 }
 

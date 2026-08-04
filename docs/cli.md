@@ -669,9 +669,10 @@ imp preview --list [--json]
 ```
 
 Builds one component at a time, in isolation. `imp preview` serves each of your **preview files** as
-its own page: every named export becomes a labeled panel holding that component, centered in a stage
-you can drag to any size, with a state editor beside it. No app boot, no backend, no navigating to
-the right screen — you edit the component, the page reloads, and you see it.
+its own page: every named export becomes a labeled panel with two tabs — **Preview**, holding that
+component in a stage you can drag to any size with a state editor beside it, and **Code**, showing
+the call that built it. No app boot, no backend, no navigating to the right screen — you edit the
+component, the page reloads, and you see it.
 
 It is the same dev server as `imp start` underneath, so the browser's console and network activity
 still stream to your terminal, and saving any file reloads the page.
@@ -745,11 +746,32 @@ independently on the same page. This discovery is a convenience, not a rule abou
 components: a state name that is computed at runtime or built behind a helper simply won't be
 listed, and a value that isn't JSON data is shown read-only.
 
+### The code behind a scenario
+
+The **Code** tab shows what produced the panel next to it: the scenario's own call, with the preview
+file's import lines above it, and a button to copy the lot. It is read straight out of your preview
+file when the page is built, so it is the real code rather than a description of it and cannot drift
+from what you are looking at — which makes a preview page something you can hand to someone else as
+the answer to "how do I get this component to look like that?".
+
+The snippet is syntax-highlighted, and its colours come from the same theme tokens as the rest of
+the page — so the code stays readable under every theme you switch to, including the high-contrast
+ones. Keywords are bold and comments italic as well as coloured, so the highlighting still reads
+when colour is unavailable, as in Windows High Contrast mode.
+
+Only exports written as `export const name = …` have code to show; a name re-exported through
+`export { … }` gets a note instead of a snippet.
+
 ### Themes
 
 A theme switcher in the top bar applies a theme to the whole page, so you can check the component
 under each of your themes without touching code. Your choice is remembered across reloads. The
 built-in `imp-light` and `imp-dark` are always offered.
+
+The whole page changes, toolbar included, because the preview page is itself an imp app built from
+`imp/std` — the same buttons, tabs, selects and text fields your app uses, reading the same tokens.
+So a theme that looks wrong here looks wrong in your app for the same reason, and the preview page
+is one more place the library has to hold up.
 
 List your own theme files in `preview.themes` to add them to the switcher:
 
@@ -793,7 +815,9 @@ what your app does — pick Arabic or Hebrew and the component lays out right to
 quickest way to catch a hardcoded `margin-left`.
 
 Only the component is affected: the preview's own toolbar and panels stay left to right whatever you
-pick, so the controls do not move around underneath you. See **[Translations](i18n.md)**.
+pick, so the controls do not move around underneath you. Direction is the one thing the page does
+not share with the component it shows — a mirrored toolbar moves every control to the other side
+mid-session, which the theme switcher never does. See **[Translations](i18n.md)**.
 
 ### Finding and opening previews
 

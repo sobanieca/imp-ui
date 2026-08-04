@@ -4,10 +4,11 @@ exit code: 0
 --- stdout ---
 counter.spec.js
   ✓ starts at zero (*ms)
+  ✓ a plain selector reaches inside a shadow root (*ms)
   ✓ increments on click (*ms)
   video: vids/counter.spec.js.gif
 
-imp test: 2 passed (1 file, *ms)
+imp test: 3 passed (1 file, *ms)
 
 --- stderr ---
 (empty)

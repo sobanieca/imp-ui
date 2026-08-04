@@ -35,10 +35,35 @@ found the way a test file is.
   mocked module graph is what the browser loads and there is exactly one instance of the library
   behind the component, the chrome, and any mock. Bundles are cached per file and dropped on any
   file change, which the existing watcher already reports as a reload.
-- **Each scenario renders into a drag-resizable stage.** The stage is resized by dragging its right,
-  bottom, or corner handle with pointer events (mouse and touch), with a live size readout and
-  phone/tablet/desktop presets on top of free dragging. Resizing changes the parent box only, so the
-  component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
+- **Each scenario is a two-tab panel: Preview and Code.** Preview holds a drag-resizable stage with
+  the state editor beside it; Code holds the call that built the scenario. The stage is resized by
+  dragging its right, bottom, or corner handle with pointer events (mouse and touch), with a live
+  size readout and phone/tablet/desktop presets on top of free dragging. Resizing changes the parent
+  box only, so the component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
+- **The code shown is sliced out of the preview file at bundle time, not described by hand.** The
+  same balanced, comment- and string-aware scanner that orders the exports also records each
+  export's initializer and the file's import statements, and both travel to the browser in the
+  generated entry's metadata alongside the scenario order and state declarations. A scenario's
+  snippet is therefore the code that ran, and the reload that rebuilds a bundle rebuilds it. Only
+  `export const name = …` forms carry a slice; a name arriving through `export { … }` is listed
+  without one and its tab says so.
+- **The snippet is highlighted by a JavaScript tokenizer imp ships itself, painted in theme
+  tokens.** A preview only ever shows JavaScript, so a small hand-written tokenizer covering
+  comments, strings and template interpolations, regular expressions, numbers, keywords and
+  punctuation buys the whole feature without pulling a highlighting library into the binary and into
+  every preview bundle. Its spans are coloured from `--imp-color-primary`, `--imp-color-danger` and
+  `--imp-color-secondary` rather than a fixed palette, so highlighting inherits every theme's
+  contrast guarantees instead of making its own, and keyword weight and comment italics carry the
+  same distinctions where colour is forced away.
+- **The preview page is an imp app built from `imp/std`.** Its toolbar, tabs, stage, state editor
+  and code panel are `component()`s reading the same `--imp-*` tokens as the library
+  (`themable-by-default-tokens.md`), so the theme switcher re-skins the page along with the specimen
+  and any theme that fails here fails in an app for the same reason. Two consequences fall out of
+  `shadow-dom-isolation.md` and are the reason the page is shaped this way: content handed to a
+  standard component is moved into **that** component's shadow root, so the page's stylesheet cannot
+  reach it — the stage, editor and code panel are therefore components carrying their own styles,
+  sizing themselves through `:host` rather than being sized by their parent. Direction stays the
+  exception below: it is the one signal the page does not share with what it shows.
 - **The state editor is best-effort static extraction with no lint rule.** imp scans the preview
   file and the relative modules it reaches for `initState` / `useState` calls, taking the state name
   from the string literal and, for `initState`, the initial value when it parses as JSON. Nothing
@@ -53,7 +78,11 @@ found the way a test file is.
   `preview.themes` in `imp.json`: each listed module is imported by the generated entry and its
   default export is passed to `applyTheme` as an object, so a theme file stays an ordinary module
   with nothing preview-specific in it and needs no name registry. Project themes are listed before
-  the built-ins and the first is applied by default, so a preview opens in the app's own skin.
+  the built-ins and the first is applied by default, so a preview opens in the app's own skin. A
+  project theme is layered over the built-in matching its `colorScheme` rather than applied alone,
+  because `applyTheme` writes only the tokens a theme names: a partial theme would otherwise leave
+  the rest at whatever the previous selection set, and now that the page wears the theme too, that
+  showed up as a half-styled workbench rather than only a half-styled component.
 - **Language and direction are chrome controls on the same seam.** A language picker calls `setLang`
   and a direction picker writes `<html dir>` (`translatable-by-default.md`), so a component is
   checked in another language, and right to left, without editing code; both selections are
@@ -84,6 +113,11 @@ Previewing a component costs one sibling file and no configuration, and the fixt
 needs are reviewed in the same diff as the component. Because the page is real HTML served by the
 real dev server, cross-cutting concerns — theming today, i18n later — are exercised rather than
 approximated.
+
+Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
+so a regression in `button`, `select`, `textArea` or `tabs` shows up while working on anything. The
+cost is the circularity: a broken standard component can break the page used to diagnose it. The
+build-failure path stays raw DOM for that reason, so an error always renders.
 
 Preview pages are bundled while the rest of development stays buildless: a preview page reflects a
 file change only after its bundle is rebuilt, which happens on the reload the watcher already

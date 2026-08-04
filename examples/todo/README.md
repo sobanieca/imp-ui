@@ -2,13 +2,13 @@
 
 A todo app written to exercise most of imp in one place: routing with a lazily loaded area, named
 state, the http client answered by mock files, standard components and forms, two languages, a
-custom theme, a feature flag, and both levels of testing.
+custom theme, a feature flag, one vendored dependency, and both levels of testing.
 
 ```
 imp start           serve it with live reload (mocks are on, so no backend is needed)
 imp test --unit     the in-process tests
 imp test --e2e      the browser specs
-imp preview         the todo row on its own, in every state
+imp preview         the components on their own, in every state
 imp build --env prod
 ```
 
@@ -23,10 +23,11 @@ imp build --env prod
 | `src/screens/new_todo.js` | a form with validation, including an async check                           |
 | `src/screens/todo.js`     | edit, save, delete, a tracked request and an error boundary                |
 | `src/stats/`              | a lazily loaded area with its own root, routes and messages                |
-| `src/components/`         | one component of our own, with its skill file and its preview              |
+| `src/components/`         | two components of our own, each with its skill file and its preview        |
 | `mocks/todos.mock.js`     | the whole API, answered in the browser                                     |
 | `locales/`                | English and Polish, including imp's own form and empty-state wording       |
 | `src/theme/midnight.js`   | a complete custom theme                                                    |
+| `dependencies/micromark/` | the one vendored package, added by `imp install` and committed             |
 
 ## The things worth copying
 
@@ -57,6 +58,20 @@ It watches the path, not the whole route, so a query change never pulls focus ou
 the first call — the route the page loaded on — is skipped. `main:focus` clears the outline, since
 nothing here was focused by hand.
 
+**A dependency is one command, and then it is just a module.** Notes are Markdown, rendered by
+[micromark](https://github.com/micromark/micromark):
+
+```
+imp install micromark
+```
+
+That vendored the package into `dependencies/micromark/micromark.js` (52 kB, one file, no
+`node_modules`), pinned `"micromark": "npm:micromark@4.0.2"` in `imp.json`, and printed every
+package that went into the bundle. Both are committed, so a clone runs with no registry access. From
+then on it is an ordinary import by its bare alias — `import { micromark } from 'micromark'` — and
+only `markdown_note.js` mentions it. micromark escapes raw HTML and drops `javascript:` URLs by
+default, which is why its output can go straight into `html()` with no sanitizer.
+
 **Translated text is bound, not read once.** `words('todo.list.title')` is a live text node and
 `message('todo.form.title')` is a live state for a prop, so switching language re-localizes in
 place. Props that imp does not keep live — a `select`'s `options`, a `placeholder` — sit inside a
@@ -69,10 +84,10 @@ form does not (rebuilding it would throw away what you had typed).
 that provides the state and the client, and spies on `fetch`. Both walk `shadowRoot` with a small
 recursive `find` — a component's content is never in the light DOM.
 
-In the e2e spec, waiting needs care: `page.waitForSelector('>>> …')` does not see nodes that appear
-**inside a shadow root** after it starts watching, so the spec waits with `page.waitForFunction` and
-a deep query instead. `textContent` does not cross a shadow root either — read the innermost
-element, `>>> #summary >>> p`, not the wrapper.
+In the e2e spec, waiting needs care: `page.waitForSelector` does not see nodes that appear **inside
+a shadow root** after it starts watching, so the spec waits with `page.waitForFunction` and a deep
+query instead. `textContent` does not cross a shadow root either — read the innermost element,
+`#summary >>> p`, not the wrapper.
 
 ## The feature flag
 

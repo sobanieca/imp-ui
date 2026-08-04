@@ -51,7 +51,7 @@ test('shows the title, the notes and the priority', () => {
   const card = find(render(), `#todo-${todo.id}`)
   expect(find(card, 'a').textContent).toEqual('Read the imp skills')
   expect(find(card, '.badge-high').textContent).toEqual('High')
-  expect(find(find(card, 'imp-text'), 'p').textContent).toEqual('1 h · Start with imp skill state.')
+  expect(find(find(card, 'imp-text'), 'p').textContent).toEqual('1 h · Has notes')
 })
 
 test('the switch is a real checkbox named after its todo', () => {

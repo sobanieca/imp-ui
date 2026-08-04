@@ -7,6 +7,7 @@ import { runEsbuild, shutdownBundler } from './deps.js'
 import { collectMocks, DATAURL_ASSET_LOADERS, impResolverPlugin } from './bundling.js'
 import { createRequestHandler, loadApp } from './start.js'
 import { createClock } from './test_clock.js'
+import { piercingBrowser, piercingPage } from './test_page.js'
 import { encodeGif, resolveVideoOptions, startScreencast, stopScreencast } from './test_video.js'
 import { bold, dim, green, red, yellow } from './colors.js'
 import { logger } from './logger.js'
@@ -232,7 +233,7 @@ async function runSpecFile(
     const registry = freshRegistry()
     await importCode(code)
     return await runRegistry(registry, {
-      context: { page, browser, baseUrl },
+      context: { page: piercingPage(page), browser: piercingBrowser(browser), baseUrl },
       defaultTimeout: E2E_TIMEOUT,
       filter,
       environment: 'e2e',

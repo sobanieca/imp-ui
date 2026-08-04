@@ -1,7 +1,13 @@
 export const clientScript = ({ mocks = false } = {}) => `
 (() => {
-  const es = new EventSource('/@imp/events')
-  es.onmessage = (e) => { if (e.data === 'reload') location.reload() }
+  let es = null
+  const connect = () => {
+    es = new EventSource('/@imp/events')
+    es.onmessage = (e) => { if (e.data === 'reload') location.reload() }
+  }
+  connect()
+  addEventListener('pagehide', () => es?.close())
+  addEventListener('pageshow', (e) => { if (e.persisted) connect() })
 
   const queue = []
   let timer = null

@@ -2,6 +2,8 @@ import { join, relative, resolve, SEPARATOR } from '@std/path'
 
 const ALWAYS_SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules', 'dist', '.imp'])
 
+const VENDORED_DEPENDENCIES = 'dependencies'
+
 export const isSkippedPath = (path) =>
   path.split(/[/\\]/).some((segment) => ALWAYS_SKIPPED_DIRECTORIES.has(segment))
 
@@ -17,6 +19,7 @@ export async function collectFiles({ root, paths, extensions, exclude = [] }) {
     const relativePath = relative(root, path)
     const segments = relativePath.split(SEPARATOR)
     if (segments.some((segment) => ALWAYS_SKIPPED_DIRECTORIES.has(segment))) return true
+    if (segments[0] === VENDORED_DEPENDENCIES) return true
     return exclude.some((entry) => {
       const prefix = entry.replace(/\/+$/, '')
       return relativePath === prefix || relativePath.startsWith(prefix + SEPARATOR)
