@@ -62,9 +62,9 @@ function recommend(display, source, byteSize, maxBytes) {
   )
 }
 
-export async function resize({ root, image, width, height, out, stretch = false }) {
+export async function resize({ root, image, width, height, output, stretch = false }) {
   if (!image) {
-    throw new Error('usage: imp resize <image> [-w <px>] [-h <px>] [--out <path>] [--stretch]')
+    throw new Error('usage: imp resize <image> [-w <px>] [-h <px>] [--output <path>] [--stretch]')
   }
   const extension = extname(image).toLowerCase()
   if (DEFERRED_TYPES.has(extension)) {
@@ -113,14 +113,14 @@ export async function resize({ root, image, width, height, out, stretch = false 
 
   await initResvg()
   const rendered = composeImage(dataUri(mediaType, bytes), target)
-  const output = encodeResized(rendered, encoder)
+  const encoded = encodeResized(rendered, encoder)
 
-  const outPath = out ? (isAbsolute(out) ? out : join(root, out)) : path
-  await Deno.writeFile(outPath, output)
+  const outPath = output ? (isAbsolute(output) ? output : join(root, output)) : path
+  await Deno.writeFile(outPath, encoded)
 
-  const outDisplay = relative(root, outPath) || out || display
+  const outDisplay = relative(root, outPath) || output || display
   logger.info(
     `${display} ${source.width}×${source.height} ${formatSize(bytes.length)} → ` +
-      `${outDisplay} ${target.width}×${target.height} ${formatSize(output.length)}`,
+      `${outDisplay} ${target.width}×${target.height} ${formatSize(encoded.length)}`,
   )
 }

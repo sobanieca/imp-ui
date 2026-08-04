@@ -3,12 +3,12 @@
 Imported from `imp/std` and its groups. Nothing to install, no CSS to include. Each component is a
 real imp component rendering as its own element (`<imp-button>`, …) with its styles sealed inside.
 
-| Import               | Exports                                                                        | Per-component skill                                                                                                      |
-| -------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `imp/std`            | `button`, `heading`, `text`, `link`                                            | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                            |
-| `imp/std/layout`     | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` | `imp skill std/stack`, `std/row`, `std/grid`, `std/item`, `std/container`, `std/spacer`, `std/divider`, `std/scrollArea` |
-| `imp/std/display`    | `emptyState`                                                                   | `imp skill std/emptyState`                                                                                               |
-| `imp/std/navigation` | `tabs`                                                                         | `imp skill std/tabs`                                                                                                     |
+| Import               | Exports                                                                                               | Per-component skill                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | `button`, `heading`, `text`, `link`                                                                   | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                           |
+| `imp/std/layout`     | `appShell`, `toolbar`, `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` | `imp skill std/appShell`, `std/toolbar`, `std/stack`, `std/row`, `std/grid`, `std/item`, `std/container`, `std/spacer`, `std/divider`, `std/scrollArea` |
+| `imp/std/display`    | `emptyState`                                                                                          | `imp skill std/emptyState`                                                                                                                              |
+| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                   | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                               |
 
 Read the component's own skill before using it — this page is only the shared contract and a summary
 of the props.
@@ -159,16 +159,18 @@ container(
 )
 ```
 
-| Component    | What it is                                | Key props                                                               |
-| ------------ | ----------------------------------------- | ----------------------------------------------------------------------- |
-| `stack`      | Flex container, column by default         | `direction`, `gap`, `justify`, `align`, `wrap`                          |
-| `row`        | The same, row by default                  | as `stack`                                                              |
-| `grid`       | CSS grid of equal columns                 | `columns` (1–12), `minItemWidth`, `gap`, `align`, `justify`             |
-| `item`       | Placement wrapper for **one** child       | `grow`, `span` (1–12 or `'full'`), `start`, `rowSpan`, `order`, `align` |
-| `container`  | Centers content, caps its width           | `size` (`'sm'`–`'xl'`, `'full'`), `padding`                             |
-| `spacer`     | Empty space in a stack or row             | `size` — omit it to absorb the leftover space                           |
-| `divider`    | A rule, optionally labelled by children   | `orientation`, `spacing`                                                |
-| `scrollArea` | A region that scrolls instead of the page | `axis`, `maxHeight`, `maxWidth`, `label`                                |
+| Component    | What it is                                | Key props                                                                   |
+| ------------ | ----------------------------------------- | --------------------------------------------------------------------------- |
+| `stack`      | Flex container, column by default         | `direction`, `gap`, `justify`, `align`, `wrap`                              |
+| `row`        | The same, row by default                  | as `stack`                                                                  |
+| `grid`       | CSS grid of equal columns                 | `columns` (1–12), `minItemWidth`, `gap`, `align`, `justify`                 |
+| `item`       | Placement wrapper for **one** child       | `grow`, `span` (1–12 or `'full'`), `start`, `rowSpan`, `order`, `align`     |
+| `container`  | Centers content, caps its width           | `size` (`'sm'`–`'xl'`, `'full'`), `padding`                                 |
+| `spacer`     | Empty space in a stack or row             | `size` — omit it to absorb the leftover space                               |
+| `divider`    | A rule, optionally labelled by children   | `orientation`, `spacing`                                                    |
+| `scrollArea` | A region that scrolls instead of the page | `axis`, `maxHeight`, `maxWidth`, `label`                                    |
+| `appShell`   | The page frame, as landmark regions       | `header`, `sidebar`, `footer`, `bottomBar`, `sidebarWidth`, `collapseBelow` |
+| `toolbar`    | A named group of controls in a line       | `label`, `orientation`, `variant`, `gap`, `justify`, `align`, `wrap`        |
 
 Rules an agent gets wrong:
 
@@ -186,6 +188,14 @@ Rules an agent gets wrong:
   because it is keyboard-focusable.
 - **`item({ order })` moves the box, not the tab order** — reading and focus order stay in DOM
   order.
+- **`appShell` takes its regions as props and the main content as children.** It is a `100dvh`
+  frame: `main` and the sidebar scroll, the header, footer and bottom bar do not. Below
+  `collapseBelow` (default `md`) the sidebar becomes a drawer behind a menu button the shell renders
+  itself — do not build that, and do not hide the sidebar yourself. `collapseBelow: null` keeps it
+  docked.
+- **`toolbar` needs a `label`** and is for controls; for a plain line of anything use `row`. Its
+  `orientation` is not responsive, and its children keep their own tab stops (focus cannot be
+  delegated across a shadow root).
 - Spacing is `gap` on the parent, never margins on the children: no std component has an outer
   margin.
 
@@ -273,17 +283,44 @@ tabs({
 })
 ```
 
-| Component | Props                                                        |
-| --------- | ------------------------------------------------------------ |
-| `tabs`    | `items`, `selected` (live), `orientation`, `label`, `events` |
+```js
+import { commandPalette, navMenu } from 'imp/std/navigation'
+
+navMenu({
+  label: 'Sections',
+  selected: currentSection,
+  groups: [{ id: 'work', label: 'Work' }],
+  items: [{ id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks', badge: 12 }],
+})
+
+commandPalette({
+  label: 'Search',
+  shortcut: 'ctrl+p',
+  items: [{ id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks' }],
+})
+```
+
+| Component        | Props                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| `tabs`           | `items`, `selected` (live), `orientation`, `label`, `events`                          |
+| `navMenu`        | `items` (live), `groups`, `selected` (live), `label`, `direction`, `gap`, `events`    |
+| `commandPalette` | `items` (live), `label`, `placeholder`, `shortcut`, `limit`, `emptyMessage`, `events` |
 
 Rules an agent gets wrong:
 
 - **Panels go in `items`, never as children** — a tab and its panel reference each other by id, and
-  ids cannot cross a shadow root, so one component must render both.
+  ids cannot cross a shadow root, so one component must render both. `commandPalette` is one
+  component for the same reason: its field and result list are wired by id.
 - **`selected` is optional.** Without it `tabs` picks the first enabled item and manages selection
   itself; pass a state when the app owns the selection, and listen with `events: { select }`.
 - **`select` fires only for a user's choice**, so a state bound both ways cannot loop.
 - Arrow keys, `Home`/`End` and RTL mirroring come with it — write no key handling.
+- **`navMenu` marks the current page with `selected`**, which writes `aria-current="page"` — never a
+  class of your own. Its items are real links; a plain click reports `select` first, so
+  `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a top or
+  bottom navbar.
+- **`commandPalette` filters its own `items`** — do not filter them yourself on every keystroke. It
+  matches `group/label` fuzzily, so a `group` is how a user searches by category. `shortcut` is
+  `'ctrl+p'`-style, where `ctrl` matches Ctrl **and** ⌘.
 
-Full manual: `imp skill std/tabs`.
+Full manuals: `imp skill std/tabs` · `imp skill std/navMenu` · `imp skill std/commandPalette`.

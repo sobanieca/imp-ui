@@ -1,4 +1,4 @@
-$ imp build --outdir .  (cwd: <tmp>)
+$ imp build --output .  (cwd: <tmp>)
 exit code: 1
 
 --- stdout ---

@@ -1,7 +1,7 @@
 # resize — shrink an oversized PNG or JPEG asset
 
 ```
-imp resize <image> [-w <px>] [-h <px>] [--out <path>] [--stretch]
+imp resize <image> [-w <px>] [-h <px>] [--output <path>] [--stretch]
 ```
 
 For the common repository bloat: an image committed far larger than the page ever displays it. It is
@@ -17,13 +17,13 @@ a downscaler, not an image editor — anything beyond a straight resize is out o
 ```
 imp resize assets/hero.png                 # check first — this is the natural first step
 imp resize assets/hero.png -w 1200         # then downscale in place
-imp resize assets/hero.png -w 1200 --out assets/hero-small.png
+imp resize assets/hero.png -w 1200 --output assets/hero-small.png
 ```
 
 ## Rules an agent gets wrong
 
 - **The file is overwritten by default.** That fits the purpose — shrinking a committed asset — but
-  pass `--out` when the original must survive. Either way imp reports before and after.
+  pass `--output` when the original must survive. Either way imp reports before and after.
 - **It never upscales.** A request larger than the source is clamped to the source.
 - **Aspect ratio is always preserved** unless you explicitly pass `--stretch`.
 - **Only static PNG and JPEG.** WebP, GIF, and animated images (animated PNG included) are detected

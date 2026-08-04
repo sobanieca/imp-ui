@@ -1,7 +1,7 @@
 # build — the production build, and the PWA output
 
 ```
-imp build [file.html|file.js] [--outdir dist] [--pwa] [--env <name>]
+imp build [file.html|file.js] [--output dist] [--pwa] [--env <name>]
 ```
 
 Writes plain static files (default `dist/`, **replaced on every run**) you upload to any host or CDN

@@ -1,4 +1,4 @@
-$ imp build app.js --outdir component  (cwd: <tmp>)
+$ imp build app.js --output component  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---

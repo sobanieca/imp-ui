@@ -213,6 +213,7 @@ export const COMPONENT_SKILLS = [
   { name: 'std/text', file: 'std/general/text.skill.md' },
   { name: 'std/link', file: 'std/general/link.skill.md' },
   { name: 'std/emptyState', file: 'std/display/empty_state.skill.md' },
+  { name: 'std/appShell', file: 'std/layout/app_shell.skill.md' },
   { name: 'std/stack', file: 'std/layout/stack.skill.md' },
   { name: 'std/row', file: 'std/layout/row.skill.md' },
   { name: 'std/grid', file: 'std/layout/grid.skill.md' },
@@ -221,6 +222,7 @@ export const COMPONENT_SKILLS = [
   { name: 'std/spacer', file: 'std/layout/spacer.skill.md' },
   { name: 'std/divider', file: 'std/layout/divider.skill.md' },
   { name: 'std/scrollArea', file: 'std/layout/scroll_area.skill.md' },
+  { name: 'std/toolbar', file: 'std/layout/toolbar.skill.md' },
   { name: 'std/form', file: 'std/inputs/form.skill.md' },
   { name: 'std/textField', file: 'std/inputs/text_field.skill.md' },
   { name: 'std/passwordField', file: 'std/inputs/password_field.skill.md' },
@@ -234,6 +236,8 @@ export const COMPONENT_SKILLS = [
   { name: 'std/submitButton', file: 'std/inputs/submit_button.skill.md' },
   { name: 'std/resetButton', file: 'std/inputs/reset_button.skill.md' },
   { name: 'std/tabs', file: 'std/navigation/tabs.skill.md' },
+  { name: 'std/navMenu', file: 'std/navigation/nav_menu.skill.md' },
+  { name: 'std/commandPalette', file: 'std/navigation/command_palette.skill.md' },
 ]
 
 const componentSubjects = COMPONENT_SKILLS.map((component) => {

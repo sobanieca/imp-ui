@@ -20,7 +20,7 @@ generated files alongside the bundled code (planned PWA support, for example, wo
 icons, and a service worker). `build` names that whole step; the former `imp bundle` name is
 retained only to report the rename.
 
-`imp build [file.html|file.js] [--outdir dist]` reuses the `imp install` engine to build the app's
+`imp build [file.html|file.js] [--output dist]` reuses the `imp install` engine to build the app's
 own module graph, resolving bare specifiers the same way the dev import map does — offline, with an
 imp-owned esbuild resolver that intercepts before the Deno resolver:
 

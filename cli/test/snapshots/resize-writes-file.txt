@@ -10,7 +10,7 @@ exit code: 0
 --- overwritten source ---
 logo.png: PNG 150×90
 
-$ imp resize logo.png -h 30 --out small.png  (cwd: <tmp>)
+$ imp resize logo.png -h 30 --output small.png  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
@@ -22,7 +22,7 @@ exit code: 0
 --- sibling output ---
 small.png: PNG 50×30
 
-$ imp resize logo.png -w 100 -h 100 --out box.png  (cwd: <tmp>)
+$ imp resize logo.png -w 100 -h 100 --output box.png  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
@@ -34,7 +34,7 @@ exit code: 0
 --- box-fit output ---
 box.png: PNG 100×60
 
-$ imp resize logo.png -w 100 -h 100 --stretch --out stretched.png  (cwd: <tmp>)
+$ imp resize logo.png -w 100 -h 100 --stretch --output stretched.png  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---

@@ -1,4 +1,4 @@
-$ imp build eager.js --outdir <component-out>  (cwd: <tmp>, component build)
+$ imp build eager.js --output <component-out>  (cwd: <tmp>, component build)
 exit code: 0
 
 --- stdout ---
@@ -11,7 +11,7 @@ built eager.js → <component-out>/
 --- impSkill exported by the component bundle ---
 # eager — WIDGETSKILLMARKER a statically imported component
 
-$ imp build --outdir app  (cwd: <tmp>, app build)
+$ imp build --output app  (cwd: <tmp>, app build)
 exit code: 0
 
 --- stdout ---

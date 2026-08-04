@@ -30,10 +30,11 @@ when a component reaches a barrel without one, so this is enforced rather than r
 - **General** — `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
-- **Layout** — `appShell`, `splitPane` _(later)_, `aspectBox` _(later)_ — placement details in
-  _Layout & placement_ below. `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider` and
+- **Layout** — `splitPane` _(later)_, `aspectBox` _(later)_ — placement details in _Layout &
+  placement_ below. `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider` and
   `scrollArea` have landed, opening the `imp/std/layout` subpath and fixing the responsive prop
-  convention for the whole library (`adr/responsive-layout-props.md`).
+  convention for the whole library (`adr/responsive-layout-props.md`); `appShell` and `toolbar`
+  landed with them.
 - **Inputs** — `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
   _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
@@ -47,10 +48,12 @@ when a component reaches a barrel without one, so this is enforced rather than r
   `imp/std/display` subpath and fixing the wording convention (`adr/translatable-by-default.md`).
 - **Feedback** — `spinner`, `progress`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
   `popconfirm`, `result` _(later)_.
-- **Navigation** — `menu`, `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `commandPalette`
-  _(later)_, `anchorNav` _(later)_, `floatButton` _(later)_. `tabs` has landed, opening the
-  `imp/std/navigation` subpath and fixing the data-driven shape every composite widget with internal
-  ARIA id references follows (`adr/component-preview.md` is its first consumer).
+- **Navigation** — `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_,
+  `floatButton` _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing
+  the data-driven shape every composite widget with internal ARIA id references follows
+  (`adr/component-preview.md` is its first consumer); `navMenu` and `commandPalette` landed with it.
+  The roadmap's `menu` is **`navMenu`**: a list of destinations rendering a `<nav>` of links, not a
+  `role="menu"` of actions — that one is `dropdownMenu`.
 - **Data** — `table` (sorting, filtering, pagination, row selection), `list`, `tree`, `virtualList`
   _(later)_, `transferList` _(later)_.
 
@@ -77,12 +80,27 @@ and a placement wrapper, not per-component positioning props. What landed:
 - All spacing values come off the theme's spacing scale as a step `0`–`6`, not free-form pixels, so
   layouts stay consistent across an app.
 
+What `appShell` settled, since it landed ahead of the feedback group rather than waiting for
+`drawer`:
+
+- **It is a viewport frame**, not a block that grows: `100dvh`, with `main` and the sidebar
+  scrolling and the header, footer and bottom bar holding their place.
+- **Regions are props, content is children** — `header`, `sidebar`, `footer`, `bottomBar` render as
+  `<header>`, `<aside>`, `<footer>` and a bottom strip; the children are `<main>`.
+- **The collapse is CSS-driven, not a `drawer`.** Below `collapseBelow` the sidebar hides and a menu
+  button in the header shows it as a fixed overlay with a backdrop, `inert` on the rest of the
+  frame, Escape and backdrop dismissal, focus moved in and handed back, and a bubbling `select`
+  closing it. The sidebar never moves in the DOM — the docked and overlay states differ only in
+  per-breakpoint custom properties, so nothing is re-parented or re-mounted. **When `drawer` lands,
+  revisit whether this becomes one**; the reason not to wait was that the collapse needs no
+  overlay-stacking or portal machinery to be correct here.
+- **A flex item's `z-index` applies even when it is `position: static`**, which is why the sidebar's
+  overlay `z-index` is part of the collapsed state rather than a constant: a constant one painted
+  the docked sidebar over the header's dropdowns.
+
 Still open in this group:
 
-- **`appShell`** is the page-level frame (antd Layout): header, sider, content, footer slots with
-  sticky header and collapsible sider built in. **Deferred until the feedback group lands** — its
-  responsive behaviour is to collapse the sider into a `drawer`, so building it first would mean
-  inventing a throwaway collapse and redoing it.
+- **`splitPane`** — user-resizable panes.
 
 ## Form handling
 
@@ -161,9 +179,10 @@ Mobile layout is first-class, not a separate component set:
   cannot read a custom property, so themeable widths would force JS-resolved layout and a wrong
   first paint. The widths are fixed and documented as such; do not add `--imp-breakpoint-*` tokens
   that would silently do nothing.
-- **Components adapt below the breakpoints they care about:** `appShell` collapses the sider into a
-  `drawer` behind a menu button; `table` switches to stacked cards or horizontal scroll; `modal`
-  goes full-screen; `drawer` becomes a bottom sheet; pickers render touch-appropriate panels.
+- **Components adapt below the breakpoints they care about:** `appShell` already collapses its
+  sidebar into an overlay behind a menu button; `table` switches to stacked cards or horizontal
+  scroll; `modal` goes full-screen; `drawer` becomes a bottom sheet; pickers render
+  touch-appropriate panels.
 - **Touch targets** meet a minimum size taken from the theme tokens.
 - **A state-shaped `breakpoint` value** (readable + watchable) is still owed, for the structural
   swaps CSS cannot express — `table`'s card mode is the first real consumer, so it lands with the
@@ -243,9 +262,11 @@ from a button's `click` handler. `button` therefore has no `type` prop
 
 ## A showcase surface
 
-Consider an `imp showcase` / component-gallery command (essence #20 lists a gallery with a live
-theme/locale editor) so agents and humans can see every component render under each theme and
-direction. Scope it as its own todo if it grows beyond a thin dev-server view.
+**`imp preview` is the gallery** — no separate `imp showcase` command is needed. Its catalog groups
+every `*.preview.js` by folder, its search finds a component by name or category, and the theme,
+language and direction pickers are on the same page, which is what a showcase was for. What is still
+missing against essence #20 is a **live theme/locale editor** rather than pickers over the themes a
+project already lists; scope that as its own todo when it is wanted.
 
 ## ADR impact
 

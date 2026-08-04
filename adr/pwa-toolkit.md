@@ -24,8 +24,7 @@ generator works) is not open to imp.
 ## Decision
 
 PWA support rides on the production build behind a single `--pwa` flag —
-`imp build [entry] [--outdir
-dist] [--pwa]` — with no dedicated command and no subcommands. A `pwa`
+`imp build [entry] [--output dist] [--pwa]` — with no dedicated command and no subcommands. A `pwa`
 block in `imp.json` (`name` + `icon` required; optional `shortName`, `themeColor`,
 `backgroundColor`, `display`, `startUrl`, `scope`) describes the app once; `--pwa` is the per-build
 trigger, so a PWA project still makes a plain build with a bare `imp build`. `--pwa` is rejected

@@ -311,17 +311,17 @@ function injectHead(html, headTags) {
 }
 
 export async function build(
-  { entry = 'index.html', outdir = 'dist', pwa = false, env = null } = {},
+  { entry = 'index.html', output = 'dist', pwa = false, env = null } = {},
 ) {
   const entryPath = await resolveEntryPath(entry, { expected: 'an HTML or JS file' })
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
-  const outdirPath = resolve(outdir)
+  const outdirPath = resolve(output)
   const insideOutdir = (path) =>
     normalize(path) === normalize(outdirPath) ||
     normalize(path).startsWith(normalize(outdirPath) + SEPARATOR)
   if (insideOutdir(root)) {
-    throw new Error(`output directory must not contain the project: ${outdir}`)
+    throw new Error(`output directory must not contain the project: ${output}`)
   }
 
   const imp = await loadImpConfig(root)

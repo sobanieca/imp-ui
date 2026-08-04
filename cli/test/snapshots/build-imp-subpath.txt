@@ -1,4 +1,4 @@
-$ imp build std-entry.js --outdir std  (cwd: <tmp>)
+$ imp build std-entry.js --output std  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
@@ -10,7 +10,7 @@ built std-entry.js → std/
 
 [bundle defines the element: true]
 
-$ imp build std-entry.js --outdir std  (cwd: <tmp>, unknown subpath)
+$ imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)
 exit code: 1
 
 --- stdout ---

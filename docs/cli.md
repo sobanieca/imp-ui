@@ -45,7 +45,7 @@ Confirm the install with `imp --version`, which prints the version the binary ru
 imp init [dir] [--pwa]                scaffold a new project (--pwa: installable app)
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
           [--mock | --no-mock]        answer from the mocks folder, or from the real API
-imp build [file.html] [--outdir dist]   build the app for production
+imp build [file.html] [--output dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
 imp preview [path] [--port 4517]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
@@ -58,8 +58,8 @@ imp test  <file>                      run one test file: *.test.js unit in-proce
 imp test  --unit | --e2e              run every file of that level, each in its own
                                       process, in parallel (--jobs <n> caps concurrency)
 imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
-           [--out <path>] [--stretch]  keeping aspect ratio unless --stretch is given
-                                      (neither -w nor -h: report current dimensions
+           [--output <path>]          keeping aspect ratio unless --stretch is given
+           [--stretch]                (neither -w nor -h: report current dimensions
                                       and size, plus a recommended resize command)
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
@@ -365,7 +365,7 @@ If a declared dependency has no vendored bundle yet (say, right after editing `i
 ## `imp build`
 
 ```
-imp build [file.html|file.js] [--outdir dist] [--pwa]
+imp build [file.html|file.js] [--output dist] [--pwa]
 ```
 
 Builds the production version of your app into an output directory (default: `dist/`) that you
@@ -843,7 +843,7 @@ Preview files are never part of your app: nothing imports them, so `imp build` n
 ## `imp resize`
 
 ```
-imp resize <image> [-w <px>] [-h <px>] [--out <path>] [--stretch]
+imp resize <image> [-w <px>] [-h <px>] [--output <path>] [--stretch]
 ```
 
 A convenience utility for the common case that bloats a repository: a committed image checked in far
@@ -866,7 +866,7 @@ combine:
   from the terminal.
 
 By default the file is overwritten — that fits the "shrink a committed asset" purpose. Pass
-`--out <path>` to write the result to a new file and leave the original untouched. Either way imp
+`--output <path>` to write the result to a new file and leave the original untouched. Either way imp
 reports the before and after dimensions and byte size.
 
 Resizing **only ever downscales pixels, with minimal compression** — quality is prioritized over

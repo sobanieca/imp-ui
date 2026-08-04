@@ -81,6 +81,14 @@ Be upfront about what imp is not, right on the landing page — it earns trust a
 Pair this with the all-in-one and SPA messaging above: the constraints are the reason the experience
 is so smooth, not a caveat bolted on at the end.
 
+## Component gallery
+
+The site carries a section where a visitor browses the standard components — pick one from a nav,
+see it rendered, switch themes, read the code behind it. That page is the one `imp preview` already
+generates, exported as static files and embedded in an `iframe`; the work to get there is
+`todo/preview-static-export.md`. The site owns the nav and the surrounding copy, the exporter owns
+the specimen pages.
+
 ## Docs constraints
 
 Everything on the site follows the `docs/` rules in `CLAUDE.md`: written for an external reader, no

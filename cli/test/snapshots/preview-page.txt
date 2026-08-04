@@ -15,6 +15,7 @@ cache-control: no-store
 <title>imp preview — components/counter.preview.js</title>
 </head>
 <body>
+<script type="application/json" id="imp-preview-catalog">{"previews":[{"file":"components/counter.preview.js","category":"components","name":"counter","path":"components/counter","href":"/preview/components/counter.preview.js"},{"file":"components/todos.preview.js","category":"components","name":"todos","path":"components/todos","href":"/preview/components/todos.preview.js"}],"current":"components/counter.preview.js"}</script>
 <script type="module" src="/@imp/preview/components/counter.preview.js"></script>
 </body>
 </html>

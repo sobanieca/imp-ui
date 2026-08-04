@@ -16,7 +16,7 @@ USAGE
                      [--mock]           answer requests from the *.mock.js files in
                      [--no-mock]        the "mocks" folder instead of the network
                                         (--no-mock forces a run against the real API)
-  imp build [file.html] [--outdir dist]   build the app for production: minified,
+  imp build [file.html] [--output dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
                                         imp imports for the host app to provide)
@@ -43,11 +43,11 @@ USAGE
                                         --video <dir> records each e2e spec as an animated GIF ·
                                         --mock / --no-mock: serve the "mocks" folder to e2e specs)
   imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
-                     [--out <path>]     keeping aspect ratio (-w & -h: fit within that box ·
+                     [--output <path>]  keeping aspect ratio (-w & -h: fit within that box ·
                      [--stretch]        --stretch: exact -w×-h, may distort ·
                                         neither -w nor -h: report current dimensions and
                                         size, plus a recommended resize command ·
-                                        --out writes a copy instead of overwriting)
+                                        --output writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
   imp skill [...subject]                print imp's usage manual for a subject —
@@ -172,7 +172,7 @@ try {
       const { build } = await import('./build.js')
       await build({
         entry: positional(rest)[0] ?? 'index.html',
-        outdir: flag(rest, 'outdir', 'dist'),
+        output: flag(rest, 'output', 'dist'),
         pwa: rest.includes('--pwa'),
         env: flag(rest, 'env', null),
       })
@@ -220,7 +220,7 @@ try {
     }
     case 'resize': {
       const { resize } = await import('./resize.js')
-      const valued = new Set(['-w', '--width', '-h', '--height', '--out'])
+      const valued = new Set(['-w', '--width', '-h', '--height', '--output'])
       const image = rest.find((arg, index) => {
         if (arg.startsWith('-')) return false
         const previous = rest[index - 1]
@@ -241,7 +241,7 @@ try {
         image,
         width: readDim('-w', '--width'),
         height: readDim('-h', '--height'),
-        out: flag(rest, 'out', null),
+        output: flag(rest, 'output', null),
         stretch: rest.includes('--stretch'),
       })
       break

@@ -57,6 +57,13 @@ preview file**, so scenarios that need different data differ by the arguments yo
 
 ## The page
 
+- **The shell** — every page is the same frame: the catalog of components in a sidebar, grouped by
+  the folder each preview file sits in, with the one you are looking at marked; a search field
+  across the top; and the theme, language and direction pickers beside it. `/` opens the catalog as
+  a card per category.
+- **Search** — press `Ctrl P` (`⌘P` on a Mac) from anywhere on the page. Matching is fuzzy over
+  `category/component`, so `inp` lists the `inputs` folder and `tf` finds `text_field`; Up and Down
+  move, `Enter` opens, `Escape` clears.
 - **Stage** — drag the right, bottom or corner handle to resize; `phone`, `tablet`, `desktop` jump
   to common viewports and `fit` returns to full width. The component re-lays-out live, which is how
   you find the width where it breaks.
@@ -80,6 +87,11 @@ With no path, every `*.preview.js` in the project is discovered and `/` lists th
 it: a preview file opens straight to it, a **component** path opens its sibling preview
 (`imp preview components/todos.js` → `components/todos.preview.js`), and a folder limits discovery.
 `?scenario=<name>` — or the panel's **isolate** button — renders one scenario alone.
+
+A component is listed as **`category/name`**, where the category is the folder holding the preview
+file and the name is the file's own name without `.preview.js` — so
+`src/inputs/text_field.preview.js` is `inputs/text_field` in the sidebar and in the search. Group
+your components into folders and the catalog groups itself.
 
 `imp preview --list` prints the discovered files one per line, `--list --json` as a JSON array. Keep
 folders out with `preview.exclude`.

@@ -1,4 +1,4 @@
-$ imp build app.js --outdir shared  (cwd: <tmp>)
+$ imp build app.js --output shared  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---

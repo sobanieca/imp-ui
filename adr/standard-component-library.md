@@ -78,10 +78,22 @@ imports the same surface an app does.
   is one line in one component. Text the **app** passes in (a `title` prop, children) is the app's
   to translate; a component never translates values handed to it.
 
+- **A composite widget cannot move focus between the components inside it.** A control renders its
+  focusable element inside its own shadow root, and a `display: contents` host cannot be focused in
+  its place, so roving tabindex — the ARIA pattern for a toolbar, a menu bar or a radio-styled group
+  — is only implementable **within** one component, never across a set of them. `toolbar` therefore
+  names and groups its controls (`role="toolbar"`, `aria-orientation`) and leaves each one its own
+  tab stop, rather than shipping arrow-key handling that would silently skip anything it cannot
+  reach. This is the same boundary that makes `tabs`, `navMenu` and `commandPalette` data-driven: a
+  widget owning an internal ARIA reference or an internal focus order must render every part of it.
+
 `link` additionally hands plain left-clicks on in-app hrefs to `navigate()`
 (`client-side-router.md`), rendering a real anchor so the URL, middle-click and copy-link behave
 natively, and leaving modifier-clicks, `external` links and off-site URLs to the browser. `href` is
-written in app space, exactly as passed to `navigate()`, with the base path applied by imp.
+written in app space, exactly as passed to `navigate()`, with the base path applied by imp. Every
+other component that renders a destination — `navMenu`'s items, `commandPalette`'s results — follows
+that same contract from one shared helper, and reports a **cancelable `select` event** before it
+follows the link, which is how an app takes navigation back.
 
 ## Consequences
 

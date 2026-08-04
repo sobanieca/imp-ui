@@ -27,14 +27,14 @@ leaks out onto your page.
 `imp` and its subpaths are the framework — element factories, `component`, state, routing, theming
 (see **[Imports](imports.md)**). `imp/std` is the component library, split by group:
 
-| Import               | What it holds                                                                  |
-| -------------------- | ------------------------------------------------------------------------------ |
-| `imp/std`            | The base set — `button`, `heading`, `text`, `link`                             |
-| `imp/std/layout`     | `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` |
-| `imp/std/inputs`     | `form` and the controls that bind to it                                        |
-| `imp/std/display`    | `emptyState`                                                                   |
-| `imp/std/navigation` | `tabs`                                                                         |
-| `imp/std/<group>`    | The rest, group by group, as they land                                         |
+| Import               | What it holds                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `imp/std`            | The base set — `button`, `heading`, `text`, `link`                                                    |
+| `imp/std/layout`     | `appShell`, `toolbar`, `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea` |
+| `imp/std/inputs`     | `form` and the controls that bind to it                                                               |
+| `imp/std/display`    | `emptyState`                                                                                          |
+| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                   |
+| `imp/std/<group>`    | The rest, group by group, as they land                                                                |
 
 Components take the obvious names, and a few of them match an element factory — `button` is both a
 plain `<button>` from `imp/html` and the styled component from `imp/std`. They never collide,
@@ -332,6 +332,8 @@ value at a time.
 | `spacer`     | Empty space — flexible, or a fixed step        | `size`                                               |
 | `divider`    | A rule between sections, optionally labelled   | `orientation`, `spacing`                             |
 | `scrollArea` | Scrolls a region instead of the whole page     | `axis`, `maxHeight`, `maxWidth`, `label`             |
+| `appShell`   | The whole page frame — see below               | `header`, `sidebar`, `footer`, `bottomBar`           |
+| `toolbar`    | A named group of controls in a line            | `label`, `orientation`, `variant`, `gap`             |
 
 `grid` deserves a note: `columns` is a **count** of equal columns, and `minItemWidth` is usually the
 better tool. Give it the narrowest a card should ever get and the grid fits as many as the screen
@@ -366,6 +368,81 @@ children already lay out correctly.
 One caution: `item({ order })` moves a box on screen without moving it in the document, so keyboard
 focus and screen-reader reading order stay in the order you wrote. Use it for visual polish, and
 change the order of your calls when the content order itself is different.
+
+### The page frame: `appShell`
+
+Almost every application has the same outline — a bar across the top, navigation down one side, the
+page in the middle, something along the bottom. `appShell` is that outline, and it takes each region
+as a prop; the children are the main content:
+
+```js
+import { appShell, toolbar } from 'imp/std/layout'
+import { navMenu } from 'imp/std/navigation'
+
+appShell(
+  {
+    header: toolbar({ label: 'Workspace' }, brand(), spacer(), accountMenu()),
+    sidebar: navMenu({ label: 'Sections', items: sections, selected: currentSection }),
+    bottomBar: navMenu({ label: 'Sections', direction: 'row', hideAbove: 'md', items: sections }),
+    footer: text({ size: 'sm', tone: 'secondary' }, 'Signed in as ada@example.com'),
+  },
+  invoicesPage(),
+)
+```
+
+| Prop            | Values                         | Default  |                                            |
+| --------------- | ------------------------------ | -------- | ------------------------------------------ |
+| `header`        | any content                    | —        | The bar across the top                     |
+| `sidebar`       | any content                    | —        | The column beside the page                 |
+| `footer`        | any content                    | —        | A strip along the bottom                   |
+| `bottomBar`     | any content                    | —        | Below the footer — where a mobile bar goes |
+| `sidebarWidth`  | `'sm'`, `'md'`, `'lg'`         | `'md'`   | From your theme's `--imp-sidebar-*` tokens |
+| `collapseBelow` | `'sm'`, `'md'`, `'lg'`, `'xl'` | `'md'`   | Where the sidebar turns into a drawer      |
+| `menuLabel`     | string — **live**              | `'Menu'` | Names the button that opens the drawer     |
+
+It is a **viewport frame**: it fills the window, the header, footer and bottom bar hold their place,
+and the main region and the sidebar scroll on their own. That is what makes a long page feel like an
+application rather than a document — your navigation does not scroll away. Put it at the top of the
+page, with the body margin reset, and give it nothing to sit inside.
+
+The part worth not writing yourself is what happens on a phone. Below `collapseBelow` the sidebar
+leaves the frame and a menu button appears in the header. Pressing it slides the sidebar over the
+page behind a backdrop, moves focus into it, and takes the rest of the page out of the accessibility
+tree so a screen reader cannot wander behind the overlay. `Escape`, the backdrop, and choosing
+anything inside it all close it again and hand focus back to the button. None of that is a prop you
+set — it is what the collapse means. Pass `collapseBelow: null` when a sidebar should stay docked at
+every width.
+
+Each region renders as its landmark — `<header>`, `<aside>`, `<main>`, `<footer>` — so a screen
+reader user can jump straight to the page content, and you should not wrap what you pass in another
+one.
+
+### Grouping controls: `toolbar`
+
+`toolbar` is a `row` that says what it is: a set of controls that belong together, with a name a
+screen reader announces.
+
+```js
+toolbar(
+  { label: 'Document actions', variant: 'surface', justify: 'between' },
+  text({ weight: 'medium' }, 'report.md'),
+  row({ gap: 2 }, button({ variant: 'ghost' }, 'Undo'), button('Save')),
+)
+```
+
+It takes the same `gap`, `justify`, `align` and `wrap` props as `row` — per screen size, like every
+layout component — plus `orientation` and a `variant` of `'plain'` or `'surface'` for the bordered
+card look. `label` is not optional in practice: an unnamed landmark is announced as an unnamed
+landmark, so the component tells you when you forget it.
+
+`orientation` is deliberately **not** responsive. It is announced through `aria-orientation`, and a
+value that changed with the window would describe the widget differently than the person using it
+finds it.
+
+One honest limitation: in the ARIA pattern a toolbar holds a single tab stop and moves between its
+controls with the arrow keys. imp does not do that, because each control is sealed inside its own
+element and focus cannot be handed across that boundary from the outside. `Tab` walks the controls
+instead — which works everywhere, where a half-implemented roving focus would not.
 
 ## Forms — from `imp/std/inputs`
 
@@ -580,6 +657,109 @@ tabs({
 That pair cannot loop: `select` fires only for a choice the user made, never for a change your state
 drove. Every panel is built at mount and hidden when it is not showing, so whatever is inside one —
 a half-filled form, a scroll position — is still there when you come back to it.
+
+## `navMenu` — from `imp/std/navigation`
+
+A list of places in your app, with the one you are on marked. Like `tabs`, it is data rather than
+children:
+
+```js
+import { navMenu } from 'imp/std/navigation'
+
+navMenu({
+  label: 'Sections',
+  selected: currentSection,
+  groups: [{ id: 'work', label: 'Work' }, { id: 'admin', label: 'Admin' }],
+  items: [
+    { id: 'reports', group: 'work', label: 'Reports', href: '/reports', badge: 4 },
+    { id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks' },
+    { id: 'billing', group: 'admin', label: 'Billing', href: '/billing' },
+  ],
+})
+```
+
+| Prop        | Values                                   | Default    |                                            |
+| ----------- | ---------------------------------------- | ---------- | ------------------------------------------ |
+| `items`     | array of `{ id, label, href, … }` — live | `[]`       | The destinations                           |
+| `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections              |
+| `selected`  | an item's `id` — **live**                | none       | The page you are on                        |
+| `label`     | string — **live**                        | —          | Names the navigation for a screen reader   |
+| `direction` | `'column'`, `'row'` — **responsive**     | `'column'` | `column` for a sidebar, `row` for a navbar |
+| `gap`       | spacing step `0`–`6` — **responsive**    | `1`        | Between items and groups                   |
+
+The current item is marked with `aria-current="page"` — the thing a screen reader actually announces
+as "current page" — and the styling follows from it, so the highlight and the announcement can never
+disagree. Bind `selected` to the state your router already drives and the menu keeps itself right.
+
+Items are real links. Middle-click and ⌘-click open them in a new tab, and a plain click is reported
+as a `select` event before the link is followed, so an app doing its own routing can call
+`event.preventDefault()` and take over. There is no keyboard behaviour to learn because there is
+none to add: `Tab` and `Enter` are what links already do, and a roving-focus menu would take those
+links out of the tab order in exchange for nothing.
+
+The same component is your top or bottom navigation bar with `direction: 'row'`. Paired with
+`appShell` — the column one in `sidebar`, a row one in `bottomBar` — that is a desktop sidebar and a
+mobile bottom bar from one list of destinations.
+
+## `commandPalette` — from `imp/std/navigation`
+
+A search field that filters a list as you type and opens what you pick. It is what you reach for
+when your app has more places than fit in a menu:
+
+```js
+import { commandPalette } from 'imp/std/navigation'
+
+commandPalette({
+  label: 'Search',
+  placeholder: 'Search components by name or category…',
+  shortcut: 'ctrl+p',
+  items: components.map((entry) => ({
+    id: entry.id,
+    group: entry.category,
+    label: entry.name,
+    href: entry.href,
+  })),
+})
+```
+
+| Prop           | Values                                    | Default        |                                    |
+| -------------- | ----------------------------------------- | -------------- | ---------------------------------- |
+| `items`        | array of `{ id, label, group, … }` — live | `[]`           | Everything that can be found       |
+| `label`        | string — **live**                         | `'Search'`     | Names the field and the results    |
+| `placeholder`  | string — **live**                         | `'Search'`     | The ghost text in the empty field  |
+| `shortcut`     | `'ctrl+p'`, `'ctrl+k'`, …                 | —              | Focuses the field from anywhere    |
+| `limit`        | whole number                              | `50`           | How many matches are shown at once |
+| `emptyMessage` | string                                    | `'No matches'` | When nothing matches               |
+
+**An item's `group` is part of what you search.** A match runs against `group/label`, so typing
+`inp` finds everything in the `inputs` group and `tf` finds `text_field` — the matching is fuzzy,
+the characters it matched are highlighted in the result, and a match on the name outranks one on the
+group. That is the whole reason to give your items a group: it turns a category into something a
+person can type.
+
+`shortcut` is one key with optional modifiers, written lowercase and joined with `+`. Write `ctrl`
+and it matches **Ctrl and ⌘**, so the same spelling is right on every platform; the hint rendered at
+the end of the field follows suit, showing `Ctrl P` or `⌘P`. The binding is taken on the page, ahead
+of the browser's own, so `Ctrl P` opens your palette rather than the print dialog.
+
+Everything else is the combobox pattern, done properly and not by you: the field is a `combobox`
+over a `listbox`, the highlighted result is announced through `aria-activedescendant`, the number of
+matches goes out through a live region on every keystroke, Up and Down move through the matches and
+wrap, `Enter` opens the highlighted one, and `Escape` clears the query before it closes the list.
+Those wires are ids pointing at each other, which cannot cross a component boundary — the reason
+this is one component rather than a field you compose with a list of your own.
+
+An item with an `href` is followed when it is picked. Anything else — running a command, opening a
+dialog — is a `select` handler:
+
+```js
+commandPalette({
+  label: 'Run a command',
+  shortcut: 'ctrl+k',
+  items: commands.map(({ id, name, section }) => ({ id, label: name, group: section })),
+  events: { select: (event) => run(event.detail.id) },
+})
+```
 
 ## Custom elements next to yours
 

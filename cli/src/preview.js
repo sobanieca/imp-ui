@@ -37,6 +37,10 @@ const RUNTIME_SPECIFIER = 'imp-preview-runtime'
 
 const PAGE_PREFIX = '/preview/'
 const BUNDLE_PREFIX = '/@imp/preview/'
+const INDEX_BUNDLE_PATH = '/@imp/preview-index.js'
+const INDEX_BUNDLE_KEY = ''
+
+const CATALOG_ELEMENT_ID = 'imp-preview-catalog'
 
 const STATE_ENTRY_POINTS = ['initState', 'useState']
 const MAX_SCANNED_SOURCES = 40
@@ -413,7 +417,9 @@ function previewEntryPlugin({ file, meta, root, themes, translations }) {
   const themeBinding = (index) => `customTheme${index}`
   const translationBinding = (index) => `previewTranslations${index}`
   const contents = [
-    `import * as scenarios from ${JSON.stringify(toFileUrl(file).href)}`,
+    file === null
+      ? 'const scenarios = null'
+      : `import * as scenarios from ${JSON.stringify(toFileUrl(file).href)}`,
     ...themes.map((theme, index) =>
       `import * as ${themeBinding(index)} from ${JSON.stringify(toFileUrl(theme.file).href)}`
     ),
@@ -451,10 +457,11 @@ function previewEntryPlugin({ file, meta, root, themes, translations }) {
   }
 }
 
-export async function bundlePreview(file, { root, dependencies, themes = [], translations = [] }) {
+const previewMeta = async (file, root) => {
+  if (file === null) return { file: null }
   const text = await Deno.readTextFile(file)
   const scenarios = extractScenarioSources(text)
-  const meta = {
+  return {
     file: relative(root, file).replaceAll('\\', '/'),
     order: scenarios.map(({ name }) => name),
     sources: Object.fromEntries(
@@ -463,7 +470,11 @@ export async function bundlePreview(file, { root, dependencies, themes = [], tra
     imports: extractImportLines(text),
     states: await collectStateDeclarations(file),
   }
-  const mocks = await collectMocks(file, { root, dependencies })
+}
+
+export async function bundlePreview(file, { root, dependencies, themes = [], translations = [] }) {
+  const meta = await previewMeta(file, root)
+  const mocks = file === null ? new Map() : await collectMocks(file, { root, dependencies })
   const result = await runEsbuild({
     plugins: [
       previewEntryPlugin({ file, meta, root, themes, translations }),
@@ -491,6 +502,27 @@ const pagePath = (file) => PAGE_PREFIX + file.split('/').map(encodeURIComponent)
 
 const bundlePath = (file) => BUNDLE_PREFIX + file.split('/').map(encodeURIComponent).join('/')
 
+const PREVIEW_SUFFIX = /\.preview\.(js|mjs)$/
+
+export function previewCatalog(files) {
+  const entries = files.map((file) => {
+    const segments = file.split('/')
+    const name = segments.pop().replace(PREVIEW_SUFFIX, '')
+    const category = segments.at(-1) ?? 'previews'
+    return { file, category, name, path: `${category}/${name}`, href: pagePath(file) }
+  })
+  return entries.sort((left, right) =>
+    left.category < right.category ? -1 : left.category > right.category ? 1 : (
+      left.name < right.name ? -1 : left.name > right.name ? 1 : 0
+    )
+  )
+}
+
+const catalogScript = (previews, current) =>
+  `<script type="application/json" id="${CATALOG_ELEMENT_ID}">${
+    JSON.stringify({ previews, current }).replaceAll('<', '\\u003c')
+  }</script>`
+
 const documentShell = (title, body) =>
   `<!doctype html>
 <html lang="en">
@@ -505,40 +537,17 @@ ${body}
 </html>
 `
 
-const previewPage = (file) =>
+const shellPage = (title, previews, current, bundle) =>
   documentShell(
-    `imp preview — ${file}`,
-    `<script type="module" src="${escapeHtml(bundlePath(file))}"></script>`,
+    title,
+    `${catalogScript(previews, current)}
+<script type="module" src="${escapeHtml(bundle)}"></script>`,
   )
 
-const INDEX_STYLES = `
-body { margin: 0; padding: 32px 24px; background: #0f1115; color: #e6e8ec;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-h1 { font-size: 16px; margin: 0 0 4px; }
-p { color: #9aa4b8; font-size: 13px; margin: 0 0 20px; }
-ul { list-style: none; padding: 0; margin: 0; max-width: 640px; }
-li { border-top: 1px solid #262b36; }
-li:last-child { border-bottom: 1px solid #262b36; }
-a { display: block; padding: 10px 4px; color: #7c9cff; text-decoration: none; font-size: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-a:hover { background: #171a21; }
-`
+const previewPage = (file, previews) =>
+  shellPage(`imp preview — ${file}`, previews, file, bundlePath(file))
 
-const indexPage = (files) =>
-  documentShell(
-    'imp preview',
-    `<style>${INDEX_STYLES}</style>
-<h1>imp preview</h1>
-<p>${files.length} preview${files.length === 1 ? '' : 's'} in this project</p>
-<ul>
-${
-      files.map((file) =>
-        `<li><a href="${escapeHtml(pagePath(file))}">${escapeHtml(file)}</a></li>`
-      )
-        .join('\n')
-    }
-</ul>`,
-  )
+const indexPage = (previews) => shellPage('imp preview', previews, null, INDEX_BUNDLE_PATH)
 
 const failureModule = (file, message) => `
 const failure = document.createElement('pre')
@@ -574,7 +583,7 @@ export function createPreviewHandler(
     if (!bundles.has(file)) {
       try {
         bundles.set(file, {
-          code: await bundlePreview(resolve(app.root, file), {
+          code: await bundlePreview(file === INDEX_BUNDLE_KEY ? null : resolve(app.root, file), {
             root: app.root,
             dependencies,
             themes,
@@ -582,7 +591,7 @@ export function createPreviewHandler(
           }),
         })
       } catch (error) {
-        logger.error(`${file} failed to build — ${error.message}`)
+        logger.error(`${file || 'the index page'} failed to build — ${error.message}`)
         bundles.set(file, { error: error.message })
       }
     }
@@ -592,15 +601,23 @@ export function createPreviewHandler(
   return async (req) => {
     const url = new URL(req.url)
     const previews = listPreviews()
+    const catalog = previewCatalog(previews)
 
     if (url.pathname === '/') {
-      return htmlResponse(injectImp(indexPage(previews), app.headInjection))
+      return htmlResponse(injectImp(indexPage(catalog), app.headInjection))
+    }
+
+    if (url.pathname === INDEX_BUNDLE_PATH) {
+      const bundle = await loadBundle(INDEX_BUNDLE_KEY)
+      return scriptResponse(
+        bundle.error ? failureModule('the index page', bundle.error) : bundle.code,
+      )
     }
 
     if (url.pathname.startsWith(PAGE_PREFIX)) {
       const file = decodeURIComponent(url.pathname.slice(PAGE_PREFIX.length))
       if (!previews.includes(file)) return new Response(`not found: ${file}`, { status: 404 })
-      return htmlResponse(injectImp(previewPage(file), app.headInjection))
+      return htmlResponse(injectImp(previewPage(file, catalog), app.headInjection))
     }
 
     if (url.pathname.startsWith(BUNDLE_PREFIX)) {

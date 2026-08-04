@@ -5,8 +5,10 @@ import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { button, text } from 'imp/std'
 import { row } from 'imp/std/layout'
+import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { tabs } from 'imp/std/navigation'
+import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
 import { tokenizeJs } from './preview_highlight.js'
 import { asNodes } from '../../lib/src/nodes.js'
 import { runInMountScope } from '../../lib/src/component.js'
@@ -62,67 +64,13 @@ const surface = `
   border-radius: var(--imp-radius-lg, 10px);
 `
 
-const PAGE_STYLES = `
-  .bar {
-    display: flex;
-    align-items: center;
-    gap: var(--imp-space-3, 12px);
-    padding-block: var(--imp-space-2, 8px);
-    padding-inline: var(--imp-space-4, 16px);
-    background: var(--imp-color-surface, #ffffff);
-    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    position: sticky;
-    inset-block-start: 0;
-    z-index: 10;
-  }
-
-  .brand {
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-weight: var(--imp-font-weight-bold, 700);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  .file {
-    color: var(--imp-color-secondary, #64748b);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  .spacer {
-    flex: 1;
-  }
-
-  .control {
-    display: flex;
-    align-items: center;
-    gap: var(--imp-space-2, 8px);
-    color: var(--imp-color-secondary, #64748b);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  a {
-    color: var(--imp-color-link, #2563eb);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    text-decoration: none;
-    border-radius: var(--imp-radius-sm, 4px);
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  a:focus-visible {
-    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
-    outline-offset: 2px;
-  }
-
+const SCENARIO_STYLES = `
   .scenario {
+    display: block;
     padding-block: var(--imp-space-5, 24px);
-    padding-inline: var(--imp-space-4, 16px);
+    padding-inline: var(--imp-space-5, 24px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
   }
 
   .scenario-head {
@@ -139,26 +87,32 @@ const PAGE_STYLES = `
     font-size: var(--imp-font-size-md, 1rem);
   }
 
-  .failure,
-  .empty {
-    margin: 0;
-    padding: var(--imp-space-3, 12px);
-    border-radius: var(--imp-radius-md, 6px);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+  a {
+    color: var(--imp-color-link, #2563eb);
     font-size: var(--imp-font-size-sm, 0.875rem);
-    white-space: pre-wrap;
+    text-decoration: none;
+    border-radius: var(--imp-radius-sm, 4px);
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  a:focus-visible {
+    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
+    outline-offset: 2px;
   }
 
   .failure {
+    margin: 0;
+    padding: var(--imp-space-3, 12px);
+    border-radius: var(--imp-radius-md, 6px);
     background: var(--imp-color-surface, #ffffff);
     border: var(--imp-border-width, 1px) solid var(--imp-color-danger, #dc2626);
     color: var(--imp-color-danger, #dc2626);
-  }
-
-  .empty {
-    color: var(--imp-color-secondary, #64748b);
-    padding-block: var(--imp-space-6, 32px);
-    padding-inline: var(--imp-space-4, 16px);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    white-space: pre-wrap;
   }
 `
 
@@ -427,9 +381,9 @@ const switchTo = (code) => {
 }
 
 const picker = (kind, ariaLabel, values, choice) =>
-  div(
-    { class: `control control--${kind}` },
-    span(kind),
+  row(
+    { gap: 2, align: 'center' },
+    text({ tone: 'secondary', size: 'sm' }, kind),
     select({ ariaLabel, value: choice, options: values }),
   )
 
@@ -688,7 +642,19 @@ const snippetFor = (name, meta) => {
   return imports ? `${imports}\n\n${source}\n` : `${source}\n`
 }
 
+const scenarioDefinition = {
+  styles: SCENARIO_STYLES,
+  onMount: (_instance, name, scenario, meta) => scenarioSection(name, scenario, meta),
+}
+
+let createScenario = null
+
 const scenarioPanel = (name, scenario, meta) => {
+  createScenario ??= component('imp-preview-scenario', scenarioDefinition)
+  return createScenario(name, scenario, meta)
+}
+
+const scenarioSection = (name, scenario, meta) => {
   let nodes
   try {
     nodes = asNodes(typeof scenario === 'function' ? scenario() : scenario)
@@ -704,7 +670,7 @@ const scenarioPanel = (name, scenario, meta) => {
   if (!nodes) {
     return el(
       'section',
-      { class: 'scenario', dir: 'ltr' },
+      { class: 'scenario' },
       head,
       pre({ class: 'failure' }, `${name} failed to build — see the terminal`),
     )
@@ -712,7 +678,7 @@ const scenarioPanel = (name, scenario, meta) => {
   const snippet = snippetFor(name, meta)
   return el(
     'section',
-    { class: 'scenario', dir: 'ltr' },
+    { class: 'scenario' },
     head,
     tabs({
       label: `${name} views`,
@@ -748,9 +714,39 @@ const scenarioOrder = (scenarios, order) => {
   return [...written, ...exported.filter((name) => !written.includes(name))]
 }
 
+const catalogEntryFor = (catalog, file) =>
+  catalog.previews.find((entry) => entry.file === file) ??
+    { file, category: '', name: file, href: null }
+
+const scenarioList = (scenarios, meta, catalog) => {
+  const names = scenarioOrder(scenarios, meta.order)
+  const requested = new URLSearchParams(location.search).get('scenario')
+  const isolated = requested !== null && names.includes(requested)
+  const shown = isolated ? [requested] : names
+  return [
+    previewHead(catalogEntryFor(catalog, meta.file), isolated),
+    ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta)) : [
+      emptyState({
+        title: 'No scenarios in this file',
+        description: `${meta.file} has no named exports — export one instance per scenario, ` +
+          'like export const empty = myComponent()',
+      }),
+    ]),
+  ]
+}
+
+const mainContent = (scenarios, meta, catalog) => {
+  if (scenarios !== null) return scenarioList(scenarios, meta, catalog)
+  if (catalog.previews.length) return previewIndex(catalog.previews)
+  return emptyState({
+    title: 'No previews found',
+    description: "Write a '*.preview.js' file next to a component and export one instance per " +
+      'scenario, like export const empty = myComponent()',
+  })
+}
+
 const pageDefinition = {
-  styles: PAGE_STYLES,
-  onMount: (_instance, scenarios, meta) => {
+  onMount: (_instance, scenarios, meta, catalog) => {
     const themeChoice = initState(THEME_STATE, readStoredTheme())
     const directionChoice = initState(DIRECTION_STATE, readStoredDirection())
     const languageChoice = languages.length ? initState(LANGUAGE_STATE, readStoredLanguage()) : null
@@ -769,44 +765,25 @@ const pageDefinition = {
       switchTo(readStoredLanguage())
     })
 
-    const names = scenarioOrder(scenarios, meta.order)
-    const requested = new URLSearchParams(location.search).get('scenario')
-    const isolated = requested !== null && names.includes(requested)
-    const shown = isolated ? [requested] : names
-
-    const bar = div(
-      { class: 'bar', dir: 'ltr' },
-      span({ class: 'brand' }, 'imp preview'),
-      span({ class: 'file' }, meta.file),
-      span({ class: 'spacer' }),
+    const controls = [
       languageChoice ? picker('language', 'Language', languages, languageChoice) : null,
       picker('direction', 'Text direction', DIRECTIONS, directionChoice),
       picker('theme', 'Theme', [...themes.keys()], themeChoice),
-      isolated ? a({ href: location.pathname }, 'all scenarios') : null,
-      a({ href: '/' }, 'all previews'),
-    )
+    ].filter(Boolean)
 
-    return div(
-      bar,
-      ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta)) : [
-        pre(
-          { class: 'empty', dir: 'ltr' },
-          `${meta.file} has no named exports — export one instance per scenario, like ` +
-            `export const empty = myComponent()`,
-        ),
-      ]),
-    )
+    return previewShell({ catalog, controls, content: mainContent(scenarios, meta, catalog) })
   },
 }
 
 let createPage = null
 
-const previewPage = (scenarios, meta) => {
+const previewPage = (scenarios, meta, catalog) => {
   createPage ??= component('imp-preview-page', pageDefinition)
-  return createPage(scenarios, meta)
+  return createPage(scenarios, meta, catalog)
 }
 
 export async function startPreview(scenarios, meta, customThemes = [], previewTranslations = []) {
+  const catalog = readCatalog()
   const styles = document.createElement('style')
   styles.textContent = DOCUMENT_STYLES
   document.head.append(styles)
@@ -825,6 +802,6 @@ export async function startPreview(scenarios, meta, customThemes = [], previewTr
   )
   await applyLanguage(readStoredLanguage())
 
-  mount(document.body, previewPage(scenarios, meta))
+  mount(document.body, previewPage(scenarios, meta, catalog))
   applyStageDirection()
 }

@@ -55,6 +55,28 @@ found the way a test file is.
   `--imp-color-secondary` rather than a fixed palette, so highlighting inherits every theme's
   contrast guarantees instead of making its own, and keyword weight and comment italics carry the
   same distinctions where colour is forced away.
+- **Every page wears the same shell, and the shell is `appShell`.** `/` and each `/preview/<path>`
+  render one frame: the catalog in `appShell`'s sidebar as a `navMenu` grouped by category, a
+  `commandPalette` across the header with the theme, language and direction pickers in a `toolbar`
+  beside it, and the page itself in `main`. Navigating between components is therefore one click
+  from anywhere, and the workbench exercises the frame components the way an app does — the drawer
+  collapse, the current-page marking and the combobox all run on every preview page. The shell is
+  pinned `dir="ltr"` on the `appShell` host, so the direction control still applies to the stage
+  alone.
+- **A preview is identified by `category/component`, derived from its path** — the folder holding
+  the file is the category and the file's base name is the component. Nothing configures it and no
+  manifest lists it: a project that groups its components in folders gets a grouped catalog, and one
+  that does not gets a flat one. The same string is what the search matches, which is why searching
+  a category works without a category concept in the tool.
+- **The catalog travels in the page, not in the bundle.** Every preview document carries a
+  `<script type="application/json">` listing the discovered previews and which one is current; the
+  runtime reads it before mounting, since `mount` replaces the body. Bundles stay per file and
+  cacheable — discovering a new preview file changes only the HTML, and a bundle never has to be
+  rebuilt because a sibling appeared.
+- **The index is the same bundle path as a preview page, with no scenarios.** `/` serves a generated
+  entry whose scenarios are `null`, so one runtime renders both the catalog view and a file's
+  scenarios rather than two page builders diverging. Its bundle is cached under its own key and
+  served from `/@imp/preview-index.js`.
 - **The preview page is an imp app built from `imp/std`.** Its toolbar, tabs, stage, state editor
   and code panel are `component()`s reading the same `--imp-*` tokens as the library
   (`themable-by-default-tokens.md`), so the theme switcher re-skins the page along with the specimen
@@ -95,11 +117,11 @@ found the way a test file is.
   chrome itself is pinned `ltr` and the direction is applied to the stage element**, so the toolbar
   and panels never mirror underneath the person using them — the preview page is the one place where
   imp's own UI and the previewed component need different directions at once.
-- **Routes:** `/` is the generated index of discovered previews, `/preview/<path>` renders one
-  file's scenarios, `?scenario=<name>` isolates one, and `/@imp/preview/<path>` serves that file's
-  bundle. A build failure is served as a module that renders the error into the page and is also
-  logged to the terminal. The preview server does not fall back to the app's `index.html` for
-  unknown routes.
+- **Routes:** `/` is the generated catalog of discovered previews, `/preview/<path>` renders one
+  file's scenarios, `?scenario=<name>` isolates one, `/@imp/preview/<path>` serves that file's
+  bundle and `/@imp/preview-index.js` serves the catalog's. A build failure is served as a module
+  that renders the error into the page and is also logged to the terminal. The preview server does
+  not fall back to the app's `index.html` for unknown routes.
 - **`imp preview [path]`** with no path serves everything; a `*.preview.js` path, a component path
   whose sibling preview is inferred, or a folder narrows it. `--list` prints what was discovered
   (`--json` for tooling), `--port` defaults to 4517 so a preview server and `imp start` can run side
@@ -115,9 +137,11 @@ real dev server, cross-cutting concerns — theming today, i18n later — are ex
 approximated.
 
 Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
-so a regression in `button`, `select`, `textArea` or `tabs` shows up while working on anything. The
-cost is the circularity: a broken standard component can break the page used to diagnose it. The
-build-failure path stays raw DOM for that reason, so an error always renders.
+so a regression in `button`, `select`, `textArea`, `tabs`, `appShell`, `navMenu`, `toolbar` or
+`commandPalette` shows up while working on anything. The cost is the circularity: a broken standard
+component can break the page used to diagnose it, and the shell widened that surface from the panels
+to the frame every page is drawn in. The build-failure path stays raw DOM for that reason, so an
+error always renders.
 
 Preview pages are bundled while the rest of development stays buildless: a preview page reflects a
 file change only after its bundle is rebuilt, which happens on the reload the watcher already

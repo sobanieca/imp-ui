@@ -192,13 +192,13 @@ Deno.test('imp commands', async (t) => {
     }
     await Deno.copyFile(join(fixture('resize'), 'logo.png'), join(dir, 'logo.png'))
     const inPlace = await runImp(['resize', 'logo.png', '-w', '150'], dir)
-    const copy = await runImp(['resize', 'logo.png', '-h', '30', '--out', 'small.png'], dir)
+    const copy = await runImp(['resize', 'logo.png', '-h', '30', '--output', 'small.png'], dir)
     const boxFit = await runImp(
-      ['resize', 'logo.png', '-w', '100', '-h', '100', '--out', 'box.png'],
+      ['resize', 'logo.png', '-w', '100', '-h', '100', '--output', 'box.png'],
       dir,
     )
     const stretched = await runImp(
-      ['resize', 'logo.png', '-w', '100', '-h', '100', '--stretch', '--out', 'stretched.png'],
+      ['resize', 'logo.png', '-w', '100', '-h', '100', '--stretch', '--output', 'stretched.png'],
       dir,
     )
     const overwritten = await pngSize('logo.png')
@@ -210,15 +210,20 @@ Deno.test('imp commands', async (t) => {
       'resize-writes-file',
       `${commandTranscript('imp resize logo.png -w 150  (cwd: <tmp>)', inPlace)}\n` +
         `--- overwritten source ---\n${overwritten}\n\n` +
-        `${commandTranscript('imp resize logo.png -h 30 --out small.png  (cwd: <tmp>)', copy)}\n` +
+        `${
+          commandTranscript('imp resize logo.png -h 30 --output small.png  (cwd: <tmp>)', copy)
+        }\n` +
         `--- sibling output ---\n${sibling}\n\n` +
         `${
-          commandTranscript('imp resize logo.png -w 100 -h 100 --out box.png  (cwd: <tmp>)', boxFit)
+          commandTranscript(
+            'imp resize logo.png -w 100 -h 100 --output box.png  (cwd: <tmp>)',
+            boxFit,
+          )
         }\n` +
         `--- box-fit output ---\n${boxFitOutput}\n\n` +
         `${
           commandTranscript(
-            'imp resize logo.png -w 100 -h 100 --stretch --out stretched.png  (cwd: <tmp>)',
+            'imp resize logo.png -w 100 -h 100 --stretch --output stretched.png  (cwd: <tmp>)',
             stretched,
           )
         }\n` +
@@ -608,7 +613,7 @@ Deno.test('imp build', async (t) => {
     })
 
     await t.step('build-js-entry', async () => {
-      const result = await runImp(['build', 'app.js', '--outdir', 'component'], dir)
+      const result = await runImp(['build', 'app.js', '--output', 'component'], dir)
       const module = await import(toFileUrl(join(dir, 'component', 'app.js')).href)
       const usage = `[bundled module: message='${module.message}', lazy loadShout()='${await module
         .loadShout()}']`
@@ -616,7 +621,7 @@ Deno.test('imp build', async (t) => {
         'build-js-entry',
         mask(
           `${
-            commandTranscript('imp build app.js --outdir component  (cwd: <tmp>)', result)
+            commandTranscript('imp build app.js --output component  (cwd: <tmp>)', result)
           }\n${await outputTree('component')}\n\n${usage}\n`,
         ),
       )
@@ -629,23 +634,23 @@ Deno.test('imp build', async (t) => {
         "import { mount } from 'imp'\nimport { button } from 'imp/std'\n\n" +
           "export const render = () => mount('#app', button('Save'))\n",
       )
-      const resolved = await runImp(['build', 'std-entry.js', '--outdir', 'std'], dir)
+      const resolved = await runImp(['build', 'std-entry.js', '--output', 'std'], dir)
       const code = await Deno.readTextFile(join(dir, 'std', 'std-entry.js'))
       await Deno.writeTextFile(
         entry,
         "import { table } from 'imp/std/data'\n\nexport const shell = table\n",
       )
-      const unknown = await runImp(['build', 'std-entry.js', '--outdir', 'std'], dir)
+      const unknown = await runImp(['build', 'std-entry.js', '--output', 'std'], dir)
       await Deno.remove(entry)
       await Deno.remove(join(dir, 'std'), { recursive: true })
       await assertSnapshot(
         'build-imp-subpath',
         mask(
           `${
-            commandTranscript('imp build std-entry.js --outdir std  (cwd: <tmp>)', resolved)
+            commandTranscript('imp build std-entry.js --output std  (cwd: <tmp>)', resolved)
           }\n[bundle defines the element: ${code.includes('imp-button')}]\n\n${
             commandTranscript(
-              'imp build std-entry.js --outdir std  (cwd: <tmp>, unknown subpath)',
+              'imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)',
               unknown,
             )
           }\n`,
@@ -661,13 +666,13 @@ Deno.test('imp build', async (t) => {
         dependencies: { mitt: 'npm:mitt@3.0.1' },
         targetImpHost: true,
       })
-      const result = await runImp(['build', 'app.js', '--outdir', 'shared'], dir)
+      const result = await runImp(['build', 'app.js', '--output', 'shared'], dir)
       const code = await Deno.readTextFile(join(dir, 'shared', 'app.js'))
       await assertSnapshot(
         'build-target-imp-host',
         mask(
           `${
-            commandTranscript('imp build app.js --outdir shared  (cwd: <tmp>)', result)
+            commandTranscript('imp build app.js --output shared  (cwd: <tmp>)', result)
           }\n${await outputTree('shared')}\n\n${section('shared/app.js', code)}\n`,
         ),
       )
@@ -688,9 +693,9 @@ Deno.test('imp build', async (t) => {
       )
       await write('index.html', '<!doctype html>\n<script type="module" src="app.js"></script>\n')
       const componentOut = await Deno.makeTempDir()
-      const component = await runImp(['build', 'eager.js', '--outdir', componentOut], project)
+      const component = await runImp(['build', 'eager.js', '--output', componentOut], project)
       const { impSkill } = await import(toFileUrl(join(componentOut, 'eager.js')).href)
-      const app = await runImp(['build', '--outdir', 'app'], project)
+      const app = await runImp(['build', '--output', 'app'], project)
       const appFiles = []
       const walkOutput = async (directory, prefix) => {
         for await (const entry of Deno.readDir(directory)) {
@@ -713,11 +718,11 @@ Deno.test('imp build', async (t) => {
         maskOutdir(mask(
           `${
             commandTranscript(
-              'imp build eager.js --outdir <component-out>  (cwd: <tmp>, component build)',
+              'imp build eager.js --output <component-out>  (cwd: <tmp>, component build)',
               component,
             )
           }\n${section('impSkill exported by the component bundle', String(impSkill))}\n\n${
-            commandTranscript('imp build --outdir app  (cwd: <tmp>, app build)', app)
+            commandTranscript('imp build --output app  (cwd: <tmp>, app build)', app)
           }\n${
             section(
               'app bundles (eager imported statically, lazy dynamically)',
@@ -829,11 +834,11 @@ Deno.test('imp build', async (t) => {
       )
     })
 
-    await t.step('build-outdir-contains-project', async () => {
-      const result = await runImp(['build', '--outdir', '.'], dir)
+    await t.step('build-output-contains-project', async () => {
+      const result = await runImp(['build', '--output', '.'], dir)
       await assertSnapshot(
-        'build-outdir-contains-project',
-        mask(commandTranscript('imp build --outdir .  (cwd: <tmp>)', result)),
+        'build-output-contains-project',
+        mask(commandTranscript('imp build --output .  (cwd: <tmp>)', result)),
       )
     })
 
@@ -1429,9 +1434,19 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         return found
       }
       globalThis.impOne = (name, from) => globalThis.impAll(name, from)[0] ?? null
-      globalThis.impPicker = (kind) =>
-        globalThis.impRoot().querySelector(`.control--${kind} imp-select`)
-          .shadowRoot.querySelector('select')
+      globalThis.impScenarios = () => globalThis.impAll('imp-preview-scenario')
+      globalThis.impPicker = (label) =>
+        globalThis.impAll('imp-select')
+          .map((host) => host.shadowRoot.querySelector('select'))
+          .find((control) => control.getAttribute('aria-label') === label)
+      globalThis.impPalette = () => globalThis.impOne('imp-command-palette').shadowRoot
+      globalThis.impSearch = (query) => {
+        const palette = globalThis.impPalette()
+        const field = palette.querySelector('input')
+        field.value = query
+        field.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+        return [...palette.querySelectorAll('[role="option"]')]
+      }
       globalThis.impTextareas = (editor) =>
         [...editor.shadowRoot.querySelectorAll('imp-text-area')]
           .map((host) => host.shadowRoot.querySelector('textarea'))
@@ -1444,11 +1459,11 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
           .filter((field) => !field.disabled).length === 3
     )
     const counter = await page.evaluate(() => {
-      const scenarios = [...globalThis.impRoot().querySelectorAll('.scenario')]
+      const scenarios = globalThis.impScenarios()
       const read = (scenario) =>
         globalThis.impOne('demo-counter', scenario).shadowRoot.querySelector('#value').textContent
       return {
-        names: scenarios.map((scenario) => scenario.querySelector('h2').textContent),
+        names: scenarios.map((scenario) => scenario.shadowRoot.querySelector('h2').textContent),
         rendered: scenarios.map(read),
         states: scenarios.map((scenario) => {
           const editor = globalThis.impOne('imp-preview-state', scenario)
@@ -1465,7 +1480,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
     })
     const coded = await page.evaluate(() => {
-      const scenario = globalThis.impRoot().querySelector('.scenario')
+      const scenario = globalThis.impScenarios()[0]
       const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
       strip.querySelectorAll('[role="tab"]')[1].click()
       const panels = [...strip.querySelectorAll('[role="tabpanel"]')]
@@ -1481,7 +1496,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
     })
     const edited = await page.evaluate(() => {
-      const scenario = globalThis.impRoot().querySelector('.scenario')
+      const scenario = globalThis.impScenarios()[0]
       const editor = globalThis.impOne('imp-preview-state', scenario)
       const field = globalThis.impTextareas(editor)[0]
       field.value = '42'
@@ -1491,7 +1506,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         .shadowRoot.querySelector('#value').textContent
     })
     const rejected = await page.evaluate(() => {
-      const scenario = globalThis.impRoot().querySelector('.scenario')
+      const scenario = globalThis.impScenarios()[0]
       const editor = globalThis.impOne('imp-preview-state', scenario)
       const field = globalThis.impTextareas(editor)[0]
       field.value = '{ not json'
@@ -1500,8 +1515,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       return editor.shadowRoot.querySelector('.message').classList.contains('message--error')
     })
     const localized = await page.evaluate(async () => {
-      const languages = globalThis.impPicker('language')
-      const directions = globalThis.impPicker('direction')
+      const languages = globalThis.impPicker('Language')
+      const directions = globalThis.impPicker('Text direction')
       const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
       const stage = () => globalThis.impOne('imp-preview-stage').shadowRoot.querySelector('.stage')
       const pick = async (picker, value) => {
@@ -1510,7 +1525,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         await settle()
         return `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
       }
-      const chrome = () => globalThis.impRoot().querySelector('.bar').dir
+      const chrome = () => globalThis.impOne('imp-app-shell').getAttribute('dir')
       const words = () => {
         const shadow = globalThis.impOne('demo-counter').shadowRoot
         return `${shadow.querySelector('#label').textContent}/${
@@ -1532,7 +1547,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
 
     const themed = await page.evaluate(() => {
-      const picker = globalThis.impPicker('theme')
+      const picker = globalThis.impPicker('Theme')
       const apply = (value) => {
         picker.value = value
         picker.dispatchEvent(new Event('change'))
@@ -1546,6 +1561,51 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
     })
 
+    const shell = await page.evaluate(() => {
+      const menu = globalThis.impOne('imp-nav-menu').shadowRoot
+      const links = [...menu.querySelectorAll('.link')]
+      const parts = (node) => [...node.childNodes].map((child) => child.textContent).join(' ')
+      return {
+        sidebar: links.map((link) => link.textContent).join(', '),
+        groups: [...menu.querySelectorAll('.group-title')].map(parts).join(', '),
+        current: links.find((link) => link.hasAttribute('aria-current'))?.textContent ?? 'none',
+        head: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.path').textContent,
+      }
+    })
+
+    const searched = await page.evaluate(() => {
+      const field = globalThis.impPalette().querySelector('input')
+      const shown = (query) =>
+        globalThis.impSearch(query).map((option) => option.querySelector('.path').textContent)
+      const result = {
+        role: field.getAttribute('role'),
+        name: field.getAttribute('aria-label'),
+        placeholder: field.placeholder,
+        shortcutHint: globalThis.impPalette().querySelector('kbd').textContent,
+        byName: shown('todo'),
+        byCategory: shown('comp'),
+      }
+      result.active = globalThis.impPalette()
+        .querySelector('[aria-selected="true"] .path')?.textContent ?? 'none'
+      result.noMatch = shown('zzz')
+      result.expanded = field.getAttribute('aria-expanded')
+      return result
+    })
+
+    await page.goto(`${base}/`, { waitUntil: 'load' })
+    await page.waitForFunction(() => globalThis.impOne('imp-preview-index'))
+    const index = await page.evaluate(() => {
+      const root = globalThis.impOne('imp-preview-index').shadowRoot
+      const hero = root.querySelector('.hero')
+      const rendered = (name) => globalThis.impOne(name, hero).shadowRoot.textContent.trim()
+      return {
+        headline: `${rendered('imp-heading')} — ${rendered('imp-text')}`,
+        cards: [...root.querySelectorAll('.card-head')]
+          .map((head) => [...head.childNodes].map((child) => child.textContent).join(' '))
+          .join(' · '),
+      }
+    })
+
     await page.goto(`${base}/preview/components/counter.preview.js?scenario=lazy`, {
       waitUntil: 'load',
     })
@@ -1553,8 +1613,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       globalThis.impRoot() && globalThis.impOne('demo-counter')?.shadowRoot?.children
     )
     const isolated = await page.evaluate(() => ({
-      panels: globalThis.impRoot().querySelectorAll('.scenario').length,
-      name: globalThis.impRoot().querySelector('h2').textContent,
+      panels: globalThis.impScenarios().length,
+      name: globalThis.impScenarios()[0].shadowRoot.querySelector('h2').textContent,
     }))
 
     await page.goto(`${base}/preview/components/todos.preview.js`, { waitUntil: 'load' })
@@ -1592,6 +1652,18 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `theme options: ${themed.options.join(', ')} (selected ${themed.selected})`,
       `imp-dark surface token: ${themed.dark}`,
       `brand surface token: ${themed.custom}`,
+      `sidebar groups: ${shell.groups}`,
+      `sidebar components: ${shell.sidebar}`,
+      `sidebar current: ${shell.current}`,
+      `page head: ${shell.head}`,
+      `search field: ${searched.role} named '${searched.name}' (${searched.shortcutHint})`,
+      `search placeholder: ${searched.placeholder}`,
+      `searching 'todo': ${searched.byName.join(', ')}`,
+      `searching 'comp': ${searched.byCategory.join(', ')}`,
+      `searching 'zzz': ${searched.noMatch.length} matches, expanded ${searched.expanded}`,
+      `highlighted match: ${searched.active}`,
+      `index headline: ${index.headline}`,
+      `index cards: ${index.cards}`,
       `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,
       `mocked todos: ${todos.items.join(', ')}`,
       `mocked todos state row: ${todos.state}`,
