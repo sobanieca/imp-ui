@@ -1,4 +1,4 @@
-# logging — the built-in logger and the per-environment level
+# logging - the built-in logger and the per-environment level
 
 imp routes its own diagnostics through one logger, and your app imports the same one from `imp/log`,
 so everything an imp app writes honors a single level set per environment.
@@ -38,20 +38,20 @@ defaults to **`info`**. Set it per environment with `IMP_LOG_LEVEL` in an enviro
 
 Filtering the browser console by `imp:` shows only the library's messages; by your prefix, only
 yours. In development every console message is also written to `.imp/dev.log` by `imp start`, one
-entry per line — grep that file instead of watching the terminal.
+entry per line - grep that file instead of watching the terminal.
 
 ## What `debug` traces
 
 Turning the level to `debug` is the fastest way to see why a binding updates too often or not at
 all. imp then logs:
 
-- **state reads** — every `get()` with its value;
-- **state sets** — every applied `set()`, plus the ones skipped as structurally equal;
-- **subscriptions** — every `watch` attaching and detaching (including those `text`, `view`, `each`
+- **state reads** - every `get()` with its value;
+- **state sets** - every applied `set()`, plus the ones skipped as structurally equal;
+- **subscriptions** - every `watch` attaching and detaching (including those `text`, `view`, `each`
   and bound props create) and each notification with its subscriber count;
-- **state lifecycle** — states initialized, resolved, and rebound after a component moves;
-- **computed states** — every recompute, including unchanged results;
-- **component lifecycle** — defined, mounted, unmounted, rebound after a move.
+- **state lifecycle** - states initialized, resolved, and rebound after a component moves;
+- **computed states** - every recompute, including unchanged results;
+- **component lifecycle** - defined, mounted, unmounted, rebound after a move.
 
-Everything at `warn` and `error` — invalid state values, failed subscribers, mount failures — shows
+Everything at `warn` and `error` - invalid state values, failed subscribers, mount failures - shows
 at the default level, so a silent console means imp found nothing wrong.

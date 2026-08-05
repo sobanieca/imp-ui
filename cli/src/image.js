@@ -82,7 +82,7 @@ const jpegSize = (bytes) => {
     }
     offset += 2 + readU16(bytes, offset + 2)
   }
-  throw new Error('could not read JPEG dimensions — the file may be corrupt')
+  throw new Error('could not read JPEG dimensions - the file may be corrupt')
 }
 
 export const rasterDimensions = (mediaType, bytes) =>

@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] 'imp' is reserved for the imp library, which every app can already import — pick a different alias
+[ERROR] 'imp' is reserved for the imp library, which every app can already import - pick a different alias

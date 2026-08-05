@@ -22,7 +22,8 @@ export function defaultAlias({ name, subpath }) {
 
 export const VALID_ALIAS = /^[A-Za-z0-9._-]+$/
 
-export const IMP_SUBPATH_MODULES = {
+export const IMP_MODULES = {
+  'imp': 'imp.js',
   'imp/html': 'api/html.js',
   'imp/state': 'api/state.js',
   'imp/router': 'api/router.js',
@@ -37,14 +38,30 @@ export const IMP_SUBPATH_MODULES = {
   'imp/std/navigation': 'std/navigation/index.js',
 }
 
-const knownImpSubpaths = () => [
-  "'imp'",
-  ...Object.keys(IMP_SUBPATH_MODULES).map((subpath) => `'${subpath}'`),
-  "'imp/test'",
-  "'imp/preview'",
-]
+export const isImpStdSpecifier = (specifier) =>
+  specifier === 'imp/std' || specifier.startsWith('imp/std/')
 
-export const isImpSubpath = (specifier) => Object.hasOwn(IMP_SUBPATH_MODULES, specifier)
+export const IMP_TOOLING_MODULES = {
+  'imp/test': { url: new URL('./test_library.js', import.meta.url).href, resolvedBy: 'imp test' },
+  'imp/preview': {
+    url: new URL('./preview_library.js', import.meta.url).href,
+    resolvedBy: 'imp preview',
+  },
+}
+
+export const isImpToolingSubpath = (specifier) => Object.hasOwn(IMP_TOOLING_MODULES, specifier)
+
+export const isImpSpecifier = (specifier) =>
+  Object.hasOwn(IMP_MODULES, specifier) || isImpToolingSubpath(specifier)
+
+const knownImpSpecifiers = () =>
+  [...Object.keys(IMP_MODULES), ...Object.keys(IMP_TOOLING_MODULES)]
+    .map((specifier) => `'${specifier}'`)
 
 export const impSubpathProblem = (specifier) =>
-  `'${specifier}' is not part of the imp library — import ${knownImpSubpaths().join(', ')}`
+  `'${specifier}' is not part of the imp library - import ${knownImpSpecifiers().join(', ')}`
+
+export const impToolingOnlyProblem = (specifier) =>
+  `'${specifier}' is only resolved by ${
+    IMP_TOOLING_MODULES[specifier].resolvedBy
+  } - it cannot be bundled into an app`

@@ -12,10 +12,10 @@ cache-control: no-store
 <script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/i18n":"/@imp/api/i18n.js","imp/log":"/@imp/api/log.js","imp/http":"/@imp/api/http.js","imp/std":"/@imp/std/index.js","imp/std/display":"/@imp/std/display/index.js","imp/std/layout":"/@imp/std/layout/index.js","imp/std/inputs":"/@imp/std/inputs/index.js","imp/std/navigation":"/@imp/std/navigation/index.js"}}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>imp preview — components/counter.preview.js</title>
+<title>imp preview - Widgets / Counter</title>
 </head>
 <body>
-<script type="application/json" id="imp-preview-catalog">{"previews":[{"file":"components/counter.preview.js","category":"components","name":"counter","path":"components/counter","href":"/preview/components/counter.preview.js"},{"file":"components/todos.preview.js","category":"components","name":"todos","path":"components/todos","href":"/preview/components/todos.preview.js"}],"current":"components/counter.preview.js"}</script>
+<script type="application/json" id="imp-preview-catalog">{"previews":[{"file":"components/counter.preview.js","path":"components/counter","name":"Counter","category":"Widgets","description":"Run 'imp skill ./components/counter.js' before writing code with it.","href":"/preview/components/counter.preview.js"},{"file":"components/todos.preview.js","path":"components/todos","name":"todos","category":"components","description":null,"href":"/preview/components/todos.preview.js"}],"current":"components/counter.preview.js"}</script>
 <script type="module" src="/@imp/preview/components/counter.preview.js"></script>
 </body>
 </html>

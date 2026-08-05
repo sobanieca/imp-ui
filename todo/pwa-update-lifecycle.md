@@ -1,4 +1,4 @@
-# PWA update lifecycle — decide between aggressive auto-update and wait-and-prompt
+# PWA update lifecycle - decide between aggressive auto-update and wait-and-prompt
 
 The service worker emitted by `imp build --pwa` (`buildServiceWorker` in `cli/src/pwa.js`) takes
 control as eagerly as possible: it calls `self.skipWaiting()` in `install` and
@@ -27,7 +27,7 @@ do, it is a real failure.
 - **Keep aggressive auto-update (status quo).** Simplest, always ships the newest code, but exposes
   the chunk-load race above. Acceptable only if paired with mitigation (below).
 - **Wait-and-prompt.** The new worker installs but does **not** `skipWaiting()`; it stays `waiting`.
-  The page detects the waiting worker and surfaces a "new version available — reload" affordance;
+  The page detects the waiting worker and surfaces a "new version available - reload" affordance;
   `skipWaiting()` fires only on user confirm, so the swap happens at a controlled moment (a reload),
   never mid-session. This is the mature default in the ecosystem.
 - **Hybrid.** Auto-update, but **retain the previous cache** for a grace window (don't delete old
@@ -36,15 +36,15 @@ do, it is a real failure.
 
 ## Considerations
 
-- imp's real-DOM model plus the fact that many imp apps won't route-split means the race is narrow —
+- imp's real-DOM model plus the fact that many imp apps won't route-split means the race is narrow -
   weigh how much lifecycle machinery is worth versus the opinionated-default philosophy of
   `adr/pwa-toolkit.md` ("not a strategy zoo").
 - A wait-and-prompt flow needs a client-side hook (a small script injected alongside the SW
-  registration in `pwaHeadTags`) and an app-visible signal — decide whether imp renders its own
+  registration in `pwaHeadTags`) and an app-visible signal - decide whether imp renders its own
   minimal prompt or exposes an event the app reacts to, mirroring the emit/subscribe stance
   elsewhere.
 - Whichever is chosen, the offline-vs-live-reload split (dev telemetry worker vs. production offline
-  worker) is unaffected — this is production-only.
+  worker) is unaffected - this is production-only.
 
 ## ADR impact
 

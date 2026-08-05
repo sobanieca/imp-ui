@@ -1,22 +1,22 @@
-# Fake timers — a virtual clock for unit tests
+# Fake timers - a virtual clock for unit tests
 
 ## Context
 
 Unit tests (`*.test.js`) run in-process on Deno's real globals: the unit environment
 (`two-level-testing.md`) borrows only the DOM APIs Deno lacks from happy-dom and deliberately keeps
-Deno's own `setTimeout`/`setInterval`/`Date`/`performance` — happy-dom's timer reimplementation is
+Deno's own `setTimeout`/`setInterval`/`Date`/`performance` - happy-dom's timer reimplementation is
 tied to its window lifecycle and adds nothing over the host's event-loop-integrated timers.
 
 That leaves time-dependent code (debounce, throttle, polling, retry backoff, animations) awkward to
 test: a test either waits real wall-clock time or hand-patches `globalThis.setTimeout`. The manual
 patch has two sharp edges. It is easy to forget to restore, leaking into the next test; and because
 the runner's own per-test timeout watchdog also calls the global `setTimeout`, patching the global
-silently disables the safety timeout — a genuinely hung test would no longer fail on schedule.
+silently disables the safety timeout - a genuinely hung test would no longer fail on schedule.
 
 ## Decision
 
-A unit test opts into virtual time with a `fakeTimers` option —
-`test(name, fn, { fakeTimers: true })` — and receives a `clock` in its test context (`{ clock }`) to
+A unit test opts into virtual time with a `fakeTimers` option -
+`test(name, fn, { fakeTimers: true })` - and receives a `clock` in its test context (`{ clock }`) to
 advance it. The runner, not the test body, owns the clock: it installs the clock before the test
 (and that test's `beforeEach`/`afterEach` hooks) run and restores real timers afterward. There is no
 imperative install call and nothing to clean up. `{ fakeTimers: { now } }` seeds the starting
@@ -29,14 +29,14 @@ instant from a number or `Date`.
   every timer that comes due in order; `await clock.runAll()` drains all pending timers; `clock.now`
   reads the current virtual time; `clock.restore()` returns to real timers early. `tick`/`runAll`
   are async and flush awaited promises between timers, so a single method covers both synchronous
-  and `await`-between-timers code — there is no separate `tickAsync` to choose, and no one-timer
+  and `await`-between-timers code - there is no separate `tickAsync` to choose, and no one-timer
   `next`. A runaway self-rescheduling interval is capped and throws rather than hanging.
 - **Auto-restore.** The runner restores the clock after each test, before it measures the test's
   duration with the real `performance.now`, so a fake clock can neither leak across tests nor
   distort the runner's own timing.
 - **Watchdog decoupling.** The runner captures the real `setTimeout`/`clearTimeout` at module load
   and its per-test timeout watchdog uses those captured references, so faking the global timers can
-  never disable the safety timeout — a hung test still fails on time.
+  never disable the safety timeout - a hung test still fails on time.
 - **Where the clock lives.** The clock is an internal runner concern, created and injected by the
   runner from a small module outside the public `imp/test` surface. `imp/test` gains only the
   `fakeTimers` test option, no new export.

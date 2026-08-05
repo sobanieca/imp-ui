@@ -1,4 +1,4 @@
-# toolbar — a named group of controls laid out in a line
+# toolbar - a named group of controls laid out in a line
 
 ```js
 import { toolbar } from 'imp/std/layout'
@@ -12,18 +12,18 @@ toolbar(
 )
 ```
 
-Call shape: `toolbar(props, ...controls)` — the children are the controls.
+Call shape: `toolbar(props, ...controls)` - the children are the controls.
 
 | Prop          | Values                                 | Default        | Notes                                           |
 | ------------- | -------------------------------------- | -------------- | ----------------------------------------------- |
-| `label`       | string, or a state holding one — live  | —              | **Required in practice** — names the landmark   |
+| `label`       | string, or a state holding one - live  | -              | **Required in practice** - names the landmark   |
 | `orientation` | `'horizontal'`, `'vertical'`           | `'horizontal'` | Also sets `aria-orientation`                    |
 | `variant`     | `'plain'`, `'surface'`                 | `'plain'`      | `surface` adds the card background and border   |
-| `gap`         | spacing step `0`–`6` — **responsive**  | `2`            | Between controls                                |
+| `gap`         | spacing step `0`-`6` - **responsive**  | `2`            | Between controls                                |
 | `justify`     | `start`, `center`, `end`, `between`, … | `'start'`      | **Responsive**, as on `row`                     |
 | `align`       | `start`, `center`, `end`, `stretch`, … | `'center'`     | **Responsive**, as on `row`                     |
-| `wrap`        | boolean — **responsive**               | `false`        | A horizontal toolbar scrolls instead by default |
-| `events`      | any DOM events                         | —              | Bound on the group                              |
+| `wrap`        | boolean - **responsive**               | `false`        | A horizontal toolbar scrolls instead by default |
+| `events`      | any DOM events                         | -              | Bound on the group                              |
 
 Also takes `hideBelow` / `hideAbove` like every layout component.
 
@@ -39,7 +39,7 @@ Rules an agent gets wrong:
   its own custom element with its own shadow root, and focus cannot be delegated across that
   boundary from the outside. So Tab walks the controls, and no arrow-key handling is added that
   would only half work.
-- **It is not a layout for content.** For a plain line of anything, use `row` — `toolbar` exists to
+- **It is not a layout for content.** For a plain line of anything, use `row` - `toolbar` exists to
   name and group **controls**, and its `role="toolbar"` says exactly that.
 - Put it in `appShell`'s `header` for a page toolbar (`imp skill std/appShell`).
 

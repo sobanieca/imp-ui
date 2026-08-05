@@ -1,11 +1,11 @@
-# fmt — formatting every file type with one command
+# fmt - formatting every file type with one command
 
 ```
 imp fmt [...paths]           format in place; default: the whole project
 imp fmt --check [...paths]   report what would change, write nothing, exit non-zero if any
 ```
 
-The formatter is built into the binary — nothing to install, offline, and a given imp release
+The formatter is built into the binary - nothing to install, offline, and a given imp release
 formats identically on every machine. `.git`, `node_modules`, `dist` and the vendored
 `dependencies/` folder are always skipped; a path that does not exist is an error. **Run `imp fmt`
 (and `imp lint`) after every batch of edits.**
@@ -23,10 +23,10 @@ formats identically on every machine. `.git`, `node_modules`, `dist` and the ven
 | `.yaml .yml`             | YAML       |
 
 HTML is formatted inside-out: inline `<script>` and `<style>` blocks go through the JavaScript and
-CSS formatters with the same options. **TypeScript is deliberately unsupported** — imp apps are
+CSS formatters with the same options. **TypeScript is deliberately unsupported** - imp apps are
 plain JavaScript that runs directly in the browser.
 
-## Options — under `fmt` in `imp.json`, see [config](config.md)
+## Options - under `fmt` in `imp.json`, see [config](config.md)
 
 | Option        | Default | Applies to                                      |
 | ------------- | ------- | ----------------------------------------------- |
@@ -34,8 +34,8 @@ plain JavaScript that runs directly in the browser.
 | `indentWidth` | `2`     | every language                                  |
 | `useTabs`     | `false` | every language                                  |
 | `singleQuote` | `true`  | JavaScript (including inline `<script>` blocks) |
-| `semiColons`  | `false` | JavaScript — semicolons are omitted by default  |
-| `exclude`     | —       | project-relative paths to skip                  |
+| `semiColons`  | `false` | JavaScript - semicolons are omitted by default  |
+| `exclude`     | -       | project-relative paths to skip                  |
 
 ```json
 { "fmt": { "lineWidth": 100, "singleQuote": true, "semiColons": false } }
@@ -43,7 +43,7 @@ plain JavaScript that runs directly in the browser.
 
 ## Keeping hand-crafted layout
 
-An ignore comment in the language's own syntax protects the next node — `// imp-fmt-ignore`,
+An ignore comment in the language's own syntax protects the next node - `// imp-fmt-ignore`,
 `/* imp-fmt-ignore */`, `<!-- imp-fmt-ignore -->`, `# imp-fmt-ignore`. `imp-fmt-ignore-file` at the
 top exempts a whole file (JavaScript, CSS, HTML/SVG/XML, Markdown). In Markdown,
 `<!-- imp-fmt-ignore-start -->` / `<!-- imp-fmt-ignore-end -->` fence off a region.

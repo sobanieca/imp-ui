@@ -2,7 +2,7 @@ $ imp preview  (cwd: test/fixtures/basic)
 exit code: 0
 
 --- stdout ---
-[INFO] no previews found — write a '*.preview.js' file next to a component and export one instance per scenario, like: export const empty = myComponent()
+[INFO] no previews found - write a '*.preview.js' file next to a component and export one instance per scenario, like: export const empty = myComponent()
 
 --- stderr ---
 (empty)

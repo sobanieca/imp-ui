@@ -3,7 +3,7 @@ exit code: 0
 
 --- stdout ---
 built app.js → shared/
-  imp imports kept bare — resolved by the imp host at runtime
+  imp imports kept bare - resolved by the imp host at runtime
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)

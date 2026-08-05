@@ -1,8 +1,8 @@
-# Analytics — emit events, forward to any store
+# Analytics - emit events, forward to any store
 
 Give imp a built-in, provider-agnostic analytics seam: imp (and the app) **emit** analytics events
 through one central dispatcher, and the user **reacts** to them and forwards each event to the
-analytics store of their choice — Google Analytics, PostHog, Plausible, an internal endpoint,
+analytics store of their choice - Google Analytics, PostHog, Plausible, an internal endpoint,
 `console`, whatever. imp never bundles or knows about any specific analytics provider; it only owns
 the emit-and-subscribe plumbing.
 
@@ -23,13 +23,13 @@ listener) and with signal subscriptions, but every app re-invents the wiring. Ce
 
 ## Pieces
 
-- `track(name, props?)` — emit an analytics event. Builds a plain, serializable record
+- `track(name, props?)` - emit an analytics event. Builds a plain, serializable record
   (`{ name, props, timestamp }`) and dispatches it to every registered sink. Pure and synchronous;
   callable from anywhere (component body, event handler, effect).
-- `onAnalytics(handler)` — register a sink `({ name, props, timestamp }) => void`; returns an
+- `onAnalytics(handler)` - register a sink `({ name, props, timestamp }) => void`; returns an
   unsubscribe function and auto-unsubscribes when the calling scope disposes (via `onDispose` /
   `scopeSignal()`). **Multiple sinks are allowed** so an app can forward to several providers at
-  once. This is the "react on analytics event" surface — the user's forwarder lives here:
+  once. This is the "react on analytics event" surface - the user's forwarder lives here:
 
   ```js
   onAnalytics(({ name, props }) => posthog.capture(name, props))
@@ -38,9 +38,9 @@ listener) and with signal subscriptions, but every app re-invents the wiring. Ce
   )
   ```
 
-- A sink that throws is reported through the built-in logger (`adr/built-in-logger.md`) and skipped
-  — one bad forwarder must never break dispatch to the others, and analytics must never crash the
-  app.
+- A sink that throws is reported through the built-in logger (`adr/built-in-logger.md`) and
+  skipped - one bad forwarder must never break dispatch to the others, and analytics must never
+  crash the app.
 
 ## Automatic instrumentation (convention, opt-in)
 
@@ -62,7 +62,7 @@ imp turns two things into `track()` calls with no per-component callbacks:
   emit `track('pageview', { path })` on navigation. Opt-in so apps that don't want route analytics
   pay nothing.
 
-Both are conveniences layered on the same `track`/`onAnalytics` core — an app can ignore them and
+Both are conveniences layered on the same `track`/`onAnalytics` core - an app can ignore them and
 call `track()` by hand.
 
 ## Explicit emit from components and app code
@@ -80,7 +80,7 @@ fire. imp ships no hard-coded event names beyond the `pageview` convention.
 
 ## Provider-agnostic by construction
 
-- imp bundles **no** analytics client and makes **no** network calls itself — transport is entirely
+- imp bundles **no** analytics client and makes **no** network calls itself - transport is entirely
   the sink's job. This keeps the offline/self-contained guarantees intact and leaves consent,
   batching, sampling, and PII policy to the user's handler.
 - The event record is plain data so any sink can reshape it for its provider's SDK.

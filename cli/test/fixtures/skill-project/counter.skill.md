@@ -1,4 +1,4 @@
-# counter — a self-contained increment/decrement widget
+# counter - a self-contained increment/decrement widget
 
 ```js
 import { counter } from './counter.js'

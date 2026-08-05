@@ -1,35 +1,22 @@
 import { dirname, extname, isAbsolute, join, resolve, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { runEsbuild } from './deps.js'
-import { IMP_SUBPATH_MODULES, impSubpathProblem, isImpSubpath } from './specifiers.js'
+import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
+import {
+  IMP_MODULES,
+  IMP_TOOLING_MODULES,
+  impSubpathProblem,
+  impToolingOnlyProblem,
+  isImpToolingSubpath,
+} from './specifiers.js'
 
-const IMP_LIBRARY_URL = import.meta.resolve('../../lib/src/imp.js')
-const TEST_LIBRARY_URL = import.meta.resolve('./test_library.js')
-const PREVIEW_LIBRARY_URL = import.meta.resolve('./preview_library.js')
+const IMP_LIBRARY_ROOT = import.meta.resolve('../../lib/src/')
+
+export const impModuleUrl = (specifier) => new URL(IMP_MODULES[specifier], IMP_LIBRARY_ROOT).href
 
 export const LIBRARY_NAMESPACE = 'imp-library'
 const MOCK_NAMESPACE = 'imp-mock'
 
 const MODULE_EXTENSIONS = ['.js', '.mjs']
-
-export const DATAURL_ASSET_LOADERS = Object.fromEntries(
-  [
-    '.wasm',
-    '.png',
-    '.jpg',
-    '.jpeg',
-    '.gif',
-    '.webp',
-    '.svg',
-    '.ico',
-    '.woff',
-    '.woff2',
-    '.css',
-    '.txt',
-    '.json',
-  ]
-    .map((extension) => [extension, 'dataurl']),
-)
 
 export const isIdentChar = (char) => /[\w$]/.test(char ?? '')
 
@@ -194,7 +181,7 @@ function extractMockModuleCalls(source) {
     const { first, rest } = splitFirstArgument(argumentSource)
     const specifier = parseStringLiteral(first)
     if (specifier === null) {
-      throw new Error('mockModule(specifier, …) — specifier must be a string literal')
+      throw new Error('mockModule(specifier, …) - specifier must be a string literal')
     }
     return { specifier, factorySource: rest }
   })
@@ -218,18 +205,18 @@ export async function resolveModuleFile(candidate) {
 async function resolveMockTarget(specifier, { mockingFile, root, dependencies }) {
   if (specifier.startsWith('.') || isAbsolute(specifier)) {
     const realFile = await resolveModuleFile(resolve(dirname(mockingFile), specifier))
-    if (!realFile) throw new Error(`mockModule('${specifier}') — module not found`)
+    if (!realFile) throw new Error(`mockModule('${specifier}') - module not found`)
     return { id: realFile, realFile }
   }
   if (!Object.hasOwn(dependencies, specifier)) {
     throw new Error(
-      `mockModule('${specifier}') — not a relative module or a dependency declared in imp.json`,
+      `mockModule('${specifier}') - not a relative module or a dependency declared in imp.json`,
     )
   }
   const realFile = await resolveModuleFile(join(root, 'dependencies', specifier, `${specifier}.js`))
   if (!realFile) {
     throw new Error(
-      `mockModule('${specifier}') — dependency '${specifier}' is not vendored; run 'imp install'`,
+      `mockModule('${specifier}') - dependency '${specifier}' is not vendored; run 'imp install'`,
     )
   }
   return { id: specifier, realFile }
@@ -285,7 +272,7 @@ export async function collectMocks(file, { root, dependencies }) {
   for (const { specifier, factorySource } of calls) {
     const target = await resolveMockTarget(specifier, { mockingFile: file, root, dependencies })
     if (mocks.has(target.id)) {
-      throw new Error(`mockModule('${specifier}') — this module is mocked more than once`)
+      throw new Error(`mockModule('${specifier}') - this module is mocked more than once`)
     }
     const exports = await discoverModuleExports(target.realFile, { root, dependencies })
     mocks.set(target.id, { ...target, factorySource: factorySource || null, ...exports })
@@ -293,9 +280,46 @@ export async function collectMocks(file, { root, dependencies }) {
   return mocks
 }
 
-export function impResolverPlugin({ root, dependencies, mocks }) {
+const libraryModule = (url) => ({ path: url, namespace: LIBRARY_NAMESPACE })
+
+export function resolveImpLibrary(build, { tooling }) {
+  build.onResolve({ filter: /^imp(\/|$)/ }, ({ path }) => {
+    if (Object.hasOwn(IMP_MODULES, path)) return libraryModule(impModuleUrl(path))
+    if (isImpToolingSubpath(path)) {
+      return tooling
+        ? libraryModule(IMP_TOOLING_MODULES[path].url)
+        : { errors: [{ text: impToolingOnlyProblem(path) }] }
+    }
+    return { errors: [{ text: impSubpathProblem(path) }] }
+  })
+  build.onResolve(
+    { filter: /.*/, namespace: LIBRARY_NAMESPACE },
+    (args) => libraryModule(new URL(args.path, args.importer).href),
+  )
+  build.onLoad({ filter: /.*/, namespace: LIBRARY_NAMESPACE }, async (args) => ({
+    contents: await Deno.readTextFile(new URL(args.path)),
+    loader: 'js',
+  }))
+}
+
+const escapeForRegExp = (text) => text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+
+export function resolveDependencyAliases(build, { root, dependencies }) {
   const aliases = Object.keys(dependencies)
-  const escapeForRegExp = (text) => text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+  if (!aliases.length) return
+  const aliasFilter = new RegExp(`^(${aliases.map(escapeForRegExp).join('|')})$`)
+  build.onResolve({ filter: aliasFilter }, async ({ path: alias }) => {
+    const path = join(root, 'dependencies', alias, `${alias}.js`)
+    try {
+      await Deno.stat(path)
+    } catch {
+      throw new Error(`dependency '${alias}' is declared but not vendored - run 'imp install'`)
+    }
+    return { path }
+  })
+}
+
+export function impResolverPlugin({ root, dependencies, mocks }) {
   return {
     name: 'imp-resolver',
     setup(build) {
@@ -316,47 +340,8 @@ export function impResolverPlugin({ root, dependencies, mocks }) {
           resolveDir: root,
         }))
       }
-      build.onResolve({ filter: /^imp$/ }, () => ({
-        path: IMP_LIBRARY_URL,
-        namespace: LIBRARY_NAMESPACE,
-      }))
-      build.onResolve({ filter: /^imp\/test$/ }, () => ({
-        path: TEST_LIBRARY_URL,
-        namespace: LIBRARY_NAMESPACE,
-      }))
-      build.onResolve({ filter: /^imp\/preview$/ }, () => ({
-        path: PREVIEW_LIBRARY_URL,
-        namespace: LIBRARY_NAMESPACE,
-      }))
-      build.onResolve({ filter: /^imp\// }, ({ path }) =>
-        isImpSubpath(path)
-          ? {
-            path: new URL(IMP_SUBPATH_MODULES[path], IMP_LIBRARY_URL).href,
-            namespace: LIBRARY_NAMESPACE,
-          }
-          : { errors: [{ text: impSubpathProblem(path) }] })
-      build.onResolve({ filter: /.*/, namespace: LIBRARY_NAMESPACE }, (args) => ({
-        path: new URL(args.path, args.importer).href,
-        namespace: LIBRARY_NAMESPACE,
-      }))
-      build.onLoad({ filter: /.*/, namespace: LIBRARY_NAMESPACE }, async (args) => ({
-        contents: await Deno.readTextFile(new URL(args.path)),
-        loader: 'js',
-      }))
-      if (aliases.length) {
-        const aliasFilter = new RegExp(`^(${aliases.map(escapeForRegExp).join('|')})$`)
-        build.onResolve({ filter: aliasFilter }, async (args) => {
-          const path = join(root, 'dependencies', args.path, `${args.path}.js`)
-          try {
-            await Deno.stat(path)
-          } catch {
-            throw new Error(
-              `dependency '${args.path}' is declared but not vendored — run 'imp install'`,
-            )
-          }
-          return { path }
-        })
-      }
+      resolveImpLibrary(build, { tooling: true })
+      resolveDependencyAliases(build, { root, dependencies })
     },
   }
 }

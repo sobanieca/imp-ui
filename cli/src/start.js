@@ -19,13 +19,13 @@ import { dim, green, red } from './colors.js'
 import { addLogSink, logger } from './logger.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev_log.js'
 import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './pwa.js'
-import { IMP_SUBPATH_MODULES } from './specifiers.js'
+import { IMP_MODULES } from './specifiers.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
 
 const DEFAULT_DEV_SERVER_PORT = 4507
 
-const CONTENT_TYPES = {
+export const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
@@ -61,7 +61,9 @@ function printEntry(entry) {
   }
 }
 
-const INJECTION_MARKER = '/@imp/imp.js'
+const impModulePath = (module) => `/@imp/${module}`
+
+const INJECTION_MARKER = impModulePath(IMP_MODULES.imp)
 
 const dependencyBundlePath = (alias) => `/dependencies/${alias}/${alias}.js`
 
@@ -71,21 +73,16 @@ function dependencyImports(dependencies) {
   )
 }
 
-const impSubpathImports = () =>
-  Object.fromEntries(
-    Object.entries(IMP_SUBPATH_MODULES).map(([subpath, module]) => [subpath, `/@imp/${module}`]),
-  )
+const impImports = Object.fromEntries(
+  Object.entries(IMP_MODULES).map(([specifier, module]) => [specifier, impModulePath(module)]),
+)
 
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
 function buildHeadInjection(dependencies, pwa, env, flags, mocks) {
   const importMap = {
-    imports: {
-      imp: '/@imp/imp.js',
-      ...impSubpathImports(),
-      ...dependencyImports(dependencies),
-    },
+    imports: { ...impImports, ...dependencyImports(dependencies) },
   }
   const pwaTags = pwa
     ? '\n' + pwaHeadTags({
@@ -160,7 +157,7 @@ export async function loadApp(entryPath, { envAlias = null, mocks = null } = {})
     : null
   if (declaredMocks && !mockingOn) {
     logger.info(
-      `mocks — ${declaredMocks.folder}/ is declared but off for this run; pass --mock to serve it`,
+      `mocks - ${declaredMocks.folder}/ is declared but off for this run; pass --mock to serve it`,
     )
   }
   const maxLogEntries = imp.maxLogEntries ?? DEFAULT_MAX_LOG_ENTRIES
@@ -191,11 +188,11 @@ export function reportMocks(state, { root, directory }) {
   if (!state.changed) return
   const where = relative(root, directory).replaceAll('\\', '/')
   if (state.problem) {
-    logger.error(`mocks — ${state.problem}`)
+    logger.error(`mocks - ${state.problem}`)
   } else if (state.files.length) {
-    logger.info(`mocks — ${state.files.length} file(s) from ${where}/ serving through the browser`)
+    logger.info(`mocks - ${state.files.length} file(s) from ${where}/ serving through the browser`)
   } else {
-    logger.warn(`mocks — no *.mock.js files under ${where}/`)
+    logger.warn(`mocks - no *.mock.js files under ${where}/`)
   }
 }
 
@@ -357,12 +354,12 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
   const removeLogSink = addLogSink(devLog.write)
 
   for (const alias of missingDependencies) {
-    logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
+    logger.warn(`dependency '${alias}' is declared but not vendored - run 'imp install'`)
   }
 
   if (await publicCopyOfEntry(root, entryName)) {
     logger.warn(
-      `public/${entryName} is ignored — ${entryName} is served from the project root, ` +
+      `public/${entryName} is ignored - ${entryName} is served from the project root, ` +
         `and 'imp build' fails on the collision`,
     )
   }

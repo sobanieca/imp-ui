@@ -7,7 +7,7 @@ async function gitVisibleFiles() {
     stderr: 'inherit',
   }).output()
   if (!success) {
-    console.error('error: git ls-files failed — compile.js must run inside the imp git repo')
+    console.error('error: git ls-files failed - compile.js must run inside the imp git repo')
     Deno.exit(1)
   }
   return new TextDecoder().decode(stdout).split('\0').filter(Boolean)
@@ -39,7 +39,7 @@ async function run(...args) {
 }
 
 if (!Deno.args.includes('--force') && await binaryIsFresh()) {
-  console.log(`${BINARY} is up to date — skipping compile (pass --force to recompile)`)
+  console.log(`${BINARY} is up to date - skipping compile (pass --force to recompile)`)
   Deno.exit(0)
 }
 

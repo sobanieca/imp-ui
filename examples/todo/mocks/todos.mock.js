@@ -6,8 +6,8 @@ const todos = [
     title: 'Read the imp skills',
     notes: `Start with \`imp skill state\`, then \`imp skill components\`.
 
-- **state** — named state, computed values, keyed lists
-- **components** — \`component()\`, props, the shadow root
+- **state** - named state, computed values, keyed lists
+- **components** - \`component()\`, props, the shadow root
 `,
     priority: 'high',
     estimate: 1,
@@ -30,7 +30,7 @@ const todos = [
     id: 't3',
     title: 'Translate the app into Polish',
     notes:
-      'See [the imp docs](https://github.com/sobanieca/imp-ui) — `locales/pl.js` translates the ' +
+      'See [the imp docs](https://github.com/sobanieca/imp-ui) - `locales/pl.js` translates the ' +
       'built-in form messages too.',
     priority: 'low',
     estimate: 0.5,

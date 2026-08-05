@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] not a test file: app.js — unit tests end with .test.js, e2e specs with .spec.js
+[ERROR] not a test file: app.js - unit tests end with .test.js, e2e specs with .spec.js

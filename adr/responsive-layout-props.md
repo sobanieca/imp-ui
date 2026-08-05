@@ -60,10 +60,10 @@ stack({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, sidebar
   the same `display` ladder every component already carries, so hiding a region at a width costs no
   extra machinery and never leaves a hidden element in the accessibility tree.
 - **Invalid values are ignored, not fatal.** A value outside a prop's allowed set is logged through
-  `createLogger('imp')` and the breakpoint below it carries on, matching the log-and-continue
+  the shared `impLogger` and the breakpoint below it carries on, matching the log-and-continue
   posture of the rest of the library.
 - **Per-child placement lives on a wrapper.** A layout parent cannot style a child that is itself a
-  component, because `:host { display: contents }` means the child's own root — inside its shadow —
+  component, because `:host { display: contents }` means the child's own root - inside its shadow -
   is the real flex or grid item and no selector from the parent can reach it. So `grow`, `span`,
   `start`, `rowSpan`, `order` and `align` are props of an `item` wrapper rather than props read off
   arbitrary children.
@@ -79,10 +79,10 @@ stack({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, sidebar
   different scale writes its own media queries in a component's `styles`; the standard library does
   not bend.
 - `grid` deliberately exposes a **column count**, not a track template, and pairs with
-  `item({ span })` for uneven layouts — the responsive spelling stays uniform because every value is
+  `item({ span })` for uneven layouts - the responsive spelling stays uniform because every value is
   a number. `minItemWidth` covers the common "as many columns as fit" case with no breakpoints at
   all.
-- Structural swaps that CSS cannot express — a table becoming cards — are not solved here. They need
+- Structural swaps that CSS cannot express - a table becoming cards - are not solved here. They need
   a readable, watchable `breakpoint` value, which lands with the first component that needs one
   rather than being invented in advance.
 - Adding a responsive prop to a future component means adding one declaration to its stylesheet and

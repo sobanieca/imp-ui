@@ -13,7 +13,7 @@ list of directories (`.git`, `node_modules`, `.imp`), a hardcoded list of root f
 files, and the mocks folder.
 
 That is a denylist, and it fails in the unsafe direction. Anything nobody thought to exclude is
-published — a stray `.env.local`, a `notes/` folder, a second checkout — and each new kind of
+published - a stray `.env.local`, a `notes/` folder, a second checkout - and each new kind of
 project file is one more entry somebody has to remember. The list was also duplicated, with three
 different sets of contents, across build, dev-server watching, and lint/fmt/test discovery.
 
@@ -26,7 +26,7 @@ root.
 
 **`public/` is the root of the built site, and the only thing copied into it.** Its contents are
 copied with the folder name stripped, so `public/assets/logo.png` ships as `assets/logo.png` and is
-served at `/assets/logo.png`. The folder is optional, and its name is fixed — there is no key in
+served at `/assets/logo.png`. The folder is optional, and its name is fixed - there is no key in
 `imp.json` to rename it, because a second name for the same concept buys nothing and every project
 that reads a config gains a case to handle.
 
@@ -35,8 +35,8 @@ Consequences of making this an allowlist:
 - **No exclusion lists in the build at all.** Module sources, `imp.json`, environment files, the
   mocks folder, `.git`, `node_modules` and `.imp` are excluded by not being in `public/`, so the
   esbuild metafile is no longer consulted for this purpose and the hardcoded sets are gone.
-- **The entry HTML stays at the project root.** imp processes that file — bundling its scripts,
-  injecting environment values and PWA tags — whereas `public/` is verbatim passthrough. The two
+- **The entry HTML stays at the project root.** imp processes that file - bundling its scripts,
+  injecting environment values and PWA tags - whereas `public/` is verbatim passthrough. The two
   roles are distinct, so they live in different places.
 - **A collision is an error.** A file in `public/` whose path matches something the build generates
   fails the build naming the path, rather than one silently overwriting the other.
@@ -61,7 +61,7 @@ base-prefixed root-absolute URL is correct from any route.
 - **Breaking for existing projects.** Assets at the project root are no longer published and must
   move into `public/`. Taken deliberately while imp is pre-1.0; `imp init` scaffolds `public/` with
   a favicon in it (`project-scaffold.md`), so the layout is visible from a project's first minute.
-- **Site-root files live in `public/`** — `favicon.ico`, `robots.txt`, `404.html`, `_redirects`.
+- **Site-root files live in `public/`** - `favicon.ico`, `robots.txt`, `404.html`, `_redirects`.
 - **Slightly more ceremony than dropping a file next to the page**, in exchange for an explicit,
   inspectable answer to what ships and a build that cannot leak a project file by omission.
 - **Development is more permissive than the build**, because the project root stays served for

@@ -1,4 +1,4 @@
-# feature-flags — `flag('NAME')`, declared in imp.json, folded away by `imp build`
+# feature-flags - `flag('NAME')`, declared in imp.json, folded away by `imp build`
 
 ```js
 import { flag } from 'imp'
@@ -11,7 +11,7 @@ bundling and replaces the call with the literal `true` or `false`, so the minifi
 branch, everything only it reached, and any chunk it would have produced. The built output contains
 no flag names, no values and no `flag()` call.
 
-## Setup — both halves are required
+## Setup - both halves are required
 
 1. **Declare** every flag in `imp.json`. An undeclared name is a build error, not a false flag.
 2. **Turn it on** in the environment file (see [config](config.md)); `true`/`false` only, and in a
@@ -23,7 +23,7 @@ no flag names, no values and no `flag()` call.
 ```
 
 ```json
-// env/prod.json — CHECKOUT_V2 is not listed, so it is off
+// env/prod.json - CHECKOUT_V2 is not listed, so it is off
 { "API_URL": "https://api.example.com", "NEW_NAV": true }
 ```
 
@@ -35,12 +35,12 @@ no flag names, no values and no `flag()` call.
 - **Declared flags are not env values.** `flags` names are removed from `env`; `env.CHECKOUT_V2` is
   `undefined`. `flag()` is the only reader, and the only form the build can fold.
 - **An undeclared flag throws at runtime too** (`imp start`, `imp preview`, `imp test`), naming the
-  declared flags — the error is not build-only.
-- **Flag names must not start with `IMP_`** — reserved for imp's own environment values
+  declared flags - the error is not build-only.
+- **Flag names must not start with `IMP_`** - reserved for imp's own environment values
   (`IMP_LOG_LEVEL`, `IMP_BASEPATH`).
 - **`flags` in `imp.json` is an array of names**, not an object of values. The values live per
   environment.
-- **Runtime-varying answers are not flags.** Per-user, per-request or fetched toggles are data —
+- **Runtime-varying answers are not flags.** Per-user, per-request or fetched toggles are data -
   load them into state. A flag is fixed for the whole build.
 - **A flag the build could not fold fails the build**, naming the file, rather than shipping a
   bundle that reads flags at runtime. Nothing in a built app can check a flag.
@@ -50,7 +50,7 @@ no flag names, no values and no `flag()` call.
 ## Dropping a feature's code entirely
 
 A dynamic `import()` inside the gate keeps the feature's whole dependency tree out of a build where
-the flag is off — the branch goes, and the chunk is never emitted:
+the flag is off - the branch goes, and the chunk is never emitted:
 
 ```js
 if (flag('CHECKOUT_V2')) {
@@ -59,5 +59,5 @@ if (flag('CHECKOUT_V2')) {
 }
 ```
 
-`imp build` prints what it resolved: `flags folded in — CHECKOUT_V2 off, NEW_NAV on` — see
+`imp build` prints what it resolved: `flags folded in - CHECKOUT_V2 off, NEW_NAV on` - see
 [build](build.md).

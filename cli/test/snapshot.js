@@ -26,7 +26,7 @@ export async function assertSnapshot(name, actual) {
     expected = await Deno.readTextFile(path)
   } catch {
     throw new Error(
-      `missing snapshot cli/test/snapshots/${name}.txt — run 'deno task test:update' to create it`,
+      `missing snapshot cli/test/snapshots/${name}.txt - run 'deno task test:update' to create it`,
     )
   }
   if (expected === actual) return

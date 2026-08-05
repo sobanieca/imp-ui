@@ -20,7 +20,7 @@ function platformSlug() {
   const slug = PLATFORM_SLUGS[`${Deno.build.os}-${Deno.build.arch}`]
   if (!slug) {
     throw new Error(
-      `imp does not ship a binary for ${Deno.build.os}/${Deno.build.arch} — supported platforms are macOS and Linux on x64 or arm64`,
+      `imp does not ship a binary for ${Deno.build.os}/${Deno.build.arch} - supported platforms are macOS and Linux on x64 or arm64`,
     )
   }
   return slug
@@ -34,7 +34,7 @@ function impHome() {
   const override = Deno.env.get('IMP_HOME')
   if (override) return override
   const home = homeDir()
-  if (!home) throw new Error('cannot locate the imp home directory — set IMP_HOME or HOME')
+  if (!home) throw new Error('cannot locate the imp home directory - set IMP_HOME or HOME')
   return join(home, '.imp')
 }
 
@@ -95,13 +95,13 @@ async function fetchExpectedChecksum(url, version) {
     response = await fetch(`${url}.sha256`)
   } catch (error) {
     throw new Error(
-      `imp ${version} checksum could not be fetched from ${url}.sha256 — ${error.message}`,
+      `imp ${version} checksum could not be fetched from ${url}.sha256 - ${error.message}`,
     )
   }
   if (!response.ok) {
     await response.body?.cancel()
     throw new Error(
-      `imp ${version} checksum could not be fetched — ${url}.sha256 responded ${response.status}`,
+      `imp ${version} checksum could not be fetched - ${url}.sha256 responded ${response.status}`,
     )
   }
   const hex = (await response.text()).trim().split(/\s+/)[0]?.toLowerCase()
@@ -124,18 +124,18 @@ async function downloadVersion(version) {
   try {
     response = await fetch(url)
   } catch (error) {
-    throw new Error(`imp ${version} could not be downloaded from ${url} — ${error.message}`)
+    throw new Error(`imp ${version} could not be downloaded from ${url} - ${error.message}`)
   }
   if (!response.ok) {
     await response.body?.cancel()
-    throw new Error(`imp ${version} could not be downloaded — ${url} responded ${response.status}`)
+    throw new Error(`imp ${version} could not be downloaded - ${url} responded ${response.status}`)
   }
   const bytes = new Uint8Array(await response.arrayBuffer())
   const expected = await fetchExpectedChecksum(url, version)
   const actual = await sha256Hex(bytes)
   if (actual !== expected) {
     throw new Error(
-      `imp ${version} failed checksum verification — expected ${expected}, got ${actual}`,
+      `imp ${version} failed checksum verification - expected ${expected}, got ${actual}`,
     )
   }
   const dir = join(impHome(), 'versions', version)
@@ -151,7 +151,7 @@ async function downloadVersion(version) {
 export async function ensureVersion(version) {
   const path = versionBinaryPath(version)
   if (await exists(path)) return path
-  console.error(dim(`imp ${version} — downloading…`))
+  console.error(dim(`imp ${version} - downloading…`))
   const downloaded = await downloadVersion(version)
   await warnStaleVersions(version)
   return downloaded
@@ -163,12 +163,12 @@ export async function resolveLatestVersion(signal) {
   if (!response.ok) {
     await response.body?.cancel()
     throw new Error(
-      `could not resolve the latest imp release — GitHub responded ${response.status}`,
+      `could not resolve the latest imp release - GitHub responded ${response.status}`,
     )
   }
   const tag = (await response.json())?.tag_name
   if (typeof tag !== 'string') {
-    throw new Error('could not resolve the latest imp release — no tag_name in the GitHub response')
+    throw new Error('could not resolve the latest imp release - no tag_name in the GitHub response')
   }
   return tag.replace(/^v/, '')
 }
@@ -187,7 +187,7 @@ async function lastUsedTime(version) {
     const parsed = Date.parse((await Deno.readTextFile(lastUsedPath(version))).trim())
     if (!Number.isNaN(parsed)) return parsed
   } catch {
-    // no lastUsed marker — fall back to the binary's own timestamp
+    // no lastUsed marker - fall back to the binary's own timestamp
   }
   try {
     const info = await Deno.stat(versionBinaryPath(version))
@@ -206,7 +206,7 @@ async function listInstalledVersions() {
       }
     }
   } catch {
-    // no versions directory yet — nothing installed
+    // no versions directory yet - nothing installed
   }
   return versions
 }
@@ -245,7 +245,7 @@ async function warnStaleVersions(justInstalled) {
       dim(
         `${stale.length} unused imp ${single ? 'version' : 'versions'} (${stale.join(', ')}) ${
           single ? 'has' : 'have'
-        } not run in over 30 days — run 'imp prune' to remove ${
+        } not run in over 30 days - run 'imp prune' to remove ${
           single ? 'it' : 'them'
         } and reclaim disk space`,
       ),
@@ -258,7 +258,7 @@ async function warnStaleVersions(justInstalled) {
 export async function prune() {
   const stale = await staleVersions(VERSION)
   if (!stale.length) {
-    console.log('no unused imp versions to prune — nothing cached is older than 30 days')
+    console.log('no unused imp versions to prune - nothing cached is older than 30 days')
     return
   }
   let freed = 0
@@ -311,7 +311,7 @@ export async function update({ root, check = false, requestedVersion = null }) {
   const target = requestedVersion ?? await resolveLatestVersion()
   if (check) {
     if (isNewer(target, VERSION)) {
-      console.log(`imp ${target} is available (you have ${VERSION}) — run 'imp update'`)
+      console.log(`imp ${target} is available (you have ${VERSION}) - run 'imp update'`)
     } else {
       console.log(`imp ${VERSION} is up to date`)
     }
@@ -321,7 +321,7 @@ export async function update({ root, check = false, requestedVersion = null }) {
   const pinPath = await findPinTarget(root)
   if (!pinPath) {
     console.log(
-      `imp ${target} downloaded — no imp.json or imp.jsonc found, so no project pin was written`,
+      `imp ${target} downloaded - no imp.json or imp.jsonc found, so no project pin was written`,
     )
     return
   }
@@ -343,7 +343,7 @@ async function latestReleaseThrottled() {
       return cache.latest
     }
   } catch {
-    // no usable cache — fall through to a fresh check
+    // no usable cache - fall through to a fresh check
   }
   const latest = await resolveLatestVersion(AbortSignal.timeout(UPDATE_CHECK_TIMEOUT))
   try {
@@ -366,7 +366,7 @@ export async function notifyUpdate(args) {
     const latest = await latestReleaseThrottled()
     if (isNewer(latest, VERSION)) {
       console.log(
-        cyan(`imp ${latest} is available`) + dim(` (you have ${VERSION}) — run 'imp update'`),
+        cyan(`imp ${latest} is available`) + dim(` (you have ${VERSION}) - run 'imp update'`),
       )
     }
   } catch {

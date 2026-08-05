@@ -33,7 +33,7 @@ function warnIfUpscaling(icon, mediaType, bytes) {
   const largestTarget = Math.max(...ICON_TARGETS.map((target) => target.size))
   if (Math.max(source.width, source.height) >= largestTarget) return
   logger.warn(
-    `pwa icon ${icon} is ${source.width}×${source.height} — icons up to ` +
+    `pwa icon ${icon} is ${source.width}×${source.height} - icons up to ` +
       `${largestTarget}×${largestTarget} will be upscaled, so some quality loss is expected; ` +
       `use an SVG or a source at least ${largestTarget}px on its longest edge for sharp icons`,
   )
@@ -150,18 +150,18 @@ export async function validatePwaBuild(pwa, isHtmlEntry, root) {
     throw new Error("--pwa requires a 'pwa' block in imp.json (name, icon, …)")
   }
   if (!isHtmlEntry) {
-    throw new Error('--pwa applies to an HTML page — a JS component build has no PWA to emit')
+    throw new Error('--pwa applies to an HTML page - a JS component build has no PWA to emit')
   }
   if (!pwa.name) {
-    throw new Error("invalid imp.json — 'pwa.name' is required to build with --pwa")
+    throw new Error("invalid imp.json - 'pwa.name' is required to build with --pwa")
   }
   if (!pwa.icon) {
-    throw new Error("invalid imp.json — 'pwa.icon' is required to build with --pwa")
+    throw new Error("invalid imp.json - 'pwa.icon' is required to build with --pwa")
   }
   const iconPath = resolveIcon(root, pwa.icon)
   if (!IMAGE_MEDIA_TYPES[extname(iconPath).toLowerCase()]) {
     throw new Error(
-      `invalid imp.json — 'pwa.icon' must be an .svg, .png, or .jpg file, got '${pwa.icon}'`,
+      `invalid imp.json - 'pwa.icon' must be an .svg, .png, or .jpg file, got '${pwa.icon}'`,
     )
   }
   try {

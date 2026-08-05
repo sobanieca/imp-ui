@@ -2,10 +2,9 @@ import { dirname, relative, resolve, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
-import { runEsbuild } from './deps.js'
+import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
 import {
   collectMocks,
-  DATAURL_ASSET_LOADERS,
   extractCalls,
   impResolverPlugin,
   isIdentChar,
@@ -22,6 +21,7 @@ import {
   loadApp,
   watchForChanges,
 } from './start.js'
+import { isPreviewMetadataExport } from './preview_metadata.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev_log.js'
 import { addLogSink, logger } from './logger.js'
 import { dim } from './colors.js'
@@ -69,7 +69,7 @@ async function resolveTargets(root, paths) {
     const hasSibling = sibling !== path && await Deno.stat(sibling).then(() => true, () => false)
     if (!hasSibling) {
       throw new Error(
-        `not a preview file: ${target} — previews end with .preview.js, and there is no ${
+        `not a preview file: ${target} - previews end with .preview.js, and there is no ${
           relative(root, sibling).replaceAll('\\', '/')
         } next to it`,
       )
@@ -307,6 +307,20 @@ export function extractScenarioSources(source) {
   return scenarios
 }
 
+export function splitPreviewExports(source) {
+  const scenarios = []
+  const declared = {}
+  for (const entry of extractScenarioSources(source)) {
+    if (!isPreviewMetadataExport(entry.name)) {
+      scenarios.push(entry)
+      continue
+    }
+    const value = entry.source === null ? null : parseStringLiteral(entry.source)
+    if (value !== null) declared[entry.name] = value
+  }
+  return { scenarios, declared }
+}
+
 export function extractImportLines(source) {
   const lines = []
   let index = 0
@@ -389,7 +403,7 @@ export async function resolvePreviewThemes(root, themes) {
   const resolved = []
   for (const entry of themes) {
     const file = await resolveModuleFile(resolve(root, entry))
-    if (!file) throw new Error(`theme not found: ${entry} — listed in 'preview.themes'`)
+    if (!file) throw new Error(`theme not found: ${entry} - listed in 'preview.themes'`)
     resolved.push({ source: entry, file })
   }
   return resolved
@@ -406,7 +420,7 @@ export async function resolvePreviewTranslations(root, translations) {
   for (const [code, entry] of Object.entries(translations)) {
     const file = await resolveModuleFile(resolve(root, entry))
     if (!file) {
-      throw new Error(`translations not found: ${entry} — listed in 'preview.translations.${code}'`)
+      throw new Error(`translations not found: ${entry} - listed in 'preview.translations.${code}'`)
     }
     resolved.push({ code, source: entry, file })
   }
@@ -457,12 +471,27 @@ function previewEntryPlugin({ file, meta, root, themes, translations }) {
   }
 }
 
+const PREVIEW_SUFFIX = /\.preview\.(js|mjs)$/
+
+export function previewIdentity(file, declared = {}) {
+  const segments = file.split('/')
+  const component = segments.pop().replace(PREVIEW_SUFFIX, '')
+  const folder = segments.at(-1) ?? 'previews'
+  return {
+    file,
+    path: `${folder}/${component}`,
+    name: declared.name ?? component,
+    category: declared.category ?? folder,
+    description: declared.description ?? null,
+  }
+}
+
 const previewMeta = async (file, root) => {
   if (file === null) return { file: null }
   const text = await Deno.readTextFile(file)
-  const scenarios = extractScenarioSources(text)
+  const { scenarios, declared } = splitPreviewExports(text)
   return {
-    file: relative(root, file).replaceAll('\\', '/'),
+    ...previewIdentity(relative(root, file).replaceAll('\\', '/'), declared),
     order: scenarios.map(({ name }) => name),
     sources: Object.fromEntries(
       scenarios.filter(({ source }) => source !== null).map(({ name, source }) => [name, source]),
@@ -502,19 +531,24 @@ const pagePath = (file) => PAGE_PREFIX + file.split('/').map(encodeURIComponent)
 
 const bundlePath = (file) => BUNDLE_PREFIX + file.split('/').map(encodeURIComponent).join('/')
 
-const PREVIEW_SUFFIX = /\.preview\.(js|mjs)$/
+const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0
 
-export function previewCatalog(files) {
-  const entries = files.map((file) => {
-    const segments = file.split('/')
-    const name = segments.pop().replace(PREVIEW_SUFFIX, '')
-    const category = segments.at(-1) ?? 'previews'
-    return { file, category, name, path: `${category}/${name}`, href: pagePath(file) }
-  })
+const declaredMetadataOf = async (file) => {
+  try {
+    return splitPreviewExports(await Deno.readTextFile(file)).declared
+  } catch {
+    return {}
+  }
+}
+
+export async function buildPreviewCatalog(root, files) {
+  const entries = []
+  for (const file of files) {
+    const declared = await declaredMetadataOf(resolve(root, file))
+    entries.push({ ...previewIdentity(file, declared), href: pagePath(file) })
+  }
   return entries.sort((left, right) =>
-    left.category < right.category ? -1 : left.category > right.category ? 1 : (
-      left.name < right.name ? -1 : left.name > right.name ? 1 : 0
-    )
+    compareText(left.category, right.category) || compareText(left.name, right.name)
   )
 }
 
@@ -544,8 +578,11 @@ const shellPage = (title, previews, current, bundle) =>
 <script type="module" src="${escapeHtml(bundle)}"></script>`,
   )
 
-const previewPage = (file, previews) =>
-  shellPage(`imp preview — ${file}`, previews, file, bundlePath(file))
+const previewPage = (file, previews) => {
+  const entry = previews.find((candidate) => candidate.file === file)
+  const title = entry ? `${entry.category} / ${entry.name}` : file
+  return shellPage(`imp preview - ${title}`, previews, file, bundlePath(file))
+}
 
 const indexPage = (previews) => shellPage('imp preview', previews, null, INDEX_BUNDLE_PATH)
 
@@ -575,7 +612,7 @@ const scriptResponse = (body) =>
   })
 
 export function createPreviewHandler(
-  { app, clients, listPreviews, dependencies, bundles, themes = [], translations = [] },
+  { app, clients, listCatalog, dependencies, bundles, themes = [], translations = [] },
 ) {
   const serveApp = createRequestHandler({ ...app, clients, historyFallback: false })
 
@@ -591,7 +628,7 @@ export function createPreviewHandler(
           }),
         })
       } catch (error) {
-        logger.error(`${file || 'the index page'} failed to build — ${error.message}`)
+        logger.error(`${file || 'the index page'} failed to build - ${error.message}`)
         bundles.set(file, { error: error.message })
       }
     }
@@ -600,8 +637,8 @@ export function createPreviewHandler(
 
   return async (req) => {
     const url = new URL(req.url)
-    const previews = listPreviews()
-    const catalog = previewCatalog(previews)
+    const catalog = listCatalog()
+    const previews = catalog.map((entry) => entry.file)
 
     if (url.pathname === '/') {
       return htmlResponse(injectImp(indexPage(catalog), app.headInjection))
@@ -649,7 +686,7 @@ export async function preview(
 
   if (!previews.length) {
     logger.info(
-      "no previews found — write a '*.preview.js' file next to a component and export one instance per scenario, like: export const empty = myComponent()",
+      "no previews found - write a '*.preview.js' file next to a component and export one instance per scenario, like: export const empty = myComponent()",
     )
     return
   }
@@ -668,13 +705,16 @@ export async function preview(
   const removeLogSink = addLogSink(devLog.write)
 
   for (const alias of app.missingDependencies) {
-    logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
+    logger.warn(`dependency '${alias}' is declared but not vendored - run 'imp install'`)
   }
+
+  let catalog = await buildPreviewCatalog(root, previews)
 
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, async () => {
     bundles.clear()
     previews = await discover().catch(() => previews)
+    catalog = await buildPreviewCatalog(root, previews)
     logger.debug('change detected → reload')
     broadcast('reload')
   })
@@ -705,7 +745,7 @@ export async function preview(
     createPreviewHandler({
       app,
       clients,
-      listPreviews: () => previews,
+      listCatalog: () => catalog,
       dependencies,
       bundles,
       themes,

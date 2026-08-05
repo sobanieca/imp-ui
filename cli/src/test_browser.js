@@ -99,7 +99,7 @@ const currentBuild = () => {
   const build = CHROME_BUILDS[`${Deno.build.os}-${Deno.build.arch}`]
   if (!build) {
     throw new Error(
-      `no managed browser build for ${Deno.build.os}-${Deno.build.arch} — point imp at an installed Chrome or Chromium via "test": { "browser": "<path>" } in imp.json`,
+      `no managed browser build for ${Deno.build.os}-${Deno.build.arch} - point imp at an installed Chrome or Chromium via "test": { "browser": "<path>" } in imp.json`,
     )
   }
   return build

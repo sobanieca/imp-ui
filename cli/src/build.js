@@ -17,7 +17,7 @@ import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
 import { formatSize } from './file_size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
-import { IMP_SUBPATH_MODULES, impSubpathProblem, isImpSubpath } from './specifiers.js'
+import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
   APPLE_TOUCH_ICON,
@@ -28,8 +28,6 @@ import {
   renderIconSet,
   validatePwaBuild,
 } from './pwa.js'
-
-const IMP_LIBRARY_URL = import.meta.resolve('../../lib/src/imp.js')
 
 const SCRIPT_TAG = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi
 
@@ -109,7 +107,7 @@ async function withComponentSkill(path) {
   }
   if (DECLARES_IMP_SKILL.test(source)) {
     throw new Error(
-      `${basename(path)} exports impSkill itself — a component's skill belongs in ${
+      `${basename(path)} exports impSkill itself - a component's skill belongs in ${
         basename(skillFileFor(path))
       } next to it`,
     )
@@ -120,46 +118,11 @@ async function withComponentSkill(path) {
 function impResolverPlugin(
   { root, dependencies, inlineSources, impProvidedByHost, isHtmlEntry, flags },
 ) {
-  const aliases = Object.keys(dependencies)
-  const escapeForRegExp = (text) => text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
   return {
     name: 'imp',
     setup(build) {
-      if (!impProvidedByHost) {
-        build.onResolve({ filter: /^imp$/ }, () => ({
-          path: IMP_LIBRARY_URL,
-          namespace: 'imp-library',
-        }))
-        build.onResolve({ filter: /^imp\// }, ({ path }) =>
-          isImpSubpath(path)
-            ? {
-              path: new URL(IMP_SUBPATH_MODULES[path], IMP_LIBRARY_URL).href,
-              namespace: 'imp-library',
-            }
-            : { errors: [{ text: impSubpathProblem(path) }] })
-        build.onResolve({ filter: /.*/, namespace: 'imp-library' }, (args) => ({
-          path: new URL(args.path, args.importer).href,
-          namespace: 'imp-library',
-        }))
-        build.onLoad({ filter: /.*/, namespace: 'imp-library' }, async (args) => ({
-          contents: await Deno.readTextFile(new URL(args.path)),
-          loader: 'js',
-        }))
-      }
-      if (aliases.length) {
-        const aliasFilter = new RegExp(`^(${aliases.map(escapeForRegExp).join('|')})$`)
-        build.onResolve({ filter: aliasFilter }, async (args) => {
-          const path = join(root, 'dependencies', args.path, `${args.path}.js`)
-          try {
-            await Deno.stat(path)
-          } catch {
-            throw new Error(
-              `dependency '${args.path}' is declared but not vendored — run 'imp install'`,
-            )
-          }
-          return { path }
-        })
-      }
+      if (!impProvidedByHost) resolveImpLibrary(build, { tooling: false })
+      resolveDependencyAliases(build, { root, dependencies })
       build.onResolve({ filter: new RegExp(`^${INLINE_ENTRY_SCHEME}\\d+$`) }, (args) => ({
         path: join(root, inlineModuleName(args.path.slice(INLINE_ENTRY_SCHEME.length))),
         namespace: 'file',
@@ -231,7 +194,7 @@ function assertEveryFlagFolded(outputFiles) {
     throw new Error(
       `${
         basename(unfolded.path)
-      } still reads a feature flag at runtime — every flag must be called as flag('NAME') with a literal name, from a module that imports flag from 'imp', so the build can fold it away`,
+      } still reads a feature flag at runtime - every flag must be called as flag('NAME') with a literal name, from a module that imports flag from 'imp', so the build can fold it away`,
     )
   }
 }
@@ -441,24 +404,24 @@ export async function build(
   console.log(`built ${entryName} → ${relative(Deno.cwd(), outdirPath) || '.'}/`)
   const mocksFolder = mocksSetting(imp)?.folder
   if (mocksFolder && isHtmlEntry) {
-    console.log(`  ${mocksFolder}/ left out — mocks serve in imp start`)
+    console.log(`  ${mocksFolder}/ left out - mocks serve in imp start`)
   }
   if (base && isHtmlEntry) {
-    console.log(`  base path ${base} — root-absolute urls prefixed for a sub-path deployment`)
+    console.log(`  base path ${base} - root-absolute urls prefixed for a sub-path deployment`)
   }
   const flagNames = Object.keys(flags)
   if (flagNames.length) {
     const states = flagNames.map((flagName) => `${flagName} ${flags[flagName] ? 'on' : 'off'}`)
-    console.log(`  flags folded in — ${states.join(', ')}`)
+    console.log(`  flags folded in - ${states.join(', ')}`)
   }
   if (pwa) {
     console.log('  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker')
-    console.log('  installable — name, 192 + 512 icons, display, start_url all present')
+    console.log('  installable - name, 192 + 512 icons, display, start_url all present')
   }
   if (impProvidedByHost) {
-    console.log('  imp imports kept bare — resolved by the imp host at runtime')
+    console.log('  imp imports kept bare - resolved by the imp host at runtime')
   } else if (targetImpHost && isHtmlEntry) {
-    console.log('  targetImpHost ignored — an HTML page is its own host, imp is bundled in')
+    console.log('  targetImpHost ignored - an HTML page is its own host, imp is bundled in')
   }
   written.sort()
   for (const name of written) {

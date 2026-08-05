@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] translations not found: locales/missing.js — listed in 'preview.translations.pl'
+[ERROR] translations not found: locales/missing.js - listed in 'preview.translations.pl'

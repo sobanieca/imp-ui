@@ -7,19 +7,11 @@ import { collectFiles } from './walk.js'
 
 const LINT_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
 
-const IMP_RULES = {
-  'imp/no-capital-component': 'error',
-  'imp/exact-dependency-versions': 'error',
-  'imp/single-props-object': 'error',
-  'imp/state-name-namespace': 'error',
-  'imp/state-setup-before-await': 'error',
-  'imp/http-client-name-namespace': 'error',
-  'imp/http-client-setup-before-await': 'error',
-  'imp/router-setup-before-await': 'error',
-  'imp/no-root-query-in-mount': 'error',
-  'imp/component-name': 'error',
-  'imp/import-source': 'error',
-}
+const IMP_RULE_NAMES = Object.keys(impPlugin.rules)
+
+const IMP_RULES = Object.fromEntries(IMP_RULE_NAMES.map((name) => [`imp/${name}`, 'error']))
+
+export const MAX_FILE_SIZE_RULE = 'imp/max-file-size'
 
 const buildConfig = (userRules, dependencyAliases) => ({
   languageOptions: {
@@ -31,8 +23,6 @@ const buildConfig = (userRules, dependencyAliases) => ({
   plugins: { imp: impPlugin },
   rules: { ...recommendedRules, ...userRules, ...IMP_RULES },
 })
-
-const IMP_RULE_NAMES = Object.keys(impPlugin.rules)
 
 const prefixImpRules = (rules) =>
   IMP_RULE_NAMES.reduce(
@@ -113,9 +103,9 @@ async function reportOversizedFiles(root, config) {
     if (!info.isFile || info.size <= limit) continue
     errors++
     console.error(
-      `error[imp/max-file-size]: ${relativePath} is ${formatSize(info.size)}, over the ${
+      `error[${MAX_FILE_SIZE_RULE}]: ${relativePath} is ${formatSize(info.size)}, over the ${
         formatSize(limit)
-      } limit — ${maxFileSizeHint}`,
+      } limit - ${maxFileSizeHint}`,
     )
     console.error(` --> ${relativePath}:1:1\n`)
   }
@@ -199,7 +189,7 @@ export async function lint({ root, paths, fix = false }) {
       /^Config \(unnamed\): /,
       '',
     )
-    console.error(`error: invalid lint configuration in imp.json — ${reason}`)
+    console.error(`error: invalid lint configuration in imp.json - ${reason}`)
     return 1
   }
 

@@ -7,7 +7,7 @@ imp reads and writes it:
 
 - **Monorepos and subdirectories.** A repository may hold several imp apps, each in its own folder
   with its own config and `dependencies/`. Commands are run from wherever the developer happens to
-  be — often a nested subfolder, not the app root. Reading config only from the current working
+  be - often a nested subfolder, not the app root. Reading config only from the current working
   directory silently yielded an empty config when run one level too deep, dropping the project's
   dependencies, lint/fmt settings, and version pin with no error. Only `imp update` searched upward;
   every other command did not, so behavior was inconsistent.
@@ -22,7 +22,7 @@ imp reads and writes it:
   its starting directory to the nearest folder containing `imp.json` or `imp.jsonc`, stopping at the
   repository root (a directory containing `.git`). This makes all commands behave the same from any
   subfolder, and lets each app in a monorepo carry its own config discovered independently. The
-  dev/build server root for `imp start` / `imp build` stays the entry file's directory — discovery
+  dev/build server root for `imp start` / `imp build` stays the entry file's directory - discovery
   affects where config is read, not what is served or built.
 - **JSONC parsing.** Config is parsed as JSONC (`//` and `/* */` comments and trailing commas
   tolerated) via the vendored `jsonc-parser`, not `JSON.parse`. `imp.json` is checked first, then
@@ -36,7 +36,7 @@ imp reads and writes it:
 ## Consequences
 
 - Commands work from any subfolder of a project, and a monorepo of independent imp apps needs no
-  special configuration — each folder's `imp.json`/`imp.jsonc` and `dependencies/` are found based
+  special configuration - each folder's `imp.json`/`imp.jsonc` and `dependencies/` are found based
   on where the command runs.
 - Users can comment and trailing-comma their config freely, in either `imp.json` or `imp.jsonc`, and
   imp's own edits preserve those comments rather than flattening the file.
@@ -44,5 +44,5 @@ imp reads and writes it:
 - `jsonc-parser` is pre-bundled into the binary like every other runtime npm dependency (see
   [prebundled-npm-dependencies](prebundled-npm-dependencies.md)).
 - Inline trailing comments can occasionally shift to an adjacent line when a new sibling key is
-  inserted next to them — comments are never lost, but their exact placement is not guaranteed
+  inserted next to them - comments are never lost, but their exact placement is not guaranteed
   across a programmatic edit.

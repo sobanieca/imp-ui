@@ -1,1 +1,1 @@
-export const only = 'never bundled — the theme path fails first'
+export const only = 'never bundled - the theme path fails first'

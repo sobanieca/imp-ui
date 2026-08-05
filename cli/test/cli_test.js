@@ -2,12 +2,16 @@ import { dirname, fromFileUrl, join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
 import { createMockBundler } from '../src/mocks.js'
-import { bundleDependency, shutdownBundler } from '../src/deps.js'
-import { injectImp } from '../src/start.js'
+import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
+import { CONTENT_TYPES, injectImp } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 import { tokenizeJs } from '../src/preview_highlight.js'
-import { COMPONENT_SKILLS, findSkill, skillFileFor, skillIndex, SKILLS } from '../src/skill.js'
+import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
+import impPlugin, { IMP_MODULE_EXPORTS } from '../src/lint_rules.js'
+import { MAX_FILE_SIZE_RULE } from '../src/lint.js'
+import { IMP_MODULES, IMP_TOOLING_MODULES } from '../src/specifiers.js'
+import { defaultTokens } from '../../lib/src/theme.js'
 import { VERSION } from '../src/version.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
@@ -34,6 +38,10 @@ const normalize = (text) =>
     .replace(/"durationMs": \d+/g, '"durationMs": *')
 
 const section = (label, text) => `--- ${label} ---\n${text.trim() ? text.trimEnd() : '(empty)'}`
+
+const check = (condition, message) => {
+  if (!condition) throw new Error(message)
+}
 
 const commandTranscript = (display, { code, stdout, stderr }) =>
   `$ ${display}\nexit code: ${code}\n\n${section('stdout', stdout)}\n\n${
@@ -641,6 +649,11 @@ Deno.test('imp build', async (t) => {
         "import { table } from 'imp/std/data'\n\nexport const shell = table\n",
       )
       const unknown = await runImp(['build', 'std-entry.js', '--output', 'std'], dir)
+      await Deno.writeTextFile(
+        entry,
+        "import { expect } from 'imp/test'\n\nexport const check = expect\n",
+      )
+      const tooling = await runImp(['build', 'std-entry.js', '--output', 'std'], dir)
       await Deno.remove(entry)
       await Deno.remove(join(dir, 'std'), { recursive: true })
       await assertSnapshot(
@@ -652,6 +665,11 @@ Deno.test('imp build', async (t) => {
             commandTranscript(
               'imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)',
               unknown,
+            )
+          }\n\n${
+            commandTranscript(
+              'imp build std-entry.js --output std  (cwd: <tmp>, tooling-only subpath)',
+              tooling,
             )
           }\n`,
         ),
@@ -683,9 +701,9 @@ Deno.test('imp build', async (t) => {
       const project = await Deno.makeTempDir()
       const write = (name, text) => Deno.writeTextFile(join(project, name), text)
       await write('eager.js', "export const eager = () => 'eager'\n")
-      await write('eager.skill.md', `# eager — ${marker} a statically imported component\n`)
+      await write('eager.skill.md', `# eager - ${marker} a statically imported component\n`)
       await write('lazy.js', "export const lazy = () => 'lazy'\n")
-      await write('lazy.skill.md', `# lazy — ${marker} a lazily imported component\n`)
+      await write('lazy.skill.md', `# lazy - ${marker} a lazily imported component\n`)
       await write(
         'app.js',
         "import { eager } from './eager.js'\n\n" +
@@ -743,13 +761,13 @@ Deno.test('imp build', async (t) => {
       await Deno.mkdir(join(project, 'dependencies', 'widget'), { recursive: true })
       await write(
         join('dependencies', 'widget', 'widget.js'),
-        `var s="# widget — ${marker} a published component";var w=()=>"widget";` +
+        `var s="# widget - ${marker} a published component";var w=()=>"widget";` +
           'export{s as impSkill,w as widget};\n',
       )
       await write('imp.json', '{ "dependencies": { "widget": "npm:widget@1.0.0" } }\n')
       await write(
         'hand.js',
-        `export const impSkill = "# hand — ${marker} written into the module by hand"\n` +
+        `export const impSkill = "# hand - ${marker} written into the module by hand"\n` +
           "export const hand = () => 'hand'\n",
       )
       await write(
@@ -787,14 +805,6 @@ Deno.test('imp build', async (t) => {
       await assertSnapshot(
         'build-html-entry-ignores-target-imp-host',
         mask(commandTranscript('imp build  (cwd: <tmp>)', result)),
-      )
-    })
-
-    await t.step('build-external-flag-removed', async () => {
-      const result = await runImp(['build', 'app.js', '--external', 'imp'], dir)
-      await assertSnapshot(
-        'build-external-flag-removed',
-        mask(commandTranscript('imp build app.js --external imp  (cwd: <tmp>)', result)),
       )
     })
 
@@ -882,14 +892,6 @@ Deno.test('imp build', async (t) => {
       await assertSnapshot(
         'build-public-collision',
         mask(commandTranscript('imp build  (cwd: <tmp>)', result)),
-      )
-    })
-
-    await t.step('build-renamed-from-bundle', async () => {
-      const result = await runImp(['bundle'], dir)
-      await assertSnapshot(
-        'build-renamed-from-bundle',
-        mask(commandTranscript('imp bundle  (cwd: <tmp>)', result)),
       )
     })
   } finally {
@@ -1495,8 +1497,17 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
           .join(' '),
       }
     })
+    const agent = await page.evaluate(() => {
+      const scenario = globalThis.impScenarios()[0]
+      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
+      strip.querySelectorAll('[role="tab"]')[2].click()
+      return globalThis.impOne('imp-preview-agent', scenario)
+        .shadowRoot.querySelector('.instruction').textContent
+    })
     const edited = await page.evaluate(() => {
       const scenario = globalThis.impScenarios()[0]
+      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
+      strip.querySelectorAll('[role="tab"]')[0].click()
       const editor = globalThis.impOne('imp-preview-state', scenario)
       const field = globalThis.impTextareas(editor)[0]
       field.value = '42'
@@ -1599,7 +1610,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const hero = root.querySelector('.hero')
       const rendered = (name) => globalThis.impOne(name, hero).shadowRoot.textContent.trim()
       return {
-        headline: `${rendered('imp-heading')} — ${rendered('imp-text')}`,
+        headline: `${rendered('imp-heading')} - ${rendered('imp-text')}`,
         cards: [...root.querySelectorAll('.card-head')]
           .map((head) => [...head.childNodes].map((child) => child.textContent).join(' '))
           .join(' · '),
@@ -1622,11 +1633,18 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       globalThis.impRoot() &&
       globalThis.impOne('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
     )
-    const todos = await page.evaluate(() => ({
-      items: [...globalThis.impOne('demo-todos').shadowRoot.querySelectorAll('.todo')]
-        .map((item) => item.textContent),
-      state: globalThis.impOne('imp-preview-state').shadowRoot.querySelector('.name').textContent,
-    }))
+    const todos = await page.evaluate(() => {
+      const scenario = globalThis.impScenarios()[0]
+      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
+      strip.querySelectorAll('[role="tab"]')[2].click()
+      const panel = [...strip.querySelectorAll('[role="tabpanel"]')][2]
+      return {
+        items: [...globalThis.impOne('demo-todos').shadowRoot.querySelectorAll('.todo')]
+          .map((item) => item.textContent),
+        state: globalThis.impOne('imp-preview-state').shadowRoot.querySelector('.name').textContent,
+        agent: globalThis.impOne('imp-text', panel).shadowRoot.textContent.trim(),
+      }
+    })
 
     const report = [
       `scenarios: ${counter.names.join(', ')}`,
@@ -1637,6 +1655,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `after picking the code tab: ${coded.selected} (panels ${coded.shown})`,
       `code shown for zero:\n${coded.source.trimEnd()}`,
       `highlighted tokens for zero: ${coded.highlighted}`,
+      `agent instruction: ${agent}`,
       `after setting demo.count to 42: ${edited}`,
       `invalid JSON rejected: ${rejected}`,
       `language options: ${localized.languages.join(', ')}`,
@@ -1667,6 +1686,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,
       `mocked todos: ${todos.items.join(', ')}`,
       `mocked todos state row: ${todos.state}`,
+      `agent tab without a description: ${todos.agent}`,
     ].join('\n')
     await assertSnapshot('preview-browser', `${report}\n`)
   } finally {
@@ -2115,7 +2135,7 @@ Deno.test('bundleDependency keeps bare imp imports external', async () => {
 Deno.test('tokenizeJs', async () => {
   const sources = [
     "import { button } from 'imp/std'\n\nexport const primary = () => button({ variant: 'primary' }, t('Save'))\n",
-    'const label = `${count} of ${total} — ${done ? `${done} done` : "none"}`\n',
+    'const label = `${count} of ${total} - ${done ? `${done} done` : "none"}`\n',
     '// a line comment\n/* a block\n   comment */\nconst rate = 0.5e3 + 0xff + 12_000n\n',
     'const clean = value.replace(/[a-z/]+/gi, "") / total\n',
     'const flags = { on: true, off: false, missing: null, unset: undefined }\n',
@@ -2131,6 +2151,239 @@ Deno.test('tokenizeJs', async () => {
     })
     .join('\n\n')
   await assertSnapshot('tokenize-js', transcript + '\n')
+})
+
+Deno.test('the prose export tables match what imp really exports', async () => {
+  const pages = [
+    'skills/imports.md',
+    'skills/std.md',
+    'docs/imports.md',
+    'docs/std-components.md',
+  ]
+  const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
+  const problems = []
+  const tabulated = new Map(pages.map((page) => [page, []]))
+
+  for (const page of pages) {
+    const text = await Deno.readTextFile(join(REPO_ROOT, page))
+    for (const [lineIndex, line] of text.split('\n').entries()) {
+      if (!line.startsWith('|')) continue
+      const cells = line.slice(1, -1).split('|').map((cell) => cell.trim())
+      const specifier = cells[0].match(/^`([^`]+)`$/)?.[1]
+      if (!specifier || !Object.hasOwn(IMP_MODULE_EXPORTS, specifier)) continue
+
+      const body = cells.slice(1).join(' ')
+      const quoted = [...body.matchAll(/`([^`]+)`/g)].map((match) => match[1])
+      const listed = quoted.filter((name) => IDENTIFIER.test(name))
+      const skillSubjects = quoted
+        .map((name) => name.match(/^(?:imp skill )?std\/([A-Za-z_$][\w$]*)$/)?.[1])
+        .filter(Boolean)
+      if (!listed.length) continue
+
+      tabulated.get(page).push(specifier)
+      const exported = Object.keys(IMP_MODULE_EXPORTS[specifier])
+      const at = `${page}:${lineIndex + 1}`
+      const report = (message) => problems.push(`${at}: '${specifier}' ${message}`)
+
+      for (const name of new Set([...listed, ...skillSubjects])) {
+        if (!exported.includes(name)) report(`does not export '${name}'`)
+      }
+      if (body.includes('…')) continue
+      for (const name of exported) {
+        if (!listed.includes(name)) {
+          report(`exports '${name}', which the table omits - list it, or mark the list with '…'`)
+        }
+        if (skillSubjects.length && !skillSubjects.includes(name)) {
+          report(`exports '${name}', which the skill column omits`)
+        }
+      }
+    }
+  }
+
+  const stdGroups = Object.keys(IMP_MODULE_EXPORTS).filter((name) => name.startsWith('imp/std'))
+  for (const page of ['skills/std.md', 'docs/std-components.md']) {
+    for (const group of stdGroups) {
+      if (!tabulated.get(page).includes(group)) {
+        problems.push(`${page}: '${group}' has no row - every std group is listed on this page`)
+      }
+    }
+  }
+
+  if (problems.length) throw new Error(`prose is out of date:\n  ${problems.join('\n  ')}`)
+})
+
+Deno.test('the prose token tables match the built-in themes', async () => {
+  const problems = []
+  for (const page of ['skills/theming.md', 'docs/theming.md']) {
+    const lines = (await Deno.readTextFile(join(REPO_ROOT, page))).split('\n')
+    const header = lines.findIndex((line) =>
+      line.startsWith('|') && line.split('|')[2]?.trim() === 'Tokens'
+    )
+    if (header === -1) {
+      problems.push(`${page}: no token table (a row with a 'Tokens' column)`)
+      continue
+    }
+    const listed = new Set()
+    for (const line of lines.slice(header + 2)) {
+      if (!line.startsWith('|')) break
+      for (const [, name] of line.matchAll(/`([^`]+)`/g)) listed.add(name)
+    }
+    for (const name of listed) {
+      if (!Object.hasOwn(defaultTokens(), name)) {
+        problems.push(`${page}: lists '${name}', which no built-in theme defines`)
+      }
+    }
+    for (const name of Object.keys(defaultTokens())) {
+      if (!listed.has(name)) problems.push(`${page}: omits the '${name}' token`)
+    }
+  }
+  if (problems.length) throw new Error(`token tables are out of date:\n  ${problems.join('\n  ')}`)
+})
+
+Deno.test('the lint prose documents exactly the rules that run', async () => {
+  const ruleNames = Object.keys(impPlugin.rules).map((name) => `imp/${name}`)
+  const notARule = new Set([...Object.keys(IMP_MODULES), ...Object.keys(IMP_TOOLING_MODULES)])
+  const problems = []
+  for (const page of ['skills/lint.md', 'docs/lint.md']) {
+    const text = await Deno.readTextFile(join(REPO_ROOT, page))
+    const documented = new Set(
+      [...text.matchAll(/`(imp\/[a-z-]+)`/g)]
+        .map((match) => match[1])
+        .filter((name) => !notARule.has(name)),
+    )
+    for (const name of ruleNames) {
+      if (!documented.has(name)) problems.push(`${page}: does not document '${name}'`)
+    }
+    for (const name of documented) {
+      if (!ruleNames.includes(name) && name !== MAX_FILE_SIZE_RULE) {
+        problems.push(`${page}: documents '${name}', which is not a rule imp runs`)
+      }
+    }
+  }
+  if (problems.length) throw new Error(`lint prose is out of date:\n  ${problems.join('\n  ')}`)
+})
+
+Deno.test('the dev server serves every bundled asset type with a content type', () => {
+  for (const extension of BINARY_ASSET_EXTENSIONS) {
+    if (!Object.hasOwn(CONTENT_TYPES, extension)) {
+      throw new Error(
+        `'${extension}' is bundled as an asset but imp start has no content type for it - it would be served as application/octet-stream`,
+      )
+    }
+  }
+})
+
+Deno.test('every imp specifier is linted against its real exports', () => {
+  const resolved = Object.keys(IMP_MODULES)
+  const linted = Object.keys(IMP_MODULE_EXPORTS)
+  for (const specifier of resolved) {
+    if (!linted.includes(specifier)) {
+      throw new Error(
+        `'${specifier}' resolves but cli/src/lint_rules.js imports no module for it - import-source would not cover it`,
+      )
+    }
+  }
+  for (const specifier of linted) {
+    if (!resolved.includes(specifier)) {
+      throw new Error(`cli/src/lint_rules.js lists '${specifier}', which imp does not resolve`)
+    }
+  }
+})
+
+const libraryModules = async () => {
+  const found = []
+  const walk = async (dir, prefix) => {
+    for await (const entry of Deno.readDir(dir)) {
+      const path = prefix ? `${prefix}/${entry.name}` : entry.name
+      if (entry.isDirectory) await walk(join(dir, entry.name), path)
+      else if (entry.name.endsWith('.js') && !entry.name.endsWith('.preview.js')) {
+        found.push({ path, source: await Deno.readTextFile(join(dir, entry.name)) })
+      }
+    }
+  }
+  await walk(join(REPO_ROOT, 'lib', 'src'), '')
+  return found.sort((a, b) => a.path.localeCompare(b.path))
+}
+
+const MODULE_SCOPE_CALL = /^(?:export )?(?:const|let|var) [\w$]+ = (?:new )?([\w$.]+)\(/
+const MODULE_SCOPE_TEMPLATE = /^(?:export )?(?:const|let|var) ([\w$]+) = `/
+
+const CALLABLE_AT_MODULE_SCOPE = ['Symbol', 'Set', 'Map', 'WeakMap', 'WeakSet', 'Object.freeze']
+
+Deno.test('nothing in the library runs work when it is imported', async () => {
+  const problems = []
+  for (const { path, source } of await libraryModules()) {
+    const lines = source.split('\n')
+    for (const [index, line] of lines.entries()) {
+      const at = `lib/src/${path}:${index + 1}`
+      const called = line.match(MODULE_SCOPE_CALL)?.[1]
+      if (called && !CALLABLE_AT_MODULE_SCOPE.includes(called)) {
+        problems.push(
+          `${at}: calls '${called}' at module scope, so a bundler must keep the statement - and ` +
+            'with it this module and every module it reaches. Build the value on first use ' +
+            `instead. Only ${CALLABLE_AT_MODULE_SCOPE.join(', ')} may be called here: they are ` +
+            'globals, so calling one cannot reach another module',
+        )
+      }
+      const template = line.match(MODULE_SCOPE_TEMPLATE)
+      if (!template) continue
+      const body = []
+      for (let next = index + 1; next < lines.length && !lines[next].startsWith('`'); next++) {
+        body.push(lines[next])
+      }
+      if (body.join('\n').includes('token(')) {
+        problems.push(
+          `${at}: '${template[1]}' builds CSS from tokens at module scope, which pins the theme ` +
+            'into every bundle - make it a function so the CSS is built on first render',
+        )
+      }
+    }
+  }
+  if (problems.length) {
+    throw new Error(`the library is not tree-shakeable:\n  ${problems.join('\n  ')}`)
+  }
+})
+
+Deno.test('an app carries only the parts of imp it imports', async () => {
+  const dir = await Deno.makeTempDir()
+  try {
+    await Deno.writeTextFile(join(dir, 'imp.json'), '{"name":"shaking"}\n')
+    const entries = {
+      minimal: "import { mount } from 'imp'\nimport { div } from 'imp/html'\n" +
+        "mount(document.body, div('hi'))\n",
+      tags: "import { mount } from 'imp'\nimport * as tags from 'imp/html'\n" +
+        'mount(document.body, tags.div(Object.keys(tags).length))\n',
+      button: "import { mount } from 'imp'\nimport { button } from 'imp/std'\n" +
+        "mount(document.body, button('hi'))\n",
+      buttonAndLink: "import { mount } from 'imp'\nimport { button, link } from 'imp/std'\n" +
+        "mount(document.body, button('hi'), link({ href: '/x' }, 'x'))\n",
+    }
+    const size = {}
+    for (const [name, source] of Object.entries(entries)) {
+      await Deno.writeTextFile(join(dir, `${name}.js`), source)
+      const { code, stderr } = await runImp(['build', `${name}.js`, '--output', name], dir)
+      check(code === 0, `imp build ${name}.js exited ${code}: ${stderr}`)
+      size[name] = (await Deno.stat(join(dir, name, `${name}.js`))).size
+    }
+
+    const KB = 1024
+    check(
+      size.minimal < 5 * KB,
+      `an entry that only mounts an element builds ${size.minimal} B - over 5 kB means it is ` +
+        'carrying state, theming, i18n or the router, none of which it imports',
+    )
+    check(
+      size.tags - size.minimal > 2 * KB,
+      `all of imp/html costs only ${size.tags - size.minimal} B over two tags - tag shaking broke`,
+    )
+    check(
+      size.buttonAndLink - size.button > 2 * KB,
+      `adding link to a button-only entry costs ${size.buttonAndLink - size.button} B - link and ` +
+        'the router it pulls are already in the button bundle, so imp/std is not shaking per export',
+    )
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
 })
 
 Deno.test('parseSpecifier', async () => {
@@ -2157,20 +2410,16 @@ Deno.test('parseSpecifier', async () => {
 })
 
 Deno.test('imp skill', async (t) => {
-  const check = (condition, message) => {
-    if (!condition) throw new Error(message)
-  }
-
   await t.step('every skills page is registered as a subject', async () => {
     const pages = []
     for await (const entry of Deno.readDir(join(REPO_ROOT, 'skills'))) {
       if (entry.isFile && entry.name.endsWith('.md')) pages.push(entry.name)
     }
-    const registered = SKILLS.map((skill) => skill.file)
+    const registered = SKILLS.map((skill) => `${skill.name}.md`)
     for (const page of pages) {
       check(
         registered.includes(page),
-        `skills/${page} has no subject in cli/src/skill.js — every skills page is an imp skill`,
+        `skills/${page} has no subject in cli/src/skill.js - a page is named after its subject`,
       )
     }
     for (const file of registered) {
@@ -2184,7 +2433,7 @@ Deno.test('imp skill', async (t) => {
       check(code === 0, `imp skill ${skill.name} exited ${code}: ${stderr}`)
       check(stderr === '', `imp skill ${skill.name} wrote to stderr: ${stderr}`)
       check(
-        stdout.startsWith(`imp skill: ${skill.name} — ${skill.summary}`),
+        stdout.startsWith(`imp skill: ${skill.name} - ${skill.summary}`),
         `imp skill ${skill.name} is missing its banner`,
       )
       check(stdout.split('\n').length > 20, `imp skill ${skill.name} printed no manual`)
@@ -2196,56 +2445,59 @@ Deno.test('imp skill', async (t) => {
     }
   })
 
-  await t.step('every std component has a skill file next to it', async () => {
-    const exported = []
-    for (const barrel of ['general', 'display', 'layout', 'inputs', 'navigation']) {
-      const path = join(REPO_ROOT, 'lib', 'src', 'std', barrel, 'index.js')
-      const source = await Deno.readTextFile(path)
-      for (const match of source.matchAll(/export\s*{\s*(\w+)\s*}\s*from\s*'\.\/([\w.]+)'/g)) {
-        exported.push({ name: match[1], module: join(dirname(path), match[2]) })
-      }
-    }
+  await t.step('every std component is derived from the barrels with a skill file', async () => {
+    const derived = await standardComponentSubjects()
+    const exported = Object.entries(IMP_MODULE_EXPORTS)
+      .filter(([specifier]) => specifier.startsWith('imp/std'))
+      .flatMap(([, module]) => Object.keys(module))
     check(exported.length > 0, 'no std components found in the barrels')
-    for (const { name, module } of exported) {
-      const registered = COMPONENT_SKILLS.find((skill) => skill.name === `std/${name}`)
-      check(registered !== undefined, `std/${name} has no entry in COMPONENT_SKILLS`)
-      const expected = skillFileFor(module)
-      const actual = join(REPO_ROOT, 'lib', 'src', registered.file)
-      check(actual === expected, `std/${name} skill should be ${expected}, registered ${actual}`)
-      const exists = await Deno.stat(expected).then(() => true).catch(() => false)
-      check(exists, `missing ${expected} — every std component ships a skill file`)
+    for (const name of exported) {
+      const subject = derived.find((component) => component.name === `std/${name}`)
+      check(subject !== undefined, `std/${name} is exported by imp/std but was not derived`)
+      const exists = await Deno.stat(subject.url).then(() => true).catch(() => false)
+      check(exists, `missing ${subject.url} - every std component ships a skill file`)
+    }
+    for (const { name } of derived) {
+      const exportName = name.slice('std/'.length)
+      check(
+        exported.includes(exportName),
+        `${name} was derived but imp/std exports no ${exportName}`,
+      )
     }
   })
 
   await t.step('a std component prints its skill file verbatim', async () => {
-    for (const component of COMPONENT_SKILLS) {
-      const file = join(REPO_ROOT, 'lib', 'src', component.file)
-      const source = (await Deno.readTextFile(file)).trimEnd()
+    for (const component of await standardComponentSubjects()) {
+      const source = (await Deno.readTextFile(component.url)).trimEnd()
       const { code, stdout } = await runImp(['skill', component.name])
       check(code === 0, `imp skill ${component.name} exited ${code}`)
-      check(stdout.trimEnd() === source, `imp skill ${component.name} did not print ${file}`)
+      check(
+        stdout.trimEnd() === source,
+        `imp skill ${component.name} did not print ${component.url}`,
+      )
     }
   })
 
-  await t.step('subjects resolve by alias, specifier and file name', () => {
+  await t.step('subjects resolve by alias, specifier and file name', async () => {
+    const resolves = async (subject) => (await findSkill(subject))?.name ?? null
     for (const skill of SKILLS) {
       for (const alias of [skill.name, ...skill.aliases]) {
-        check(findSkill(alias)?.name === skill.name, `'${alias}' does not resolve to ${skill.name}`)
+        check(await resolves(alias) === skill.name, `'${alias}' does not resolve to ${skill.name}`)
       }
     }
-    check(findSkill('imp/State')?.name === 'state', 'subject lookup is not case-insensitive')
-    check(findSkill('state.md')?.name === 'state', 'a docs file name does not resolve')
-    check(findSkill('button')?.name === 'std/button', "'button' does not resolve to std/button")
+    check(await resolves('imp/State') === 'state', 'subject lookup is not case-insensitive')
+    check(await resolves('state.md') === 'state', 'a docs file name does not resolve')
+    check(await resolves('button') === 'std/button', "'button' does not resolve to std/button")
     check(
-      findSkill('imp/std/emptyState')?.name === 'std/emptyState',
+      await resolves('imp/std/emptyState') === 'std/emptyState',
       'an imp/std specifier does not resolve to its component',
     )
-    check(findSkill('bogus') === null, 'an unknown subject resolved to something')
+    check(await resolves('bogus') === null, 'an unknown subject resolved to something')
   })
 
   await t.step('the index lists every subject once', async () => {
     const index = await skillIndex()
-    for (const skill of [...SKILLS, ...COMPONENT_SKILLS]) {
+    for (const skill of [...SKILLS, ...await standardComponentSubjects()]) {
       const lines = index.split('\n').filter((line) => line.startsWith(`  ${skill.name} `))
       check(lines.length === 1, `${skill.name} appears ${lines.length} times in the index`)
     }
@@ -2255,7 +2507,7 @@ Deno.test('imp skill', async (t) => {
     const { stdout } = await runImp(['skill'], fixture('skill-project'))
     check(stdout.includes('THIS PROJECT'), 'the index has no project section')
     check(
-      /\n {2}\.\/counter\.js\s+counter — a self-contained/.test(stdout),
+      /\n {2}\.\/counter\.js\s+counter - a self-contained/.test(stdout),
       'the project component is missing from the index',
     )
     check(

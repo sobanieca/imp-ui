@@ -1,11 +1,11 @@
-# imp — Formatting
+# imp - Formatting
 
 ```
 imp fmt [...paths]
 imp fmt --check [...paths]
 ```
 
-`imp fmt` formats your whole project with one command — JavaScript, JSON, Markdown, CSS, HTML, SVG,
+`imp fmt` formats your whole project with one command - JavaScript, JSON, Markdown, CSS, HTML, SVG,
 XML, SQL, and YAML, all with consistent options. The formatter is built into the `imp` binary:
 nothing to install, works offline, and a given imp release formats the same way on every machine, so
 a team never disagrees about formatting because of tool versions.
@@ -33,7 +33,7 @@ HTML is formatted inside-out: inline `<script>` and `<style>` blocks are formatt
 JavaScript and CSS formatters, honouring the same options as standalone files. SVG and XML are
 formatted by the same markup formatter as HTML.
 
-TypeScript is deliberately not supported — imp is buildless, and imp apps are plain JavaScript that
+TypeScript is deliberately not supported - imp is buildless, and imp apps are plain JavaScript that
 runs directly in the browser.
 
 ## Options
@@ -53,13 +53,13 @@ Options live under `fmt` in `imp.json`. Every option has a default, so the block
 }
 ```
 
-- **`lineWidth`** (default `100`) — the line length the formatter aims for.
-- **`indentWidth`** (default `2`) — spaces per indentation level.
-- **`useTabs`** (default `false`) — indent with tabs instead of spaces.
-- **`singleQuote`** (default `true`) — prefer single quotes in JavaScript.
-- **`semiColons`** (default `false`) — write JavaScript with semicolons; by default they are omitted
+- **`lineWidth`** (default `100`) - the line length the formatter aims for.
+- **`indentWidth`** (default `2`) - spaces per indentation level.
+- **`useTabs`** (default `false`) - indent with tabs instead of spaces.
+- **`singleQuote`** (default `true`) - prefer single quotes in JavaScript.
+- **`semiColons`** (default `false`) - write JavaScript with semicolons; by default they are omitted
   where the language allows.
-- **`exclude`** — project-relative paths to skip.
+- **`exclude`** - project-relative paths to skip.
 
 `singleQuote` and `semiColons` apply to JavaScript (including inline `<script>` blocks in HTML); the
 other options apply to every language.
@@ -67,7 +67,7 @@ other options apply to every language.
 ## `--check` mode
 
 `imp fmt --check` reports files that would change without writing them, shows the lines that differ,
-and exits non-zero when formatting is needed — useful as a CI gate:
+and exits non-zero when formatting is needed - useful as a CI gate:
 
 ```
 from src/app.js:
@@ -130,5 +130,5 @@ Checked 12 files
 A file the formatter cannot parse (a syntax error) is reported and skipped; the rest of the files
 are still formatted.
 
-The command exits `0` when everything succeeded, and `1` when a file failed to format — or, in
+The command exits `0` when everything succeeded, and `1` when a file failed to format - or, in
 `--check` mode, when at least one file needs formatting.

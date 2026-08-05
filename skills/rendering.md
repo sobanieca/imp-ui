@@ -1,7 +1,7 @@
-# rendering — element factories, props and mount
+# rendering - element factories, props and mount
 
 Element factories come from `imp/html`, `mount` from `imp`. Factories are **eager**: they return
-real DOM nodes when called. No virtual DOM, no diffing, no JSX, no build step — you hold the node
+real DOM nodes when called. No virtual DOM, no diffing, no JSX, no build step - you hold the node
 and mutate it with ordinary DOM APIs.
 
 ```js
@@ -25,7 +25,7 @@ Arguments dispatch **by type, in any order**:
 | string / number / bigint          | text child                                                              |
 | `Node`                            | child                                                                   |
 | array                             | children, flattened recursively                                         |
-| plain object                      | props — **one object per call**; extras merge (later keys win) and warn |
+| plain object                      | props - **one object per call**; extras merge (later keys win) and warn |
 | `null`/`undefined`/`false`/`true` | skipped, so `cond && el(…)` works                                       |
 
 ```js
@@ -45,7 +45,7 @@ button({
 }, 'Save')
 ```
 
-- **Keys are HTML names verbatim** — `class`, `for`, `data-*`, `aria-*`. No camelCase aliases, no
+- **Keys are HTML names verbatim** - `class`, `for`, `data-*`, `aria-*`. No camelCase aliases, no
   `className`, no `htmlFor`.
 - **Property-first.** A name that exists as a JS property on the node is assigned as a property
   (`disabled`, `checked`, `value`, custom-element props); otherwise it becomes an attribute.
@@ -54,9 +54,9 @@ button({
 - **`class`** takes `'card'`, `['card', maybe]` (falsy dropped), or `{ active: cond }` (truthy keys
   become classes). Each form sets the class **whole**.
 - **`style`** takes a string or an object (camelCase → kebab; `--custom-props` verbatim).
-- **`events`** is `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` — native event
+- **`events`** is `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` - native event
   names, **no `on` prefix**. An array's second entry is `addEventListener` options.
-- **A state may be a prop value** and the prop stays live — `div({ class: theme })`,
+- **A state may be a prop value** and the prop stays live - `div({ class: theme })`,
   `input({ disabled: busy })`. Pass the state itself, never `state.get()`. See [state](state.md).
 - On **custom elements** (hyphenated tag or `is=`) a `null` property value passes through as real
   `null`; on built-ins it is coerced to `''`. Define a custom element before building nodes that
@@ -77,10 +77,10 @@ result, and returns an `unmount` function. The result may be a `Node`, a string,
 
 Rules an agent gets wrong:
 
-- **A plain helper function is not a component.** `card({ title }) => div(…)` is just a function —
+- **A plain helper function is not a component.** `card({ title }) => div(…)` is just a function -
   lowercase, no lifecycle. Promote it to `component(…)` only when it needs mount/unmount, state
   resolution, or a loading placeholder. See [components](components.md).
 - **Never pass two props objects** to one call (`imp/single-props-object` lint error).
-- **Never pass a state as a bare child** — `div(count)` is reported and skipped; write
+- **Never pass a state as a bare child** - `div(count)` is reported and skipped; write
   `div(count.text())`.
 - Bindings built here are inert until a component or `mount` places the DOM.

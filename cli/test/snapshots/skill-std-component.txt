@@ -2,7 +2,7 @@ $ imp skill std/button
 exit code: 0
 
 --- stdout ---
-# button — the standard button, rendered as a real `<button>`
+# button - the standard button, rendered as a real `<button>`
 
 ```js
 import { button } from 'imp/std'
@@ -10,17 +10,17 @@ import { button } from 'imp/std'
 button({ variant: 'primary', events: { click: save } }, 'Save changes')
 ```
 
-Call shape: `button(props?, ...children)` — the props object, when present, must be the **first**
+Call shape: `button(props?, ...children)` - the props object, when present, must be the **first**
 argument; everything after it is content.
 
 | Prop       | Values                                          | Default     | Notes                                                  |
 | ---------- | ----------------------------------------------- | ----------- | ------------------------------------------------------ |
 | `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'` | `'default'` | Visual weight and intent                               |
 | `size`     | `'sm'`, `'md'`, `'lg'`                          | `'md'`      | Padding and type size                                  |
-| `disabled` | boolean, or a state holding one — **live**      | `false`     | Blocks interaction                                     |
-| `loading`  | boolean, or a state holding one — **live**      | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
+| `disabled` | boolean, or a state holding one - **live**      | `false`     | Blocks interaction                                     |
+| `loading`  | boolean, or a state holding one - **live**      | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
 | `block`    | boolean                                         | `false`     | Fills the width of its container                       |
-| `events`   | event map, e.g. `{ click: handler }`            | —           | Handlers, exactly as on any element                    |
+| `events`   | event map, e.g. `{ click: handler }`            | -           | Handlers, exactly as on any element                    |
 
 Rules an agent gets wrong:
 
@@ -28,7 +28,7 @@ Rules an agent gets wrong:
   submitting there. Passing `type` warns about an unknown prop.
 - **`loading` implies disabled**, so an in-flight request cannot be fired twice. Do not also pass
   `disabled`.
-- **A live prop takes the state itself, not its value** — `disabled: saving`, never
+- **A live prop takes the state itself, not its value** - `disabled: saving`, never
   `disabled: saving.get()`, which would freeze at the value read during mount.
 - **No outer margins.** Spacing between buttons belongs to whatever lays them out.
 - The accessible name is the button's content. An icon-only button needs an `aria-label` prop.

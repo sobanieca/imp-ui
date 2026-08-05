@@ -8,7 +8,7 @@ cannot reach standard components. The form layer therefore had to be built rathe
 the open question was how a control gets hold of **one field** of a form's values.
 
 Named state (`event-propagated-state.md`) shares a whole object down the tree, and `computed` can
-project one field out of it — but only to read. A write cannot be inverted out of a function, so a
+project one field out of it - but only to read. A write cannot be inverted out of a function, so a
 control handed `computed([user], (u) => u.address.city)` can display a value and never commit one.
 The two candidates were a split contract (`value` reads, a separate `commit` prop writes) and a
 writable path projection added to the kernel.
@@ -22,8 +22,8 @@ writable path projection added to the kernel.
   `imp.form`, and unmounting a form disposes its values with the rest of the subtree. Nothing is
   registered, wired or torn down by hand.
 - **A control declares `field: 'user.firstName'`.** It resolves `imp.form` from its own position
-  with `useState` — the same lookup every other component does, so it works at any nesting depth,
-  through layout components and app components alike — then reads its value by walking the path and
+  with `useState` - the same lookup every other component does, so it works at any nesting depth,
+  through layout components and app components alike - then reads its value by walking the path and
   writes by rebuilding the object along it.
 
   This is what makes nested fields work with **no kernel change**: a path is data the form layer can
@@ -40,7 +40,7 @@ writable path projection added to the kernel.
   `aria-invalid` resolve by id and cannot cross a shadow root, so a separate `formField` wrapper
   component could never label the control it wraps. The wrapper is therefore not a component: every
   control takes `label`, `ariaLabel`, `help` and `required` and renders the whole field group in one
-  shadow root. `radioGroup` renders a real `<fieldset>`/`<legend>` for the same reason — the group's
+  shadow root. `radioGroup` renders a real `<fieldset>`/`<legend>` for the same reason - the group's
   name and its options must share a root.
 - **Errors are stored as a message key and params, not a resolved string**, so a language change
   re-renders them in place like every other word the library shows (`translatable-by-default.md`). A
@@ -54,23 +54,23 @@ writable path projection added to the kernel.
   short-circuits it, so a server is never asked about a value that is already invalid. In flight,
   the field is marked in `imp.form.validating` and carries `aria-busy`; the newest run wins by
   token, so a stale answer can never overwrite a fresh one, and a control that unmounts mid-check
-  clears its own entry. A rejected check reports `imp.form.checkFailed` rather than failing open —
+  clears its own entry. A rejected check reports `imp.form.checkFailed` rather than failing open -
   an unreachable server must not let invalid data through.
 - **Submit waits only when something is actually in flight.** `runSubmit` bumps the counter and, if
-  `imp.form.validating` is empty, decides in the same tick — so a form with no async checks still
+  `imp.form.validating` is empty, decides in the same tick - so a form with no async checks still
   submits synchronously. Otherwise it sets `imp.form.submitting` (spinning the submit button) and
   resumes when the last check clears, which the form learns by watching the state rather than by
   holding any promise a control gave it.
 - **Submitting is an action, not a button mode.** `submitButton()` and `resetButton()` find their
   form by dispatching a composed, bubbling event that the form catches, and read
   `imp.form.submitting` to drive their own spinner. `button` keeps no `type` prop
-  (`standard-component-library.md`), and **implicit submission** — Enter in a single-line field — is
+  (`standard-component-library.md`), and **implicit submission** - Enter in a single-line field - is
   implemented by the form, which the platform would otherwise have provided.
 
 ## Consequences
 
 - A form is declarative and flat: `initialValues` in, `onSubmit` out, and a string per control. That
-  is the shape an agent gets right, and it is checkable — a malformed path or a `field` with no form
+  is the shape an agent gets right, and it is checkable - a malformed path or a `field` with no form
   around it fails loudly at mount rather than silently binding to nothing.
 - The values are readable by anything in the subtree with `useState('imp.form')`, so a live summary,
   a preview pane or a dependent field is ordinary state consumption rather than a form API.

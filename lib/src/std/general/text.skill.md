@@ -1,4 +1,4 @@
-# text — body text, a paragraph by default or an inline span
+# text - body text, a paragraph by default or an inline span
 
 ```js
 import { text } from 'imp/std'
@@ -6,7 +6,7 @@ import { text } from 'imp/std'
 text('Everything below is included in your plan.')
 ```
 
-Call shape: `text(props?, ...children)` — the props object, when present, must be the **first**
+Call shape: `text(props?, ...children)` - the props object, when present, must be the **first**
 argument; everything after it is the content, and children may be other elements or `text` calls.
 
 | Prop     | Values                           | Default     | Notes                                |
@@ -19,7 +19,7 @@ argument; everything after it is the content, and children may be other elements
 
 Rules an agent gets wrong:
 
-- **Emphasis inside a sentence is a nested `text` with `inline: true`** — a block `text` inside a
+- **Emphasis inside a sentence is a nested `text` with `inline: true`** - a block `text` inside a
   paragraph would break the line.
 - **No outer margins**, so paragraphs do not space themselves: the container lays them out.
 - Unknown props warn at mount, and an out-of-range `tone`/`size`/`weight`/`align` warns and falls

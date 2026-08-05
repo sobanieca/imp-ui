@@ -72,7 +72,7 @@ export function createClock(options) {
   const guard = (steps, method) => {
     if (steps > MAX_TIMER_STEPS) {
       throw new Error(
-        `clock.${method}() exceeded ${MAX_TIMER_STEPS} timers — an unbounded interval is rescheduling without end`,
+        `clock.${method}() exceeded ${MAX_TIMER_STEPS} timers - an unbounded interval is rescheduling without end`,
       )
     }
   }

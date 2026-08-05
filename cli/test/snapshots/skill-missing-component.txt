@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] no skill for ./widget.js — describe the component in widget.skill.md next to it
+[ERROR] no skill for ./widget.js - describe the component in widget.skill.md next to it

@@ -1,7 +1,7 @@
 # Third-party licenses
 
 imp is distributed as a single self-contained binary. That binary, and the vendored files it is
-compiled from, **redistribute** other people's code — pre-bundled npm packages, WebAssembly
+compiled from, **redistribute** other people's code - pre-bundled npm packages, WebAssembly
 formatter plugins, and (downloaded on first use) a Chrome for Testing build. Every one of those
 carries a license whose notice obligations imp must honor to stay distributable.
 
@@ -33,8 +33,8 @@ Run `imp licenses` to print this notice from the binary.
 | lax-sql (SQL)                 | 0.3.0   | MIT          | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
 | @zip-js/zip-js                | 2.8.7   | BSD-3-Clause | https://github.com/gildas-lormeau/zip.js               |
 | @resvg/resvg-wasm             | 2.6.2   | MPL-2.0      | https://github.com/yisibl/resvg-js                     |
-| @std (Deno standard library)  | —       | MIT          | https://github.com/denoland/std                        |
-| @deno/esbuild-plugin          | —       | MIT          | https://github.com/denoland/deno_esbuild               |
+| @std (Deno standard library)  | -       | MIT          | https://github.com/denoland/std                        |
+| @deno/esbuild-plugin          | -       | MIT          | https://github.com/denoland/deno_esbuild               |
 | Chrome for Testing (download) | pinned  | BSD-3-Clause | https://github.com/GoogleChromeLabs/chrome-for-testing |
 
 The Chrome for Testing build is not embedded in the binary; imp downloads a pinned,

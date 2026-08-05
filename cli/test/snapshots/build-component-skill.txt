@@ -9,7 +9,7 @@ built eager.js → <component-out>/
 (empty)
 
 --- impSkill exported by the component bundle ---
-# eager — WIDGETSKILLMARKER a statically imported component
+# eager - WIDGETSKILLMARKER a statically imported component
 
 $ imp build --output app  (cwd: <tmp>, app build)
 exit code: 0

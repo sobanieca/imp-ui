@@ -1,4 +1,4 @@
-# toggle — a switch for a boolean that takes effect immediately
+# toggle - a switch for a boolean that takes effect immediately
 
 ```js
 import { toggle } from 'imp/std/inputs'
@@ -6,7 +6,7 @@ import { toggle } from 'imp/std/inputs'
 toggle({ field: 'notifications', label: 'Notifications' })
 ```
 
-Call shape: `toggle(props?)` — the text beside the switch is the `label` prop, not children.
+Call shape: `toggle(props?)` - the text beside the switch is the `label` prop, not children.
 
 It is `checkbox` drawn as a switch and announced as one (`role="switch"`). Reach for it in settings,
 where flipping it _is_ the action; reach for `checkbox` in a form the user submits.
@@ -19,7 +19,7 @@ where flipping it _is_ the action; reach for `checkbox` in a form the user submi
 | `ariaLabel` | string                                     | Names it when there is no visible label     |
 | `help`      | string, or a state holding one             | Hint under the control                      |
 | `required`  | boolean                                    | Marks it and validates that it is filled in |
-| `disabled`  | boolean, or a state holding one — **live** | Blocks interaction                          |
+| `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                          |
 
 Also: `validate`, and `validateAsync` for a check that runs on blur and submit.
 

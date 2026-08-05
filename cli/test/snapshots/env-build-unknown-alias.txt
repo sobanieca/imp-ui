@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] unknown environment 'staging' — defined environments: dev, prod, default
+[ERROR] unknown environment 'staging' - defined environments: dev, prod, default

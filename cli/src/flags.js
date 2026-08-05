@@ -44,7 +44,7 @@ function localFlagName(source) {
 
 const unknownFlagProblem = (name, flags) => {
   const declared = Object.keys(flags)
-  return `unknown flag '${name}' — ${
+  return `unknown flag '${name}' - ${
     declared.length
       ? `declare it in imp.json's 'flags'; declared flags: ${declared.join(', ')}`
       : "imp.json declares no 'flags'"
@@ -63,10 +63,10 @@ export function foldFlagCalls(source, { flags, file }) {
     const name = parseStringLiteral(first)
     if (name === null || rest !== '') {
       throw new Error(
-        `${file} — ${local}() takes one string literal flag name, so the build can fold it away: ${local}('CHECKOUT_V2')`,
+        `${file} - ${local}() takes one string literal flag name, so the build can fold it away: ${local}('CHECKOUT_V2')`,
       )
     }
-    if (!Object.hasOwn(flags, name)) throw new Error(`${file} — ${unknownFlagProblem(name, flags)}`)
+    if (!Object.hasOwn(flags, name)) throw new Error(`${file} - ${unknownFlagProblem(name, flags)}`)
     folded += source.slice(lastIndex, call.start) + String(flags[name])
     lastIndex = call.end
   }

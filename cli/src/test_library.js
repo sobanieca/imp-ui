@@ -14,10 +14,10 @@ const registry = globalThis[REGISTRY_KEY] ??= {
 
 function register(mode, name, run, options) {
   if (typeof name !== 'string' || !name) {
-    throw new TypeError('test(name, fn) — name must be a non-empty string')
+    throw new TypeError('test(name, fn) - name must be a non-empty string')
   }
   if (typeof run !== 'function') {
-    throw new TypeError(`test('${name}', fn) — fn must be a function`)
+    throw new TypeError(`test('${name}', fn) - fn must be a function`)
   }
   if (mode === 'only') registry.focused = true
   registry.tests.push({
@@ -56,7 +56,7 @@ export function spy(target, method, implementation) {
   if (!patchesMethod) return makeSpy(target)
   const original = target[method]
   if (typeof original !== 'function') {
-    throw new TypeError(`spy(object, '${method}') — '${method}' is not a method on the object`)
+    throw new TypeError(`spy(object, '${method}') - '${method}' is not a method on the object`)
   }
   const wrapped = makeSpy(implementation ?? ((...args) => original.apply(target, args)))
   target[method] = wrapped
@@ -218,7 +218,7 @@ function buildMatchers(received, negated) {
     },
     toThrow(expected) {
       if (typeof received !== 'function') {
-        fail(['expect(fn).toThrow() — the received value must be a function'])
+        fail(['expect(fn).toThrow() - the received value must be a function'])
       }
       const matches = (error) => {
         if (expected === undefined) return true

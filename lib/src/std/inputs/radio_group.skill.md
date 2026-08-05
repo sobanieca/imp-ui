@@ -1,4 +1,4 @@
-# radioGroup — one choice out of a few, bound to a form field
+# radioGroup - one choice out of a few, bound to a form field
 
 ```js
 import { radioGroup } from 'imp/std/inputs'
@@ -6,10 +6,10 @@ import { radioGroup } from 'imp/std/inputs'
 radioGroup({ field: 'size', label: 'Size', options: ['small', 'medium', 'large'] })
 ```
 
-Call shape: `radioGroup(props?)` — the choices are the `options` prop, never children.
+Call shape: `radioGroup(props?)` - the choices are the `options` prop, never children.
 
 It renders a real `<fieldset>` with the label as its `<legend>`, so the group is announced as one
-thing, and the radios share a name — arrow keys move between them for free.
+thing, and the radios share a name - arrow keys move between them for free.
 
 | Prop        | Values                                     | Notes                                       |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
@@ -19,9 +19,9 @@ thing, and the radios share a name — arrow keys move between them for free.
 | `ariaLabel` | string                                     | Names it when there is no visible label     |
 | `help`      | string, or a state holding one             | Hint under the control                      |
 | `required`  | boolean                                    | Marks it and validates that it is filled in |
-| `disabled`  | boolean, or a state holding one — **live** | Blocks interaction                          |
+| `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                          |
 
-Also: `options` — plain strings or `{ value, label, disabled }` objects — `orientation`
+Also: `options` - plain strings or `{ value, label, disabled }` objects - `orientation`
 (`'vertical'` default, or `'horizontal'`), and `validate`.
 
 Rules an agent gets wrong:
@@ -34,7 +34,7 @@ Rules an agent gets wrong:
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
 - Unknown props warn at mount, and an out-of-range value warns and falls back.
 - **Choices go in `options`, not in children.**
-- **All of them are visible at once**, so keep it to a handful — use `select` past five or six.
+- **All of them are visible at once**, so keep it to a handful - use `select` past five or six.
 - **Arrow keys move the choice, Tab leaves the group.** That is the native behaviour, and imp does
   not override it.
 

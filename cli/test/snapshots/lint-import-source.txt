@@ -5,13 +5,13 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/import-source]: 'div' is not exported by 'imp' — it comes from 'imp/html': import { div } from 'imp/html'
+error[imp/import-source]: 'div' is not exported by 'imp' - it comes from 'imp/html': import { div } from 'imp/html'
  --> app.js:1:21
 
-error[imp/import-source]: 'useState' is not exported by 'imp' — it comes from 'imp/state': import { useState } from 'imp/state'
+error[imp/import-source]: 'useState' is not exported by 'imp' - it comes from 'imp/state': import { useState } from 'imp/state'
  --> app.js:1:26
 
-error[imp/import-source]: 'mount' is not exported by 'imp/router' — it comes from 'imp': import { mount } from 'imp'
+error[imp/import-source]: 'mount' is not exported by 'imp/router' - it comes from 'imp': import { mount } from 'imp'
  --> app.js:2:10
 
 Found 3 problems

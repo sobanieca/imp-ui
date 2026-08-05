@@ -1,4 +1,4 @@
-# Production build — `imp build` over vendored bundles and the baked-in library
+# Production build - `imp build` over vendored bundles and the baked-in library
 
 ## Context
 
@@ -17,11 +17,10 @@ bundling utilities remain unavailable inside a compiled binary (`deno bundle` is
 The command is named `imp build`, not `imp bundle`, because bundling JavaScript is only part of
 producing a deployable site: it owns the whole production-output step and is expected to emit other
 generated files alongside the bundled code (planned PWA support, for example, would add a manifest,
-icons, and a service worker). `build` names that whole step; the former `imp bundle` name is
-retained only to report the rename.
+icons, and a service worker). `build` names that whole step.
 
 `imp build [file.html|file.js] [--output dist]` reuses the `imp install` engine to build the app's
-own module graph, resolving bare specifiers the same way the dev import map does — offline, with an
+own module graph, resolving bare specifiers the same way the dev import map does - offline, with an
 imp-owned esbuild resolver that intercepts before the Deno resolver:
 
 - **`imp` resolves to the library source baked into the binary**, loaded from the compiled binary's
@@ -37,18 +36,17 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   modules (`import()`) and code shared between entry points split into content-hashed files under
   `chunks/`.
 - **Static assets ship from `public/`**, whose contents are copied to the output root unchanged and
-  are the only files copied — see `public-folder-static-assets.md`. The output directory (default
+  are the only files copied - see `public-folder-static-assets.md`. The output directory (default
   `dist/`, replaced on each run) is the complete uploadable site.
 - **A JS entry emits a self-contained module**: imp and all dependencies compiled in, so an imp
   component can be dropped into any application without a runtime. No files are copied in this mode.
 - **`targetImpHost: true` in `imp.json` (JS entries only) keeps `imp` imports out of the bundle** as
-  bare specifiers for the host context to resolve — the dev server's import map and a host app's own
+  bare specifiers for the host context to resolve - the dev server's import map and a host app's own
   `imp build` both resolve bare `imp`, so a component can share the host's single copy of imp
   instead of carrying its own. imp is the only import that can stay bare: declared dependencies are
   always compiled in with their vendored, pinned versions, keeping the option a single boolean
-  instead of a per-import list. An HTML entry compiles imp in regardless — the page is its own host,
-  and its production output has no import map that could resolve a bare import. The former
-  `--external` flag is removed and rejected with a migration hint.
+  instead of a per-import list. An HTML entry compiles imp in regardless - the page is its own host,
+  and its production output has no import map that could resolve a bare import.
 
 ## Consequences
 
@@ -57,16 +55,19 @@ imp-owned esbuild resolver that intercepts before the Deno resolver:
   (`vendored-dependencies.md`).
 - Dev and prod resolve specifiers identically; the shipped output needs no import map and no imp
   runtime.
-- Entry files keep stable, source-derived names — HTML never has to be rewritten, but entries get no
+- Dead-code elimination reaches the library itself, not only the app: no library module does work
+  when it is imported, so an app carries only the subjects and components it uses
+  (`tree-shakeable-library.md`).
+- Entry files keep stable, source-derived names - HTML never has to be rewritten, but entries get no
   content-hash cache busting; only chunks and emitted assets are hashed.
 - Each vendored bundle enters the graph as one opaque, already-minified module: it is emitted once
   and shared across all chunks, but a transitive package duplicated across two different vendored
-  bundles stays duplicated in the output — accepted deliberately
-  (`transitive-duplication-accepted.md`) — and tree-shaking inside vendored bundles is limited to
+  bundles stays duplicated in the output - accepted deliberately
+  (`transitive-duplication-accepted.md`) - and tree-shaking inside vendored bundles is limited to
   what their bundled form exposes.
 - Bundles built for an imp host trade the frozen-version guarantee for sharing: the component runs
   against whatever imp version the host provides, so version skew between author and host becomes
-  possible — a contract self-contained bundles never have. In exchange the host page holds one imp
+  possible - a contract self-contained bundles never have. In exchange the host page holds one imp
   instance, which matters once imp carries shared state. The skew is confined to imp: every other
   dependency ships frozen inside the bundle, at the cost of possible duplicates between host and
   component (`transitive-duplication-accepted.md`).

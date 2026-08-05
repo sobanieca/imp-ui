@@ -1,8 +1,0 @@
-$ imp build app.js --external imp  (cwd: <tmp>)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] --external has been removed — set "targetImpHost": true in imp.json to keep imp imports for the host application to provide

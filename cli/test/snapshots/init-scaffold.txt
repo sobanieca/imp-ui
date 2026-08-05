@@ -4,20 +4,20 @@ exit code: 0
 --- stdout ---
 Created a new imp project in app.
 
-  imp.json            the one config file — pins imp <version>
+  imp.json            the one config file - pins imp <version>
   index.html          the page imp serves
   src/main.js         entry point: applies the theme, mounts the app
   src/app.js          the app's components
   test/app.test.js    unit test, runs in-process
   test/app.spec.js    e2e spec, runs in a real browser
-  public/favicon.svg  published at the site root — replace it with your own mark
+  public/favicon.svg  published at the site root - replace it with your own mark
   .gitignore          dist/, .imp/ and every .env file
 
 Next steps:
   cd app
   imp start        serve the app with live reload
   imp test --unit  run the unit test (--e2e for the browser spec)
-  imp skill        read imp's manuals — an AI agent starts here
+  imp skill        read imp's manuals - an AI agent starts here
 
 Now point your AI agent at `imp skill` and start building!
 
@@ -35,7 +35,7 @@ test/app.spec.js
 test/app.test.js
 
 --- .gitignore ---
-# imp writes these — never commit them
+# imp writes these - never commit them
 dist/
 .imp/
 
@@ -159,4 +159,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] imp init writes imp.json, index.html, src/main.js, src/app.js, test/app.test.js, test/app.spec.js, public/favicon.svg, which already exist here — nothing was written. Scaffold into an empty directory instead ('imp init <dir>'), or move those files aside.
+[ERROR] imp init writes imp.json, index.html, src/main.js, src/app.js, test/app.test.js, test/app.spec.js, public/favicon.svg, which already exist here - nothing was written. Scaffold into an empty directory instead ('imp init <dir>'), or move those files aside.

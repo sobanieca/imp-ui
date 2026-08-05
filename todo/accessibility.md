@@ -1,9 +1,9 @@
-# Accessibility — an a11y baseline for the standard library
+# Accessibility - an a11y baseline for the standard library
 
 Make the standard component library (`todo/stdlib-components.md`) accessible by default, so an app
 built entirely from stdlib components clears the common WCAG bar without the app author wiring ARIA,
 focus, or keyboard handling by hand. Accessibility is a property of the components imp ships, not
-something each app re-implements — the same all-in-one argument that justifies the stdlib justifies
+something each app re-implements - the same all-in-one argument that justifies the stdlib justifies
 owning its a11y contract.
 
 ## Why imp owns this
@@ -22,16 +22,16 @@ open question left in `todo/stdlib-components.md`):
 - **Semantic roles.** Prefer native elements (`button`, `a[href]`, `input`, `<dialog>`) so roles and
   states come from the platform; add ARIA roles only where no native element fits (`tabs`, `tree`,
   `menuList`).
-- **Keyboard operability.** Every interaction reachable by pointer is reachable by keyboard —
+- **Keyboard operability.** Every interaction reachable by pointer is reachable by keyboard -
   Tab/Shift-Tab order, Enter/Space activation, Arrow-key navigation for composite widgets (`tabs`,
   `radioGroup`, `menuList`, `tree`, `pagination`), Escape to dismiss overlays.
 - **Focus management.** Overlays (`modal`, `drawer`) trap focus while open, restore focus to the
-  invoking element on close, and are opened with focus moved into them — shared through the overlay
+  invoking element on close, and are opened with focus moved into them - shared through the overlay
   management seam the stdlib already needs (`todo/stdlib-components.md` "Overlay management" open
   question), not re-rolled per component.
 - **State wiring.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
   `aria-invalid`, `aria-busy`, `aria-live` for feedback (`alert`, `toast`, `spinner`) reflect the
-  component's reactive state automatically — they bind to the same states that drive the visuals
+  component's reactive state automatically - they bind to the same states that drive the visuals
   (`adr/event-propagated-state.md`), so they can never drift from what is shown.
 - **Labels & descriptions.** Inputs associate a `<label>` (or `aria-label`/`aria-labelledby`);
   icon-only controls require an accessible name; error/help text links via `aria-describedby`.
@@ -60,8 +60,8 @@ components as part of `imp test` is an open question.
 
 ## Dependencies
 
-- The core contract depends on the standard component library (`todo/stdlib-components.md`) — it is
-  the surface being made accessible — and is best defined **alongside** it rather than bolted on
+- The core contract depends on the standard component library (`todo/stdlib-components.md`) - it is
+  the surface being made accessible - and is best defined **alongside** it rather than bolted on
   after, so every component ships accessible from its first version.
 - State wiring binds to the landed state layer (`adr/event-propagated-state.md`); focus indicators
   use theme tokens (`adr/themable-by-default-tokens.md`); route focus management builds on the

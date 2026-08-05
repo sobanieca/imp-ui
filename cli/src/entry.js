@@ -17,7 +17,7 @@ export async function publicCopyOfEntry(root, entryName) {
 const MISSING_MESSAGE_INDENT = ' '.repeat('[ERROR] '.length)
 
 const inPublicFolderHint = (entryName) =>
-  `${MISSING_MESSAGE_INDENT}public/${entryName} exists — move it to the project root: ` +
+  `${MISSING_MESSAGE_INDENT}public/${entryName} exists - move it to the project root: ` +
   `public/ ships verbatim, while the entry page is the one imp bundles, injects environment ` +
   `values into and adds PWA tags to`
 

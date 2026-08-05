@@ -5,13 +5,13 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/component-name]: component name 'profile' must be lowercase with at least one dash — like 'my-app-profile'
+error[imp/component-name]: component name 'profile' must be lowercase with at least one dash - like 'my-app-profile'
  --> app.js:4:34
 
-error[imp/component-name]: component name 'Settings-Panel' must be lowercase with at least one dash — like 'my-app-profile'
+error[imp/component-name]: component name 'Settings-Panel' must be lowercase with at least one dash - like 'my-app-profile'
  --> app.js:8:35
 
-error[imp/component-name]: component name 'font-face' is reserved by the HTML standard — pick another name
+error[imp/component-name]: component name 'font-face' is reserved by the HTML standard - pick another name
  --> app.js:12:32
 
 Found 3 problems

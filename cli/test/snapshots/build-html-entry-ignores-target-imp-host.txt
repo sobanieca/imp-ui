@@ -3,7 +3,7 @@ exit code: 0
 
 --- stdout ---
 built index.html → dist/
-  targetImpHost ignored — an HTML page is its own host, imp is bundled in
+  targetImpHost ignored - an HTML page is its own host, imp is bundled in
   app.js (<size>)
   assets/note.txt (<size>)
   chunks/chunk-<hash>.js (<size>)

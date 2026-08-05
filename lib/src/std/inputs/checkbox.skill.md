@@ -1,4 +1,4 @@
-# checkbox — a single boolean bound to a form field
+# checkbox - a single boolean bound to a form field
 
 ```js
 import { checkbox } from 'imp/std/inputs'
@@ -6,7 +6,7 @@ import { checkbox } from 'imp/std/inputs'
 checkbox({ field: 'terms', label: 'I accept the terms', required: true })
 ```
 
-Call shape: `checkbox(props?)` — the text beside the box is the `label` prop, not children.
+Call shape: `checkbox(props?)` - the text beside the box is the `label` prop, not children.
 
 | Prop        | Values                                     | Notes                                       |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
@@ -16,7 +16,7 @@ Call shape: `checkbox(props?)` — the text beside the box is the `label` prop, 
 | `ariaLabel` | string                                     | Names it when there is no visible label     |
 | `help`      | string, or a state holding one             | Hint under the control                      |
 | `required`  | boolean                                    | Marks it and validates that it is filled in |
-| `disabled`  | boolean, or a state holding one — **live** | Blocks interaction                          |
+| `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                          |
 
 Also: `validate`, and `validateAsync` for a check that runs on blur and submit.
 

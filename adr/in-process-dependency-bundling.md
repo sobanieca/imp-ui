@@ -1,4 +1,4 @@
-# In-process dependency bundling — esbuild-wasm plus the Deno esbuild plugin
+# In-process dependency bundling - esbuild-wasm plus the Deno esbuild plugin
 
 ## Context
 
@@ -13,7 +13,7 @@ under `dependencies/` (`vendored-dependencies.md`). The original implementation 
   'unref')`), contradicting
   `in-process-toolchain.md`, which requires the binary to spawn nothing.
 - **`@luca/esbuild-deno-loader` cannot resolve dependencies there.** Its portable loader needs a
-  `node_modules` directory and its native loader shells out to the `deno` binary — neither exists on
+  `node_modules` directory and its native loader shells out to the `deno` binary - neither exists on
   an end user's machine running only the imp binary.
 
 Hand-writing imp's own esbuild resolver-loader (npm registry metadata, semver, tarball fetch and
@@ -26,7 +26,7 @@ Dependency bundling runs fully in-process, with no hand-rolled resolver:
 
 - **Engine:** `esbuild-wasm`, loaded as the ESM browser build with a manually supplied wasm module
   and `worker: false` (`esbuild.initialize({ wasmModule, worker: false })`). This is the one
-  esbuild-wasm entry that works both under `deno run` and compiled — the default entry spawns a
+  esbuild-wasm entry that works both under `deno run` and compiled - the default entry spawns a
   worker script absent from the binary's virtual filesystem. The wasm is embedded by
   `deno compile --include src` reaching the whole `src/` tree, and the esbuild-wasm asset is
   embedded as part of its npm package.
@@ -49,6 +49,6 @@ the dependency's vendor folder.
   the only project-visible output is the vendored bundle (`vendored-dependencies.md`).
 - wasm esbuild is roughly an order of magnitude slower than native esbuild; that cost is paid once
   per `imp install`, never while serving or in CI.
-- Resolution semantics match Deno's own, since the plugin uses Deno's resolver crates — the same
+- Resolution semantics match Deno's own, since the plugin uses Deno's resolver crates - the same
   behavior apps get from imp. The engine and resolver are reused by `imp build`
   (`production-bundling.md`).

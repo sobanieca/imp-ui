@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] environment 'prod' — key 'TOKEN' references shell variable 'IMP_DEMO_TOKEN', which is not set
+[ERROR] environment 'prod' - key 'TOKEN' references shell variable 'IMP_DEMO_TOKEN', which is not set

@@ -3,7 +3,7 @@ import { VERSION } from './version.js'
 import { projectRoot } from './config.js'
 import { maybeDelegate, notifyUpdate, prune, update } from './version_manager.js'
 
-const HELP = `imp — buildless UI toolkit
+const HELP = `imp - buildless UI toolkit
 
 USAGE
   imp init [dir] [--pwa]                scaffold a runnable project: a page, a counter
@@ -35,7 +35,7 @@ USAGE
   imp test <file>                       run one test file: *.test.js unit in-process,
                                         *.spec.js e2e in a real browser
   imp test --unit | --e2e               run every file of that level, each in its own
-                                        process, in parallel — passing files are summarized,
+                                        process, in parallel - passing files are summarized,
                                         failing files print their full output
                                         (--jobs <n> caps parallelism · --filter <text> ·
                                         --list prints the selected files as JSON ·
@@ -50,7 +50,7 @@ USAGE
                                         --output writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
-  imp skill [...subject]                print imp's usage manual for a subject —
+  imp skill [...subject]                print imp's usage manual for a subject -
              [./component.js]           the documentation shipped inside this binary,
                                         written to be read before writing imp code
                                         (a path prints that component's own skill,
@@ -158,17 +158,7 @@ try {
       })
       break
     }
-    case 'bundle': {
-      throw new Error(
-        "'imp bundle' has been renamed to 'imp build' — run 'imp build' instead",
-      )
-    }
     case 'build': {
-      if (rest.includes('--external')) {
-        throw new Error(
-          '--external has been removed — set "targetImpHost": true in imp.json to keep imp imports for the host application to provide',
-        )
-      }
       const { build } = await import('./build.js')
       await build({
         entry: positional(rest)[0] ?? 'index.html',

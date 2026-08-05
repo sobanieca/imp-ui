@@ -43,7 +43,7 @@ function parseDotenv(text) {
 
 function resolveValues(alias, filePath, raw) {
   if (!isPlainObject(raw)) {
-    throw new Error(`environment '${alias}' — ${filePath} must be a flat JSON object of values`)
+    throw new Error(`environment '${alias}' - ${filePath} must be a flat JSON object of values`)
   }
   const resolved = {}
   for (const [key, value] of Object.entries(raw)) {
@@ -54,7 +54,7 @@ function resolveValues(alias, filePath, raw) {
         const fromShell = Deno.env.get(variable)
         if (fromShell === undefined) {
           throw new Error(
-            `environment '${alias}' — key '${key}' references shell variable '${variable}', which is not set`,
+            `environment '${alias}' - key '${key}' references shell variable '${variable}', which is not set`,
           )
         }
         resolved[key] = fromShell
@@ -65,7 +65,7 @@ function resolveValues(alias, filePath, raw) {
       resolved[key] = value
     } else {
       throw new Error(
-        `environment '${alias}' — key '${key}' must be a string, number, or boolean`,
+        `environment '${alias}' - key '${key}' must be a string, number, or boolean`,
       )
     }
   }
@@ -88,13 +88,13 @@ export async function resolveEnvironment({ root, config, requestedAlias = null }
   if (filePath === undefined) {
     const defined = Object.keys(environments)
     const list = defined.length ? defined.join(', ') : '(none defined in imp.json)'
-    throw new Error(`unknown environment '${alias}' — defined environments: ${list}`)
+    throw new Error(`unknown environment '${alias}' - defined environments: ${list}`)
   }
   let text
   try {
     text = await Deno.readTextFile(resolve(root, filePath))
   } catch {
-    throw new Error(`environment '${alias}' — file not found: ${filePath}`)
+    throw new Error(`environment '${alias}' - file not found: ${filePath}`)
   }
   let raw
   if (isDotenvFile(filePath)) {
@@ -103,7 +103,7 @@ export async function resolveEnvironment({ root, config, requestedAlias = null }
     try {
       raw = JSON.parse(text)
     } catch (error) {
-      throw new Error(`environment '${alias}' — invalid JSON in ${filePath}: ${error.message}`)
+      throw new Error(`environment '${alias}' - invalid JSON in ${filePath}: ${error.message}`)
     }
   }
   return resolveValues(alias, filePath, raw)

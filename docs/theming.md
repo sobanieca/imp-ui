@@ -1,14 +1,14 @@
-# imp-ui — Theming
+# imp-ui - Theming
 
 Every imp app is themable by default. A theme is a plain JavaScript file you write, apply it at your
-entry point, and your app is skinned. Swapping to another theme re-skins the whole app instantly —
+entry point, and your app is skinned. Swapping to another theme re-skins the whole app instantly -
 no CSS build step, no re-render, no framework store to configure. Light and dark are just two theme
 files.
 
 ## A theme is a file
 
-A theme is an ordinary module whose default export is a flat set of **design tokens** — named values
-like colors, radii, spacing, and typography — plus a little optional metadata:
+A theme is an ordinary module whose default export is a flat set of **design tokens** - named values
+like colors, radii, spacing, and typography - plus a little optional metadata:
 
 ```js
 // dark.js
@@ -24,17 +24,17 @@ export default {
 
 - **`tokens`** is a flat map of token name → CSS value. Keys are bare names like `color-primary`;
   imp adds an `--imp-` prefix, so the CSS custom property your styles reference is
-  `--imp-color-primary`. There is no nesting — one flat namespace.
+  `--imp-color-primary`. There is no nesting - one flat namespace.
 - **`name`** labels the theme, handy for a theme-switcher UI and for remembering a choice.
 - **`colorScheme`** is `'light'` or `'dark'` (optional). It tells the browser how to render native
   form controls, scrollbars, and `prefers-color-scheme`-aware CSS so they match your palette. It is
-  metadata on one theme — not a mode imp manages for you. If you leave it out, imp does not touch
+  metadata on one theme - not a mode imp manages for you. If you leave it out, imp does not touch
   the color scheme.
 
-An app can ship as many theme files as it likes. There is no registry to register them in — a theme
+An app can ship as many theme files as it likes. There is no registry to register them in - a theme
 is just a module you import.
 
-## Applying and swapping — `applyTheme`
+## Applying and swapping - `applyTheme`
 
 At your entry point (the file that calls `mount()`), import a theme and apply it:
 
@@ -47,20 +47,20 @@ import dark from './dark.js'
 applyTheme(light)
 mount('#app', app())
 
-// later — a settings toggle, a theme switcher:
+// later - a settings toggle, a theme switcher:
 applyTheme(dark)
 ```
 
 `applyTheme` writes the theme's tokens as `--imp-*` custom properties on the document root, where
-they inherit into everything — your components, their shadow DOM, and any content imp adds to the
+they inherit into everything - your components, their shadow DOM, and any content imp adds to the
 page. It also sets the color scheme from `colorScheme`.
 
 **Swapping re-skins instantly.** Because tokens are CSS custom properties, applying a new theme
-rewrites the variables in a single pass and every rule that references a token re-skins at once —
+rewrites the variables in a single pass and every rule that references a token re-skins at once -
 nothing re-renders. Each theme is expected to define the full set of tokens, so applying one fully
 replaces the last; start from a built-in theme (below) and every token is already covered.
 
-## Reading the active theme — the `theme` state
+## Reading the active theme - the `theme` state
 
 `applyTheme` is the only thing that changes the active theme, and it keeps a reactive `theme` state
 in sync. Import it to read or react to whichever theme is currently applied:
@@ -77,7 +77,7 @@ const badge = component('my-app-theme-badge', {
 
 `theme.get()` returns the active theme object anywhere; inside a component you can
 `theme.watch(...)` or bind it with `theme.text` / `theme.view` to update when the theme swaps. Most
-of your app never needs this — the re-skin happens through the CSS variables — but it is there for
+of your app never needs this - the re-skin happens through the CSS variables - but it is there for
 the rare component that must branch on the active theme, and for building a theme switcher.
 
 ## Built-in starter themes
@@ -107,7 +107,7 @@ every foreground/background pair is chosen well past the WCAG AA threshold. Beca
 ordinary themes, applying one re-skins the whole app in a single custom-property write, exactly like
 switching between light and dark.
 
-These four names are the only strings `applyTheme` accepts — any other throws. The `imp-` prefix
+These four names are the only strings `applyTheme` accepts - any other throws. The `imp-` prefix
 keeps them out of your way: your own themes are free to be called `light` and `dark`, and there is
 never a question of whose theme a name refers to. Everything else works exactly as with a theme
 object: the tokens land as `--imp-*` custom properties, `colorScheme` is set to match, and the
@@ -131,7 +131,7 @@ applyTheme({
 
 ### Following the reader's contrast preference
 
-imp does not pick a theme for you — there is no built-in mode axis, for contrast any more than for
+imp does not pick a theme for you - there is no built-in mode axis, for contrast any more than for
 light and dark. If you want to follow the reader's system setting, watch the media query and apply
 the matching theme yourself:
 
@@ -146,12 +146,12 @@ wantsMoreContrast.addEventListener('change', pickTheme)
 ```
 
 This is separate from Windows Contrast Themes and similar OS-level modes, which replace your colors
-with the system palette outright — see [Forced colors](#forced-colors) below.
+with the system palette outright - see [Forced colors](#forced-colors) below.
 
 ## Remembering a choice
 
 imp deliberately does **not** persist the selected theme. Because a theme is a module your app
-imports, imp has no way to turn a stored name back into the right module — so storage stays your
+imports, imp has no way to turn a stored name back into the right module - so storage stays your
 call, and stays flexible. To remember a choice, save `theme.get().name` (for example to
 `localStorage`) when the user picks one, and re-apply the matching module on load. Applying it
 before you `mount()` avoids a flash of the wrong theme.
@@ -168,7 +168,7 @@ applyTheme(themes[saved] ?? light)
 mount('#app', app())
 ```
 
-If you only use the built-ins, there is no map to keep — the stored name goes straight back into
+If you only use the built-ins, there is no map to keep - the stored name goes straight back into
 `applyTheme`:
 
 ```js
@@ -188,14 +188,14 @@ your theme files in `imp.json` and they join the switcher:
 }
 ```
 
-Nothing about the theme file changes — the switcher applies the same module your entry point does,
+Nothing about the theme file changes - the switcher applies the same module your entry point does,
 and editing it reloads the page with the new tokens. See **[`imp preview`](cli.md#imp-preview)**.
 
 ## Token names
 
-Token keys are bare names that imp prefixes with `--imp-`. They follow a fixed scheme — semantic
+Token keys are bare names that imp prefixes with `--imp-`. They follow a fixed scheme - semantic
 color roles (`color-primary`, `color-secondary`, …) alongside numeric scales for spacing, radius,
-shadow, and typography — so themes stay consistent and interchangeable. Reference a token in your
+shadow, and typography - so themes stay consistent and interchangeable. Reference a token in your
 own CSS with a fallback so styles still hold up before a theme is applied:
 
 ```css
@@ -206,17 +206,18 @@ own CSS with a fallback so styles still hold up before a theme is applied:
 
 The set of tokens grows as imp's component library grows: each component brings the tokens it needs
 into the built-in themes, so every name arrives with something that actually uses it. These are the
-tokens the built-in themes ship today — a theme of your own is expected to define all of them:
+tokens the built-in themes ship today - a theme of your own is expected to define all of them:
 
 | Group      | Tokens                                                                                                                                                                                                                        |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal` |
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                                         |
-| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`                                                                                                    |
-| Metrics    | `space-1` … `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `border-width`, `focus-ring-width`, `duration-fast`, `disabled-opacity`, `container-sm` … `container-xl`                                                        |
+| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-lg`                                                                                       |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `border-width`, `focus-ring-width`, `duration-fast`, `disabled-opacity`                                              |
+| Sizing     | `container-sm`, `container-md`, `container-lg`, `container-xl`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`                                                                                                                      |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
-theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone —
+theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone -
 secondary text, de-emphasized links. See **[Standard components](std-components.md)** for the
 components that consume them.
 
@@ -233,7 +234,7 @@ affordances themselves. Use them in your own styles the same way:
 
 ## Forced colors
 
-Windows Contrast Themes — and equivalent OS-level modes elsewhere — do not read your tokens at all.
+Windows Contrast Themes - and equivalent OS-level modes elsewhere - do not read your tokens at all.
 They replace the page's colors with the reader's own system palette, and no theme you write can
 override that. This is deliberate: a reader who has chosen a system palette wants it applied
 everywhere, not overridden by each site.
@@ -266,7 +267,7 @@ The system color keywords worth knowing are `Canvas` / `CanvasText` for page bac
 
 ## Writing styles that adapt
 
-When you write your own component styles, prefer CSS **logical properties** — `margin-inline-*`,
+When you write your own component styles, prefer CSS **logical properties** - `margin-inline-*`,
 `inset-inline-*`, and `text-align: start / end` rather than their left/right counterparts. Layouts
 written this way mirror automatically once the document's `dir` is right-to-left, with no extra work
-on your part. imp does not set `dir` for you — set it yourself if your app has an RTL language.
+on your part. imp does not set `dir` for you - set it yourself if your app has an RTL language.

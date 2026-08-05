@@ -1,11 +1,11 @@
-# Component preview — `*.preview.js` scenarios served on a synthesized page
+# Component preview - `*.preview.js` scenarios served on a synthesized page
 
 ## Context
 
 Building a component inside a running app is a slow loop: reach the screen that renders it, get the
 data into the state it should show, and resize the browser to check the layout. Component
 workbenches solve this, but the usual ones bring a story DSL, a second build pipeline, and a config
-surface — none of which fit imp's buildless dev server, its type-dispatched call sites
+surface - none of which fit imp's buildless dev server, its type-dispatched call sites
 (`type-based-argument-dispatch.md`), or its "no framework-specific ceremony" stance. imp already had
 the two hard pieces: a dev server with auto-injection and telemetry (`imp start`) and a
 module-mocking seam in the test bundler (`two-level-testing.md`).
@@ -17,13 +17,27 @@ internals (`loadApp` / `createRequestHandler`, head injection, live reload, cons
 telemetry) instead of a second server. Discovery uses the shared file walker, so a preview file is
 found the way a test file is.
 
-- **A preview file is plain imp code; every named export is a scenario.** The export name is the
-  panel label, so the name of a scenario lives only in the code. A scenario is the component built
-  with its normal factory call — props, children, and text pass exactly as at a real call site — so
-  there is no story format. There is no default export. An export may be an instance or a **function
-  returning one**, which imp calls when it renders the panel; the function form exists for scenarios
-  whose setup should run at render time. Panels are ordered by the order the exports are written in
-  the file, falling back to module order for exports the scanner does not recognize.
+- **A preview file is plain imp code; every named export except three is a scenario.** The export
+  name is the panel label, so the name of a scenario lives only in the code. A scenario is the
+  component built with its normal factory call - props, children, and text pass exactly as at a real
+  call site - so there is no story format. There is no default export. An export may be an instance
+  or a **function returning one**, which imp calls when it renders the panel; the function form
+  exists for scenarios whose setup should run at render time. Panels are ordered by the order the
+  exports are written in the file, falling back to module order for exports the scanner does not
+  recognize.
+- **`name`, `category` and `description` are metadata, not scenarios.** A component's human label,
+  its group in the catalog, and the line an agent should read before writing code with it are
+  declared as three optional string exports in the preview file itself, next to the scenarios that
+  demonstrate it - there is no manifest, no registry and no second file to keep in sync, and a
+  component that declares nothing still appears, labelled by its file and folder as before. The
+  price is three reserved export names, which is why they are the plainest words available rather
+  than a prefixed convention: a scenario worth calling `name` does not exist, and reserving the
+  obvious words keeps the file readable. Each is read by the same export scanner that slices the
+  code snippets and must be a string literal; anything else is ignored and the fallback stands,
+  since a preview page that fails to load because a label was computed would be a poor trade.
+  `description` is deliberately an **instruction to run `imp skill`**, not a summary of the
+  component: the manual already exists in the component's `*.skill.md` (`agent-skills.md`), and
+  duplicating it into the preview file would give an agent two sources that drift.
 - **Module mocking reuses the test runner's seam.** `mockModule(specifier, factory)` is imported
   from `imp/preview` and behaves as in `imp test`: the same `imp-mock` esbuild namespace, the same
   `orig`/`spy` helpers, the same rule that a specifier is a relative module or a vendored `imp.json`
@@ -35,18 +49,23 @@ found the way a test file is.
   mocked module graph is what the browser loads and there is exactly one instance of the library
   behind the component, the chrome, and any mock. Bundles are cached per file and dropped on any
   file change, which the existing watcher already reports as a reload.
-- **Each scenario is a two-tab panel: Preview and Code.** Preview holds a drag-resizable stage with
-  the state editor beside it; Code holds the call that built the scenario. The stage is resized by
-  dragging its right, bottom, or corner handle with pointer events (mouse and touch), with a live
-  size readout and phone/tablet/desktop presets on top of free dragging. Resizing changes the parent
-  box only, so the component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
+- **Each scenario is a three-tab panel: Preview, Code and Agent.** Preview holds a drag-resizable
+  stage with the state editor beside it; Code holds the call that built the scenario; Agent holds
+  the file's `description`, copyable, so the page serves the two readers of a component - the person
+  looking at it and the agent about to write a call site - from one place. Agent repeats per panel
+  rather than sitting once in the page head because the tab strip is where a reader already looks
+  for "what else is here", and a per-file band above the panels would be read as chrome and skipped.
+  The stage is resized by dragging its right, bottom, or corner handle with pointer events (mouse
+  and touch), with a live size readout and phone/tablet/desktop presets on top of free dragging.
+  Resizing changes the parent box only, so the component re-lays-out through the real DOM path
+  (`real-dom-no-virtual-dom.md`).
 - **The code shown is sliced out of the preview file at bundle time, not described by hand.** The
   same balanced, comment- and string-aware scanner that orders the exports also records each
   export's initializer and the file's import statements, and both travel to the browser in the
   generated entry's metadata alongside the scenario order and state declarations. A scenario's
   snippet is therefore the code that ran, and the reload that rebuilds a bundle rebuilds it. Only
-  `export const name = …` forms carry a slice; a name arriving through `export { … }` is listed
-  without one and its tab says so.
+  `export const <scenario> = …` forms carry a slice; a name arriving through `export { … }` is
+  listed without one and its tab says so.
 - **The snippet is highlighted by a JavaScript tokenizer imp ships itself, painted in theme
   tokens.** A preview only ever shows JavaScript, so a small hand-written tokenizer covering
   comments, strings and template interpolations, regular expressions, numbers, keywords and
@@ -59,20 +78,24 @@ found the way a test file is.
   render one frame: the catalog in `appShell`'s sidebar as a `navMenu` grouped by category, a
   `commandPalette` across the header with the theme, language and direction pickers in a `toolbar`
   beside it, and the page itself in `main`. Navigating between components is therefore one click
-  from anywhere, and the workbench exercises the frame components the way an app does — the drawer
+  from anywhere, and the workbench exercises the frame components the way an app does - the drawer
   collapse, the current-page marking and the combobox all run on every preview page. The shell is
   pinned `dir="ltr"` on the `appShell` host, so the direction control still applies to the stage
   alone.
-- **A preview is identified by `category/component`, derived from its path** — the folder holding
-  the file is the category and the file's base name is the component. Nothing configures it and no
-  manifest lists it: a project that groups its components in folders gets a grouped catalog, and one
-  that does not gets a flat one. The same string is what the search matches, which is why searching
-  a category works without a category concept in the tool.
-- **The catalog travels in the page, not in the bundle.** Every preview document carries a
-  `<script type="application/json">` listing the discovered previews and which one is current; the
-  runtime reads it before mounting, since `mount` replaces the body. Bundles stay per file and
-  cacheable — discovering a new preview file changes only the HTML, and a bundle never has to be
-  rebuilt because a sibling appeared.
+- **A preview is identified by `category/name`, declared in the file or derived from its path** -
+  the file's `category` and `name` exports when it has them, otherwise the folder holding the file
+  and the file's base name. A project that writes no metadata still gets a grouped catalog from its
+  folders; one that writes it gets a catalog organized the way its team talks, including groups that
+  span folders. The same pair is what the search matches and what the sidebar, page head and
+  document title show, so what is searched is always what is read.
+- **The catalog travels in the page, not in the bundle, and is built at discovery time.** Every
+  preview document carries a `<script type="application/json">` listing the discovered previews -
+  each with its file, identity and description - and which one is current; the runtime reads it
+  before mounting, since `mount` replaces the body. Reading the metadata means opening every preview
+  file, so the catalog is built once when discovery runs and rebuilt by the same watcher callback
+  that clears the bundle cache, never per request. Bundles stay per file and cacheable - discovering
+  a new preview file changes only the HTML, and a bundle never has to be rebuilt because a sibling
+  appeared.
 - **The index is the same bundle path as a preview page, with no scenarios.** `/` serves a generated
   entry whose scenarios are `null`, so one runtime renders both the catalog view and a file's
   scenarios rather than two page builders diverging. Its bundle is cached under its own key and
@@ -83,7 +106,7 @@ found the way a test file is.
   and any theme that fails here fails in an app for the same reason. Two consequences fall out of
   `shadow-dom-isolation.md` and are the reason the page is shaped this way: content handed to a
   standard component is moved into **that** component's shadow root, so the page's stylesheet cannot
-  reach it — the stage, editor and code panel are therefore components carrying their own styles,
+  reach it - the stage, editor and code panel are therefore components carrying their own styles,
   sizing themselves through `:host` rather than being sized by their parent. Direction stays the
   exception below: it is the one signal the page does not share with what it shows.
 - **The state editor is best-effort static extraction with no lint rule.** imp scans the preview
@@ -109,13 +132,13 @@ found the way a test file is.
   and a direction picker writes `<html dir>` (`translatable-by-default.md`), so a component is
   checked in another language, and right to left, without editing code; both selections are
   remembered like the theme. The languages offered are the ones the project lists in
-  `preview.translations` — a code-to-file map, imported by the generated entry and handed to `init`
+  `preview.translations` - a code-to-file map, imported by the generated entry and handed to `init`
   as loaders, so a translations file stays an ordinary module; a project that lists none gets no
   language picker, since imp has no languages of its own to offer (`translatable-by-default.md`).
   The direction picker offers `auto`, which re-derives from the language, alongside `ltr` and `rtl`,
   which pin it: pinning is how a right-to-left layout is checked while still reading English. **The
   chrome itself is pinned `ltr` and the direction is applied to the stage element**, so the toolbar
-  and panels never mirror underneath the person using them — the preview page is the one place where
+  and panels never mirror underneath the person using them - the preview page is the one place where
   imp's own UI and the previewed component need different directions at once.
 - **Routes:** `/` is the generated catalog of discovered previews, `/preview/<path>` renders one
   file's scenarios, `?scenario=<name>` isolates one, `/@imp/preview/<path>` serves that file's
@@ -133,7 +156,7 @@ found the way a test file is.
 
 Previewing a component costs one sibling file and no configuration, and the fixtures a scenario
 needs are reviewed in the same diff as the component. Because the page is real HTML served by the
-real dev server, cross-cutting concerns — theming today, i18n later — are exercised rather than
+real dev server, cross-cutting concerns - theming today, i18n later - are exercised rather than
 approximated.
 
 Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
@@ -150,11 +173,17 @@ with anything served outside it.
 
 Scenario isolation stops at the module graph: mocks are per file, so two scenarios needing different
 mocked data must differ by their arguments or live in separate preview files. Teardown between
-renders is the page reload — scenarios are never unmounted and re-mounted in place, so a stub
+renders is the page reload - scenarios are never unmounted and re-mounted in place, so a stub
 holding timers or subscriptions cannot leak between renders.
+
+The three metadata exports are reserved for good: a preview file can never have a scenario called
+`name`, `category` or `description`, and one written anyway is silently taken as a label rather than
+rendered. Nothing warns about it, because the scanner cannot tell an intended label from an intended
+scenario. The same nothing-happens rule covers a value that is not a string literal, so metadata is
+never a reason a preview page fails to open.
 
 State discovery is a convenience with no guarantee: dynamic or indirected state names do not appear
 in the editor, and an initial value that is not a JSON literal is left blank until the running
-component provides one. This is deliberate — the alternative was a lint rule constraining where
+component provides one. This is deliberate - the alternative was a lint rule constraining where
 `initState` and `useState` may be written, which would trade a working editor row for a restriction
 on every component.

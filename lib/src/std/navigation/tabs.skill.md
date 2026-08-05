@@ -1,4 +1,4 @@
-# tabs — one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
+# tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
 
 ```js
 import { tabs } from 'imp/std/navigation'
@@ -12,37 +12,37 @@ tabs({
 })
 ```
 
-Call shape: `tabs(props)` — everything is passed as props. It takes **no children**; a child is
+Call shape: `tabs(props)` - everything is passed as props. It takes **no children**; a child is
 warned about and dropped.
 
 | Prop          | Values                                            | Default            | Notes                                      |
 | ------------- | ------------------------------------------------- | ------------------ | ------------------------------------------ |
-| `items`       | array of `{ id, label, content, disabled }`       | `[]`               | Required in practice — see the table below |
-| `selected`    | an item's `id`, or a state holding one — **live** | first enabled item | Which panel is showing                     |
+| `items`       | array of `{ id, label, content, disabled }`       | `[]`               | Required in practice - see the table below |
+| `selected`    | an item's `id`, or a state holding one - **live** | first enabled item | Which panel is showing                     |
 | `orientation` | `'horizontal'`, `'vertical'`                      | `'horizontal'`     | Vertical puts the strip beside the panels  |
-| `label`       | string, or a state holding one — **live**         | —                  | Accessible name for the tab strip          |
-| `events`      | `{ select }`                                      | —                  | `select` fires on the host — see below     |
+| `label`       | string, or a state holding one - **live**         | -                  | Accessible name for the tab strip          |
+| `events`      | `{ select }`                                      | -                  | `select` fires on the host - see below     |
 
 Each entry in `items`:
 
 | Key        | Values                    | Default   | Notes                                          |
 | ---------- | ------------------------- | --------- | ---------------------------------------------- |
 | `id`       | string or number          | its index | What `selected` and `event.detail.id` refer to |
-| `label`    | string, or a state — live | required  | The word on the tab                            |
-| `content`  | any content               | empty     | The panel body — nodes, text, or an array      |
+| `label`    | string, or a state - live | required  | The word on the tab                            |
+| `content`  | any content               | empty     | The panel body - nodes, text, or an array      |
 | `disabled` | boolean                   | `false`   | Not selectable and skipped by the arrow keys   |
 
 Rules an agent gets wrong:
 
 - **It imports from `imp/std/navigation`**, not from `imp/std`.
 - **Panels are passed as `items`, not as children.** A tab and its panel are wired together by id
-  (`aria-controls` / `aria-labelledby`), and those ids cannot cross a shadow root — so `tabs` must
+  (`aria-controls` / `aria-labelledby`), and those ids cannot cross a shadow root - so `tabs` must
   render both halves, which is why the API is one `items` array rather than composed children.
 - **Selection is not a prop you keep writing.** With no `selected`, `tabs` selects the first enabled
   item and manages selection itself. Pass `selected` only to control it; pass a **state** to keep
   controlling it after mount, since a plain string is read once.
 - **Listen with `events: { select }`, not `onSelect`.** It is a `CustomEvent` on the host with
-  `detail: { id, index }`, and it fires only for a user's choice — never for a change driven by the
+  `detail: { id, index }`, and it fires only for a user's choice - never for a change driven by the
   `selected` state, so a state bound both ways cannot loop.
 - **Every panel is rendered at mount** and hidden with `hidden`, so state inside a panel survives
   switching tabs. Do not pass content that is expensive to build for every tab at once.

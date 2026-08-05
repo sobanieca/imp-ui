@@ -3,8 +3,8 @@ import { encodeBase64 } from '@std/encoding/base64'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
-import { runEsbuild, shutdownBundler } from './deps.js'
-import { collectMocks, DATAURL_ASSET_LOADERS, impResolverPlugin } from './bundling.js'
+import { DATAURL_ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
+import { collectMocks, impResolverPlugin } from './bundling.js'
 import { createRequestHandler, loadApp } from './start.js'
 import { createClock } from './test_clock.js'
 import { piercingBrowser, piercingPage } from './test_page.js'
@@ -89,7 +89,7 @@ const createTestClock = (fakeTimers, environment) => {
   if (!fakeTimers) return null
   if (environment === 'e2e') {
     throw new Error(
-      'fakeTimers is only available in unit tests (*.test.js) — e2e specs run in a real browser; control time through the Puppeteer page instead',
+      'fakeTimers is only available in unit tests (*.test.js) - e2e specs run in a real browser; control time through the Puppeteer page instead',
     )
   }
   return createClock(fakeTimers === true ? undefined : fakeTimers)
@@ -281,7 +281,7 @@ async function selectFiles({ root, paths, unit, e2e, exclude }) {
     }
     if (info.isFile && !isTestFile(path)) {
       throw new Error(
-        `not a test file: ${target} — unit tests end with .test.js, e2e specs with .spec.js`,
+        `not a test file: ${target} - unit tests end with .test.js, e2e specs with .spec.js`,
       )
     }
   }
@@ -467,12 +467,12 @@ export async function runTests(
       await Deno.stat(entryPath)
     } catch {
       throw new Error(
-        `e2e entry not found: ${entry} — each *.spec.js runs against your served app; set "test": { "entry": "<page>.html" } in imp.json if it is not index.html`,
+        `e2e entry not found: ${entry} - each *.spec.js runs against your served app; set "test": { "entry": "<page>.html" } in imp.json if it is not index.html`,
       )
     }
     const app = await loadApp(entryPath, { mocks })
     for (const alias of app.missingDependencies) {
-      logger.warn(`dependency '${alias}' is declared but not vendored — run 'imp install'`)
+      logger.warn(`dependency '${alias}' is declared but not vendored - run 'imp install'`)
     }
     const { resolveBrowser } = await import('./test_browser.js')
     e2eRun = { app, browserPath: await resolveBrowser(testConfig.browser) }

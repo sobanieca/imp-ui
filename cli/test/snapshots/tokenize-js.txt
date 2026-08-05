@@ -33,7 +33,7 @@ round-trips: true
   punctuation: "))"
   plain: "\n"
 
-=== "const label = `${count} of ${total} — ${done ? `${done} done` : \"none\"}`\n" ===
+=== "const label = `${count} of ${total} - ${done ? `${done} done` : \"none\"}`\n" ===
 round-trips: true
   keyword: "const"
   plain: " label "
@@ -43,7 +43,7 @@ round-trips: true
   plain: "count"
   string: "} of ${"
   plain: "total"
-  string: "} — ${"
+  string: "} - ${"
   plain: "done "
   punctuation: "?"
   plain: " "

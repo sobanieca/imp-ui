@@ -5,10 +5,10 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/no-capital-component]: 'Card' starts with a capital letter — imp components are lowercase functions (write 'card')
+error[imp/no-capital-component]: 'Card' starts with a capital letter - imp components are lowercase functions (write 'card')
  --> components.js:1:17
 
-error[imp/no-capital-component]: 'NavBar' starts with a capital letter — imp components are lowercase functions (write 'navBar')
+error[imp/no-capital-component]: 'NavBar' starts with a capital letter - imp components are lowercase functions (write 'navBar')
  --> components.js:5:14
 
 Found 2 problems

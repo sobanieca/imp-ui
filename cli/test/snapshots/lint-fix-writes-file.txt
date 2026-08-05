@@ -5,7 +5,7 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp components are lowercase functions (write 'widget')
+error[imp/no-capital-component]: 'Widget' starts with a capital letter - imp components are lowercase functions (write 'widget')
  --> app.js:6:14
 
 Fixed 1 file
@@ -28,7 +28,7 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp components are lowercase functions (write 'widget')
+error[imp/no-capital-component]: 'Widget' starts with a capital letter - imp components are lowercase functions (write 'widget')
  --> app.js:6:14
 
 Found 1 problem

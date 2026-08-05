@@ -14,7 +14,7 @@ $ imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)
 exit code: 1
 
 --- stdout ---
-✘ [ERROR] 'imp/std/data' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/test', 'imp/preview' [plugin imp]
+✘ [ERROR] 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/test', 'imp/preview' [plugin imp]
 
     <tmp>/std-entry.js:1:22:
       1 │ import { table } from 'imp/std/data'
@@ -22,5 +22,20 @@ exit code: 1
 
 --- stderr ---
 [ERROR] Build failed with 1 error:
-<tmp>/std-entry.js:1:22: ERROR: [plugin: imp] 'imp/std/data' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/test', 'imp/preview'
+<tmp>/std-entry.js:1:22: ERROR: [plugin: imp] 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/test', 'imp/preview'
+
+
+$ imp build std-entry.js --output std  (cwd: <tmp>, tooling-only subpath)
+exit code: 1
+
+--- stdout ---
+✘ [ERROR] 'imp/test' is only resolved by imp test - it cannot be bundled into an app [plugin imp]
+
+    <tmp>/std-entry.js:1:23:
+      1 │ import { expect } from 'imp/test'
+        ╵                        ~~~~~~~~~~
+
+--- stderr ---
+[ERROR] Build failed with 1 error:
+<tmp>/std-entry.js:1:23: ERROR: [plugin: imp] 'imp/test' is only resolved by imp test - it cannot be bundled into an app
 

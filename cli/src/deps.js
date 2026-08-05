@@ -15,9 +15,29 @@ function initEsbuild() {
   return esbuildReady
 }
 
-export const ASSET_LOADERS = Object.fromEntries(
-  ['.wasm', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.woff', '.woff2']
-    .map((extension) => [extension, 'file']),
+export const BINARY_ASSET_EXTENSIONS = [
+  '.wasm',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.ico',
+  '.woff',
+  '.woff2',
+]
+
+const TEXT_ASSET_EXTENSIONS = ['.css', '.txt', '.json']
+
+const loadersFor = (extensions, loader) =>
+  Object.fromEntries(extensions.map((extension) => [extension, loader]))
+
+export const ASSET_LOADERS = loadersFor(BINARY_ASSET_EXTENSIONS, 'file')
+
+export const DATAURL_ASSET_LOADERS = loadersFor(
+  [...BINARY_ASSET_EXTENSIONS, ...TEXT_ASSET_EXTENSIONS],
+  'dataurl',
 )
 
 const NPM_CACHE_PATH = /[/\\]npm[/\\][^/\\]+[/\\](@[^/\\]+[/\\][^/\\]+|[^/\\]+)[/\\]([^/\\]+)[/\\]/

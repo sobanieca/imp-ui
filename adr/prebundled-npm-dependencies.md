@@ -2,7 +2,7 @@
 
 ## Context
 
-`deno compile` embeds every npm package in the module graph as its **complete package tree** — every
+`deno compile` embeds every npm package in the module graph as its **complete package tree** - every
 dist format, `.d.ts` files, source maps, and type-only transitive packages. For imp's runtime
 libraries this multiplied the binary far beyond the code actually executed: the `imp test`
 dependencies alone (happy-dom ~31 MB embedded with its `@types/*` train, puppeteer-core with
@@ -13,7 +13,7 @@ chromium-bidi and devtools-protocol ~35 MB) plus the eslint tree pushed the bina
 
 Every npm package imp uses **at runtime inside the compiled binary** is pre-bundled at build time
 into a single minified ESM file under `cli/src/vendor/`, and imp's source imports that file instead
-of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
+of the npm specifier - the same vendoring pattern as the dprint wasm plugins.
 
 - `tools/prebundle_npm_deps.js` (wired into the `compile` task) bundles each entry with the
   in-process esbuild engine: `happy-dom` → `vendor/happy_dom.js`, `puppeteer-core` →
@@ -27,7 +27,7 @@ of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
   re-runs skip bundles that are already current.
 - **Bundles target the Deno runtime:** platform `node`, ESM, with node builtins externalized under
   the `node:` prefix (required for first-party modules in Deno) and the optional native add-ons
-  `supports-color`, `utf-8-validate`, and `bufferutil` left external — `ws` and puppeteer already
+  `supports-color`, `utf-8-validate`, and `bufferutil` left external - `ws` and puppeteer already
   treat them as optional behind try/catch. A `createRequire` shim in the banner serves CJS `require`
   calls of those externals, and packages whose `module` field points at a default-export-only ESM
   build while CJS consumers `require` their named API (esquery) are redirected to their `main`
@@ -42,11 +42,11 @@ of the npm specifier — the same vendoring pattern as the dprint wasm plugins.
 - The binary drops from ~209 MB to ~155 MB with zero behavior change: same package versions, same
   APIs, only tree-shaken instead of whole-tree embedding.
 - New runtime npm dependencies must be routed through `tools/prebundle_npm_deps.js` rather than
-  imported directly from source that ships in the binary — a direct npm import silently re-adds a
+  imported directly from source that ships in the binary - a direct npm import silently re-adds a
   whole package tree.
 - The vendor bundles must exist before the binary can be compiled, exactly as `imp fmt` already
-  requires the vendored wasm plugins — `deno task compile` runs the prebundle tool first, and every
+  requires the vendored wasm plugins - `deno task compile` runs the prebundle tool first, and every
   task that invokes imp compiles through it, so this is never a manual step.
-- Dependency bumps are manual: edit the version pins in `tools/prebundle_npm_deps.js` — these
+- Dependency bumps are manual: edit the version pins in `tools/prebundle_npm_deps.js` - these
   packages are invisible to `deno outdated`. The next compile detects the version banner mismatch
   and re-bundles automatically.

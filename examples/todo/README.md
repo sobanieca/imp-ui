@@ -1,4 +1,4 @@
-# imp todos — a sample app
+# imp todos - a sample app
 
 A todo app written to exercise most of imp in one place: routing with a lazily loaded area, named
 state, the http client answered by mock files, standard components and forms, two languages, a
@@ -44,18 +44,18 @@ below calls `useHttpClient('todo.api')` before its first `await`. Nothing import
 and nothing knows the mocks exist.
 
 **The row saves itself.** `todo_item.js` owns a per-instance `todo.item.done` state, patches the API
-when it changes, and puts the switch back if the request fails — no callback threaded down from the
+when it changes, and puts the switch back if the request fails - no callback threaded down from the
 screen.
 
-**Position-sensitive calls come first.** In an async `onMount`, `useState`, `useHttpClient` and —
-less obviously — `router()` inside an area root all have to run before the first `await`. The stats
+**Position-sensitive calls come first.** In an async `onMount`, `useState`, `useHttpClient` and -
+less obviously - `router()` inside an area root all have to run before the first `await`. The stats
 shell keeps its `router()` slot in a variable and awaits afterwards.
 
 **A route change moves focus, once for every screen.** The shell renders its `main` with a
 `tabindex` of `-1` and focuses it from `useRoute().watch(...)` whenever the path changes, so a
 keyboard or screen-reader user lands in the new screen instead of staying on the link they followed.
 It watches the path, not the whole route, so a query change never pulls focus out of an input, and
-the first call — the route the page loaded on — is skipped. `main:focus` clears the outline, since
+the first call - the route the page loaded on - is skipped. `main:focus` clears the outline, since
 nothing here was focused by hand.
 
 **A dependency is one command, and then it is just a module.** Notes are Markdown, rendered by
@@ -68,13 +68,13 @@ imp install micromark
 That vendored the package into `dependencies/micromark/micromark.js` (52 kB, one file, no
 `node_modules`), pinned `"micromark": "npm:micromark@4.0.2"` in `imp.json`, and printed every
 package that went into the bundle. Both are committed, so a clone runs with no registry access. From
-then on it is an ordinary import by its bare alias — `import { micromark } from 'micromark'` — and
+then on it is an ordinary import by its bare alias - `import { micromark } from 'micromark'` - and
 only `markdown_note.js` mentions it. micromark escapes raw HTML and drops `javascript:` URLs by
 default, which is why its output can go straight into `html()` with no sanitizer.
 
 **Translated text is bound, not read once.** `words('todo.list.title')` is a live text node and
 `message('todo.form.title')` is a live state for a prop, so switching language re-localizes in
-place. Props that imp does not keep live — a `select`'s `options`, a `placeholder` — sit inside a
+place. Props that imp does not keep live - a `select`'s `options`, a `placeholder` - sit inside a
 `lang.view(...)` instead, which is why the filter row rebuilds on a language change but the new-todo
 form does not (rebuilding it would throw away what you had typed).
 
@@ -82,20 +82,20 @@ form does not (rebuilding it would throw away what you had typed).
 
 `test/todos.test.js` is plain logic. `test/todo_item.test.js` mounts the component under a tiny host
 that provides the state and the client, and spies on `fetch`. Both walk `shadowRoot` with a small
-recursive `find` — a component's content is never in the light DOM.
+recursive `find` - a component's content is never in the light DOM.
 
 In the e2e spec, waiting needs care: `page.waitForSelector` does not see nodes that appear **inside
 a shadow root** after it starts watching, so the spec waits with `page.waitForFunction` and a deep
-query instead. `textContent` does not cross a shadow root either — read the innermost element,
+query instead. `textContent` does not cross a shadow root either - read the innermost element,
 `#summary >>> p`, not the wrapper.
 
 ## The feature flag
 
 `TODO_STATS` gates the stats area. `env/dev.json` turns it on; `env/prod.json` leaves it off, and
-`imp build --env prod` folds the branch away — the area's chunk is never emitted. Compare the two
+`imp build --env prod` folds the branch away - the area's chunk is never emitted. Compare the two
 builds:
 
 ```
 imp build --env dev     chunks/area-*.js is emitted
-imp build --env prod    flags folded in — TODO_STATS off
+imp build --env prod    flags folded in - TODO_STATS off
 ```

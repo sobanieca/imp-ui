@@ -1,13 +1,13 @@
 # Architecture Decision Records
 
 Each ADR captures one architectural decision: the context that forced it, the choice made, and the
-consequences. Every ADR in this folder is the current, accepted state of that decision — there is no
+consequences. Every ADR in this folder is the current, accepted state of that decision - there is no
 status field. When a decision changes, replace the ADR with a new one describing the new decision;
 when a decision is dropped, delete its ADR.
 
 Conventions:
 
-- **File name** is a short descriptive slug of the decision (`real-dom-no-virtual-dom.md`) — no
+- **File name** is a short descriptive slug of the decision (`real-dom-no-virtual-dom.md`) - no
   numbering.
 - **Format per record:** Context · Decision · Consequences.
 - **Presence means accepted.** Nothing in the folder is a proposal or history; the folder always
@@ -32,14 +32,14 @@ Conventions:
 
 | ADR                                                   | Decision                                                                                          |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| [event-propagated-state](event-propagated-state.md)   | Named state via initState/useState — subtree-scoped by DOM-event bubbling, auto-cleanup, computed |
+| [event-propagated-state](event-propagated-state.md)   | Named state via initState/useState - subtree-scoped by DOM-event bubbling, auto-cleanup, computed |
 | [state-plain-data-values](state-plain-data-values.md) | Plain-data state values: fused validate+structural-compare on set, deep-frozen when stored        |
 
 ## Styling
 
 | ADR                                                         | Decision                                                                           |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` — `--imp-*` vars on :root |
+| [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` - `--imp-*` vars on :root |
 
 ## Internationalization
 
@@ -61,6 +61,7 @@ Conventions:
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | [built-in-logger](built-in-logger.md)                     | One console-backed logger, level from `IMP_LOG_LEVEL`                                      |
 | [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/i18n, imp/log |
+| [tree-shakeable-library](tree-shakeable-library.md)       | Nothing runs at module scope; unused library code is dropped from app bundles              |
 | [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, bindable request state                |
 
 ## CLI
@@ -75,7 +76,7 @@ Conventions:
 | [public-folder-static-assets](public-folder-static-assets.md)         | public/ is the site root; IMP_BASEPATH prefixes built URLs     |
 | [pwa-toolkit](pwa-toolkit.md)                                         | imp build --pwa: manifest, icons, build-graph SW               |
 | [raster-image-pipeline](raster-image-pipeline.md)                     | resvg decode+resize, format-preserving encode, no new codec    |
-| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles — by design                  |
+| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles - by design                  |
 | [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome          |
 | [dev-server-mocks](dev-server-mocks.md)                               | Mocks from *.mock.js files, answered by the dev service worker |
 | [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                |

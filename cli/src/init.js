@@ -132,7 +132,7 @@ test('counts a click', async ({ page }) => {
 })
 `
 
-const gitignore = `# imp writes these — never commit them
+const gitignore = `# imp writes these - never commit them
 dist/
 .imp/
 
@@ -187,7 +187,7 @@ async function templateFiles({ title, pwa }) {
     {
       path: 'imp.json',
       contents: impConfig({ title, pwa }),
-      note: `the one config file — pins imp ${VERSION}`,
+      note: `the one config file - pins imp ${VERSION}`,
     },
     { path: 'index.html', contents: indexHtml(title), note: 'the page imp serves' },
     {
@@ -201,7 +201,7 @@ async function templateFiles({ title, pwa }) {
     {
       path: 'public/favicon.svg',
       contents: await readTemplate('favicon.svg'),
-      note: 'published at the site root — replace it with your own mark',
+      note: 'published at the site root - replace it with your own mark',
     },
     {
       path: GITIGNORE,
@@ -231,9 +231,9 @@ async function pathExists(path) {
 
 function noteFor(file) {
   if (!file.appended) return file.note
-  if (file.appended.length === 0) return 'left as it was — it already covers all of these'
+  if (file.appended.length === 0) return 'left as it was - it already covers all of these'
   const count = file.appended.length
-  return `kept yours — appended the ${count} ${count > 1 ? 'entries' : 'entry'} it was missing`
+  return `kept yours - appended the ${count} ${count > 1 ? 'entries' : 'entry'} it was missing`
 }
 
 function printSummary({ files, label, pwa }) {
@@ -247,7 +247,7 @@ function printSummary({ files, label, pwa }) {
   if (appended) {
     console.log('')
     logger.warn(
-      `${GITIGNORE} already existed — appended ${
+      `${GITIGNORE} already existed - appended ${
         appended.appended.join(', ')
       } to it and left everything else in it untouched`,
     )
@@ -259,7 +259,7 @@ function printSummary({ files, label, pwa }) {
   if (pwa) {
     console.log(`  imp build --pwa  ${dim('build an installable, offline app into dist/')}`)
   }
-  console.log(`  imp skill        ${dim("read imp's manuals — an AI agent starts here")}`)
+  console.log(`  imp skill        ${dim("read imp's manuals - an AI agent starts here")}`)
   console.log('\nNow point your AI agent at `imp skill` and start building!')
 }
 
@@ -290,7 +290,7 @@ export async function init({ cwd, dir = null, pwa = false }) {
         conflicts.length > 1 ? 'exist' : 'exists'
       }${
         label ? ` in ${label}` : ' here'
-      } — nothing was written. Scaffold into an empty directory ` +
+      } - nothing was written. Scaffold into an empty directory ` +
         `instead ('imp init <dir>'), or move those files aside.`,
     )
   }

@@ -1,4 +1,4 @@
-# routing — one plain-data route table, with lazily loaded areas
+# routing - one plain-data route table, with lazily loaded areas
 
 Everything comes from `imp/router`. `router()` is the slot the matched screen renders into; drop it
 in your layout and everything around it stays put across navigations.
@@ -34,7 +34,7 @@ mount('#app', shell())
 | Export                                   | What it does                                                                                        |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `placeholder`, `onError`, `onNotFound` |
-| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area — the **only** on-demand unit                          |
+| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                          |
 | `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                                  |
 | `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                            |
 | `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                |
@@ -48,7 +48,7 @@ single fallback for unmatched URLs.
 ## The route table
 
 A pattern is a URL path; `:name` segments capture values. The target is a factory receiving one
-argument, `{ params, query }` — `params` values are URL-decoded strings, `query` is the query string
+argument, `{ params, query }` - `params` values are URL-decoded strings, `query` is the query string
 parsed **at the moment the screen is entered**.
 
 | Pattern      | Matches                         | Factory sees                      |
@@ -57,34 +57,34 @@ parsed **at the moment the screen is entered**.
 | `/todos`     | exactly `/todos` (or `/todos/`) | `{ params: {}, query }`           |
 | `/todos/:id` | `/todos/42`                     | `{ params: { id: '42' }, query }` |
 
-**First match wins**, in the order the keys are written — put a static path before a param path that
+**First match wins**, in the order the keys are written - put a static path before a param path that
 would also match. Trailing slashes are ignored.
 
 ## Rules an agent gets wrong
 
-- **A screen factory builds its screen immediately.** Never `await` in it and never `import()` in it
-  — fetch data in the screen component's async `onMount` (its `placeholder` covers the wait), and
+- **A screen factory builds its screen immediately.** Never `await` in it and never `import()` in
+  it - fetch data in the screen component's async `onMount` (its `placeholder` covers the wait), and
   put on-demand code behind an `area()`.
 - **`area()` is the only lazy entry.** There is no lazy-screen form and no eager-area form. A
   pattern pointing at an area matches as a **prefix**; every other pattern matches exactly.
 - **An area's own routes are written relative to the prefix** (`'/users'` inside `/admin` serves
   `/admin/users`).
-- **A table-less `router()` is position-sensitive like `useState`** — it finds its area through the
+- **A table-less `router()` is position-sensitive like `useState`** - it finds its area through the
   mounting component, so in an async `root` it must be called **before the first `await`**; keep the
   slot in a variable and use it after. Past the await it throws `'routes' is required`, which reads
   as if the table were missing. Lint rule `imp/router-setup-before-await`. A `router({ routes })`
   looks nothing up and can be built anywhere.
-- **A query-only change keeps the current screen mounted** — read the live query from `useRoute()`,
+- **A query-only change keeps the current screen mounted** - read the live query from `useRoute()`,
   not from the factory's `query`, on a screen whose query can change while it stays up. Changing the
   pattern or a `:param` mounts a fresh screen and unmounts the old one.
 - **There is no link component.** Call `navigate()` from a click handler, or use `link` from
   `imp/std`. Use `{ replace: true }` after a login redirect. Navigating to the current URL is a
   no-op.
-- **Shared layout is a plain function** you call from each factory — there is no layout route.
+- **Shared layout is a plain function** you call from each factory - there is no layout route.
 - **imp has no folder convention.** An area is a routing concept, not a directory; point each
   `import()` wherever the module actually is.
 - Leaving an area releases its screens' state and DOM, but the browser keeps the downloaded module
-  for the life of the page — lazy areas save the **download**, not the heap.
+  for the life of the page - lazy areas save the **download**, not the heap.
 
 ## An area file
 
@@ -101,10 +101,10 @@ export default area({
 ```
 
 An area's `translations` are covered in [i18n](i18n.md). Areas nest to any depth, and a prefix can
-capture params (`'/org/:orgId': area(…)` — a changing prefix param remounts the section). Navigating
+capture params (`'/org/:orgId': area(…)` - a changing prefix param remounts the section). Navigating
 inside an area keeps it mounted and swaps its inner screen.
 
-## `root` — one component around a whole section
+## `root` - one component around a whole section
 
 ```js
 const shell = component('admin-shell', {
@@ -117,11 +117,11 @@ const shell = component('admin-shell', {
 export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 ```
 
-- **`router()` with no table only works inside an area's `root`** — it renders that area's own
+- **`router()` with no table only works inside an area's `root`** - it renders that area's own
   routes and inherits the parent router's `placeholder`, `onError` and `onNotFound`, each
   overridable for the section. Anywhere else, `routes` is required.
 - `root` is a **function** returning the component, and it receives the same `{ params, query }` a
-  screen factory gets — `root: ({ params }) => orgShell(params.orgId)`.
+  screen factory gets - `root: ({ params }) => orgShell(params.orgId)`.
 - What it buys over wrapping each screen by hand is **lifetime**: the root stays mounted while the
   user moves between the section's screens and unmounts when they leave. So it is where a
   section-wide [http](http.md) client, a section-scoped [state](state.md), or a layout that must
@@ -131,13 +131,13 @@ export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 
 A screen is a component, so its loading is `placeholder` + async `onMount`, its errors are `onError`
 (bubbling to the router's), and its cleanup is `onUnmount`. Navigating away unmounts it: state,
-subscriptions and DOM go with it — put screen state in the screen's root component and only app-wide
+subscriptions and DOM go with it - put screen state in the screen's root component and only app-wide
 state above the router.
 
 Scroll is managed for you (top on forward navigation, restored on back/forward). **Focus is yours**:
 focus a heading in `instance.afterMount`, or announce via a live region from `useRoute().watch(…)`.
 Do it once for all screens by giving the element the router slot renders into `tabindex: -1` and
-focusing it from `useRoute().watch(…)` when the **path** changes — compare paths (a query change
+focusing it from `useRoute().watch(…)` when the **path** changes - compare paths (a query change
 must not steal focus from an input), skip the first call (it fires with the loaded route), and style
 that element `:focus { outline: none }` or the browser rings the whole screen on arrival.
 

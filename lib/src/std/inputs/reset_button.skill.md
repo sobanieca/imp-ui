@@ -1,4 +1,4 @@
-# resetButton — puts the form back to the values it started with
+# resetButton - puts the form back to the values it started with
 
 ```js
 import { resetButton } from 'imp/std/inputs'
@@ -6,7 +6,7 @@ import { resetButton } from 'imp/std/inputs'
 resetButton('Start over')
 ```
 
-Call shape: `resetButton(props?, ...children)` — children are the label.
+Call shape: `resetButton(props?, ...children)` - children are the label.
 
 It finds the form around it by position and restores the form's `initialValues`, clearing every
 error and every field's touched state along with them.
@@ -15,7 +15,7 @@ error and every field's touched state along with them.
 | ---------- | ----------------------------------------------- | ----------- | --------------------- |
 | `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'` | `'default'` | Visual weight         |
 | `size`     | `'sm'`, `'md'`, `'lg'`                          | `'md'`      | Padding and type size |
-| `disabled` | boolean, or a state holding one — **live**      | `false`     | Blocks interaction    |
+| `disabled` | boolean, or a state holding one - **live**      | `false`     | Blocks interaction    |
 
 Rules an agent gets wrong:
 

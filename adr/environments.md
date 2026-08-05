@@ -2,8 +2,8 @@
 
 ## Context
 
-The same source often needs to ship against different configuration — a different API URL in dev,
-stage, and prod — without editing code between targets. Frontend config is not secret (everything
+The same source often needs to ship against different configuration - a different API URL in dev,
+stage, and prod - without editing code between targets. Frontend config is not secret (everything
 reaches the browser), so the need is to select a named value set at build/serve time and expose it
 to app code, not to hide it.
 
@@ -31,11 +31,11 @@ Two constraints shaped the mechanism:
 - **Flat value bag, string/number/boolean.** Each env file is a flat set of values; nested objects
   and arrays (in JSON) are rejected. A string of the form `$env.NAME` resolves at build/serve time
   from the shell (`Deno.env.get`); any other string is a literal. Referencing an unset `$env.NAME`
-  is a fail-fast error naming the alias, the key, and the variable — a half-populated environment is
+  is a fail-fast error naming the alias, the key, and the variable - a half-populated environment is
   worse than a stopped build.
 - **Selection precedence.** `--env <alias>` on `imp start`/`imp build` wins; otherwise the `IMP_ENV`
   shell variable (for CI); otherwise an alias literally named `default` if one is defined; otherwise
-  no environment (empty object — today's behavior, no breakage for projects that never opt in). An
+  no environment (empty object - today's behavior, no breakage for projects that never opt in). An
   unknown alias fails fast listing the defined aliases.
 - **One runtime mechanism, dev == prod.** The resolved values are injected into the HTML head as
   `<script>globalThis.__IMP_ENV__ = { … }</script>`, ahead of the import map, identically by the dev
@@ -43,7 +43,7 @@ Two constraints shaped the mechanism:
   global (empty when nothing was injected), so app code writes `import { env } from 'imp'` and never
   touches the global directly.
 - **Env files stay out of the build output.** Every file referenced by `environments` is excluded
-  from the static copy into the build output directory — it is build-time config, like `imp.json`.
+  from the static copy into the build output directory - it is build-time config, like `imp.json`.
 - **A value that switches a feature on or off is a flag, not an env value.** Names listed in
   `imp.json`'s `flags` are removed from the injected `env` object and read through `flag()` instead,
   which `imp build` resolves and folds away; see `adr/feature-flags.md`.
@@ -51,7 +51,7 @@ Two constraints shaped the mechanism:
 ## Consequences
 
 - One authoring API and one behavior across `imp start` and `imp build`; no bundler-vs-dev-server
-  skew. `env` values are always read at runtime — nothing about them is folded or tree-shaken, which
+  skew. `env` values are always read at runtime - nothing about them is folded or tree-shaken, which
   is why anything meant to remove code from a production build goes through `flag()` instead.
 - Env values ship to the browser and are fully readable by any visitor. `$env.` keeps values out of
   the repo; it does not make them private. Only publishable keys and public config belong here.

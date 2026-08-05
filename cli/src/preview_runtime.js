@@ -10,6 +10,7 @@ import { select, textArea } from 'imp/std/inputs'
 import { tabs } from 'imp/std/navigation'
 import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
 import { tokenizeJs } from './preview_highlight.js'
+import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
 import { asNodes } from '../../lib/src/nodes.js'
 import { runInMountScope } from '../../lib/src/component.js'
 import { findStateFrom } from '../../lib/src/state.js'
@@ -294,6 +295,33 @@ const CODE_STYLES = `
   }
 `
 
+const AGENT_STYLES = `
+  :host {
+    display: block;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--imp-space-3, 12px);
+    margin-block-end: var(--imp-space-2, 8px);
+  }
+
+  .instruction {
+    margin: 0;
+    box-sizing: border-box;
+    overflow: auto;
+    padding: var(--imp-space-3, 12px);
+    ${surface}
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-normal, 1.6);
+    white-space: pre-wrap;
+  }
+`
+
 const isThemeDefinition = (value) =>
   !!value && typeof value === 'object' && !Array.isArray(value) &&
   !!value.tokens && typeof value.tokens === 'object'
@@ -311,7 +339,7 @@ const registerThemes = (customThemes) => {
     if (!isThemeDefinition(definition)) {
       console.error(
         `imp preview: '${source}' is listed in preview.themes but does not default-export a theme ` +
-          'object like { name, colorScheme, tokens } — skipping it',
+          'object like { name, colorScheme, tokens } - skipping it',
       )
       continue
     }
@@ -343,7 +371,7 @@ const readStored = (key, isKnown, fallback) => {
 const remember = (key, value) => {
   try {
     localStorage.setItem(key, value)
-  } catch { /* storage is unavailable — the choice just does not survive a reload */ }
+  } catch { /* storage is unavailable - the choice just does not survive a reload */ }
 }
 
 const readStoredTheme = () =>
@@ -412,7 +440,7 @@ const describeValue = (value) => {
   try {
     text = JSON.stringify(value, null, 2)
   } catch (error) {
-    return { text: String(value), editable: false, note: `not editable here — ${error.message}` }
+    return { text: String(value), editable: false, note: `not editable here - ${error.message}` }
   }
   if (text === undefined) {
     return {
@@ -600,32 +628,37 @@ const highlighted = (snippet) =>
     kind === 'plain' ? text : span({ class: `token token--${kind}` }, text)
   )
 
-const codeDefinition = {
-  styles: CODE_STYLES,
-  onMount: (_instance, snippet) => {
-    const label = document.createTextNode('copy')
-    const copy = button(
-      {
-        size: 'sm',
-        variant: 'ghost',
-        events: {
-          click: async () => {
-            try {
-              await navigator.clipboard.writeText(snippet)
-              label.data = 'copied'
-            } catch {
-              label.data = 'could not copy'
-            }
-            setTimeout(() => {
-              label.data = 'copy'
-            }, COPIED_FEEDBACK_MS)
-          },
+const copyButton = (content) => {
+  const label = document.createTextNode('copy')
+  return button(
+    {
+      size: 'sm',
+      variant: 'ghost',
+      events: {
+        click: async () => {
+          try {
+            await navigator.clipboard.writeText(content)
+            label.data = 'copied'
+          } catch {
+            label.data = 'could not copy'
+          }
+          setTimeout(() => {
+            label.data = 'copy'
+          }, COPIED_FEEDBACK_MS)
         },
       },
-      label,
-    )
-    return div(div({ class: 'head' }, copy), pre(codeTag(highlighted(snippet))))
-  },
+    },
+    label,
+  )
+}
+
+const codeDefinition = {
+  styles: CODE_STYLES,
+  onMount: (_instance, snippet) =>
+    div(
+      div({ class: 'head' }, copyButton(snippet)),
+      pre(codeTag(highlighted(snippet))),
+    ),
 }
 
 let createCode = null
@@ -633,6 +666,29 @@ let createCode = null
 const codePanel = (snippet) => {
   createCode ??= component('imp-preview-code', codeDefinition)
   return createCode(snippet)
+}
+
+const agentDefinition = {
+  styles: AGENT_STYLES,
+  onMount: (_instance, instruction) =>
+    div(
+      div(
+        { class: 'head' },
+        text(
+          { tone: 'secondary', size: 'sm' },
+          'Hand this to an AI agent before it writes code with this component.',
+        ),
+        copyButton(instruction),
+      ),
+      pre({ class: 'instruction' }, instruction),
+    ),
+}
+
+let createAgent = null
+
+const agentPanel = (instruction) => {
+  createAgent ??= component('imp-preview-agent', agentDefinition)
+  return createAgent(instruction)
 }
 
 const snippetFor = (name, meta) => {
@@ -672,7 +728,7 @@ const scenarioSection = (name, scenario, meta) => {
       'section',
       { class: 'scenario' },
       head,
-      pre({ class: 'failure' }, `${name} failed to build — see the terminal`),
+      pre({ class: 'failure' }, `${name} failed to build - see the terminal`),
     )
   }
   const snippet = snippetFor(name, meta)
@@ -698,10 +754,22 @@ const scenarioSection = (name, scenario, meta) => {
           content: snippet === null
             ? text(
               { tone: 'secondary', size: 'sm' },
-              `imp could not read the code behind '${name}' — only exports written as ` +
+              `imp could not read the code behind '${name}' - only exports written as ` +
                 `'export const ${name} = …' in the preview file are shown here.`,
             )
             : codePanel(snippet),
+        },
+        {
+          id: 'agent',
+          label: 'Agent',
+          content: meta.description === null
+            ? text(
+              { tone: 'secondary', size: 'sm' },
+              `${meta.file} declares no description - add ` +
+                "'export const description = …' to it with the command an agent should run " +
+                'to learn this component.',
+            )
+            : agentPanel(meta.description),
         },
       ],
     }),
@@ -709,14 +777,14 @@ const scenarioSection = (name, scenario, meta) => {
 }
 
 const scenarioOrder = (scenarios, order) => {
-  const exported = Object.keys(scenarios)
+  const exported = Object.keys(scenarios).filter((name) => !PREVIEW_METADATA_EXPORTS.includes(name))
   const written = order.filter((name) => exported.includes(name))
   return [...written, ...exported.filter((name) => !written.includes(name))]
 }
 
-const catalogEntryFor = (catalog, file) =>
-  catalog.previews.find((entry) => entry.file === file) ??
-    { file, category: '', name: file, href: null }
+const catalogEntryFor = (catalog, meta) =>
+  catalog.previews.find((entry) => entry.file === meta.file) ??
+    { file: meta.file, category: meta.category, name: meta.name, href: null }
 
 const scenarioList = (scenarios, meta, catalog) => {
   const names = scenarioOrder(scenarios, meta.order)
@@ -724,11 +792,11 @@ const scenarioList = (scenarios, meta, catalog) => {
   const isolated = requested !== null && names.includes(requested)
   const shown = isolated ? [requested] : names
   return [
-    previewHead(catalogEntryFor(catalog, meta.file), isolated),
+    previewHead(catalogEntryFor(catalog, meta), isolated),
     ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta)) : [
       emptyState({
         title: 'No scenarios in this file',
-        description: `${meta.file} has no named exports — export one instance per scenario, ` +
+        description: `${meta.file} has no named exports - export one instance per scenario, ` +
           'like export const empty = myComponent()',
       }),
     ]),

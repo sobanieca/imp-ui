@@ -1,9 +1,9 @@
-# testing — unit tests in-process, e2e specs in a real browser
+# testing - unit tests in-process, e2e specs in a real browser
 
 Two levels, one command, one import. Runner, assertions and simulated DOM are built into the binary.
 
-- **`*.test.js`** — unit and integration, in-process against a simulated browser environment.
-- **`*.spec.js`** — end-to-end: imp serves the app like `imp start`, launches headless Chrome and
+- **`*.test.js`** - unit and integration, in-process against a simulated browser environment.
+- **`*.spec.js`** - end-to-end: imp serves the app like `imp start`, launches headless Chrome and
   hands each spec a Puppeteer `page`.
 
 ```
@@ -17,7 +17,7 @@ imp test --e2e --mock        answer the app's requests from the *.mock.js files 
 ```
 
 One test file per process is the unit of isolation. A bare `imp test` with several candidate files
-runs nothing and exits non-zero — always name a level or a file.
+runs nothing and exits non-zero - always name a level or a file.
 
 ## Writing tests
 
@@ -32,7 +32,7 @@ test('adds numbers', () => {
 `test(name, fn, options?)` registers; tests run in file order, one at a time. `test.skip`,
 `test.only`. Options: `timeout` (ms; default 5s unit, 30s e2e), `fakeTimers` (unit only). Hooks
 `beforeAll`, `beforeEach`, `afterEach`, `afterAll` are file-scoped and awaited. Parameterized tests
-are a plain `for…of` loop around `test()` — there is no `each` helper.
+are a plain `for…of` loop around `test()` - there is no `each` helper.
 
 ## Assertions
 
@@ -76,7 +76,7 @@ Placeholders nest anywhere inside a `toEqual`/`toContain` value:
 ## Mocking
 
 **`spy(fn?)`** records every call in `spy.calls` (an array of argument lists) and otherwise does
-whatever function you pass — there are no `.mockReturnValue`-style methods:
+whatever function you pass - there are no `.mockReturnValue`-style methods:
 
 ```js
 const onSave = spy() //                       records only
@@ -91,7 +91,7 @@ expect(onSave.calls).toEqual([[{ id: 1 }]]) // called once with { id: 1 }
 expect(load.calls.length).toEqual(2)
 ```
 
-Spies are cleared and wrapped methods restored between tests — no cleanup to write.
+Spies are cleared and wrapped methods restored between tests - no cleanup to write.
 
 **`mockModule(specifier, factory)`** replaces a whole module for the file under test, everywhere it
 is imported, at any depth:
@@ -105,22 +105,22 @@ mockModule('./http.js', ({ spy, orig }) => ({
 
 - The specifier is relative to **your test file**, or the dependency alias from `imp.json`. imp
   matches by resolved file, so a different spelling elsewhere is still covered.
-- Call it `mockModule` (do not rename the import) and pass a **string literal** — imp reads these
+- Call it `mockModule` (do not rename the import) and pass a **string literal** - imp reads these
   before your test runs.
-- The factory runs in the mocked module and **cannot see your test file's variables** — use the
+- The factory runs in the mocked module and **cannot see your test file's variables** - use the
   injected `spy`/`orig`.
 - Exports you do not return are auto-filled with fresh spies; `default` mocks a default export.
 - Mocks are scoped to one file and never leak.
 
 **A component's HTTP calls** need neither: `spy(globalThis, 'fetch', …)` stands in for the network,
 and a one-line host component owns the client (`onMount: (_instance, setup) => setup()`) since a
-client is always owned by a component. `{ fakeTimers: true }` makes retries and timeouts instant —
+client is always owned by a component. `{ fakeTimers: true }` makes retries and timeouts instant -
 `await clock.tick(delay)` between attempts. See [http](http.md).
 
 ## Unit tests
 
 A fresh simulated DOM per file: `document`, `window`, elements, events, `localStorage` are globals.
-Files share their DOM between tests — reset in `beforeEach`.
+Files share their DOM between tests - reset in `beforeEach`.
 
 ```js
 import { mount } from 'imp'
@@ -135,14 +135,14 @@ test('reacts to clicks', () => {
 })
 ```
 
-**Components render into shadow roots** — see [components](components.md) — so
+**Components render into shadow roots** - see [components](components.md) - so
 `document.querySelector` does not see their internals:
 
 ```js
 document.querySelector('my-app-card').shadowRoot.querySelector('button').click()
 ```
 
-**Fake timers** (unit only) — `{ fakeTimers: true }` or
+**Fake timers** (unit only) - `{ fakeTimers: true }` or
 `{ fakeTimers: { now: new Date('2030-01-01') } }` puts `setTimeout`, `setInterval`,
 `requestAnimationFrame`, `Date` and `performance.now()` on a virtual clock handed to the test as
 `clock`:
@@ -164,7 +164,7 @@ test('debounce fires once', async ({ clock }) => {
 }, { fakeTimers: true })
 ```
 
-`tick`/`runAll` are async — always `await` them. Setting `fakeTimers` on a spec fails.
+`tick`/`runAll` are async - always `await` them. Setting `fakeTimers` on a spec fails.
 
 ## E2E specs
 
@@ -180,9 +180,9 @@ test('increments on click', async ({ page }) => {
 ```
 
 The e2e server is the dev server, so `--mock` (or `mocks.enabled` in `imp.json`) feeds the whole
-suite from your `*.mock.js` files with no stub of any kind — see [mocks](mocks.md).
+suite from your `*.mock.js` files with no stub of any kind - see [mocks](mocks.md).
 
-**Write plain CSS selectors — they already reach inside components.** Never prefix a selector with
+**Write plain CSS selectors - they already reach inside components.** Never prefix a selector with
 `>>>`; the search is deep from the page down. Use `>>>` only _between_ parts to disambiguate when a
 selector would match in more than one component, one per boundary crossed:
 `imp-submit-button >>> imp-button >>> button`. The page is already on your app before the first
@@ -194,12 +194,12 @@ The browser is resolved in order: `test.browser` in `imp.json`, `IMP_BROWSER`, a
 Chrome/Chromium, else a pinned checksum-verified download into `~/.imp/browser/`.
 
 `--video <dir>` records one GIF per spec (tune `test.video`: `enable`, `fps`, `maxDuration`,
-`width`, `quality`) — GIFs play inline in a GitHub PR, which is how an agent shows a reviewer the
+`width`, `quality`) - GIFs play inline in a GitHub PR, which is how an agent shows a reviewer the
 feature working.
 
 ## Output
 
 Plain text on stdout: `✓`/`✗`/`-` per test for a single file; for a level run one `✓ <file>` line
 per passing file and the full output of every failing one, then a tally. Exit code `1` if anything
-failed. The only machine-readable surface is `--list` (JSON array of files, for a CI matrix — one
+failed. The only machine-readable surface is `--list` (JSON array of files, for a CI matrix - one
 job per spec, since each spec is self-contained).

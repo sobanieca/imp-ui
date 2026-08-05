@@ -1,7 +1,7 @@
 import { isAbsolute, join, relative, SEPARATOR, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { runEsbuild } from './deps.js'
-import { DATAURL_ASSET_LOADERS, impResolverPlugin } from './bundling.js'
+import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
+import { impResolverPlugin } from './bundling.js'
 
 const MOCK_FILE_SUFFIX = '.mock.js'
 
@@ -37,7 +37,7 @@ function entrySource(files, root) {
     `const collect = (module, file) => {`,
     `  const declared = module.mocks ?? module.default`,
     `  if (!Array.isArray(declared)) {`,
-    '    self.__impMockProblem(file + " must export \'mocks\' — an array of { match, handler }")',
+    '    self.__impMockProblem(file + " must export \'mocks\' - an array of { match, handler }")',
     `    return []`,
     `  }`,
     `  return declared.flatMap((entry, index) => {`,
@@ -105,7 +105,7 @@ const locate = (file, root) => {
 function describeProblem(error, root) {
   const reported = error?.errors?.map((issue) => {
     const file = issue.location?.file
-    const where = file ? `${locate(file, root)}:${issue.location.line} — ` : ''
+    const where = file ? `${locate(file, root)}:${issue.location.line} - ` : ''
     return `${where}${issue.text}`
   })
   return reported?.length ? reported.join('; ') : (error?.message ?? String(error))

@@ -9,7 +9,7 @@ const { target, maxBytes } = JSON.parse(await Deno.readTextFile(LIMIT_FILE))
 
 const info = await Deno.stat(new URL(`../${BINARY}`, import.meta.url)).catch(() => null)
 if (!info) {
-  console.error(`error: ${BINARY} not found — run "deno task compile" first`)
+  console.error(`error: ${BINARY} not found - run "deno task compile" first`)
   Deno.exit(1)
 }
 
@@ -30,4 +30,4 @@ if (info.size > maxBytes) {
 }
 
 const headroom = ((1 - info.size / maxBytes) * 100).toFixed(1)
-console.log(`within limit — ${headroom}% headroom`)
+console.log(`within limit - ${headroom}% headroom`)

@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] --stretch requires both -w and -h — without it aspect ratio is always kept
+[ERROR] --stretch requires both -w and -h - without it aspect ratio is always kept

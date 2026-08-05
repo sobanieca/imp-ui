@@ -1,4 +1,4 @@
-# imp — Linting
+# imp - Linting
 
 ```
 imp lint [...paths]
@@ -6,7 +6,7 @@ imp lint --fix [...paths]
 ```
 
 `imp lint` checks your code with a standard recommended rule set plus imp's own rules. The linter is
-built into the `imp` binary — there is nothing to install or configure, it works offline, and a
+built into the `imp` binary - there is nothing to install or configure, it works offline, and a
 given imp release lints the same way on every machine.
 
 Given paths (files or directories) are checked; with no paths, the whole project is. The command
@@ -14,7 +14,7 @@ exits with an error if a given path does not exist.
 
 ## What gets linted
 
-`imp lint` checks `.js`, `.mjs`, and `.cjs` files — and `.html` files too: inline `<script>` blocks
+`imp lint` checks `.js`, `.mjs`, and `.cjs` files - and `.html` files too: inline `<script>` blocks
 are linted like any other module, with problems reported at their real line in the HTML file.
 Scripts with a `src` attribute are skipped (the file they point to is linted on its own), as are
 scripts whose `type` is neither a JavaScript type nor `module`.
@@ -23,7 +23,7 @@ Code is linted as modern browser code: ES modules, current JavaScript syntax, an
 (`document`, `fetch`, `localStorage`, …) are all recognized.
 
 Directories named `.git`, `node_modules`, `dist`, and `.imp` are always skipped, and so is the
-vendored `dependencies/` folder — the code in it is a package's, not yours. Additional paths can be
+vendored `dependencies/` folder - the code in it is a package's, not yours. Additional paths can be
 skipped with `exclude` (see _Configuration_ below).
 
 ## The rule set
@@ -35,7 +35,7 @@ On top of the base set, imp's own rules are always applied as errors:
 
 ### `imp/no-capital-component`
 
-imp components are lowercase functions — element factories and `component()` factories alike — and
+imp components are lowercase functions - element factories and `component()` factories alike - and
 there is no JSX, so a capitalized function name signals a habit from another framework. The rule
 flags function declarations and function-valued variables whose name starts with a capital letter:
 
@@ -44,14 +44,14 @@ const Widget = () => div('widget')
 ```
 
 ```
-error[imp/no-capital-component]: 'Widget' starts with a capital letter — imp components are lowercase functions (write 'widget')
+error[imp/no-capital-component]: 'Widget' starts with a capital letter - imp components are lowercase functions (write 'widget')
  --> src/widget.js:1:7
 ```
 
 ### `imp/single-props-object`
 
 An element takes at most one props object; everything else you pass is a child. Passing a second
-object literal is almost always a mistake — at runtime the objects are merged and later keys
+object literal is almost always a mistake - at runtime the objects are merged and later keys
 silently win. The rule flags any call to a built-in element factory (`div`, `span`, …, and the
 generic `el`) or a standard component (`button`, `emptyState`, …) that receives more than one object
 literal:
@@ -61,7 +61,7 @@ div({ class: 'card' }, { onclick: open }, 'Open')
 ```
 
 ```
-error[imp/single-props-object]: multiple props objects passed to 'div' — pass a single props object; later keys win
+error[imp/single-props-object]: multiple props objects passed to 'div' - pass a single props object; later keys win
  --> src/app.js:1:26
 ```
 
@@ -79,18 +79,18 @@ const user = initState('user', { name: 'Ada' })
 ```
 
 ```
-error[imp/state-name-namespace]: state name 'user' must include a namespace — use dot-separated segments like 'myapp.user'
+error[imp/state-name-namespace]: state name 'user' must include a namespace - use dot-separated segments like 'myapp.user'
  --> src/app.js:1:24
 ```
 
-Names built dynamically (a variable, a template with expressions) are not checked statically — the
+Names built dynamically (a variable, a template with expressions) are not checked statically - the
 same validation then happens at runtime, where a bad name throws.
 
 ### `imp/state-setup-before-await`
 
 In an async `onMount`, state resolution must happen **before the first `await`** (see
 **[State](state.md)**). Past it, the mounting component is out of reach and `initState`, `useState`,
-and `watch` all throw at runtime — this rule catches them earlier, as you write them. It flags
+and `watch` all throw at runtime - this rule catches them earlier, as you write them. It flags
 `initState`/`useState` calls placed after an `await` in an async `onMount`, and `watch` called there
 on a handle the file created with `initState`, `useState`, or `computed` (tracking the handle keeps
 unrelated third-party `.watch()` methods out of the reports):
@@ -108,21 +108,21 @@ const orders = component('my-app-orders', {
 ```
 
 ```
-error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
  --> src/orders.js:5:20
 
-error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
+error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async onMount - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
  --> src/orders.js:6:5
 ```
 
-Initialize the state with an empty value first, `await` the data, then `set` it in — the handle
+Initialize the state with an empty value first, `await` the data, then `set` it in - the handle
 lives on in the closure, and reads and writes are allowed anywhere. Only resolution and `watch` are
 position-sensitive: the DOM you build from the handles (`text`/`view`/`each`, bound props) can come
 after the `await` and goes live when the component mounts it.
 
 ### `imp/http-client-name-namespace`
 
-HTTP client names follow the same rule as state names — at least two non-empty dot-separated
+HTTP client names follow the same rule as state names - at least two non-empty dot-separated
 segments, like `myapp.api` (see **[HTTP](http.md)**). The rule checks every
 `initHttpClient`/`useHttpClient`/`createHttpClient` call whose name is written literally:
 
@@ -131,13 +131,13 @@ const api = initHttpClient('api', { baseUrl: '/api' })
 ```
 
 ```
-error[imp/http-client-name-namespace]: http client name 'api' must include a namespace — use dot-separated segments like 'myapp.api'
+error[imp/http-client-name-namespace]: http client name 'api' must include a namespace - use dot-separated segments like 'myapp.api'
  --> src/app.js:1:31
 ```
 
 ### `imp/http-client-setup-before-await`
 
-An HTTP client is owned by the component that initializes it, so — exactly like state — it must be
+An HTTP client is owned by the component that initializes it, so - exactly like state - it must be
 resolved **before the first `await`** of an async `onMount`:
 
 ```js
@@ -152,18 +152,18 @@ const orders = component('my-app-orders', {
 ```
 
 ```
-error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
+error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
  --> src/orders.js:5:21
 ```
 
 Resolve every client you need up front; the handles work anywhere afterwards, including in event
-handlers and after any number of `await`s. `createHttpClient` is not flagged — a client you own
+handlers and after any number of `await`s. `createHttpClient` is not flagged - a client you own
 yourself needs no mounting component and can be built anywhere.
 
 ### `imp/router-setup-before-await`
 
 A `router()` with no `routes` renders the routes of the **area around it**, which it finds through
-the mounting component — so in an area's `root` it is position-sensitive in exactly the way state
+the mounting component - so in an area's `root` it is position-sensitive in exactly the way state
 and clients are (see **[Routing](routing.md)**). Called after the first `await`, it cannot see the
 area and reports the misleading `'routes' is required` instead:
 
@@ -178,19 +178,19 @@ const shell = component('admin-shell', {
 ```
 
 ```
-error[imp/router-setup-before-await]: 'router' runs after an await in an async onMount — past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
+error[imp/router-setup-before-await]: 'router' runs after an await in an async onMount - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
  --> src/admin/shell.js:5:34
 ```
 
-Build the slot first and use it afterwards — `const screens = router()` above the `await`, then
+Build the slot first and use it afterwards - `const screens = router()` above the `await`, then
 `div(adminNav(settings), screens)`. A `router({ routes })` with its own table is **not** flagged: it
 looks nothing up, so it can be built anywhere. The rule also flags `watch` on a `useRoute()` handle
-after the first `await`, which needs a mounting component to own the subscription — bind the route
+after the first `await`, which needs a mounting component to own the subscription - bind the route
 to DOM with `text`/`view`/`each` instead, or watch it before the `await`.
 
 ### `imp/no-root-query-in-mount`
 
-While `onMount` runs, the DOM it returns is **not in the shadow root yet** — imp inserts it after
+While `onMount` runs, the DOM it returns is **not in the shadow root yet** - imp inserts it after
 `onMount` returns, and after the resolved promise for an async `onMount` (see
 **[Components](components.md)**). Querying `instance.root` there finds the placeholder, not your
 content. This rule flags `querySelector`, `querySelectorAll`, and `getElementById` called directly
@@ -209,19 +209,19 @@ const card = component('my-app-card', {
 ```
 
 ```
-error[imp/no-root-query-in-mount]: the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page
+error[imp/no-root-query-in-mount]: the shadow root is queried in onMount before the returned DOM is placed - onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page
  --> src/card.js:4:5
 ```
 
 Keep a reference to the node you build and mutate it directly, or run the query from
-`instance.afterMount(callback)`, which imp flushes on the next frame once your DOM is placed — the
+`instance.afterMount(callback)`, which imp flushes on the next frame once your DOM is placed - the
 fixes are spelled out under _The instance_ and _Running code after the DOM is placed_ in
 **[Components](components.md)**.
 
 ### `imp/component-name`
 
 Component names become real element tags, so they must be lowercase with at least one dash, like
-`my-app-profile` (see **[Components](components.md)**) — that is what makes them valid custom
+`my-app-profile` (see **[Components](components.md)**) - that is what makes them valid custom
 element names, and the leading segment doubles as your app's namespace. The rule checks every
 `component` call whose name is written literally:
 
@@ -230,7 +230,7 @@ export const profile = component('profile', { onMount: () => div('…') })
 ```
 
 ```
-error[imp/component-name]: component name 'profile' must be lowercase with at least one dash — like 'my-app-profile'
+error[imp/component-name]: component name 'profile' must be lowercase with at least one dash - like 'my-app-profile'
  --> src/profile.js:1:34
 ```
 
@@ -239,8 +239,8 @@ rejected. Dynamically built names are validated at runtime instead, where a bad 
 
 ### `imp/import-source`
 
-imp's library is split by subject — `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
-`imp/i18n`, `imp/log`, `imp/http` (see **[Imports](imports.md)**) — and each name has exactly one
+imp's library is split by subject - `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
+`imp/i18n`, `imp/log`, `imp/http` (see **[Imports](imports.md)**) - and each name has exactly one
 home. Importing a name from a sibling specifier would fail at runtime with a missing-export error
 that says nothing about where to look, so the rule names the right specifier instead:
 
@@ -249,7 +249,7 @@ import { component, div } from 'imp'
 ```
 
 ```
-error[imp/import-source]: 'div' is not exported by 'imp' — it comes from 'imp/html': import { div } from 'imp/html'
+error[imp/import-source]: 'div' is not exported by 'imp' - it comes from 'imp/html': import { div } from 'imp/html'
  --> src/app.js:1:21
 ```
 
@@ -268,12 +268,12 @@ project's `dependencies/` folder by `imp install` (see
 dependency can appear:
 
 - **Pins in `imp.json` must be exact.** Every `dependencies` entry must be an `npm:`/`jsr:`
-  specifier with an exact version (`npm:mitt@3.0.1` — never `npm:mitt@3`, `npm:mitt@^3.0.1`, or a
+  specifier with an exact version (`npm:mitt@3.0.1` - never `npm:mitt@3`, `npm:mitt@^3.0.1`, or a
   bare `npm:mitt`). There is no lock file: the exact pin plus the committed bundle are what make
   resolution reproducible.
 
   ```
-  error[imp/exact-dependency-versions]: dependency 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) — the vendored bundle in dependencies/ is built from this pin (e.g. 'npm:dayjs@1.0.0'); run 'imp install' to re-resolve and re-pin it
+  error[imp/exact-dependency-versions]: dependency 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) - the vendored bundle in dependencies/ is built from this pin (e.g. 'npm:dayjs@1.0.0'); run 'imp install' to re-resolve and re-pin it
    --> imp.json:1:1
   ```
 
@@ -284,19 +284,19 @@ dependency can appear:
   ```
 
   ```
-  error[imp/exact-dependency-versions]: 'npm:mitt@3.0.1' is an inline dependency specifier — dependencies are vendored: run 'imp install mitt@3.0.1' and import 'mitt' instead
+  error[imp/exact-dependency-versions]: 'npm:mitt@3.0.1' is an inline dependency specifier - dependencies are vendored: run 'imp install mitt@3.0.1' and import 'mitt' instead
    --> src/app.js:1:18
   ```
 
 - **Bare imports must be declared.** A bare specifier (anything that is not relative, absolute, a
-  URL, or part of imp itself — `imp` and its subpaths) must match a declared dependency alias:
+  URL, or part of imp itself - `imp` and its subpaths) must match a declared dependency alias:
 
   ```js
   import confetti from 'canvas-confetti'
   ```
 
   ```
-  error[imp/exact-dependency-versions]: 'canvas-confetti' is not a declared dependency — run 'imp install canvas-confetti' to vendor it and add it to 'dependencies' in imp.json
+  error[imp/exact-dependency-versions]: 'canvas-confetti' is not a declared dependency - run 'imp install canvas-confetti' to vendor it and add it to 'dependencies' in imp.json
    --> src/app.js:1:22
   ```
 
@@ -304,7 +304,7 @@ dependency can appear:
   available ones listed:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/layout' is not part of the imp library — import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/test', 'imp/preview'
+  error[imp/exact-dependency-versions]: 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 
@@ -323,18 +323,18 @@ Extra lint configuration lives under `lint` in `imp.json` and is layered on top 
 }
 ```
 
-- **`rules`** — per-rule severities: `"off"`, `"warn"`, or `"error"`. Warnings are reported but do
+- **`rules`** - per-rule severities: `"off"`, `"warn"`, or `"error"`. Warnings are reported but do
   not fail the command; errors make it exit non-zero.
-- **`exclude`** — project-relative paths to skip.
+- **`exclude`** - project-relative paths to skip.
 
-imp's own rules are always applied as errors and cannot be reconfigured — for a deliberate one-off
+imp's own rules are always applied as errors and cannot be reconfigured - for a deliberate one-off
 exception, use an ignore comment (below).
 
 An invalid `lint` block (an unknown rule, a bad severity) fails the command with a message
 explaining what is wrong:
 
 ```
-error: invalid lint configuration in imp.json — Key "rules": Key "eqeqeq": Expected severity of "off", 0, "warn", 1, "error", or 2.
+error: invalid lint configuration in imp.json - Key "rules": Key "eqeqeq": Expected severity of "off", 0, "warn", 1, "error", or 2.
 ```
 
 ## Suppressing findings in code
@@ -355,7 +355,7 @@ directive anywhere in the file:
 ```
 
 imp rule names can be written bare (`no-capital-component`) or fully qualified
-(`imp/no-capital-component`) — both work.
+(`imp/no-capital-component`) - both work.
 
 ## Applying fixes
 

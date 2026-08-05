@@ -1,6 +1,7 @@
 import { basename, dirname, join, relative, resolve } from '@std/path'
 import { VERSION } from './version.js'
 import { collectFiles } from './walk.js'
+import { IMP_MODULES, isImpStdSpecifier } from './specifiers.js'
 
 const SUBJECT_SKILLS = new URL('../../skills/', import.meta.url)
 const LIBRARY = new URL('../../lib/src/', import.meta.url)
@@ -12,66 +13,59 @@ const GROUPS = [
   { id: 'toolkit', title: 'WORKING IN AN IMP PROJECT' },
   {
     id: 'components',
-    title: "STANDARD COMPONENTS — imported from 'imp/std' · read: imp skill std/button",
+    title: "STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button",
   },
 ]
 
 const PROJECT_TITLE =
-  'THIS PROJECT — components with a skill file · read: imp skill ./path/to/component.js'
+  'THIS PROJECT - components with a skill file · read: imp skill ./path/to/component.js'
 
 const NO_PROJECT_SKILLS =
-  "  (none yet — write 'counter.skill.md' next to a component and it is listed here)"
+  "  (none yet - write 'counter.skill.md' next to a component and it is listed here)"
 
 export const SKILLS = [
   {
     name: 'imports',
-    file: 'imports.md',
     group: 'app',
     aliases: ['imp', 'specifiers'],
     summary: 'every bare specifier imp resolves, and what each one exports',
   },
   {
     name: 'rendering',
-    file: 'rendering.md',
     group: 'app',
     aliases: ['html', 'imp/html', 'elements'],
     summary: 'element factories, props objects, children, and mount',
   },
   {
     name: 'components',
-    file: 'components.md',
     group: 'app',
     aliases: ['component'],
     summary: 'custom elements with an onMount lifecycle: instance, styles, cleanup',
   },
   {
     name: 'state',
-    file: 'state.md',
     group: 'app',
     aliases: ['imp/state'],
     summary: 'named reactive state shared down the tree and bound straight to the DOM',
   },
   {
     name: 'http',
-    file: 'http.md',
     group: 'app',
     aliases: ['imp/http', 'fetch', 'api', 'http-client'],
     summary: 'the configured HTTP client a component owns, with retries and request state',
   },
   {
     name: 'routing',
-    file: 'routing.md',
     group: 'app',
     aliases: ['router', 'imp/router'],
     summary: 'client-side routes as one plain-data table, with lazily loaded sections',
   },
   {
     name: 'std',
-    file: 'std-components.md',
     group: 'app',
     aliases: [
       'imp/std',
-      'std-components',
+      'standard-components',
       'imp/std/display',
       'imp/std/layout',
       'imp/std/inputs',
@@ -81,195 +75,170 @@ export const SKILLS = [
   },
   {
     name: 'theming',
-    file: 'theming.md',
     group: 'app',
     aliases: ['theme', 'imp/theme', 'tokens'],
     summary: 'themes as plain token modules, applied at the entry point and swappable',
   },
   {
     name: 'i18n',
-    file: 'i18n.md',
     group: 'app',
     aliases: ['imp/i18n', 'translations'],
     summary: 't() lookups, per-language messages, and the lang attribute that drives them',
   },
   {
     name: 'logging',
-    file: 'logging.md',
     group: 'app',
     aliases: ['log', 'imp/log', 'logger'],
     summary: 'the built-in logger and the per-environment log level',
   },
   {
     name: 'feature-flags',
-    file: 'feature-flags.md',
     group: 'app',
     aliases: ['flag', 'flags', 'feature-flag', 'toggles'],
     summary: 'flag() gates a feature per environment and imp build folds the branch away',
   },
   {
     name: 'cli',
-    file: 'cli.md',
     group: 'toolkit',
     aliases: ['commands', 'help'],
     summary: 'every command, and which skill covers it',
   },
   {
     name: 'init',
-    file: 'init.md',
     group: 'toolkit',
     aliases: ['scaffold', 'new', 'create', 'starter'],
     summary: 'scaffolding a runnable project: what imp init writes and what it refuses',
   },
   {
     name: 'config',
-    file: 'config.md',
     group: 'toolkit',
     aliases: ['imp.json', 'imp.jsonc', 'environments', 'env'],
     summary: 'the imp.json file key by key, and the --env environment files',
   },
   {
     name: 'start',
-    file: 'start.md',
     group: 'toolkit',
     aliases: ['serve', 'dev', 'dev-server', 'dev.log'],
     summary: 'the dev server: injected imports, live reload and the .imp/dev.log to grep',
   },
   {
     name: 'build',
-    file: 'build.md',
     group: 'toolkit',
     aliases: ['bundle', 'pwa', 'dist', 'targetimphost', 'public', 'assets'],
     summary: 'the production build, JS entries for publishing, and the offline PWA output',
   },
   {
     name: 'mocks',
-    file: 'mocks.md',
     group: 'toolkit',
     aliases: ['mock', 'mock.js', 'fixtures', 'backend'],
     summary: "answering the app's requests from *.mock.js files instead of the network",
   },
   {
     name: 'preview',
-    file: 'preview.md',
     group: 'toolkit',
     aliases: ['previews', 'preview.js', 'imp/preview', 'scenarios'],
     summary: 'rendering components in isolation from a *.preview.js file',
   },
   {
     name: 'testing',
-    file: 'testing.md',
     group: 'toolkit',
     aliases: ['test', 'imp/test'],
     summary: 'unit tests in-process and e2e specs against a real browser',
   },
   {
     name: 'dependencies',
-    file: 'dependencies.md',
     group: 'toolkit',
     aliases: ['deps', 'install', 'uninstall'],
     summary: 'vendoring packages into dependencies/ and importing them',
   },
   {
     name: 'lint',
-    file: 'lint.md',
     group: 'toolkit',
     aliases: ['rules'],
     summary: 'the imp lint rules, what each one prevents, and how to apply fixes',
   },
   {
     name: 'fmt',
-    file: 'fmt.md',
     group: 'toolkit',
     aliases: ['format', 'formatting'],
     summary: 'formatting every file type in the project with one command',
   },
   {
     name: 'resize',
-    file: 'resize.md',
     group: 'toolkit',
     aliases: ['image', 'images'],
     summary: 'downscaling an oversized PNG or JPEG asset in place',
   },
   {
     name: 'skill',
-    file: 'skill.md',
     group: 'toolkit',
     aliases: ['skills', 'skill.md'],
     summary: 'reading these manuals, and writing a *.skill.md for a component',
   },
   {
     name: 'update',
-    file: 'update.md',
     group: 'toolkit',
     aliases: ['version', 'pin', 'prune', 'licenses'],
     summary: 'pinning the imp version, pruning cached ones, and the license notices',
   },
 ]
 
-export const COMPONENT_SKILLS = [
-  { name: 'std/button', file: 'std/general/button.skill.md' },
-  { name: 'std/heading', file: 'std/general/heading.skill.md' },
-  { name: 'std/text', file: 'std/general/text.skill.md' },
-  { name: 'std/link', file: 'std/general/link.skill.md' },
-  { name: 'std/emptyState', file: 'std/display/empty_state.skill.md' },
-  { name: 'std/appShell', file: 'std/layout/app_shell.skill.md' },
-  { name: 'std/stack', file: 'std/layout/stack.skill.md' },
-  { name: 'std/row', file: 'std/layout/row.skill.md' },
-  { name: 'std/grid', file: 'std/layout/grid.skill.md' },
-  { name: 'std/item', file: 'std/layout/item.skill.md' },
-  { name: 'std/container', file: 'std/layout/container.skill.md' },
-  { name: 'std/spacer', file: 'std/layout/spacer.skill.md' },
-  { name: 'std/divider', file: 'std/layout/divider.skill.md' },
-  { name: 'std/scrollArea', file: 'std/layout/scroll_area.skill.md' },
-  { name: 'std/toolbar', file: 'std/layout/toolbar.skill.md' },
-  { name: 'std/form', file: 'std/inputs/form.skill.md' },
-  { name: 'std/textField', file: 'std/inputs/text_field.skill.md' },
-  { name: 'std/passwordField', file: 'std/inputs/password_field.skill.md' },
-  { name: 'std/searchField', file: 'std/inputs/search_field.skill.md' },
-  { name: 'std/textArea', file: 'std/inputs/text_area.skill.md' },
-  { name: 'std/numberField', file: 'std/inputs/number_field.skill.md' },
-  { name: 'std/select', file: 'std/inputs/select.skill.md' },
-  { name: 'std/checkbox', file: 'std/inputs/checkbox.skill.md' },
-  { name: 'std/toggle', file: 'std/inputs/toggle.skill.md' },
-  { name: 'std/radioGroup', file: 'std/inputs/radio_group.skill.md' },
-  { name: 'std/submitButton', file: 'std/inputs/submit_button.skill.md' },
-  { name: 'std/resetButton', file: 'std/inputs/reset_button.skill.md' },
-  { name: 'std/tabs', file: 'std/navigation/tabs.skill.md' },
-  { name: 'std/navMenu', file: 'std/navigation/nav_menu.skill.md' },
-  { name: 'std/commandPalette', file: 'std/navigation/command_palette.skill.md' },
-]
+const STD_BARRELS = Object.entries(IMP_MODULES)
+  .filter(([specifier]) => isImpStdSpecifier(specifier))
+  .map(([, module]) => new URL(module, LIBRARY))
 
-const componentSubjects = COMPONENT_SKILLS.map((component) => {
-  const exportName = component.name.slice('std/'.length)
-  return {
-    ...component,
-    kind: 'component',
-    group: 'components',
-    url: new URL(component.file, LIBRARY),
-    aliases: [exportName, `imp/${component.name}`],
+const BARREL_EXPORT = /export\s*(?:(\*)|\{\s*(\w+)\s*\})\s*from\s*'([^']+)'/g
+
+async function barrelComponents(barrel) {
+  const source = await Deno.readTextFile(barrel)
+  const components = []
+  for (const [, star, name, module] of source.matchAll(BARREL_EXPORT)) {
+    if (star) components.push(...await barrelComponents(new URL(module, barrel)))
+    else components.push({ name, url: new URL(skillFileFor(module), barrel) })
   }
-})
+  return components
+}
+
+export async function standardComponentSubjects() {
+  const subjects = []
+  for (const barrel of STD_BARRELS) {
+    for (const { name, url } of await barrelComponents(barrel)) {
+      subjects.push({
+        name: `std/${name}`,
+        kind: 'component',
+        group: 'components',
+        url,
+        aliases: [name, `imp/std/${name}`],
+      })
+    }
+  }
+  return subjects
+}
 
 const subjectSkills = SKILLS.map((skill) => ({
   ...skill,
   kind: 'subject',
-  url: new URL(skill.file, SUBJECT_SKILLS),
+  file: `${skill.name}.md`,
+  url: new URL(`${skill.name}.md`, SUBJECT_SKILLS),
 }))
 
-const SUBJECTS = [...subjectSkills, ...componentSubjects]
+const loadSubjects = async () => [...subjectSkills, ...await standardComponentSubjects()]
+
+let subjects = null
+
+const allSubjects = () => (subjects ??= loadSubjects())
 
 const normalize = (subject) =>
   subject.trim().toLowerCase().replace(/^\.?\//, '').replace(/\.md$/, '')
 
-const byName = new Map()
-for (const subject of SUBJECTS) {
-  for (const name of [subject.name, ...subject.aliases]) byName.set(normalize(name), subject)
+const nameByFile = new Map(subjectSkills.map((skill) => [skill.file, skill.name]))
+
+export async function findSkill(subject) {
+  const wanted = normalize(subject)
+  return (await allSubjects()).find((candidate) =>
+    [candidate.name, ...candidate.aliases].some((name) => normalize(name) === wanted)
+  ) ?? null
 }
-
-const nameByFile = new Map(SKILLS.map((skill) => [skill.file, skill.name]))
-
-export const findSkill = (subject) => byName.get(normalize(subject)) ?? null
 
 const SUBJECT_LINK = /\[([^\]]+)\]\(([\w-]+)\.md(?:#[^)]*)?\)/g
 const FENCE = /^\s*(`{3,})(.*)$/
@@ -365,7 +334,7 @@ async function renderSkill(subject) {
     .map((name) => `imp skill ${name}`).join(' · ')
   const footer = relatedLine ? `\n\nRelated: ${relatedLine}` : ''
   if (subject.kind === 'component') return `${retargeted}${footer}`
-  const banner = `imp skill: ${subject.name} — ${subject.summary} (imp ${VERSION})`
+  const banner = `imp skill: ${subject.name} - ${subject.summary} (imp ${VERSION})`
   return `${banner}\n\n${retargeted}${footer}`
 }
 
@@ -380,7 +349,7 @@ export async function readComponentSkill(path, display = path) {
     return await readSkillText(skillFile)
   } catch {
     throw new Error(
-      `no skill for ${display} — describe the component in ${basename(skillFile)} next to it`,
+      `no skill for ${display} - describe the component in ${basename(skillFile)} next to it`,
     )
   }
 }
@@ -400,14 +369,14 @@ export async function projectSkills(root) {
   return skills
 }
 
-const INTRO = `imp skills — the usage manuals imp ships for the agent writing the code
+const INTRO = `imp skills - the usage manuals imp ships for the agent writing the code
 
-imp is a buildless UI toolkit: your ES modules run in the browser exactly as written — no
+imp is a buildless UI toolkit: your ES modules run in the browser exactly as written - no
 compile step, no JSX, no bundler in development. Everything an app uses arrives through a
 bare specifier imp resolves ('imp', 'imp/html', 'imp/state', …), and the same imp binary
 serves, tests, lints, formats and builds the project.
 
-Read one in full — no flags, the text goes to stdout:
+Read one in full - no flags, the text goes to stdout:
 
   imp skill state                  a subject listed below (several at once is fine)
   imp skill std/button             a standard component
@@ -415,7 +384,7 @@ Read one in full — no flags, the text goes to stdout:
 `
 
 const OUTRO =
-  `A component documents itself in a 'counter.skill.md' file next to it — write one for every
+  `A component documents itself in a 'counter.skill.md' file next to it - write one for every
 component you build, and an agent can learn it the same way it learns imp. 'imp help' lists
 every command; run 'imp lint' and 'imp fmt' when you are done editing.`
 
@@ -426,7 +395,7 @@ const section = (title, entries, width) => {
 
 export async function skillIndex({ root = null } = {}) {
   const listed = []
-  for (const subject of SUBJECTS) {
+  for (const subject of await allSubjects()) {
     listed.push({ ...subject, summary: await summaryOf(subject) })
   }
   const project = await projectSkills(root)
@@ -447,18 +416,18 @@ const looksLikeFile = (subject) =>
   subject.endsWith(SKILL_SUFFIX) || subject.endsWith('.js') || subject.includes('/') ||
   subject.includes('\\')
 
-function unknownSubject(subject) {
-  const names = SUBJECTS.map(({ name }) => name).join(', ')
+async function unknownSubject(subject) {
+  const names = (await allSubjects()).map(({ name }) => name).join(', ')
   return new Error(
-    `unknown skill '${subject}' — run 'imp skill' for the index · subjects: ${names} · ` +
+    `unknown skill '${subject}' - run 'imp skill' for the index · subjects: ${names} · ` +
       'for a component of this project pass its path: imp skill ./path/to/component.js',
   )
 }
 
 async function renderRequested(subject) {
-  const known = findSkill(subject)
+  const known = await findSkill(subject)
   if (known) return await renderSkill(known)
-  if (!looksLikeFile(subject)) throw unknownSubject(subject)
+  if (!looksLikeFile(subject)) throw await unknownSubject(subject)
   return await readComponentSkill(resolve(subject), subject)
 }
 

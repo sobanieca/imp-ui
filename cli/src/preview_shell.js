@@ -106,7 +106,6 @@ const HEAD_STYLES = `
 
   .path {
     color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
     font-size: var(--imp-font-size-lg, 1.125rem);
     font-weight: var(--imp-font-weight-bold, 700);
   }
@@ -242,7 +241,7 @@ const indexDefinition = {
             previews.length === 1 ? '' : 's'
           } in ${categories.length} categor${
             categories.length === 1 ? 'y' : 'ies'
-          } — press Ctrl P to search by name or category.`,
+          } - press Ctrl P to search by name or category.`,
         ),
       ),
       div({ class: 'cards' }, ...cards),
@@ -257,7 +256,7 @@ const headDefinition = {
       { class: 'head' },
       span(
         { class: 'path' },
-        span({ class: 'category' }, `${entry.category}/`),
+        span({ class: 'category' }, `${entry.category} / `),
         entry.name,
       ),
       span({ class: 'file' }, entry.file),

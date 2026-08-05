@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] --pwa applies to an HTML page — a JS component build has no PWA to emit
+[ERROR] --pwa applies to an HTML page - a JS component build has no PWA to emit

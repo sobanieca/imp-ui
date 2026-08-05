@@ -1,3 +1,3 @@
-broken: mocks/broken.mock.js:2 — Unexpected end of file
+broken: mocks/broken.mock.js:2 - Unexpected end of file
 repaired: null (1 file, changed: true)
 missing directory: absent/ does not exist

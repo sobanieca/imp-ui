@@ -1,12 +1,12 @@
-# Binary distribution — GitHub Releases, compiled per platform
+# Binary distribution - GitHub Releases, compiled per platform
 
 ## Context
 
 imp ships as a single self-contained binary produced by `deno compile`. For the binary to be
 installable, updatable, and pinnable (`version-pinning-self-delegation.md`), releases need
 predictable, per-version, per-platform download URLs and an automated way to produce them. The
-sibling project `sobanieca/jsonr` already solves this the same way — a GitHub Actions workflow that
-compiles the binary for each target on push to `main` and attaches the assets to a tagged release —
+sibling project `sobanieca/jsonr` already solves this the same way - a GitHub Actions workflow that
+compiles the binary for each target on push to `main` and attaches the assets to a tagged release -
 and reusing that proven shape avoids inventing a bespoke pipeline.
 
 ## Decision
@@ -16,9 +16,9 @@ jsonr's release mechanism.
 
 - **Version source of truth is `deno.json`'s `"version"` field.** It is baked into the binary by
   importing it (`import denoJson from '../../deno.json' with { type: 'json' }`), so `imp --version`
-  and the self-delegation comparison read the same value the release is tagged with. Unlike jsonr —
+  and the self-delegation comparison read the same value the release is tagged with. Unlike jsonr -
   which duplicates the version into a `src/version.js` and runs a `check-version` job to keep the
-  two in sync — imp imports `deno.json` directly, so no consistency check is needed.
+  two in sync - imp imports `deno.json` directly, so no consistency check is needed.
 - **A `Release` workflow on push to `main`** runs formatting/lint checks, then, when a tag for the
   current version does not already exist, compiles the binary and publishes a GitHub Release tagged
   `v{version}` via `softprops/action-gh-release`. Re-pushing without bumping the version is a no-op
@@ -33,7 +33,7 @@ jsonr's release mechanism.
   number resolves from `https://api.github.com/repos/sobanieca/imp-ui/releases/latest` (`tag_name`,
   leading `v` stripped).
 - **An `install.sh`** detects OS/arch via `uname`, downloads the matching latest asset, and installs
-  it to `INSTALL_DIR` (default `/usr/local/bin`, using `sudo` when needed) — the one-line install
+  it to `INSTALL_DIR` (default `/usr/local/bin`, using `sudo` when needed) - the one-line install
   documented in `docs/cli.md`.
 - **Per-asset SHA-256 checksums.** Each binary is published alongside an `imp-{os}-{arch}.sha256`
   asset (`sha256sum` output). This is the one place imp deliberately diverges from jsonr, which

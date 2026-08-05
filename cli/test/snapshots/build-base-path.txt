@@ -3,7 +3,7 @@ exit code: 0
 
 --- stdout ---
 built index.html → dist/
-  base path /my-imp-app — root-absolute urls prefixed for a sub-path deployment
+  base path /my-imp-app - root-absolute urls prefixed for a sub-path deployment
   app.js (<size>)
   assets/note.txt (<size>)
   chunks/chunk-<hash>.js (<size>)

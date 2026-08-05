@@ -57,7 +57,7 @@ export const clientScript = ({ mocks = false } = {}) => `
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/@imp/sw.js', { scope: '/' })
-      .catch((error) => console.error('imp: the dev service worker failed to start —', error))
+      .catch((error) => console.error('imp: the dev service worker failed to start -', error))
 
     if (${mocks} && !navigator.serviceWorker.controller) {
       const network = globalThis.fetch

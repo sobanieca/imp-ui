@@ -49,7 +49,7 @@ function recommend(display, source, byteSize, maxBytes) {
   const oversized = byteSize > maxBytes || longestEdge > RECOMMENDED_MAX_EDGE
   logger.info(`${display} is ${source.width}×${source.height}, ${formatSize(byteSize)}`)
   if (!oversized) {
-    logger.info('already within the size budget — nothing to resize')
+    logger.info('already within the size budget - nothing to resize')
     return
   }
   const suggestedEdge = longestEdge > RECOMMENDED_MAX_EDGE
@@ -58,7 +58,7 @@ function recommend(display, source, byteSize, maxBytes) {
   const axis = source.width >= source.height ? '-w' : '-h'
   logger.info(`to shrink it, run:  imp resize ${display} ${axis} ${suggestedEdge}`)
   logger.info(
-    'resize keeps quality high with minimal compression — reach for a dedicated image tool for fine-grained control',
+    'resize keeps quality high with minimal compression - reach for a dedicated image tool for fine-grained control',
   )
 }
 
@@ -69,18 +69,18 @@ export async function resize({ root, image, width, height, output, stretch = fal
   const extension = extname(image).toLowerCase()
   if (DEFERRED_TYPES.has(extension)) {
     throw new Error(
-      `${extension} images are not yet supported — imp resize currently handles .png and .jpg`,
+      `${extension} images are not yet supported - imp resize currently handles .png and .jpg`,
     )
   }
   const encoder = RASTER_ENCODERS[extension]
   if (!encoder) {
     throw new Error(
-      `unsupported image format '${extension || image}' — imp resize handles .png and .jpg`,
+      `unsupported image format '${extension || image}' - imp resize handles .png and .jpg`,
     )
   }
   const mediaType = IMAGE_MEDIA_TYPES[extension]
   if (stretch && (width === null || height === null)) {
-    throw new Error('--stretch requires both -w and -h — without it aspect ratio is always kept')
+    throw new Error('--stretch requires both -w and -h - without it aspect ratio is always kept')
   }
 
   const path = isAbsolute(image) ? image : join(root, image)
@@ -106,7 +106,7 @@ export async function resize({ root, image, width, height, output, stretch = fal
   const target = targetDimensions(source, width, height, stretch)
   if (target.width === source.width && target.height === source.height) {
     logger.info(
-      `${display} is already ${source.width}×${source.height} — requested size would upscale it, so nothing was changed`,
+      `${display} is already ${source.width}×${source.height} - requested size would upscale it, so nothing was changed`,
     )
     return
   }

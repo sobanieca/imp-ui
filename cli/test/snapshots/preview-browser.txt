@@ -1,14 +1,15 @@
 scenarios: zero, startsAtFive, lazy
 rendered values: 0, 5, 9
 state rows: demo.count=0, demo.count=5, demo.count=9
-tabs per scenario: Preview, Code
+tabs per scenario: Preview, Code, Agent
 resize handles per stage: 3
-after picking the code tab: false/true (panels hidden/shown)
+after picking the code tab: false/true/false (panels hidden/shown/hidden)
 code shown for zero:
 import { counter } from './counter.js'
 
 counter()
 highlighted tokens for zero: keyword:import punctuation:{ punctuation:} keyword:from string:'./counter.js' punctuation:()
+agent instruction: Run 'imp skill ./components/counter.js' before writing code with it.
 after setting demo.count to 42: 42
 invalid JSON rejected: true
 language options: en, pl, ar
@@ -24,18 +25,19 @@ lang/dir/stage back on en: en/ltr/ltr
 theme options: brand, imp-light, imp-dark, imp-high-contrast-light, imp-high-contrast-dark (selected brand)
 imp-dark surface token: #0f172a
 brand surface token: #fdf7ff
-sidebar groups: components 2
-sidebar components: counter, todos
-sidebar current: counter
-page head: components/counter
+sidebar groups: Widgets 1, components 1
+sidebar components: Counter, todos
+sidebar current: Counter
+page head: Widgets / Counter
 search field: combobox named 'Search components' (Ctrl P)
 search placeholder: Search components…
 searching 'todo': components/todos
-searching 'comp': components/counter, components/todos
+searching 'comp': components/todos
 searching 'zzz': 0 matches, expanded true
-highlighted match: components/counter
-index headline: Components — 2 previews in 1 category — press Ctrl P to search by name or category.
-index cards: components 2
+highlighted match: components/todos
+index headline: Components - 2 previews in 2 categories - press Ctrl P to search by name or category.
+index cards: Widgets 1 · components 1
 ?scenario=lazy panels: 1 (lazy)
 mocked todos: Buy milk, Ship imp
 mocked todos state row: demo.todos
+agent tab without a description: components/todos.preview.js declares no description - add 'export const description = …' to it with the command an agent should run to learn this component.

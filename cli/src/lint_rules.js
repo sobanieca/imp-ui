@@ -3,7 +3,8 @@ import {
   DEPENDENCY_SCHEME,
   EXACT_VERSION,
   impSubpathProblem,
-  isImpSubpath,
+  isImpSpecifier,
+  isImpStdSpecifier,
   parseSpecifier,
 } from './specifiers.js'
 import { stateNameProblem } from '../../lib/src/state.js'
@@ -23,15 +24,7 @@ import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
 import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
 
-const STD_EXPORTS_BY_SPECIFIER = {
-  'imp/std': stdModule,
-  'imp/std/display': stdDisplayModule,
-  'imp/std/layout': stdLayoutModule,
-  'imp/std/inputs': stdInputsModule,
-  'imp/std/navigation': stdNavigationModule,
-}
-
-const EXPORTS_BY_SPECIFIER = {
+export const IMP_MODULE_EXPORTS = {
   'imp': impModule,
   'imp/html': htmlModule,
   'imp/state': stateModule,
@@ -40,11 +33,22 @@ const EXPORTS_BY_SPECIFIER = {
   'imp/i18n': i18nModule,
   'imp/log': logModule,
   'imp/http': httpModule,
+  'imp/std': stdModule,
+  'imp/std/display': stdDisplayModule,
+  'imp/std/layout': stdLayoutModule,
+  'imp/std/inputs': stdInputsModule,
+  'imp/std/navigation': stdNavigationModule,
 }
 
+const STD_SPECIFIERS = Object.keys(IMP_MODULE_EXPORTS).filter(isImpStdSpecifier)
+
+const API_SPECIFIERS = Object.keys(IMP_MODULE_EXPORTS).filter(
+  (specifier) => !isImpStdSpecifier(specifier),
+)
+
 const EXPORT_HOMES = new Map(
-  Object.entries(EXPORTS_BY_SPECIFIER).flatMap(([specifier, module]) =>
-    Object.keys(module).map((name) => [name, specifier])
+  API_SPECIFIERS.flatMap((specifier) =>
+    Object.keys(IMP_MODULE_EXPORTS[specifier]).map((name) => [name, specifier])
   ),
 )
 
@@ -53,10 +57,10 @@ const ELEMENT_FACTORIES = new Set(
 )
 
 const STD_COMPONENTS = new Set(
-  Object.values(STD_EXPORTS_BY_SPECIFIER).flatMap((module) => Object.keys(module)),
+  STD_SPECIFIERS.flatMap((specifier) => Object.keys(IMP_MODULE_EXPORTS[specifier])),
 )
 
-const PROPS_DISPATCHING_SPECIFIERS = ['imp/html', ...Object.keys(STD_EXPORTS_BY_SPECIFIER)]
+const PROPS_DISPATCHING_SPECIFIERS = ['imp/html', ...STD_SPECIFIERS]
 
 const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
 
@@ -101,14 +105,14 @@ const exampleVersion = (version) => {
 export const dependencyPinProblem = (specifier) => {
   const parsed = parseSpecifier(specifier)
   if (!parsed?.scheme) {
-    return `'${specifier}' must be an 'npm:' or 'jsr:' specifier (e.g. 'npm:mitt@3.0.1') — run 'imp install' to declare dependencies`
+    return `'${specifier}' must be an 'npm:' or 'jsr:' specifier (e.g. 'npm:mitt@3.0.1') - run 'imp install' to declare dependencies`
   }
   if (parsed.version && EXACT_VERSION.test(parsed.version)) return null
   const example = `${parsed.scheme}:${parsed.name}@${exampleVersion(parsed.version)}`
   const reason = parsed.version
     ? `'${parsed.version}' is not an exact version`
     : 'no version is given'
-  return `'${specifier}' must pin an exact version (${reason}) — the vendored bundle in dependencies/ is built from this pin (e.g. '${example}'); run 'imp install' to re-resolve and re-pin it`
+  return `'${specifier}' must pin an exact version (${reason}) - the vendored bundle in dependencies/ is built from this pin (e.g. '${example}'); run 'imp install' to re-resolve and re-pin it`
 }
 
 const isRelativeOrUrl = (specifier) =>
@@ -289,7 +293,7 @@ export default {
           context.report({
             node,
             message:
-              `'${name}' starts with a capital letter — imp components are lowercase functions (write '${
+              `'${name}' starts with a capital letter - imp components are lowercase functions (write '${
                 name[0].toLowerCase() + name.slice(1)
               }')`,
           })
@@ -346,7 +350,7 @@ export default {
                 node: propsObjects[1],
                 message: `multiple props objects passed to '${
                   factoryName(node.callee)
-                }' — pass a single props object; later keys win`,
+                }' - pass a single props object; later keys win`,
               })
             }
           },
@@ -363,9 +367,9 @@ export default {
       setupHelpers: STATE_SETUP_HELPERS,
       handleCreators: STATE_HANDLE_CREATORS,
       setupMessage: (helper) =>
-        `'${helper}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
+        `'${helper}' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
       watchMessage: (handle) =>
-        `'${handle}.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
+        `'${handle}.watch' runs after an await in an async onMount - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
     }),
     'http-client-name-namespace': createLiteralNameRule(
       'imp/http',
@@ -377,7 +381,7 @@ export default {
       setupHelpers: HTTP_SETUP_HELPERS,
       handleCreators: HTTP_CLIENT_HELPERS,
       setupMessage: (helper) =>
-        `'${helper}' runs after an await in an async onMount — past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
+        `'${helper}' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
       watchMessage: null,
     }),
     'router-setup-before-await': createSetupBeforeAwaitRule({
@@ -386,9 +390,9 @@ export default {
       handleCreators: ROUTE_HANDLE_CREATORS,
       appliesTo: rendersEnclosingArea,
       setupMessage: () =>
-        `'router' runs after an await in an async onMount — past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable`,
+        `'router' runs after an await in an async onMount - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable`,
       watchMessage: (handle) =>
-        `'${handle}.watch' runs after an await in an async onMount — past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead`,
+        `'${handle}.watch' runs after an await in an async onMount - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead`,
     }),
     'no-root-query-in-mount': {
       create(context) {
@@ -445,7 +449,7 @@ export default {
               context.report({
                 node,
                 message:
-                  `the shadow root is queried in onMount before the returned DOM is placed — onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page`,
+                  `the shadow root is queried in onMount before the returned DOM is placed - onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page`,
               })
             }
           },
@@ -518,7 +522,7 @@ export default {
           ImportDeclaration(node) {
             declarations.push(node)
             const source = node.source.value
-            if (!Object.hasOwn(EXPORTS_BY_SPECIFIER, source)) return
+            if (!API_SPECIFIERS.includes(source)) return
             for (const specifier of node.specifiers) {
               if (specifier.type !== 'ImportSpecifier') continue
               const name = importedName(specifier)
@@ -532,7 +536,7 @@ export default {
               context.report({
                 node: entry.specifier,
                 message:
-                  `'${entry.name}' is not exported by '${entry.source}' — it comes from '${entry.home}': import { ${entry.name} } from '${entry.home}'`,
+                  `'${entry.name}' is not exported by '${entry.source}' - it comes from '${entry.home}': import { ${entry.name} } from '${entry.home}'`,
                 fix: index === 0 ? (fixer) => moveSpecifier(fixer, entry) : undefined,
               })
             }
@@ -553,13 +557,12 @@ export default {
             context.report({
               node,
               message:
-                `'${specifier}' is an inline dependency specifier — dependencies are vendored: run 'imp install ${installArg}' and import '${alias}' instead`,
+                `'${specifier}' is an inline dependency specifier - dependencies are vendored: run 'imp install ${installArg}' and import '${alias}' instead`,
             })
             return
           }
           if (
-            specifier === 'imp' || specifier === 'imp/test' || specifier === 'imp/preview' ||
-            isImpSubpath(specifier) || isRelativeOrUrl(specifier) || aliases.has(specifier)
+            isImpSpecifier(specifier) || isRelativeOrUrl(specifier) || aliases.has(specifier)
           ) return
           if (specifier.startsWith('imp/') && !aliases.has(specifier)) {
             context.report({ node, message: impSubpathProblem(specifier) })
@@ -568,7 +571,7 @@ export default {
           context.report({
             node,
             message:
-              `'${specifier}' is not a declared dependency — run 'imp install ${specifier}' to vendor it and add it to 'dependencies' in imp.json`,
+              `'${specifier}' is not a declared dependency - run 'imp install ${specifier}' to vendor it and add it to 'dependencies' in imp.json`,
           })
         }
         return {

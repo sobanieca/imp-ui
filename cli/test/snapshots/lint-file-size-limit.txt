@@ -6,10 +6,10 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/max-file-size]: big.txt is 300.0 kB, over the 200.0 kB limit — raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
+error[imp/max-file-size]: big.txt is 300.0 kB, over the 200.0 kB limit - raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
  --> big.txt:1:1
 
-error[imp/max-file-size]: huge.bin is 300.0 kB, over the 200.0 kB limit — raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
+error[imp/max-file-size]: huge.bin is 300.0 kB, over the 200.0 kB limit - raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
  --> huge.bin:1:1
 
 Found 2 problems
@@ -23,7 +23,7 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/max-file-size]: big.txt is 300.0 kB, over the 200.0 kB limit — raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
+error[imp/max-file-size]: big.txt is 300.0 kB, over the 200.0 kB limit - raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
  --> big.txt:1:1
 
 Found 1 problem

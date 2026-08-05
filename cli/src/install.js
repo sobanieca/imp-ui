@@ -20,11 +20,11 @@ async function latestVersion(scheme, name) {
   }
   if (!response.ok) {
     await response.body?.cancel()
-    throw new Error(`failed to resolve ${scheme}:${name} — registry responded ${response.status}`)
+    throw new Error(`failed to resolve ${scheme}:${name} - registry responded ${response.status}`)
   }
   const metadata = await response.json()
   const latest = scheme === 'npm' ? metadata['dist-tags']?.latest : metadata.latest
-  if (!latest) throw new Error(`failed to resolve ${scheme}:${name} — no latest version published`)
+  if (!latest) throw new Error(`failed to resolve ${scheme}:${name} - no latest version published`)
   return latest
 }
 
@@ -39,7 +39,7 @@ async function installOne({ root, alias, scheme, name, version, subpath, maxByte
     logger.warn(
       `${specifier} bundles to ${
         formatSize(countedSize)
-      }, which will be committed into your git repository — ${maxFileSizeHint}`,
+      }, which will be committed into your git repository - ${maxFileSizeHint}`,
     )
   }
   const folder = join(root, 'dependencies', alias)
@@ -86,7 +86,7 @@ function requestedTarget(packageArg, versionArg, aliasArg, dependencies) {
   const version = parsed.version ?? versionArg ?? null
   if (version && !EXACT_VERSION.test(version)) {
     throw new Error(
-      `'${version}' is not an exact version — give an exact version (e.g. 1.2.3) or omit it to resolve the latest`,
+      `'${version}' is not an exact version - give an exact version (e.g. 1.2.3) or omit it to resolve the latest`,
     )
   }
   if (!scheme && !subpath && !aliasArg && dependencies[name]) {
@@ -99,7 +99,7 @@ function requestedTarget(packageArg, versionArg, aliasArg, dependencies) {
   if (!VALID_ALIAS.test(alias)) throw new Error(`invalid dependency alias: '${alias}'`)
   if (alias === 'imp') {
     throw new Error(
-      "'imp' is reserved for the imp library, which every app can already import — pick a different alias",
+      "'imp' is reserved for the imp library, which every app can already import - pick a different alias",
     )
   }
   return { alias, scheme: scheme ?? 'npm', name, version, subpath }
@@ -116,7 +116,7 @@ export async function install({ root, packageArg = null, versionArg = null, alia
   } else {
     if (versionArg || aliasArg) throw new Error('a version or alias requires a package name')
     if (!Object.keys(dependencies).length) {
-      console.log('nothing to install — no dependencies declared in imp.json')
+      console.log('nothing to install - no dependencies declared in imp.json')
       return
     }
     for (const [alias, specifier] of Object.entries(dependencies)) {

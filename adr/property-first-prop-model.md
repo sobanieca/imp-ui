@@ -8,7 +8,7 @@ They diverge in important cases:
 
 - Boolean reflection: `node.disabled = true` vs `setAttribute('disabled', '')`.
 - Live form state: `value`, `checked`, `selected`, `indeterminate` only behave correctly as
-  properties — the attribute is just the _default_, not the current value.
+  properties - the attribute is just the _default_, not the current value.
 - Custom elements expose rich data through properties, not attributes.
 - A handful of attributes have a read-only or detached IDL property and must go through
   `setAttribute` (`list`, `form`).
@@ -19,7 +19,7 @@ They diverge in important cases:
 
 Two rules:
 
-1. **Prop keys are HTML attribute names, verbatim.** `class`, `for`, `data-*`, `aria-*` — exactly as
+1. **Prop keys are HTML attribute names, verbatim.** `class`, `for`, `data-*`, `aria-*` - exactly as
    written in HTML. No `className`/`htmlFor` aliases.
 2. **Property-first with attribute fallback.** For a key `k` on node `n`: if `k in n`, assign
    `n[k] = v` (covers booleans, live form state, custom-element properties); otherwise
@@ -32,7 +32,7 @@ because their IDL properties are read-only or detached from the attribute.
 
 ## Consequences
 
-- One mental model — "use the HTML name" — covers attributes, boolean props, form state, and custom
+- One mental model - "use the HTML name" - covers attributes, boolean props, form state, and custom
   elements without the author choosing a mechanism.
 - `class`/`for`/`data-*`/`aria-*` naturally land on `setAttribute` because they are not own JS
   property names, so verbatim naming and property-first agree.

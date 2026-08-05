@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] .webp images are not yet supported — imp resize currently handles .png and .jpg
+[ERROR] .webp images are not yet supported - imp resize currently handles .png and .jpg

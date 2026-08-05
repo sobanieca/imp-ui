@@ -1,6 +1,6 @@
-# imp-ui — Rendering
+# imp-ui - Rendering
 
-How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX — plain
+How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX - plain
 JavaScript ES modules that run directly in the browser. The element factories come from
 **`imp/html`** and `mount` comes from **`imp`**, both bare specifiers imp resolves for you (see
 **[Imports](imports.md)** for the full map):
@@ -20,14 +20,14 @@ mount('#app', div(h1('Hello')))
 ## Mental model
 
 - `el()` and the tag factories are **eager**: they return actual `Node`s the moment you call them.
-  You hold the reference and mutate it with normal DOM APIs — there is no virtual DOM and no
+  You hold the reference and mutate it with normal DOM APIs - there is no virtual DOM and no
   diffing.
-- Plain helper functions that bundle up elements (`card({ title }) -> div(...)`) are just functions
-  — lowercase, no JSX, no framework concept. When a piece of UI needs a lifecycle or state, promote
-  it to a **component** (`component('my-app-card', …)`, see **[Components](components.md)**); its
-  factory is called the same way.
+- Plain helper functions that bundle up elements (`card({ title }) -> div(...)`) are just
+  functions - lowercase, no JSX, no framework concept. When a piece of UI needs a lifecycle or
+  state, promote it to a **component** (`component('my-app-card', …)`, see
+  **[Components](components.md)**); its factory is called the same way.
 - Arguments are dispatched by **type**, not position.
-- Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) — no
+- Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) - no
   aliases.
 
 ## Elements
@@ -46,10 +46,10 @@ Argument dispatch by **type**, order irrelevant:
 | array                             | children, flattened recursively                                              |
 | string / number / bigint          | text child                                                                   |
 | `Node`                            | child                                                                        |
-| plain object                      | props (one object per call — extras merge with later keys winning, and warn) |
+| plain object                      | props (one object per call - extras merge with later keys winning, and warn) |
 | `null`/`undefined`/`false`/`true` | skipped (so `cond && el(...)` works)                                         |
 
-Inline text mixes with elements in document order — both forms work:
+Inline text mixes with elements in document order - both forms work:
 
 ```js
 p(['Hello ', strong('world')])
@@ -82,20 +82,20 @@ button(
   to `''` (avoids the literal `"null"` string that non-`[LegacyNullToEmptyString]` IDL setters would
   produce). For **custom elements** (hyphenated tag, or `is=`) the raw value is passed through, so a
   setter typed as `T | null` receives real `null`. Caveat: this only applies once the property
-  exists on the node — if the element is built **before** `customElements.define(...)`, the prop is
+  exists on the node - if the element is built **before** `customElements.define(...)`, the prop is
   not yet exposed and falls back to an attribute, so define custom elements before constructing
   nodes that pass rich/`null` props to them.
 - **`class`**: `'card'` · `['card', extra]` (falsy entries dropped, joined) · `{ active: cond }`
-  (object — the truthy entries' names become the class). Every form sets the class whole — what you
+  (object - the truthy entries' names become the class). Every form sets the class whole - what you
   pass is what the element gets.
 - **`style`**: `'color:red'` · object (`camelCase` -> kebab, `--custom-props` kept verbatim).
-- **`events`**: `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` — native DOM event
+- **`events`**: `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` - native DOM event
   names, **no `on` prefix**. The optional second array element is `addEventListener` options.
-- **State-valued props.** Any prop value may be a state (from `initState`/`useState`/`computed`) —
+- **State-valued props.** Any prop value may be a state (from `initState`/`useState`/`computed`) -
   the prop then stays **live**, re-applied on every change, with each form keeping its usual meaning
   (`div({ class: theme })`, `input({ disabled: busy })`). The binding goes live when a component (or
   `mount`) places the element and ends with it; a state passed as a standalone argument instead of a
-  prop value is reported and skipped. See **[State](state.md)** — _Binding props_.
+  prop value is reported and skipped. See **[State](state.md)** - _Binding props_.
 
 ## Mounting
 
