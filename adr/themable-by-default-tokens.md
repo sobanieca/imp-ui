@@ -27,10 +27,9 @@ object or the **name of a built-in theme** as a string (`'imp-light'` | `'imp-da
 resolves to the matching built-in and then treats identically. It:
 
 - writes each token as an `--imp-`-prefixed custom property on `:root` (`document.documentElement`),
-  where it inherits into body, every component's shadow root, and anything a `portal` appends to the
-  document. imp owns the `--imp-` prefix; token keys are bare (`color-primary` →
-  `--imp-color-primary`), one flat namespace with no dots or nesting, matching state and message
-  keys.
+  where it inherits into body and every component's shadow root. imp owns the `--imp-` prefix; token
+  keys are bare (`color-primary` → `--imp-color-primary`), one flat namespace with no dots or
+  nesting, matching state and message keys.
 - overwrites every token it carries and does **not** diff against the previous theme or remove any
   property. A theme is required to define the **full** token set - a partial theme is a bug in the
   theme, the app's responsibility, not something imp compensates for - so a complete theme fully

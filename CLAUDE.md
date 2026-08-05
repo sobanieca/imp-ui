@@ -179,6 +179,40 @@ nullish coalescing (`??`), `async`/`await`, and other current language features.
 browser-targeted code too, including scripts emitted as strings (e.g. injected client and service
 worker code).
 
+## Browser support - call the platform, never shadow it
+
+**imp targets the current stable version of Chrome, Edge, Firefox and Safari** - Baseline Newly
+available. A web platform feature is usable here the moment all four have shipped it; imp does not
+wait the further 30 months for Baseline Widely available, and supports nothing older than current
+stable. The full decision and its costs are in `adr/browser-support-baseline.md`.
+
+Two rules follow, and they apply to every change:
+
+- **Never write a polyfill, a feature detection, or a fallback path.** No `@supports` branch
+  guarding a JS alternative, no `typeof el.showPopover === 'function'` check, no
+  graceful-degradation tier. Below the floor imp **breaks rather than degrades**, deliberately. One
+  code path, the current one.
+- **Never write JavaScript that stands in for a platform primitive.** The line is not "no
+  JavaScript" - imp is a JavaScript library - it is what the JavaScript is _for_:
+  - **Write it** when it implements a feature nothing in the platform provides: sorting a table,
+    fuzzy matching, walking a `field` path, validating a form, handling a keypress.
+  - **Do not write it** when the platform owns the job: a focus trap (`showModal()` traps focus), an
+    anchor positioning engine (CSS anchor positioning places it), a stacking registry (the top layer
+    stacks), a scroll virtualizer (`content-visibility: auto`), a `:has()` shim.
+
+**A component that cannot be built without the second kind does not get built.** Do not approximate
+it and do not ship it behind a caveat - leave it out, and say in `docs/` what to use instead. This
+is a scope rule with teeth: it has already removed `virtualList` from the catalog and parked
+`carousel`.
+
+The judgement call, since the rule needs a boundary: a modal's scroll lock is **allowed** -
+`showModal()` deliberately does not stop the page behind it scrolling, so writing `overflow: hidden`
+on the document element is a one-property state toggle, not a shadow implementation of anything.
+When a case is this close, put the reasoning in the ADR rather than deciding it again silently.
+
+Components with no platform counterpart at all - `comboBox`, `datePicker`, `tree` - are **in**
+scope. Nothing is being substituted for; the platform simply has no such control.
+
 ## Accessibility
 
 **imp supports accessibility out of the box.** An app built from standard components clears the

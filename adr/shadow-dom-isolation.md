@@ -50,7 +50,11 @@ light DOM stays empty and untouched.
   be themable must consume variables rather than expect page rules to restyle its internals.
 - Native platform couplings that cannot cross shadow boundaries are confined: form controls inside a
   component do not participate in outside `<form>`s, and `label[for]`/ARIA id references cannot
-  point across the boundary - a component must keep such pairs inside itself.
+  point across the boundary - a component must keep such pairs inside itself. CSS `anchor-name` and
+  `position-anchor` resolve within one tree scope for the same reason, so an element positioned
+  against an anchor and the anchor itself must be rendered by one component too. Both are
+  by-reference couplings, and where a component boundary falls is decided by them rather than by
+  taste.
 - Reading a component's rendered text or DOM from outside requires piercing: `host.textContent` is
   empty by design, and unit tests walk `shadowRoot`. Because that would otherwise put a deep
   combinator in front of every e2e selector - in an imp app there is no other kind - the page handed

@@ -26,9 +26,9 @@ open question left in `todo/stdlib-components.md`):
   Tab/Shift-Tab order, Enter/Space activation, Arrow-key navigation for composite widgets (`tabs`,
   `radioGroup`, `menuList`, `tree`, `pagination`), Escape to dismiss overlays.
 - **Focus management.** Overlays (`modal`, `drawer`) trap focus while open, restore focus to the
-  invoking element on close, and are opened with focus moved into them - shared through the overlay
-  management seam the stdlib already needs (`todo/stdlib-components.md` "Overlay management" open
-  question), not re-rolled per component.
+  invoking element on close, and are opened with focus moved into them. None of that is written per
+  component or shared as imp code: it comes from the platform's top layer, through the seam settled
+  in `todo/overlay-seam.md`.
 - **State wiring.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
   `aria-invalid`, `aria-busy`, `aria-live` for feedback (`alert`, `toast`, `spinner`) reflect the
   component's reactive state automatically - they bind to the same states that drive the visuals
@@ -72,17 +72,21 @@ components as part of `imp test` is an open question.
 ## ADR impact
 
 Record an `accessible-by-default-stdlib.md` ADR: the accessibility contract every stdlib component
-meets (native-first roles, keyboard operability, focus management via the shared overlay seam,
-signal-bound ARIA state, labeling rules, token-based visible focus, reduced-motion), and the
-deliberate scope boundary (imp guarantees a baseline for its own components and app-level route
-focus; it does not audit arbitrary app markup beyond a few lint checks). Update the ADR table in
-`adr/README.md`; document the a11y guarantees in `docs/`. Once accepted, remove the "Accessibility
-baseline" open question from the stdlib item since it is answered here.
+meets (native-first roles, keyboard operability, top-layer focus management, signal-bound ARIA
+state, labeling rules, token-based visible focus, reduced-motion), and the deliberate scope boundary
+(imp guarantees a baseline for its own components and app-level route focus; it does not audit
+arbitrary app markup beyond a few lint checks). Update the ADR table in `adr/README.md`; document
+the a11y guarantees in `docs/`. Once accepted, remove the "Accessibility baseline" open question
+from the stdlib item since it is answered here.
 
 ## Open questions
 
-- **Contract strictness.** Is the baseline a hard guarantee every component is tested against, or a
-  best-effort convention? A hard guarantee needs per-component a11y tests.
+- **What the unit level can actually assert.** The baseline is a hard guarantee, so every
+  interactive component ships an a11y test - but imp's test DOM implements almost none of the
+  behaviour being guaranteed: `showModal()` is a stub that sets `open`, there is no `showPopover`,
+  and focus, `inert` and Escape handling are absent. Decide how much of that to fill in
+  `cli/src/test_dom.js` (`todo/overlay-seam.md` scopes the top-layer part) and how much stays
+  e2e-only, per behaviour rather than per component.
 - **Automated auditing in `imp test`.** Whether to run an axe-core-style check over rendered
   components in the e2e path, and whether a pure-JS/vendored auditor exists that fits the in-process
   constraints (`adr/in-process-toolchain.md`).

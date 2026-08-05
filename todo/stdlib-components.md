@@ -44,19 +44,25 @@ without a skill file, so this is enforced rather than remembered.
   `imp/std/inputs` subpath and settling the field-binding contract (`adr/state-driven-forms.md`) -
   details in _Form handling_ below.
 - **Display** - `card`, `badge`, `avatar`, `tag`, `tooltip`, `popover`, `accordion`,
-  `descriptionList`, `statistic`, `timeline` _(later)_, `carousel` _(later)_, `image` (preview/zoom)
-  _(later)_, `calendar` _(later)_, `qrCode` _(later)_. `emptyState` has landed, opening the
+  `descriptionList`, `statistic`, `timeline` _(later)_, `image` (preview/zoom) _(later)_, `calendar`
+  _(later)_, `qrCode` _(later)_. **`carousel` waits** for `::scroll-button()` and
+  `::scroll-marker()` to be interoperable - scroll-button JavaScript in the meantime is what
+  `adr/browser-support-baseline.md` rules out. `emptyState` has landed, opening the
   `imp/std/display` subpath and fixing the wording convention (`adr/translatable-by-default.md`).
 - **Feedback** - `spinner`, `progress`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
-  `popconfirm`, `result` _(later)_.
+  `popconfirm`, `result` _(later)_. How the overlays among them reach above the page is settled in
+  `todo/overlay-seam.md`, which also covers the anchored ones in _Display_ and _Navigation_.
 - **Navigation** - `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_,
   `floatButton` _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing
   the data-driven shape every composite widget with internal ARIA id references follows
   (`adr/component-preview.md` is its first consumer); `navMenu` and `commandPalette` landed with it.
   The roadmap's `menu` is **`navMenu`**: a list of destinations rendering a `<nav>` of links, not a
   `role="menu"` of actions - that one is `dropdownMenu`.
-- **Data** - `table` (sorting, filtering, pagination, row selection), `list`, `tree`, `virtualList`
-  _(later)_, `transferList` _(later)_.
+- **Data** - `table` (sorting, filtering, pagination, row selection), `list`, `tree`, `transferList`
+  _(later)_. **`virtualList` is out of scope**: windowing reimplements the browser's own scrolling,
+  measurement and rendering, which `adr/browser-support-baseline.md` forbids -
+  `content-visibility: auto` with `contain-intrinsic-size` is the answer, documented rather than
+  wrapped.
 
 ## Layout & placement
 
@@ -76,7 +82,7 @@ and a placement wrapper, not per-component positioning props. What landed:
   component's own root - inside its shadow - is the real flex or grid item, and no selector from the
   parent can reach it (`adr/responsive-layout-props.md`).
 - **`spacer`, `divider`, `container`, `scrollArea`** round out spacing, separation, max-width
-  centering, and overflow control. `container` widths are theme tokens (`--imp-container-sm` …
+  centering, and overflow control. `container` widths are theme tokens (`--imp-container-sm` ...
   `-xl`); `splitPane` adds user-resizable panes _(later)_.
 - All spacing values come off the theme's spacing scale as a step `0`-`6`, not free-form pixels, so
   layouts stay consistent across an app.
@@ -92,9 +98,11 @@ What `appShell` settled, since it landed ahead of the feedback group rather than
   button in the header shows it as a fixed overlay with a backdrop, `inert` on the rest of the
   frame, Escape and backdrop dismissal, focus moved in and handed back, and a bubbling `select`
   closing it. The sidebar never moves in the DOM - the docked and overlay states differ only in
-  per-breakpoint custom properties, so nothing is re-parented or re-mounted. **When `drawer` lands,
-  revisit whether this becomes one**; the reason not to wait was that the collapse needs no
-  overlay-stacking or portal machinery to be correct here.
+  per-breakpoint custom properties, so nothing is re-parented or re-mounted. **It stays its own
+  thing when `drawer` lands** (`todo/overlay-seam.md`): a `<dialog>` is open or closed, while this
+  sidebar is docked at one breakpoint and an overlay at another, and driving that from a
+  `matchMedia` listener is exactly the JS-resolved layout and wrong first paint
+  `adr/responsive-layout-props.md` rejected.
 - **A flex item's `z-index` applies even when it is `position: static`**, which is why the sidebar's
   overlay `z-index` is part of the collapsed state rather than a constant: a constant one painted
   the docked sidebar over the header's dropdowns.
@@ -128,7 +136,7 @@ provides), still built entirely on named state:
   The control resolves `imp.form` from its own position (the same `useState` lookup every other
   component does), reads its field by walking the path, and writes back by rebuilding the object
   along that path. This is what makes nested fields work without a writable projection in the
-  kernel: the path is data the control can walk in both directions, where `computed(…)` is a
+  kernel: the path is data the control can walk in both directions, where `computed(...)` is a
   function that can only be walked one way. It also keeps the call site free of plumbing - a field
   is a string, which is exactly the shape an agent gets right.
 
@@ -193,8 +201,8 @@ Mobile layout is first-class, not a separate component set:
 ## Conventions
 
 The shape every component follows - `imp-` prefixed custom elements, lazy definition, the
-`(props?, …children)` call shape, closed and logged prop sets, live props taking state, tokens with
-fallbacks, logical properties, no outer margins - is settled and recorded in
+`(props?, ...children)` call shape, closed and logged prop sets, live props taking state, tokens
+with fallbacks, logical properties, no outer margins - is settled and recorded in
 `adr/standard-component-library.md`. What is still open here:
 
 - **Two-way binding by convention:** an input's `value`/`checked` prop accepts anything
@@ -210,7 +218,7 @@ fallbacks, logical properties, no outer margins - is settled and recorded in
     `change` for pickers, blur/debounce where that is the better default) - the control owns its
     commit semantics instead of exposing modifier soup.
   - It never emits a commit in response to a programmatic value assignment it made itself; together
-    with `set`'s content-equality dedup this keeps set → watch → set echo loops from forming.
+    with `set`'s content-equality dedup this keeps set -> watch -> set echo loops from forming.
 
   The bind contract is **public and documented**, not a stdlib-internal convention: custom
   components and third-party widget wrappers accept state-shaped values the same way, with the
@@ -235,9 +243,10 @@ This is the top of the stack. Named state is in place and considered complete
 (`adr/event-propagated-state.md`) and needs no addition for the form layer - `field` paths are
 walked by the form components on the public API. Theming is in place
 (`adr/themable-by-default-tokens.md`), and each group extends the `--imp-*` token surface as it
-lands. Translations are in place (`adr/translatable-by-default.md`); some components (`toast`,
-`modal`, `drawer`) need a `portal` primitive for DOM rendered outside the owning subtree. The stdlib
-grows group by group; a group that needs a missing dependency waits for it.
+lands. Translations are in place (`adr/translatable-by-default.md`). **The overlay components need
+no new kernel surface and no `portal`** - they promote into the platform's top layer without moving
+in the DOM (`todo/overlay-seam.md`). The stdlib grows group by group; a group that needs a missing
+dependency waits for it.
 
 **The feedback group owes the HTTP client its wiring** (`adr/http-client.md`). A client publishes
 state-shaped `pending` and `lastError`, so `spinner`/`progress` should accept a client (or its name,
@@ -288,8 +297,6 @@ Each group extends `docs/std-components.md` with its own section as it lands.
   depending on its argument type.
 - **Catalog scope for v1.** A core vs. _(later)_ split is drafted in the catalog above; confirm or
   reshuffle it while building - the tier markers are a starting bid, not a commitment.
-- **Overlay management.** Shared stacking/focus-trap/escape handling for `modal`/`drawer`/`toast`
-  rather than each rolling its own.
 - **Accessibility baseline.** The ARIA/keyboard contract every interactive component must meet. The
   General group set the opening precedent - render the native element wherever one exists, a
   `:focus-visible` ring from `--imp-color-focus-ring`, and state mirrored into ARIA (`aria-busy` on
