@@ -1,14 +1,15 @@
 scenarios: zero, startsAtFive, lazy
 rendered values: 0, 5, 9
 state rows: demo.count=0, demo.count=5, demo.count=9
-tabs per scenario: Preview, Code, Agent
+tabs per scenario: Preview, Code
 resize handles per stage: 3
-after picking the code tab: false/true/false (panels hidden/shown/hidden)
+after picking the code tab: false/true (panels hidden/shown)
 code shown for zero:
 import { counter } from './counter.js'
 
 counter()
 highlighted tokens for zero: keyword:import punctuation:{ punctuation:} keyword:from string:'./counter.js' punctuation:()
+agent instruction strips on the page: 1 (region 'Agent instruction')
 agent instruction: Run 'imp skill ./components/counter.js' before writing code with it.
 after setting demo.count to 42: 42
 invalid JSON rejected: true
@@ -40,4 +41,4 @@ index cards: Widgets 1 · components 1
 ?scenario=lazy panels: 1 (lazy)
 mocked todos: Buy milk, Ship imp
 mocked todos state row: demo.todos
-agent tab without a description: components/todos.preview.js declares no description - add 'export const description = …' to it with the command an agent should run to learn this component.
+agent instruction without a description: no description - add 'export const description = ...' to this file with the command an agent should run to learn this component.

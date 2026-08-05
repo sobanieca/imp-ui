@@ -675,11 +675,11 @@ imp preview --list [--json]
 ```
 
 Builds one component at a time, in isolation. `imp preview` serves each of your **preview files** as
-its own page: every named export becomes a labeled panel with three tabs - **Preview**, holding that
-component in a stage you can drag to any size with a state editor beside it, **Code**, showing the
-call that built it, and **Agent**, holding the one line an AI agent should read before it writes
-code with the component. No app boot, no backend, no navigating to the right screen - you edit the
-component, the page reloads, and you see it.
+its own page: the one line an AI agent should read before it writes code with the component sits
+below the page head, and every named export becomes a labeled panel with two tabs - **Preview**,
+holding that component in a stage you can drag to any size with a state editor beside it, and
+**Code**, showing the call that built it. No app boot, no backend, no navigating to the right
+screen - you edit the component, the page reloads, and you see it.
 
 It is the same dev server as `imp start` underneath, so the browser's console and network activity
 still stream to your terminal, and saving any file reloads the page.
@@ -717,10 +717,10 @@ export const description = "Run 'imp skill ./components/todos.js' before writing
 ```
 
 `name` is the label in the sidebar, the search, the page head and the browser tab; `category` is the
-group it is listed under; `description` is what the **Agent** tab shows. Each one is optional and
-each is a plain string. Declare none of them and imp falls back to the file's own name and the
-folder it sits in, so `src/inputs/text_field.preview.js` is `text_field` under `inputs` - readable,
-but not what you would call it out loud.
+group it is listed under; `description` is the agent instruction shown below the head. Each one is
+optional and each is a plain string. Declare none of them and imp falls back to the file's own name
+and the folder it sits in, so `src/inputs/text_field.preview.js` is `text_field` under `inputs` -
+readable, but not what you would call it out loud.
 
 Because the grouping comes from `category` rather than the folder, the catalog can be organized the
 way you talk about the components rather than the way the files happen to be laid out: two files in
@@ -792,14 +792,16 @@ Only exports written as `export const <scenario> = …` have code to show; a nam
 
 ### The instruction for an agent
 
-The **Agent** tab shows the file's `description` with a button to copy it. It exists because the two
-readers of a component need different things from the same page: a person looks at the stage, and an
-agent about to write a call site needs to be told where the component's manual is. Keep it an
-instruction rather than a summary -
-`Run 'imp skill std/button' to learn what button can do before
-using it.` - so pasting it into an
+Below the page head, above the first scenario, the file's `description` is shown once with a button
+to copy it. It exists because the two readers of a component need different things from the same
+page: a person looks at the stage, and an agent about to write a call site needs to be told where
+the component's manual is. It belongs to the component rather than to any one scenario, which is why
+it is stated once at the top instead of repeated beside every panel.
+
+Keep it an instruction rather than a summary -
+`Run 'imp skill std/button' to learn what button can do before using it.` - so pasting it into an
 agent is enough to get the whole manual, which stays in one place and cannot drift. A file that
-declares no `description` says so in the tab.
+declares no `description` says so in the same place.
 
 ### Themes
 

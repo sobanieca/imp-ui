@@ -1,8 +1,9 @@
 import { component } from 'imp'
-import { a, div, span } from 'imp/html'
+import { a, div, el, pre, span } from 'imp/html'
 import { heading, text } from 'imp/std'
 import { appShell, toolbar } from 'imp/std/layout'
 import { commandPalette, navMenu } from 'imp/std/navigation'
+import { copyButton } from './preview_copy.js'
 
 const CATALOG_ELEMENT_ID = 'imp-preview-catalog'
 
@@ -95,13 +96,57 @@ const INDEX_STYLES = `
 const HEAD_STYLES = `
   .head {
     display: flex;
-    align-items: baseline;
+    flex-direction: column;
     gap: var(--imp-space-3, 12px);
-    flex-wrap: wrap;
     padding-block: var(--imp-space-4, 16px);
     padding-inline: var(--imp-space-5, 24px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
+  }
+
+  .title {
+    display: flex;
+    align-items: baseline;
+    gap: var(--imp-space-3, 12px);
+    flex-wrap: wrap;
+  }
+
+  .agent {
+    display: flex;
+    align-items: center;
+    gap: var(--imp-space-3, 12px);
+    flex-wrap: wrap;
+    padding-block: var(--imp-space-2, 8px);
+    padding-inline: var(--imp-space-3, 12px);
+    background-color: var(--imp-color-surface, #ffffff);
+    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+    border-radius: var(--imp-radius-md, 6px);
+  }
+
+  .agent-label {
+    color: var(--imp-color-secondary, #64748b);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    font-weight: var(--imp-font-weight-medium, 500);
+    white-space: nowrap;
+  }
+
+  .instruction {
+    flex: 1 1 16rem;
+    min-inline-size: 0;
+    margin: 0;
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-normal, 1.6);
+    white-space: pre-wrap;
+  }
+
+  .missing {
+    flex: 1 1 16rem;
+    min-inline-size: 0;
+    color: var(--imp-color-secondary, #64748b);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-normal, 1.6);
   }
 
   .path {
@@ -249,18 +294,36 @@ const indexDefinition = {
   },
 }
 
+const agentStrip = (instruction) =>
+  el(
+    'section',
+    { class: 'agent', 'aria-label': 'Agent instruction' },
+    span({ class: 'agent-label' }, 'For an agent'),
+    instruction === null
+      ? span(
+        { class: 'missing' },
+        "no description - add 'export const description = ...' to this file with the command " +
+          'an agent should run to learn this component.',
+      )
+      : [pre({ class: 'instruction' }, instruction), copyButton(instruction)],
+  )
+
 const headDefinition = {
   styles: HEAD_STYLES,
-  onMount: (_instance, entry, isolated) =>
+  onMount: (_instance, entry, isolated, instruction) =>
     div(
       { class: 'head' },
-      span(
-        { class: 'path' },
-        span({ class: 'category' }, `${entry.category} / `),
-        entry.name,
+      div(
+        { class: 'title' },
+        span(
+          { class: 'path' },
+          span({ class: 'category' }, `${entry.category} / `),
+          entry.name,
+        ),
+        span({ class: 'file' }, entry.file),
+        isolated ? a({ href: globalThis.location.pathname }, 'all scenarios') : null,
       ),
-      span({ class: 'file' }, entry.file),
-      isolated ? a({ href: globalThis.location.pathname }, 'all scenarios') : null,
+      agentStrip(instruction),
     ),
 }
 
@@ -278,9 +341,9 @@ export const previewIndex = (previews) => {
   return createIndex(previews)
 }
 
-export const previewHead = (entry, isolated) => {
+export const previewHead = (entry, isolated, instruction) => {
   createHead ??= component('imp-preview-head', headDefinition)
-  return createHead(entry, isolated)
+  return createHead(entry, isolated, instruction)
 }
 
 export const previewShell = ({ catalog, controls, content }) => {

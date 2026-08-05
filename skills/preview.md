@@ -5,11 +5,11 @@ imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
 ```
 
-Serves each **preview file** as its own page: one labelled panel per named export, under a
-**Preview** tab holding the component in a resizable stage with a state editor beside it, a **Code**
-tab showing the call that built it, and an **Agent** tab showing the file's `description`. No app
-boot, no backend, no navigating to the right screen. It is the same dev server as [start](start.md)
-underneath - terminal telemetry and reload on save included.
+Serves each **preview file** as its own page: the file's `description` as one agent instruction
+below the page head, then one labelled panel per named export, under a **Preview** tab holding the
+component in a resizable stage with a state editor beside it and a **Code** tab showing the call
+that built it. No app boot, no backend, no navigating to the right screen. It is the same dev server
+as [start](start.md) underneath - terminal telemetry and reload on save included.
 
 ## The preview file
 
@@ -51,11 +51,11 @@ preview file**, so scenarios that need different data differ by the arguments yo
 `name`, `category` and `description` are **not scenarios** - they name the component in the page
 instead. Each is optional and each must be a plain string literal; anything else is ignored.
 
-| export        | what it does                                                                   |
-| ------------- | ------------------------------------------------------------------------------ |
-| `name`        | the label in the sidebar, the search, the page head and the browser tab        |
-| `category`    | the group the component is listed under, replacing the folder name             |
-| `description` | the **Agent** tab: the command an agent should run before writing code with it |
+| export        | what it does                                                                     |
+| ------------- | -------------------------------------------------------------------------------- |
+| `name`        | the label in the sidebar, the search, the page head and the browser tab          |
+| `category`    | the group the component is listed under, replacing the folder name               |
+| `description` | the agent instruction below the page head: the command an agent should run first |
 
 Without them the label falls back to the file name and the folder - `inputs/text_field.preview.js`
 is `text_field` under `inputs`.
@@ -96,8 +96,9 @@ is `text_field` under `inputs`.
   the current theme's colours and ready to copy. It is read out of the file, so it cannot drift from
   what rendered. Only exports written as `export const <scenario> = …` have one; a re-export through
   `export { … }` shows a note instead.
-- **Agent tab** - the file's `description`, ready to copy: the command to hand an agent before it
-  writes code with this component. A file that declares none says so.
+- **Agent instruction** - the file's `description`, ready to copy, once per page below the head
+  rather than per scenario: the command to hand an agent before it writes code with this component.
+  A file that declares none says so there.
 - **Theme, language and direction switchers** - fed by `preview.themes` and `preview.translations`
   in `imp.json`, see [config](config.md); choices survive reloads. Direction has **auto** (follows
   the language), **ltr** and **rtl** - pinning it while reading English is the quickest way to catch

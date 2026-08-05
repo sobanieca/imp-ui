@@ -9,6 +9,7 @@ import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { tabs } from 'imp/std/navigation'
 import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
+import { copyButton } from './preview_copy.js'
 import { tokenizeJs } from './preview_highlight.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
 import { asNodes } from '../../lib/src/nodes.js'
@@ -49,7 +50,6 @@ const MIN_STAGE_SIZE = 80
 const STATE_LOOKUP_ATTEMPTS = 30
 const STATE_LOOKUP_INTERVAL = 100
 const MAX_SCANNED_ELEMENTS = 500
-const COPIED_FEEDBACK_MS = 1200
 
 const DOCUMENT_STYLES = `
 body {
@@ -292,33 +292,6 @@ const CODE_STYLES = `
 
   .token--punctuation {
     color: var(--imp-color-secondary, #64748b);
-  }
-`
-
-const AGENT_STYLES = `
-  :host {
-    display: block;
-  }
-
-  .head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--imp-space-3, 12px);
-    margin-block-end: var(--imp-space-2, 8px);
-  }
-
-  .instruction {
-    margin: 0;
-    box-sizing: border-box;
-    overflow: auto;
-    padding: var(--imp-space-3, 12px);
-    ${surface}
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    line-height: var(--imp-line-height-normal, 1.6);
-    white-space: pre-wrap;
   }
 `
 
@@ -628,30 +601,6 @@ const highlighted = (snippet) =>
     kind === 'plain' ? text : span({ class: `token token--${kind}` }, text)
   )
 
-const copyButton = (content) => {
-  const label = document.createTextNode('copy')
-  return button(
-    {
-      size: 'sm',
-      variant: 'ghost',
-      events: {
-        click: async () => {
-          try {
-            await navigator.clipboard.writeText(content)
-            label.data = 'copied'
-          } catch {
-            label.data = 'could not copy'
-          }
-          setTimeout(() => {
-            label.data = 'copy'
-          }, COPIED_FEEDBACK_MS)
-        },
-      },
-    },
-    label,
-  )
-}
-
 const codeDefinition = {
   styles: CODE_STYLES,
   onMount: (_instance, snippet) =>
@@ -666,29 +615,6 @@ let createCode = null
 const codePanel = (snippet) => {
   createCode ??= component('imp-preview-code', codeDefinition)
   return createCode(snippet)
-}
-
-const agentDefinition = {
-  styles: AGENT_STYLES,
-  onMount: (_instance, instruction) =>
-    div(
-      div(
-        { class: 'head' },
-        text(
-          { tone: 'secondary', size: 'sm' },
-          'Hand this to an AI agent before it writes code with this component.',
-        ),
-        copyButton(instruction),
-      ),
-      pre({ class: 'instruction' }, instruction),
-    ),
-}
-
-let createAgent = null
-
-const agentPanel = (instruction) => {
-  createAgent ??= component('imp-preview-agent', agentDefinition)
-  return createAgent(instruction)
 }
 
 const snippetFor = (name, meta) => {
@@ -759,18 +685,6 @@ const scenarioSection = (name, scenario, meta) => {
             )
             : codePanel(snippet),
         },
-        {
-          id: 'agent',
-          label: 'Agent',
-          content: meta.description === null
-            ? text(
-              { tone: 'secondary', size: 'sm' },
-              `${meta.file} declares no description - add ` +
-                "'export const description = …' to it with the command an agent should run " +
-                'to learn this component.',
-            )
-            : agentPanel(meta.description),
-        },
       ],
     }),
   )
@@ -792,7 +706,7 @@ const scenarioList = (scenarios, meta, catalog) => {
   const isolated = requested !== null && names.includes(requested)
   const shown = isolated ? [requested] : names
   return [
-    previewHead(catalogEntryFor(catalog, meta), isolated),
+    previewHead(catalogEntryFor(catalog, meta), isolated, meta.description),
     ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], meta)) : [
       emptyState({
         title: 'No scenarios in this file',

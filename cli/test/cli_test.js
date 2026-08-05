@@ -1498,11 +1498,12 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
     })
     const agent = await page.evaluate(() => {
-      const scenario = globalThis.impScenarios()[0]
-      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
-      strip.querySelectorAll('[role="tab"]')[2].click()
-      return globalThis.impOne('imp-preview-agent', scenario)
-        .shadowRoot.querySelector('.instruction').textContent
+      const head = globalThis.impOne('imp-preview-head').shadowRoot
+      return {
+        strips: globalThis.impAll('imp-preview-head').length,
+        region: head.querySelector('.agent').getAttribute('aria-label'),
+        instruction: head.querySelector('.instruction').textContent,
+      }
     })
     const edited = await page.evaluate(() => {
       const scenario = globalThis.impScenarios()[0]
@@ -1633,18 +1634,12 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       globalThis.impRoot() &&
       globalThis.impOne('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
     )
-    const todos = await page.evaluate(() => {
-      const scenario = globalThis.impScenarios()[0]
-      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
-      strip.querySelectorAll('[role="tab"]')[2].click()
-      const panel = [...strip.querySelectorAll('[role="tabpanel"]')][2]
-      return {
-        items: [...globalThis.impOne('demo-todos').shadowRoot.querySelectorAll('.todo')]
-          .map((item) => item.textContent),
-        state: globalThis.impOne('imp-preview-state').shadowRoot.querySelector('.name').textContent,
-        agent: globalThis.impOne('imp-text', panel).shadowRoot.textContent.trim(),
-      }
-    })
+    const todos = await page.evaluate(() => ({
+      items: [...globalThis.impOne('demo-todos').shadowRoot.querySelectorAll('.todo')]
+        .map((item) => item.textContent),
+      state: globalThis.impOne('imp-preview-state').shadowRoot.querySelector('.name').textContent,
+      agent: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.missing').textContent,
+    }))
 
     const report = [
       `scenarios: ${counter.names.join(', ')}`,
@@ -1655,7 +1650,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `after picking the code tab: ${coded.selected} (panels ${coded.shown})`,
       `code shown for zero:\n${coded.source.trimEnd()}`,
       `highlighted tokens for zero: ${coded.highlighted}`,
-      `agent instruction: ${agent}`,
+      `agent instruction strips on the page: ${agent.strips} (region '${agent.region}')`,
+      `agent instruction: ${agent.instruction}`,
       `after setting demo.count to 42: ${edited}`,
       `invalid JSON rejected: ${rejected}`,
       `language options: ${localized.languages.join(', ')}`,
@@ -1686,7 +1682,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,
       `mocked todos: ${todos.items.join(', ')}`,
       `mocked todos state row: ${todos.state}`,
-      `agent tab without a description: ${todos.agent}`,
+      `agent instruction without a description: ${todos.agent}`,
     ].join('\n')
     await assertSnapshot('preview-browser', `${report}\n`)
   } finally {
