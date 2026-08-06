@@ -34,5 +34,8 @@ Rules an agent gets wrong:
 - The switch's accessible name is the todo's title, so a page full of rows still reads correctly.
 
 ```js
-stack({ gap: 3 }, visible.each((todo) => todoItem({ todo }), (todo) => todo.id))
+flex(
+  { direction: 'column', gap: 3 },
+  visible.each((todo) => todoItem({ todo }), (todo) => todo.id),
+)
 ```

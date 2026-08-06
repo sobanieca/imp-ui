@@ -4,7 +4,7 @@ import { HttpError, useHttpClient } from 'imp/http'
 import { navigate } from 'imp/router'
 import { lang, t } from 'imp/i18n'
 import { button, heading, link, text } from 'imp/std'
-import { container, item, row, stack } from 'imp/std/layout'
+import { flex } from 'imp/std/layout'
 import {
   checkbox,
   form,
@@ -44,66 +44,63 @@ export const todoScreen = component('todo-app-detail', {
       navigate('/', { replace: true })
     }
 
-    return container(
-      { size: 'sm', padding: 4 },
-      stack(
-        { gap: 5 },
-        heading({ level: 2 }, words('todo.form.editTitle')),
-        form(
-          { initialValues: todo, onSubmit: save },
-          textField({
-            field: 'title',
-            label: message('todo.form.title'),
-            required: true,
-            maxLength: 80,
-          }),
-          textArea({
-            field: 'notes',
-            label: message('todo.form.notes'),
-            help: message('todo.form.notesHelp'),
-            rows: 3,
-          }),
-          markdownNote({ field: 'notes', label: words('todo.form.notesPreview') }),
-          row(
-            { gap: 3, wrap: true },
-            item(
-              { grow: true },
-              lang.view(() =>
-                select({
-                  field: 'priority',
-                  label: t('todo.form.priority'),
-                  options: priorityOptions(),
-                })
-              ),
-            ),
-            item(
-              { grow: true },
-              numberField({
-                field: 'estimate',
-                label: message('todo.form.estimate'),
-                min: 0,
-                max: 40,
-                step: 0.5,
-              }),
+    return flex(
+      { direction: 'column', gap: 5 },
+      heading({ level: 2 }, words('todo.form.editTitle')),
+      form(
+        { initialValues: todo, onSubmit: save },
+        textField({
+          field: 'title',
+          label: message('todo.form.title'),
+          required: true,
+          maxLength: 80,
+        }),
+        textArea({
+          field: 'notes',
+          label: message('todo.form.notes'),
+          help: message('todo.form.notesHelp'),
+          rows: 3,
+        }),
+        markdownNote({ field: 'notes', label: words('todo.form.notesPreview') }),
+        flex(
+          { gap: 3, wrap: true },
+          flex(
+            { grow: true },
+            lang.view(() =>
+              select({
+                field: 'priority',
+                label: t('todo.form.priority'),
+                options: priorityOptions(),
+              })
             ),
           ),
-          checkbox({ field: 'done', label: message('todo.form.done') }),
-          checkbox({ field: 'pinned', label: message('todo.form.pinned') }),
-          row(
-            { gap: 2, wrap: true },
-            submitButton(words('todo.form.save')),
-            resetButton(words('todo.form.reset')),
-            button(
-              { variant: 'danger', loading: removing, events: { click: remove } },
-              words('todo.form.delete'),
-            ),
+          flex(
+            { grow: true },
+            numberField({
+              field: 'estimate',
+              label: message('todo.form.estimate'),
+              min: 0,
+              max: 40,
+              step: 0.5,
+            }),
           ),
         ),
-        api.lastError.view((error) =>
-          error && text({ tone: 'secondary', size: 'sm' }, error.message)
+        checkbox({ field: 'done', label: message('todo.form.done') }),
+        checkbox({ field: 'pinned', label: message('todo.form.pinned') }),
+        flex(
+          { gap: 2, wrap: true },
+          submitButton(words('todo.form.save')),
+          resetButton(words('todo.form.reset')),
+          button(
+            { variant: 'danger', loading: removing, events: { click: remove } },
+            words('todo.form.delete'),
+          ),
         ),
-        link({ href: '/' }, words('app.home')),
       ),
+      api.lastError.view((error) =>
+        error && text({ tone: 'secondary', size: 'sm' }, error.message)
+      ),
+      link({ href: '/' }, words('app.home')),
     )
   },
 })

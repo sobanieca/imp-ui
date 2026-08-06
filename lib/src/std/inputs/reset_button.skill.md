@@ -27,5 +27,5 @@ Rules an agent gets wrong:
   handler.
 
 ```js
-row({ gap: 2 }, submitButton('Save'), resetButton('Start over'))
+flex({ gap: 2 }, submitButton('Save'), resetButton('Start over'))
 ```

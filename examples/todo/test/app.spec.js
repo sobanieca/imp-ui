@@ -25,6 +25,7 @@ const textOf = (page, selector) => page.$eval(selector, (node) => node.textConte
 const focusedInShell = () =>
   document.querySelector('todo-app-root')?.shadowRoot
     ?.querySelector('todo-app-shell')?.shadowRoot
+    ?.querySelector('imp-app')?.shadowRoot
     ?.activeElement?.id ?? null
 
 test('lists what the api answers', async ({ page }) => {

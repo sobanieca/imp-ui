@@ -6,7 +6,7 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | `button`, `heading`, `text`, `link`                                                                                                                         | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                                                                                         |
-| `imp/std/layout`     | `appShell`, `toolbar`, `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea`                                                       | `imp skill std/appShell`, `std/toolbar`, `std/stack`, `std/row`, `std/grid`, `std/item`, `std/container`, `std/spacer`, `std/divider`, `std/scrollArea`                                                               |
+| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `flex`, `grid`                                                                                                        | `imp skill std/app`, `std/navbar`, `std/sidebar`, `std/footer`, `std/flex`, `std/grid`                                                                                                                                |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
@@ -137,66 +137,63 @@ Everything below takes a **responsive value**: either one value, or a per-breakp
 a custom property inside a media query. A breakpoint you skip **inherits the nearest one below it**,
 so `{ md: 'row' }` is the default under `md` and a row from `md` up.
 
-Spacing props (`gap`, `padding`, `spacing`, `size` on `spacer`) take a **step `0`-`6`** from the
-theme scale - `gap: 4` means `--imp-space-4`. Pixels warn and fall back.
+Spacing props (`gap`, `padding`) take a **step `0`-`6`** from the theme scale - `gap: 4` means
+`--imp-space-4`. Pixels warn and fall back.
 
 Every layout component also takes `hideBelow` and `hideAbove` (`'sm'`-`'xl'`), which hide it under
 or from that width and remove it from the accessibility tree with it.
 
 ```js
-import { container, grid, item, row, stack } from 'imp/std/layout'
+import { app, flex, grid, navbar, sidebar } from 'imp/std/layout'
 
-container(
-  stack(
-    { gap: 5 },
-    row({ justify: 'between', align: 'center' }, heading('Invoices'), button('New')),
+app(
+  { maxWidth: 'lg' },
+  navbar({ label: 'Top bar' }, brand()),
+  sidebar({ side: 'left', label: 'Sections' }, navMenu({ items })),
+  flex(
+    { direction: 'column', gap: 5 },
+    flex({ justify: 'between', align: 'center' }, heading('Invoices'), button('New')),
     grid({ minItemWidth: '18rem', gap: 4 }, ...cards),
-    row(
+    flex(
       { direction: { xs: 'column', sm: 'row' }, gap: 2 },
-      item({ grow: true }, search()),
+      flex({ grow: true }, search()),
       button('Go'),
     ),
   ),
 )
 ```
 
-| Component    | What it is                                | Key props                                                                   |
-| ------------ | ----------------------------------------- | --------------------------------------------------------------------------- |
-| `stack`      | Flex container, column by default         | `direction`, `gap`, `justify`, `align`, `wrap`                              |
-| `row`        | The same, row by default                  | as `stack`                                                                  |
-| `grid`       | CSS grid of equal columns                 | `columns` (1-12), `minItemWidth`, `gap`, `align`, `justify`                 |
-| `item`       | Placement wrapper for **one** child       | `grow`, `span` (1-12 or `'full'`), `start`, `rowSpan`, `order`, `align`     |
-| `container`  | Centers content, caps its width           | `size` (`'sm'`-`'xl'`, `'full'`), `padding`                                 |
-| `spacer`     | Empty space in a stack or row             | `size` - omit it to absorb the leftover space                               |
-| `divider`    | A rule, optionally labelled by children   | `orientation`, `spacing`                                                    |
-| `scrollArea` | A region that scrolls instead of the page | `axis`, `maxHeight`, `maxWidth`, `label`                                    |
-| `appShell`   | The page frame, as landmark regions       | `header`, `sidebar`, `footer`, `bottomBar`, `sidebarWidth`, `collapseBelow` |
-| `toolbar`    | A named group of controls in a line       | `label`, `orientation`, `variant`, `gap`, `justify`, `align`, `wrap`        |
+| Component | What it is                             | Key props                                                                                                      |
+| --------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `flex`    | Flex container, a row by default       | `direction`, `gap`, `justify`, `align`, `wrap`, `grow`, `scroll`                                               |
+| `grid`    | CSS grid of equal columns              | `columns` (1-12), `minItemWidth`, `gap`, `align`, `justify`, `grow`                                            |
+| `app`     | The page frame; sorts its own children | `maxWidth` (`'sm'`-`'xl'`, `'full'`), `padding`                                                                |
+| `navbar`  | The bar across the top of the frame    | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
+| `sidebar` | A collapsible side region of the frame | `side` (`'left'`/`'right'`), `label`, `width`, `resizable`, `minWidth`, `maxWidth`, `collapsible`, `collapsed` |
+| `footer`  | The bar across the bottom of the frame | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
 
 Rules an agent gets wrong:
 
-- **A layout parent cannot make a child grow.** `grow` on a `row` warns as an unknown prop - wrap
-  the child: `row(item({ grow: true }, field()), button('Go'))`. The same is true of `span` in a
-  `grid`. Only wrap the children that need placement.
+- **These six are the whole layout group** - do not import anything else from it. A column is
+  `flex({ direction: 'column' })`, empty space is a `justify` or a `grow`, a scrolling region is
+  `flex({ scroll: true })`, a capped and centred column is `app({ maxWidth })`, and a line of
+  controls is a `flex`. Anything past that is a component you write.
+- **`grow` belongs to the child, not the parent.** To let one box take the leftover room, give that
+  box `grow: true`; wrap anything that is not a `flex` or a `grid` in a `flex` to do it.
 - **Reach for `grid({ minItemWidth })` before a `columns` ladder** - it reflows from one column to
   as many as fit with no breakpoints written at all.
-- **`columns` is a count, not a track template.** There is no `'1fr 2fr'`; uneven layouts are
-  `item({ span })` inside a bigger count.
-- **A `row` does not wrap** unless you pass `wrap: true`.
-- **`spacer` only works inside a `stack` or `row`** - it sizes along the parent's main axis.
-- **A vertical `divider` needs a `row`** to stretch against, and takes no label.
-- **`scrollArea` scrolls nothing without a `maxHeight`** (or a bounded parent), and wants a `label`
-  because it is keyboard-focusable.
-- **`item({ order })` moves the box, not the tab order** - reading and focus order stay in DOM
-  order.
-- **`appShell` takes its regions as props and the main content as children.** It is a `100dvh`
-  frame: `main` and the sidebar scroll, the header, footer and bottom bar do not. Below
-  `collapseBelow` (default `md`) the sidebar becomes a drawer behind a menu button the shell renders
-  itself - do not build that, and do not hide the sidebar yourself. `collapseBelow: null` keeps it
-  docked.
-- **`toolbar` needs a `label`** and is for controls; for a plain line of anything use `row`. Its
-  `orientation` is not responsive, and its children keep their own tab stops (focus cannot be
-  delegated across a shadow root).
+- **`columns` is a count, not a track template.** There is no `'1fr 2fr'` and no per-cell span; a
+  child always fills exactly one cell.
+- **A `flex` does not wrap** unless you pass `wrap: true`.
+- **`app` sorts its children into regions by what they are** - a `navbar` goes on top, a `sidebar`
+  down the side it names, a `footer` at the bottom, and everything else is the main content. They
+  are props of nothing: `app({ sidebar: ... })` warns about an unknown prop.
+- **A sidebar carries its own collapse toggle, and becomes a drawer below 48rem** - do not build a
+  menu button, do not hide it with `hideBelow`, and do not write the breakpoint yourself.
+- **A sidebar drags wider only with `resizable: true`**, between `minWidth` and `maxWidth` - and all
+  three take a keyword of the sidebar scale (`'xs'` to `'xl'`), never a length.
+- **Only `app`'s main region scrolls.** The frame is `100dvh`, so put `app` at the top of the page
+  and nothing around it.
 - Spacing is `gap` on the parent, never margins on the children: no std component has an outer
   margin.
 

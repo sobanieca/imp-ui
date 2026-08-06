@@ -208,18 +208,25 @@ The set of tokens grows as imp's component library grows: each component brings 
 into the built-in themes, so every name arrives with something that actually uses it. These are the
 tokens the built-in themes ship today - a theme of your own is expected to define all of them:
 
-| Group      | Tokens                                                                                                                                                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal` |
-| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                                         |
-| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-lg`                                                                                       |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `border-width`, `focus-ring-width`, `duration-fast`, `disabled-opacity`                                              |
-| Sizing     | `container-sm`, `container-md`, `container-lg`, `container-xl`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`                                                                                                                      |
+| Group      | Tokens                                                                                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`   |
+| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                                           |
+| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                               |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity` |
+| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                               |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
 theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone -
 secondary text, de-emphasized links. See **[Standard components](std-components.md)** for the
 components that consume them.
+
+The three shadow steps and the radius scale are how a theme sets its own depth and softness:
+`shadow-sm` lifts a card off the page, `shadow-md` an element that floats near it, `shadow-lg` an
+overlay that sits above everything - and `radius-sm` through `radius-xl` (plus `radius-full` for
+pills) round every corner the standard components draw. A theme that wants flat, square chrome sets
+every shadow to `none` and every radius to `0`, and every component follows without a line of CSS in
+your app.
 
 `border-width` and `focus-ring-width` exist so that contrast is not purely a matter of color. A
 theme that only swapped colors could never make a hairline border or a thin focus ring easier to

@@ -8,7 +8,7 @@ submitButton('Save changes')
 
 Call shape: `submitButton(props?, ...children)` - children are the label.
 
-It finds the form around it by position, so it works at any depth - inside a `row`, a `stack`, or
+It finds the form around it by position, so it works at any depth - inside a `flex`, a `grid`, or
 anything else. Clicking it validates every field and runs the form's `onSubmit` only if they all
 pass. While an async `onSubmit` is in flight it shows a spinner and refuses further clicks.
 
@@ -33,6 +33,6 @@ Rules an agent gets wrong:
 form(
   { initialValues: { email: '' }, onSubmit: save },
   textField({ field: 'email', label: 'Email', required: true }),
-  row({ gap: 2 }, submitButton('Save'), resetButton('Cancel')),
+  flex({ gap: 2 }, submitButton('Save'), resetButton('Cancel')),
 )
 ```

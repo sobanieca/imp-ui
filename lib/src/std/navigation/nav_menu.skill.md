@@ -53,8 +53,8 @@ Rules an agent gets wrong:
   a page cannot break that page's heading outline.
 - **It renders one flat level.** There are no submenus and no expanding items; for a menu of actions
   rather than destinations, that is a different component.
-- **`direction: 'row'` is how the same menu becomes a top or bottom navbar** - with `appShell`, put
-  the column one in `sidebar` and the row one in `bottomBar` (`imp skill std/appShell`).
+- **`direction: 'row'` is how the same menu becomes a bar rather than a list** - put the column one
+  in a `sidebar` and the row one straight in the `navbar` (`imp skill std/app`).
 - **Listen with `events: { select }`, not `onSelect`.** It is a cancelable `CustomEvent` on the host
   with `detail: { id, item }`; the link is followed unless you call `preventDefault()`. Modifier and
   middle clicks are left to the browser, so a link still opens in a new tab.

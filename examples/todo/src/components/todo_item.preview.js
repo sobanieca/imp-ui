@@ -1,7 +1,7 @@
 import { component } from 'imp'
 import { initState } from 'imp/state'
 import { initHttpClient } from 'imp/http'
-import { stack } from 'imp/std/layout'
+import { flex } from 'imp/std/layout'
 import { todoItem } from './todo_item.js'
 
 const todos = [
@@ -39,7 +39,7 @@ const host = component('todo-item-preview-host', {
   onMount: (_instance, ...children) => {
     initState('todo.items', todos)
     initHttpClient('todo.api', { baseUrl: '/api' })
-    return stack({ gap: 3 }, ...children)
+    return flex({ direction: 'column', gap: 3 }, ...children)
   },
 })
 

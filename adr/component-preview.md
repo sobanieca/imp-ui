@@ -74,14 +74,23 @@ found the way a test file is.
   `--imp-color-secondary` rather than a fixed palette, so highlighting inherits every theme's
   contrast guarantees instead of making its own, and keyword weight and comment italics carry the
   same distinctions where colour is forced away.
-- **Every page wears the same shell, and the shell is `appShell`.** `/` and each `/preview/<path>`
-  render one frame: the catalog in `appShell`'s sidebar as a `navMenu` grouped by category, a
-  `commandPalette` across the header with the theme, language and direction pickers in a `toolbar`
-  beside it, and the page itself in `main`. Navigating between components is therefore one click
-  from anywhere, and the workbench exercises the frame components the way an app does - the drawer
-  collapse, the current-page marking and the combobox all run on every preview page. The shell is
-  pinned `dir="ltr"` on the `appShell` host, so the direction control still applies to the stage
-  alone.
+- **Every page wears the same shell, and the shell is `app`.** `/` and each `/preview/<path>` render
+  one frame: a left `sidebar` holding the catalog as a `navMenu` grouped by category, a `navbar`
+  carrying the brand and a `commandPalette`, a right `sidebar` holding the theme, language and
+  direction pickers plus the theme editor, a `footer`, and the page itself in `main`. Navigating
+  between components is therefore one click from anywhere, and the workbench exercises the frame the
+  way an app does - two sidebars, their collapse and their drawer behaviour, the current-page
+  marking and the combobox all run on every preview page. The shell is pinned `dir="ltr"` on the
+  `app` host, so the direction control still applies to the stage alone.
+- **The right sidebar edits the applied theme, token by token.** The pickers choose which theme is
+  applied; the editor below them lists every token the applied theme wrote, grouped by kind, and
+  writes each change straight back through `applyTheme` so the page and the specimen re-skin as the
+  value is typed. Edits are kept per theme in `localStorage` and layered back over the theme on
+  reload, and the editor offers the result as a theme module to paste into a project - which makes
+  the workbench the place a theme is designed, not just the place one is checked. It reads the token
+  names from the custom properties the applied theme left on the document element rather than from a
+  list of its own, so a token added to a theme shows up in the editor with no second registry to
+  update.
 - **A preview is identified by `category/name`, declared in the file or derived from its path** -
   the file's `category` and `name` exports when it has them, otherwise the folder holding the file
   and the file's base name. A project that writes no metadata still gets a grouped catalog from its
@@ -100,8 +109,8 @@ found the way a test file is.
   entry whose scenarios are `null`, so one runtime renders both the catalog view and a file's
   scenarios rather than two page builders diverging. Its bundle is cached under its own key and
   served from `/@imp/preview-index.js`.
-- **The preview page is an imp app built from `imp/std`.** Its toolbar, tabs, stage, state editor
-  and code panel are `component()`s reading the same `--imp-*` tokens as the library
+- **The preview page is an imp app built from `imp/std`.** Its bars, tabs, stage, state editor and
+  code panel are `component()`s reading the same `--imp-*` tokens as the library
   (`themable-by-default-tokens.md`), so the theme switcher re-skins the page along with the specimen
   and any theme that fails here fails in an app for the same reason. Two consequences fall out of
   `shadow-dom-isolation.md` and are the reason the page is shaped this way: content handed to a
@@ -137,7 +146,7 @@ found the way a test file is.
   language picker, since imp has no languages of its own to offer (`translatable-by-default.md`).
   The direction picker offers `auto`, which re-derives from the language, alongside `ltr` and `rtl`,
   which pin it: pinning is how a right-to-left layout is checked while still reading English. **The
-  chrome itself is pinned `ltr` and the direction is applied to the stage element**, so the toolbar
+  chrome itself is pinned `ltr` and the direction is applied to the stage element**, so the frame
   and panels never mirror underneath the person using them - the preview page is the one place where
   imp's own UI and the previewed component need different directions at once.
 - **Routes:** `/` is the generated catalog of discovered previews, `/preview/<path>` renders one
@@ -160,7 +169,7 @@ real dev server, cross-cutting concerns - theming today, i18n later - are exerci
 approximated.
 
 Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
-so a regression in `button`, `select`, `textArea`, `tabs`, `appShell`, `navMenu`, `toolbar` or
+so a regression in `button`, `select`, `textArea`, `tabs`, `app`, `sidebar`, `navbar`, `navMenu` or
 `commandPalette` shows up while working on anything. The cost is the circularity: a broken standard
 component can break the page used to diagnose it, and the shell widened that surface from the panels
 to the frame every page is drawn in. The build-failure path stays raw DOM for that reason, so an

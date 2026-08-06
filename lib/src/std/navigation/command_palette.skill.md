@@ -9,7 +9,7 @@ commandPalette({
   shortcut: 'ctrl+p',
   items: [
     { id: 'general/button', group: 'general', label: 'button', href: '/preview/button.js' },
-    { id: 'layout/stack', group: 'layout', label: 'stack', href: '/preview/stack.js' },
+    { id: 'layout/flex', group: 'layout', label: 'flex', href: '/preview/flex.js' },
   ],
 })
 ```

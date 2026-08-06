@@ -26,7 +26,7 @@ Three constraints shaped the mechanism:
 told apart by type, exactly as props and children already are (`type-based-argument-dispatch.md`):
 
 ```js
-stack({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, sidebar(), main())
+flex({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, filters(), results())
 ```
 
 - **The scale is `xs`, `sm`, `md`, `lg`, `xl`**, at 0, 40rem, 48rem, 64rem and 80rem, and a value
@@ -62,26 +62,27 @@ stack({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, sidebar
 - **Invalid values are ignored, not fatal.** A value outside a prop's allowed set is logged through
   the shared `impLogger` and the breakpoint below it carries on, matching the log-and-continue
   posture of the rest of the library.
-- **Per-child placement lives on a wrapper.** A layout parent cannot style a child that is itself a
+- **Per-child placement lives on the child.** A layout parent cannot style a child that is itself a
   component, because `:host { display: contents }` means the child's own root - inside its shadow -
-  is the real flex or grid item and no selector from the parent can reach it. So `grow`, `span`,
-  `start`, `rowSpan`, `order` and `align` are props of an `item` wrapper rather than props read off
-  arbitrary children.
+  is the real flex or grid item and no selector from the parent can reach it. So `grow` is a prop of
+  the box that grows, carried by `flex` and `grid` themselves and written onto their own root,
+  rather than a prop the parent reads off arbitrary children. A child that is not a layout component
+  and needs to grow is wrapped in a `flex`.
 
 ## Consequences
 
 - One spelling covers every layout prop on every layout component, so an agent that has learned
-  `direction: { xs, md }` has learned `gap`, `columns`, `padding`, `span` and `order` too.
+  `direction: { xs, md }` has learned `gap`, `columns`, `padding`, `justify` and `maxWidth` too.
 - Responsive layout is pure CSS: no resize listeners, no subscriptions, no layout thrash on
   breakpoint crossings, and the first paint is already correct. The per-instance cost is a handful
   of inline custom properties.
 - Breakpoint widths are a fixed part of imp rather than a theme's choice. An app that needs a
   different scale writes its own media queries in a component's `styles`; the standard library does
   not bend.
-- `grid` deliberately exposes a **column count**, not a track template, and pairs with
-  `item({ span })` for uneven layouts - the responsive spelling stays uniform because every value is
-  a number. `minItemWidth` covers the common "as many columns as fit" case with no breakpoints at
-  all.
+- `grid` deliberately exposes a **column count**, not a track template: the responsive spelling
+  stays uniform because every value is a number, and an uneven layout is nested boxes rather than a
+  per-cell span vocabulary. `minItemWidth` covers the common "as many columns as fit" case with no
+  breakpoints at all.
 - Structural swaps that CSS cannot express - a table becoming cards - are not solved here. They need
   a readable, watchable `breakpoint` value, which lands with the first component that needs one
   rather than being invented in advance.

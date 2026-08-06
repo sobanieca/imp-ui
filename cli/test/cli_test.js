@@ -1537,7 +1537,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         await settle()
         return `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
       }
-      const chrome = () => globalThis.impOne('imp-app-shell').getAttribute('dir')
+      const chrome = () => globalThis.impOne('imp-app').getAttribute('dir')
       const words = () => {
         const shadow = globalThis.impOne('demo-counter').shadowRoot
         return `${shadow.querySelector('#label').textContent}/${

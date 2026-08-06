@@ -1,5 +1,5 @@
 import { form, textArea } from 'imp/std/inputs'
-import { stack } from 'imp/std/layout'
+import { flex } from 'imp/std/layout'
 import { markdownNote } from './markdown_note.js'
 
 const rich = `# Release notes
@@ -27,8 +27,8 @@ export const inline = markdownNote({
 
 export const live = form(
   { initialValues: { notes: '**Type here** and the panel below follows.' } },
-  stack(
-    { gap: 3 },
+  flex(
+    { direction: 'column', gap: 3 },
     textArea({ field: 'notes', label: 'Notes', rows: 4 }),
     markdownNote({ field: 'notes', label: 'Preview' }),
   ),

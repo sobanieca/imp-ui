@@ -30,7 +30,7 @@ leaks out onto your page.
 | Import               | What it holds                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                                                                                                                            |
-| `imp/std/layout`     | `appShell`, `toolbar`, `stack`, `row`, `grid`, `item`, `container`, `spacer`, `divider`, `scrollArea`                                                                                         |
+| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `flex`, `grid`                                                                                                                                          |
 | `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
@@ -257,20 +257,17 @@ for `computed([lang], () => t('invoices.empty'))` if it needs to follow the lang
 ## Laying a page out - from `imp/std/layout`
 
 Layout is where a page stops being a list of components and starts being a design, so imp gives it
-its own group. You get a flex box (`stack` and `row`), a grid, a page-width `container`, and the
-small pieces that go between things - `spacer`, `divider`, `scrollArea`. None of them ask you to
-write CSS.
+its own group - and keeps it deliberately small. You get a flex box, a grid, and the four pieces of
+the page frame. None of them ask you to write CSS.
 
 ```js
 import { button, heading } from 'imp/std'
-import { container, grid, item, row, stack } from 'imp/std/layout'
+import { flex, grid } from 'imp/std/layout'
 
-container(
-  stack(
-    { gap: 5 },
-    row({ justify: 'between', align: 'center' }, heading('Invoices'), button('New invoice')),
-    grid({ minItemWidth: '18rem', gap: 4 }, ...invoiceCards),
-  ),
+flex(
+  { direction: 'column', gap: 5 },
+  flex({ justify: 'between', align: 'center' }, heading('Invoices'), button('New invoice')),
+  grid({ minItemWidth: '18rem', gap: 4 }, ...invoiceCards),
 )
 ```
 
@@ -281,9 +278,9 @@ responsive story - there is no second API for mobile, no media queries to write,
 tree to render:
 
 ```js
-row({ direction: { xs: 'column', md: 'row' } }, filters(), results())
+flex({ direction: { xs: 'column', md: 'row' } }, filters(), results())
 grid({ columns: { xs: 1, sm: 2, lg: 4 } }, ...cards)
-container({ padding: { xs: 2, lg: 6 } }, article())
+app({ padding: { xs: 2, lg: 6 } }, article())
 ```
 
 The sizes are `xs` from 0, `sm` from 40rem, `md` from 48rem, `lg` from 64rem and `xl` from 80rem,
@@ -300,7 +297,7 @@ To show something only on wide screens - or only on narrow ones - every layout c
 `hideBelow` and `hideAbove`:
 
 ```js
-stack({ hideBelow: 'lg' }, desktopSidebar())
+flex({ hideBelow: 'lg' }, wideScreenExtras())
 button({ hideAbove: 'md' }, 'Menu')
 ```
 
@@ -309,11 +306,11 @@ while it is hidden.
 
 ### Space comes from the scale
 
-Anywhere a layout component asks for space - `gap`, `padding`, a fixed `spacer` - you give it a
-**step from 0 to 6**, not a pixel value:
+Anywhere a layout component asks for space - `gap`, `padding` - you give it a **step from 0 to 6**,
+not a pixel value:
 
 ```js
-stack({ gap: 4 }, ...rows)
+flex({ direction: 'column', gap: 4 }, ...rows)
 ```
 
 Those steps are your theme's spacing scale (see **[Theming](theming.md)**), so spacing stays
@@ -322,18 +319,20 @@ value at a time.
 
 ### The components
 
-| Component    | What it does                                   | The props you will reach for                         |
-| ------------ | ---------------------------------------------- | ---------------------------------------------------- |
-| `stack`      | Lays children out in a column                  | `direction`, `gap`, `justify`, `align`, `wrap`       |
-| `row`        | The same component, in a row                   | the same                                             |
-| `grid`       | Equal columns, or as many as fit               | `columns`, `minItemWidth`, `gap`                     |
-| `item`       | Wraps one child that needs its own placement   | `grow`, `span`, `start`, `rowSpan`, `order`, `align` |
-| `container`  | Centers your content and caps how wide it gets | `size`, `padding`                                    |
-| `spacer`     | Empty space - flexible, or a fixed step        | `size`                                               |
-| `divider`    | A rule between sections, optionally labelled   | `orientation`, `spacing`                             |
-| `scrollArea` | Scrolls a region instead of the whole page     | `axis`, `maxHeight`, `maxWidth`, `label`             |
-| `appShell`   | The whole page frame - see below               | `header`, `sidebar`, `footer`, `bottomBar`           |
-| `toolbar`    | A named group of controls in a line            | `label`, `orientation`, `variant`, `gap`             |
+| Component | What it does                            | The props you will reach for                           |
+| --------- | --------------------------------------- | ------------------------------------------------------ |
+| `flex`    | Lays children out in a row, or a column | `direction`, `gap`, `justify`, `align`, `wrap`, `grow` |
+| `grid`    | Equal columns, or as many as fit        | `columns`, `minItemWidth`, `gap`                       |
+| `app`     | The whole page frame - see below        | `maxWidth`, `padding`                                  |
+| `navbar`  | The bar across the top of the frame     | `label`, `gap`, `justify`, `align`, `wrap`             |
+| `sidebar` | A collapsible column beside the page    | `side`, `label`, `width`, `resizable`, `collapsible`   |
+| `footer`  | The strip along the bottom of the frame | `label`, `gap`, `justify`, `align`, `wrap`             |
+
+Six components, and the first two do all the everyday work. A row and a column are the same
+component with a different `direction`, so there is one thing to learn instead of two; empty space
+between children is a `justify` or a `grow` rather than an element you insert; and a region that
+scrolls on its own is `flex({ scroll: true })`. Anything more specific than these - a card, a
+labelled rule, a media object - is a component of yours, built once and named after what it is.
 
 `grid` deserves a note: `columns` is a **count** of equal columns, and `minItemWidth` is usually the
 better tool. Give it the narrowest a card should ever get and the grid fits as many as the screen
@@ -344,105 +343,130 @@ breakpoint:
 grid({ minItemWidth: '18rem', gap: 4 }, ...cards)
 ```
 
-### Sizing one child: `item`
+### Letting one child take the leftover room
 
 `gap` handles the space between children, and `justify`/`align` handle the group as a whole. When
-**one** child needs to behave differently - fill the leftover space, span three grid columns, come
-last on mobile - wrap that child in `item` and put the prop there:
+**one** child should absorb what is left over, give that child `grow`:
 
 ```js
-row({ gap: 2 }, item({ grow: true }, searchField()), button('Search'))
-
-grid(
-  { columns: 12, gap: 4 },
-  item({ span: { xs: 'full', lg: 8 } }, chart()),
-  item({ span: { xs: 'full', lg: 4 } }, legend()),
-)
+flex({ gap: 2 }, flex({ grow: true }, searchField()), button('Search'))
 ```
 
-This is a wrapper rather than a prop on the child for a reason you can see from the outside: a
-component seals its own styling, so `row` genuinely cannot reach inside `searchField` to stretch it.
-`item` is the box that belongs to the parent's layout. Only wrap the children that need it - plain
-children already lay out correctly.
+`grow` is a prop of the box that grows, not of the parent, and that is a consequence of how imp
+components work rather than a preference: a component seals its own styling, so a parent genuinely
+cannot reach inside `searchField` to stretch it. `flex` and `grid` carry `grow` themselves; wrap
+anything else in a `flex` when it needs to grow. Everything else lays out correctly with no wrapper
+at all.
 
-One caution: `item({ order })` moves a box on screen without moving it in the document, so keyboard
-focus and screen-reader reading order stay in the order you wrote. Use it for visual polish, and
-change the order of your calls when the content order itself is different.
-
-### The page frame: `appShell`
+### The page frame: `app`
 
 Almost every application has the same outline - a bar across the top, navigation down one side, the
-page in the middle, something along the bottom. `appShell` is that outline, and it takes each region
-as a prop; the children are the main content:
+page in the middle, something along the bottom. `app` is that outline. You do not describe it with
+props: you pass the regions as children and `app` sorts them by what they are.
 
 ```js
-import { appShell, toolbar } from 'imp/std/layout'
+import { app, flex, footer, navbar, sidebar } from 'imp/std/layout'
 import { navMenu } from 'imp/std/navigation'
 
-appShell(
-  {
-    header: toolbar({ label: 'Workspace' }, brand(), spacer(), accountMenu()),
-    sidebar: navMenu({ label: 'Sections', items: sections, selected: currentSection }),
-    bottomBar: navMenu({ label: 'Sections', direction: 'row', hideAbove: 'md', items: sections }),
-    footer: text({ size: 'sm', tone: 'secondary' }, 'Signed in as ada@example.com'),
-  },
+app(
+  { maxWidth: 'lg' },
+  navbar({ label: 'Workspace', justify: 'between' }, brand(), accountMenu()),
+  sidebar({ side: 'left', label: 'Sections' }, navMenu({ label: 'Sections', items: sections })),
+  sidebar({ side: 'right', label: 'Activity', width: 'sm' }, activityFeed()),
+  footer({ label: 'Session' }, text({ size: 'sm', tone: 'secondary' }, 'Signed in as ada')),
   invoicesPage(),
 )
 ```
 
-| Prop            | Values                         | Default  |                                            |
-| --------------- | ------------------------------ | -------- | ------------------------------------------ |
-| `header`        | any content                    | -        | The bar across the top                     |
-| `sidebar`       | any content                    | -        | The column beside the page                 |
-| `footer`        | any content                    | -        | A strip along the bottom                   |
-| `bottomBar`     | any content                    | -        | Below the footer - where a mobile bar goes |
-| `sidebarWidth`  | `'sm'`, `'md'`, `'lg'`         | `'md'`   | From your theme's `--imp-sidebar-*` tokens |
-| `collapseBelow` | `'sm'`, `'md'`, `'lg'`, `'xl'` | `'md'`   | Where the sidebar turns into a drawer      |
-| `menuLabel`     | string - **live**              | `'Menu'` | Names the button that opens the drawer     |
+Every `navbar` goes on top, every `sidebar` down the edge it names, every `footer` at the bottom,
+and **everything left over is the main content**. Order between them does not matter, so you can
+write the frame in whatever order reads best. Only sidebars on the same side care: they stack in the
+order you write them, outward from the page.
 
-It is a **viewport frame**: it fills the window, the header, footer and bottom bar hold their place,
-and the main region and the sidebar scroll on their own. That is what makes a long page feel like an
-application rather than a document - your navigation does not scroll away. Put it at the top of the
-page, with the body margin reset, and give it nothing to sit inside.
+| Prop       | Values                                   | Default  |                                     |
+| ---------- | ---------------------------------------- | -------- | ----------------------------------- |
+| `maxWidth` | `'sm'`, `'md'`, `'lg'`, `'xl'`, `'full'` | `'full'` | Caps the main region and centres it |
+| `padding`  | spacing step `0`-`6`                     | `4`      | The inset around the main region    |
 
-The part worth not writing yourself is what happens on a phone. Below `collapseBelow` the sidebar
-leaves the frame and a menu button appears in the header. Pressing it slides the sidebar over the
-page behind a backdrop, moves focus into it, and takes the rest of the page out of the accessibility
-tree so a screen reader cannot wander behind the overlay. `Escape`, the backdrop, and choosing
-anything inside it all close it again and hand focus back to the button. None of that is a prop you
-set - it is what the collapse means. Pass `collapseBelow: null` when a sidebar should stay docked at
-every width.
+It is a **viewport frame**: it fills the window, the navbar and footer hold their place, and only
+the main region scrolls. That is what makes a long page feel like an application rather than a
+document - your navigation does not scroll away. Put it at the top of the page and give it nothing
+to sit inside.
+
+`maxWidth` caps the **content**, not the chrome. The navbar, the sidebars and the footer stay
+full-bleed against the window edges while the page itself settles into a centred column of readable
+width - which is what you want on a wide monitor, and it costs one prop.
+
+### Sidebars, and what happens on a phone
+
+A sidebar is a region and a control in one. It renders as a `complementary` landmark, and unless you
+turn it off with `collapsible: false` it draws its own toggle: pressing it collapses the sidebar to
+a narrow rail with the toggle still on it, and pressing it again slides the panel back open. The
+width animates, and it does not animate at all for someone who has asked their system for reduced
+motion.
+
+| Prop          | Values              | Default  |                                                     |
+| ------------- | ------------------- | -------- | --------------------------------------------------- |
+| `side`        | `'left'`, `'right'` | `'left'` | Follows the reading direction, so it mirrors in RTL |
+| `label`       | string - **live**   | -        | Names the landmark and its toggle - always pass it  |
+| `width`       | scale keyword       | `'md'`   | From your theme's `--imp-sidebar-*` tokens          |
+| `resizable`   | boolean             | `false`  | Lets the reader drag the sidebar wider or narrower  |
+| `minWidth`    | scale keyword       | `'xs'`   | How narrow a drag may take it                       |
+| `maxWidth`    | scale keyword       | `'xl'`   | How wide a drag may take it                         |
+| `collapsible` | boolean             | `true`   | `false` drops the rail, but never the drawer tab    |
+| `collapsed`   | boolean - **live**  | `false`  | The starting state on a wide screen                 |
+
+A scale keyword is one of `'xs'`, `'sm'`, `'md'`, `'lg'` and `'xl'` - the five steps of your theme's
+sidebar scale, 10rem to 24rem until you retune them.
+
+The part worth not writing yourself is the phone. Below 48rem every sidebar leaves the flow: it
+collapses to a small tab pinned to its own edge of the screen, and tapping that tab slides the panel
+over the page behind a backdrop, moves focus into it, and takes the rest of the page out of the
+accessibility tree so a screen reader cannot wander behind the overlay. `Escape`, the backdrop, and
+choosing anything inside it all close it again and hand focus back to the tab.
+
+`collapsible: false` says the sidebar is not a column you can roll up - it takes the toggle off the
+wide-screen layout - and that is all it says. On a narrow screen the sidebar is still a drawer and
+still keeps its tab, because a region with no way to open it is a region nobody can read.
+
+This is also the answer to the question a second sidebar raises. Two sidebars will not fit beside a
+phone screen, so on a narrow screen they do not try: each keeps its own tab, the tabs stack down
+their edge in the order you wrote them, and opening one closes any other that is open. One panel is
+over the page at a time, whichever side it came from, and the page behind it is never half-covered
+by two. None of this is a prop you set - it is what a sidebar is - so do not add a menu button, a
+`hideBelow`, or a breakpoint of your own on top of it.
+
+### Letting the reader choose the width
+
+`resizable: true` puts a drag handle down the edge of the sidebar that faces the page, and the
+reader takes it from there - with the mouse, with a finger on a touch screen, or with a pen. It is
+the same handle in each case, so there is nothing to enable for touch.
+
+```js
+sidebar(
+  { side: 'left', label: 'Sections', resizable: true, minWidth: 'xs', maxWidth: 'lg' },
+  navMenu({ label: 'Sections', items: sections }),
+)
+```
+
+The drag never leaves the range you gave it, and the range is the same keyword scale as `width`, so
+a resizable sidebar cannot be dragged into a shape your theme did not plan for. Whoever cannot use a
+pointer gets the same control: the handle is in the tab order, the arrow keys move it a step at a
+time, `Home` and `End` take it to the ends of the range, and a screen reader announces it as a
+splitter along with the width it is at. A double click puts the sidebar back to the `width` you
+declared.
+
+The width a reader drags to sticks for as long as the page is open, including across collapsing and
+reopening the sidebar. The handle itself is only there while there is something to drag: it goes
+away while the sidebar is collapsed to its rail, and on a narrow screen, where the sidebar is a
+drawer rather than a column.
 
 Each region renders as its landmark - `<header>`, `<aside>`, `<main>`, `<footer>` - so a screen
 reader user can jump straight to the page content, and you should not wrap what you pass in another
 one.
 
-### Grouping controls: `toolbar`
-
-`toolbar` is a `row` that says what it is: a set of controls that belong together, with a name a
-screen reader announces.
-
-```js
-toolbar(
-  { label: 'Document actions', variant: 'surface', justify: 'between' },
-  text({ weight: 'medium' }, 'report.md'),
-  row({ gap: 2 }, button({ variant: 'ghost' }, 'Undo'), button('Save')),
-)
-```
-
-It takes the same `gap`, `justify`, `align` and `wrap` props as `row` - per screen size, like every
-layout component - plus `orientation` and a `variant` of `'plain'` or `'surface'` for the bordered
-card look. `label` is not optional in practice: an unnamed landmark is announced as an unnamed
-landmark, so the component tells you when you forget it.
-
-`orientation` is deliberately **not** responsive. It is announced through `aria-orientation`, and a
-value that changed with the window would describe the widget differently than the person using it
-finds it.
-
-One honest limitation: in the ARIA pattern a toolbar holds a single tab stop and moves between its
-controls with the arrow keys. imp does not do that, because each control is sealed inside its own
-element and focus cannot be handed across that boundary from the outside. `Tab` walks the controls
-instead - which works everywhere, where a half-implemented roving focus would not.
+`footer` here is the app region; `imp/html` exports a `footer` element factory too. They never
+collide because they arrive through different imports, but a file that wants both should alias one.
 
 ## Forms - from `imp/std/inputs`
 
@@ -537,7 +561,7 @@ attempted. You do not have to manage that - there is no "show errors" flag to ke
 `submitButton()` is the submit action. It can sit anywhere inside the form:
 
 ```js
-row({ gap: 2 }, submitButton('Save changes'), resetButton('Start over'))
+flex({ gap: 2 }, submitButton('Save changes'), resetButton('Start over'))
 ```
 
 Clicking it re-checks every field. If anything fails, `onSubmit` never runs and the bad fields start
@@ -697,9 +721,8 @@ as a `select` event before the link is followed, so an app doing its own routing
 none to add: `Tab` and `Enter` are what links already do, and a roving-focus menu would take those
 links out of the tab order in exchange for nothing.
 
-The same component is your top or bottom navigation bar with `direction: 'row'`. Paired with
-`appShell` - the column one in `sidebar`, a row one in `bottomBar` - that is a desktop sidebar and a
-mobile bottom bar from one list of destinations.
+The same component is your navigation bar with `direction: 'row'`. Put the column one in a `sidebar`
+and a row one straight in the `navbar`, and one list of destinations serves both.
 
 ## `commandPalette` - from `imp/std/navigation`
 

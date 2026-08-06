@@ -4,11 +4,12 @@ import { initState } from 'imp/state'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { button, text } from 'imp/std'
-import { row } from 'imp/std/layout'
+import { flex } from 'imp/std/layout'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { tabs } from 'imp/std/navigation'
 import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
+import { applyEdits, readEdits, snapshotBaseTokens, themeEditor } from './preview_theme_editor.js'
 import { copyButton } from './preview_copy.js'
 import { tokenizeJs } from './preview_highlight.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
@@ -20,6 +21,7 @@ const THEME_STORAGE_KEY = 'imp.preview.theme'
 const LANGUAGE_STORAGE_KEY = 'imp.preview.lang'
 const DIRECTION_STORAGE_KEY = 'imp.preview.dir'
 
+const EDITOR_STATE = 'imp.preview.editor'
 const THEME_STATE = 'imp.preview.theme'
 const LANGUAGE_STATE = 'imp.preview.lang'
 const DIRECTION_STATE = 'imp.preview.dir'
@@ -68,8 +70,7 @@ const surface = `
 const SCENARIO_STYLES = `
   .scenario {
     display: block;
-    padding-block: var(--imp-space-5, 24px);
-    padding-inline: var(--imp-space-5, 24px);
+    padding-block-end: var(--imp-space-5, 24px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
   }
@@ -321,13 +322,20 @@ const registerThemes = (customThemes) => {
   for (const name of BUILT_IN_THEMES) themes.set(name, name)
 }
 
-const applySelectedTheme = (definition) => {
-  if (typeof definition === 'string') {
+const colorSchemeOf = (definition) =>
+  typeof definition === 'string'
+    ? (definition.includes('dark') ? 'dark' : 'light')
+    : (definition?.colorScheme ?? 'light')
+
+const applySelectedTheme = (name) => {
+  const definition = themes.get(name)
+  if (typeof definition === 'string') applyTheme(definition)
+  else {
+    applyTheme(BASE_THEME_FOR[definition?.colorScheme] ?? 'imp-light')
     applyTheme(definition)
-    return
   }
-  applyTheme(BASE_THEME_FOR[definition?.colorScheme] ?? 'imp-light')
-  applyTheme(definition)
+  snapshotBaseTokens()
+  applyEdits(name, colorSchemeOf(definition), readEdits(name))
 }
 
 const defaultThemeName = () => themes.keys().next().value
@@ -382,7 +390,7 @@ const switchTo = (code) => {
 }
 
 const picker = (kind, ariaLabel, values, choice) =>
-  row(
+  flex(
     { gap: 2, align: 'center' },
     text({ tone: 'secondary', size: 'sm' }, kind),
     select({ ariaLabel, value: choice, options: values }),
@@ -668,7 +676,7 @@ const scenarioSection = (name, scenario, meta) => {
         {
           id: 'preview',
           label: 'Preview',
-          content: row(
+          content: flex(
             { gap: 4, align: 'start', wrap: true },
             stagePanel(nodes),
             stateEditor(nodes, meta.states),
@@ -736,7 +744,7 @@ const pageDefinition = {
     themeChoice.watch((name) => {
       if (!themes.has(name)) return
       remember(THEME_STORAGE_KEY, name)
-      applySelectedTheme(themes.get(name))
+      applySelectedTheme(name)
     })
     languageChoice?.watch((codeName) => {
       remember(LANGUAGE_STORAGE_KEY, codeName)
@@ -747,13 +755,27 @@ const pageDefinition = {
       switchTo(readStoredLanguage())
     })
 
+    const editorOpen = initState(EDITOR_STATE, false)
     const controls = [
       languageChoice ? picker('language', 'Language', languages, languageChoice) : null,
       picker('direction', 'Text direction', DIRECTIONS, directionChoice),
       picker('theme', 'Theme', [...themes.keys()], themeChoice),
+      button(
+        { size: 'sm', events: { click: () => editorOpen.set(!editorOpen.get()) } },
+        editorOpen.text((open) => (open ? 'close theme editor' : 'edit theme')),
+      ),
     ].filter(Boolean)
 
-    return previewShell({ catalog, controls, content: mainContent(scenarios, meta, catalog) })
+    const editor = editorOpen.view((open) =>
+      open ? themeChoice.view((name) => themeEditor(name, colorSchemeOf(themes.get(name)))) : null
+    )
+
+    return previewShell({
+      catalog,
+      controls,
+      editor,
+      content: mainContent(scenarios, meta, catalog),
+    })
   },
 }
 
@@ -770,7 +792,7 @@ export async function startPreview(scenarios, meta, customThemes = [], previewTr
   styles.textContent = DOCUMENT_STYLES
   document.head.append(styles)
   registerThemes(customThemes)
-  applySelectedTheme(themes.get(readStoredTheme()))
+  applySelectedTheme(readStoredTheme())
   registerLanguages(previewTranslations)
 
   await init(

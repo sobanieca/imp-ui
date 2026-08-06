@@ -1,7 +1,7 @@
 import { component } from 'imp'
 import { a, div, el, pre, span } from 'imp/html'
 import { heading, text } from 'imp/std'
-import { appShell, toolbar } from 'imp/std/layout'
+import { app, flex, footer, navbar, sidebar } from 'imp/std/layout'
 import { commandPalette, navMenu } from 'imp/std/navigation'
 import { copyButton } from './preview_copy.js'
 
@@ -40,10 +40,25 @@ const BAR_STYLES = `
   }
 `
 
+const SETTINGS_STYLES = `
+  .settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--imp-space-3, 12px);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--imp-color-secondary, #64748b);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+`
+
 const INDEX_STYLES = `
   .root {
-    padding-block: var(--imp-space-6, 32px);
-    padding-inline: var(--imp-space-5, 24px);
     font-family: var(--imp-font-family, system-ui, sans-serif);
   }
 
@@ -67,6 +82,7 @@ const INDEX_STYLES = `
     background-color: var(--imp-color-surface, #ffffff);
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     border-radius: var(--imp-radius-lg, 10px);
+    box-shadow: var(--imp-shadow-sm, 0 1px 2px rgb(15 23 42 / 10%));
   }
 
   .card-head {
@@ -98,8 +114,7 @@ const HEAD_STYLES = `
     display: flex;
     flex-direction: column;
     gap: var(--imp-space-3, 12px);
-    padding-block: var(--imp-space-4, 16px);
-    padding-inline: var(--imp-space-5, 24px);
+    padding-block-end: var(--imp-space-4, 16px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
   }
@@ -251,12 +266,22 @@ const searchField = (previews) =>
 
 const barDefinition = {
   styles: BAR_STYLES,
-  onMount: (_instance, previews, controls) =>
+  onMount: (_instance, previews) =>
     div(
       { class: 'bar' },
       a({ class: 'brand', href: '/' }, 'imp preview'),
       div({ class: 'search' }, searchField(previews)),
-      toolbar({ label: 'Preview settings', gap: 3, wrap: true }, ...controls),
+    ),
+}
+
+const settingsDefinition = {
+  styles: SETTINGS_STYLES,
+  onMount: (_instance, controls, editor) =>
+    div(
+      { class: 'settings' },
+      el('h2', 'Preview'),
+      ...controls,
+      editor,
     ),
 }
 
@@ -328,12 +353,18 @@ const headDefinition = {
 }
 
 let createBar = null
+let createSettings = null
 let createIndex = null
 let createHead = null
 
-export const previewBar = (previews, controls) => {
+export const previewBar = (previews) => {
   createBar ??= component('imp-preview-bar', barDefinition)
-  return createBar(previews, controls)
+  return createBar(previews)
+}
+
+export const previewSettings = (controls, editor) => {
+  createSettings ??= component('imp-preview-settings', settingsDefinition)
+  return createSettings(controls, editor)
 }
 
 export const previewIndex = (previews) => {
@@ -346,17 +377,29 @@ export const previewHead = (entry, isolated, instruction) => {
   return createHead(entry, isolated, instruction)
 }
 
-export const previewShell = ({ catalog, controls, content }) => {
-  const shell = appShell(
-    {
-      header: previewBar(catalog.previews, controls),
-      ...(catalog.previews.length === 0 ? {} : {
-        sidebar: componentMenu(catalog.previews, catalog.current, { label: 'Components' }),
-        collapseBelow: 'md',
-        menuLabel: 'Components',
-      }),
-    },
-    content,
+export const previewShell = ({ catalog, controls, editor, content }) => {
+  const hasPreviews = catalog.previews.length > 0
+  const shell = app(
+    { padding: 5 },
+    navbar({ label: 'imp preview' }, previewBar(catalog.previews)),
+    hasPreviews
+      ? sidebar(
+        { side: 'left', label: 'Components' },
+        componentMenu(catalog.previews, catalog.current, { label: 'Components' }),
+      )
+      : null,
+    sidebar(
+      { side: 'right', label: 'Preview settings' },
+      previewSettings(controls, editor),
+    ),
+    footer(
+      { label: 'Preview footer' },
+      text(
+        { size: 'sm', tone: 'secondary' },
+        `${catalog.previews.length} component${catalog.previews.length === 1 ? '' : 's'}`,
+      ),
+    ),
+    flex({ direction: 'column', gap: 4 }, content),
   )
   shell.setAttribute('dir', 'ltr')
   return shell

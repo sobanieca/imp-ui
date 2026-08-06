@@ -71,6 +71,6 @@ form(
   },
   textField({ field: 'email', label: 'Email', type: 'email', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro'] }),
-  row(submitButton('Create account'), resetButton('Start over')),
+  flex(submitButton('Create account'), resetButton('Start over')),
 )
 ```
