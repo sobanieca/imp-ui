@@ -99,6 +99,11 @@ is `text_field` under `inputs`.
 - **Agent instruction** - the file's `description`, ready to copy, once per page below the head
   rather than per scenario: the command to hand an agent before it writes code with this component.
   A file that declares none says so there.
+- **Theme editor** - _edit theme_ beside the switcher. Knobs: mode (light/dark), primary, secondary,
+  border radius (`none` | `small` | `medium` | `large` | `full`), shadow (`none` | `soft` |
+  `strong`). Every other colour token is derived from the two base colours. Copy or download the
+  result as a `theme.js` exporting `light` and `dark`, then pass it to `init({ theme })`. Drafts are
+  kept per theme in `localStorage`; _reset_ clears one. See [theming](theming.md).
 - **Theme, language and direction switchers** - fed by `preview.themes` and `preview.translations`
   in `imp.json`, see [config](config.md); choices survive reloads. Direction has **auto** (follows
   the language), **ltr** and **rtl** - pinning it while reading English is the quickest way to catch

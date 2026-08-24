@@ -1,12 +1,13 @@
-import { dirname, fromFileUrl, join, toFileUrl } from '@std/path'
+import { dirname, fromFileUrl, join, relative, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
 import { createMockBundler } from '../src/mocks.js'
 import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
-import { CONTENT_TYPES, injectImp } from '../src/start.js'
+import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 import { tokenizeJs } from '../src/preview_highlight.js'
+import { themeFileSource } from '../src/preview_theme_source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import impPlugin, { IMP_MODULE_EXPORTS } from '../src/lint_rules.js'
 import { MAX_FILE_SIZE_RULE } from '../src/lint.js'
@@ -1419,6 +1420,10 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
   try {
     const page = await browser.newPage()
     await page.evaluateOnNewDocument(() => {
+      globalThis.impResizeLoops = 0
+      globalThis.addEventListener('error', (event) => {
+        if (String(event.message).includes('ResizeObserver loop')) globalThis.impResizeLoops++
+      })
       globalThis.impRoot = () => document.querySelector('imp-preview-page')?.shadowRoot ?? null
       globalThis.impAll = (name, from) => {
         const found = []
@@ -1573,6 +1578,37 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
     })
 
+    const themeEdits = await page.evaluate(async () => {
+      const open = globalThis.impAll('imp-button')
+        .find((node) => node.shadowRoot.textContent.includes('edit theme'))
+      open.shadowRoot.querySelector('button').click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const panel = globalThis.impOne('imp-preview-theme').shadowRoot
+      const field = (id) => panel.querySelector(`#${id}`)
+      const token = (name) =>
+        getComputedStyle(document.documentElement).getPropertyValue(`--imp-${name}`).trim()
+      const change = (node, value) => {
+        node.value = value
+        node.dispatchEvent(new Event(node.localName === 'select' ? 'change' : 'input'))
+      }
+      const knobs = [...panel.querySelectorAll('.field > label')].map((node) => node.textContent)
+      change(field('theme-primary'), '#8821ac')
+      const primary = token('color-primary')
+      const derived = token('color-primary-hover')
+      change(field('theme-radius'), 'none')
+      const flat = token('radius-md')
+      change(field('theme-mode'), 'dark')
+      const darkSurface = token('color-surface')
+      return {
+        knobs: knobs.join(', '),
+        primary,
+        derived,
+        flat,
+        darkSurface,
+        usage: panel.querySelector('.usage pre').textContent.split('\n')[0],
+      }
+    })
+
     const shell = await page.evaluate(() => {
       const menu = globalThis.impOne('imp-nav-menu').shadowRoot
       const links = [...menu.querySelectorAll('.link')]
@@ -1641,6 +1677,32 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       agent: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.missing').textContent,
     }))
 
+    const resizeLoops = await page.evaluate(() => globalThis.impResizeLoops)
+    check(
+      resizeLoops === 0,
+      `the preview chrome drove ${resizeLoops} ResizeObserver feedback loops - something read a ` +
+        'size and then wrote layout that changes it',
+    )
+
+    const readout = await page.evaluate(() => {
+      const stage = globalThis.impOne('imp-preview-stage').shadowRoot
+      const node = stage.querySelector('.readout')
+      const restore = node.textContent
+      const widthShowing = (text) => {
+        node.textContent = text
+        return node.getBoundingClientRect().width
+      }
+      const result = { narrow: widthShowing('1 × 1'), wide: widthShowing('1280 × 800') }
+      node.textContent = restore
+      return result
+    })
+    check(
+      readout.narrow === readout.wide,
+      'the stage size readout resizes with its own text (' +
+        `${readout.narrow} vs ${readout.wide}px) - a ResizeObserver writes that text, so its ` +
+        'width must not depend on it or measuring the stage changes the stage',
+    )
+
     const report = [
       `scenarios: ${counter.names.join(', ')}`,
       `rendered values: ${counter.rendered.join(', ')}`,
@@ -1667,6 +1729,11 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `theme options: ${themed.options.join(', ')} (selected ${themed.selected})`,
       `imp-dark surface token: ${themed.dark}`,
       `brand surface token: ${themed.custom}`,
+      `theme editor knobs: ${themeEdits.knobs}`,
+      `after picking a primary: ${themeEdits.primary} (hover ${themeEdits.derived})`,
+      `after picking radius none: ${themeEdits.flat}`,
+      `after switching the editor to dark: ${themeEdits.darkSurface}`,
+      `theme editor usage line: ${themeEdits.usage}`,
       `sidebar groups: ${shell.groups}`,
       `sidebar components: ${shell.sidebar}`,
       `sidebar current: ${shell.current}`,
@@ -1741,6 +1808,38 @@ Deno.test('injectImp', async () => {
     )
     .join('\n')
   await assertSnapshot('inject-imp', transcript)
+})
+
+Deno.test('resolveWithinRoot', async () => {
+  const root = join(await Deno.makeTempDir(), 'app')
+  const requests = [
+    '/index.html',
+    '/sub/page.js',
+    '/',
+    '/sub/',
+    '/.git/config',
+    '/.git/HEAD',
+    '/node_modules/pkg/index.js',
+    '/dist/app.js',
+    '/.imp/dev.log',
+    '/sub/.git/config',
+    '/dependencies/lodash/lodash.js',
+    '/.well-known/assetlinks.json',
+    '/../outside.txt',
+    '/%2e%2e%2fapp-secrets/keys.env',
+    '/%2e%2e%2f%2e%2e%2fetc/passwd',
+    '/..%2f..%2fetc/passwd',
+    '/sub/%2e%2e%2f%2e%2e%2foutside.txt',
+    '/%',
+  ]
+  const transcript = requests
+    .map((request) => {
+      const within = resolveWithinRoot(root, new URL('http://host' + request).pathname)
+      const where = within ? relative(root, within.fsPath).replaceAll('\\', '/') : 'forbidden'
+      return `${request.padEnd(36)} ${where}`
+    })
+    .join('\n') + '\n'
+  await assertSnapshot('resolve-within-root', transcript)
 })
 
 Deno.test('resolveEnvironment', async () => {
@@ -2126,6 +2225,53 @@ Deno.test('bundleDependency keeps bare imp imports external', async () => {
     await shutdownBundler()
     await Deno.remove(dir, { recursive: true })
   }
+})
+
+Deno.test('the theme editor exports a theme file that imports back as two themes', async () => {
+  const draft = {
+    mode: 'light',
+    radius: 'large',
+    shadow: 'strong',
+    light: { primary: '#3b6fe0', secondary: '#6b7280' },
+    dark: { primary: '#7c9cff', secondary: '#94a3b8' },
+  }
+  const source = themeFileSource('acme', draft)
+  const module = await import(`data:text/javascript,${encodeURIComponent(source)}`)
+
+  check(module.default === module.light, 'the default export is the light theme')
+  check(module.light.colorScheme === 'light', 'the light theme declares its colour scheme')
+  check(module.dark.colorScheme === 'dark', 'the dark theme declares its colour scheme')
+  check(module.light.name === 'acme-light', `unexpected theme name ${module.light.name}`)
+
+  for (const theme of [module.light, module.dark]) {
+    const missing = Object.keys(defaultTokens()).filter((name) => !(name in theme.tokens))
+    check(missing.length === 0, `the exported theme omits ${missing.join(', ')}`)
+  }
+
+  check(
+    module.light.tokens['color-primary'] === '#3b6fe0',
+    'the light theme carries the primary the editor was given',
+  )
+  check(
+    module.dark.tokens['color-primary'] === '#7c9cff',
+    'the dark theme carries its own primary',
+  )
+  check(
+    module.light.tokens['color-green'] === module.dark.tokens['color-green'],
+    'both themes share one palette block',
+  )
+  check(
+    module.light.tokens['color-success'] === module.light.tokens['color-green'],
+    'the semantic aliases point at the palette, so editing a hue moves the role',
+  )
+  check(
+    module.light.tokens['radius-md'] === '10px' && module.light.tokens['shadow-md'] !== 'none',
+    'the radius and shadow steps reach the exported tokens',
+  )
+  check(
+    !source.includes("from 'imp"),
+    'the exported theme file imports nothing from imp',
+  )
 })
 
 Deno.test('tokenizeJs', async () => {

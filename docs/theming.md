@@ -191,6 +191,43 @@ your theme files in `imp.json` and they join the switcher:
 Nothing about the theme file changes - the switcher applies the same module your entry point does,
 and editing it reloads the page with the new tokens. See **[`imp preview`](cli.md#imp-preview)**.
 
+## Writing a theme with the theme editor
+
+You do not have to spell out ninety tokens to get a theme. `imp preview` ships a **theme editor**
+next to the switcher - open it with _edit theme_ - and it asks for four things:
+
+| Knob              | Choices                          | What it drives                                             |
+| ----------------- | -------------------------------- | ---------------------------------------------------------- |
+| **Mode**          | light, dark                      | Which of the two themes you are editing                    |
+| **Primary**       | any color                        | The accent: buttons, links, focus rings                    |
+| **Secondary**     | any color                        | The muted tone, and the hue of every surface, border, text |
+| **Border radius** | none, small, medium, large, full | The whole `radius-*` scale                                 |
+| **Shadow**        | none, soft, strong               | The three `shadow-*` steps                                 |
+
+Everything else is **derived**. From the primary color imp builds the hover and active steps and
+picks a readable `color-on-primary`; from the secondary it builds the surface, sunken, hover, border
+and text colors so they share one hue and land at contrast-safe lightness for the mode you are in.
+The page re-skins as you type, on the real components, and your choices survive a reload.
+
+The editor changes nothing about what a theme _is_. Press **copy** (or **download theme.js**) and
+you get an ordinary module - the same flat token map described above, with a `light` and a `dark`
+export - which you save into your app and pass to `init`:
+
+```js
+import { init } from 'imp'
+import light, { dark } from './theme.js'
+
+await init({ theme: light })
+
+// later, from a theme switcher:
+applyTheme(dark)
+```
+
+The generated file is yours to edit by hand from that point on, and it is laid out for exactly that.
+The 31 named palette colors sit at the top as a shared `palette` object both themes spread in, so
+changing `color-grass` once changes it for light and dark together. The editor never rewrites the
+file - it is a starting point, not a format it owns.
+
 ## Token names
 
 Token keys are bare names that imp prefixes with `--imp-`. They follow a fixed scheme - semantic
@@ -208,25 +245,36 @@ The set of tokens grows as imp's component library grows: each component brings 
 into the built-in themes, so every name arrives with something that actually uses it. These are the
 tokens the built-in themes ship today - a theme of your own is expected to define all of them:
 
-| Group      | Tokens                                                                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`   |
-| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                                           |
-| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                               |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity` |
-| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                               |
+| Group      | Tokens                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                          |
+| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
+| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                                              |
+| Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                                        |
+| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                                                                                                                                                                                                                                                                      |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
 theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone -
-secondary text, de-emphasized links. See **[Standard components](std-components.md)** for the
-components that consume them.
+secondary text, de-emphasized links. `color-surface` is a panel, `color-surface-sunken` the page
+behind it, `color-surface-hover` the tint under the pointer. See
+**[Standard components](std-components.md)** for the components that consume them.
+
+The **palette** is the one group nothing in imp consumes by default: 31 named colors, one value
+each, there for the places an app needs a specific hue rather than a role - a tag per project, a
+series in a chart, an avatar background. `color-success`, `color-warning` and `color-info` are
+aliases pointing at three of them (`color-green`, `color-amber`, `color-blue`), and `color-danger`
+is derived from `color-red`, so editing the hue in one place moves the role with it. Every palette
+value is chosen to carry white text and to stay legible on a light or a dark surface, so the same
+block of colors serves both themes.
 
 The three shadow steps and the radius scale are how a theme sets its own depth and softness:
 `shadow-sm` lifts a card off the page, `shadow-md` an element that floats near it, `shadow-lg` an
 overlay that sits above everything - and `radius-sm` through `radius-xl` (plus `radius-full` for
 pills) round every corner the standard components draw. A theme that wants flat, square chrome sets
 every shadow to `none` and every radius to `0`, and every component follows without a line of CSS in
-your app.
+your app. The layout components expose both scales directly, as
+`box({ radius: 'lg', shadow: 'sm' })`.
 
 `border-width` and `focus-ring-width` exist so that contrast is not purely a matter of color. A
 theme that only swapped colors could never make a hairline border or a thin focus ring easier to

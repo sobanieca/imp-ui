@@ -200,6 +200,5 @@ closed precisely because there is a documented way out - and if `imp/kit` lands,
   baseline requires would keep the guarantee with the code - but those tests are written against
   imp's internal test layout, so this needs a look before promising it.
 - **What else is ejectable?** A built-in theme (`imp eject theme imp-light` -> a token module to
-  tweak, which is what `todo/theme-editor.md` exports by hand today) and the `imp init` templates
-  are the obvious candidates. Keep the first release to components; the noun in the command leaves
-  room.
+  tweak, which is close to what the preview's theme editor exports) and the `imp init` templates are
+  the obvious candidates. Keep the first release to components; the noun in the command leaves room.

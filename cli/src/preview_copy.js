@@ -11,7 +11,9 @@ export const copyButton = (content) => {
       events: {
         click: async () => {
           try {
-            await navigator.clipboard.writeText(content)
+            await navigator.clipboard.writeText(
+              typeof content === 'function' ? content() : content,
+            )
             label.data = 'copied'
           } catch {
             label.data = 'could not copy'

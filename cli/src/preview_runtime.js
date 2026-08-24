@@ -9,7 +9,7 @@ import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { tabs } from 'imp/std/navigation'
 import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
-import { applyEdits, readEdits, snapshotBaseTokens, themeEditor } from './preview_theme_editor.js'
+import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview_theme_editor.js'
 import { copyButton } from './preview_copy.js'
 import { tokenizeJs } from './preview_highlight.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
@@ -137,6 +137,9 @@ const STAGE_STYLES = `
 
   .readout {
     margin-inline-start: auto;
+    inline-size: 11ch;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
   }
 
@@ -335,7 +338,7 @@ const applySelectedTheme = (name) => {
     applyTheme(definition)
   }
   snapshotBaseTokens()
-  applyEdits(name, colorSchemeOf(definition), readEdits(name))
+  applyStoredDraft(name)
 }
 
 const defaultThemeName = () => themes.keys().next().value

@@ -31,10 +31,14 @@ without a skill file, so this is enforced rather than remembered.
 - **General** - `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
-- **Layout** - `splitPane` _(later)_, `aspectBox` _(later)_ - placement details in _Layout &
-  placement_ below. `flex` and `grid` have landed, opening the `imp/std/layout` subpath and fixing
-  the responsive prop convention for the whole library (`adr/responsive-layout-props.md`); the frame
-  (`app`, `navbar`, `sidebar`, `footer`) landed with them (`adr/app-frame-regions.md`).
+- **Layout** - `splitPane` _(later)_ - placement details in _Layout & placement_ below. `box`,
+  `flex`, `grid`, `container` and `section` have landed, opening the `imp/std/layout` subpath and
+  fixing the responsive prop convention for the whole library (`adr/responsive-layout-props.md`);
+  the frame (`app`, `navbar`, `sidebar`, `footer`) landed with them (`adr/app-frame-regions.md`).
+  **`aspectBox` is dropped**: it is `box({ ratio: '16/9' })`, one prop on the shared surface rather
+  than a component of its own. **`scrollArea` is out of scope** for the same reason `virtualList`
+  is - custom scrollbars reimplement the browser's own scrolling
+  (`adr/browser-support-baseline.md`); `flex({ scroll: true })` is the supported answer.
 - **Inputs** - `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
   _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
@@ -66,10 +70,20 @@ without a skill file, so this is enforced rather than remembered.
 ## Layout & placement
 
 The layout group is the placement toolkit - child positioning is expressed through layout parents
-and props on the boxes themselves, not per-component positioning props. It is deliberately six
-components, because every extra one is a name an agent has to learn and a decision it has to make.
+and props on the boxes themselves, not per-component positioning props. It is deliberately small,
+because every extra component is a name an agent has to learn and a decision it has to make - the
+five boxes below plus the four frame regions, and nothing is added that an existing prop can say.
 What landed:
 
+- **`box`** is the plain block, and its props are the **shared box surface** every other layout
+  component also accepts: `padding`/`paddingX`/`paddingY` off the spacing scale, `width`/`height`
+  and their min/max as CSS lengths, `radius`, `shadow`, `background`, `border`, `ratio`, `grow`,
+  `scroll` and the visibility pair. One table an agent learns once. Margins and positioning are
+  deliberately absent (`adr/responsive-layout-props.md`).
+- **`container`** caps content at a themed width (`size`, `sm`-`xl` off the `--imp-content-*`
+  tokens) and centres it; **`section`** is a band of page with block padding off the spacing scale
+  (`size`, `sm`-`lg`), rendering a real `<section>` that becomes a landmark once given a `label`.
+  Both are a `box` with one extra prop, and both let an explicit box prop win over their sugar.
 - **`flex`** carries the flex placement surface: `direction`, `gap`, `justify`, `align`, `wrap` -
   enough that app code almost never writes raw flex CSS. One component covers a row and a column;
   `scroll: true` is the overflow case and a `justify` or a `grow` is the spacing one, so neither
@@ -79,7 +93,7 @@ What landed:
   on the children buys nothing over a bigger `columns` count, and a percentage `offset` is the one
   placement that cannot be expressed cleanly on an auto-placed grid item. Per-cell spans and
   named-area templates (`areas`) were left out too - add them when something needs one.
-- **`grow` is a prop of the box, not of its parent**, and only `flex` and `grid` carry it. Placement
+- **`grow` is a prop of the box, not of its parent**, and every layout box carries it. Placement
   cannot be applied to an arbitrary child because `:host { display: contents }` means a child
   component's own root - inside its shadow - is the real flex or grid item, and no selector from the
   parent can reach it (`adr/responsive-layout-props.md`); anything else that needs to grow is

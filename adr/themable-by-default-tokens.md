@@ -64,27 +64,54 @@ so it cannot map a stored name back to a module and deliberately does **not** to
 The `theme` state exposes the active theme (`name` included) for an app that wants to remember and
 re-apply a choice on load.
 
-imp ships a built-in light and dark theme so an app renders sensibly before any theme editor exists
-and so a future editor has a baseline to seed from. They are **not exported as objects** -
-`applyTheme('imp-light')` / `applyTheme('imp-dark')` is the whole API, keeping the common case a
-single call with no import to add and no name to learn beyond `applyTheme` itself. The names carry
-an **`imp-` prefix** so imp's built-ins never collide conceptually with an app's own `light` /
-`dark` theme modules: a bare name always means the app's theme, an `imp-` name always means imp's.
-The resolved object is still reachable through `theme.get()` for anything that needs to seed from
-it, so hiding the exports costs nothing: the state layer deep-freezes every value it holds, so an
-applied built-in cannot be edited in place by one app corner and silently change what a later
-`applyTheme('imp-dark')` produces - seeding copies the tokens instead. Theming adds no freezing of
-its own. Stdlib components reference tokens through a `token('color-primary')` helper that expands
-to `var(--imp-color-primary, …)` with the fallback taken from the built-in light theme, so they
-render standalone before any theme is applied and no component can state a default the themes
-disagree with.
+imp ships a built-in light and dark theme so an app renders sensibly before it writes one of its
+own, and so the theme editor (`theme-editor.md`) has a baseline to seed from. They are **not
+exported as objects** - `applyTheme('imp-light')` / `applyTheme('imp-dark')` is the whole API,
+keeping the common case a single call with no import to add and no name to learn beyond `applyTheme`
+itself. The names carry an **`imp-` prefix** so imp's built-ins never collide conceptually with an
+app's own `light` / `dark` theme modules: a bare name always means the app's theme, an `imp-` name
+always means imp's. The resolved object is still reachable through `theme.get()` for anything that
+needs to seed from it, so hiding the exports costs nothing: the state layer deep-freezes every value
+it holds, so an applied built-in cannot be edited in place by one app corner and silently change
+what a later `applyTheme('imp-dark')` produces - seeding copies the tokens instead. Theming adds no
+freezing of its own. Stdlib components reference tokens through a `token('color-primary')` helper
+that expands to `var(--imp-color-primary, …)` with the fallback taken from the built-in light theme,
+so they render standalone before any theme is applied and no component can state a default the
+themes disagree with.
 
 The **token naming scheme is fixed** - semantic color roles, numeric scales (`space-*`, `radius-*`,
 `shadow-*`, `font-size-*`, …), and font families - but the **exact list is not enumerated up
 front**: each stdlib component pulls the tokens it needs into the built-in surface as it is built,
-so every `--imp-*` name lands with a real consumer. Once referenced, a name is public API. The
-built-in themes currently carry only `color-primary` and `color-secondary`; the surface grows with
-the stdlib.
+so every `--imp-*` name lands with a real consumer. Once referenced, a name is public API.
+
+**A theme is authored from four values, not ninety.** Writing a full token map by hand is not a
+thing a person should do, so imp derives one: a **primary** color, a **secondary** color, a
+**radius** step (`none` | `small` | `medium` | `large` | `full`) and a **shadow** step (`none` |
+`soft` | `strong`) produce the whole color, radius and shadow surface for one `colorScheme`. The
+derivation is imp's own, computed in OKLCH: the primary yields its hover and active steps (darker in
+light, lighter in dark) and a `color-on-primary` chosen by WCAG contrast against white and a
+near-black tint of the same hue; the secondary yields `color-text`, `color-surface`,
+`color-surface-sunken`, `color-surface-hover` and `color-border` at fixed lightness steps per mode,
+keeping the secondary's hue at a capped chroma so a theme's neutrals are tinted rather than gray.
+Deriving rather than tabulating is what keeps the built-in themes, the theme editor's live preview
+and the file it exports from ever disagreeing - there is one function, and all three call it.
+
+**The palette is 31 named colors carried by every theme** - `color-gray` … `color-sky`, one solid
+value each, generated from a table of OKLCH hue/chroma/lightness anchors. It is the one group with
+**no consumer inside imp**, and it is in the token surface anyway: an app that needs a per-item hue
+(a tag colour, a chart series, an avatar) should reach for a themed name rather than a literal, and
+a theme should be able to re-tune those hues in one place. Values are picked dark enough to carry
+white text and light enough to read on a dark surface, so **one block of palette values serves both
+themes** rather than each mode carrying its own. `color-success`, `color-warning` and `color-info`
+alias three of them and `color-danger` derives its ramp from `color-red`, so a semantic role and the
+hue behind it cannot drift apart.
+
+Two costs are accepted deliberately. The palette values are **not** Radix Colors' - imp generates
+its own scales rather than vendoring a third party's, so they are close in spirit and not identical
+in value, and imp owes no attribution. And an app pays for the derivation code and the anchor table
+in its bundle even if it only ever calls `applyTheme('imp-light')`; the alternative - committing
+generated token literals and a tool to regenerate them - buys a couple of kilobytes at the price of
+a second source of truth for every color imp ships.
 
 **Direction (RTL/LTR) is not part of a theme.** It belongs with language, not palette
 (`translatable-by-default.md`), and imp does not resolve it yet: nothing in the framework writes the
@@ -109,8 +136,16 @@ once it is set. The theme engine touches direction not at all.
   (`applyTheme('imp-dark')`), while custom themes stay plain modules and keep the obvious `light` /
   `dark` names for themselves; the built-in palettes are imp's to evolve because no app can hold a
   mutable reference to them.
-- The `--imp-*` token surface is public API that grows one consumer at a time; the built-ins ship a
-  minimal palette (`color-primary`, `color-secondary`) and expand as stdlib components need tokens.
+- The `--imp-*` token surface is public API that grows one consumer at a time, with the named
+  palette as the deliberate exception: it ships without a consumer because it exists for the app,
+  not for imp.
+- A theme can be written by choosing two colors and two steps, which is what makes a theme editor
+  possible at all (`theme-editor.md`) - and because the editor exports a plain token module, the
+  derivation is a starting point rather than a format an app is locked into. Hand-editing the
+  exported file is the supported path for anything the four knobs cannot say.
+- imp carries its own color math (~2 kB) into every app that touches theming, and its palette is
+  visibly imp's rather than a copy of an established one. Both were chosen over vendoring a third
+  party's color scales and the attribution that comes with them.
 - A malformed theme or an unknown built-in name fails loudly at the call site; suspicious-but-usable
   input is logged through the imp logger and applied anyway, consistent with the log-and-continue
   posture of the rest of the library.

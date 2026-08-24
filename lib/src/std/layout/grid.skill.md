@@ -16,9 +16,10 @@ argument; everything after it is content. Children fill the cells in order, one 
 | `gap`          | spacing step `0`-`6`                        | `3`         | Space between cells, both axes                   |
 | `align`        | `'start'`, `'center'`, `'end'`, `'stretch'` | `'stretch'` | Cell content down the block axis                 |
 | `justify`      | `'start'`, `'center'`, `'end'`, `'stretch'` | `'stretch'` | Cell content across the inline axis              |
-| `grow`         | boolean or whole number `0`+                | `false`     | How the grid grows in a `flex` parent            |
-| `hideBelow`    | `'sm'`, `'md'`, `'lg'`, `'xl'`              | -           | Hidden under that width                          |
-| `hideAbove`    | `'sm'`, `'md'`, `'lg'`, `'xl'`              | -           | Hidden from that width up                        |
+
+**`grid` also takes every prop in the shared box surface** - `padding`, `width`, `maxWidth`,
+`radius`, `shadow`, `background`, `border`, `ratio`, `grow`, `scroll`, `hideBelow`, `hideAbove` -
+see box (imp skill std/box).
 
 **Every prop above is responsive.** Pass one value for all sizes, or a per-breakpoint object - a
 breakpoint applies from its width upward. Breakpoints: `xs` from 0, `sm` from 40rem, `md` from
@@ -42,4 +43,4 @@ grid({ columns: { xs: 1, md: 3 }, gap: 5 }, ...cards)
 grid({ columns: 2, gap: 2, align: 'center' }, label(), value())
 ```
 
-Related: flex (imp skill std/flex), app (imp skill std/app)
+Related: box (imp skill std/box), flex (imp skill std/flex), app (imp skill std/app)

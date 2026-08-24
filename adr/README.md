@@ -41,6 +41,7 @@ Conventions:
 | ADR                                                         | Decision                                                                           |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` - `--imp-*` vars on :root |
+| [theme-editor](theme-editor.md)                             | imp preview edits four knobs and exports a plain light/dark theme file             |
 
 ## Internationalization
 

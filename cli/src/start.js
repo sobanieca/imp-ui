@@ -7,6 +7,7 @@ import {
   normalize,
   relative,
   resolve,
+  SEPARATOR,
 } from '@std/path'
 import { clientScript, serviceWorkerScript } from './client.js'
 import { loadImpConfig, mocksSetting, publicDirectory } from './config.js'
@@ -115,11 +116,25 @@ function contentType(path) {
   return CONTENT_TYPES[extname(path).toLowerCase()] ?? 'application/octet-stream'
 }
 
-async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
-  let path = decodeURIComponent(relativePath)
+export function resolveWithinRoot(dir, relativePath) {
+  let path
+  try {
+    path = decodeURIComponent(relativePath)
+  } catch {
+    return null
+  }
   if (path.endsWith('/')) path += 'index.html'
-  const fsPath = normalize(join(dir, path))
-  if (!fsPath.startsWith(normalize(dir))) return new Response('forbidden', { status: 403 })
+  const base = resolve(dir)
+  const fsPath = normalize(join(base, path))
+  if (fsPath !== base && !fsPath.startsWith(base + SEPARATOR)) return null
+  if (isSkippedPath(relative(base, fsPath))) return null
+  return { path, fsPath }
+}
+
+async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
+  const within = resolveWithinRoot(dir, relativePath)
+  if (!within) return new Response('forbidden', { status: 403 })
+  const { path, fsPath } = within
   let bytes
   try {
     const stat = await Deno.stat(fsPath)

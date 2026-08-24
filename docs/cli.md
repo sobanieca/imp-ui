@@ -829,6 +829,22 @@ selected by default, so a preview opens looking like your app rather than like t
 Editing a theme file reloads the page with the new tokens applied, so a preview page is also the
 fastest way to iterate on a theme. See **[Theming](theming.md)**.
 
+### The theme editor
+
+**edit theme**, beside the switcher, opens an editor for writing a theme rather than picking one. It
+asks for the mode you are editing (light or dark), a **primary** and a **secondary** colour, a
+**border radius** step and a **shadow** step - and derives every other colour token from those two
+colours: the hover and active steps, a readable on-primary, and the surfaces, borders and text that
+share the secondary's hue.
+
+The page re-skins as you type, on real components, and your choices are remembered per theme across
+reloads. When it looks right, **copy** or **download theme.js** hands you an ordinary theme module
+with a `light` and a `dark` export, ready to drop into your app and pass to `init` - the editor
+prints the two lines that do it right there in the panel. What it produces is a plain file with no
+imp import in it, so from that point on it is yours to edit by hand; the 31 named palette colours
+sit at the top of the file for exactly that. **reset** drops the draft and goes back to the picked
+theme. See **[Theming](theming.md)**.
+
 ### Language and text direction
 
 Next to the theme switcher are a **language** picker and a **direction** picker, so you can see a

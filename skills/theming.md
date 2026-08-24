@@ -57,23 +57,65 @@ applyTheme({
 
 ## The tokens the built-in themes ship
 
-| Group      | Tokens                                                                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`   |
-| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`                                           |
-| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                               |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity` |
-| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                               |
+| Group      | Tokens                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                          |
+| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
+| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                                              |
+| Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                                        |
+| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                                                                                                                                                                                                                                                                      |
 
 `color-on-primary` / `color-on-danger` are the text colors that sit **on** those backgrounds.
-`color-secondary` is the muted tone. `border-width` and `focus-ring-width` exist so contrast is not
-purely a matter of color - use them in your own styles:
+`color-secondary` is the muted tone. `color-surface` is a panel, `color-surface-sunken` the page
+behind it. The **palette** is 31 named hues no component reads by default - use them for per-item
+colors (tags, chart series, avatars). `color-success` / `color-warning` / `color-info` alias
+`color-green` / `color-amber` / `color-blue`; `color-danger` derives from `color-red`.
+
+`border-width` and `focus-ring-width` exist so contrast is not purely a matter of color - use them
+in your own styles:
 
 ```css
 .panel {
   border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
 }
 ```
+
+## Writing a theme with the editor
+
+`imp preview` has a theme editor (_edit theme_ in the top bar). It exposes **mode** (light/dark),
+**primary**, **secondary**, **border radius** (`none` | `small` | `medium` | `large` | `full`) and
+**shadow** (`none` | `soft` | `strong`), derives every other color token from the two base colors,
+and copies or downloads a ready `theme.js`:
+
+```js
+// theme.js - generated, then edited by hand
+const palette = { 'color-green': '#00884d' /* 30 more */ }
+
+export const light = {
+  name: 'app-light',
+  colorScheme: 'light',
+  tokens: { ...palette /* ... */ },
+}
+export const dark = {
+  name: 'app-dark',
+  colorScheme: 'dark',
+  tokens: { ...palette /* ... */ },
+}
+export default light
+```
+
+```js
+import { init } from 'imp'
+import light, { dark } from './theme.js'
+
+await init({ theme: light })
+```
+
+Derivation rules the editor follows, and which you should follow when hand-writing a theme:
+`color-primary-hover` / `-active` step the primary darker in light mode and lighter in dark;
+`color-on-primary` is whichever of white or a near-black tint of the same hue has the better
+contrast; surfaces, borders and text take the secondary's hue at fixed lightness steps per mode.
 
 ## Forced colors
 

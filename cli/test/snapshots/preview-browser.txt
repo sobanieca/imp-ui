@@ -24,8 +24,13 @@ lang/dir/stage after pinning ltr: ar/ltr/ltr
 lang/dir/stage back on auto: ar/rtl/rtl
 lang/dir/stage back on en: en/ltr/ltr
 theme options: brand, imp-light, imp-dark, imp-high-contrast-light, imp-high-contrast-dark (selected brand)
-imp-dark surface token: #0f172a
+imp-dark surface token: #161719
 brand surface token: #fdf7ff
+theme editor knobs: Mode, Primary, Secondary, Border radius, Shadow
+after picking a primary: #8821ac (hover #77009a)
+after picking radius none: 0px
+after switching the editor to dark: #161719
+theme editor usage line: import { init } from 'imp'
 sidebar groups: Widgets 1, components 1
 sidebar components: Counter, todos
 sidebar current: Counter

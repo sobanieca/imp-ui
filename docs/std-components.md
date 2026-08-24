@@ -30,7 +30,7 @@ leaks out onto your page.
 | Import               | What it holds                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                                                                                                                            |
-| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `flex`, `grid`                                                                                                                                          |
+| `imp/std/layout`     | The frame - `app`, `navbar`, `sidebar`, `footer` - and the boxes it holds: `box`, `flex`, `grid`, `container`, `section`                                                                      |
 | `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
@@ -257,17 +257,20 @@ for `computed([lang], () => t('invoices.empty'))` if it needs to follow the lang
 ## Laying a page out - from `imp/std/layout`
 
 Layout is where a page stops being a list of components and starts being a design, so imp gives it
-its own group - and keeps it deliberately small. You get a flex box, a grid, and the four pieces of
-the page frame. None of them ask you to write CSS.
+its own group - and keeps it small. You get five boxes and the four pieces of the page frame. None
+of them ask you to write CSS.
 
 ```js
 import { button, heading } from 'imp/std'
-import { flex, grid } from 'imp/std/layout'
+import { container, flex, grid } from 'imp/std/layout'
 
-flex(
-  { direction: 'column', gap: 5 },
-  flex({ justify: 'between', align: 'center' }, heading('Invoices'), button('New invoice')),
-  grid({ minItemWidth: '18rem', gap: 4 }, ...invoiceCards),
+container(
+  { size: 'lg', paddingX: 4 },
+  flex(
+    { direction: 'column', gap: 5 },
+    flex({ justify: 'between', align: 'center' }, heading('Invoices'), button('New invoice')),
+    grid({ minItemWidth: '18rem', gap: 4 }, ...invoiceCards),
+  ),
 )
 ```
 
@@ -319,20 +322,63 @@ value at a time.
 
 ### The components
 
-| Component | What it does                            | The props you will reach for                           |
-| --------- | --------------------------------------- | ------------------------------------------------------ |
-| `flex`    | Lays children out in a row, or a column | `direction`, `gap`, `justify`, `align`, `wrap`, `grow` |
-| `grid`    | Equal columns, or as many as fit        | `columns`, `minItemWidth`, `gap`                       |
-| `app`     | The whole page frame - see below        | `maxWidth`, `padding`                                  |
-| `navbar`  | The bar across the top of the frame     | `label`, `gap`, `justify`, `align`, `wrap`             |
-| `sidebar` | A collapsible column beside the page    | `side`, `label`, `width`, `resizable`, `collapsible`   |
-| `footer`  | The strip along the bottom of the frame | `label`, `gap`, `justify`, `align`, `wrap`             |
+| Component   | What it does                                | The props you will reach for                           |
+| ----------- | ------------------------------------------- | ------------------------------------------------------ |
+| `box`       | A plain box - the base every other one uses | `padding`, `background`, `border`, `radius`, `shadow`  |
+| `flex`      | Lays children out in a row, or a column     | `direction`, `gap`, `justify`, `align`, `wrap`, `grow` |
+| `grid`      | Equal columns, or as many as fit            | `columns`, `minItemWidth`, `gap`                       |
+| `container` | Caps content at a readable width, centred   | `size`, `paddingX`                                     |
+| `section`   | A band of page content with vertical rhythm | `size`, `label`                                        |
+| `app`       | The whole page frame - see below            | `maxWidth`, `padding`                                  |
+| `navbar`    | The bar across the top of the frame         | `label`, `gap`, `justify`, `align`, `wrap`             |
+| `sidebar`   | A collapsible column beside the page        | `side`, `label`, `width`, `resizable`, `collapsible`   |
+| `footer`    | The strip along the bottom of the frame     | `label`, `gap`, `justify`, `align`, `wrap`             |
 
-Six components, and the first two do all the everyday work. A row and a column are the same
-component with a different `direction`, so there is one thing to learn instead of two; empty space
-between children is a `justify` or a `grow` rather than an element you insert; and a region that
-scrolls on its own is `flex({ scroll: true })`. Anything more specific than these - a card, a
-labelled rule, a media object - is a component of yours, built once and named after what it is.
+`flex` and `grid` do all the everyday work. A row and a column are the same component with a
+different `direction`, so there is one thing to learn instead of two; empty space between children
+is a `justify` or a `grow` rather than an element you insert; and a region that scrolls on its own
+is `flex({ scroll: true })`. Anything more specific than these - a card, a labelled rule, a media
+object - is a component of yours, built once and named after what it is.
+
+### One box surface, five components
+
+`box`, `flex`, `grid`, `container` and `section` are the same box with different jobs, so they share
+one set of props on top of their own. Learn it once and it works everywhere:
+
+| Prop                                                                | Takes                                              |
+| ------------------------------------------------------------------- | -------------------------------------------------- |
+| `padding`, `paddingX`, `paddingY`                                   | a spacing step `0`-`6`                             |
+| `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight` | a CSS length, e.g. `'20rem'`                       |
+| `radius`                                                            | `'none'`, `'sm'`, `'md'`, `'lg'`, `'xl'`, `'full'` |
+| `shadow`                                                            | `'none'`, `'sm'`, `'md'`, `'lg'`                   |
+| `background`                                                        | `'none'`, `'surface'`, `'sunken'`                  |
+| `border`                                                            | `true` / `false`                                   |
+| `ratio`                                                             | an aspect ratio, e.g. `'16/9'`                     |
+| `grow`, `scroll`, `hideBelow`, `hideAbove`                          | as described above                                 |
+
+```js
+box({ padding: 4, background: 'surface', border: true, radius: 'lg', shadow: 'sm' }, summary())
+```
+
+That is a panel: theme background, theme border, theme corner rounding, theme shadow - four steps,
+no colours and no pixel values. `radius` and `shadow` read the scales your theme sets (see
+**[Theming](theming.md)**), so a rounder or flatter theme changes every box at once.
+
+Two things the surface deliberately leaves out. There are **no margin props**: the space between
+siblings belongs to their parent's `gap`, so a component never pushes on the space around it and two
+layouts can never fight over the same margin. And there are **no positioning props** - a layout
+component places its children in flow, and anything that has to escape the flow is a component of
+yours with its own styles.
+
+`container` and `section` are the two named shapes that come up on every page. A container caps its
+content at a themed width (`sm` 40rem through `xl` 80rem) and centres what is left over, so a
+paragraph never runs the full width of a monitor. A section is a band of page with block padding
+from the spacing scale, and it renders a real `<section>` element - give it a `label` matching its
+heading and a screen reader can jump straight to it:
+
+```js
+container({ size: 'md' }, section({ label: 'Pricing' }, heading('Pricing'), plans()))
+```
 
 `grid` deserves a note: `columns` is a **count** of equal columns, and `minItemWidth` is usually the
 better tool. Give it the narrowest a card should ever get and the grid fits as many as the screen

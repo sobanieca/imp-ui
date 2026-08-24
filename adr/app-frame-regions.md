@@ -9,9 +9,9 @@ every app rebuilds it. Two things about imp constrain how:
 - **A component seals its own DOM** (`shadow-dom-isolation.md`), so a frame cannot reach into a
   region to style it, and a button in one component cannot carry an `aria-controls` pointing at a
   panel in another - id references do not cross a shadow root.
-- **The layout group is deliberately small.** It carries one flex box, one grid, and the frame.
-  Every extra layout primitive is a name an agent has to learn and a decision it has to make, so a
-  shape that can be expressed with what is already there does not become a component
+- **The layout group is deliberately small.** It carries a handful of boxes and the frame. Every
+  extra layout primitive is a name an agent has to learn and a decision it has to make, so a shape
+  that can be expressed with what is already there does not become a component
   (`standard-component-library.md`).
 
 The question was how an app describes the frame's regions, and what happens to a frame with several

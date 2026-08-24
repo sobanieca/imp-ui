@@ -65,9 +65,17 @@ flex({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, filters(
 - **Per-child placement lives on the child.** A layout parent cannot style a child that is itself a
   component, because `:host { display: contents }` means the child's own root - inside its shadow -
   is the real flex or grid item and no selector from the parent can reach it. So `grow` is a prop of
-  the box that grows, carried by `flex` and `grid` themselves and written onto their own root,
-  rather than a prop the parent reads off arbitrary children. A child that is not a layout component
-  and needs to grow is wrapped in a `flex`.
+  the box that grows, carried by every layout box itself and written onto its own root, rather than
+  a prop the parent reads off arbitrary children. A child that is not a layout component and needs
+  to grow is wrapped in a `box` or a `flex`.
+- **The layout boxes share one prop surface.** `box`, `flex`, `grid`, `container` and `section` all
+  accept the same padding, sizing, `radius`, `shadow`, `background`, `border`, `ratio`, `grow` and
+  `scroll` props on top of their own, resolved through the same ladder - so an agent that has
+  learned the surface on one has learned it on all five. Spacing is a step on the theme scale and a
+  size is a plain CSS length, because a page width is not spacing. **Margins are not on the surface
+  at all**: space between siblings is the parent's `gap` (`standard-component-library.md`), and
+  neither is positioning, which would make a layout box the wrong place to solve overlays
+  (`todo/overlay-seam.md`).
 
 ## Consequences
 
