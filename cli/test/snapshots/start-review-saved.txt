@@ -1,0 +1,42 @@
+POST /@imp/review: 200 application/json
+path: .imp/reviews/<timestamp>.txt
+on a blank comment: 400 {"error":"a review needs a comment"}
+on a malformed body: 400 {"error":"the review could not be read"}
+
+time: <timestamp>
+page: http://localhost:<port>/
+title: basic app
+viewport: 900x700
+element: body > div#app > h1
+text: hello
+html: <h1>hello</h1>
+
+log:
+  [INFO] imp start serving index.html from <tmp>
+
+comment:
+the heading should be quieter
+
+--- imp review ---
+.imp/reviews/<timestamp>.txt
+  <timestamp>  http://localhost:<port>/
+  body > div#app > h1
+  the heading should be quieter
+  also recorded: log (1)
+
+.imp/reviews/<timestamp>.txt
+  <timestamp>
+  body > footer
+  the year in the footer is stale
+  also recorded: log (3)
+
+[INFO] 2 reviews in .imp/reviews - 'imp review clear' deletes them all
+--- imp review (cwd: public/) ---
+[INFO] 2 reviews in .imp/reviews - 'imp review clear' deletes them all
+--- imp review clear ---
+[INFO] cleared 2 reviews from .imp/reviews
+--- imp review after clearing ---
+[INFO] no reviews yet - serve the app with imp start or imp preview, press the review button in the corner of the page, and pick the element you want to comment on
+--- imp review clear again ---
+[INFO] no reviews to clear
+reviews folder left behind: false

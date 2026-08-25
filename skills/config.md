@@ -103,7 +103,7 @@ built site - see [build](build.md) - and **`dependencies/`**, holding the vendor
 - **There is no lock file, no cache folder and no generated config.** If you are about to create
   one, the answer is `imp.json` plus the committed `dependencies/` folder.
 - **imp writes nothing else into the project** - `.imp/` is the working directory (`dev.log`,
-  screenshots, videos) and belongs in `.gitignore`, as do `dist/` and `.env` files.
+  reviews, screenshots, videos) and belongs in `.gitignore`, as do `dist/` and `.env` files.
 - **A malformed value fails the command** with a message naming the key
   (`invalid imp.json - 'devServerPort' must be an integer between 1 and 65535`). An **unknown** key,
   though, is ignored - a misspelled key silently does nothing, so check the table above rather than

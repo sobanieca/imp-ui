@@ -28,6 +28,8 @@ light DOM stays empty and untouched.
   `:host { display: contents }` is adopted first in every root, replacing the old global rule; a
   component's own `styles` may override it (`:host { display: block }`) since its sheet is adopted
   after the default.
+- **Roots delegate focus.** They are attached with `delegatesFocus: true`, so `host.focus()` reaches
+  the control the component rendered rather than silently doing nothing (`focus-delegation.md`).
 - **Roots are open, not closed.** Internals stay inspectable in devtools and reachable through
   `element.shadowRoot` - the sanctioned escape hatch for tests and for deliberate reaching-in. imp
   holds no private root references and needs no internal-access API; closed mode would add ceremony,

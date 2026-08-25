@@ -10,6 +10,7 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
+| `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
 
 Read the component's own skill before using it - this page is only the shared contract and a summary
 of the props.
@@ -50,16 +51,18 @@ section(
 button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
 ```
 
-| Prop       | Values                                          | Default     | Notes                                       |
-| ---------- | ----------------------------------------------- | ----------- | ------------------------------------------- |
-| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'` | `'default'` | Visual weight and intent                    |
-| `size`     | `'sm'`, `'md'`, `'lg'`                          | `'md'`      | Padding and type size                       |
-| `disabled` | boolean - **live**                              | `false`     | Blocks interaction                          |
-| `loading`  | boolean - **live**                              | `false`     | Spinner, implies disabled, sets `aria-busy` |
-| `block`    | boolean                                         | `false`     | Fills its container's width                 |
-| `events`   | event map                                       | -           | Handlers, as on any element                 |
+| Prop       | Values                                                    | Default     | Notes                                       |
+| ---------- | --------------------------------------------------------- | ----------- | ------------------------------------------- |
+| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                    |
+| `size`     | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                       |
+| `disabled` | boolean - **live**                                        | `false`     | Blocks interaction                          |
+| `loading`  | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy` |
+| `block`    | boolean                                                   | `false`     | Fills its container's width                 |
+| `label`    | string - **live**                                         | -           | `aria-label`, for an icon-only button       |
+| `events`   | event map                                                 | -           | Handlers, as on any element                 |
 
 **No `type` prop and no submit button** - a button acts on its `click` handler; submit there.
+`variant: 'link'` is a button that reads as a link; use `link` when it is a place to go.
 
 ## heading
 
@@ -322,3 +325,37 @@ Rules an agent gets wrong:
   `'ctrl+p'`-style, where `ctrl` matches Ctrl **and** ⌘.
 
 Full manuals: `imp skill std/tabs` · `imp skill std/navMenu` · `imp skill std/commandPalette`.
+
+## Feedback - from `imp/std/feedback`
+
+```js
+import { bugReport } from 'imp/std/feedback'
+
+bugReport({
+  onSubmit: (report) =>
+    fetch('/api/bug-reports', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(report),
+    }),
+})
+```
+
+| Component   | Props                                                         |
+| ----------- | ------------------------------------------------------------- |
+| `bugReport` | `onSubmit`, `as`, `variant`, `size`, `label` (live), `events` |
+
+Rules an agent gets wrong:
+
+- **`onSubmit` is a prop, not an `events` entry**, because storing a report is asynchronous and can
+  fail. Return a promise: the panel stays open and shows a retryable error when it rejects.
+- **imp stores nothing.** There is no endpoint, no `localStorage` fallback and no queue - what
+  `onSubmit` does with the report is the app's decision, and so is stripping anything private out of
+  it first.
+- **The person never sees the element path.** They pick an element by clicking it and it stays
+  outlined while they type; the path is in the report for whoever reads it.
+- **`as: 'link'` still renders a `<button>`** - it performs an action, so it is never an `<a>`.
+- **It is not `imp review`** (`imp skill review`), which is the dev server's own widget writing
+  `.imp/reviews/`. They share one capture engine, so a report has the same shape either way.
+
+Full manual: `imp skill std/bugReport`.

@@ -19,6 +19,7 @@ relative path, a URL, or a version.
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, …                |
 | `imp/std/display`    | `emptyState`                                                                        |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                 |
+| `imp/std/feedback`   | `bugReport`                                                                         |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/…                   |
 | `imp/preview`        | `mockModule` (for `*.preview.js` files)                                             |
 

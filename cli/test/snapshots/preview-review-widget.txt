@@ -1,0 +1,36 @@
+panel hidden before the toggle: true
+view after opening it: idle (aria-expanded true)
+view after Add review: picking
+element highlighted on hover: true
+view after clicking the element: commenting
+picked element stays outlined while commenting: true
+element locator shown to the reviewer: false
+view after saving: idle
+outline cleared after saving: true
+status after saving: Saved .imp/reviews/<timestamp>.txt
+review files written: 1
+
+time: <timestamp>
+page: http://localhost:<port>/preview/components/counter.preview.js
+title: imp preview - Widgets / Counter
+viewport: 900x700
+scheme: light
+lang: en
+dir: ltr
+element: ... demo-counter >> div.counter > span#value
+rect: 10x19 at 371,463
+text: 0
+html: <span id="value">0</span>
+
+state:
+  demo.count = 0
+  imp.preview.theme = "brand"
+  imp.preview.dir = "auto"
+  imp.preview.lang = "en"
+  imp.preview.editor = false
+
+log:
+  [INFO] imp preview serving 2 previews from <tmp>
+
+comment:
+The value is cut off below 320px.

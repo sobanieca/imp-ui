@@ -136,6 +136,7 @@ const STAGE_STYLES = `
   }
 
   .readout {
+    flex: none;
     margin-inline-start: auto;
     inline-size: 11ch;
     text-align: end;

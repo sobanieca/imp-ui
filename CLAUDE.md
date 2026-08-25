@@ -125,6 +125,17 @@ resolves to the library embedded in the running binary, so the page comes back b
 Preview files themselves are read from disk, so edits to a `*.preview.js` do live-reload. The loop
 for a component edit is Ctrl-C and `deno task preview` again, which recompiles first.
 
+## Running the example app
+
+`deno task example` compiles the binary and serves `examples/todo` with it, mocks on, at
+<http://localhost:4507/> - the whole-app counterpart to `deno task preview`. Extra arguments reach
+`imp start`, so `deno task example --port 9000` and `deno task example --env prod` work.
+
+**The same restart rule applies as for previews.** The app's `import { mount } from 'imp'` resolves
+to the library baked into the running binary, so editing `lib/src` mid-session does not reach the
+page - Ctrl-C and run the task again, which recompiles first. Editing anything under
+`examples/todo/` does live-reload, since those files are read from disk.
+
 ## After making changes
 
 After completing a batch of code changes, always run `deno lint` and `deno fmt` and address any

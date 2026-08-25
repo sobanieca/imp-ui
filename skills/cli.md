@@ -13,6 +13,7 @@ This page is the map. Each command has its own manual - read that one before run
 | `--mock` · `--no-mock`               | answer from `*.mock.js` files, or from the real API      | [mocks](mocks.md)               |
 | `imp build [file.html\|file.js]`     | production build; `--pwa` for an installable offline app | [build](build.md)               |
 | `imp preview [path]`                 | render components in isolation from `*.preview.js`       | [preview](preview.md)           |
+| `imp review [clear]`                 | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |
 | `imp test <file> \| --unit \| --e2e` | `*.test.js` in-process, `*.spec.js` in a real browser    | [testing](testing.md)           |
 | `imp install [pkg[@version]]`        | vendor a dependency into `dependencies/`                 | [dependencies](dependencies.md) |
 | `imp uninstall <pkg>`                | remove one                                               | [dependencies](dependencies.md) |
@@ -42,8 +43,8 @@ environment files, in [config](config.md).
   `imp.json` decides. See [mocks](mocks.md).
 - **Exit codes are the interface**: `0` on success, `1` on failure - a failed lint, a failing test
   file, a build error, an unknown skill subject.
-- **`.imp/` is imp's per-project working directory** (`dev.log`, `screenshots/`, `videos/`) and
-  belongs in `.gitignore`, along with `dist/` and any `.env` files.
+- **`.imp/` is imp's per-project working directory** (`dev.log`, `reviews/`, `screenshots/`,
+  `videos/`) and belongs in `.gitignore`, along with `dist/` and any `.env` files.
 - **A pinned `version` in `imp.json` wins over the binary you invoked** - whatever command you run,
   it runs on the project's version. See [update](update.md).
 

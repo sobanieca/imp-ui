@@ -25,6 +25,7 @@ Conventions:
 | [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events        |
 | [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; onMount lifecycle    |
 | [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry         |
+| [focus-delegation](focus-delegation.md)                         | Hosts delegate focus to the control they render      |
 | [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind          |
 | [error-boundaries](error-boundaries.md)                         | onError boundaries via events; isolated teardown     |
 | [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components  |
@@ -69,27 +70,28 @@ Conventions:
 
 ## CLI
 
-| ADR                                                                   | Decision                                                       |
-| --------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [project-scaffold](project-scaffold.md)                               | imp init: one non-interactive scaffold, tests included         |
-| [in-process-toolchain](in-process-toolchain.md)                       | fmt and lint run in-process, no subprocess                     |
-| [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin          |
-| [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile          |
-| [production-bundling](production-bundling.md)                         | imp build from vendored bundles + baked-in library             |
-| [public-folder-static-assets](public-folder-static-assets.md)         | public/ is the site root; IMP_BASEPATH prefixes built URLs     |
-| [pwa-toolkit](pwa-toolkit.md)                                         | imp build --pwa: manifest, icons, build-graph SW               |
-| [raster-image-pipeline](raster-image-pipeline.md)                     | resvg decode+resize, format-preserving encode, no new codec    |
-| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles - by design                  |
-| [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome          |
-| [dev-server-mocks](dev-server-mocks.md)                               | Mocks from *.mock.js files, answered by the dev service worker |
-| [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                |
-| [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg    |
-| [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios on a synthesized page      |
-| [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                     |
-| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES        |
-| [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals      |
-| [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                 |
-| [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary            |
-| [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits    |
-| [environments](environments.md)                                       | Named env files, `$env.` shell refs, one injected `env` global |
-| [feature-flags](feature-flags.md)                                     | `flags` declared in imp.json, `flag()` folded out by the build |
+| ADR                                                                   | Decision                                                         |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [project-scaffold](project-scaffold.md)                               | imp init: one non-interactive scaffold, tests included           |
+| [in-process-toolchain](in-process-toolchain.md)                       | fmt and lint run in-process, no subprocess                       |
+| [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin            |
+| [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile            |
+| [production-bundling](production-bundling.md)                         | imp build from vendored bundles + baked-in library               |
+| [public-folder-static-assets](public-folder-static-assets.md)         | public/ is the site root; IMP_BASEPATH prefixes built URLs       |
+| [pwa-toolkit](pwa-toolkit.md)                                         | imp build --pwa: manifest, icons, build-graph SW                 |
+| [raster-image-pipeline](raster-image-pipeline.md)                     | resvg decode+resize, format-preserving encode, no new codec      |
+| [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles - by design                    |
+| [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome            |
+| [dev-server-mocks](dev-server-mocks.md)                               | Mocks from *.mock.js files, answered by the dev service worker   |
+| [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                  |
+| [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg      |
+| [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios on a synthesized page        |
+| [in-page-review-capture](in-page-review-capture.md)                   | One capture engine: dev review files and the bugReport component |
+| [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                       |
+| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES          |
+| [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals        |
+| [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                   |
+| [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary              |
+| [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits      |
+| [environments](environments.md)                                       | Named env files, `$env.` shell refs, one injected `env` global   |
+| [feature-flags](feature-flags.md)                                     | `flags` declared in imp.json, `flag()` folded out by the build   |

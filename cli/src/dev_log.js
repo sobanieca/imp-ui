@@ -40,6 +40,7 @@ export async function createDevLog({ root, maxEntries = DEFAULT_MAX_LOG_ENTRIES 
 
   return {
     path,
+    recent: (limit) => recent.slice(-limit),
     write(line) {
       pending = pending.then(() => append(line)).catch(() => {})
       return pending

@@ -1,3 +1,5 @@
+import { reviewWidgetScript } from './review.js'
+
 export const clientScript = ({ mocks = false } = {}) => `
 (() => {
   let es = null
@@ -74,7 +76,7 @@ export const clientScript = ({ mocks = false } = {}) => `
     }
   }
 })()
-`
+;${reviewWidgetScript()}`
 
 export const serviceWorkerScript = ({ mockBundle = '' } = {}) => `
 self.addEventListener('install', () => self.skipWaiting())

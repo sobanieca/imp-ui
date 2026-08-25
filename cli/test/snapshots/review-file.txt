@@ -1,0 +1,45 @@
+file name: 2026-08-25T12-10-36-682Z.txt
+file name when that one exists: 2026-08-25T12-10-36-682Z-2.txt
+from 127.0.0.1: true
+from ::1: true
+from ::ffff:127.0.0.1: true
+from 192.168.1.20: false
+with no address at all: false
+
+time: 2026-08-25T12:10:36.682Z
+page: http://localhost:4517/preview/components/counter.preview.js
+title: imp preview - Widgets / Counter
+viewport: 900x700 at 2x
+scroll: 0,1240
+scheme: dark
+motion: reduce
+lang: en
+dir: ltr
+element: body > imp-preview-page >> demo-counter >> span#value
+rect: 10x19 at 371,485
+text: Total 0
+html: <span id="value">0</span>
+
+state:
+  demo.count = 0
+  demo.filter = "done"
+
+controls:
+  input[name=title] = "Buy milk"
+  input[name=done] = "checked" (disabled)
+  input[name=secret] = <8 characters, not recorded>
+
+log:
+  [BROWSER:error] TypeError: todo is undefined
+  [HTTP] GET /api/todos -> 500 12ms
+
+comment:
+The count is cut off.
+
+It needs more room at 320px.
+
+time: 2026-08-25T12:10:36.682Z
+element: body
+
+comment:
+a review with no page around it

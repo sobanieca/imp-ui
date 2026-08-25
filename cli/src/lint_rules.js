@@ -23,6 +23,7 @@ import * as stdDisplayModule from '../../lib/src/std/display/index.js'
 import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
 import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
+import * as stdFeedbackModule from '../../lib/src/std/feedback/index.js'
 
 export const IMP_MODULE_EXPORTS = {
   'imp': impModule,
@@ -38,6 +39,7 @@ export const IMP_MODULE_EXPORTS = {
   'imp/std/layout': stdLayoutModule,
   'imp/std/inputs': stdInputsModule,
   'imp/std/navigation': stdNavigationModule,
+  'imp/std/feedback': stdFeedbackModule,
 }
 
 const STD_SPECIFIERS = Object.keys(IMP_MODULE_EXPORTS).filter(isImpStdSpecifier)

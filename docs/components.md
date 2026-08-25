@@ -592,6 +592,9 @@ else can pick up.
   component boundary. When a parent needs a live handle on something a child shows - a container it
   appends into, a field it reads - create that node yourself, keep the reference, and pass it as a
   factory argument; the child renders it where it belongs.
+- **Focus a component from outside with `host.focus()`.** The element a factory returns forwards
+  focus to the first focusable thing the component renders, so a parent that opened a dialog can put
+  focus back on the trigger it holds - without knowing what that trigger is made of.
 - **A component can find its own host** with `event.target.getRootNode().host` - the shadow-DOM
   replacement for `closest('my-app-card')` in handlers that need the component element.
 - **Strict content models** (`<table>`, `<select>`): let one component render the whole structure

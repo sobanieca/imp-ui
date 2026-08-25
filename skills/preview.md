@@ -104,6 +104,10 @@ is `text_field` under `inputs`.
   `strong`). Every other colour token is derived from the two base colours. Copy or download the
   result as a `theme.js` exporting `light` and `dark`, then pass it to `init({ theme })`. Drafts are
   kept per theme in `localStorage`; _reset_ clears one. See [theming](theming.md).
+- **Review widget** - the same one `imp start` injects, in the bottom corner: the person picks a
+  part of the previewed component, comments on it, and imp writes the note to `.imp/reviews/` with
+  the preview page it came from. Read the folder before reworking a component on a vague report. See
+  [start](start.md).
 - **Theme, language and direction switchers** - fed by `preview.themes` and `preview.translations`
   in `imp.json`, see [config](config.md); choices survive reloads. Direction has **auto** (follows
   the language), **ltr** and **rtl** - pinning it while reading English is the quickest way to catch

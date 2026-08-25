@@ -6,6 +6,7 @@ import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../s
 import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
+import { formatReview, isLocalRequest, reviewFileName } from '../src/review.js'
 import { tokenizeJs } from '../src/preview_highlight.js'
 import { themeFileSource } from '../src/preview_theme_source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
@@ -103,6 +104,8 @@ Deno.test('imp commands', async (t) => {
   await test('fmt-ignore-directive', ['fmt', '--check', 'app.js'], fixture('fmt-ignore'))
   await test('fmt-path-not-found', ['fmt', 'missing.js'], fixture('basic'))
   await test('fmt-invalid-imp-json', ['fmt', '--check', 'app.js'], fixture('broken-config'))
+  await test('review-empty', ['review'], fixture('basic'))
+  await test('review-unknown-argument', ['review', 'bogus'], fixture('basic'))
   await test('resize-guidance', ['resize', 'logo.png'], fixture('resize'))
   await test('resize-usage', ['resize'], fixture('resize'))
   await test('resize-unsupported-format', ['resize', 'photo.bmp', '-w', '100'], fixture('resize'))
@@ -1755,6 +1758,209 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
   } finally {
     await browser.close().catch(() => {})
     await server.stop()
+  }
+})
+
+Deno.test('a review file names itself by timestamp and records the page it came from', async () => {
+  const at = new Date('2026-08-25T12:10:36.682Z')
+  const address = (hostname) => ({ remoteAddr: { transport: 'tcp', hostname } })
+  const report = [
+    `file name: ${reviewFileName(at)}`,
+    `file name when that one exists: ${reviewFileName(at, 2)}`,
+    `from 127.0.0.1: ${isLocalRequest(address('127.0.0.1'))}`,
+    `from ::1: ${isLocalRequest(address('::1'))}`,
+    `from ::ffff:127.0.0.1: ${isLocalRequest(address('::ffff:127.0.0.1'))}`,
+    `from 192.168.1.20: ${isLocalRequest(address('192.168.1.20'))}`,
+    `with no address at all: ${isLocalRequest(undefined)}`,
+    '',
+    formatReview(
+      {
+        page: 'http://localhost:4517/preview/components/counter.preview.js',
+        title: 'imp preview - Widgets / Counter',
+        viewport: '900x700 at 2x',
+        scroll: '0,1240',
+        scheme: 'dark',
+        motion: 'reduce',
+        lang: 'en',
+        dir: 'ltr',
+        element: {
+          path: 'body > imp-preview-page >> demo-counter >> span#value',
+          rect: '10x19 at 371,485',
+          text: 'Total 0',
+          html: '<span id="value">0</span>',
+        },
+        state: [{ name: 'demo.count', value: 0 }, { name: 'demo.filter', value: 'done' }],
+        controls: [
+          { name: 'input[name=title]', value: 'Buy milk' },
+          { name: 'input[name=done]', value: 'checked', disabled: true },
+          { name: 'input[name=secret]', value: null, length: 8 },
+        ],
+        comment: 'The count is cut off.\n\nIt needs more room at 320px.',
+      },
+      at.toISOString(),
+      [
+        '[BROWSER:error] TypeError: todo is undefined',
+        '[HTTP] GET /api/todos -> 500 12ms',
+      ],
+    ),
+    formatReview(
+      { element: { path: 'body' }, comment: 'a review with no page around it' },
+      at.toISOString(),
+    ),
+  ].join('\n')
+  await assertSnapshot('review-file', report)
+})
+
+Deno.test('imp start saves a review under .imp/reviews', async () => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('basic'), dir)
+  const server = await startServer(dir)
+  const endpoint = `http://127.0.0.1:${server.port}/@imp/review`
+  const post = (body) =>
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    })
+  try {
+    const saved = await post({
+      page: `http://localhost:${server.port}/`,
+      title: 'basic app',
+      viewport: '900x700',
+      element: { path: 'body > div#app > h1', text: 'hello', html: '<h1>hello</h1>' },
+      comment: 'the heading should be quieter',
+    })
+    const { path } = await saved.json()
+    const written = await Deno.readTextFile(join(dir, path))
+    const blank = await post({ element: { path: 'body' }, comment: '   ' })
+    const malformed = await post('not json at all')
+    await post({
+      element: { path: 'body > footer' },
+      comment: 'the year in the footer is stale',
+    })
+    const listed = await runImp(['review'], dir)
+    const fromSubdirectory = await runImp(['review'], join(dir, 'public'))
+    const cleared = await runImp(['review', 'clear'], dir)
+    const afterClearing = await runImp(['review'], dir)
+    const clearedAgain = await runImp(['review', 'clear'], dir)
+    const maskTimestamps = (text) =>
+      normalize(text)
+        .replaceAll(/[\d-]+T[\d:.-]+Z/g, '<timestamp>')
+        .replaceAll(`:${server.port}`, ':<port>')
+        .replaceAll(dir, '<tmp>')
+    const report = [
+      `POST /@imp/review: ${saved.status} ${saved.headers.get('content-type')}`,
+      `path: ${path.replace(/[\d-]+T[\d-]+Z/, '<timestamp>')}`,
+      `on a blank comment: ${blank.status} ${JSON.stringify(await blank.json())}`,
+      `on a malformed body: ${malformed.status} ${JSON.stringify(await malformed.json())}`,
+      '',
+      maskTimestamps(written),
+      section('imp review', maskTimestamps(listed.stdout)),
+      section(
+        'imp review (cwd: public/)',
+        maskTimestamps(fromSubdirectory.stdout).trimEnd().split('\n').at(-1),
+      ),
+      section('imp review clear', normalize(cleared.stdout)),
+      section('imp review after clearing', normalize(afterClearing.stdout)),
+      section('imp review clear again', normalize(clearedAgain.stdout)),
+      `reviews folder left behind: ${await Deno.stat(join(dir, '.imp', 'reviews')).then(
+        () => true,
+        () => false,
+      )}`,
+    ].join('\n')
+    await assertSnapshot('start-review-saved', report + '\n')
+  } finally {
+    await server.stop()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('the review widget picks an element in the preview page', async () => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('preview'), dir)
+  const server = await startPreviewServer(dir)
+  const { resolveBrowser } = await import('../src/test_browser.js')
+  const { default: puppeteer } = await import('../src/vendor/puppeteer_core.js')
+  const args = ['--disable-dev-shm-usage']
+  try {
+    if (Deno.uid() === 0) args.push('--no-sandbox')
+  } catch { /* not available on this platform */ }
+  const browser = await puppeteer.launch({
+    executablePath: await resolveBrowser(),
+    headless: true,
+    args,
+  })
+  try {
+    const page = await browser.newPage()
+    await page.setViewport({ width: 900, height: 700 })
+    await page.goto(
+      `http://localhost:${server.port}/preview/components/counter.preview.js`,
+      { waitUntil: 'load' },
+    )
+    await page.waitForFunction(() => document.getElementById('imp-review')?.shadowRoot)
+    const flow = await page.evaluate(async () => {
+      const shadow = document.getElementById('imp-review').shadowRoot
+      const view = () =>
+        [...shadow.querySelectorAll('.view')].find((panel) => !panel.hidden).dataset.view
+      const deep = (root, name) => {
+        for (const element of root.querySelectorAll('*')) {
+          if (element.localName === name) return element
+          const found = element.shadowRoot ? deep(element.shadowRoot, name) : null
+          if (found) return found
+        }
+        return null
+      }
+      const outline = () => shadow.querySelector('.outline')
+      const steps = { hiddenAtFirst: shadow.querySelector('.panel').hidden }
+      shadow.querySelector('.toggle').click()
+      steps.openedView = view()
+      steps.expanded = shadow.querySelector('.toggle').getAttribute('aria-expanded')
+      shadow.querySelector('[data-action="pick"]').click()
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      steps.pickingView = view()
+      const target = deep(document, 'demo-counter').shadowRoot.querySelector('#value')
+      target.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, composed: true }))
+      steps.highlighted = !outline().hidden
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      steps.commentingView = view()
+      steps.outlineKept = !outline().hidden
+      steps.locatorShown = shadow.textContent.includes('>>')
+      const field = shadow.querySelector('textarea')
+      field.value = 'The value is cut off below 320px.'
+      shadow.querySelector('[data-action="save"]').click()
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      steps.status = shadow.querySelector('.status').textContent
+      steps.viewAfterSaving = view()
+      steps.outlineGone = outline().hidden
+      return steps
+    })
+    const files = []
+    for await (const entry of Deno.readDir(join(dir, '.imp', 'reviews'))) files.push(entry.name)
+    const written = await Deno.readTextFile(join(dir, '.imp', 'reviews', files[0]))
+    const report = [
+      `panel hidden before the toggle: ${flow.hiddenAtFirst}`,
+      `view after opening it: ${flow.openedView} (aria-expanded ${flow.expanded})`,
+      `view after Add review: ${flow.pickingView}`,
+      `element highlighted on hover: ${flow.highlighted}`,
+      `view after clicking the element: ${flow.commentingView}`,
+      `picked element stays outlined while commenting: ${flow.outlineKept}`,
+      `element locator shown to the reviewer: ${flow.locatorShown}`,
+      `view after saving: ${flow.viewAfterSaving}`,
+      `outline cleared after saving: ${flow.outlineGone}`,
+      `status after saving: ${flow.status.replace(/[\d-]+T[\d-]+Z/, '<timestamp>')}`,
+      `review files written: ${files.length}`,
+      '',
+      written
+        .replace(/^time: .*$/m, 'time: <timestamp>')
+        .replace(/^element: .*(?=demo-counter)/m, 'element: ... ')
+        .replaceAll(`:${server.port}`, ':<port>')
+        .replaceAll(dir, '<tmp>'),
+    ].join('\n')
+    await assertSnapshot('preview-review-widget', report)
+  } finally {
+    await browser.close().catch(() => {})
+    await server.stop()
+    await Deno.remove(dir, { recursive: true })
   }
 })
 

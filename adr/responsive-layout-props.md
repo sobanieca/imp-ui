@@ -40,11 +40,13 @@ flex({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, filters(
 - **Resolution is a ladder of CSS custom properties, written per instance.** At mount the component
   validates each breakpoint's value, converts it to a CSS value, fills it forward across the
   remaining breakpoints, and writes the result as inline custom properties on its own root element
-  (`--gap-xs`, `--gap-sm`, …). The shared stylesheet consumes them through one static media query
-  per breakpoint, with the component's default as the `var()` fallback:
+  (`--gap-xs`, `--gap-sm`, …). The shared stylesheet declares the component's default for every rung
+  on the same root, then consumes the ladder through one static media query per breakpoint:
 
   ```css
   .root {
+    --gap-xs: var(--imp-space-3, 12px);
+    --gap-md: var(--imp-space-3, 12px);
     gap: var(--gap-xs, var(--imp-space-3, 12px));
   }
   @media (min-width: 48rem) {
@@ -56,6 +58,14 @@ flex({ direction: { xs: 'column', md: 'row' }, gap: { xs: 2, lg: 5 } }, filters(
 
   Because the fill-forward happens in JS, the CSS never needs a nested fallback chain, and because
   the media queries are static, the stylesheet is still compiled once and shared.
+- **Declaring the defaults is what keeps one layout out of the next one.** Custom properties
+  inherit, and they inherit straight through a shadow boundary, so without that declaration a nested
+  box would read the ladder of the nearest ancestor that had been given the prop - a `flex` inside
+  `flex({ direction: 'column' })` would silently come out a column. Each root re-declaring every
+  rung it consumes stops the inherited value at the component that owns it, and an inline value
+  still wins because inline styles beat a stylesheet rule. The one place the inheritance is wanted
+  is `navMenu`, whose groups and lists take their layout from the menu root, so it declares the
+  defaults on the root alone and lets the rungs reach the rest.
 - **Visibility is the same mechanism, not a special case.** `hideBelow` and `hideAbove` resolve into
   the same `display` ladder every component already carries, so hiding a region at a width costs no
   extra machinery and never leaves a hidden element in the accessibility tree.

@@ -61,9 +61,9 @@ export const todosScreen = component('todo-app-list', {
       ),
       lang.view(() =>
         flex(
-          { gap: 3, align: 'end', wrap: true },
+          { gap: 3, align: 'start', wrap: true },
           flex(
-            { grow: true },
+            { direction: 'column', grow: true },
             searchField({
               value: query,
               label: t('todo.list.search'),

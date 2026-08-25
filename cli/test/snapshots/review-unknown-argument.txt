@@ -1,0 +1,8 @@
+$ imp review bogus  (cwd: test/fixtures/basic)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] unknown argument 'bogus' - imp review takes 'clear' or nothing

@@ -29,6 +29,10 @@ USAGE
                      [--list] [--json]  stages with a live state editor (no path: every preview,
                      [--mock]           listed on an index page · --list prints what was found ·
                      [--no-mock]        --mock serves the "mocks" folder to previewed components)
+  imp review [clear]                    list what was written from the browser by the review
+                                        widget the dev server puts on every page - the page,
+                                        the element picked and the comment left on it
+                                        (clear: delete every saved review)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest · no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -156,6 +160,11 @@ try {
         json: rest.includes('--json'),
         mocks: mockFlag(rest),
       })
+      break
+    }
+    case 'review': {
+      const { review } = await import('./review.js')
+      await review({ root: await projectRoot(Deno.cwd()), args: positional(rest) })
       break
     }
     case 'build': {

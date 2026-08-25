@@ -55,6 +55,14 @@ without a skill file, so this is enforced rather than remembered.
 - **Feedback** - `spinner`, `progress`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
   `popconfirm`, `result` _(later)_. How the overlays among them reach above the page is settled in
   `todo/overlay-seam.md`, which also covers the anchored ones in _Display_ and _Navigation_.
+  `bugReport` has landed ahead of the rest, opening the `imp/std/feedback` subpath: it shares the
+  dev server's element picker and context capture through `lib/src/report.js`
+  (`adr/in-page-review-capture.md`), and it settled two things the group inherits - **an
+  asynchronous, failable action is a function prop** (`onSubmit`) rather than an `events` entry,
+  because a `CustomEvent` cannot be awaited, and **a component composes `button` rather than
+  restyling a native one** - it drives the nested button through props (a state handle for
+  `disabled` or `loading`) and focuses it through its host, which every component now supports
+  (`adr/focus-delegation.md`).
 - **Navigation** - `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_,
   `floatButton` _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing
   the data-driven shape every composite widget with internal ARIA id references follows

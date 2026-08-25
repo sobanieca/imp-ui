@@ -28,8 +28,12 @@ Rules an agent gets wrong:
   middle-click or a modifier-click all behave natively.
 - **`href` is required**: without it the component warns and renders text that cannot be followed.
 - The accessible name is the link text; write where it goes, not "click here".
+- **A control that performs an action is not a link** - no `href`, no `<a>`. Use button (imp skill
+  std/button) with `variant: 'link'` to get link appearance on a real button.
 
 ```js
 link({ href: 'https://example.com', external: true }, 'Read the docs')
 link({ href: '/invoices/42', tone: 'secondary', size: 'sm' }, 'Invoice #42')
 ```
+
+Related: button (imp skill std/button)

@@ -70,6 +70,7 @@ export const SKILLS = [
       'imp/std/layout',
       'imp/std/inputs',
       'imp/std/navigation',
+      'imp/std/feedback',
     ],
     summary: 'the built-in component library: text, layout, forms, navigation and empty states',
   },
@@ -138,6 +139,12 @@ export const SKILLS = [
     group: 'toolkit',
     aliases: ['previews', 'preview.js', 'imp/preview', 'scenarios'],
     summary: 'rendering components in isolation from a *.preview.js file',
+  },
+  {
+    name: 'review',
+    group: 'toolkit',
+    aliases: ['reviews', 'feedback', 'comments'],
+    summary: 'reading what the person looking at the page said, from .imp/reviews',
   },
   {
     name: 'testing',

@@ -52,6 +52,12 @@ The file is truncated at every `imp start`, so it always reflects the current se
 `maxLogEntries` (4000 by default) with older entries rolling off. `.imp/` is imp's per-project
 working directory and belongs in `.gitignore`.
 
+## `.imp/reviews/` - what the person looking at the page said
+
+The same injected client puts a **review widget** on every served page: the person picks an element,
+comments on it, and imp writes one text file per review to `.imp/reviews/`. `imp review` lists them.
+Read that folder before acting on a vague report - see [review](review.md).
+
 ## Rules an agent gets wrong
 
 - **`imp start` is long-running.** Start it in the background (or in another terminal) and read
@@ -64,6 +70,10 @@ working directory and belongs in `.gitignore`.
   extensionless path serves the entry HTML, while a genuinely missing asset (a bad `.js` path) still
   404s. Production needs a host-side rewrite; see [routing](routing.md).
 - **`/@imp/*` is reserved** - `/@imp/events` (the reload stream), `/@imp/log` (the telemetry sink),
-  `/@imp/sw.js` (the service worker) and the library source. Do not serve app files from there.
+  `/@imp/review` (the review sink), `/@imp/sw.js` (the service worker) and the library source. Do
+  not serve app files from there.
+- **The review widget is dev-only and local-only** - `imp start` and `imp preview` inject it,
+  `imp build` never does, and the server takes a review only from the machine it runs on. Never
+  write review UI into the app.
 - A request for a directory redirects to its trailing-slash URL and serves the `index.html` inside
   it; paths outside the served directory are rejected.

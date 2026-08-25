@@ -20,6 +20,7 @@ import { dim, green, red } from './colors.js'
 import { addLogSink, logger } from './logger.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev_log.js'
 import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './pwa.js'
+import { isLocalRequest, REVIEW_ENDPOINT, REVIEW_LOG_LINES, writeReview } from './review.js'
 import { IMP_MODULES } from './specifiers.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
@@ -211,6 +212,32 @@ export function reportMocks(state, { root, directory }) {
   }
 }
 
+const jsonResponse = (body, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+  })
+
+async function saveReview(req, info, root, recentLog) {
+  if (!isLocalRequest(info)) {
+    return jsonResponse({ error: 'reviews are only accepted from this machine' }, 403)
+  }
+  let payload
+  try {
+    payload = await req.json()
+  } catch {
+    return jsonResponse({ error: 'the review could not be read' }, 400)
+  }
+  try {
+    const path = await writeReview(root, payload, { log: recentLog?.(REVIEW_LOG_LINES) ?? [] })
+    logger.info(`review - ${path}`)
+    return jsonResponse({ path })
+  } catch (error) {
+    logger.error(`review - ${error.message}`)
+    return jsonResponse({ error: error.message }, 400)
+  }
+}
+
 export function createRequestHandler(
   {
     root,
@@ -222,6 +249,7 @@ export function createRequestHandler(
     mocksDirectory = null,
     buildMocks = null,
     publicDir = null,
+    recentLog = null,
   },
 ) {
   let iconSet = null
@@ -233,8 +261,12 @@ export function createRequestHandler(
     }
     return serveFromDir(root, pathname, { headInjection })
   }
-  return async (req) => {
+  return async (req, info) => {
     const url = new URL(req.url)
+
+    if (url.pathname === REVIEW_ENDPOINT && req.method === 'POST') {
+      return saveReview(req, info, root, recentLog)
+    }
 
     if (pwa && url.pathname === DEV_MANIFEST_PATH) {
       return new Response(
@@ -406,6 +438,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
       mocksDirectory,
       buildMocks,
       publicDir,
+      recentLog: devLog.recent,
     }),
   )
 

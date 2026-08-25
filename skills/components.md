@@ -79,6 +79,9 @@ Re-inserting in a later task is a real remount (also the way to force one).
 - **Never store per-mount resources at module scope** - use the instance; every mount gets its own.
 - **Component internals are private.** `document.querySelector` and page CSS stop at the boundary.
   For a live handle on something a child shows, build the node in the parent and pass it in.
+- **`host.focus()` works from outside** - a component host forwards focus to the first focusable
+  element it renders, so keep the factory's return value and focus that; never reach into another
+  component's `shadowRoot` to focus its control.
 - Inside a handler, `event.target.getRootNode().host` is the shadow-DOM replacement for
   `closest('my-app-card')`.
 - **Strict content models** (`<table>`, `<select>`): render the whole structure in one component - a

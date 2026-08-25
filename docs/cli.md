@@ -50,6 +50,8 @@ imp build [file.html] [--output dist]   build the app for production
 imp preview [path] [--port 4517]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
             [--mock | --no-mock]
+imp review [clear]                    list the reviews written from the browser
+                                      (clear: delete every saved review)
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest · no package: update all)
 imp uninstall <package>               remove a vendored dependency
@@ -230,7 +232,34 @@ trailing-slash URL and serves the `index.html` inside it; paths outside the serv
 rejected.
 
 Internal endpoints (reserved, not part of your app): `/@imp/events` (reload stream), `/@imp/log`
-(telemetry sink), `/@imp/sw.js` (the service worker), and `/@imp/*` (library source).
+(telemetry sink), `/@imp/review` (the review sink, described next), `/@imp/sw.js` (the service
+worker), and `/@imp/*` (library source).
+
+### Reviewing the page - notes for your agent
+
+Every page the dev server serves carries a small **review widget** in the bottom corner. Click it
+and the toolbox opens with one button, **Add review**: click that, and the next element you click on
+the page is the one you are reviewing. Hover to see what is about to be picked - the element under
+the pointer is outlined - then click it, type a comment, and press **Save review** (or
+`Ctrl`/`Cmd` + `Enter`). The element you picked stays outlined while you type, so you never have to
+check a DOM path to know what you are describing. `Escape` cancels the pick, and `Enter` takes the
+highlighted element if you would rather move with the keyboard than the mouse.
+
+That is the whole interaction: you click through the app and describe what is wrong in the words you
+would use out loud, and imp records which page you were on and which element you meant, so your AI
+coding agent does not have to guess either. Each review becomes a plain-text file you read back with
+**[`imp review`](#imp-review)**, described there.
+
+The widget is part of the dev server and nothing else: it is injected by `imp start` and
+`imp preview`, never by `imp build`, so no review code reaches your production bundle. It only
+appears when you are looking at the server over a loopback address, and the server accepts a review
+only from the machine it runs on - open the dev server from another device on your network and the
+widget is simply not there.
+
+If you want the same thing for the people using your finished app, that is the `bugReport` component
+(see **[Standard components](std-components.md)**). It is the same picker and the same captured
+context, shipped in your bundle and handing the report to a function you write - it does not write
+`.imp/reviews/` and it is not a replacement for this widget.
 
 ### Mock responses - `*.mock.js`
 
@@ -682,7 +711,11 @@ holding that component in a stage you can drag to any size with a state editor b
 screen - you edit the component, the page reloads, and you see it.
 
 It is the same dev server as `imp start` underneath, so the browser's console and network activity
-still stream to your terminal, and saving any file reloads the page.
+still stream to your terminal, saving any file reloads the page, your `public/favicon.svg` marks the
+tab just as it does in your running app - imp's own mark stands in when the project has none - and
+the review widget is in the corner - pick a part of the component you are previewing, comment on it,
+and the note lands in `.imp/reviews/` with the preview page it came from (see
+**[Reviewing the page](#reviewing-the-page---notes-for-your-agent)**).
 
 ### The preview file
 
@@ -896,6 +929,111 @@ environment entry from `imp.json`, exactly like `imp start`. Keep a folder out o
 ```
 
 Preview files are never part of your app: nothing imports them, so `imp build` never sees them.
+
+## `imp review`
+
+```
+imp review [clear]
+```
+
+Prints every review saved from the browser by the widget described under
+**[Reviewing the page](#reviewing-the-page---notes-for-your-agent)** - the page it came from, the
+element that was picked, and the comment left on it - oldest first:
+
+```
+.imp/reviews/2026-08-25T12-10-36-682Z.txt
+  2026-08-25T12:10:36.682Z  http://localhost:4507/settings
+  body > div#app > acme-settings >> form.panel > button.save
+  The save button is disabled until a field is touched, but nothing says so.
+
+[INFO] 1 review in .imp/reviews - 'imp review clear' deletes them all
+```
+
+It reads the project you run it from, so it works from any subdirectory, and with nothing saved yet
+it says so instead of printing an empty list.
+
+### What a review records
+
+Each review is its own file under `.imp/reviews/`, named after the moment it was saved
+(`2026-08-25T12-10-36-682Z.txt`), so nothing you write can overwrite anything you wrote before. The
+file is plain text: a header describing where you were, then blocks describing the state you were
+in, then your comment.
+
+```
+time: 2026-08-25T12:10:36.682Z
+page: http://localhost:4507/settings
+title: Settings - Acme
+viewport: 1440x900
+scroll: 0,1240
+scheme: dark
+lang: en
+dir: ltr
+element: body > div#app > acme-settings >> form.panel > button.save
+rect: 96x36 at 512,604
+text: Save changes
+html: <button class="save" type="submit" disabled="">Save changes</button>
+
+state:
+  settings.profile = {"name":"Ada","role":"admin"}
+  settings.dirty = false
+
+controls:
+  input[name=name] = "Ada"
+  input[name=notifications] = "checked"
+  select[name=timezone] = "Europe/Warsaw"
+
+log:
+  [BROWSER:error] TypeError: profile.email is undefined
+  [HTTP] PATCH http://localhost:4507/api/profile -> 500 34ms
+
+comment:
+The save button is disabled until a field is touched, but nothing says so.
+```
+
+**A URL and a selector are not enough to say what the app was doing**, so imp records four more
+things at the moment you pick the element:
+
+- **`state`** - every piece of imp state in scope at the picked element, by name, as JSON. This is
+  the real answer to "what state was the app in": imp state is named and holds plain data, so the
+  block is both readable and reproducible - an agent can set the same values in a test or a preview
+  scenario and be looking at the same screen. Only the state that reaches the picked element is
+  listed, nearest provider first, so what you get is the state that component could actually see. On
+  a preview page imp's own `imp.preview.*` entries appear too - they are the theme, language and
+  direction you were previewing under.
+- **`controls`** - what every form control actually held: typed text, checked boxes, selected
+  options, and whether a control was disabled or read-only. **The HTML does not carry this** - a
+  typed-in value lives on the element, not in the markup, so `html` above would show an empty field
+  where you had typed a name. Picking anything inside a form records the whole form; picking outside
+  one records the controls in what you picked. Password fields are **never recorded** - only how
+  many characters were in them.
+- **`log`** - the last 20 lines of the dev log as of that moment: the console error that fired, the
+  request that failed. This is the "how did it get here" that a screenshot would not tell you
+  either.
+- **The environment** - `viewport` (with the device pixel ratio when it is not 1), `scroll` when the
+  page was scrolled, `scheme` for light or dark, `motion` when reduced motion is on, and `lang` /
+  `dir`. "Only when the window is narrow" and "only in dark mode" are half the reports anyone
+  writes, and now neither has to be typed out. `rect` is the picked element's own size and position,
+  which is how "it is 8px wide" stops being a guess.
+
+`element` is the path from `<body>` down to what you picked, and `>>` marks a crossing into a
+component's own shadow tree - so `acme-settings >> form.panel` is the form **rendered by**
+`acme-settings`, which is usually the file to open. Deeply nested paths are cut at twelve steps and
+start with `...`, keeping the end that names the component.
+
+Nothing has to be parsed to use any of this. Hand the folder to your agent and ask it to work
+through the list - `imp review`, or `cat .imp/reviews/*.txt`, are equally good ways in - and each
+review carries enough to find the code, and to get back to the screen, without a follow-up question.
+
+```
+imp review clear
+```
+
+Deletes every saved review and removes the folder. imp never clears reviews on its own - not when
+the server restarts, not when a build runs - so the list is a backlog you empty when you decide the
+comments on it are settled, and losing one to a restart is not a thing that happens.
+
+Reviews live in `.imp/`, which a fresh `imp init` project already git-ignores, so they stay on the
+machine that wrote them. To share one, paste it - there is nothing to sync.
 
 ## `imp resize`
 

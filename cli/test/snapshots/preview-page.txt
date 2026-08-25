@@ -9,9 +9,10 @@ cache-control: no-store
 <script>
 [imp client script]
 </script>
-<script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/i18n":"/@imp/api/i18n.js","imp/log":"/@imp/api/log.js","imp/http":"/@imp/api/http.js","imp/std":"/@imp/std/index.js","imp/std/display":"/@imp/std/display/index.js","imp/std/layout":"/@imp/std/layout/index.js","imp/std/inputs":"/@imp/std/inputs/index.js","imp/std/navigation":"/@imp/std/navigation/index.js"}}</script>
+<script type="importmap">{"imports":{"imp":"/@imp/imp.js","imp/html":"/@imp/api/html.js","imp/state":"/@imp/api/state.js","imp/router":"/@imp/api/router.js","imp/theme":"/@imp/api/theme.js","imp/i18n":"/@imp/api/i18n.js","imp/log":"/@imp/api/log.js","imp/http":"/@imp/api/http.js","imp/std":"/@imp/std/index.js","imp/std/display":"/@imp/std/display/index.js","imp/std/layout":"/@imp/std/layout/index.js","imp/std/inputs":"/@imp/std/inputs/index.js","imp/std/navigation":"/@imp/std/navigation/index.js","imp/std/feedback":"/@imp/std/feedback/index.js"}}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg">
 <title>imp preview - Widgets / Counter</title>
 </head>
 <body>

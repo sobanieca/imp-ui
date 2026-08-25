@@ -304,7 +304,7 @@ dependency can appear:
   available ones listed:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/test', 'imp/preview'
+  error[imp/exact-dependency-versions]: 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/display', 'imp/std/layout', 'imp/std/inputs', 'imp/std/navigation', 'imp/std/feedback', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 

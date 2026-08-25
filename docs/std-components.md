@@ -34,6 +34,7 @@ leaks out onto your page.
 | `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
+| `imp/std/feedback`   | `bugReport`                                                                                                                                                                                   |
 | `imp/std/<group>`    | The rest, group by group, as they land                                                                                                                                                        |
 
 Components take the obvious names, and a few of them match an element factory - `button` is both a
@@ -113,14 +114,20 @@ are the browser's own.
 button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
 ```
 
-| Prop       | Values                                          | Default     |                                                        |
-| ---------- | ----------------------------------------------- | ----------- | ------------------------------------------------------ |
-| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'` | `'default'` | The visual weight and intent                           |
-| `size`     | `'sm'`, `'md'`, `'lg'`                          | `'md'`      | Padding and type size                                  |
-| `disabled` | boolean - **live**                              | `false`     | Blocks interaction                                     |
-| `loading`  | boolean - **live**                              | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
-| `block`    | boolean                                         | `false`     | Fills the width of its container                       |
-| `events`   | event map                                       | -           | Handlers, exactly as on any element                    |
+| Prop       | Values                                                    | Default     |                                                        |
+| ---------- | --------------------------------------------------------- | ----------- | ------------------------------------------------------ |
+| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | The visual weight and intent                           |
+| `size`     | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                                  |
+| `disabled` | boolean - **live**                                        | `false`     | Blocks interaction                                     |
+| `loading`  | boolean - **live**                                        | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
+| `block`    | boolean                                                   | `false`     | Fills the width of its container                       |
+| `label`    | a string, or a state holding one                          | -           | The accessible name, when the content is not enough    |
+| `events`   | event map                                                 | -           | Handlers, exactly as on any element                    |
+
+`variant: 'link'` is a button that reads as a link. Reach for it when the control performs an
+action - opening a panel, starting a flow - and the surrounding text calls for link weight rather
+than a filled or outlined button. It stays a real `<button>`, so it is not something a person can
+open in a new tab; use `link` for anywhere they can actually go.
 
 **There is no `type` prop, and no submit button.** A button always acts on its `click` handler.
 Because the button element lives inside the component, the browser would never associate it with a
@@ -215,6 +222,10 @@ In-app navigation is handed to the router (see **[Routing](routing.md)**), so `h
 same way you would write it for `navigate()` - a path like `/settings`, without your app's base
 path. imp adds that for you. Clicks are left to the browser whenever the user means it: a
 middle-click, a modifier-click, an `external` link, or an absolute URL pointing off-site.
+
+A link is a place to go. When the control performs an action instead - opening a panel, starting a
+flow - it belongs in a `button`, and `variant: 'link'` gives it link appearance without giving up
+what a button is.
 
 ## `emptyState` - from `imp/std/display`
 
@@ -829,6 +840,92 @@ commandPalette({
   events: { select: (event) => run(event.detail.id) },
 })
 ```
+
+## `bugReport` - from `imp/std/feedback`
+
+Ships a "something is wrong here" trigger inside your app. The person using it presses the trigger,
+clicks the element the problem is about, and types a comment - and you get one plain object
+describing what they were looking at.
+
+```js
+import { bugReport } from 'imp/std/feedback'
+
+bugReport({
+  onSubmit: (report) =>
+    fetch('/api/bug-reports', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(report),
+    }),
+})
+```
+
+| Prop       | Values                           | Default     | What it does                                           |
+| ---------- | -------------------------------- | ----------- | ------------------------------------------------------ |
+| `onSubmit` | a function taking the report     | -           | Where the report goes. May be async and may reject     |
+| `as`       | `'button'`, `'link'`             | `'button'`  | How the trigger looks - both are a real button         |
+| `variant`  | any `button` variant             | `'default'` | The trigger's look, passed to `button`                 |
+| `size`     | `'sm'`, `'md'`, `'lg'`           | `'md'`      | The trigger's size                                     |
+| `label`    | a string, or a state holding one | -           | The trigger's text; with children, its accessible name |
+| `events`   | any DOM events                   | -           | Bound on the component                                 |
+
+**imp does not store the report.** There is no endpoint to configure, no queue and no local
+fallback: `onSubmit` is the whole storage story, so a report can go to your API, an issue tracker,
+`localStorage`, or nowhere at all. It may return a promise - the panel disables its buttons while it
+is pending, closes when it resolves, and shows a retryable message when it rejects, keeping what was
+typed.
+
+The report is plain JSON-safe data, captured the moment the element was picked rather than when the
+comment was finished - so it describes the screen being complained about even if the app has moved
+on since:
+
+```js
+{
+  comment: 'The save button does nothing.',
+  time: '2026-08-25T12:10:36.682Z',
+  page: 'https://acme.test/settings',
+  title: 'Settings - Acme',
+  viewport: '1440x900',
+  scroll: '0,1240',
+  scheme: 'dark',
+  motion: '',
+  lang: 'en',
+  dir: 'ltr',
+  element: {
+    path: 'body > div#app > acme-settings >> form.panel > button.save',
+    rect: '96x36 at 512,604',
+    text: 'Save changes',
+    html: '<button class="save" type="submit" disabled="">Save changes</button>',
+  },
+  state: [{ name: 'settings.profile', value: { name: 'Ada' } }],
+  controls: [{ name: 'input[name=name]', value: 'Ada', disabled: false, readOnly: false }],
+}
+```
+
+Three of those fields are what make a vague report actionable. `element.path` names the node,
+crossing into a component with `>>` so the component before the last one owns it. `state` is every
+named state in scope at that element, as plain data - close enough to a snapshot that you can put
+the values back and be looking at the same screen. `controls` is what was actually typed into the
+form the element sits in, which the markup does not carry; a password field records only its length,
+never its value.
+
+The rest is the context that usually goes unreported: the viewport and device pixel ratio, the
+scroll position, the colour scheme, whether reduced motion was on, and the page language and
+direction. "Only when narrow" and "only in dark mode" stop being something anybody has to remember
+to mention.
+
+**Whoever reports the problem never sees the element path.** Picking is visual on both ends: the
+element under the pointer is outlined, a click takes it (`Enter` takes the outlined one, `Escape`
+cancels), and it stays outlined while the comment is typed. Nothing about the DOM is put in front of
+a person who should not have to look at one.
+
+The wording is translatable like every other standard component, under `imp.bugReport.*` keys (see
+**[Translations](i18n.md)**), so a `label` prop is for changing the words in one place rather than
+for translating them.
+
+**One privacy note.** `state` and `controls` carry whatever your app put there, and imp sends none
+of it anywhere by itself. Strip what should not leave the browser inside `onSubmit`, before you send
+it.
 
 ## Custom elements next to yours
 

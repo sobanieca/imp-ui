@@ -36,6 +36,7 @@ WORKING IN AN IMP PROJECT
   build               the production build, JS entries for publishing, and the offline PWA output
   mocks               answering the app's requests from *.mock.js files instead of the network
   preview             rendering components in isolation from a *.preview.js file
+  review              reading what the person looking at the page said, from .imp/reviews
   testing             unit tests in-process and e2e specs against a real browser
   dependencies        vendoring packages into dependencies/ and importing them
   lint                the imp lint rules, what each one prevents, and how to apply fixes
@@ -74,6 +75,7 @@ STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
   std/commandPalette  commandPalette - one search field that fuzzy-filters a list of destinations
   std/navMenu         navMenu - a nav landmark of links, grouped, with the current one marked
   std/tabs            tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
+  std/bugReport       bugReport - a trigger that lets a person point at an element and describe what is wrong with it
 
 THIS PROJECT - components with a skill file · read: imp skill ./path/to/component.js
   ./test/fixtures/skill-project/counter.js  counter - a self-contained increment/decrement widget

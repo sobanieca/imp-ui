@@ -42,6 +42,9 @@ const INDEX_BUNDLE_KEY = ''
 
 const CATALOG_ELEMENT_ID = 'imp-preview-catalog'
 
+const FAVICON_PATH = '/favicon.svg'
+const IMP_MARK_URL = new URL('./templates/favicon.svg', import.meta.url)
+
 const STATE_ENTRY_POINTS = ['initState', 'useState']
 const MAX_SCANNED_SOURCES = 40
 
@@ -563,6 +566,7 @@ const documentShell = (title, body) =>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="${FAVICON_PATH}">
 <title>${escapeHtml(title)}</title>
 </head>
 <body>
@@ -606,15 +610,31 @@ const htmlResponse = (body) =>
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
   })
 
+let impMark = null
+
+const impMarkResponse = async () =>
+  new Response(impMark ??= await Deno.readTextFile(IMP_MARK_URL), {
+    headers: { 'content-type': 'image/svg+xml', 'cache-control': 'no-store' },
+  })
+
 const scriptResponse = (body) =>
   new Response(body, {
     headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' },
   })
 
 export function createPreviewHandler(
-  { app, clients, listCatalog, dependencies, bundles, themes = [], translations = [] },
+  {
+    app,
+    clients,
+    listCatalog,
+    dependencies,
+    bundles,
+    themes = [],
+    translations = [],
+    recentLog = null,
+  },
 ) {
-  const serveApp = createRequestHandler({ ...app, clients, historyFallback: false })
+  const serveApp = createRequestHandler({ ...app, clients, historyFallback: false, recentLog })
 
   const loadBundle = async (file) => {
     if (!bundles.has(file)) {
@@ -635,7 +655,7 @@ export function createPreviewHandler(
     return bundles.get(file)
   }
 
-  return async (req) => {
+  return async (req, info) => {
     const url = new URL(req.url)
     const catalog = listCatalog()
     const previews = catalog.map((entry) => entry.file)
@@ -664,7 +684,9 @@ export function createPreviewHandler(
       return scriptResponse(bundle.error ? failureModule(file, bundle.error) : bundle.code)
     }
 
-    return serveApp(req)
+    const response = await serveApp(req, info)
+    if (response.status === 404 && url.pathname === FAVICON_PATH) return impMarkResponse()
+    return response
   }
 }
 
@@ -750,6 +772,7 @@ export async function preview(
       bundles,
       themes,
       translations,
+      recentLog: devLog.recent,
     }),
   )
 

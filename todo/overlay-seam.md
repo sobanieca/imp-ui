@@ -119,6 +119,11 @@ no focus move, no focus restore, no `cancel` - and has no `showPopover` at all. 
 unit tests can assert markup, roles, accessible names and state wiring, and **nothing about the
 behaviour the seam exists for**.
 
+Focus delegation is in the same state: happy-dom reads the shadow-root option as `delegateFocus`
+rather than `delegatesFocus` and never forwards focus, so `host.focus()` does nothing there
+(`adr/focus-delegation.md`). Every assertion about focus reaching a nested component is an e2e spec
+today, and a top-layer fill should cover this alongside the rest.
+
 `todo/accessibility.md` asks for a test-backed guarantee rather than a best-effort convention, so
 budget a small top-layer emulation installed in `installDomEnvironment` (`cli/src/test_dom.js`):
 promotion, `inert` on the rest of the document, focus entry and restore, Escape, and light dismiss.
