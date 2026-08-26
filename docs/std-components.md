@@ -30,7 +30,7 @@ leaks out onto your page.
 | Import               | What it holds                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                                                                                                                            |
-| `imp/std/layout`     | The frame - `app`, `navbar`, `sidebar`, `footer` - and the boxes it holds: `box`, `flex`, `grid`, `container`, `section`                                                                      |
+| `imp/std/layout`     | The frame - `app`, `navbar`, `sidebar`, `footer` - and the boxes it holds: `page`, `stack`, `grid`, `section`                                                                                 |
 | `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
@@ -269,50 +269,63 @@ for `computed([lang], () => t('invoices.empty'))` if it needs to follow the lang
 
 Layout is where a page stops being a list of components and starts being a design, so imp gives it
 its own group - and keeps it small. You get five boxes and the four pieces of the page frame. None
-of them ask you to write CSS.
+of them ask you to write CSS, and most of them need no props at all.
 
 ```js
 import { button, heading } from 'imp/std'
-import { container, flex, grid } from 'imp/std/layout'
+import { grid, page, stack } from 'imp/std/layout'
 
-container(
-  { size: 'lg', paddingX: 4 },
-  flex(
-    { direction: 'column', gap: 5 },
-    flex({ justify: 'between', align: 'center' }, heading('Invoices'), button('New invoice')),
-    grid({ minItemWidth: '18rem', gap: 4 }, ...invoiceCards),
+page(
+  stack(
+    stack({ direction: 'row', justify: 'between' }, heading('Invoices'), button('New invoice')),
+    grid(...invoiceCards),
   ),
 )
 ```
 
-### One layout, every screen size
+That example passes two props, and it is already responsive: the page gutter grows with the
+viewport, the row wraps when it runs out of room, and the grid fits as many cards as the screen
+allows. The next two sections explain why.
 
-Every layout prop takes **either one value or a value per screen size**. That is the whole
-responsive story - there is no second API for mobile, no media queries to write, and no separate
-tree to render:
+### Responsive by default, not by configuration
+
+Most responsive design in imp is not something you write. It is already in the values:
+
+- **Spacing is fluid.** The theme's spacing scale is built from `clamp()`, so a gap or a page gutter
+  grows smoothly with the viewport instead of jumping at a fixed width. `padding: 4` is tighter on a
+  phone and roomier on a monitor without you saying so.
+- **`grid` fits as many columns as the width allows.** With no props at all it reflows from one
+  column on a phone to four on a monitor.
+- **A `stack` wraps.** A line of controls that runs out of room continues on the next line rather
+  than overflowing.
+
+Between them these cover most of what breakpoints used to be for, which is why imp only has two.
+
+### The two stops, for when layout must actually change
+
+Sometimes a layout has to genuinely change shape rather than scale - an axis flips, a region
+disappears. For that there are exactly two screen sizes: **`mobile`**, under 48rem, and
+**`desktop`**, 48rem and up. Every layout prop takes either one value or one per stop:
 
 ```js
-flex({ direction: { xs: 'column', md: 'row' } }, filters(), results())
-grid({ columns: { xs: 1, sm: 2, lg: 4 } }, ...cards)
-app({ padding: { xs: 2, lg: 6 } }, article())
+stack({ direction: { mobile: 'column', desktop: 'row' } }, filters(), results())
+stack({ gap: { mobile: 2, desktop: 5 } }, ...sections)
+navbar({ justify: { mobile: 'center', desktop: 'between' } }, brand(), userMenu())
 ```
 
-The sizes are `xs` from 0, `sm` from 40rem, `md` from 48rem, `lg` from 64rem and `xl` from 80rem,
-and a value **holds until the next one you set**. So `{ md: 'row' }` means "whatever the default is
-on small screens, and a row from 48rem up" - you only name the widths where something actually
-changes.
+A stop you leave out keeps the component's own default, so you only name the case that differs.
 
-These widths are fixed. It is the one measurement in imp a theme cannot change, and the reason is
+That one width is fixed. It is the one measurement in imp a theme cannot change, and the reason is
 worth knowing: CSS media queries cannot read a theme variable, so honouring a custom scale would
 mean measuring the window in JavaScript and re-laying-out on every resize. imp would rather your
-layout be correct in the very first frame the browser paints.
+layout be correct in the very first frame the browser paints - and with fluid spacing doing the
+continuous work, one stop is enough.
 
-To show something only on wide screens - or only on narrow ones - every layout component takes
-`hideBelow` and `hideAbove`:
+To show something on one stop only, every layout component takes `hideOnMobile` and `hideOnDesktop`:
 
 ```js
-flex({ hideBelow: 'lg' }, wideScreenExtras())
-button({ hideAbove: 'md' }, 'Menu')
+stack({ hideOnMobile: true }, wideScreenExtras())
+button({ hideOnDesktop: true }, 'Menu')
 ```
 
 Hidden means genuinely gone: it is not read out by a screen reader and not reachable by keyboard
@@ -324,37 +337,41 @@ Anywhere a layout component asks for space - `gap`, `padding` - you give it a **
 not a pixel value:
 
 ```js
-flex({ direction: 'column', gap: 4 }, ...rows)
+stack({ gap: 4 }, ...rows)
 ```
 
 Those steps are your theme's spacing scale (see **[Theming](theming.md)**), so spacing stays
-consistent across the whole app and changes with the theme instead of drifting one hand-typed pixel
-value at a time.
+consistent across the whole app, scales with the viewport, and changes with the theme instead of
+drifting one hand-typed pixel value at a time. Most of the time you can leave `gap` and `padding`
+out entirely and take the theme's answer.
 
 ### The components
 
-| Component   | What it does                                | The props you will reach for                           |
-| ----------- | ------------------------------------------- | ------------------------------------------------------ |
-| `box`       | A plain box - the base every other one uses | `padding`, `background`, `border`, `radius`, `shadow`  |
-| `flex`      | Lays children out in a row, or a column     | `direction`, `gap`, `justify`, `align`, `wrap`, `grow` |
-| `grid`      | Equal columns, or as many as fit            | `columns`, `minItemWidth`, `gap`                       |
-| `container` | Caps content at a readable width, centred   | `size`, `paddingX`                                     |
-| `section`   | A band of page content with vertical rhythm | `size`, `label`                                        |
-| `app`       | The whole page frame - see below            | `maxWidth`, `padding`                                  |
-| `navbar`    | The bar across the top of the frame         | `label`, `gap`, `justify`, `align`, `wrap`             |
-| `sidebar`   | A collapsible column beside the page        | `side`, `label`, `width`, `resizable`, `collapsible`   |
-| `footer`    | The strip along the bottom of the frame     | `label`, `gap`, `justify`, `align`, `wrap`             |
+| Component | What it does                                | The props you will reach for                         |
+| --------- | ------------------------------------------- | ---------------------------------------------------- |
+| `page`    | A padded, centred column at a good measure  | `size`                                               |
+| `stack`   | A column, a row, or one that changes shape  | `direction`, `gap`, `align`, `justify`, `wrap`       |
+| `grid`    | As many equal columns as fit                | `minItemWidth`, `columns`, `gap`                     |
+| `section` | A band of page content with vertical rhythm | `size`, `label`                                      |
+| `app`     | The whole page frame - see below            | `maxWidth`, `padding`                                |
+| `navbar`  | The bar across the top of the frame         | `label`, `gap`, `justify`, `align`, `wrap`           |
+| `sidebar` | A collapsible column beside the page        | `side`, `label`, `width`, `resizable`, `collapsible` |
+| `footer`  | The strip along the bottom of the frame     | `label`, `gap`, `justify`, `align`, `wrap`           |
 
-`flex` and `grid` do all the everyday work. A row and a column are the same component with a
-different `direction`, so there is one thing to learn instead of two; empty space between children
-is a `justify` or a `grow` rather than an element you insert; and a region that scrolls on its own
-is `flex({ scroll: true })`. Anything more specific than these - a card, a labelled rule, a media
-object - is a component of yours, built once and named after what it is.
+`stack` does all the everyday work. A column, a row, and a column that becomes a row on a wider
+screen are the same component with a different `direction`, so there is one thing to learn instead
+of three; empty space between children is a `justify` or a `grow` rather than an element you insert;
+and a region that scrolls on its own is `stack({ scroll: true })`. Anything more specific than these
+
+- a labelled rule, a media object - is a component of yours, built once and named after what it is.
+
+A card is not a component either, because it does not need to be: it is a `stack` with a background
+and a border, which the shared box surface below already gives you.
 
 ### One box surface, five components
 
-`box`, `flex`, `grid`, `container` and `section` are the same box with different jobs, so they share
-one set of props on top of their own. Learn it once and it works everywhere:
+`page`, `stack`, `grid` and `section` are the same box with different jobs, so they share one set of
+props on top of their own. Learn it once and it works everywhere:
 
 | Prop                                                                | Takes                                              |
 | ------------------------------------------------------------------- | -------------------------------------------------- |
@@ -365,10 +382,10 @@ one set of props on top of their own. Learn it once and it works everywhere:
 | `background`                                                        | `'none'`, `'surface'`, `'sunken'`                  |
 | `border`                                                            | `true` / `false`                                   |
 | `ratio`                                                             | an aspect ratio, e.g. `'16/9'`                     |
-| `grow`, `scroll`, `hideBelow`, `hideAbove`                          | as described above                                 |
+| `grow`, `scroll`, `hideOnMobile`, `hideOnDesktop`                   | as described above                                 |
 
 ```js
-box({ padding: 4, background: 'surface', border: true, radius: 'lg', shadow: 'sm' }, summary())
+stack({ padding: 4, background: 'surface', border: true, radius: 'lg', shadow: 'sm' }, ...summary)
 ```
 
 That is a panel: theme background, theme border, theme corner rounding, theme shadow - four steps,
@@ -381,23 +398,23 @@ layouts can never fight over the same margin. And there are **no positioning pro
 component places its children in flow, and anything that has to escape the flow is a component of
 yours with its own styles.
 
-`container` and `section` are the two named shapes that come up on every page. A container caps its
-content at a themed width (`sm` 40rem through `xl` 80rem) and centres what is left over, so a
-paragraph never runs the full width of a monitor. A section is a band of page with block padding
-from the spacing scale, and it renders a real `<section>` element - give it a `label` matching its
-heading and a screen reader can jump straight to it:
+`page` and `section` are the two named shapes that come up on every page. A page caps its content at
+a themed width (`sm` 40rem through `xl` 80rem, or `full` for none) and centres what is left over, so
+a paragraph never runs the full width of a monitor, and it pads itself from the theme so text never
+sits flush against a phone's screen edge. A section is a band of page with block padding from the
+spacing scale, and it renders a real `<section>` element - give it a `label` matching its heading
+and a screen reader can jump straight to it:
 
 ```js
-container({ size: 'md' }, section({ label: 'Pricing' }, heading('Pricing'), plans()))
+page({ size: 'md' }, section({ label: 'Pricing' }, heading('Pricing'), plans()))
 ```
 
-`grid` deserves a note: `columns` is a **count** of equal columns, and `minItemWidth` is usually the
-better tool. Give it the narrowest a card should ever get and the grid fits as many as the screen
-allows, reflowing from one column on a phone to four on a monitor without you naming a single
-breakpoint:
+`grid` deserves a note: it fits as many columns as the width allows by default. `minItemWidth` sets
+the narrowest a card should ever get, and `columns` is a **count** of equal columns for the rarer
+case where the number has to be exact:
 
 ```js
-grid({ minItemWidth: '18rem', gap: 4 }, ...cards)
+grid({ minItemWidth: '18rem' }, ...cards)
 ```
 
 ### Letting one child take the leftover room
@@ -406,13 +423,13 @@ grid({ minItemWidth: '18rem', gap: 4 }, ...cards)
 **one** child should absorb what is left over, give that child `grow`:
 
 ```js
-flex({ gap: 2 }, flex({ grow: true }, searchField()), button('Search'))
+stack({ direction: 'row' }, stack({ grow: true }, searchField()), button('Search'))
 ```
 
 `grow` is a prop of the box that grows, not of the parent, and that is a consequence of how imp
 components work rather than a preference: a component seals its own styling, so a parent genuinely
-cannot reach inside `searchField` to stretch it. `flex` and `grid` carry `grow` themselves; wrap
-anything else in a `flex` when it needs to grow. Everything else lays out correctly with no wrapper
+cannot reach inside `searchField` to stretch it. Every layout box carries `grow` itself; wrap
+anything else in a `stack` when it needs to grow. Everything else lays out correctly with no wrapper
 at all.
 
 ### The page frame: `app`
@@ -491,7 +508,7 @@ phone screen, so on a narrow screen they do not try: each keeps its own tab, the
 their edge in the order you wrote them, and opening one closes any other that is open. One panel is
 over the page at a time, whichever side it came from, and the page behind it is never half-covered
 by two. None of this is a prop you set - it is what a sidebar is - so do not add a menu button, a
-`hideBelow`, or a breakpoint of your own on top of it.
+`hideOnMobile`, or a breakpoint of your own on top of it.
 
 ### Letting the reader choose the width
 
@@ -618,7 +635,7 @@ attempted. You do not have to manage that - there is no "show errors" flag to ke
 `submitButton()` is the submit action. It can sit anywhere inside the form:
 
 ```js
-flex({ gap: 2 }, submitButton('Save changes'), resetButton('Start over'))
+stack({ direction: 'row', gap: 2 }, submitButton('Save changes'), resetButton('Start over'))
 ```
 
 Clicking it re-checks every field. If anything fails, `onSubmit` never runs and the bad fields start

@@ -4,7 +4,7 @@ import { HttpError, useHttpClient } from 'imp/http'
 import { navigate } from 'imp/router'
 import { lang, t } from 'imp/i18n'
 import { button, heading, link, text } from 'imp/std'
-import { flex } from 'imp/std/layout'
+import { stack } from 'imp/std/layout'
 import {
   checkbox,
   form,
@@ -44,8 +44,8 @@ export const todoScreen = component('todo-app-detail', {
       navigate('/', { replace: true })
     }
 
-    return flex(
-      { direction: 'column', gap: 5 },
+    return stack(
+      { gap: 5 },
       heading({ level: 2 }, words('todo.form.editTitle')),
       form(
         { initialValues: todo, onSubmit: save },
@@ -62,10 +62,10 @@ export const todoScreen = component('todo-app-detail', {
           rows: 3,
         }),
         markdownNote({ field: 'notes', label: words('todo.form.notesPreview') }),
-        flex(
-          { gap: 3, wrap: true },
-          flex(
-            { grow: true },
+        stack(
+          { direction: 'row', gap: 3 },
+          stack(
+            { direction: 'row', grow: true },
             lang.view(() =>
               select({
                 field: 'priority',
@@ -74,8 +74,8 @@ export const todoScreen = component('todo-app-detail', {
               })
             ),
           ),
-          flex(
-            { grow: true },
+          stack(
+            { direction: 'row', grow: true },
             numberField({
               field: 'estimate',
               label: message('todo.form.estimate'),
@@ -87,8 +87,8 @@ export const todoScreen = component('todo-app-detail', {
         ),
         checkbox({ field: 'done', label: message('todo.form.done') }),
         checkbox({ field: 'pinned', label: message('todo.form.pinned') }),
-        flex(
-          { gap: 2, wrap: true },
+        stack(
+          { direction: 'row', gap: 2 },
           submitButton(words('todo.form.save')),
           resetButton(words('todo.form.reset')),
           button(

@@ -6,7 +6,7 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | `button`, `heading`, `text`, `link`                                                                                                                         | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                                                                                         |
-| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `box`, `flex`, `grid`, `container`, `section`                                                                         | `imp skill std/app`, `std/navbar`, `std/sidebar`, `std/footer`, `std/box`, `std/flex`, `std/grid`, `std/container`, `std/section`                                                                                     |
+| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `page`, `stack`, `grid`, `section`                                                                                    | `imp skill std/app`, `std/navbar`, `std/sidebar`, `std/footer`, `std/page`, `std/stack`, `std/grid`, `std/section`                                                                                                    |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
@@ -134,65 +134,102 @@ language.
 
 ## Layout - from `imp/std/layout`
 
-Everything below takes a **responsive value**: either one value, or a per-breakpoint object
-`{ xs, sm, md, lg, xl }` whose values apply from that width upward. Breakpoints are fixed at `xs` 0,
-`sm` 40rem, `md` 48rem, `lg` 64rem, `xl` 80rem - a theme cannot change them, because CSS cannot read
-a custom property inside a media query. A breakpoint you skip **inherits the nearest one below it**,
-so `{ md: 'row' }` is the default under `md` and a row from `md` up.
-
-Spacing props (`gap`, `padding`) take a **step `0`-`6`** from the theme scale - `gap: 4` means
-`--imp-space-4`. Pixels warn and fall back.
-
-Every layout component also takes `hideBelow` and `hideAbove` (`'sm'`-`'xl'`), which hide it under
-or from that width and remove it from the accessibility tree with it.
-
 ```js
-import { app, flex, grid, navbar, sidebar } from 'imp/std/layout'
+import { app, grid, navbar, page, sidebar, stack } from 'imp/std/layout'
 
 app(
-  { maxWidth: 'lg' },
   navbar({ label: 'Top bar' }, brand()),
   sidebar({ side: 'left', label: 'Sections' }, navMenu({ items })),
-  flex(
-    { direction: 'column', gap: 5 },
-    flex({ justify: 'between', align: 'center' }, heading('Invoices'), button('New')),
-    grid({ minItemWidth: '18rem', gap: 4 }, ...cards),
-    flex(
-      { direction: { xs: 'column', sm: 'row' }, gap: 2 },
-      flex({ grow: true }, search()),
-      button('Go'),
-    ),
+  stack(
+    stack({ direction: 'row', justify: 'between' }, heading('Invoices'), button('New')),
+    grid(...cards),
+    stack({ direction: 'row' }, stack({ direction: 'row', grow: true }, search()), button('Go')),
   ),
 )
 ```
 
 | Component | What it is                             | Key props                                                                                                      |
 | --------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `flex`    | Flex container, a row by default       | `direction`, `gap`, `justify`, `align`, `wrap`, `grow`, `scroll`                                               |
-| `grid`    | CSS grid of equal columns              | `columns` (1-12), `minItemWidth`, `gap`, `align`, `justify`, `grow`                                            |
+| `page`    | Content column: theme padding, centred | `size` (`'sm'`-`'xl'`, `'full'`)                                                                               |
+| `stack`   | A column, a row, or one that changes   | `direction`, `gap`, `align`, `justify`, `wrap`                                                                 |
+| `grid`    | As many equal columns as fit           | `minItemWidth`, `columns` (1-12), `gap`, `align`, `justify`                                                    |
+| `section` | Named band of page content             | `size` (`'sm'`-`'lg'`), `label`                                                                                |
 | `app`     | The page frame; sorts its own children | `maxWidth` (`'sm'`-`'xl'`, `'full'`), `padding`                                                                |
 | `navbar`  | The bar across the top of the frame    | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
 | `sidebar` | A collapsible side region of the frame | `side` (`'left'`/`'right'`), `label`, `width`, `resizable`, `minWidth`, `maxWidth`, `collapsible`, `collapsed` |
 | `footer`  | The bar across the bottom of the frame | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
 
+### Responsive: two stops, and mostly none
+
+There are exactly two breakpoints, **`mobile`** (under 48rem) and **`desktop`** (48rem and up). They
+are fixed - a theme cannot change them, because CSS cannot read a custom property inside a media
+query.
+
+Reach for them last. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()` values
+that grow with the viewport, so a gap or a page gutter is already right at every width with no
+breakpoint written. `grid` fits as many columns as the width allows, and a `stack` wraps. Between
+them those cover most of what a breakpoint used to be for.
+
+When layout must genuinely change axis or disappear, every layout prop takes
+`{ mobile: ..., desktop: ... }` in place of a single value, and a stop you skip falls back to the
+component's own default:
+
+```js
+stack({ direction: { mobile: 'column', desktop: 'row' } }, filters(), results())
+stack({ gap: { mobile: 2, desktop: 5 } }, ...sections)
+navbar({ justify: { mobile: 'center', desktop: 'between' } }, brand(), userMenu())
+```
+
+Every layout component also takes **`hideOnMobile`** and **`hideOnDesktop`** booleans, which hide it
+at that stop and remove it from the accessibility tree with it.
+
+### The shared box surface
+
+`page`, `stack`, `grid` and `section` all take these on top of their own props, resolved the same
+way. Learn it once.
+
+| Prop                      | Values                                             | Default  | Notes                                       |
+| ------------------------- | -------------------------------------------------- | -------- | ------------------------------------------- |
+| `padding`                 | spacing step `0`-`6`                               | `0`      | Inside space on both axes                   |
+| `paddingX` / `paddingY`   | spacing step `0`-`6`                               | -        | One axis only; wins over `padding`          |
+| `width` / `height`        | CSS length, e.g. `'20rem'`, `'100%'`, `'auto'`     | `auto`   | Written as `inline-size` / `block-size`     |
+| `minWidth` / `maxWidth`   | CSS length                                         | -        | `min-` / `max-inline-size`                  |
+| `minHeight` / `maxHeight` | CSS length                                         | -        | `min-` / `max-block-size`                   |
+| `radius`                  | `'none'`, `'sm'`, `'md'`, `'lg'`, `'xl'`, `'full'` | `'none'` | Corner rounding from the theme radius scale |
+| `shadow`                  | `'none'`, `'sm'`, `'md'`, `'lg'`                   | `'none'` | Theme shadow scale                          |
+| `background`              | `'none'`, `'surface'`, `'sunken'`                  | `'none'` | Panel colour / page colour from the theme   |
+| `border`                  | boolean                                            | `false`  | Theme border width and colour               |
+| `ratio`                   | aspect ratio, e.g. `'16/9'`                        | -        | Keeps the box at that shape                 |
+| `grow`                    | boolean or whole number `0`+                       | `false`  | How this box grows in its own parent        |
+| `scroll`                  | boolean                                            | `false`  | Scroll its overflow instead of growing      |
+| `hideOnMobile`            | boolean                                            | `false`  | Hidden under 48rem                          |
+| `hideOnDesktop`           | boolean                                            | `false`  | Hidden from 48rem up                        |
+
+Spacing props (`gap`, `padding`) take a **step `0`-`6`** from the theme scale - `gap: 4` means
+`--imp-space-4`. Pixels warn and fall back. Sizes are the opposite: plain CSS lengths, because a
+page width is not spacing. There are **no margin props** at all.
+
 Rules an agent gets wrong:
 
-- **These six are the whole layout group** - do not import anything else from it. A column is
-  `flex({ direction: 'column' })`, empty space is a `justify` or a `grow`, a scrolling region is
-  `flex({ scroll: true })`, a capped and centred column is `app({ maxWidth })`, and a line of
-  controls is a `flex`. Anything past that is a component you write.
+- **These eight are the whole layout group** - do not import anything else from it. A column, a row
+  and a column-that-becomes-a-row are all `stack` with a `direction`; a capped and padded content
+  column is a `page`; a card is a `stack` with `background` and `border`; a scrolling region is
+  `stack({ scroll: true })`. Anything past that is a component you write.
+- **Do not pass `padding` to `page` or `gap` to `stack` without a reason.** The theme already sizes
+  both, fluidly, for every viewport; a fixed step replaces a value that was already correct.
+- **Reach for a `{ mobile, desktop }` object last.** Fluid spacing, a wrapping `stack` and an
+  auto-fitting `grid` handle the continuum; a stop is for changing axis or hiding something.
 - **`grow` belongs to the child, not the parent.** To let one box take the leftover room, give that
-  box `grow: true`; wrap anything that is not a `flex` or a `grid` in a `flex` to do it.
-- **Reach for `grid({ minItemWidth })` before a `columns` ladder** - it reflows from one column to
-  as many as fit with no breakpoints written at all.
+  box `grow: true`; wrap anything that is not a layout component in a `stack` to do it.
+- **`grid` fits as many columns as the width allows by default.** Pass `minItemWidth` to change the
+  item floor; pass `columns` only when the count must be exact.
 - **`columns` is a count, not a track template.** There is no `'1fr 2fr'` and no per-cell span; a
   child always fills exactly one cell.
-- **A `flex` does not wrap** unless you pass `wrap: true`.
 - **`app` sorts its children into regions by what they are** - a `navbar` goes on top, a `sidebar`
   down the side it names, a `footer` at the bottom, and everything else is the main content. They
   are props of nothing: `app({ sidebar: ... })` warns about an unknown prop.
 - **A sidebar carries its own collapse toggle, and becomes a drawer below 48rem** - do not build a
-  menu button, do not hide it with `hideBelow`, and do not write the breakpoint yourself.
+  menu button, do not hide it with `hideOnMobile`, and do not write the breakpoint yourself.
 - **A sidebar drags wider only with `resizable: true`**, between `minWidth` and `maxWidth` - and all
   three take a keyword of the sidebar scale (`'xs'` to `'xl'`), never a length.
 - **Only `app`'s main region scrolls.** The frame is `100dvh`, so put `app` at the top of the page

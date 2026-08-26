@@ -23,9 +23,8 @@ names, every `footer` at the bottom, and **everything left over becomes the main
 | `padding`  | spacing step `0`-`6`                     | `4`      | Inset around the main region        |
 | `events`   | `{ click: handler }`                     | -        | Listeners on the frame              |
 
-`maxWidth` and `padding` are responsive: pass one value or a per-breakpoint object
-(`{ xs: 'full', lg: 'lg' }`). Breakpoints: `xs` from 0, `sm` from 40rem, `md` from 48rem, `lg` from
-64rem, `xl` from 80rem.
+`maxWidth` and `padding` are responsive: pass one value or `{ mobile, desktop }`. `mobile` is under
+48rem, `desktop` is 48rem and up.
 
 Rules an agent gets wrong:
 
@@ -44,7 +43,7 @@ Rules an agent gets wrong:
 
 ```js
 app(
-  { maxWidth: { xs: 'full', lg: 'xl' }, padding: 5 },
+  { maxWidth: { mobile: 'full', desktop: 'xl' }, padding: 5 },
   navbar({ label: 'Top bar', justify: 'between' }, brand(), userMenu()),
   sidebar({ side: 'left', label: 'Sections', width: 'sm' }, navMenu({ ... })),
   sidebar({ side: 'left', label: 'Filters', collapsed: true }, filterList()),
@@ -55,4 +54,4 @@ app(
 ```
 
 Related: sidebar (imp skill std/sidebar), navbar (imp skill std/navbar), footer (imp skill
-std/footer), flex (imp skill std/flex), grid (imp skill std/grid)
+std/footer), stack (imp skill std/stack)

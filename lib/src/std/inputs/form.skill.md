@@ -17,13 +17,13 @@ ordinary named state** living at the form's position in the tree. Controls insid
 they own with a dot path and read and write that state directly. Nothing to wire up, and unmounting
 the form disposes the state with it.
 
-| Prop                      | Values                                   | Default      | Notes                                        |
-| ------------------------- | ---------------------------------------- | ------------ | -------------------------------------------- |
-| `initialValues`           | plain object                             | `null`       | Seeds `imp.form`; also what `reset` restores |
-| `onSubmit`                | `(values) => void \| Promise`            | -            | Runs only when every field is valid          |
-| `layout`                  | `'vertical'`, `'horizontal'`, `'inline'` | `'vertical'` | Where each field's label sits                |
-| `gap`                     | spacing step `0`-`6`                     | `4`          | Space between children                       |
-| `hideBelow` / `hideAbove` | `'sm'`-`'xl'`                            | -            | Responsive visibility                        |
+| Prop                             | Values                                   | Default      | Notes                                        |
+| -------------------------------- | ---------------------------------------- | ------------ | -------------------------------------------- |
+| `initialValues`                  | plain object                             | `null`       | Seeds `imp.form`; also what `reset` restores |
+| `onSubmit`                       | `(values) => void \| Promise`            | -            | Runs only when every field is valid          |
+| `layout`                         | `'vertical'`, `'horizontal'`, `'inline'` | `'vertical'` | Where each field's label sits                |
+| `gap`                            | spacing step `0`-`6`                     | `4`          | Space between children                       |
+| `hideOnMobile` / `hideOnDesktop` | boolean                                  | `false`      | Hide under / from 48rem                      |
 
 ## The states it owns
 

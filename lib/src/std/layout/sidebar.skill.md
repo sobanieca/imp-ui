@@ -39,7 +39,7 @@ Rules an agent gets wrong:
 - **Below 48rem every sidebar is a drawer.** It leaves the flow, collapses to a tab pinned to its
   screen edge, and slides over the page when tapped, dimming the rest. Opening one closes the
   others; Escape, the backdrop, and choosing something inside it all close it. **Do not write your
-  own breakpoint for this** and do not pair it with `hideBelow` on the content.
+  own breakpoint for this** and do not pair it with `hideOnMobile` on the content.
 - **`collapsed` is the wide-screen state.** A drawer always starts closed on a narrow screen
   whatever this says. Bind a state to it to drive the collapse from elsewhere.
 - Collapsed on a wide screen leaves a rail with just the toggle - the panel is inert, not removed.

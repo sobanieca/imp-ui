@@ -1,9 +1,9 @@
-# grid - a CSS grid whose column count changes per breakpoint
+# grid - a CSS grid that fits as many equal columns as the width allows
 
 ```js
 import { grid } from 'imp/std/layout'
 
-grid({ columns: { xs: 1, md: 2, lg: 3 }, gap: 4 }, ...cards)
+grid({ minItemWidth: '18rem' }, ...cards)
 ```
 
 Call shape: `grid(props?, ...children)` - the props object, when present, must be the **first**
@@ -18,12 +18,11 @@ argument; everything after it is content. Children fill the cells in order, one 
 | `justify`      | `'start'`, `'center'`, `'end'`, `'stretch'` | `'stretch'` | Cell content across the inline axis              |
 
 **`grid` also takes every prop in the shared box surface** - `padding`, `width`, `maxWidth`,
-`radius`, `shadow`, `background`, `border`, `ratio`, `grow`, `scroll`, `hideBelow`, `hideAbove` -
-see box (imp skill std/box).
+`radius`, `shadow`, `background`, `border`, `ratio`, `grow`, `scroll`, `hideOnMobile`,
+`hideOnDesktop` - see std (imp skill std).
 
-**Every prop above is responsive.** Pass one value for all sizes, or a per-breakpoint object - a
-breakpoint applies from its width upward. Breakpoints: `xs` from 0, `sm` from 40rem, `md` from
-48rem, `lg` from 64rem, `xl` from 80rem. They are fixed - a theme cannot change them, because CSS
+**Every prop above is responsive.** Pass one value, or `{ mobile, desktop }`. `mobile` is under
+48rem, `desktop` is 48rem and up. The two stops are fixed - a theme cannot change them, because CSS
 cannot read a custom property inside a media query.
 
 Rules an agent gets wrong:
@@ -39,8 +38,8 @@ Rules an agent gets wrong:
 
 ```js
 grid({ minItemWidth: '20rem', gap: 4 }, ...products)
-grid({ columns: { xs: 1, md: 3 }, gap: 5 }, ...cards)
+grid({ columns: { mobile: 1, desktop: 3 }, gap: 5 }, ...cards)
 grid({ columns: 2, gap: 2, align: 'center' }, label(), value())
 ```
 
-Related: box (imp skill std/box), flex (imp skill std/flex), app (imp skill std/app)
+Related: stack (imp skill std/stack), page (imp skill std/page)

@@ -251,7 +251,7 @@ tokens the built-in themes ship today - a theme of your own is expected to defin
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                                              |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                                        |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                          |
 | Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                                                                                                                                                                                                                                                                      |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
@@ -274,7 +274,14 @@ overlay that sits above everything - and `radius-sm` through `radius-xl` (plus `
 pills) round every corner the standard components draw. A theme that wants flat, square chrome sets
 every shadow to `none` and every radius to `0`, and every component follows without a line of CSS in
 your app. The layout components expose both scales directly, as
-`box({ radius: 'lg', shadow: 'sm' })`.
+`stack({ radius: 'lg', shadow: 'sm' })`.
+
+The spacing scale is **fluid**. `space-3` and up are `clamp()` values that grow with the viewport,
+so a gap set once is tighter on a phone and roomier on a monitor with no breakpoint written
+anywhere, and `space-page` is the page gutter the `page` component uses. Each one keeps a `rem` term
+in its preferred value, so browser zoom and a larger default font size still scale spacing the way a
+reader expects. A theme that wants fixed spacing sets plain lengths instead; nothing in imp requires
+the scale to be fluid.
 
 `border-width` and `focus-ring-width` exist so that contrast is not purely a matter of color. A
 theme that only swapped colors could never make a hairline border or a thin focus ring easier to

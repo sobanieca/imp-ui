@@ -52,14 +52,13 @@ STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
   std/link            link - a real anchor whose in-app clicks are handled by the router
   std/emptyState      emptyState - the placeholder for a list, table or search result with nothing in it
   std/app             app - the page frame: a navbar, sidebars, a footer and the main region
-  std/box             box - the plain layout box every other layout component is built from
-  std/container       container - caps content at a readable width and centres it
-  std/flex            flex - a flexbox row or column whose direction and gap change per breakpoint
   std/footer          footer - the bar across the bottom of the app frame
-  std/grid            grid - a CSS grid whose column count changes per breakpoint
+  std/grid            grid - a CSS grid that fits as many equal columns as the width allows
   std/navbar          navbar - the bar across the top of the app frame
+  std/page            page - the content column: theme padding and a readable measure, with no props
   std/section         section - a band of page content with consistent vertical spacing
   std/sidebar         sidebar - a collapsible side region of the app frame, stackable on either side
+  std/stack           stack - the one layout box: a column, a row, or a column that becomes a row
   std/checkbox        checkbox - a single boolean bound to a form field
   std/form            form - a form whose values are ordinary imp state, addressed by field path
   std/numberField     numberField - a numeric input that commits a number, not a string

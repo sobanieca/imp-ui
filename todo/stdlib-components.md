@@ -32,13 +32,13 @@ without a skill file, so this is enforced rather than remembered.
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
 - **Layout** - `splitPane` _(later)_ - placement details in _Layout & placement_ below. `box`,
-  `flex`, `grid`, `container` and `section` have landed, opening the `imp/std/layout` subpath and
-  fixing the responsive prop convention for the whole library (`adr/responsive-layout-props.md`);
-  the frame (`app`, `navbar`, `sidebar`, `footer`) landed with them (`adr/app-frame-regions.md`).
+  `stack`, `grid`, `page` and `section` have landed, opening the `imp/std/layout` subpath and fixing
+  the responsive prop convention for the whole library (`adr/responsive-fluid-two-stops.md`); the
+  frame (`app`, `navbar`, `sidebar`, `footer`) landed with them (`adr/app-frame-regions.md`).
   **`aspectBox` is dropped**: it is `box({ ratio: '16/9' })`, one prop on the shared surface rather
   than a component of its own. **`scrollArea` is out of scope** for the same reason `virtualList`
   is - custom scrollbars reimplement the browser's own scrolling
-  (`adr/browser-support-baseline.md`); `flex({ scroll: true })` is the supported answer.
+  (`adr/browser-support-baseline.md`); `stack({ scroll: true })` is the supported answer.
 - **Inputs** - `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
   _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
@@ -87,12 +87,12 @@ What landed:
   component also accepts: `padding`/`paddingX`/`paddingY` off the spacing scale, `width`/`height`
   and their min/max as CSS lengths, `radius`, `shadow`, `background`, `border`, `ratio`, `grow`,
   `scroll` and the visibility pair. One table an agent learns once. Margins and positioning are
-  deliberately absent (`adr/responsive-layout-props.md`).
-- **`container`** caps content at a themed width (`size`, `sm`-`xl` off the `--imp-content-*`
-  tokens) and centres it; **`section`** is a band of page with block padding off the spacing scale
-  (`size`, `sm`-`lg`), rendering a real `<section>` that becomes a landmark once given a `label`.
-  Both are a `box` with one extra prop, and both let an explicit box prop win over their sugar.
-- **`flex`** carries the flex placement surface: `direction`, `gap`, `justify`, `align`, `wrap` -
+  deliberately absent (`adr/responsive-fluid-two-stops.md`).
+- **`page`** caps content at a themed width (`size`, `sm`-`xl` off the `--imp-content-*` tokens) and
+  centres it; **`section`** is a band of page with block padding off the spacing scale (`size`,
+  `sm`-`lg`), rendering a real `<section>` that becomes a landmark once given a `label`. Both are a
+  `box` with one extra prop, and both let an explicit box prop win over their sugar.
+- **`stack`** carries the flex placement surface: `direction`, `gap`, `justify`, `align`, `wrap` -
   enough that app code almost never writes raw flex CSS. One component covers a row and a column;
   `scroll: true` is the overflow case and a `justify` or a `grow` is the spacing one, so neither
   needs a component of its own.
@@ -104,8 +104,8 @@ What landed:
 - **`grow` is a prop of the box, not of its parent**, and every layout box carries it. Placement
   cannot be applied to an arbitrary child because `:host { display: contents }` means a child
   component's own root - inside its shadow - is the real flex or grid item, and no selector from the
-  parent can reach it (`adr/responsive-layout-props.md`); anything else that needs to grow is
-  wrapped in a `flex`.
+  parent can reach it (`adr/responsive-fluid-two-stops.md`); anything else that needs to grow is
+  wrapped in a `stack`.
 - **`app` caps and centres the main region** through `maxWidth`, whose widths are theme tokens
   (`--imp-content-sm` ... `-xl`); `splitPane` adds user-resizable panes _(later)_.
 - All spacing values come off the theme's spacing scale as a step `0`-`6`, not free-form pixels, so
@@ -129,7 +129,7 @@ What the frame settled, since it landed ahead of the feedback group rather than 
   re-mounted. **It stays its own thing when `drawer` lands** (`todo/overlay-seam.md`): a `<dialog>`
   is open or closed, while this sidebar is docked at one breakpoint and an overlay at another, and
   driving that from a `matchMedia` listener is exactly the JS-resolved layout and wrong first paint
-  `adr/responsive-layout-props.md` rejected.
+  `adr/responsive-fluid-two-stops.md` rejected.
 - **A flex item's `z-index` applies even when it is `position: static`**, which is why the sidebar's
   drawer `z-index` is part of the drawer state rather than a constant: a constant one painted the
   docked sidebar over the navbar's dropdowns.
@@ -206,8 +206,8 @@ Still owed by this group:
 
 Mobile layout is first-class, not a separate component set:
 
-- **Settled with the layout group** (`adr/responsive-layout-props.md`): the `xs`-`xl` scale, the
-  per-breakpoint object every layout-affecting prop accepts
+- **Settled with the layout group** (`adr/responsive-fluid-two-stops.md`): the `mobile`/`desktop`
+  stops, the per-breakpoint object every layout-affecting prop accepts
   (`direction: { xs: 'column', md: 'row' }`), inherit-from-below semantics, `hideBelow`/`hideAbove`,
   and resolution into per-instance CSS custom properties consumed by static media queries. Every
   group after this one follows the same spelling.

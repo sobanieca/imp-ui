@@ -5,7 +5,7 @@ import { useHttpClient } from 'imp/http'
 import { lang, t } from 'imp/i18n'
 import { createLogger } from 'imp/log'
 import { link, text } from 'imp/std'
-import { flex } from 'imp/std/layout'
+import { stack } from 'imp/std/layout'
 import { toggle } from 'imp/std/inputs'
 
 const log = createLogger('todo.item')
@@ -89,13 +89,13 @@ export const todoItem = component('todo-app-item', {
 
     return article(
       { id: `todo-${todo.id}`, class: { card: true, done: todo.done } },
-      flex(
-        { align: 'center', gap: 3 },
+      stack(
+        { direction: 'row', gap: 3 },
         toggle({ value: done, ariaLabel: t('todo.item.toggle', { title: todo.title }) }),
-        flex(
-          { grow: true },
-          flex(
-            { direction: 'column', gap: 1 },
+        stack(
+          { direction: 'row', grow: true },
+          stack(
+            { gap: 1 },
             link({ href: `/todos/${todo.id}`, weight: 'medium' }, todo.title),
             text(
               { tone: 'secondary', size: 'sm' },

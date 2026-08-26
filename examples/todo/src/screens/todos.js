@@ -5,7 +5,7 @@ import { useHttpClient } from 'imp/http'
 import { navigate } from 'imp/router'
 import { lang, t } from 'imp/i18n'
 import { button, heading, text } from 'imp/std'
-import { flex } from 'imp/std/layout'
+import { stack } from 'imp/std/layout'
 import { emptyState } from 'imp/std/display'
 import { radioGroup, searchField } from 'imp/std/inputs'
 import { summarize, visibleTodos } from '../todos.js'
@@ -45,12 +45,12 @@ export const todosScreen = component('todo-app-list', {
 
     items.set(await api.get('/todos'))
 
-    return flex(
-      { direction: 'column', gap: 5 },
-      flex(
-        { justify: 'between', align: 'center', wrap: true, gap: 3 },
-        flex(
-          { direction: 'column', gap: 1 },
+    return stack(
+      { gap: 5 },
+      stack(
+        { direction: 'row', justify: 'between', gap: 3 },
+        stack(
+          { gap: 1 },
           heading({ level: 2 }, lang.text(() => t('todo.list.title'))),
           div({ id: 'summary' }, text({ tone: 'secondary', size: 'sm' }, summary.text())),
         ),
@@ -60,10 +60,10 @@ export const todosScreen = component('todo-app-list', {
         ),
       ),
       lang.view(() =>
-        flex(
-          { gap: 3, align: 'start', wrap: true },
-          flex(
-            { direction: 'column', grow: true },
+        stack(
+          { direction: 'row', gap: 3, align: 'start' },
+          stack(
+            { grow: true },
             searchField({
               value: query,
               label: t('todo.list.search'),
@@ -85,10 +85,7 @@ export const todosScreen = component('todo-app-list', {
           description: emptyHelp,
         })
       ),
-      flex(
-        { direction: 'column', gap: 3 },
-        visible.each((todo) => todoItem({ todo }), (todo) => todo.id),
-      ),
+      stack({ gap: 3 }, visible.each((todo) => todoItem({ todo }), (todo) => todo.id)),
     )
   },
 })

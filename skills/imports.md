@@ -4,24 +4,24 @@ imp resolves these specifiers itself: in development through the import map `imp
 production through `imp build`. Nothing to install, nothing to configure. Never import imp by a
 relative path, a URL, or a version.
 
-| Specifier            | Exports                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`                                         |
-| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`…)                 |
-| `imp/state`          | `initState`, `useState`, `computed`                                                 |
-| `imp/router`         | `router`, `area`, `navigate`, `useRoute`, `url`                                     |
-| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                  |
-| `imp/theme`          | `theme`, `applyTheme`                                                               |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                 |
-| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                 |
-| `imp/std`            | `button`, `heading`, `text`, `link`                                                 |
-| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `box`, `flex`, `grid`, `container`, `section` |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, …                |
-| `imp/std/display`    | `emptyState`                                                                        |
-| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                 |
-| `imp/std/feedback`   | `bugReport`                                                                         |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/…                   |
-| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                             |
+| Specifier            | Exports                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`                              |
+| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`…)      |
+| `imp/state`          | `initState`, `useState`, `computed`                                      |
+| `imp/router`         | `router`, `area`, `navigate`, `useRoute`, `url`                          |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`       |
+| `imp/theme`          | `theme`, `applyTheme`                                                    |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`      |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                      |
+| `imp/std`            | `button`, `heading`, `text`, `link`                                      |
+| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `page`, `stack`, `grid`, `section` |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, …     |
+| `imp/std/display`    | `emptyState`                                                             |
+| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                      |
+| `imp/std/feedback`   | `bugReport`                                                              |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/…        |
+| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                  |
 
 ```js
 import { component } from 'imp'

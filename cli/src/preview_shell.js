@@ -1,7 +1,7 @@
 import { component } from 'imp'
 import { a, div, el, pre, span } from 'imp/html'
 import { heading, text } from 'imp/std'
-import { app, flex, footer, navbar, sidebar } from 'imp/std/layout'
+import { app, footer, navbar, sidebar, stack } from 'imp/std/layout'
 import { commandPalette, navMenu } from 'imp/std/navigation'
 import { copyButton } from './preview_copy.js'
 
@@ -399,7 +399,7 @@ export const previewShell = ({ catalog, controls, editor, content }) => {
         `${catalog.previews.length} component${catalog.previews.length === 1 ? '' : 's'}`,
       ),
     ),
-    flex({ direction: 'column', gap: 4 }, content),
+    stack({ gap: 4 }, content),
   )
   shell.setAttribute('dir', 'ltr')
   return shell

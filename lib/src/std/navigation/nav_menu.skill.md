@@ -28,7 +28,7 @@ warned about and dropped.
 | `gap`       | spacing step `0`-`6` - **responsive**    | `1`        | Between items, and between groups               |
 | `events`    | `{ select }`                             | -          | `select` fires on the host - see below          |
 
-Also takes `hideBelow` / `hideAbove` like every layout component.
+Also takes `hideOnMobile` / `hideOnDesktop` like every layout component.
 
 Each entry in `items`:
 

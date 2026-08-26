@@ -63,7 +63,7 @@ applyTheme({
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                                              |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                                        |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                          |
 | Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                                                                                                                                                                                                                                                                      |
 
 `color-on-primary` / `color-on-danger` are the text colors that sit **on** those backgrounds.
@@ -71,6 +71,10 @@ applyTheme({
 behind it. The **palette** is 31 named hues no component reads by default - use them for per-item
 colors (tags, chart series, avatars). `color-success` / `color-warning` / `color-info` alias
 `color-green` / `color-amber` / `color-blue`; `color-danger` derives from `color-red`.
+
+`space-3` and up are **fluid** `clamp()` values that grow with the viewport, each keeping a `rem`
+term so zoom still scales them; `space-page` is the gutter `page` uses. A theme may set plain
+lengths instead.
 
 `border-width` and `focus-ring-width` exist so contrast is not purely a matter of color - use them
 in your own styles:

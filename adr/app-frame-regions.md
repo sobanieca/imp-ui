@@ -40,7 +40,7 @@ app(
   page, and order between unlike regions does not matter. A `side` is read from an attribute the
   `sidebar` factory writes before mount, because `app` builds its DOM before its children mount and
   cannot ask them anything yet.
-- **Only direct children are regions.** A `sidebar` inside a `flex` is content, not a region. The
+- **Only direct children are regions.** A `sidebar` inside a `stack` is content, not a region. The
   alternative - searching the subtree - would make an unrelated nested component silently
   restructure the page.
 - **`maxWidth` caps the main region, not the frame.** The bars and sidebars stay full-bleed against
@@ -58,7 +58,7 @@ app(
   would cover each other; making the frame the arbiter keeps that rule in one place rather than in a
   registry each sidebar consults.
 - **The breakpoint is not configurable.** It is the `md` of the shared scale
-  (`responsive-layout-props.md`). A per-sidebar collapse width would let two sidebars on one edge
+  (`responsive-fluid-two-stops.md`). A per-sidebar collapse width would let two sidebars on one edge
   disagree about whether they are drawers, and the stacked-tab geometry assumes they agree.
 - **`collapsible: false` speaks about the wide screen only.** It says the sidebar is not a column
   that rolls up to a rail, so its toggle is hidden there - but below `md` the sidebar is a drawer

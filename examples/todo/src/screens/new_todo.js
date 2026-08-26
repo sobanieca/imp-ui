@@ -4,7 +4,7 @@ import { useHttpClient } from 'imp/http'
 import { navigate } from 'imp/router'
 import { lang, t } from 'imp/i18n'
 import { button, heading } from 'imp/std'
-import { flex } from 'imp/std/layout'
+import { stack } from 'imp/std/layout'
 import {
   checkbox,
   form,
@@ -35,8 +35,8 @@ export const newTodoScreen = component('todo-app-new', {
       navigate('/', { replace: true })
     }
 
-    return flex(
-      { direction: 'column', gap: 5 },
+    return stack(
+      { gap: 5 },
       heading({ level: 2 }, words('todo.form.newTitle')),
       form(
         {
@@ -59,10 +59,10 @@ export const newTodoScreen = component('todo-app-new', {
           rows: 3,
         }),
         markdownNote({ field: 'notes', label: words('todo.form.notesPreview') }),
-        flex(
-          { gap: 3, wrap: true },
-          flex(
-            { grow: true },
+        stack(
+          { direction: 'row', gap: 3 },
+          stack(
+            { direction: 'row', grow: true },
             lang.view(() =>
               select({
                 field: 'priority',
@@ -71,8 +71,8 @@ export const newTodoScreen = component('todo-app-new', {
               })
             ),
           ),
-          flex(
-            { grow: true },
+          stack(
+            { direction: 'row', grow: true },
             numberField({
               field: 'estimate',
               label: message('todo.form.estimate'),
@@ -83,8 +83,8 @@ export const newTodoScreen = component('todo-app-new', {
           ),
         ),
         checkbox({ field: 'pinned', label: message('todo.form.pinned') }),
-        flex(
-          { gap: 2 },
+        stack(
+          { direction: 'row', gap: 2 },
           submitButton(words('todo.form.add')),
           button(
             { variant: 'ghost', events: { click: () => navigate('/') } },

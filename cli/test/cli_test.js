@@ -1953,6 +1953,7 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       written
         .replace(/^time: .*$/m, 'time: <timestamp>')
         .replace(/^element: .*(?=demo-counter)/m, 'element: ... ')
+        .replace(/^rect: \d+x\d+ at \d+,\d+$/m, 'rect: <w>x<h> at <x>,<y>')
         .replaceAll(`:${server.port}`, ':<port>')
         .replaceAll(dir, '<tmp>'),
     ].join('\n')

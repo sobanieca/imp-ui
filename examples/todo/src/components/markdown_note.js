@@ -2,7 +2,7 @@ import { component } from 'imp'
 import { div, html } from 'imp/html'
 import { computed, useState } from 'imp/state'
 import { text } from 'imp/std'
-import { flex } from 'imp/std/layout'
+import { stack } from 'imp/std/layout'
 import { micromark } from 'micromark'
 import { words } from '../panels.js'
 
@@ -101,8 +101,8 @@ export const markdownNote = component('todo-app-note', {
         ? div({ class: 'note' }, html(micromark(value)))
         : text({ tone: 'secondary', size: 'sm' }, words('todo.form.notesEmpty'))
 
-    return flex(
-      { direction: 'column', gap: 1 },
+    return stack(
+      { gap: 1 },
       label && text({ size: 'sm', weight: 'medium' }, label),
       isState(markdown) ? markdown.view(render) : render(markdown),
     )

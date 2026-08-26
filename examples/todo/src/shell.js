@@ -6,7 +6,7 @@ import { applyTheme, theme } from 'imp/theme'
 import { useRoute } from 'imp/router'
 import { createLogger } from 'imp/log'
 import { heading, link, text } from 'imp/std'
-import { app, flex, footer, navbar, sidebar } from 'imp/std/layout'
+import { app, footer, navbar, sidebar, stack } from 'imp/std/layout'
 import { navMenu } from 'imp/std/navigation'
 import { select, toggle } from 'imp/std/inputs'
 import midnight from './theme/midnight.js'
@@ -61,16 +61,16 @@ export const appShell = component('todo-app-shell', {
       { maxWidth: 'md', padding: 4 },
       navbar(
         { label: lang.text(() => t('app.title')), justify: 'between', wrap: true },
-        flex(
-          { direction: 'column', gap: 1 },
+        stack(
+          { gap: 1 },
           heading({ level: 1 }, lang.text(() => t('app.title'))),
-          flex(
-            { hideBelow: 'sm' },
+          stack(
+            { direction: 'row', hideOnMobile: true },
             text({ tone: 'secondary', size: 'sm' }, lang.text(() => t('app.tagline'))),
           ),
         ),
-        flex(
-          { gap: 4, align: 'end' },
+        stack(
+          { direction: 'row', gap: 4, align: 'end' },
           select({ value: language, label: languageLabel, options: LANGUAGES }),
           toggle({ value: dark, label: themeLabel }),
         ),

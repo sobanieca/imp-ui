@@ -55,7 +55,7 @@ Conventions:
 | ADR                                                         | Decision                                                                           |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md) | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props   |
-| [responsive-layout-props](responsive-layout-props.md)       | Per-breakpoint prop values resolved into CSS custom properties; fixed scale        |
+| [responsive-fluid-two-stops](responsive-fluid-two-stops.md) | Fluid theme values first; two fixed stops, mobile and desktop, split at 48rem      |
 | [app-frame-regions](app-frame-regions.md)                   | The app frame sorts its own children into regions; one drawer at a time on a phone |
 | [state-driven-forms](state-driven-forms.md)                 | Form values are named state; controls bind one field by dot path                   |
 

@@ -3,7 +3,7 @@ import { useState } from 'imp/state'
 import { useHttpClient } from 'imp/http'
 import { router } from 'imp/router'
 import { heading, link, text } from 'imp/std'
-import { flex } from 'imp/std/layout'
+import { stack } from 'imp/std/layout'
 import { loadingPanel, messagePanel, words } from '../panels.js'
 
 export const statsShell = component('todo-stats-shell', {
@@ -16,10 +16,10 @@ export const statsShell = component('todo-stats-shell', {
 
     if (items.get().length === 0) items.set(await api.get('/todos'))
 
-    return flex(
-      { direction: 'column', gap: 4 },
-      flex(
-        { align: 'center', justify: 'between', gap: 3 },
+    return stack(
+      { gap: 4 },
+      stack(
+        { direction: 'row', justify: 'between', gap: 3 },
         heading({ level: 2 }, words('stats.title')),
         link({ href: '/' }, words('app.home')),
       ),
