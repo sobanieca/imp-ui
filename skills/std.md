@@ -6,6 +6,7 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | `button`, `heading`, `text`, `link`                                                                                                                         | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                                                                                         |
+| `imp/std/layout`     | `flex`, `column`                                                                                                                                            | `imp skill std/flex`, `std/column`                                                                                                                                                                                    |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
@@ -111,6 +112,45 @@ link({ href: 'https://example.com', external: true }, 'Read the docs')
 Renders a real anchor; a plain left-click on an in-app path is handled by the router, while
 middle-click, modifier-click, `external`, and off-site URLs are left to the browser.
 
+## Layout - from `imp/std/layout`
+
+Two flex primitives, and nothing else: `flex` is a row, `column` is a stack. There is no `grid`, no
+`box`, no padding/width/background props - a box that needs those is a `div` your own component
+styles.
+
+```js
+import { column, flex } from 'imp/std/layout'
+
+column(
+  { gap: 4 },
+  flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Invoices'), button('New')),
+  text('12 unpaid.'),
+)
+```
+
+### flex
+
+| Prop              | Values                                       | Default     | Notes                                    |
+| ----------------- | -------------------------------------------- | ----------- | ---------------------------------------- |
+| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'justify'` | `'left'`    | Along the row; `'justify'` spreads apart |
+| `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'stretch'` | `'stretch'` | Across the row                           |
+| `wrap`            | boolean                                      | `false`     | Lets the row break onto more lines       |
+| `gap`             | spacing step `0`-`6`                         | `3`         | Space between children                   |
+
+### column
+
+| Prop              | Values                                       | Default     | Notes                  |
+| ----------------- | -------------------------------------------- | ----------- | ---------------------- |
+| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack       |
+| `gap`             | spacing step `0`-`6`                         | `3`         | Space between children |
+
+- **`gap` is a step number off the theme scale, never a length** - `gap: 4`, not `gap: '1rem'`. The
+  scale is fluid, so one step is right at every width. A bad value warns and falls back to `3`.
+- **`column` has no `verticalAlign`** - a stack is as tall as its children.
+- **Spacing between components is a `gap`**, since no standard component carries an outer margin.
+- A layout that must change shape below some width is a media query in your own component's
+  `styles`; no prop varies by screen size.
+
 ## emptyState - from `imp/std/display`
 
 ```js
@@ -162,8 +202,8 @@ inside one.
 
 Rules an agent gets wrong:
 
-- **The library ships no layout components.** Write the boxes your page needs as your own
-  components, laid out with plain CSS in their `styles`.
+- **The layout components are `flex` and `column` only.** Anything else a box needs - padding, a
+  background, a width, a grid - is plain CSS in your own component's `styles`.
 - **Spacing is `gap` on the parent, never margins on the children**: no std component has an outer
   margin.
 

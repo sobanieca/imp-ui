@@ -57,6 +57,7 @@ Conventions:
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md)     | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props |
 | [responsive-fluid-values-only](responsive-fluid-values-only.md) | Fluid theme values only; no per-screen props - an app writes its own media query |
+| [layout-two-flex-primitives](layout-two-flex-primitives.md)     | Layout is `flex` and `column` only - CSS flexbox, gap off the theme scale        |
 | [state-driven-forms](state-driven-forms.md)                     | Form values are named state; controls bind one field by dot path                 |
 
 ## Library

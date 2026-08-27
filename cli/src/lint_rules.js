@@ -19,6 +19,7 @@ import * as i18nModule from '../../lib/src/api/i18n.js'
 import * as logModule from '../../lib/src/api/log.js'
 import * as httpModule from '../../lib/src/api/http.js'
 import * as stdModule from '../../lib/src/std/index.js'
+import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdDisplayModule from '../../lib/src/std/display/index.js'
 import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
 import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
@@ -34,6 +35,7 @@ export const IMP_MODULE_EXPORTS = {
   'imp/log': logModule,
   'imp/http': httpModule,
   'imp/std': stdModule,
+  'imp/std/layout': stdLayoutModule,
   'imp/std/display': stdDisplayModule,
   'imp/std/inputs': stdInputsModule,
   'imp/std/navigation': stdNavigationModule,

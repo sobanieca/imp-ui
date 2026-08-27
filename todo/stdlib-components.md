@@ -31,12 +31,12 @@ without a skill file, so this is enforced rather than remembered.
 - **General** - `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
-- **Layout** - **nothing has landed, and the group is being designed from scratch.** A first attempt
-  shipped a box set and a page frame and has been removed in full; nothing of it survives in the
-  library, the theme tokens, the docs or the ADRs. See _Layout & placement_ below for what the
-  redesign still has to answer. **`scrollArea` is out of scope** for the same reason `virtualList`
-  is - custom scrollbars reimplement the browser's own scrolling
-  (`adr/browser-support-baseline.md`).
+- **Layout** - `flex` and `column` have landed, opening the `imp/std/layout` subpath and settling
+  the group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
+  nothing else (`adr/layout-two-flex-primitives.md`). `shell` - an app shell of navbar / sidebar /
+  content that works on a phone and a desktop - is the next piece; see _Layout & placement_ below.
+  **`scrollArea` is out of scope** for the same reason `virtualList` is - custom scrollbars
+  reimplement the browser's own scrolling (`adr/browser-support-baseline.md`).
 - **Inputs** - `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
   _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
@@ -75,29 +75,24 @@ without a skill file, so this is enforced rather than remembered.
 
 ## Layout & placement
 
-**Undesigned.** The first layout group - a shared box surface plus `box`, `stack`, `grid`, `page`,
-`section` and an `app` frame of `navbar` / `sidebar` / `footer` regions - was built, shipped and
-then removed outright. Nothing from it is authoritative any more: do not reintroduce its component
-names, its prop tables or its region-sorting behaviour by copying them from an old commit.
+`flex` and `column` are the whole layout set and the group is deliberately staying that small
+(`adr/layout-two-flex-primitives.md`). What is still owed:
 
-The redesign starts from the questions that group answered badly or not at all:
-
-- **How small can the set be?** Every component is a name an agent has to learn and a decision it
-  has to make, so the count matters more here than anywhere else in the library.
-- **Where does the shared surface stop?** A single prop table across every box was cheap to learn
-  and expensive to carry; decide deliberately what is shared, what is per-component, and what is
-  simply CSS the app writes.
-- **How is a child positioned?** `:host { display: contents }` means a child component's own root -
-  inside its shadow - is the real flex or grid item, and no selector from the parent can reach it.
-  Any placement story has to hold under that constraint.
-- **Is there a page frame at all?** The removed one was a `100dvh` viewport frame that sorted its
-  children into regions and owned a phone drawer. Whether the library should own that shape, or
-  leave it to the app's own CSS, is open.
-- **What stays true regardless:** a prop takes exactly one value applied at every width, spacing
-  comes off the theme scale as a step `0`-`6`, there are no margin props, and a structural change by
-  width is a media query the app writes (`adr/responsive-fluid-values-only.md`).
-
-`splitPane` - user-resizable panes - is still wanted, and waits on the redesign.
+- **`shell` - the app shell.** One component that gives an app a navbar, a sidebar and a content
+  area without the app assembling them, and that works on a phone as well as a desktop: the sidebar
+  becomes a drawer, the navbar keeps its trigger. This is the one place the library takes a position
+  on the shape of a whole page, so it decides its own regions rather than reviving the removed
+  frame's `navbar` / `sidebar` / `footer` sorting.
+  - It has to hold under `:host { display: contents }`: a child component's own root is the real
+    layout item and no parent selector can reach it, so every region is placed by the shell's own
+    container properties or rendered by the shell itself.
+  - A drawer that opens over the page is the first layout consumer of the overlay seam
+    (`todo/overlay-seam.md`), and the first to need a structural swap by width - which
+    `adr/responsive-fluid-values-only.md` says is a media query, not a prop.
+- **Whether a grid is ever wanted.** A dense form or a dashboard of cards is CSS grid in the app's
+  own component today. That is the deliberate answer for now; revisit only with a real call site
+  that a nested `flex`/`column` genuinely cannot express.
+- **`splitPane`** - user-resizable panes - is still wanted and is unblocked by the redesign.
 
 ## Form handling
 

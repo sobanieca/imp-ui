@@ -22,7 +22,7 @@ WRITING AN APP
   state               named reactive state shared down the tree and bound straight to the DOM
   http                the configured HTTP client a component owns, with retries and request state
   routing             client-side routes as one plain-data table, with lazily loaded sections
-  std                 the built-in component library: text, forms, navigation and empty states
+  std                 the built-in component library: text, layout, forms, navigation and empty states
   theming             themes as plain token modules, applied at the entry point and swappable
   i18n                t() lookups, per-language messages, and the lang attribute that drives them
   logging             the built-in logger and the per-environment log level
@@ -50,6 +50,8 @@ STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
   std/heading         heading - a section heading, rendered as the real `h1`-`h6` element
   std/text            text - body text, a paragraph by default or an inline span
   std/link            link - a real anchor whose in-app clicks are handled by the router
+  std/column          column - a vertical stack of children laid out with CSS flexbox
+  std/flex            flex - a row of children laid out with CSS flexbox
   std/emptyState      emptyState - the placeholder for a list, table or search result with nothing in it
   std/checkbox        checkbox - a single boolean bound to a form field
   std/form            form - a form whose values are ordinary imp state, addressed by field path

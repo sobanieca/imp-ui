@@ -30,6 +30,7 @@ leaks out onto your page.
 | Import               | What it holds                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                                                                                                                            |
+| `imp/std/layout`     | `flex` and `column` - the two flex primitives                                                                                                                                                 |
 | `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
@@ -225,6 +226,141 @@ middle-click, a modifier-click, an `external` link, or an absolute URL pointing 
 A link is a place to go. When the control performs an action instead - opening a panel, starting a
 flow - it belongs in a `button`, and `variant: 'link'` gives it link appearance without giving up
 what a button is.
+
+## Layout - `flex` and `column`, from `imp/std/layout`
+
+Two components lay a page out, and they are both CSS flexbox with the sharp edges filed off:
+**`flex` is a row**, **`column` is a stack**.
+
+```js
+import { column, flex } from 'imp/std/layout'
+
+column(
+  { gap: 5 },
+  flex(
+    { horizontalAlign: 'justify', verticalAlign: 'center' },
+    heading('Invoices'),
+    button({ variant: 'primary' }, 'New invoice'),
+  ),
+  text({ tone: 'secondary' }, 'Everything you have sent this year.'),
+)
+```
+
+That is the whole layout library. There is no grid, no box, and no wrapper with padding, background
+and width props - a box that needs those is a `div` in your own component, styled with the CSS you
+already know. Two primitives cover the arrangements a page actually makes, and every one of them is
+a name you do not have to look up.
+
+### `flex`
+
+A row. Children sit side by side in the order you pass them.
+
+```js
+flex({ gap: 2 }, button('Cancel'), button({ variant: 'primary' }, 'Save'))
+```
+
+| Prop              | Values                                       | Default     |                                                    |
+| ----------------- | -------------------------------------------- | ----------- | -------------------------------------------------- |
+| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'justify'` | `'left'`    | Where the children sit along the row               |
+| `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'stretch'` | `'stretch'` | How they line up across it                         |
+| `wrap`            | boolean                                      | `false`     | Lets a row that runs out of width break onto lines |
+| `gap`             | spacing step `0`-`6`                         | `3`         | The space between children                         |
+
+`horizontalAlign: 'justify'` pushes the children apart to the two ends of the row, with the leftover
+space shared between them - a title on the left and a button on the right is one call.
+
+### `column`
+
+A stack. Children sit one under another.
+
+```js
+column({ gap: 4 }, heading('Settings'), text('Everything about this workspace.'))
+```
+
+| Prop              | Values                                       | Default     |                            |
+| ----------------- | -------------------------------------------- | ----------- | -------------------------- |
+| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'stretch'` | `'stretch'` | How wide each child sits   |
+| `gap`             | spacing step `0`-`6`                         | `3`         | The space between children |
+
+`'stretch'` is the default because it is what a stack usually wants: every child as wide as the
+column, so buttons and fields line up down both edges. A column has no vertical alignment, because a
+stack is exactly as tall as the things in it - when there is spare room to place things in, that is
+a row's job.
+
+### `left` means left, in every language
+
+The alignment props are physical, and they stay physical when the document reads right to left. imp
+sets `<html dir="rtl">` for a right-to-left language on its own (see
+**[Internationalization](i18n.md)**), and that mirrors the text inside your components - but it does
+not move a row's children or flip what `horizontalAlign: 'left'` means. A row keeps its first child
+on the left and a column aligned `left` stays on the left, in Arabic exactly as in English.
+
+That is deliberate: these two components place _components_ - buttons, fields, cards - not glyphs,
+so a prop called `left` that sometimes means right would be worse than useless. If you do want an
+arrangement mirrored for a right-to-left language, order the children the other way round yourself:
+
+```js
+import { dir } from 'imp/i18n'
+
+const actions = [button('Cancel'), button({ variant: 'primary' }, 'Save')]
+flex({ horizontalAlign: 'right' }, ...(dir.get() === 'rtl' ? actions.reverse() : actions))
+```
+
+### Spacing is a `gap`, and a step, not a length
+
+No standard component carries an outer margin, so the space between two of them is always the
+parent's `gap`. It is a **step on the theme's spacing scale**, `0` through `6` - not `'1rem'`:
+
+```js
+column({ gap: 5 }, ...) // correct
+column({ gap: '1.5rem' }, ...) // logged, and falls back to the default step
+```
+
+The steps from `3` up are fluid `clamp()` values that grow with the viewport (see
+**[Theming](theming.md)**), so one number is the right amount of space on a phone and on a desktop
+alike, and `gap: 0` turns spacing off.
+
+### Nesting is the whole technique
+
+Every arrangement is rows in stacks in rows. A toolbar above a body, a card with a footer of
+buttons, a form with actions to the right - all of them are two or three of these calls nested:
+
+```js
+column(
+  { gap: 4 },
+  flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Team'), button('Invite')),
+  column({ gap: 2 }, ...members.map((member) => memberRow(member))),
+  flex(
+    { horizontalAlign: 'right', gap: 2 },
+    button('Cancel'),
+    button({ variant: 'primary' }, 'Save'),
+  ),
+)
+```
+
+### Changing shape at a width
+
+No prop here varies by screen size, and none of them needs to: the spacing scale is fluid and a row
+that runs out of room can `wrap`. When a layout genuinely has to change shape - a row becoming a
+stack on a phone - that is a media query in your own component's `styles`, where it sits next to the
+thing it affects:
+
+```js
+component('invoice-filters', {
+  styles: () => `
+    .filters { display: flex; flex-direction: column; gap: var(--imp-space-4); }
+
+    @media (min-width: 48rem) {
+      .filters { flex-direction: row; }
+    }
+  `,
+  onMount: () => div({ class: 'filters' }, ...filters()),
+})
+```
+
+`48rem` is the width imp itself splits at, and it is the `breakpoint-desktop` token - though a media
+query needs the literal, because CSS cannot read a custom property inside one. See
+**[Theming](theming.md)**.
 
 ## `emptyState` - from `imp/std/display`
 

@@ -66,12 +66,13 @@ export const SKILLS = [
     aliases: [
       'imp/std',
       'standard-components',
+      'imp/std/layout',
       'imp/std/display',
       'imp/std/inputs',
       'imp/std/navigation',
       'imp/std/feedback',
     ],
-    summary: 'the built-in component library: text, forms, navigation and empty states',
+    summary: 'the built-in component library: text, layout, forms, navigation and empty states',
   },
   {
     name: 'theming',
