@@ -108,7 +108,7 @@ This answers the note left in `todo/stdlib-components.md`: **when `drawer` lands
 `sidebar` does not become one.** A `<dialog>` is open or closed, while a sidebar is docked above
 `md` and a drawer below it (`adr/app-frame-regions.md`). Expressing that as a dialog means calling
 `showModal()` from a `matchMedia` listener, which is the JS-resolved layout and wrong first paint
-that `adr/responsive-fluid-two-stops.md` already rejected. The drawer state stays CSS-driven with
+that `adr/responsive-fluid-values-only.md` already rejected. The drawer state stays CSS-driven with
 its own focus and Escape handling, and `app` keeps arbitrating which one is open; the seam is for
 components that are unconditionally overlays.
 

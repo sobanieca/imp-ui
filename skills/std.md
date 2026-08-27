@@ -159,29 +159,35 @@ app(
 | `sidebar` | A collapsible side region of the frame | `side` (`'left'`/`'right'`), `label`, `width`, `resizable`, `minWidth`, `maxWidth`, `collapsible`, `collapsed` |
 | `footer`  | The bar across the bottom of the frame | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
 
-### Responsive: two stops, and mostly none
+### Responsive: fluid values, and your own media query
 
-There are exactly two breakpoints, **`mobile`** (under 48rem) and **`desktop`** (48rem and up). They
-are fixed - a theme cannot change them, because CSS cannot read a custom property inside a media
-query.
+**No layout prop takes a per-screen value, and no component hides itself at a width.** Every prop
+takes one value and it applies at every width.
 
-Reach for them last. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()` values
-that grow with the viewport, so a gap or a page gutter is already right at every width with no
-breakpoint written. `grid` fits as many columns as the width allows, and a `stack` wraps. Between
-them those cover most of what a breakpoint used to be for.
+Most layouts need nothing more. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()`
+values that grow with the viewport, so a gap or a page gutter is already right at every width.
+`grid` fits as many columns as the width allows, and a `stack` wraps.
 
-When layout must genuinely change axis or disappear, every layout prop takes
-`{ mobile: ..., desktop: ... }` in place of a single value, and a stop you skip falls back to the
-component's own default:
+When a layout must genuinely change axis or disappear, write a media query in your own component's
+`styles`, where it is scoped to that component:
 
 ```js
-stack({ direction: { mobile: 'column', desktop: 'row' } }, filters(), results())
-stack({ gap: { mobile: 2, desktop: 5 } }, ...sections)
-navbar({ justify: { mobile: 'center', desktop: 'between' } }, brand(), userMenu())
+component('invoice-filters', {
+  styles: () => `
+    .filters { display: flex; flex-direction: column; gap: var(--imp-space-4); }
+
+    @media (min-width: 48rem) {
+      .filters { flex-direction: row; }
+    }
+  `,
+  onMount: () => div({ class: 'filters' }, ...filters()),
+})
 ```
 
-Every layout component also takes **`hideOnMobile`** and **`hideOnDesktop`** booleans, which hide it
-at that stop and remove it from the accessibility tree with it.
+`48rem` is the width imp itself splits at, and it is the theme token `--imp-breakpoint-desktop`. Use
+the token anywhere a length goes (`calc()`, `min()`, `max-inline-size`) and when reading the number
+from JavaScript; **a media query needs the literal**, because CSS cannot read a custom property
+inside one.
 
 ### The shared box surface
 
@@ -202,8 +208,6 @@ way. Learn it once.
 | `ratio`                   | aspect ratio, e.g. `'16/9'`                        | -        | Keeps the box at that shape                 |
 | `grow`                    | boolean or whole number `0`+                       | `false`  | How this box grows in its own parent        |
 | `scroll`                  | boolean                                            | `false`  | Scroll its overflow instead of growing      |
-| `hideOnMobile`            | boolean                                            | `false`  | Hidden under 48rem                          |
-| `hideOnDesktop`           | boolean                                            | `false`  | Hidden from 48rem up                        |
 
 Spacing props (`gap`, `padding`) take a **step `0`-`6`** from the theme scale - `gap: 4` means
 `--imp-space-4`. Pixels warn and fall back. Sizes are the opposite: plain CSS lengths, because a
@@ -217,8 +221,8 @@ Rules an agent gets wrong:
   `stack({ scroll: true })`. Anything past that is a component you write.
 - **Do not pass `padding` to `page` or `gap` to `stack` without a reason.** The theme already sizes
   both, fluidly, for every viewport; a fixed step replaces a value that was already correct.
-- **Reach for a `{ mobile, desktop }` object last.** Fluid spacing, a wrapping `stack` and an
-  auto-fitting `grid` handle the continuum; a stop is for changing axis or hiding something.
+- **Reach for a media query last.** Fluid spacing, a wrapping `stack` and an auto-fitting `grid`
+  handle the continuum; write a breakpoint only when the layout changes axis or disappears.
 - **`grow` belongs to the child, not the parent.** To let one box take the leftover room, give that
   box `grow: true`; wrap anything that is not a layout component in a `stack` to do it.
 - **`grid` fits as many columns as the width allows by default.** Pass `minItemWidth` to change the
@@ -229,7 +233,7 @@ Rules an agent gets wrong:
   down the side it names, a `footer` at the bottom, and everything else is the main content. They
   are props of nothing: `app({ sidebar: ... })` warns about an unknown prop.
 - **A sidebar carries its own collapse toggle, and becomes a drawer below 48rem** - do not build a
-  menu button, do not hide it with `hideOnMobile`, and do not write the breakpoint yourself.
+  menu button and do not write the breakpoint yourself.
 - **A sidebar drags wider only with `resizable: true`**, between `minWidth` and `maxWidth` - and all
   three take a keyword of the sidebar scale (`'xs'` to `'xl'`), never a length.
 - **Only `app`'s main region scrolls.** The frame is `100dvh`, so put `app` at the top of the page

@@ -59,6 +59,10 @@ user.set({ ...user.get(), theme: 'light' })
   functions, DOM nodes, class instances, `Map`/`Set`, or cycles - imp logs an error naming the path
   and content comparison silently degrades to identity.
 - **A function passed to `set` always means the updater form**, so a function can never be a value.
+- **There is no pending/loading phase.** `initState(name)` with no initial value is just
+  `undefined`, and `view`/`text` are called with it. Model a load as `undefined` (unknown) -> `null`
+  (known to be empty) -> value, and branch where it matters; [routing](routing.md) guards read
+  exactly that convention.
 - **Resolution is position-sensitive, everything else is not.** `initState`/`useState`/`watch` throw
   after the first `await` of an async `onMount` (`imp/state-setup-before-await`) and outside a
   mounting component. Resolve first, `await`, then `set` and build DOM.

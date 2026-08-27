@@ -64,7 +64,7 @@ applyTheme({
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                                              |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                          |
-| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                                                                                                                                                                                                                                                                      |
+| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`, `breakpoint-desktop`                                                                                                                                                                                                                                                                                                |
 
 `color-on-primary` / `color-on-danger` are the text colors that sit **on** those backgrounds.
 `color-secondary` is the muted tone. `color-surface` is a panel, `color-surface-sunken` the page
@@ -75,6 +75,11 @@ colors (tags, chart series, avatars). `color-success` / `color-warning` / `color
 `space-3` and up are **fluid** `clamp()` values that grow with the viewport, each keeping a `rem`
 term so zoom still scales them; `space-page` is the gutter `page` uses. A theme may set plain
 lengths instead.
+
+`breakpoint-desktop` (`48rem`) is the width imp splits phone from desktop at - a `sidebar` becomes a
+drawer below it. Use it wherever a length goes, and read it from JS with `getComputedStyle`. **It
+cannot go inside a media query** - CSS forbids `var()` there - so write the literal in the query and
+keep the token for everything else. Retuning it does not move `sidebar`'s own drawer width.
 
 `border-width` and `focus-ring-width` exist so contrast is not purely a matter of color - use them
 in your own styles:

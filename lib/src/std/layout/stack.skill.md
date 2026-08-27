@@ -3,7 +3,7 @@
 ```js
 import { stack } from 'imp/std/layout'
 
-stack({ direction: { mobile: 'column', desktop: 'row' }, gap: 4 }, filters(), results())
+stack({ direction: 'row', gap: 4 }, filters(), results())
 ```
 
 Call shape: `stack(props?, ...children)` - the props object, when present, must be the **first**
@@ -23,18 +23,17 @@ rather than overflowing.
 | `wrap`      | boolean                                                             | `true`      | Let children wrap onto more lines |
 
 **`stack` also takes the shared box surface** - `padding`, `width`, `maxWidth`, `radius`, `shadow`,
-`background`, `border`, `ratio`, `grow`, `scroll`, `hideOnMobile`, `hideOnDesktop` - see std (imp
-skill std).
+`background`, `border`, `ratio`, `grow`, `scroll` - see std (imp skill std).
 
-**Every prop above is responsive.** Pass one value, or `{ mobile, desktop }`. `mobile` is under
-48rem, `desktop` is 48rem and up, and a stop you leave out keeps the default.
+**Every prop above takes one value that applies at every width.** When a layout must genuinely
+change shape, write a media query in your own component's `styles` - the width imp splits at is the
+`--imp-breakpoint-desktop` token (`48rem`), though a media query needs the literal, since CSS cannot
+read a custom property inside one.
 
 Rules an agent gets wrong:
 
-- **A column that becomes a row is one prop**, not two components:
-  `direction: { mobile: 'column', desktop: 'row' }`.
-- **Reach for a `{ mobile, desktop }` object last.** Spacing is fluid, a stack wraps, and `grid`
-  fits as many columns as the width allows - a stop is for changing axis or hiding something.
+- **Reach for a media query last.** Spacing is fluid, a stack wraps, and `grid` fits as many columns
+  as the width allows - most layouts need no breakpoint at all.
 - **A stack plus the box surface is a card.** There is no separate card component:
   `stack({ padding: 4, background: 'surface', border: true, radius: 'lg' }, ...)` is one.
 - **There is no `'row-reverse'` or `'column-reverse'`.** Reading order is the axis and it already
@@ -48,7 +47,6 @@ Rules an agent gets wrong:
 ```js
 stack(...fields)
 stack({ direction: 'row', justify: 'between' }, heading('Invoices'), button('New'))
-stack({ direction: { mobile: 'column', desktop: 'row' }, gap: 2 }, filters(), results())
 stack({ padding: 4, background: 'surface', border: true, radius: 'lg' }, ...cardBody)
 stack({ direction: 'row' }, stack({ direction: 'row', grow: true }, search()), button('Go'))
 ```

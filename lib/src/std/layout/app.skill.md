@@ -23,8 +23,10 @@ names, every `footer` at the bottom, and **everything left over becomes the main
 | `padding`  | spacing step `0`-`6`                     | `4`      | Inset around the main region        |
 | `events`   | `{ click: handler }`                     | -        | Listeners on the frame              |
 
-`maxWidth` and `padding` are responsive: pass one value or `{ mobile, desktop }`. `mobile` is under
-48rem, `desktop` is 48rem and up.
+**Every prop above takes one value that applies at every width.** When a layout must genuinely
+change shape, write a media query in your own component's `styles` - the width imp splits at is the
+`--imp-breakpoint-desktop` token (`48rem`), though a media query needs the literal, since CSS cannot
+read a custom property inside one.
 
 Rules an agent gets wrong:
 
@@ -43,7 +45,7 @@ Rules an agent gets wrong:
 
 ```js
 app(
-  { maxWidth: { mobile: 'full', desktop: 'xl' }, padding: 5 },
+  { maxWidth: 'xl', padding: 5 },
   navbar({ label: 'Top bar', justify: 'between' }, brand(), userMenu()),
   sidebar({ side: 'left', label: 'Sections', width: 'sm' }, navMenu({ ... })),
   sidebar({ side: 'left', label: 'Filters', collapsed: true }, filterList()),

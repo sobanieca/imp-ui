@@ -448,6 +448,36 @@ subtree - an overlay or dialog appended to `document.body`, say - `useState` the
 name, but the owning component can simply pass its helper down as an argument, and the receiver
 subscribes as usual.
 
+## State that hasn't loaded yet
+
+`initState(name)` with no initial value starts the state at `undefined`. imp has no separate
+"loading" phase - `undefined` is an ordinary value, and it is up to your app to read it as "not
+loaded yet":
+
+```js
+onMount: () => {
+  const session = initState('myapp.session') // undefined - nothing known yet
+  const api = initHttpClient('myapp.api', { baseUrl: env.API_URL })
+  api.get('/session')
+    .then((user) => session.set(user)) //       null when nobody is signed in
+    .catch(() => session.set(null))
+  return div(shell())
+},
+```
+
+That gives you three readable answers instead of two: `undefined` (still loading), `null` (loaded,
+nobody signed in), and a value. Keep the distinction - a lot of code downstream depends on being
+able to tell "I don't know yet" from "I know, and the answer is nothing".
+**[Route guards](routing.md)** are the clearest example: a guard returns `wait` for `undefined` and
+redirects for `null`.
+
+Bindings work normally on an unloaded state - `view` and `text` are called with `undefined`, so
+branch on it where it matters:
+
+```js
+div(session.view((user) => (user === undefined ? spinner() : user ? profile(user) : signInLink())))
+```
+
 ## Initialization and lookup rules
 
 - **Init first, use after.** `useState(name)` throws if nothing in scope has initialized that name.

@@ -252,7 +252,7 @@ tokens the built-in themes ship today - a theme of your own is expected to defin
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                                              |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-sm`, `radius-md`, `radius-lg`, `radius-xl`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`                                                                                                                                                                                                                          |
-| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`                                                                                                                                                                                                                                                                                                                      |
+| Sizing     | `content-sm`, `content-md`, `content-lg`, `content-xl`, `sidebar-xs`, `sidebar-sm`, `sidebar-md`, `sidebar-lg`, `sidebar-xl`, `sidebar-collapsed`, `breakpoint-desktop`                                                                                                                                                                                                                                                                                                |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds, so a
 theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone -
@@ -282,6 +282,30 @@ anywhere, and `space-page` is the page gutter the `page` component uses. Each on
 in its preferred value, so browser zoom and a larger default font size still scale spacing the way a
 reader expects. A theme that wants fixed spacing sets plain lengths instead; nothing in imp requires
 the scale to be fluid.
+
+`breakpoint-desktop` is the width imp splits a phone layout from a desktop one at - `48rem` unless
+you retune it. A `sidebar` becomes a drawer below it, and it is there so that a media query you
+write in your own component does not have to repeat a number imp already has an opinion about. Use
+it anywhere a length goes:
+
+```css
+.rail {
+  max-inline-size: calc(var(--imp-breakpoint-desktop) / 3);
+}
+```
+
+There is one place it cannot go, and it is a CSS rule rather than an imp one: **a custom property
+cannot be used inside a media query.** `@media (min-width: var(--imp-breakpoint-desktop))` does not
+work in any browser, so the query itself still needs the literal `48rem`. Read the token from
+JavaScript when you need the number as data:
+
+```js
+const desktopFrom = getComputedStyle(document.documentElement)
+  .getPropertyValue('--imp-breakpoint-desktop')
+```
+
+For the same reason, retuning the token changes what your own styles do with it and does not move
+the drawer width compiled into `sidebar`.
 
 `border-width` and `focus-ring-width` exist so that contrast is not purely a matter of color. A
 theme that only swapped colors could never make a hairline border or a thin focus ring easier to

@@ -16,8 +16,12 @@ from the theme spacing scale, so consecutive bands of a page breathe the same wa
 | `label` | string or state        | -       | `aria-label`; makes it a navigable `region`  |
 
 **`section` also takes every prop in the shared box surface** - `padding`, `background`, `radius`,
-`border`, `maxWidth`, `grow`, `hideOnMobile`, ... - see std (imp skill std). All of them, `size`
-included, are responsive: pass one value or `{ mobile, desktop }`.
+`border`, `maxWidth`, `grow`, ... - see std (imp skill std).
+
+**Every prop above takes one value that applies at every width.** When a layout must genuinely
+change shape, write a media query in your own component's `styles` - the width imp splits at is the
+`--imp-breakpoint-desktop` token (`48rem`), though a media query needs the literal, since CSS cannot
+read a custom property inside one.
 
 Rules an agent gets wrong:
 
@@ -31,7 +35,7 @@ Rules an agent gets wrong:
 ```js
 section({ label: 'Features' }, heading({ level: 2 }, 'Features'), featureGrid())
 section({ size: 'lg', background: 'sunken' }, testimonials())
-section({ size: { mobile: 'sm', desktop: 'lg' } }, callToAction())
+section({ size: 'lg' }, callToAction())
 ```
 
 Related: page (imp skill std/page), stack (imp skill std/stack), app (imp skill std/app)

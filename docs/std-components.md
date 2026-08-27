@@ -299,37 +299,76 @@ Most responsive design in imp is not something you write. It is already in the v
 - **A `stack` wraps.** A line of controls that runs out of room continues on the next line rather
   than overflowing.
 
-Between them these cover most of what breakpoints used to be for, which is why imp only has two.
+Between them these cover the great majority of what breakpoints used to be for.
 
-### The two stops, for when layout must actually change
+### When a layout must actually change
 
-Sometimes a layout has to genuinely change shape rather than scale - an axis flips, a region
-disappears. For that there are exactly two screen sizes: **`mobile`**, under 48rem, and
-**`desktop`**, 48rem and up. Every layout prop takes either one value or one per stop:
+Every layout prop takes one value, and that value applies at every width. imp's layout components
+have no notion of a screen size at all: nothing you pass one is per-screen, and nothing they render
+changes shape on its own.
 
-```js
-stack({ direction: { mobile: 'column', desktop: 'row' } }, filters(), results())
-stack({ gap: { mobile: 2, desktop: 5 } }, ...sections)
-navbar({ justify: { mobile: 'center', desktop: 'between' } }, brand(), userMenu())
-```
+That is a deliberate limit rather than an omission. Fluid spacing, a wrapping `stack` and an
+auto-fitting `grid` are continuous: they are correct at every width, in the first frame the browser
+paints, with nothing to configure. A breakpoint is a step function bolted onto a continuous problem,
+and the moment the library offers one, it is the tool everything reaches for - including the cases
+the fluid values already had right.
 
-A stop you leave out keeps the component's own default, so you only name the case that differs.
-
-That one width is fixed. It is the one measurement in imp a theme cannot change, and the reason is
-worth knowing: CSS media queries cannot read a theme variable, so honouring a custom scale would
-mean measuring the window in JavaScript and re-laying-out on every resize. imp would rather your
-layout be correct in the very first frame the browser paints - and with fluid spacing doing the
-continuous work, one stop is enough.
-
-To show something on one stop only, every layout component takes `hideOnMobile` and `hideOnDesktop`:
+So when a layout genuinely has to change shape rather than scale - an axis flips, a region
+disappears - you write that yourself, in your own component's `styles`, with a media query:
 
 ```js
-stack({ hideOnMobile: true }, wideScreenExtras())
-button({ hideOnDesktop: true }, 'Menu')
+component('invoice-filters', {
+  styles: () => `
+    .filters { display: flex; flex-direction: column; }
+
+    @media (min-width: 48rem) {
+      .filters { flex-direction: row; }
+    }
+  `,
+  onMount: () => div({ class: 'filters' }, ...filters()),
+})
 ```
 
-Hidden means genuinely gone: it is not read out by a screen reader and not reachable by keyboard
-while it is hidden.
+Your styles are scoped to your component, so this affects nothing else, and it is plain CSS that any
+developer can read without knowing an imp convention.
+
+### The breakpoint is a theme token
+
+The width imp itself splits at is a theme token, `--imp-breakpoint-desktop`, so the number in your
+media query does not have to be a magic constant you keep in your head:
+
+```js
+component('invoice-filters', {
+  styles: () => `
+    .filters { gap: var(--imp-space-4); }
+
+    /* usable anywhere a length is */
+    .rail { max-inline-size: calc(var(--imp-breakpoint-desktop) / 3); }
+  `,
+})
+```
+
+It ships at `48rem`, and like every other token you can retune it when you build a theme:
+
+```js
+applyTheme({ name: 'wide', tokens: { ...defaultTokens, 'breakpoint-desktop': '56rem' } })
+```
+
+One catch, and it is a CSS limitation rather than an imp one: **a custom property cannot be used
+inside a media query.** `@media (min-width: var(--imp-breakpoint-desktop))` does not work in any
+browser, so a media query still needs the literal length. The token is what you reach for everywhere
+else - `calc()`, `min()`, `clamp()`, a `max-inline-size` - and it is what you read from JavaScript
+when you need the number:
+
+```js
+const desktopFrom = getComputedStyle(document.documentElement)
+  .getPropertyValue('--imp-breakpoint-desktop')
+```
+
+Retuning the token moves what your own styles do with it. It does not move the one width built into
+imp: a `sidebar` becomes a drawer under 48rem, and that query is compiled into the component's
+shared stylesheet before any theme is applied, for the same reason - a media query cannot read a
+token.
 
 ### Space comes from the scale
 
@@ -382,7 +421,7 @@ props on top of their own. Learn it once and it works everywhere:
 | `background`                                                        | `'none'`, `'surface'`, `'sunken'`                  |
 | `border`                                                            | `true` / `false`                                   |
 | `ratio`                                                             | an aspect ratio, e.g. `'16/9'`                     |
-| `grow`, `scroll`, `hideOnMobile`, `hideOnDesktop`                   | as described above                                 |
+| `grow`, `scroll`                                                    | as described above                                 |
 
 ```js
 stack({ padding: 4, background: 'surface', border: true, radius: 'lg', shadow: 'sm' }, ...summary)
@@ -507,8 +546,8 @@ This is also the answer to the question a second sidebar raises. Two sidebars wi
 phone screen, so on a narrow screen they do not try: each keeps its own tab, the tabs stack down
 their edge in the order you wrote them, and opening one closes any other that is open. One panel is
 over the page at a time, whichever side it came from, and the page behind it is never half-covered
-by two. None of this is a prop you set - it is what a sidebar is - so do not add a menu button, a
-`hideOnMobile`, or a breakpoint of your own on top of it.
+by two. None of this is a prop you set - it is what a sidebar is - so do not add a menu button or a
+breakpoint of your own on top of it.
 
 ### Letting the reader choose the width
 
@@ -782,8 +821,8 @@ navMenu({
 | `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections              |
 | `selected`  | an item's `id` - **live**                | none       | The page you are on                        |
 | `label`     | string - **live**                        | -          | Names the navigation for a screen reader   |
-| `direction` | `'column'`, `'row'` - **responsive**     | `'column'` | `column` for a sidebar, `row` for a navbar |
-| `gap`       | spacing step `0`-`6` - **responsive**    | `1`        | Between items and groups                   |
+| `direction` | `'column'`, `'row'`                      | `'column'` | `column` for a sidebar, `row` for a navbar |
+| `gap`       | spacing step `0`-`6`                     | `1`        | Between items and groups                   |
 
 The current item is marked with `aria-current="page"` - the thing a screen reader actually announces
 as "current page" - and the styling follows from it, so the highlight and the announcement can never

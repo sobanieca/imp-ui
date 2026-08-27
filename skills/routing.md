@@ -6,7 +6,7 @@ in your layout and everything around it stays put across navigations.
 ```js
 import { component, mount } from 'imp'
 import { button, div, nav } from 'imp/html'
-import { area, navigate, router, useRoute } from 'imp/router'
+import { area, guard, navigate, route, router, useRoute, wait } from 'imp/router'
 
 const shell = component('app-shell', {
   onMount: () =>
@@ -36,6 +36,9 @@ mount('#app', shell())
 | `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `placeholder`, `onError`, `onNotFound` |
 | `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                          |
 | `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                                  |
+| `route({ guard, screen })`               | a guarded routes-table entry - one guard; `screen` is the factory or `area()` it maps to            |
+| `guard(states, check)`                   | a synchronous check over the states it names: `true` \| `wait` \| `false` \| `'/path'`              |
+| `wait`                                   | the verdict for "cannot decide yet" - the router keeps `placeholder` up and re-runs the guard       |
 | `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                            |
 | `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                |
 | `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                           |
@@ -85,6 +88,68 @@ would also match. Trailing slashes are ignored.
   `import()` wherever the module actually is.
 - Leaving an area releases its screens' state and DOM, but the browser keeps the downloaded module
   for the life of the page - lazy areas save the **download**, not the heap.
+
+## Guards
+
+```js
+import { guard, route, router, wait } from 'imp/router'
+
+const requireSession = (session) => session === undefined ? wait : Boolean(session) || '/login'
+
+const requireAdmin = (session) => {
+  const allowed = requireSession(session)
+  return allowed === true ? session.role === 'admin' || '/forbidden' : allowed
+}
+
+const signedIn = guard(['myapp.session'], requireSession)
+const adminOnly = guard(['myapp.session'], requireAdmin)
+
+router({
+  routes: {
+    '/': () => home(), //                                        open
+    '/login': () => login(), //                                  open
+    '/todos': route({ guard: signedIn, screen: () => todos() }),
+    '/admin': route({ guard: adminOnly, screen: area(() => import('./admin/area.js')) }),
+  },
+  placeholder: () => div('Loading...'), //                       shown while a guard waits
+})
+```
+
+`guard(states, check)` - `states` is a non-empty array of **state names** (not handles: a table is
+module scope). The router resolves them with `useState` at its own position, passes their values
+**positionally**, then `{ params, query, path }` last.
+
+| Verdict              | Effect                                                   |
+| -------------------- | -------------------------------------------------------- |
+| `true` / `undefined` | render the screen                                        |
+| `wait`               | keep `placeholder`; re-run when a declared state changes |
+| `'/path'`            | `navigate(path, { replace: true })`                      |
+| `false`              | render `onNotFound`                                      |
+| anything else        | throws, route renders `onError`                          |
+
+## Rules an agent gets wrong about guards
+
+- **A route has exactly one guard, declared on the route.** There is no `router({ guard })` and no
+  `area({ guard })` - both throw, pointing at `route()`. No inheritance, no stacking, no array.
+  Compose by sharing a plain check function between guards, as above.
+- **There is no pending state in imp.** `initState('myapp.session')` with no initial value is just
+  `undefined`; the guard is the only place that decides `undefined` means "not loaded". Return
+  `wait` for it explicitly - a guard that reads `undefined` without checking will deny or throw, and
+  it will never wait.
+- **Sign out with `set(null)`, not by clearing to `undefined`.** `null` is an answer a guard acts on
+  (redirect); `undefined` only makes it wait, and **`wait` is ignored once the screen is showing** -
+  only a redirect leaves a mounted screen. `false` after mount is an error for the same reason.
+- **Declare every state the check reads.** Undeclared states are neither passed in nor watched, so
+  the guard goes stale. Do not call `useState` inside a check - it works on entry and throws on
+  re-check.
+- **Guard the entry, not the area file**: `route({ guard, screen: area(() => import(...)) })` covers
+  the section's root and every screen in it, and decides before the chunk downloads. A route inside
+  the area may carry its own, narrower guard. Neither is authorization - the server still checks.
+- **A guard is sync and pure.** No `await`, no fetch, no `navigate` inside it - return a path
+  instead. It re-runs on every change of a declared state, so keep it a cheap comparison.
+- **Failure is closed**: a throwing guard, an unknown verdict, or a state no ancestor provides all
+  render `onError`. A guard stuck on `wait` warns after 5s naming the states; guards that redirect
+  to each other throw after 10 hops.
 
 ## An area file
 

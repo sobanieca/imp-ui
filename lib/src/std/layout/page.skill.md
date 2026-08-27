@@ -21,7 +21,7 @@ left. That is the correct result on every screen without you configuring anythin
 cap - all themeable.
 
 **`page` also takes the shared box surface** - `padding`, `background`, `radius`, `border`,
-`shadow`, `grow`, `hideOnMobile`, ... - see std (imp skill std).
+`shadow`, `grow`, ... - see std (imp skill std).
 
 Rules an agent gets wrong:
 

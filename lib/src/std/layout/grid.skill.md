@@ -18,18 +18,18 @@ argument; everything after it is content. Children fill the cells in order, one 
 | `justify`      | `'start'`, `'center'`, `'end'`, `'stretch'` | `'stretch'` | Cell content across the inline axis              |
 
 **`grid` also takes every prop in the shared box surface** - `padding`, `width`, `maxWidth`,
-`radius`, `shadow`, `background`, `border`, `ratio`, `grow`, `scroll`, `hideOnMobile`,
-`hideOnDesktop` - see std (imp skill std).
+`radius`, `shadow`, `background`, `border`, `ratio`, `grow`, `scroll` - see std (imp skill std).
 
-**Every prop above is responsive.** Pass one value, or `{ mobile, desktop }`. `mobile` is under
-48rem, `desktop` is 48rem and up. The two stops are fixed - a theme cannot change them, because CSS
-cannot read a custom property inside a media query.
+**Every prop above takes one value that applies at every width.** When a layout must genuinely
+change shape, write a media query in your own component's `styles` - the width imp splits at is the
+`--imp-breakpoint-desktop` token (`48rem`), though a media query needs the literal, since CSS cannot
+read a custom property inside one.
 
 Rules an agent gets wrong:
 
-- **`minItemWidth` needs no breakpoints at all.** `grid({ minItemWidth: '18rem' })` already reflows
-  from one column on a phone to as many as fit on a desktop - reach for it before writing a
-  `columns` ladder. Passing both warns and uses `minItemWidth`.
+- **`minItemWidth` needs no breakpoint at all.** `grid({ minItemWidth: '18rem' })` already reflows
+  from one column on a phone to as many as fit on a desktop - reach for it before writing a media
+  query. Passing both warns and uses `minItemWidth`.
 - **`columns` is a count, not a template.** `columns: 3` means three equal columns; there is no
   `'1fr 2fr'` spelling and no per-cell span - a child always fills exactly one cell. An uneven
   layout is a `flex` with a `grow` on the wide side, or two nested grids.
@@ -38,7 +38,7 @@ Rules an agent gets wrong:
 
 ```js
 grid({ minItemWidth: '20rem', gap: 4 }, ...products)
-grid({ columns: { mobile: 1, desktop: 3 }, gap: 5 }, ...cards)
+grid({ columns: 3, gap: 5 }, ...cards)
 grid({ columns: 2, gap: 2, align: 'center' }, label(), value())
 ```
 

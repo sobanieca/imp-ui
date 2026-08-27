@@ -29,6 +29,7 @@ Conventions:
 | [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind          |
 | [error-boundaries](error-boundaries.md)                         | onError boundaries via events; isolated teardown     |
 | [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components  |
+| [route-guards](route-guards.md)                                 | Synchronous guards over declared states, with wait   |
 
 ## State
 
@@ -52,12 +53,12 @@ Conventions:
 
 ## Components
 
-| ADR                                                         | Decision                                                                           |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [standard-component-library](standard-component-library.md) | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props   |
-| [responsive-fluid-two-stops](responsive-fluid-two-stops.md) | Fluid theme values first; two fixed stops, mobile and desktop, split at 48rem      |
-| [app-frame-regions](app-frame-regions.md)                   | The app frame sorts its own children into regions; one drawer at a time on a phone |
-| [state-driven-forms](state-driven-forms.md)                 | Form values are named state; controls bind one field by dot path                   |
+| ADR                                                             | Decision                                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [standard-component-library](standard-component-library.md)     | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props   |
+| [responsive-fluid-values-only](responsive-fluid-values-only.md) | Fluid theme values only; no per-screen props - an app writes its own media query   |
+| [app-frame-regions](app-frame-regions.md)                       | The app frame sorts its own children into regions; one drawer at a time on a phone |
+| [state-driven-forms](state-driven-forms.md)                     | Form values are named state; controls bind one field by dot path                   |
 
 ## Library
 

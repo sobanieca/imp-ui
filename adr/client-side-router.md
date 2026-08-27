@@ -144,6 +144,11 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   handles first. `onNotFound` is the one fallback used when no pattern matches, declared alongside
   the router's other options. All options are optional.
 
+- **Access control is a separate primitive layered on the same wrapper (`route-guards.md`).** A
+  single `guard` declared on a table entry runs inside `imp-route` before the screen factory, and
+  its `wait` verdict resolves through the same placeholder an area's download uses, so the router
+  gains no second loading path and the screen gains no loading branch.
+
 - **No built-in link component; `navigate` is the single navigation primitive.** A client-side link
   is a plain `<a href>` whose left-click the app intercepts to call `navigate` - a few lines an app
   writes once. imp does not ship a `link`/`navLink` because a useful link is inseparable from a
@@ -194,6 +199,8 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   is a nested router, the navigation token is the mount generation, loading is the placeholder, and
   errors are the error boundary. Everything the lifecycle guarantees - deterministic teardown,
   stale-async discard, fault isolation - the router inherits.
+- The public surface stayed small enough that guarding a route later needed one more table value
+  (`route({ guard, screen })`), rather than a routing layer of its own.
 - The route map is data in one place. `router({ routes })` reads top-to-bottom; there are no free
   `route()` side effects scattered across modules, and an area's routes live in the area's own file,
   named once at the composition root.

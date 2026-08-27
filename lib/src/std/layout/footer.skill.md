@@ -10,18 +10,19 @@ Call shape: `footer(props?, ...children)` - the children lay out in a row. It re
 `contentinfo` landmark and pins itself to the bottom of `app`; as a direct child of `app` it is a
 region, anywhere else it is a plain bar.
 
-| Prop            | Values                                                              | Default    | Notes                  |
-| --------------- | ------------------------------------------------------------------- | ---------- | ---------------------- |
-| `label`         | string or state                                                     | -          | Names the landmark     |
-| `gap`           | spacing step `0`-`6`                                                | `3`        | Space between children |
-| `justify`       | `'start'`, `'center'`, `'end'`, `'between'`, `'around'`, `'evenly'` | `'start'`  | Along the row          |
-| `align`         | `'start'`, `'center'`, `'end'`, `'stretch'`, `'baseline'`           | `'center'` | Across the row         |
-| `wrap`          | boolean                                                             | `false`    | Let children wrap      |
-| `hideOnMobile`  | boolean                                                             | `false`    | Hidden under 48rem     |
-| `hideOnDesktop` | boolean                                                             | `false`    | Hidden from 48rem up   |
-| `events`        | `{ click: handler }`                                                | -          | Listeners on the bar   |
+| Prop      | Values                                                              | Default    | Notes                  |
+| --------- | ------------------------------------------------------------------- | ---------- | ---------------------- |
+| `label`   | string or state                                                     | -          | Names the landmark     |
+| `gap`     | spacing step `0`-`6`                                                | `3`        | Space between children |
+| `justify` | `'start'`, `'center'`, `'end'`, `'between'`, `'around'`, `'evenly'` | `'start'`  | Along the row          |
+| `align`   | `'start'`, `'center'`, `'end'`, `'stretch'`, `'baseline'`           | `'center'` | Across the row         |
+| `wrap`    | boolean                                                             | `false`    | Let children wrap      |
+| `events`  | `{ click: handler }`                                                | -          | Listeners on the bar   |
 
-**Every layout prop above is responsive** - one value, or `{ mobile, desktop }`.
+**Every prop above takes one value that applies at every width.** When a layout must genuinely
+change shape, write a media query in your own component's `styles` - the width imp splits at is the
+`--imp-breakpoint-desktop` token (`48rem`), though a media query needs the literal, since CSS cannot
+read a custom property inside one.
 
 Rules an agent gets wrong:
 

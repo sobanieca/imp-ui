@@ -24,11 +24,9 @@ warned about and dropped.
 | `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections                   |
 | `selected`  | an item's `id`, or a state - **live**    | none       | Gets `aria-current="page"`                      |
 | `label`     | string, or a state holding one - live    | -          | Names the `<nav>`; give one when a page has two |
-| `direction` | `'column'`, `'row'` - **responsive**     | `'column'` | `column` for a sidebar, `row` for a navbar      |
-| `gap`       | spacing step `0`-`6` - **responsive**    | `1`        | Between items, and between groups               |
+| `direction` | `'column'`, `'row'`                      | `'column'` | `column` for a sidebar, `row` for a navbar      |
+| `gap`       | spacing step `0`-`6`                     | `1`        | Between items, and between groups               |
 | `events`    | `{ select }`                             | -          | `select` fires on the host - see below          |
-
-Also takes `hideOnMobile` / `hideOnDesktop` like every layout component.
 
 Each entry in `items`:
 

@@ -57,9 +57,9 @@ app(
   **One drawer is open at a time, whichever side it came from.** Two panels over a phone screen
   would cover each other; making the frame the arbiter keeps that rule in one place rather than in a
   registry each sidebar consults.
-- **The breakpoint is not configurable.** It is the `md` of the shared scale
-  (`responsive-fluid-two-stops.md`). A per-sidebar collapse width would let two sidebars on one edge
-  disagree about whether they are drawers, and the stacked-tab geometry assumes they agree.
+- **The breakpoint is not configurable.** It is the `breakpoint-desktop` theme token's shipped value
+  (`responsive-fluid-values-only.md`). A per-sidebar collapse width would let two sidebars on one
+  edge disagree about whether they are drawers, and the stacked-tab geometry assumes they agree.
 - **`collapsible: false` speaks about the wide screen only.** It says the sidebar is not a column
   that rolls up to a rail, so its toggle is hidden there - but below `md` the sidebar is a drawer
   like every other, and its tab is rendered whatever `collapsible` says. The toggle is therefore

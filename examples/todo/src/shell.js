@@ -65,7 +65,7 @@ export const appShell = component('todo-app-shell', {
           { gap: 1 },
           heading({ level: 1 }, lang.text(() => t('app.title'))),
           stack(
-            { direction: 'row', hideOnMobile: true },
+            { direction: 'row' },
             text({ tone: 'secondary', size: 'sm' }, lang.text(() => t('app.tagline'))),
           ),
         ),

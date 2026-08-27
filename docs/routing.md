@@ -9,7 +9,7 @@ Everything routing-related is imported from **`imp/router`** (see **[Imports](im
 full map):
 
 ```js
-import { area, navigate, router, useRoute } from 'imp/router'
+import { area, guard, navigate, route, router, useRoute, wait } from 'imp/router'
 ```
 
 ## The whole thing in one screen
@@ -140,7 +140,8 @@ required:
 
 - **`routes`** - the route table (see above).
 - **`placeholder`** - what the router shows while an **area's** code is still downloading (see
-  _Areas_). It's called with the route's `{ params, query }`.
+  _Areas_) or a guard is waiting for the state it reads (see _Route guards_). It's called with the
+  route's `{ params, query }`.
 - **`onError`** - a route-level **error boundary**. It renders a fallback when the matched screen,
   or any component it renders, throws during mount and doesn't handle the error itself - including
   an area whose `import()` won't download. A screen (or any nested component) that defines its own
@@ -349,6 +350,178 @@ everything under it - while every other pattern matches exactly. `area()` is how
 prefix loads a table, match the rest of the URL against it," which is the one thing the router can't
 guess from a bare import.
 
+## Route guards: keeping a screen behind a condition
+
+A guard decides whether the visitor may open a route. It is a plain function of the state it reads,
+and it runs before the screen is built:
+
+```js
+import { guard, wait } from 'imp/router'
+
+const signedIn = guard(
+  ['myapp.session'],
+  (session) => session === undefined ? wait : Boolean(session) || '/login',
+)
+```
+
+Read that from the inside out. `['myapp.session']` declares **which states this guard reads** - the
+router looks them up for you and passes their values in, in the same order. The function returns one
+of four answers:
+
+| Return              | Means                                                       |
+| ------------------- | ----------------------------------------------------------- |
+| `true` (or nothing) | allow - render the screen                                   |
+| `wait`              | "I can't decide yet" - keep the loader up and ask me again  |
+| `'/login'`          | redirect there, replacing the current history entry         |
+| `false`             | render the `onNotFound` page, as if the route did not exist |
+
+### `wait` is what makes a synchronous guard possible
+
+Nearly every real condition depends on something the app loads after it starts - the session comes
+from your backend, so when the first URL is matched the answer genuinely isn't known yet. Rather
+than making guards async (which would mean a request per navigation, and error handling in every
+guard), imp lets a guard say **`wait`**.
+
+When a guard returns `wait`, the router subscribes to the states it declared and pauses. Every time
+one of them changes, the guard runs again - same function, same inputs, just later and with more
+data. The first answer that isn't `wait` is acted on. So the guard stays a simple synchronous
+function that you can call in a unit test with plain values, and the waiting is the router's job.
+
+**A state that hasn't loaded yet is just `undefined`** - `initState('myapp.session')` with no
+initial value starts there. imp has no separate "loading" concept, so `undefined` means whatever
+your app decides it means; the guard is the one place that decides. That's why a signed-out session
+is best written as `null`: `undefined` is "I don't know yet", `null` is "I know, and there is
+nobody".
+
+### The loader you already have
+
+While a guard waits, the router shows its `placeholder` - the same loader an area's download shows:
+
+```js
+router({
+  routes: {
+    '/': () => home(),
+    '/todos': route({ guard: signedIn, screen: () => todoList() }),
+  },
+  placeholder: () => div(spinner(), 'Loading...'),
+})
+```
+
+You write no loading branch and no spinner state. And once the session has loaded, a guard that can
+answer immediately renders its screen in the same tick - no loader appears at all when navigating
+between screens later.
+
+### One guard per route, written on the route
+
+A guard attaches in exactly one place: the entry it protects. `route({ guard, screen })` is the
+third thing a routes table accepts, next to a plain factory and an `area()` - its `screen` is
+whatever you would have written there instead.
+
+```js
+router({
+  routes: {
+    '/': () => home(), //       no guard - open
+    '/login': () => login(), // no guard - open
+    '/todos': route({ guard: signedIn, screen: () => todoList() }),
+    '/todos/:id': route({ guard: signedIn, screen: ({ params }) => todoDetail(params.id) }),
+    '/admin': route({ guard: adminOnly, screen: area(() => import('./admin/area.js')) }),
+  },
+})
+```
+
+There is no router-wide default and no inheritance: a route has one guard or none, and you can see
+which by reading its line. Nothing above a route can add a condition it doesn't name, so "why was I
+redirected here?" is always answered by one function.
+
+The cost is repetition when most of an app is protected - `route({ guard: signedIn, ... })` on every
+entry. That is the trade: a repeated word you can grep for, instead of a rule applied to a route
+from somewhere else.
+
+**Combining conditions is your job, and it's just a function.** Write the shared part once as a
+plain check and build each guard from it:
+
+```js
+const requireSession = (session) => session === undefined ? wait : Boolean(session) || '/login'
+
+const requireAdmin = (session) => {
+  const allowed = requireSession(session)
+  return allowed === true ? session.role === 'admin' || '/forbidden' : allowed
+}
+
+const signedIn = guard(['myapp.session'], requireSession)
+const adminOnly = guard(['myapp.session'], requireAdmin)
+
+const billingAdmin = guard(['myapp.session', 'myapp.plan'], (session, plan) => {
+  const allowed = requireAdmin(session)
+  if (allowed !== true) return allowed
+  if (plan === undefined) return wait
+  return plan.tier === 'business' || '/upgrade'
+})
+```
+
+Sharing the _check_ rather than stacking guards keeps the composition in your code, where you read
+it top to bottom and test it with plain values.
+
+A guard receives `{ params, query, path }` as its last argument, after the state values - so it can
+check the route it is guarding, not just the session:
+
+```js
+const canEditOrg = guard(['myapp.session', 'myapp.orgs'], (session, orgs, { params }) => {
+  if (session === undefined || orgs === undefined) return wait
+  if (!session) return '/login'
+  const org = orgs.find((candidate) => candidate.id === params.orgId)
+  return org?.ownerId === session.id || '/forbidden'
+})
+```
+
+### Guards keep watching
+
+A guard doesn't run once. The states it declared stay watched for as long as the screen is showing,
+so signing out while on a protected screen redirects immediately:
+
+```js
+button('Sign out', {
+  events: {
+    click: async () => {
+      await api.post('/logout')
+      session.set(null) // the guard on this route re-runs and redirects to /login
+    },
+  },
+})
+```
+
+Set `null` rather than clearing back to `undefined`: `null` is an answer a guard can act on, while
+`undefined` only makes it wait - and a guard that returns `wait` for a screen already on the page is
+ignored. Once you are in, only a redirect takes you out; otherwise a background refresh of the
+session would tear down the screen you are working in, losing scroll, focus, and anything you typed.
+
+### Guards and lazily loaded sections
+
+A guard on the entry that points at an area covers the whole section - its `root` and every screen
+under it - and it decides **before the import runs**, so a non-admin never downloads the admin code:
+
+```js
+'/admin': route({ guard: adminOnly, screen: area(() => import('./admin/area.js')) }),
+```
+
+The area's own file declares no guard of its own; a route inside it can carry one for a narrower
+rule (`/admin/billing` needing more than `/admin` does). The entry's guard keeps watching while the
+visitor is inside the section, so losing the session redirects out of it immediately.
+
+Guards are a UI concern: they decide what to render, not what a visitor is allowed to have. Your
+backend still authorizes every request - a determined visitor can always fetch the JavaScript.
+
+### When something goes wrong
+
+Guards fail closed - no failure path lets a screen through:
+
+- A guard that throws, or returns something that isn't one of the four answers, renders the router's
+  `onError`.
+- A guard declaring a state that no component above the router provides fails the route with the
+  same error `useState` gives you.
+- A guard stuck on `wait` for more than five seconds logs a warning naming the route and the states
+  it is waiting for - usually a state nothing ever sets.
+
 ## Navigating
 
 ### Programmatically
@@ -421,6 +594,8 @@ const todoDetail = component('app-todo-detail', {
 
 - **Data loading** lives in the screen's `onMount` - fetch, `await`, build. The `placeholder` shows
   until it resolves. There is no separate loader or data-fetching API to learn.
+- **Waiting on a guard** uses the same `placeholder` (see _Route guards_) - the visitor sees one
+  loader whether the wait is a download, a guard, or the screen's own data.
 - **Errors** - a screen that defines `onError` handles its own failures first. A failure it doesn't
   handle - an area's `import()` that won't download, or the screen (or any component it renders)
   throwing during mount - bubbles up to the **router's** `onError`, which acts as an error boundary
@@ -534,6 +709,9 @@ still 404s - so deep links and refresh just work while you build.
 | `router(options)`                        | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `onError`, `onNotFound`.                                           |
 | `router()`                               | a live router slot | Inside an area's `root`, renders the section's own routes; inherits the parent router's options.                                              |
 | `area({ routes, root?, translations? })` | an area definition | Declares an area's own table, the component its screens render inside, and the translations it loads, for its `export default` (see _Areas_). |
+| `route({ guard, screen })`               | a guarded entry    | A routes-table entry that renders `screen` only if its one guard allows it (see _Route guards_).                                              |
+| `guard(states, check)`                   | a guard            | A synchronous check over the values of the states it names; returns `true`, `wait`, `false`, or a path to redirect to.                        |
+| `wait`                                   | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `placeholder` up and re-runs the guard when a declared state changes.       |
 | `area(() => import(...))`                | an area marker     | Marks a prefix entry as a lazily-loaded area - the one on-demand unit.                                                                        |
 | `navigate(path, { replace? })`           | -                  | Navigates programmatically; `replace` swaps the current history entry.                                                                        |
 | `useRoute()`                             | a read-only route  | The live `{ path, query }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                                    |
