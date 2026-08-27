@@ -22,11 +22,11 @@ imports the same surface an app does.
 - **The library is a separate import namespace, split by group.** The kernel is `imp` and its
   per-subject specifiers - `imp/html`, `imp/state`, `imp/router`, `imp/theme`, `imp/log`
   (`library-import-namespaces.md`). The base group is **`imp/std`**; every other group is
-  **`imp/std/<group>`** (`imp/std/layout`, `imp/std/inputs`, …). Groups are registered as subpaths
-  when they land, and an unknown subpath fails with an imp-branded error listing the ones that
-  exist - in the bundler, the dev server's import map and the `imp lint` specifier check alike, from
-  one shared table. Splitting by group keeps a growing catalog from flooding one namespace and makes
-  an import line say which part of the library a file leans on.
+  **`imp/std/<group>`** (`imp/std/inputs`, `imp/std/navigation`, …). Groups are registered as
+  subpaths when they land, and an unknown subpath fails with an imp-branded error listing the ones
+  that exist - in the bundler, the dev server's import map and the `imp lint` specifier check alike,
+  from one shared table. Splitting by group keeps a growing catalog from flooding one namespace and
+  makes an import line say which part of the library a file leans on.
 - **Names are the natural ones** - `button`, `text`, `link`, `form`, `select` - precisely because
   the namespace is separate: a std component may shadow a bare element factory from `imp/html`,
   since the two never arrive through the same specifier. A file needing both aliases one at the
@@ -92,8 +92,7 @@ imports the same surface an app does.
   implementable **within** one component, never across a set of them. A bar of controls is therefore
   a plain layout box whose children each keep their own tab stop, rather than a widget shipping
   arrow-key handling that would silently skip anything it cannot reach. This is the same boundary
-  that makes `tabs`, `navMenu` and `commandPalette` data-driven, and the reason `sidebar` renders
-  its own collapse toggle rather than letting `navbar` own it: a widget holding an internal ARIA
+  that makes `tabs`, `navMenu` and `commandPalette` data-driven: a widget holding an internal ARIA
   reference or an internal focus order must render every part of it.
 
 `link` additionally hands plain left-clicks on in-app hrefs to `navigate()`

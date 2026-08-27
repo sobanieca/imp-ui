@@ -6,7 +6,6 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | `button`, `heading`, `text`, `link`                                                                                                                         | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                                                                                         |
-| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `page`, `stack`, `grid`, `section`                                                                                    | `imp skill std/app`, `std/navbar`, `std/sidebar`, `std/footer`, `std/page`, `std/stack`, `std/grid`, `std/section`                                                                                                    |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
@@ -132,41 +131,13 @@ Children are the actions, in a centered row under the text. With no `title` it r
 not translated for you - use `computed([lang], () => t('invoices.empty'))` if it must follow the
 language.
 
-## Layout - from `imp/std/layout`
+## Responsive: fluid values, and your own media query
 
-```js
-import { app, grid, navbar, page, sidebar, stack } from 'imp/std/layout'
+**No prop takes a per-screen value, and no component hides itself at a width.** Every prop takes one
+value and it applies at every width.
 
-app(
-  navbar({ label: 'Top bar' }, brand()),
-  sidebar({ side: 'left', label: 'Sections' }, navMenu({ items })),
-  stack(
-    stack({ direction: 'row', justify: 'between' }, heading('Invoices'), button('New')),
-    grid(...cards),
-    stack({ direction: 'row' }, stack({ direction: 'row', grow: true }, search()), button('Go')),
-  ),
-)
-```
-
-| Component | What it is                             | Key props                                                                                                      |
-| --------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `page`    | Content column: theme padding, centred | `size` (`'sm'`-`'xl'`, `'full'`)                                                                               |
-| `stack`   | A column, a row, or one that changes   | `direction`, `gap`, `align`, `justify`, `wrap`                                                                 |
-| `grid`    | As many equal columns as fit           | `minItemWidth`, `columns` (1-12), `gap`, `align`, `justify`                                                    |
-| `section` | Named band of page content             | `size` (`'sm'`-`'lg'`), `label`                                                                                |
-| `app`     | The page frame; sorts its own children | `maxWidth` (`'sm'`-`'xl'`, `'full'`), `padding`                                                                |
-| `navbar`  | The bar across the top of the frame    | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
-| `sidebar` | A collapsible side region of the frame | `side` (`'left'`/`'right'`), `label`, `width`, `resizable`, `minWidth`, `maxWidth`, `collapsible`, `collapsed` |
-| `footer`  | The bar across the bottom of the frame | `label`, `gap`, `justify`, `align`, `wrap`                                                                     |
-
-### Responsive: fluid values, and your own media query
-
-**No layout prop takes a per-screen value, and no component hides itself at a width.** Every prop
-takes one value and it applies at every width.
-
-Most layouts need nothing more. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()`
+Most pages need nothing more. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()`
 values that grow with the viewport, so a gap or a page gutter is already right at every width.
-`grid` fits as many columns as the width allows, and a `stack` wraps.
 
 When a layout must genuinely change axis or disappear, write a media query in your own component's
 `styles`, where it is scoped to that component:
@@ -189,56 +160,11 @@ the token anywhere a length goes (`calc()`, `min()`, `max-inline-size`) and when
 from JavaScript; **a media query needs the literal**, because CSS cannot read a custom property
 inside one.
 
-### The shared box surface
-
-`page`, `stack`, `grid` and `section` all take these on top of their own props, resolved the same
-way. Learn it once.
-
-| Prop                      | Values                                             | Default  | Notes                                       |
-| ------------------------- | -------------------------------------------------- | -------- | ------------------------------------------- |
-| `padding`                 | spacing step `0`-`6`                               | `0`      | Inside space on both axes                   |
-| `paddingX` / `paddingY`   | spacing step `0`-`6`                               | -        | One axis only; wins over `padding`          |
-| `width` / `height`        | CSS length, e.g. `'20rem'`, `'100%'`, `'auto'`     | `auto`   | Written as `inline-size` / `block-size`     |
-| `minWidth` / `maxWidth`   | CSS length                                         | -        | `min-` / `max-inline-size`                  |
-| `minHeight` / `maxHeight` | CSS length                                         | -        | `min-` / `max-block-size`                   |
-| `radius`                  | `'none'`, `'sm'`, `'md'`, `'lg'`, `'xl'`, `'full'` | `'none'` | Corner rounding from the theme radius scale |
-| `shadow`                  | `'none'`, `'sm'`, `'md'`, `'lg'`                   | `'none'` | Theme shadow scale                          |
-| `background`              | `'none'`, `'surface'`, `'sunken'`                  | `'none'` | Panel colour / page colour from the theme   |
-| `border`                  | boolean                                            | `false`  | Theme border width and colour               |
-| `ratio`                   | aspect ratio, e.g. `'16/9'`                        | -        | Keeps the box at that shape                 |
-| `grow`                    | boolean or whole number `0`+                       | `false`  | How this box grows in its own parent        |
-| `scroll`                  | boolean                                            | `false`  | Scroll its overflow instead of growing      |
-
-Spacing props (`gap`, `padding`) take a **step `0`-`6`** from the theme scale - `gap: 4` means
-`--imp-space-4`. Pixels warn and fall back. Sizes are the opposite: plain CSS lengths, because a
-page width is not spacing. There are **no margin props** at all.
-
 Rules an agent gets wrong:
 
-- **These eight are the whole layout group** - do not import anything else from it. A column, a row
-  and a column-that-becomes-a-row are all `stack` with a `direction`; a capped and padded content
-  column is a `page`; a card is a `stack` with `background` and `border`; a scrolling region is
-  `stack({ scroll: true })`. Anything past that is a component you write.
-- **Do not pass `padding` to `page` or `gap` to `stack` without a reason.** The theme already sizes
-  both, fluidly, for every viewport; a fixed step replaces a value that was already correct.
-- **Reach for a media query last.** Fluid spacing, a wrapping `stack` and an auto-fitting `grid`
-  handle the continuum; write a breakpoint only when the layout changes axis or disappears.
-- **`grow` belongs to the child, not the parent.** To let one box take the leftover room, give that
-  box `grow: true`; wrap anything that is not a layout component in a `stack` to do it.
-- **`grid` fits as many columns as the width allows by default.** Pass `minItemWidth` to change the
-  item floor; pass `columns` only when the count must be exact.
-- **`columns` is a count, not a track template.** There is no `'1fr 2fr'` and no per-cell span; a
-  child always fills exactly one cell.
-- **`app` sorts its children into regions by what they are** - a `navbar` goes on top, a `sidebar`
-  down the side it names, a `footer` at the bottom, and everything else is the main content. They
-  are props of nothing: `app({ sidebar: ... })` warns about an unknown prop.
-- **A sidebar carries its own collapse toggle, and becomes a drawer below 48rem** - do not build a
-  menu button and do not write the breakpoint yourself.
-- **A sidebar drags wider only with `resizable: true`**, between `minWidth` and `maxWidth` - and all
-  three take a keyword of the sidebar scale (`'xs'` to `'xl'`), never a length.
-- **Only `app`'s main region scrolls.** The frame is `100dvh`, so put `app` at the top of the page
-  and nothing around it.
-- Spacing is `gap` on the parent, never margins on the children: no std component has an outer
+- **The library ships no layout components.** Write the boxes your page needs as your own
+  components, laid out with plain CSS in their `styles`.
+- **Spacing is `gap` on the parent, never margins on the children**: no std component has an outer
   margin.
 
 ## Forms - from `imp/std/inputs`
@@ -360,7 +286,7 @@ Rules an agent gets wrong:
 - **`navMenu` marks the current page with `selected`**, which writes `aria-current="page"` - never a
   class of your own. Its items are real links; a plain click reports `select` first, so
   `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a top or
-  bottom navbar.
+  bottom navigation bar.
 - **`commandPalette` filters its own `items`** - do not filter them yourself on every keystroke. It
   matches `group/label` fuzzily, so a `group` is how a user searches by category. `shortcut` is
   `'ctrl+p'`-style, where `ctrl` matches Ctrl **and** ⌘.

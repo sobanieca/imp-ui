@@ -24,7 +24,7 @@ warned about and dropped.
 | `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections                   |
 | `selected`  | an item's `id`, or a state - **live**    | none       | Gets `aria-current="page"`                      |
 | `label`     | string, or a state holding one - live    | -          | Names the `<nav>`; give one when a page has two |
-| `direction` | `'column'`, `'row'`                      | `'column'` | `column` for a sidebar, `row` for a navbar      |
+| `direction` | `'column'`, `'row'`                      | `'column'` | `column` down the side, `row` across the top    |
 | `gap`       | spacing step `0`-`6`                     | `1`        | Between items, and between groups               |
 | `events`    | `{ select }`                             | -          | `select` fires on the host - see below          |
 
@@ -52,7 +52,7 @@ Rules an agent gets wrong:
 - **It renders one flat level.** There are no submenus and no expanding items; for a menu of actions
   rather than destinations, that is a different component.
 - **`direction: 'row'` is how the same menu becomes a bar rather than a list** - put the column one
-  in a `sidebar` and the row one straight in the `navbar` (`imp skill std/app`).
+  down the side of your page and the row one across the top.
 - **Listen with `events: { select }`, not `onSelect`.** It is a cancelable `CustomEvent` on the host
   with `detail: { id, item }`; the link is followed unless you call `preventDefault()`. Modifier and
   middle clicks are left to the browser, so a link still opens in a new tab.

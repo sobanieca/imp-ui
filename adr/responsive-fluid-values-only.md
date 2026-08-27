@@ -2,17 +2,16 @@
 
 ## Context
 
-The layout group carried two responsive stops, `mobile` and `desktop`, split at 48rem. Every
+The library once carried two responsive stops, `mobile` and `desktop`, split at 48rem. Every
 layout-affecting prop accepted `{ mobile, desktop }` in place of a single value, resolved into a
 two-rung ladder of CSS custom properties consumed through one static media query per component, and
-every layout component carried `hideOnMobile` / `hideOnDesktop` booleans riding the same ladder.
+components carried `hideOnMobile` / `hideOnDesktop` booleans riding the same ladder.
 
 Three things came out of living with it.
 
-- **Almost nothing used it.** The example app in this repo is the only whole application built on
-  the library, and across its layout calls it passed no per-stop object at all. The one component
-  that genuinely decides by width, `sidebar`, uses its own media query.
-- **Two rungs is still a ladder.** Every declaration of every layout component paid for a duplicated
+- **Almost nothing used it.** Across every call site in this repo, no per-stop object was passed at
+  all. The components that genuinely decided by width used their own media query instead.
+- **Two rungs is still a ladder.** Every declaration of every component paid for a duplicated
   custom-property default and a second rule block inside a media query, in CSS compiled once per
   component type but shipped to every app that imports one - to serve a feature almost no call site
   used.
@@ -33,34 +32,30 @@ does: no jump at an arbitrary width.
 **Responsiveness is a property of the values. The library has no notion of a screen size, and an app
 that needs a breakpoint writes it as a media query in its own component's `styles`.**
 
-- **Every layout prop takes exactly one value**, applied at every width. There is no per-stop object
-  and no per-stop resolution: a prop converts to one CSS value written as one custom property on the
+- **Every prop takes exactly one value**, applied at every width. There is no per-stop object and no
+  per-stop resolution: a prop converts to one CSS value written as one custom property on the
   instance's root, against one default declared in the shared stylesheet.
 - **No component hides itself at a width.** Showing something on one screen size and not the other
   is a media query on the thing that needs it, in the component that owns it.
+- **No component changes its structure by width.** A component that would need to leave the flow, or
+  swap the shape of its box, below some width is a component the library does not ship; that
+  decision belongs to the app, in CSS it can read.
 - **The theme's spacing scale stays fluid.** `space-3` through `space-6` and `space-page` are
-  `clamp()` values that grow with the viewport, so a `gap: 4` or a page gutter is already correct at
+  `clamp()` values that grow with the viewport, so a gap or a page gutter is already correct at
   every width with no breakpoint written anywhere. Each keeps a `rem` term in its preferred value,
   so browser zoom and a larger default font size still scale spacing (WCAG 1.4.4).
-- **`grid` fits as many columns as the width allows by default**, through `minItemWidth` (16rem
-  unless given). `columns` remains for the rarer case where the count must be exact.
-- **`stack` wraps by default**, so a line of controls that runs out of room continues on the next
-  line rather than overflowing.
 - **The width imp itself splits at is the theme token `breakpoint-desktop`, `48rem`.** It is a value
   token, so an app can reuse it wherever a length goes and read it from JavaScript rather than
   repeating a number the library already has an opinion about. **It cannot be used inside a media
-  query** - CSS does not resolve `var()` there - so a query still needs the literal, and the token
-  does not move the drawer width compiled into `sidebar`. The docs say both plainly.
-- **`sidebar` keeps its own media query at that width**, unchanged: below it a sidebar leaves the
-  flow and becomes a drawer. It is the one component whose job is a structural change by width, and
-  it owns that decision rather than exposing it.
+  query** - CSS does not resolve `var()` there - so a query still needs the literal. The docs say
+  both plainly.
 
 ## Consequences
 
-- Every layout component's generated CSS loses a rung and a media block: one default per declaration
+- Every component's generated CSS loses a rung and a media block: one default per declaration
   instead of two, one rule block instead of two.
-- The common case is unchanged and still costs nothing: a `stack` or a `page` with no props is
-  responsive because its values are, not because it resolved anything at mount.
+- The common case is unchanged and still costs nothing: a component with no props is responsive
+  because its values are, not because it resolved anything at mount.
 - **An app that needs a structural change by width now writes CSS.** That is more to type than a
   prop was, and it is the deliberate trade: the breakpoint is visible, scoped to the component that
   needs it, and readable by anyone who knows CSS without knowing an imp convention. A layout that

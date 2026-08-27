@@ -74,15 +74,15 @@ found the way a test file is.
   `--imp-color-secondary` rather than a fixed palette, so highlighting inherits every theme's
   contrast guarantees instead of making its own, and keyword weight and comment italics carry the
   same distinctions where colour is forced away.
-- **Every page wears the same shell, and the shell is `app`.** `/` and each `/preview/<path>` render
-  one frame: a left `sidebar` holding the catalog as a `navMenu` grouped by category, a `navbar`
-  carrying the brand and a `commandPalette`, a right `sidebar` holding the theme, language and
-  direction pickers plus the theme editor, a `footer`, and the page itself in `main`. Navigating
-  between components is therefore one click from anywhere, and the workbench exercises the frame the
-  way an app does - two sidebars, their collapse and their drawer behaviour, the current-page
-  marking and the combobox all run on every preview page. The shell is pinned `dir="ltr"` on the
-  `app` host, so the direction control still applies to the stage alone.
-- **The right sidebar edits the applied theme, token by token.** The pickers choose which theme is
+- **Every page wears the same shell, and the shell is the workbench's own.** `/` and each
+  `/preview/<path>` render one frame built from a plain CSS grid the preview owns: a `<header>`
+  carrying the brand and a `commandPalette`, a `<nav>` holding the catalog as a `navMenu` grouped by
+  category, an `<aside>` holding the theme, language and direction pickers plus the theme editor, a
+  `<footer>`, and the page itself in `<main>`. Navigating between components is therefore one click
+  from anywhere. The frame is the preview's own markup rather than a standard component, so the
+  workbench never depends on a layout component to render the page used to diagnose one. The shell
+  is pinned `dir="ltr"` on its host, so the direction control still applies to the stage alone.
+- **The settings panel edits the applied theme, token by token.** The pickers choose which theme is
   applied; the editor below them lists every token the applied theme wrote, grouped by kind, and
   writes each change straight back through `applyTheme` so the page and the specimen re-skin as the
   value is typed. Edits are kept per theme in `localStorage` and layered back over the theme on
@@ -95,7 +95,7 @@ found the way a test file is.
   the file's `category` and `name` exports when it has them, otherwise the folder holding the file
   and the file's base name. A project that writes no metadata still gets a grouped catalog from its
   folders; one that writes it gets a catalog organized the way its team talks, including groups that
-  span folders. The same pair is what the search matches and what the sidebar, page head and
+  span folders. The same pair is what the search matches and what the catalog, page head and
   document title show, so what is searched is always what is read.
 - **The catalog travels in the page, not in the bundle, and is built at discovery time.** Every
   preview document carries a `<script type="application/json">` listing the discovered previews -
@@ -169,11 +169,11 @@ real dev server, cross-cutting concerns - theming today, i18n later - are exerci
 approximated.
 
 Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
-so a regression in `button`, `select`, `textArea`, `tabs`, `app`, `sidebar`, `navbar`, `navMenu` or
-`commandPalette` shows up while working on anything. The cost is the circularity: a broken standard
-component can break the page used to diagnose it, and the shell widened that surface from the panels
-to the frame every page is drawn in. The build-failure path stays raw DOM for that reason, so an
-error always renders.
+so a regression in `button`, `select`, `textArea`, `tabs`, `navMenu` or `commandPalette` shows up
+while working on anything. The cost is the circularity: a broken standard component can break the
+page used to diagnose it. The frame itself is the preview's own markup, which keeps that surface
+down to the panels rather than the page every preview is drawn in, and the build-failure path stays
+raw DOM for the same reason, so an error always renders.
 
 Preview pages are bundled while the rest of development stays buildless: a preview page reflects a
 file change only after its bundle is rebuilt, which happens on the reload the watcher already

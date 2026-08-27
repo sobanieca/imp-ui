@@ -12,9 +12,9 @@ fast-follow tier - listed now so the shape of the full set is fixed up front, bu
 lands.
 
 **Imports are grouped by subpath** (`adr/standard-component-library.md`): the base group is
-`imp/std`, every other group is `imp/std/<group>` - `imp/std/layout`, `imp/std/inputs`, and so on. A
-group is registered as a subpath when it lands; until then the specifier fails with an imp-branded
-error listing what exists.
+`imp/std`, every other group is `imp/std/<group>` - `imp/std/inputs`, `imp/std/navigation`, and so
+on. A group is registered as a subpath when it lands; until then the specifier fails with an
+imp-branded error listing what exists.
 
 **Names are the natural ones** - `button`, `text`, `form`, `select` - because `imp/std` is a
 separate namespace from the element factories, so shadowing one is not a conflict. A file that needs
@@ -31,14 +31,12 @@ without a skill file, so this is enforced rather than remembered.
 - **General** - `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
-- **Layout** - `splitPane` _(later)_ - placement details in _Layout & placement_ below. `box`,
-  `stack`, `grid`, `page` and `section` have landed, opening the `imp/std/layout` subpath and fixing
-  the prop-value convention for the whole library (`adr/responsive-fluid-values-only.md`); the frame
-  (`app`, `navbar`, `sidebar`, `footer`) landed with them (`adr/app-frame-regions.md`).
-  **`aspectBox` is dropped**: it is `box({ ratio: '16/9' })`, one prop on the shared surface rather
-  than a component of its own. **`scrollArea` is out of scope** for the same reason `virtualList`
+- **Layout** - **nothing has landed, and the group is being designed from scratch.** A first attempt
+  shipped a box set and a page frame and has been removed in full; nothing of it survives in the
+  library, the theme tokens, the docs or the ADRs. See _Layout & placement_ below for what the
+  redesign still has to answer. **`scrollArea` is out of scope** for the same reason `virtualList`
   is - custom scrollbars reimplement the browser's own scrolling
-  (`adr/browser-support-baseline.md`); `stack({ scroll: true })` is the supported answer.
+  (`adr/browser-support-baseline.md`).
 - **Inputs** - `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
   _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
@@ -77,66 +75,29 @@ without a skill file, so this is enforced rather than remembered.
 
 ## Layout & placement
 
-The layout group is the placement toolkit - child positioning is expressed through layout parents
-and props on the boxes themselves, not per-component positioning props. It is deliberately small,
-because every extra component is a name an agent has to learn and a decision it has to make - the
-five boxes below plus the four frame regions, and nothing is added that an existing prop can say.
-What landed:
+**Undesigned.** The first layout group - a shared box surface plus `box`, `stack`, `grid`, `page`,
+`section` and an `app` frame of `navbar` / `sidebar` / `footer` regions - was built, shipped and
+then removed outright. Nothing from it is authoritative any more: do not reintroduce its component
+names, its prop tables or its region-sorting behaviour by copying them from an old commit.
 
-- **`box`** is the plain block, and its props are the **shared box surface** every other layout
-  component also accepts: `padding`/`paddingX`/`paddingY` off the spacing scale, `width`/`height`
-  and their min/max as CSS lengths, `radius`, `shadow`, `background`, `border`, `ratio`, `grow` and
-  `scroll`. One table an agent learns once. Margins and positioning are deliberately absent
-  (`adr/responsive-fluid-values-only.md`).
-- **`page`** caps content at a themed width (`size`, `sm`-`xl` off the `--imp-content-*` tokens) and
-  centres it; **`section`** is a band of page with block padding off the spacing scale (`size`,
-  `sm`-`lg`), rendering a real `<section>` that becomes a landmark once given a `label`. Both are a
-  `box` with one extra prop, and both let an explicit box prop win over their sugar.
-- **`stack`** carries the flex placement surface: `direction`, `gap`, `justify`, `align`, `wrap` -
-  enough that app code almost never writes raw flex CSS. One component covers a row and a column;
-  `scroll: true` is the overflow case and a `justify` or a `grow` is the spacing one, so neither
-  needs a component of its own.
-- **`grid`** is a count of equal columns (`columns`, 1-12) plus `minItemWidth` for the auto-fitting
-  case, not a track template. The antd Row/Col model was **dropped**: a 24-column grid with `offset`
-  on the children buys nothing over a bigger `columns` count, and a percentage `offset` is the one
-  placement that cannot be expressed cleanly on an auto-placed grid item. Per-cell spans and
-  named-area templates (`areas`) were left out too - add them when something needs one.
-- **`grow` is a prop of the box, not of its parent**, and every layout box carries it. Placement
-  cannot be applied to an arbitrary child because `:host { display: contents }` means a child
-  component's own root - inside its shadow - is the real flex or grid item, and no selector from the
-  parent can reach it (`adr/responsive-fluid-values-only.md`); anything else that needs to grow is
-  wrapped in a `stack`.
-- **`app` caps and centres the main region** through `maxWidth`, whose widths are theme tokens
-  (`--imp-content-sm` ... `-xl`); `splitPane` adds user-resizable panes _(later)_.
-- All spacing values come off the theme's spacing scale as a step `0`-`6`, not free-form pixels, so
-  layouts stay consistent across an app.
+The redesign starts from the questions that group answered badly or not at all:
 
-What the frame settled, since it landed ahead of the feedback group rather than waiting for `drawer`
-(`adr/app-frame-regions.md`):
+- **How small can the set be?** Every component is a name an agent has to learn and a decision it
+  has to make, so the count matters more here than anywhere else in the library.
+- **Where does the shared surface stop?** A single prop table across every box was cheap to learn
+  and expensive to carry; decide deliberately what is shared, what is per-component, and what is
+  simply CSS the app writes.
+- **How is a child positioned?** `:host { display: contents }` means a child component's own root -
+  inside its shadow - is the real flex or grid item, and no selector from the parent can reach it.
+  Any placement story has to hold under that constraint.
+- **Is there a page frame at all?** The removed one was a `100dvh` viewport frame that sorted its
+  children into regions and owned a phone drawer. Whether the library should own that shape, or
+  leave it to the app's own CSS, is open.
+- **What stays true regardless:** a prop takes exactly one value applied at every width, spacing
+  comes off the theme scale as a step `0`-`6`, there are no margin props, and a structural change by
+  width is a media query the app writes (`adr/responsive-fluid-values-only.md`).
 
-- **It is a viewport frame**, not a block that grows: `100dvh`, with only the main region scrolling
-  and the bars and sidebars holding their place.
-- **Regions are children, not props** - `app` sorts its direct children by element, so a `navbar`
-  goes on top, each `sidebar` down the side it names, a `footer` at the bottom, and everything left
-  over is `<main>`. Children have no arity, which is what makes several sidebars the same call shape
-  as none.
-- **A sidebar owns its own toggle**, because `aria-controls` and `aria-expanded` cannot cross a
-  shadow root - which is the accessibility constraint deciding where the component boundary falls.
-- **The drawer state is CSS-driven, not a `drawer`.** Below `md` a sidebar leaves the flow, keeps a
-  tab pinned to its screen edge and slides over the page, with `app` closing the others, showing the
-  backdrop and marking every other region `inert`. The sidebar never moves in the DOM - the docked
-  and drawer states differ only in per-breakpoint custom properties, so nothing is re-parented or
-  re-mounted. **It stays its own thing when `drawer` lands** (`todo/overlay-seam.md`): a `<dialog>`
-  is open or closed, while this sidebar is docked at one breakpoint and an overlay at another, and
-  driving that from a `matchMedia` listener is exactly the JS-resolved layout and wrong first paint
-  `adr/responsive-fluid-values-only.md` rejected.
-- **A flex item's `z-index` applies even when it is `position: static`**, which is why the sidebar's
-  drawer `z-index` is part of the drawer state rather than a constant: a constant one painted the
-  docked sidebar over the navbar's dropdowns.
-
-Still open in this group:
-
-- **`splitPane`** - user-resizable panes.
+`splitPane` - user-resizable panes - is still wanted, and waits on the redesign.
 
 ## Form handling
 
@@ -206,22 +167,19 @@ Still owed by this group:
 
 Mobile layout is first-class, not a separate component set:
 
-- **Settled with the layout group** (`adr/responsive-fluid-values-only.md`): a layout prop takes
-  exactly one value, applied at every width, resolved into one per-instance CSS custom property. No
-  component varies a prop or hides itself by screen size. Every group after this one follows the
-  same spelling.
+- **Settled library-wide** (`adr/responsive-fluid-values-only.md`): a prop takes exactly one value,
+  applied at every width, resolved into one per-instance CSS custom property. No component varies a
+  prop or hides itself by screen size. Every group after this one follows the same spelling.
 - **`--imp-breakpoint-desktop` (48rem) is a theme token**, so an app can reuse the width in `calc()`
   and read it from JS. It is a value token only: **a media query cannot read a custom property**, so
-  a query still needs the literal, and retuning the token does not move `sidebar`'s drawer width. Do
-  not build anything that implies otherwise.
-- **Components adapt below the breakpoints they care about:** `sidebar` already turns into a drawer
-  behind a pinned edge tab; `table` switches to stacked cards or horizontal scroll; `modal` goes
-  full-screen; `drawer` becomes a bottom sheet; pickers render touch-appropriate panels.
+  a query still needs the literal. Do not build anything that implies otherwise.
+- **Components adapt below the breakpoints they care about:** `table` switches to stacked cards or
+  horizontal scroll; `modal` goes full-screen; `drawer` becomes a bottom sheet; pickers render
+  touch-appropriate panels.
 - **Touch targets** meet a minimum size taken from the theme tokens.
 - **A state-shaped `breakpoint` value** (readable + watchable) is still owed, for the structural
   swaps CSS cannot express - `table`'s card mode is the first real consumer, so it lands with the
-  data group rather than being invented ahead of one. Pure-CSS responsiveness covers the layout
-  group completely without it.
+  data group rather than being invented ahead of one.
 
 ## Conventions
 

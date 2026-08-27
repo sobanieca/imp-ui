@@ -749,7 +749,7 @@ export const category = 'Widgets'
 export const description = "Run 'imp skill ./components/todos.js' before writing code with it."
 ```
 
-`name` is the label in the sidebar, the search, the page head and the browser tab; `category` is the
+`name` is the label in the catalog, the search, the page head and the browser tab; `category` is the
 group it is listed under; `description` is the agent instruction shown below the head. Each one is
 optional and each is a plain string. Declare none of them and imp falls back to the file's own name
 and the folder it sits in, so `src/inputs/text_field.preview.js` is `text_field` under `inputs` -

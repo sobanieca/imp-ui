@@ -30,7 +30,6 @@ leaks out onto your page.
 | Import               | What it holds                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                                                                                                                            |
-| `imp/std/layout`     | The frame - `app`, `navbar`, `sidebar`, `footer` - and the boxes it holds: `page`, `stack`, `grid`, `section`                                                                                 |
 | `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
@@ -265,322 +264,6 @@ Translate those keys in your own files to put it in your own words and every lan
 specific. A `title` you pass is text like any other - imp does not translate it for you, so reach
 for `computed([lang], () => t('invoices.empty'))` if it needs to follow the language.
 
-## Laying a page out - from `imp/std/layout`
-
-Layout is where a page stops being a list of components and starts being a design, so imp gives it
-its own group - and keeps it small. You get five boxes and the four pieces of the page frame. None
-of them ask you to write CSS, and most of them need no props at all.
-
-```js
-import { button, heading } from 'imp/std'
-import { grid, page, stack } from 'imp/std/layout'
-
-page(
-  stack(
-    stack({ direction: 'row', justify: 'between' }, heading('Invoices'), button('New invoice')),
-    grid(...invoiceCards),
-  ),
-)
-```
-
-That example passes two props, and it is already responsive: the page gutter grows with the
-viewport, the row wraps when it runs out of room, and the grid fits as many cards as the screen
-allows. The next two sections explain why.
-
-### Responsive by default, not by configuration
-
-Most responsive design in imp is not something you write. It is already in the values:
-
-- **Spacing is fluid.** The theme's spacing scale is built from `clamp()`, so a gap or a page gutter
-  grows smoothly with the viewport instead of jumping at a fixed width. `padding: 4` is tighter on a
-  phone and roomier on a monitor without you saying so.
-- **`grid` fits as many columns as the width allows.** With no props at all it reflows from one
-  column on a phone to four on a monitor.
-- **A `stack` wraps.** A line of controls that runs out of room continues on the next line rather
-  than overflowing.
-
-Between them these cover the great majority of what breakpoints used to be for.
-
-### When a layout must actually change
-
-Every layout prop takes one value, and that value applies at every width. imp's layout components
-have no notion of a screen size at all: nothing you pass one is per-screen, and nothing they render
-changes shape on its own.
-
-That is a deliberate limit rather than an omission. Fluid spacing, a wrapping `stack` and an
-auto-fitting `grid` are continuous: they are correct at every width, in the first frame the browser
-paints, with nothing to configure. A breakpoint is a step function bolted onto a continuous problem,
-and the moment the library offers one, it is the tool everything reaches for - including the cases
-the fluid values already had right.
-
-So when a layout genuinely has to change shape rather than scale - an axis flips, a region
-disappears - you write that yourself, in your own component's `styles`, with a media query:
-
-```js
-component('invoice-filters', {
-  styles: () => `
-    .filters { display: flex; flex-direction: column; }
-
-    @media (min-width: 48rem) {
-      .filters { flex-direction: row; }
-    }
-  `,
-  onMount: () => div({ class: 'filters' }, ...filters()),
-})
-```
-
-Your styles are scoped to your component, so this affects nothing else, and it is plain CSS that any
-developer can read without knowing an imp convention.
-
-### The breakpoint is a theme token
-
-The width imp itself splits at is a theme token, `--imp-breakpoint-desktop`, so the number in your
-media query does not have to be a magic constant you keep in your head:
-
-```js
-component('invoice-filters', {
-  styles: () => `
-    .filters { gap: var(--imp-space-4); }
-
-    /* usable anywhere a length is */
-    .rail { max-inline-size: calc(var(--imp-breakpoint-desktop) / 3); }
-  `,
-})
-```
-
-It ships at `48rem`, and like every other token you can retune it when you build a theme:
-
-```js
-applyTheme({ name: 'wide', tokens: { ...defaultTokens, 'breakpoint-desktop': '56rem' } })
-```
-
-One catch, and it is a CSS limitation rather than an imp one: **a custom property cannot be used
-inside a media query.** `@media (min-width: var(--imp-breakpoint-desktop))` does not work in any
-browser, so a media query still needs the literal length. The token is what you reach for everywhere
-else - `calc()`, `min()`, `clamp()`, a `max-inline-size` - and it is what you read from JavaScript
-when you need the number:
-
-```js
-const desktopFrom = getComputedStyle(document.documentElement)
-  .getPropertyValue('--imp-breakpoint-desktop')
-```
-
-Retuning the token moves what your own styles do with it. It does not move the one width built into
-imp: a `sidebar` becomes a drawer under 48rem, and that query is compiled into the component's
-shared stylesheet before any theme is applied, for the same reason - a media query cannot read a
-token.
-
-### Space comes from the scale
-
-Anywhere a layout component asks for space - `gap`, `padding` - you give it a **step from 0 to 6**,
-not a pixel value:
-
-```js
-stack({ gap: 4 }, ...rows)
-```
-
-Those steps are your theme's spacing scale (see **[Theming](theming.md)**), so spacing stays
-consistent across the whole app, scales with the viewport, and changes with the theme instead of
-drifting one hand-typed pixel value at a time. Most of the time you can leave `gap` and `padding`
-out entirely and take the theme's answer.
-
-### The components
-
-| Component | What it does                                | The props you will reach for                         |
-| --------- | ------------------------------------------- | ---------------------------------------------------- |
-| `page`    | A padded, centred column at a good measure  | `size`                                               |
-| `stack`   | A column, a row, or one that changes shape  | `direction`, `gap`, `align`, `justify`, `wrap`       |
-| `grid`    | As many equal columns as fit                | `minItemWidth`, `columns`, `gap`                     |
-| `section` | A band of page content with vertical rhythm | `size`, `label`                                      |
-| `app`     | The whole page frame - see below            | `maxWidth`, `padding`                                |
-| `navbar`  | The bar across the top of the frame         | `label`, `gap`, `justify`, `align`, `wrap`           |
-| `sidebar` | A collapsible column beside the page        | `side`, `label`, `width`, `resizable`, `collapsible` |
-| `footer`  | The strip along the bottom of the frame     | `label`, `gap`, `justify`, `align`, `wrap`           |
-
-`stack` does all the everyday work. A column, a row, and a column that becomes a row on a wider
-screen are the same component with a different `direction`, so there is one thing to learn instead
-of three; empty space between children is a `justify` or a `grow` rather than an element you insert;
-and a region that scrolls on its own is `stack({ scroll: true })`. Anything more specific than these
-
-- a labelled rule, a media object - is a component of yours, built once and named after what it is.
-
-A card is not a component either, because it does not need to be: it is a `stack` with a background
-and a border, which the shared box surface below already gives you.
-
-### One box surface, five components
-
-`page`, `stack`, `grid` and `section` are the same box with different jobs, so they share one set of
-props on top of their own. Learn it once and it works everywhere:
-
-| Prop                                                                | Takes                                              |
-| ------------------------------------------------------------------- | -------------------------------------------------- |
-| `padding`, `paddingX`, `paddingY`                                   | a spacing step `0`-`6`                             |
-| `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight` | a CSS length, e.g. `'20rem'`                       |
-| `radius`                                                            | `'none'`, `'sm'`, `'md'`, `'lg'`, `'xl'`, `'full'` |
-| `shadow`                                                            | `'none'`, `'sm'`, `'md'`, `'lg'`                   |
-| `background`                                                        | `'none'`, `'surface'`, `'sunken'`                  |
-| `border`                                                            | `true` / `false`                                   |
-| `ratio`                                                             | an aspect ratio, e.g. `'16/9'`                     |
-| `grow`, `scroll`                                                    | as described above                                 |
-
-```js
-stack({ padding: 4, background: 'surface', border: true, radius: 'lg', shadow: 'sm' }, ...summary)
-```
-
-That is a panel: theme background, theme border, theme corner rounding, theme shadow - four steps,
-no colours and no pixel values. `radius` and `shadow` read the scales your theme sets (see
-**[Theming](theming.md)**), so a rounder or flatter theme changes every box at once.
-
-Two things the surface deliberately leaves out. There are **no margin props**: the space between
-siblings belongs to their parent's `gap`, so a component never pushes on the space around it and two
-layouts can never fight over the same margin. And there are **no positioning props** - a layout
-component places its children in flow, and anything that has to escape the flow is a component of
-yours with its own styles.
-
-`page` and `section` are the two named shapes that come up on every page. A page caps its content at
-a themed width (`sm` 40rem through `xl` 80rem, or `full` for none) and centres what is left over, so
-a paragraph never runs the full width of a monitor, and it pads itself from the theme so text never
-sits flush against a phone's screen edge. A section is a band of page with block padding from the
-spacing scale, and it renders a real `<section>` element - give it a `label` matching its heading
-and a screen reader can jump straight to it:
-
-```js
-page({ size: 'md' }, section({ label: 'Pricing' }, heading('Pricing'), plans()))
-```
-
-`grid` deserves a note: it fits as many columns as the width allows by default. `minItemWidth` sets
-the narrowest a card should ever get, and `columns` is a **count** of equal columns for the rarer
-case where the number has to be exact:
-
-```js
-grid({ minItemWidth: '18rem' }, ...cards)
-```
-
-### Letting one child take the leftover room
-
-`gap` handles the space between children, and `justify`/`align` handle the group as a whole. When
-**one** child should absorb what is left over, give that child `grow`:
-
-```js
-stack({ direction: 'row' }, stack({ grow: true }, searchField()), button('Search'))
-```
-
-`grow` is a prop of the box that grows, not of the parent, and that is a consequence of how imp
-components work rather than a preference: a component seals its own styling, so a parent genuinely
-cannot reach inside `searchField` to stretch it. Every layout box carries `grow` itself; wrap
-anything else in a `stack` when it needs to grow. Everything else lays out correctly with no wrapper
-at all.
-
-### The page frame: `app`
-
-Almost every application has the same outline - a bar across the top, navigation down one side, the
-page in the middle, something along the bottom. `app` is that outline. You do not describe it with
-props: you pass the regions as children and `app` sorts them by what they are.
-
-```js
-import { app, flex, footer, navbar, sidebar } from 'imp/std/layout'
-import { navMenu } from 'imp/std/navigation'
-
-app(
-  { maxWidth: 'lg' },
-  navbar({ label: 'Workspace', justify: 'between' }, brand(), accountMenu()),
-  sidebar({ side: 'left', label: 'Sections' }, navMenu({ label: 'Sections', items: sections })),
-  sidebar({ side: 'right', label: 'Activity', width: 'sm' }, activityFeed()),
-  footer({ label: 'Session' }, text({ size: 'sm', tone: 'secondary' }, 'Signed in as ada')),
-  invoicesPage(),
-)
-```
-
-Every `navbar` goes on top, every `sidebar` down the edge it names, every `footer` at the bottom,
-and **everything left over is the main content**. Order between them does not matter, so you can
-write the frame in whatever order reads best. Only sidebars on the same side care: they stack in the
-order you write them, outward from the page.
-
-| Prop       | Values                                   | Default  |                                     |
-| ---------- | ---------------------------------------- | -------- | ----------------------------------- |
-| `maxWidth` | `'sm'`, `'md'`, `'lg'`, `'xl'`, `'full'` | `'full'` | Caps the main region and centres it |
-| `padding`  | spacing step `0`-`6`                     | `4`      | The inset around the main region    |
-
-It is a **viewport frame**: it fills the window, the navbar and footer hold their place, and only
-the main region scrolls. That is what makes a long page feel like an application rather than a
-document - your navigation does not scroll away. Put it at the top of the page and give it nothing
-to sit inside.
-
-`maxWidth` caps the **content**, not the chrome. The navbar, the sidebars and the footer stay
-full-bleed against the window edges while the page itself settles into a centred column of readable
-width - which is what you want on a wide monitor, and it costs one prop.
-
-### Sidebars, and what happens on a phone
-
-A sidebar is a region and a control in one. It renders as a `complementary` landmark, and unless you
-turn it off with `collapsible: false` it draws its own toggle: pressing it collapses the sidebar to
-a narrow rail with the toggle still on it, and pressing it again slides the panel back open. The
-width animates, and it does not animate at all for someone who has asked their system for reduced
-motion.
-
-| Prop          | Values              | Default  |                                                     |
-| ------------- | ------------------- | -------- | --------------------------------------------------- |
-| `side`        | `'left'`, `'right'` | `'left'` | Follows the reading direction, so it mirrors in RTL |
-| `label`       | string - **live**   | -        | Names the landmark and its toggle - always pass it  |
-| `width`       | scale keyword       | `'md'`   | From your theme's `--imp-sidebar-*` tokens          |
-| `resizable`   | boolean             | `false`  | Lets the reader drag the sidebar wider or narrower  |
-| `minWidth`    | scale keyword       | `'xs'`   | How narrow a drag may take it                       |
-| `maxWidth`    | scale keyword       | `'xl'`   | How wide a drag may take it                         |
-| `collapsible` | boolean             | `true`   | `false` drops the rail, but never the drawer tab    |
-| `collapsed`   | boolean - **live**  | `false`  | The starting state on a wide screen                 |
-
-A scale keyword is one of `'xs'`, `'sm'`, `'md'`, `'lg'` and `'xl'` - the five steps of your theme's
-sidebar scale, 10rem to 24rem until you retune them.
-
-The part worth not writing yourself is the phone. Below 48rem every sidebar leaves the flow: it
-collapses to a small tab pinned to its own edge of the screen, and tapping that tab slides the panel
-over the page behind a backdrop, moves focus into it, and takes the rest of the page out of the
-accessibility tree so a screen reader cannot wander behind the overlay. `Escape`, the backdrop, and
-choosing anything inside it all close it again and hand focus back to the tab.
-
-`collapsible: false` says the sidebar is not a column you can roll up - it takes the toggle off the
-wide-screen layout - and that is all it says. On a narrow screen the sidebar is still a drawer and
-still keeps its tab, because a region with no way to open it is a region nobody can read.
-
-This is also the answer to the question a second sidebar raises. Two sidebars will not fit beside a
-phone screen, so on a narrow screen they do not try: each keeps its own tab, the tabs stack down
-their edge in the order you wrote them, and opening one closes any other that is open. One panel is
-over the page at a time, whichever side it came from, and the page behind it is never half-covered
-by two. None of this is a prop you set - it is what a sidebar is - so do not add a menu button or a
-breakpoint of your own on top of it.
-
-### Letting the reader choose the width
-
-`resizable: true` puts a drag handle down the edge of the sidebar that faces the page, and the
-reader takes it from there - with the mouse, with a finger on a touch screen, or with a pen. It is
-the same handle in each case, so there is nothing to enable for touch.
-
-```js
-sidebar(
-  { side: 'left', label: 'Sections', resizable: true, minWidth: 'xs', maxWidth: 'lg' },
-  navMenu({ label: 'Sections', items: sections }),
-)
-```
-
-The drag never leaves the range you gave it, and the range is the same keyword scale as `width`, so
-a resizable sidebar cannot be dragged into a shape your theme did not plan for. Whoever cannot use a
-pointer gets the same control: the handle is in the tab order, the arrow keys move it a step at a
-time, `Home` and `End` take it to the ends of the range, and a screen reader announces it as a
-splitter along with the width it is at. A double click puts the sidebar back to the `width` you
-declared.
-
-The width a reader drags to sticks for as long as the page is open, including across collapsing and
-reopening the sidebar. The handle itself is only there while there is something to drag: it goes
-away while the sidebar is collapsed to its rail, and on a narrow screen, where the sidebar is a
-drawer rather than a column.
-
-Each region renders as its landmark - `<header>`, `<aside>`, `<main>`, `<footer>` - so a screen
-reader user can jump straight to the page content, and you should not wrap what you pass in another
-one.
-
-`footer` here is the app region; `imp/html` exports a `footer` element factory too. They never
-collide because they arrive through different imports, but a file that wants both should alias one.
-
 ## Forms - from `imp/std/inputs`
 
 A form in imp is not a special construct with its own API to learn. **Its values are ordinary imp
@@ -674,7 +357,12 @@ attempted. You do not have to manage that - there is no "show errors" flag to ke
 `submitButton()` is the submit action. It can sit anywhere inside the form:
 
 ```js
-stack({ direction: 'row', gap: 2 }, submitButton('Save changes'), resetButton('Start over'))
+form(
+  { initialValues, onSubmit },
+  ...fields,
+  submitButton('Save changes'),
+  resetButton('Start over'),
+)
 ```
 
 Clicking it re-checks every field. If anything fails, `onSubmit` never runs and the bad fields start
@@ -815,14 +503,14 @@ navMenu({
 })
 ```
 
-| Prop        | Values                                   | Default    |                                            |
-| ----------- | ---------------------------------------- | ---------- | ------------------------------------------ |
-| `items`     | array of `{ id, label, href, … }` - live | `[]`       | The destinations                           |
-| `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections              |
-| `selected`  | an item's `id` - **live**                | none       | The page you are on                        |
-| `label`     | string - **live**                        | -          | Names the navigation for a screen reader   |
-| `direction` | `'column'`, `'row'`                      | `'column'` | `column` for a sidebar, `row` for a navbar |
-| `gap`       | spacing step `0`-`6`                     | `1`        | Between items and groups                   |
+| Prop        | Values                                   | Default    |                                              |
+| ----------- | ---------------------------------------- | ---------- | -------------------------------------------- |
+| `items`     | array of `{ id, label, href, … }` - live | `[]`       | The destinations                             |
+| `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections                |
+| `selected`  | an item's `id` - **live**                | none       | The page you are on                          |
+| `label`     | string - **live**                        | -          | Names the navigation for a screen reader     |
+| `direction` | `'column'`, `'row'`                      | `'column'` | `column` down the side, `row` across the top |
+| `gap`       | spacing step `0`-`6`                     | `1`        | Between items and groups                     |
 
 The current item is marked with `aria-current="page"` - the thing a screen reader actually announces
 as "current page" - and the styling follows from it, so the highlight and the announcement can never
@@ -834,8 +522,8 @@ as a `select` event before the link is followed, so an app doing its own routing
 none to add: `Tab` and `Enter` are what links already do, and a roving-focus menu would take those
 links out of the tab order in exchange for nothing.
 
-The same component is your navigation bar with `direction: 'row'`. Put the column one in a `sidebar`
-and a row one straight in the `navbar`, and one list of destinations serves both.
+The same component is your navigation bar with `direction: 'row'`. Put the column one down the side
+of your page and a row one across the top, and one list of destinations serves both.
 
 ## `commandPalette` - from `imp/std/navigation`
 

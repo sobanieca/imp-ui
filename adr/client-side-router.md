@@ -27,11 +27,11 @@ as data.** The public surface is `router`, `area`, `navigate`, `useRoute`, and `
 lifecycle or scheduler; a screen cleans up through the ordinary component `onUnmount`.
 
 - **`router({ routes, placeholder, onError, onNotFound })` renders the matched screen.** It is the
-  slot the current screen appears in - everything around it (header, sidebar, footer) persists
-  across navigations; only its contents change. It behaves like a regular imp component and takes
-  the same lifecycle options a component does (`placeholder`, `onError`), plus a single
-  `onNotFound`. Because a router is just an element you place, an app can have none (a plain
-  component tree, e.g. for SSR) or one - the documented shape is one router per app.
+  slot the current screen appears in - everything around it, the app's own chrome, persists across
+  navigations; only its contents change. It behaves like a regular imp component and takes the same
+  lifecycle options a component does (`placeholder`, `onError`), plus a single `onNotFound`. Because
+  a router is just an element you place, an app can have none (a plain component tree, e.g. for SSR)
+  or one - the documented shape is one router per app.
 
 - **Routes are a table, not registrations.** `routes` is an object mapping a path pattern to its
   target: `{ '/': () => home(), '/todos/:id': ({ params }) => detail(params.id) }`. A pattern is a

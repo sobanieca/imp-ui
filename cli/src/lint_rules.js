@@ -20,7 +20,6 @@ import * as logModule from '../../lib/src/api/log.js'
 import * as httpModule from '../../lib/src/api/http.js'
 import * as stdModule from '../../lib/src/std/index.js'
 import * as stdDisplayModule from '../../lib/src/std/display/index.js'
-import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
 import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
 import * as stdFeedbackModule from '../../lib/src/std/feedback/index.js'
@@ -36,7 +35,6 @@ export const IMP_MODULE_EXPORTS = {
   'imp/http': httpModule,
   'imp/std': stdModule,
   'imp/std/display': stdDisplayModule,
-  'imp/std/layout': stdLayoutModule,
   'imp/std/inputs': stdInputsModule,
   'imp/std/navigation': stdNavigationModule,
   'imp/std/feedback': stdFeedbackModule,

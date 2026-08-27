@@ -4,7 +4,6 @@ import { initState } from 'imp/state'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { button, text } from 'imp/std'
-import { stack } from 'imp/std/layout'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { tabs } from 'imp/std/navigation'
@@ -80,6 +79,14 @@ const SCENARIO_STYLES = `
     align-items: baseline;
     gap: var(--imp-space-3, 12px);
     margin-block-end: var(--imp-space-2, 8px);
+  }
+
+  .scenario-body {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--imp-space-4, 16px);
+    flex-wrap: wrap;
   }
 
   .scenario-head h2 {
@@ -394,8 +401,8 @@ const switchTo = (code) => {
 }
 
 const picker = (kind, ariaLabel, values, choice) =>
-  stack(
-    { direction: 'row', gap: 2 },
+  div(
+    { class: 'picker' },
     text({ tone: 'secondary', size: 'sm' }, kind),
     select({ ariaLabel, value: choice, options: values }),
   )
@@ -680,8 +687,8 @@ const scenarioSection = (name, scenario, meta) => {
         {
           id: 'preview',
           label: 'Preview',
-          content: stack(
-            { direction: 'row', gap: 4, align: 'start' },
+          content: div(
+            { class: 'scenario-body' },
             stagePanel(nodes),
             stateEditor(nodes, meta.states),
           ),

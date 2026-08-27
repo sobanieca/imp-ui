@@ -22,7 +22,7 @@ WRITING AN APP
   state               named reactive state shared down the tree and bound straight to the DOM
   http                the configured HTTP client a component owns, with retries and request state
   routing             client-side routes as one plain-data table, with lazily loaded sections
-  std                 the built-in component library: text, layout, forms, navigation and empty states
+  std                 the built-in component library: text, forms, navigation and empty states
   theming             themes as plain token modules, applied at the entry point and swappable
   i18n                t() lookups, per-language messages, and the lang attribute that drives them
   logging             the built-in logger and the per-environment log level
@@ -51,14 +51,6 @@ STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
   std/text            text - body text, a paragraph by default or an inline span
   std/link            link - a real anchor whose in-app clicks are handled by the router
   std/emptyState      emptyState - the placeholder for a list, table or search result with nothing in it
-  std/app             app - the page frame: a navbar, sidebars, a footer and the main region
-  std/footer          footer - the bar across the bottom of the app frame
-  std/grid            grid - a CSS grid that fits as many equal columns as the width allows
-  std/navbar          navbar - the bar across the top of the app frame
-  std/page            page - the content column: theme padding and a readable measure, with no props
-  std/section         section - a band of page content with consistent vertical spacing
-  std/sidebar         sidebar - a collapsible side region of the app frame, stackable on either side
-  std/stack           stack - the one layout box: a column, a row, or a column that becomes a row
   std/checkbox        checkbox - a single boolean bound to a form field
   std/form            form - a form whose values are ordinary imp state, addressed by field path
   std/numberField     numberField - a numeric input that commits a number, not a string

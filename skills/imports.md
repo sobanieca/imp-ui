@@ -15,7 +15,6 @@ relative path, a URL, or a version.
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
 | `imp/std`            | `button`, `heading`, `text`, `link`                                       |
-| `imp/std/layout`     | `app`, `navbar`, `sidebar`, `footer`, `page`, `stack`, `grid`, `section`  |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, …      |
 | `imp/std/display`    | `emptyState`                                                              |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                       |

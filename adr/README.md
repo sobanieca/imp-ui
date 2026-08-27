@@ -53,12 +53,11 @@ Conventions:
 
 ## Components
 
-| ADR                                                             | Decision                                                                           |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [standard-component-library](standard-component-library.md)     | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props   |
-| [responsive-fluid-values-only](responsive-fluid-values-only.md) | Fluid theme values only; no per-screen props - an app writes its own media query   |
-| [app-frame-regions](app-frame-regions.md)                       | The app frame sorts its own children into regions; one drawer at a time on a phone |
-| [state-driven-forms](state-driven-forms.md)                     | Form values are named state; controls bind one field by dot path                   |
+| ADR                                                             | Decision                                                                         |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [standard-component-library](standard-component-library.md)     | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props |
+| [responsive-fluid-values-only](responsive-fluid-values-only.md) | Fluid theme values only; no per-screen props - an app writes its own media query |
+| [state-driven-forms](state-driven-forms.md)                     | Form values are named state; controls bind one field by dot path                 |
 
 ## Library
 

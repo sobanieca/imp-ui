@@ -102,16 +102,6 @@ shared helper. `dropdownMenu({ label, items })` is unaffected because it renders
 This is the data-driven rule that already made `tabs`, `navMenu` and `commandPalette` what they are
 (`adr/standard-component-library.md`), applied to its least obvious case.
 
-## `sidebar` keeps its own drawer
-
-This answers the note left in `todo/stdlib-components.md`: **when `drawer` lands, the frame's
-`sidebar` does not become one.** A `<dialog>` is open or closed, while a sidebar is docked above
-`md` and a drawer below it (`adr/app-frame-regions.md`). Expressing that as a dialog means calling
-`showModal()` from a `matchMedia` listener, which is the JS-resolved layout and wrong first paint
-that `adr/responsive-fluid-values-only.md` already rejected. The drawer state stays CSS-driven with
-its own focus and Escape handling, and `app` keeps arbitrating which one is open; the seam is for
-components that are unconditionally overlays.
-
 ## imp's test DOM does not implement any of this
 
 The vendored happy-dom stubs `showModal()` as `setAttribute('open', '')` - no top layer, no `inert`,
@@ -156,8 +146,6 @@ waiting on this seam to be describable from something real.
 - `docs/state.md`, `skills/state.md` and `skills/http.md` all illustrate out-of-subtree DOM with "an
   overlay appended to `document.body`". That stays true of app code, but it will read as a
   description of imp's own overlays, which never do it. Reword the example when the seam lands.
-- `docs/std-components.md` describes a collapsed `sidebar` as turning "into a drawer". Reword once
-  `drawer` is a component, so the two do not read as the same thing.
 
 ## Open questions
 

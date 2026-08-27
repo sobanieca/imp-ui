@@ -53,7 +53,7 @@ instead. Each is optional and each must be a plain string literal; anything else
 
 | export        | what it does                                                                     |
 | ------------- | -------------------------------------------------------------------------------- |
-| `name`        | the label in the sidebar, the search, the page head and the browser tab          |
+| `name`        | the label in the catalog, the search, the page head and the browser tab          |
 | `category`    | the group the component is listed under, replacing the folder name               |
 | `description` | the agent instruction below the page head: the command an agent should run first |
 
@@ -80,9 +80,10 @@ is `text_field` under `inputs`.
 
 ## The page
 
-- **The shell** - every page is the same frame: the catalog of components in a sidebar, grouped by
+- **The shell** - every page is the same frame: the catalog of components down the side, grouped by
   category, with the one you are looking at marked; a search field across the top; and the theme,
-  language and direction pickers beside it. `/` opens the catalog as a card per category.
+  language and direction pickers in a settings panel beside the page. `/` opens the catalog as a
+  card per category.
 - **Search** - press `Ctrl P` (`⌘P` on a Mac) from anywhere on the page. Matching is fuzzy over
   `category/name` as they are shown, so `inp` lists the `Inputs` category and `tf` finds
   `Text field`; Up and Down move, `Enter` opens, `Escape` clears.
@@ -125,7 +126,7 @@ it: a preview file opens straight to it, a **component** path opens its sibling 
 A component is listed as **`category/name`**, taken from the file's `category` and `name` exports
 and falling back to the folder holding the preview file and the file's own name without
 `.preview.js` - so `src/inputs/text_field.preview.js` with no metadata is `inputs/text_field` in the
-sidebar and in the search. Group your components into folders and the catalog groups itself; declare
+catalog and in the search. Group your components into folders and the catalog groups itself; declare
 `category` to group them your own way, and two files declaring the same `category` land in one group
 whatever folders they sit in.
 
