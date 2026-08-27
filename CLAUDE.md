@@ -142,6 +142,17 @@ commit.
 else it surfaces - fix it before considering the work done; do not ignore, suppress, or leave lint
 errors behind.
 
+## Git - commit on the branch you are on
+
+**`main` is a working branch here, so when the checked-out branch is `main`, commit straight to
+it.** Do not create a topic branch first, do not open a pull request, and do not fast-forward a side
+branch back onto it - the repo's history is linear on `main` and a branch-per-change only adds a
+merge to undo. When some other branch is checked out, commit there instead; the rule is always to
+commit where you already are.
+
+Committing is still something you do only when asked, and `deno lint` and `deno fmt` pass before the
+commit is made.
+
 ## Code style
 
 **Write ASCII only - never a long dash, never Unicode punctuation.** Every character you write, in
