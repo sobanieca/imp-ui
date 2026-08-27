@@ -3,7 +3,9 @@ exit code: 0
 
 --- stdout ---
 built app.js → shared/
+  LICENSES.txt - 2 third-party license notices, referenced from every script emitted
   imp imports kept bare - resolved by the imp host at runtime
+  LICENSES.txt (<size>)
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
@@ -12,9 +14,11 @@ built app.js → shared/
 (empty)
 
 --- output files ---
+shared/LICENSES.txt
 shared/app.js
 shared/chunks/chunk-<hash>.js
 shared/chunks/lazy-<hash>.js
 
 --- shared/app.js ---
+/*! Third-party license notices: /LICENSES.txt */
 import{a as r}from"./chunks/chunk-<hash>.js";function a(e){return{all:e=e||new Map,on:function(o,n){var t=e.get(o);t?t.push(n):e.set(o,[n])},off:function(o,n){var t=e.get(o);t&&(n?t.splice(t.indexOf(n)>>>0,1):e.set(o,[]))},emit:function(o,n){var t=e.get(o);t&&t.slice().map(function(i){i(n)}),(t=e.get("*"))&&t.slice().map(function(i){i(o,n)})}}}import{logLevel as m}from"imp/log";var s=a(),c=null;s.on("ready",e=>{c=e});s.emit("ready",r);var g=c,d=m(),v=async()=>{let{shout:e}=await import("./chunks/lazy-<hash>.js");return e()};export{d as impLogLevel,v as loadShout,g as message};

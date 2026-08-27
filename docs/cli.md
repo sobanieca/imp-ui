@@ -425,6 +425,10 @@ module scripts and bundles each one into minified, self-contained JavaScript:
   others in its group. A page that mounts a single element builds under 4 kB of imp; one that uses
   every part of imp pays for every part. Nothing is configured for this - import what you need and
   the rest is never emitted.
+- **Third-party license notices are collected, not stripped.** Every license notice carried by the
+  code that ends up in the bundle is gathered into a single `LICENSES.txt` at the root of the
+  output, and each emitted script opens with a one-line comment pointing at it. See
+  [License notices](#license-notices) below.
 - **Feature flags are resolved and folded away.** Every `flag('NAME')` check is answered for the
   environment you are building, the branch behind a disabled flag is removed along with everything
   only it used, and the build prints what it decided. See **[Feature flags](feature-flags.md)**.
@@ -448,6 +452,53 @@ HTML entry is a finished app that nobody writes code against, so imp adds no ski
 skill file into the output, and removes any `impSkill` it finds on the way in - from a pre-built
 component you installed as much as from your own modules, and from lazily loaded chunks as much as
 from the main bundle. See **[Components](components.md)**.
+
+### License notices
+
+Most open-source licenses - MIT, BSD, Apache-2.0 - let you ship the code on one condition: the
+copyright and permission notice travels with it. Minifiers throw those notices away by default,
+which quietly leaves the build you deploy out of compliance.
+
+`imp build` keeps them. While bundling, it collects every legal comment it finds in the code that
+made it into the output - the `/*! ... */`, `//!`, `@license` and `@preserve` blocks that libraries
+use to mark their notices - and writes them to **`LICENSES.txt`** at the root of the output
+directory:
+
+```
+Third-party license notices
+
+Every license notice carried by the code bundled into this build is reproduced
+below, one block per notice, exactly as its authors wrote it. Ship this file
+alongside the build: the licenses it lists require the notice to travel with the
+code. Every script imp emitted points back here.
+
+/*! mitt v3.0.1 | MIT License | https://github.com/developit/mitt */
+
+/*! @license DOMPurify 3.4.14 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 */
+```
+
+Each notice is reproduced verbatim, exactly as its author wrote it - imp never reformats, truncates
+or summarizes license text. Identical notices are listed once.
+
+Every JavaScript file the build emits - the bundles, the lazily loaded chunks, and the inline module
+scripts re-inlined into your page - starts with a comment naming the file:
+
+```js
+/*! Third-party license notices: /LICENSES.txt */
+```
+
+so a reader who lands on a minified bundle can find the notices from there. Under a
+[sub-path deployment](#deploying-under-a-sub-path) that reference is prefixed like every other
+root-absolute URL, so it still points at the right place.
+
+`LICENSES.txt` is part of the output: upload it with the rest of the directory, and keep it there.
+Dropping it is what the notices are asking you not to do.
+
+If nothing in the bundle carries a notice, no file is written and no comment is added.
+
+This is separate from `imp licenses`, which prints the notices for the tools compiled into the imp
+binary itself - the bundler, formatter and test runner you develop with, none of which ship in your
+app. `LICENSES.txt` covers what your users actually download.
 
 ### The `public/` folder
 
@@ -638,7 +689,9 @@ resolves the latest release - which also makes re-running it the update path - a
 at all it updates every declared dependency. `imp uninstall` removes a dependency's folder and its
 pin. Your code imports dependencies by their bare alias (`import mitt from 'mitt'`). A package that
 itself imports `imp` keeps that import bare - your app provides the imp library, so `imp` is never
-mistaken for a registry package.
+mistaken for a registry package. The bundle keeps the package's license notice where the package put
+it, so the notice is still there for `imp build` to collect into your app's
+[`LICENSES.txt`](#license-notices).
 
 See **[Managing dependencies](dependencies.md)** for the full story: version pinning, updating,
 aliases, jsr packages and subpaths, what gets printed, and why the vendored folder is committed.
@@ -1250,3 +1303,7 @@ formatter and linter engines, the image and video encoders, and more). `imp lice
 third-party license notices for everything the binary ships - each component, its version, and the
 full text of its license - so the attribution required by those licenses is available straight from
 the binary. It takes no arguments.
+
+This covers the tools you _develop_ with, not the code you _ship_: none of it ends up in your app.
+The notices for what your users download are collected by `imp build` into
+[`LICENSES.txt`](#license-notices).

@@ -89,6 +89,7 @@ Conventions:
 | [in-page-review-capture](in-page-review-capture.md)                   | One capture engine: dev review files and the bugReport component |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                       |
 | [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES          |
+| [built-app-license-notices](built-app-license-notices.md)             | imp build writes LICENSES.txt; every script points at it         |
 | [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals        |
 | [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                   |
 | [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary              |

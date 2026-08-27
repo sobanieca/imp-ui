@@ -55,3 +55,6 @@ pin again later is re-downloaded on demand - pruning is always safe.
 
 Prints the third-party license notices for everything bundled into the binary - each component, its
 version, and the full license text. No arguments, nothing to configure.
+
+**This is the toolchain, not your app.** None of it ships to a user. The notices for the code an app
+actually serves are collected by `imp build` into `LICENSES.txt`; see [build](build.md).

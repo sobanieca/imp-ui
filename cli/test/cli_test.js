@@ -610,6 +610,7 @@ Deno.test('imp build', async (t) => {
     await t.step('build-app', async () => {
       const result = await runImp(['build'], dir)
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      const licenses = await Deno.readTextFile(join(dir, 'dist', 'LICENSES.txt'))
       const module = await import(toFileUrl(join(dir, 'dist', 'app.js')).href)
       const usage =
         `[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, lazy loadShout()='${await module
@@ -619,7 +620,9 @@ Deno.test('imp build', async (t) => {
         mask(
           `${commandTranscript('imp build  (cwd: <tmp>)', result)}\n${await outputTree(
             'dist',
-          )}\n\n${section('dist/index.html', html)}\n\n${usage}\n`,
+          )}\n\n${section('dist/index.html', html)}\n\n${
+            section('dist/LICENSES.txt', licenses)
+          }\n\n${usage}\n`,
         ),
       )
     })

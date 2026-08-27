@@ -193,6 +193,11 @@ Committed does not mean maintained by you: `imp lint` and `imp fmt` skip the fol
 minified bundle never reports findings against your code or gets reformatted under you. The one
 check that still looks at it is the file-size limit, since the bundle lands in git.
 
+**A package's license notice stays in its bundle.** Minifying normally throws those comments away;
+`imp install` keeps them, because the notice has to survive all the way to what your users download.
+`imp build` picks it up from there and collects it into your app's `LICENSES.txt` - see
+**[License notices](cli.md#license-notices)**. Leave the notice where it is.
+
 ## Choosing dependencies well
 
 Each dependency is bundled independently and self-contained, so two packages that share an internal

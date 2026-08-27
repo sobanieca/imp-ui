@@ -4,6 +4,8 @@ exit code: 0
 --- stdout ---
 built index.html → dist/
   base path /my-imp-app - root-absolute urls prefixed for a sub-path deployment
+  LICENSES.txt - 2 third-party license notices, referenced from every script emitted
+  LICENSES.txt (<size>)
   app.js (<size>)
   assets/note.txt (<size>)
   chunks/chunk-<hash>.js (<size>)
@@ -16,6 +18,7 @@ built index.html → dist/
 (empty)
 
 --- output files ---
+dist/LICENSES.txt
 dist/app.js
 dist/assets/note.txt
 dist/chunks/chunk-<hash>.js
@@ -33,6 +36,7 @@ dist/styles.css
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/my-imp-app/styles.css">
     <script type="module">
+/*! Third-party license notices: /my-imp-app/LICENSES.txt */
 import{a as e}from"./chunks/chunk-<hash>.js";console.log("inline module sees imp:",e());
 </script>
   </head>

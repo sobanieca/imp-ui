@@ -33,6 +33,9 @@ artifact.
   does not change imp's own MIT license; imp preserves each component's notice, keeps MPL-covered
   source forms retrievable at their published versions, and ships those components unmodified. Deno
   being MIT imposes nothing on imp's license.
+- **This record is about the binary only.** The other artifact imp distributes - the `dist/`
+  directory `imp build` produces - carries its own notices by a separate mechanism; see
+  `built-app-license-notices.md`.
 - **New bundled dependencies must be recorded here.** Adding a vendored/prebundled/downloaded
   dependency requires a row in `THIRD_PARTY_LICENSES.md` and its license text, the same way a new
   runtime npm dependency must route through the prebundle tool (`prebundled-npm-dependencies.md`).

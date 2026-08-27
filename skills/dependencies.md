@@ -60,6 +60,10 @@ installed micromark (npm:micromark@4.0.2)
     micromark-core-commonmark@2.0.3
 ```
 
+The bundle keeps the package's own license notice (`/*! ... */`, `@license`) where the package put
+it, so `imp build` can collect it into the app's `LICENSES.txt` - see [build](build.md). Never strip
+it out.
+
 A bundle over `maxFileSize` (200 kB default) warns, because it lands in git. Raise `maxFileSize` or
 list the folder in `maxFileSizeIgnore` in `imp.json` to accept it - the same limit `imp lint`
 enforces. Apart from that limit, `dependencies/` is skipped by everything that walks the tree, so

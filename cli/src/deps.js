@@ -84,7 +84,7 @@ export async function bundleDependency({ specifier, alias }) {
     format: 'esm',
     platform: 'browser',
     target: 'es2022',
-    legalComments: 'none',
+    legalComments: 'inline',
     metafile: true,
     write: false,
     outdir: '/bundle',

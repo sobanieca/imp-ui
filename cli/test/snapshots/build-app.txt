@@ -3,6 +3,8 @@ exit code: 0
 
 --- stdout ---
 built index.html → dist/
+  LICENSES.txt - 2 third-party license notices, referenced from every script emitted
+  LICENSES.txt (<size>)
   app.js (<size>)
   assets/note.txt (<size>)
   chunks/chunk-<hash>.js (<size>)
@@ -15,6 +17,7 @@ built index.html → dist/
 (empty)
 
 --- output files ---
+dist/LICENSES.txt
 dist/app.js
 dist/assets/note.txt
 dist/chunks/chunk-<hash>.js
@@ -31,6 +34,7 @@ dist/styles.css
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/styles.css">
     <script type="module">
+/*! Third-party license notices: /LICENSES.txt */
 import{a as e}from"./chunks/chunk-<hash>.js";console.log("inline module sees imp:",e());
 </script>
   </head>
@@ -40,5 +44,21 @@ import{a as e}from"./chunks/chunk-<hash>.js";console.log("inline module sees imp
     <script type="module" src="https://example.com/external.js"></script>
   </body>
 </html>
+
+--- dist/LICENSES.txt ---
+Third-party license notices
+
+Every license notice carried by the code bundled into this build is reproduced
+below, one block per notice, exactly as its authors wrote it. Ship this file
+alongside the build: the licenses it lists require the notice to travel with the
+code. Every script imp emitted points back here.
+
+/*! mitt v3.0.1 | MIT License | https://github.com/developit/mitt */
+
+/**
+ * @license shout-helper v1.0.0
+ * Copyright (c) 2024 The Shout Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 [bundled module: message='hello from the bundle', impLogLevel=info, lazy loadShout()='HELLO FROM THE BUNDLE']

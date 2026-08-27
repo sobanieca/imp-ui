@@ -57,6 +57,26 @@ my-app/
 - Inside a stylesheet, write asset URLs relative to the stylesheet (`url(assets/logo.png)`) so they
   survive a base path.
 
+## License notices - `LICENSES.txt`
+
+Legal comments (`/*! ... */`, `//!`, `@license`, `@preserve`) are **collected, never stripped**.
+Every one found in code that reached the output is written verbatim into `LICENSES.txt` at the root
+of the output directory, duplicates merged, and every emitted `.js` file - bundles, chunks, and
+inline module scripts re-inlined into the page - opens with:
+
+```js
+/*! Third-party license notices: /LICENSES.txt */
+```
+
+Under `IMP_BASEPATH` that reference is prefixed like any other root-absolute URL. If nothing in the
+bundle carries a notice, no file and no comment are emitted. Nothing configures this.
+
+`imp install` leaves a package's notice in the vendored bundle so the build can find it later. Do
+not strip it by hand.
+
+Not to be confused with `imp licenses`, which prints the notices for the tools inside the imp
+binary, none of which ship in an app. See [update](update.md).
+
 ## Deploying under a sub-path
 
 Set the `IMP_BASEPATH` environment value - see [config](config.md) - and `imp build` prefixes every
@@ -101,6 +121,8 @@ at all - but the **offline** worker only ever comes from `imp build --pwa`. See 
 ## Rules an agent gets wrong
 
 - **Never hand-edit anything in the output directory** - it is deleted and rewritten on every run.
+- **Deploy `LICENSES.txt` with the rest of the output.** Dropping it is what the licenses that
+  produced it forbid; it is not a build artifact you can prune.
 - **A static asset belongs in `public/`.** A stylesheet or image sitting next to your sources is not
   copied and 404s in production, even though `imp start` serves it - the dev server serves the whole
   project, the build ships `public/` and the bundles.

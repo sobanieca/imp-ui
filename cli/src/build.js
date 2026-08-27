@@ -20,6 +20,12 @@ import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
+  LICENSE_NOTICES_FILE,
+  licenseNoticesFile,
+  licenseNoticesReference,
+  splitLicenseNotices,
+} from './license_notices.js'
+import {
   APPLE_TOUCH_ICON,
   buildManifest,
   buildServiceWorker,
@@ -174,7 +180,7 @@ async function buildEntryPoints(
       format: 'esm',
       platform: 'browser',
       target: 'es2022',
-      legalComments: 'none',
+      legalComments: 'external',
       write: false,
       outdir,
       chunkNames: 'chunks/[name]-[hash]',
@@ -334,21 +340,34 @@ export async function build(
 
   assertEveryFlagFolded(result.outputFiles)
 
+  const base = basePathOf(resolvedEnv)
+  const { code: outputFiles, notices } = splitLicenseNotices(result.outputFiles)
+  const noticeReference = notices.length
+    ? licenseNoticesReference(siteUrl(base, LICENSE_NOTICES_FILE))
+    : ''
+  const withNoticeReference = (text) => new TextEncoder().encode(noticeReference + text)
+
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
+  await Deno.mkdir(outdirPath, { recursive: true })
   const written = []
   const inlineOutputs = []
-  for (const file of result.outputFiles) {
+  for (const file of outputFiles) {
     const inline = file.path.match(INLINE_MODULE_PATH)
     if (inline) {
-      inlineOutputs[Number(inline[1])] = file.text
+      inlineOutputs[Number(inline[1])] = noticeReference + file.text
       continue
     }
     await Deno.mkdir(dirname(file.path), { recursive: true })
-    await Deno.writeFile(file.path, file.contents)
+    await Deno.writeFile(
+      file.path,
+      file.path.endsWith('.js') ? withNoticeReference(file.text) : file.contents,
+    )
     written.push(asPosix(relative(outdirPath, file.path)))
   }
-
-  const base = basePathOf(resolvedEnv)
+  if (notices.length) {
+    await Deno.writeTextFile(join(outdirPath, LICENSE_NOTICES_FILE), licenseNoticesFile(notices))
+    written.push(LICENSE_NOTICES_FILE)
+  }
   if (isHtmlEntry) {
     let builtHtml = rewriteRootAbsoluteUrls(replaceInlineScripts(html, inlineOutputs), base)
     const envTag = envInjectionScript(resolvedEnv)
@@ -379,7 +398,6 @@ export async function build(
         }),
       )
     }
-    await Deno.mkdir(outdirPath, { recursive: true })
     await Deno.writeTextFile(join(outdirPath, entryName), builtHtml)
     written.push(entryName)
     await copyPublicFiles({ publicDir: publicDirectory(root), outdir: outdirPath, written })
@@ -408,6 +426,10 @@ export async function build(
   }
   if (base && isHtmlEntry) {
     console.log(`  base path ${base} - root-absolute urls prefixed for a sub-path deployment`)
+  }
+  if (notices.length) {
+    const count = `${notices.length} third-party license notice${notices.length === 1 ? '' : 's'}`
+    console.log(`  ${LICENSE_NOTICES_FILE} - ${count}, referenced from every script emitted`)
   }
   const flagNames = Object.keys(flags)
   if (flagNames.length) {

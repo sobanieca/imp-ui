@@ -3,6 +3,8 @@ exit code: 0
 
 --- stdout ---
 built app.js → component/
+  LICENSES.txt - 2 third-party license notices, referenced from every script emitted
+  LICENSES.txt (<size>)
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
@@ -11,6 +13,7 @@ built app.js → component/
 (empty)
 
 --- output files ---
+component/LICENSES.txt
 component/app.js
 component/chunks/chunk-<hash>.js
 component/chunks/lazy-<hash>.js
