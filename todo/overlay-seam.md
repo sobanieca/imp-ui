@@ -1,158 +1,106 @@
-# Overlay seam - one shared module behind modal, drawer, tooltip and menus
+# Overlay seam - what is left after `dialog` landed
 
-Settle how `modal`, `drawer`, `toast`, `popconfirm`, `tooltip`, `popover` and `dropdownMenu` paint
-above the rest of the page, before the first of them is built. The conclusion is almost entirely
-**subtractive**: the platform's top layer does what a `portal` primitive, a z-index registry and a
-shared focus trap were planned for, and CSS anchor positioning does the placement. What is left is a
-handful of small helpers, one public-API decision, and a fill for a gap in imp's test DOM.
+The seam is built and recorded in `adr/overlay-top-layer.md`: `lib/src/std/shared/overlay.js` ships
+`modalOverlay`, `panelOverlay`, `draggable`, `overlayMotion` and `overlayScrim`; `shell`'s drawer
+and the `dialog` component run on them; and `cli/src/test_dom.js` carries the top-layer fill. This
+file is the rest, with the browser facts it depends on re-checked against MDN's compat data in
+August 2026 - several of the earlier assumptions here were wrong and are corrected below.
 
-## No portal - the top layer, in place
+## Corrections to the original plan
 
-**Overlays are not re-parented and imp ships no `portal`.** Both `dialog.showModal()` and
-`popover=""` + `showPopover()` promote an element to the document's **top layer from inside a shadow
-root**, without moving it in the DOM. Promotion changes painting and stacking only, so the element
-keeps its position for style inheritance and for everything imp relies on:
+- **The closing transition cannot be pure CSS**, which the plan had drifted towards.
+  `transition-behavior: allow-discrete` on `display` is unimplemented in Firefox (bug 1882408) and
+  the `overlay` property is Chrome-only, so a CSS-only exit does not animate in Firefox and animates
+  outside the top layer in Safari. The seam sequences the exit instead - `data-closing`, await
+  `getAnimations()`, then `close()` - which is what the original bullet asked for. Reduced motion
+  needs no branch: the stylesheet drops the transitions, so there is nothing to await.
+- **`prefers-reduced-motion` is never read from JavaScript** anywhere in the seam.
+- **Dismissal reasons are not an imp API.** Escape and backdrop dismissal close with no return
+  value, leaving `dialog.returnValue` as the channel the platform already defined. Nothing needs a
+  reason enum.
+- **`dialog.requestClose()` is Baseline** (Chrome 134, Firefox 139, Safari 18.4) and already runs
+  the seam's animated close, because the seam handles the `cancel` event that `requestClose()`
+  raises. No wrapper needed.
+- **`closedby="any"` is not usable yet** - Chrome 134 and Firefox 141 ship it, Safari only in
+  preview, so the feature is Baseline "limited". When Safari ships it, the attribute deletes the
+  seam's backdrop-click listener outright. Recheck before building the next overlay.
+- **Anchor positioning holds up, with one trap.** `anchor-name` (Chrome 125, Firefox 147, Safari
+  26), `position-area` (129 / 147 / 26), `position-try-fallbacks` (128 / 147 / 26) and
+  `position-visibility: anchors-visible` (125 / 147 / 26.2) are all shipped in the four current
+  browsers. But **`position-anchor`'s initial value only settled in Chrome 151, Firefox 151 and
+  Safari 27**, so every panel must declare `position-anchor` explicitly and never lean on the
+  initial value. `web-features` still classifies the group as "limited"; the per-property data is
+  what to trust here.
+- **A `<dialog popover="manual">` behaves differently from a modal in four ways that matter**, all
+  probed in the browser the e2e suite pins rather than assumed: `showPopover()` **never sets the
+  `open` attribute** (so `:popover-open` is the only selector that sees it), Escape does not close
+  it and raises no `cancel`, focus moves in on show but is **dropped on `<body>` on hide** rather
+  than restored, and its `::backdrop` paints but blocks no clicks. The seam covers the second and
+  third; the fourth is why the scrim is opt-in.
+- **The test-DOM claims were accurate.** A probe of the vendored happy-dom confirms `showModal()`
+  only sets the attribute: no focus move, no focus restore, no `inert`, no `cancel` on Escape, no
+  `requestClose`, no `:modal`, no `:popover-open`, and no popover API at all. The fill now covers
+  the modal half; the popover shim still dispatches toggle events only, which is enough because the
+  seam tracks its own shown flag rather than querying `:popover-open` - **light dismiss and the
+  popover focusing steps still need emulating before `dropdownMenu`.**
 
-- It keeps its component's adopted stylesheet. Content appended to a container outside the component
-  would lose it, and recovering it would mean injecting document-level CSS, which
-  `adr/shadow-dom-isolation.md` deliberately removed.
-- Its ARIA id references keep resolving, because it stays in the tree scope that owns them.
-- It is disposed with its component, with nothing to tear down by hand.
+## What is built
 
-The top layer also stacks in call order and closes topmost-first on Escape, and a `popover` inside
-an open `dialog` paints above it - so a `select` or a `dropdownMenu` opened from inside a `modal` is
-correct with no shared bookkeeping. That is the whole of the "shared stacking" the stdlib was going
-to build.
+The seam - `modalOverlay`, `panelOverlay`, `draggable`, `overlayMotion`, `overlayScrim` - and the
+`dialog` component on top of it, in both modes: the modal frame and the movable, non-blocking
+window, several of which may be open at once. `shell`'s drawer uses the modal half. What the seam
+adds over the platform is backdrop dismissal, the ref-counted scroll hold, focus restore for the
+popover path, the closing slide and the drag, and nothing else.
 
-The portal model - one container near the document root that overlays render their content into - is
-what a virtual-DOM library needs because its tree cannot opt out of a container's clipping. imp
-writes real DOM, and the platform shipped the answer.
+## What is left
 
-## What the seam is
+### 1. `drawer`
 
-A shared module of plain functions, `lib/src/std/shared/overlay.js` - **not** a component, and not a
-manager singleton. Each overlay component renders its own native element and attaches behaviour to
-it:
+Same helper, different geometry: `--overlay-offset` is the only thing that differs from a dialog,
+and a bottom sheet below the breakpoint is one more offset. The shell's drawer already proves the
+path.
 
-```js
-export const modalOverlay = (dialog, { onDismiss, signal }) // -> { open, close }
-export const anchoredStyles = ({ placement, align }) // -> a CSS string for the component's `styles`
-export const lockScroll = () // ref-counted, returns release
-```
+### 2. `dropdownMenu` - the first anchored consumer
 
-`modalOverlay` is mostly a call into the platform. `open()` is `showModal()`, which brings
-`::backdrop`, `inert` on the rest of the document, focus moved in, focus restored to the invoker on
-close, and Escape as a cancelable `cancel` event. It adds only what the platform leaves out:
+`popover="auto"` brings the layer, light dismiss, Escape and a nesting stack; placement is CSS, so
+`anchoredStyles({ placement, align })` is a **string builder** and not a runtime - `anchor-name` on
+the trigger, `position-anchor` on the panel (always declared), `position-area` in logical keywords
+so RTL mirrors for free, `position-try-fallbacks: flip-block, flip-inline` for collisions, and
+`position-visibility: anchors-visible` to hide a panel whose trigger scrolled away. No
+`ResizeObserver`, no scroll listener, nothing to recompute. `anchor-name` is tree-scoped, so every
+instance can use the same literal `--imp-anchor` with no generated ids.
 
-- **Backdrop dismissal**, detected by `event.target === dialog` on a `click`, since a click on
-  `::backdrop` lands on the dialog itself.
-- **Scroll locking** while any overlay is open, ref-counted so nested overlays release correctly.
-- **Waiting out a closing transition** before `close()`, skipped under `prefers-reduced-motion`.
+Placement is exempt from unit testing - happy-dom has no layout engine - so what a unit test can
+check is that a component declares the rules; where a panel lands is e2e and visual.
 
-`toast` is the one that needs a **region** rather than an element - several toasts share one for
-reading order and stacking. That region is a component the app mounts once, found by a composed
-bubbling event the way `useState` and `useHttpClient` resolve, and it builds every toast from plain
-data. It is still not a container other components render into.
+### 3. `toast` - the one region
 
-## The anchored layer is CSS, not JavaScript
-
-`tooltip`, `popover`, `dropdownMenu` and `popconfirm` are positioned against a trigger, and **none
-of that positioning is imp code**. The layer and the dismissal come from `popover="auto"` - light
-dismiss, Escape, and a nesting stack - and the placement comes from CSS anchor positioning, which is
-interoperable since Firefox 147 and so inside imp's floor (`adr/browser-support-baseline.md`). There
-is no `ResizeObserver`, no scroll listener, no measuring in `afterMount`, and nothing to recompute:
-
-- `anchor-name` on the trigger and `position-anchor` on the panel.
-- `position-area` places it, in **logical** keywords, so RTL mirrors for free.
-- `position-try-fallbacks: flip-block, flip-inline` handles collisions, with `@position-try` blocks
-  for anything that needs a shape of its own.
-- `position-visibility: anchors-visible` hides the panel when its trigger scrolls away.
-
-Repositioning on scroll and resize is layout rather than a callback, so it cannot lag a frame behind
-the trigger the way a JS positioner does. `anchoredStyles` is therefore a **CSS-string builder**, in
-the same "shared CSS is shared strings" spirit as the rest of `std/shared`
-(`adr/shadow-dom-isolation.md`) - not a runtime.
-
-A pleasant consequence of shadow DOM: `anchor-name` is tree-scoped, so every instance of a component
-can use the same literal name (`--imp-anchor`) with no collision and no generated ids - the same
-isolation that makes `id="control"` safe inside a component today.
-
-Opening and closing is declarative too wherever the trigger is a button in the same root:
-`popovertarget` needs no listener at all. JS is left only for triggers the attribute cannot
-express - a tooltip opening on hover or focus with a delay.
+Several toasts share one region for reading order and stacking. That region is a component the app
+mounts once, found by a composed bubbling event the way `useState` resolves, building each toast
+from plain data. It is still not a container other components render into.
 
 ## Where the component boundary falls
 
-Two constraints point the same way, and this is the decision that cannot be retrofitted:
+Unchanged and still the decision that cannot be retrofitted: ARIA id references do not cross a
+shadow root, and `anchor-name` / `position-anchor` resolve within one tree scope. Both force trigger
+and panel into the same shadow root, which is why the seam is a module and not an `overlay()`
+wrapper. The consequence: **`tooltip({ text }, button(...))` cannot be made correct** - the child is
+an `imp-button` host, `aria-describedby` on a roleless host is ignored, and the real `<button>` is
+one root deeper. A tooltip is therefore a prop of the component that owns the trigger,
+`button({ tooltip: 'Copy' })`. `dropdownMenu({ label, items })` is unaffected, since it renders its
+own trigger.
 
-- ARIA id references (`aria-controls`, `aria-describedby`, `aria-activedescendant`) cannot cross a
-  shadow root.
-- CSS `anchor-name` and `position-anchor` resolve **within one tree scope**, so an anchor in one
-  shadow root is invisible to a panel in another.
+## Docs and skills impact
 
-Both force the trigger and the panel into the same shadow root, which is why the seam has to be a
-module and not an `overlay()` wrapper: a wrapper can neither label nor anchor what it wraps - the
-same argument that ruled out `formField`.
-
-The consequence worth stating plainly: **`tooltip({ text }, button(...))` cannot be made correct.**
-The child is an `imp-button` host, `aria-describedby` on a host with no role is ignored, and the
-real `<button>` sits one shadow root deeper. So a tooltip is a **prop of the component that owns the
-trigger** - `button({ tooltip: 'Copy' })` - rendered inside that component's own root through the
-shared helper. `dropdownMenu({ label, items })` is unaffected because it renders its own trigger.
-This is the data-driven rule that already made `tabs`, `navMenu` and `commandPalette` what they are
-(`adr/standard-component-library.md`), applied to its least obvious case.
-
-## imp's test DOM does not implement any of this
-
-The vendored happy-dom stubs `showModal()` as `setAttribute('open', '')` - no top layer, no `inert`,
-no focus move, no focus restore, no `cancel` - and has no `showPopover` at all. So without a fill,
-unit tests can assert markup, roles, accessible names and state wiring, and **nothing about the
-behaviour the seam exists for**.
-
-Focus delegation is in the same state: happy-dom reads the shadow-root option as `delegateFocus`
-rather than `delegatesFocus` and never forwards focus, so `host.focus()` does nothing there
-(`adr/focus-delegation.md`). Every assertion about focus reaching a nested component is an e2e spec
-today, and a top-layer fill should cover this alongside the rest.
-
-`todo/accessibility.md` asks for a test-backed guarantee rather than a best-effort convention, so
-budget a small top-layer emulation installed in `installDomEnvironment` (`cli/src/test_dom.js`):
-promotion, `inert` on the rest of the document, focus entry and restore, Escape, and light dismiss.
-This completes the test environment the same way imp already ships fake timers
-(`adr/fake-timers.md`); it is not a product fallback, and the seam itself calls the real APIs
-unconditionally. Real-browser behaviour still belongs in e2e specs (`adr/two-level-testing.md`) -
-the emulation buys per-component unit coverage, not proof.
-
-Placement is exempt: happy-dom has no layout engine, so anchor positioning was never going to be
-unit-testable - but with it in CSS there is no imp code to test either, only whether a component
-declares the rules it should. Where a panel actually lands is an e2e and visual concern.
-
-## Build order
-
-1. `overlay.js` and the test-DOM top-layer emulation.
-2. `modal` - proves the modal half on the smallest surface.
-3. `drawer` - proves it generalizes: same helper, different geometry, bottom sheet below `md`.
-4. `dropdownMenu` - first anchored consumer, proves `anchoredStyles` and the tree-scope API
-   decision.
-5. `toast` - the region, resolved by composed event.
-
-Then the accessibility contract can be recorded as an ADR (`todo/accessibility.md`), which has been
-waiting on this seam to be describable from something real.
-
-## Docs, skills and ADR impact
-
-- Record an `overlay-top-layer.md` ADR **once the seam lands**: no portal, promotion in place, the
-  three helpers, the trigger-and-panel-in-one-root rule and what it does to the public API, and the
-  scroll lock as the one thing imp adds. Update the table in `adr/README.md`.
-- `docs/state.md`, `skills/state.md` and `skills/http.md` all illustrate out-of-subtree DOM with "an
-  overlay appended to `document.body`". That stays true of app code, but it will read as a
-  description of imp's own overlays, which never do it. Reword the example when the seam lands.
+- `docs/state.md`, `skills/state.md` and `skills/http.md` illustrate out-of-subtree DOM with "an
+  overlay appended to `document.body`". True of app code, misleading about imp's own overlays, which
+  never do it - reword them.
 
 ## Open questions
 
 - **Tooltip spelling.** `button({ tooltip: 'Copy' })` follows from the tree-scope constraint, but it
-  means every component that can carry a tooltip grows a prop and a bit of shared wiring. Confirm
-  that against the alternative of shipping no `tooltip` at all and leaning on `title`.
-- **Dismissal reasons.** Whether `onDismiss` receives a reason (`escape`, `backdrop`, `close`) and
-  whether a component may veto a dismissal, or whether an overlay is always dismissible.
-- **Animation.** Whether entry and exit transitions are fixed component behaviour or theme tokens,
-  and how that interacts with `@starting-style` and `transition-behavior: allow-discrete`.
+  grows a prop on every component that can carry one. Confirm that against shipping no `tooltip` at
+  all and leaning on `title`.
+- **Vetoing a dismissal.** The seam prevents `cancel` itself, so an app cannot refuse to close. A
+  form with unsaved changes is the case that would want it; decide whether that is the seam's hook
+  or the component's prop when a component asks for it.

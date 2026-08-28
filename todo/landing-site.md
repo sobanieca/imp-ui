@@ -27,6 +27,30 @@ builder learns to ship a valuable frontend application.** Not a stack to assembl
 state library, a bundler, a test runner, and a formatter - one tool that already is those things.
 Lead with that, and let the docs prove it.
 
+## Home page - the workflow imp is built around
+
+The page should show the whole arc of building an app with imp, as a numbered walkthrough a visitor
+can read in thirty seconds. This is the concrete proof of the all-in-one claim above: every step is
+the same tool.
+
+1. **Install the CLI.**
+2. **`imp init`** - a real app, running, with nothing to wire up.
+3. **Teach the agent imp.** Install imp's skill, or point the agent at `imp skill` and let it read
+   the manual for whatever it is about to use.
+4. **Model the app against mocks.** Build the whole frontend with the backend faked, and see it
+   working before a single endpoint exists.
+   - **`imp preview`** to review components in isolation while modelling.
+   - **The dev tool's in-page review widget** to leave feedback on specific pages
+     (`adr/in-page-review-capture.md`).
+5. **Get the design approved, then drop the mocks** and implement the backend against a frontend
+   that already works.
+6. **Write the unit and e2e tests with imp** - one runner, already there.
+7. **`imp build`** - a static bundle ready to throw at any CDN.
+
+The point to land: the mocked-app step is not a prototype that gets thrown away, it is the app. And
+the loop from step 3 to step 5 is the one AI agents are actually good at, which is why imp is shaped
+this way.
+
 ## Home page - the SPA argument
 
 The page should make the case for the SPA architecture, plainly and confidently:
@@ -78,6 +102,14 @@ Be upfront about what imp is not, right on the landing page - it earns trust and
   runner, and a formatter and keeping them agreeing with each other - the developer just **focuses
   on building the app.**
 
+One constraint worth naming on the page as a worked example, because it is the one that surprises
+people: **the layout library is two components.** `flex` is a row, `stack` is a column, and that is
+all - no grid, no box, no wrapper with padding and background props
+(`adr/layout-two-flex-primitives.md`). Anyone who wants a specific CSS layout system writes the CSS
+they already know inside their own component, where it is isolated and readable by anyone. It shows
+the shape of every other imp constraint in miniature: imp declines to reinvent something the
+platform does well, and hands it back to the developer instead of wrapping it.
+
 Pair this with the all-in-one and SPA messaging above: the constraints are the reason the experience
 is so smooth, not a caveat bolted on at the end.
 
@@ -88,6 +120,33 @@ see it rendered, switch themes, read the code behind it. That page is the one `i
 generates, exported as static files and embedded in an `iframe`; the work to get there is
 `todo/preview-static-export.md`. The site owns the nav and the surrounding copy, the exporter owns
 the specimen pages.
+
+**`docs/std-components.md` already points at this page.** That doc was cut down from a
+component-by-component reference to the library's selling points, on the basis that the catalog
+belongs in the gallery rather than in prose that drifts from the code. It now links to
+`/components` - a **placeholder path**, resolved to nothing until the gallery is embedded - and so
+do `docs/theming.md`, `docs/i18n.md` and `docs/cli.md`. Two things follow:
+
+- **The generator must resolve `/components`** to wherever the embedded gallery actually lands, or
+  the published docs ship four dead links. Decide the path before the first publish.
+- **The gallery is now load-bearing documentation, not a nice-to-have.** It is the only place a
+  reader can find a component's props, its variants, and the message keys it reads - so the
+  specimens have to carry that information, not just render the component. Prop tables and the
+  `imp.` keys each component looks up belong on the specimen page.
+
+**The preview page itself needs a redesign first.** The gallery is the shopfront's most persuasive
+page - a visitor judges the whole library by it - and the current preview UI is a functional
+development tool rather than something to lead with. What it owes:
+
+- **Finding a component visually, fast.** A browsable grid of specimens - each component shown as
+  itself, not as a row of text in a list - so someone who does not yet know the names can point at
+  the thing they want. Search and group filtering on top of that, not instead of it.
+- **A modern, deliberate look** that matches the confidence of the copy around it: real spacing, the
+  theme's own tokens, light and dark, and specimen framing that makes each component look
+  considered.
+- **It stays one page, not two.** The same UI serves `imp preview` in development and the exported
+  static gallery (`todo/preview-static-export.md`), so this work pays out twice - the redesign is
+  what every imp user's own component gallery looks like too.
 
 ## Docs constraints
 

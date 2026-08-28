@@ -6,7 +6,7 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | `button`, `heading`, `text`, `link`                                                                                                                         | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                                                                                         |
-| `imp/std/layout`     | `flex`, `column`                                                                                                                                            | `imp skill std/flex`, `std/column`                                                                                                                                                                                    |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                                                                                                          | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`                                                                                                                                                          |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
 | `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
@@ -112,16 +112,69 @@ link({ href: 'https://example.com', external: true }, 'Read the docs')
 Renders a real anchor; a plain left-click on an in-app path is handled by the router, while
 middle-click, modifier-click, `external`, and off-site URLs are left to the browser.
 
+## shell - from `imp/std/layout`
+
+**Build an app's frame with `shell`; do not hand-assemble a header-and-sidebar grid.** Regions take
+DOM, main content is the children.
+
+```js
+import { shell } from 'imp/std/layout'
+
+shell(
+  { header: bar(), sidebar: navMenu({ label: 'Sections', items, selected }) },
+  router({ routes }),
+)
+```
+
+| Prop         | Values                         | Default  | Notes                                                |
+| ------------ | ------------------------------ | -------- | ---------------------------------------------------- |
+| `header`     | DOM                            | -        | Rendered into `<header>`                             |
+| `rail`       | DOM                            | -        | Thin far-left column                                 |
+| `sidebar`    | DOM                            | -        | Nav column; a modal drawer below `48rem`             |
+| `aside`      | DOM                            | -        | Right contextual column, into `<aside>`              |
+| `bottomNav`  | DOM                            | -        | Below `48rem` only; suppresses the drawer            |
+| `headerSpan` | `'full'`, `'content'`          | `'full'` | `'content'` starts the header after rail and sidebar |
+| `navOpen`    | boolean, or a state - **live** | `false`  | Drawer state; shell-owned when omitted               |
+| `events`     | `{ navToggle }`                | -        | `detail: { open }`, on every change the shell makes  |
+
+| Layout                   | Props                                        |
+| ------------------------ | -------------------------------------------- |
+| Sidebar + top navbar     | `header`, `sidebar`                          |
+| Full-height sidebar      | `header`, `sidebar`, `headerSpan: 'content'` |
+| Rail + secondary sidebar | `rail`, `sidebar`, `headerSpan: 'content'`   |
+| Layout with right aside  | `header`, `sidebar`, `aside`                 |
+| Mobile bottom navigation | `header`, `sidebar`, `bottomNav`             |
+
+Widths are custom properties, not props: `--imp-shell-rail-inline-size` (`3.5rem`),
+`--imp-shell-sidebar-inline-size` (`16rem`), `--imp-shell-aside-inline-size` (`20rem`).
+
+Rules an agent gets wrong:
+
+- **Regions are DOM, not data**, so arbitrary content in one needs no new prop. Main content is the
+  children: `shell({ sidebar }, page())`. There is no `layout` enum and no `footer` region.
+- **The nav item registry is the data half**: a plain-data state each screen contributes to under an
+  owner key, bound into `navMenu`. **You at the call site -> DOM; a screen at runtime -> data**,
+  because imp has no portal, so DOM cannot travel up out of a screen into the sidebar.
+- **`bottomNav`'s presence is the mobile switch** - passing it suppresses the drawer. There is no
+  `compact` mode prop.
+- **`navOpen` must be writable** (never a `computed`) if you pass it: the shell writes back when the
+  drawer closes itself.
+- **The shell is imp's only breakpoint exception** (`48rem`); do not copy that into your components.
+  It renders `<header>`, `<main>`, `<aside>` but **no `<nav>`** - `navMenu` brings that.
+- **It is `100dvh` on its own host**; set `block-size` on the element to embed one in a shorter box.
+
+Full manual: `imp skill std/shell`.
+
 ## Layout - from `imp/std/layout`
 
-Two flex primitives, and nothing else: `flex` is a row, `column` is a stack. There is no `grid`, no
+Two flex primitives, and nothing else: `flex` is a row, `stack` is a column. There is no `grid`, no
 `box`, no padding/width/background props - a box that needs those is a `div` your own component
 styles.
 
 ```js
-import { column, flex } from 'imp/std/layout'
+import { flex, stack } from 'imp/std/layout'
 
-column(
+stack(
   { gap: 4 },
   flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Invoices'), button('New')),
   text('12 unpaid.'),
@@ -137,7 +190,7 @@ column(
 | `wrap`            | boolean                                      | `false`     | Lets the row break onto more lines       |
 | `gap`             | spacing step `0`-`6`                         | `3`         | Space between children                   |
 
-### column
+### stack
 
 | Prop              | Values                                       | Default     | Notes                  |
 | ----------------- | -------------------------------------------- | ----------- | ---------------------- |
@@ -146,10 +199,37 @@ column(
 
 - **`gap` is a step number off the theme scale, never a length** - `gap: 4`, not `gap: '1rem'`. The
   scale is fluid, so one step is right at every width. A bad value warns and falls back to `3`.
-- **`column` has no `verticalAlign`** - a stack is as tall as its children.
+- **`stack` has no `verticalAlign`** - a stack is as tall as its children.
 - **Spacing between components is a `gap`**, since no standard component carries an outer margin.
 - A layout that must change shape below some width is a media query in your own component's
   `styles`; no prop varies by screen size.
+
+## dialog - from `imp/std/layout`
+
+```js
+import { dialog } from 'imp/std/layout'
+
+dialog({ title: 'Edit user', open: editing }, form({ initialValues }, textField({ field: 'name' })))
+dialog({ title: 'Inspector', modal: false, open: inspecting }, details())
+```
+
+| Prop     | Values                            | Default | Notes                                          |
+| -------- | --------------------------------- | ------- | ---------------------------------------------- |
+| `title`  | string - **live**                 | -       | Names the dialog for a screen reader; give one |
+| `modal`  | boolean - **read once, at mount** | `true`  | `false` is the movable, non-blocking window    |
+| `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                       |
+| `events` | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
+
+- **`dialog` is both overlay windows.** `modal: true` (the default) freezes the page behind a
+  backdrop, closes on Escape and holds the page scroll; `modal: false` is a movable window that
+  blocks nothing, ignores Escape, and may be opened several at a time. `modal` is read once, at
+  mount.
+- **`open` is the only way to open a dialog** - a writable state, which the dialog writes `false`
+  back into when the person closes it. There is no `show()` and no handle.
+- **`dialog` shadows the `dialog` element factory** from `imp/html`; a file needing both aliases
+  one.
+
+Full manual: `imp skill std/dialog`.
 
 ## emptyState - from `imp/std/display`
 
@@ -174,7 +254,8 @@ language.
 ## Responsive: fluid values, and your own media query
 
 **No prop takes a per-screen value, and no component hides itself at a width.** Every prop takes one
-value and it applies at every width.
+value and it applies at every width. `shell` is the single exception - the app frame swaps structure
+at `48rem` - and it is not a licence to do the same in your own components.
 
 Most pages need nothing more. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()`
 values that grow with the viewport, so a gap or a page gutter is already right at every width.
@@ -202,8 +283,9 @@ inside one.
 
 Rules an agent gets wrong:
 
-- **The layout components are `flex` and `column` only.** Anything else a box needs - padding, a
-  background, a width, a grid - is plain CSS in your own component's `styles`.
+- **The arrangement components are `flex` and `stack` only** (`shell` is the page frame, not a box).
+  Anything else a box needs - padding, a background, a width, a grid - is plain CSS in your own
+  component's `styles`.
 - **Spacing is `gap` on the parent, never margins on the children**: no std component has an outer
   margin.
 

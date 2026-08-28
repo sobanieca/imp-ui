@@ -125,9 +125,74 @@ const installPopoverApi = (window) => {
   }
 }
 
+const installAnimationsApi = (window) => {
+  const prototype = window.Element.prototype
+  if (prototype.getAnimations) return
+  prototype.getAnimations = function getAnimations() {
+    return []
+  }
+}
+
+const MODAL_STATE = Symbol('imp.test.modalState')
+
+const deepActiveElement = (document) => {
+  let active = document.activeElement
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+  return active
+}
+
+const containingChild = (document, node) => {
+  let current = node
+  while (current && current.parentNode !== document.body) {
+    current = current.parentNode ?? current.host ?? current.getRootNode?.().host
+  }
+  return current
+}
+
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+
+const installTopLayer = (window) => {
+  const prototype = window.HTMLDialogElement.prototype
+  const showModal = prototype.showModal
+  const close = prototype.close
+  const stack = []
+
+  prototype.showModal = function modalShowModal() {
+    showModal.call(this)
+    const document = this.ownerDocument
+    const inside = containingChild(document, this)
+    const inerted = [...document.body.children].filter((child) => child !== inside && !child.inert)
+    for (const child of inerted) child.inert = true
+    this[MODAL_STATE] = { restore: deepActiveElement(document), inerted }
+    stack.push(this)
+    const target = this.querySelector('[autofocus]') ?? this.querySelector(FOCUSABLE) ?? this
+    target.focus()
+  }
+
+  prototype.close = function modalClose(returnValue) {
+    const state = this[MODAL_STATE]
+    if (state) {
+      for (const child of state.inerted) child.inert = false
+      stack.splice(stack.indexOf(this), 1)
+      this[MODAL_STATE] = null
+      state.restore?.focus()
+    }
+    close.call(this, returnValue)
+  }
+
+  window.document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || stack.length === 0) return
+    const dialog = stack.at(-1)
+    const cancel = new window.Event('cancel', { bubbles: false, cancelable: true })
+    if (dialog.dispatchEvent(cancel)) dialog.close()
+  })
+}
+
 export function installDomEnvironment() {
   const window = new Window({ url: 'http://localhost/' })
   installPopoverApi(window)
+  installAnimationsApi(window)
+  installTopLayer(window)
   const replaced = new Map()
 
   const names = new Set(['window', 'document', ...Object.getOwnPropertyNames(window)])

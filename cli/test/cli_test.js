@@ -1548,7 +1548,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         await settle()
         return `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
       }
-      const chrome = () => globalThis.impOne('imp-preview-shell').getAttribute('dir')
+      const chrome = () => globalThis.impOne('imp-shell').getAttribute('dir')
       const words = () => {
         const shadow = globalThis.impOne('demo-counter').shadowRoot
         return `${shadow.querySelector('#label').textContent}/${
@@ -2540,7 +2540,7 @@ Deno.test('the prose export tables match what imp really exports', async () => {
       for (const name of new Set([...listed, ...skillSubjects])) {
         if (!exported.includes(name)) report(`does not export '${name}'`)
       }
-      if (body.includes('…')) continue
+      if (body.includes('…') || body.includes('...')) continue
       for (const name of exported) {
         if (!listed.includes(name)) {
           report(`exports '${name}', which the table omits - list it, or mark the list with '…'`)

@@ -257,8 +257,8 @@ only from the machine it runs on - open the dev server from another device on yo
 widget is simply not there.
 
 If you want the same thing for the people using your finished app, that is the `bugReport` component
-(see **[Standard components](std-components.md)**). It is the same picker and the same captured
-context, shipped in your bundle and handing the report to a function you write - it does not write
+(see the [component gallery](/components)). It is the same picker and the same captured context,
+shipped in your bundle and handing the report to a function you write - it does not write
 `.imp/reviews/` and it is not a replacement for this widget.
 
 ### Mock responses - `*.mock.js`

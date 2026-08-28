@@ -258,7 +258,8 @@ tokens the built-in themes ship today - a theme of your own is expected to defin
 theme can pick a readable pair rather than hoping white works. `color-secondary` is the muted tone -
 secondary text, de-emphasized links. `color-surface` is a panel, `color-surface-sunken` the page
 behind it, `color-surface-hover` the tint under the pointer. See
-**[Standard components](std-components.md)** for the components that consume them.
+**[Standard components](std-components.md)** for how the library consumes them, and the
+[component gallery](/components) to see a token change land on every component at once.
 
 The **palette** is the one group nothing in imp consumes by default: 31 named colors, one value
 each, there for the places an app needs a specific hue rather than a role - a tag per project, a

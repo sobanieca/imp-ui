@@ -20,7 +20,7 @@ Rules an agent gets wrong:
 
 - **`gap` is a step number, not a length** - `gap: 4`, never `gap: '1rem'`. A bad value warns and
   falls back to step `3`. The scale is fluid, so one step is correct at every screen width.
-- **`horizontalAlign` moves children along the row, `verticalAlign` across it.** In a `column` it is
+- **`horizontalAlign` moves children along the row, `verticalAlign` across it.** In a `stack` it is
   the other way round, because the axes swap - that is the only difference between the two props.
 - **`left` always means left, even under `dir="rtl"`.** The row reverses its flex direction so the
   first child stays on the left and `horizontalAlign: 'left'` stays on the left; only the text
@@ -37,7 +37,7 @@ Rules an agent gets wrong:
 ```js
 flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Invoices'), button('New'))
 flex({ wrap: true, gap: 2 }, ...tags.map((tag) => text(tag)))
-flex(column({ gap: 1 }, heading('Title'), text('Subtitle')), button('Edit'))
+flex(stack({ gap: 1 }, heading('Title'), text('Subtitle')), button('Edit'))
 ```
 
-Related: imp skill std/column - the same primitive stacking its children vertically.
+Related: imp skill std/stack - the same primitive stacking its children vertically.

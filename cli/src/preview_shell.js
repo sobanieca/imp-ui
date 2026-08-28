@@ -1,6 +1,7 @@
 import { component } from 'imp'
 import { a, div, el, pre, span } from 'imp/html'
 import { heading, text } from 'imp/std'
+import { shell, stack } from 'imp/std/layout'
 import { commandPalette, navMenu } from 'imp/std/navigation'
 import { copyButton } from './preview_copy.js'
 
@@ -60,81 +61,6 @@ const SETTINGS_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-  }
-`
-
-const SHELL_STYLES = `
-  .shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'head'
-      'nav'
-      'main'
-      'aside'
-      'foot';
-    gap: var(--imp-space-4, 16px);
-    box-sizing: border-box;
-    min-block-size: 100vh;
-    padding: var(--imp-space-4, 16px);
-    background-color: var(--imp-color-surface-hover, #f1f5f9);
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-  }
-
-  @media (min-width: 60rem) {
-    .shell {
-      grid-template-columns: 14rem minmax(0, 1fr) 16rem;
-      grid-template-areas:
-        'head head head'
-        'nav  main aside'
-        'foot foot foot';
-      align-items: start;
-    }
-
-    .shell.without-nav {
-      grid-template-columns: minmax(0, 1fr) 16rem;
-      grid-template-areas:
-        'head head'
-        'main aside'
-        'foot foot';
-    }
-  }
-
-  .head {
-    grid-area: head;
-    display: flex;
-    align-items: center;
-  }
-
-  .nav {
-    grid-area: nav;
-    min-inline-size: 0;
-  }
-
-  .main {
-    grid-area: main;
-    display: flex;
-    flex-direction: column;
-    gap: var(--imp-space-4, 16px);
-    min-inline-size: 0;
-  }
-
-  .aside {
-    grid-area: aside;
-    min-inline-size: 0;
-  }
-
-  .foot {
-    grid-area: foot;
-  }
-
-  .panel {
-    box-sizing: border-box;
-    padding: var(--imp-space-3, 12px);
-    background-color: var(--imp-color-surface, #ffffff);
-    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-lg, 10px);
   }
 `
 
@@ -458,43 +384,27 @@ export const previewHead = (entry, isolated, instruction) => {
   return createHead(entry, isolated, instruction)
 }
 
-const shellDefinition = {
-  styles: SHELL_STYLES,
-  onMount: (_instance, catalog, controls, editor, content) => {
-    const hasPreviews = catalog.previews.length > 0
-    return div(
-      { class: hasPreviews ? 'shell' : 'shell without-nav' },
-      el('header', { class: 'head panel' }, previewBar(catalog.previews)),
-      hasPreviews
-        ? el(
-          'nav',
-          { class: 'nav panel', 'aria-label': 'Components' },
+export const previewShell = ({ catalog, controls, editor, content }) => {
+  const hasPreviews = catalog.previews.length > 0
+  const host = shell(
+    {
+      header: previewBar(catalog.previews),
+      sidebar: hasPreviews
+        ? stack(
+          { gap: 3 },
           componentMenu(catalog.previews, catalog.current, { label: 'Components' }),
+          text(
+            { size: 'sm', tone: 'secondary' },
+            `${catalog.previews.length} component${catalog.previews.length === 1 ? '' : 's'}`,
+          ),
         )
         : null,
-      el('main', { class: 'main' }, content),
-      el(
-        'aside',
-        { class: 'aside panel', 'aria-label': 'Preview settings' },
-        previewSettings(controls, editor),
-      ),
-      el(
-        'footer',
-        { class: 'foot' },
-        text(
-          { size: 'sm', tone: 'secondary' },
-          `${catalog.previews.length} component${catalog.previews.length === 1 ? '' : 's'}`,
-        ),
-      ),
-    )
-  },
-}
-
-let createShell = null
-
-export const previewShell = ({ catalog, controls, editor, content }) => {
-  createShell ??= component('imp-preview-shell', shellDefinition)
-  const shell = createShell(catalog, controls, editor, content)
-  shell.setAttribute('dir', 'ltr')
-  return shell
+      aside: previewSettings(controls, editor),
+    },
+    stack({ gap: 4 }, content),
+  )
+  host.setAttribute('dir', 'ltr')
+  host.style.setProperty('--imp-shell-sidebar-inline-size', '15rem')
+  host.style.setProperty('--imp-shell-aside-inline-size', '18rem')
+  return host
 }

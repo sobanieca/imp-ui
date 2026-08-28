@@ -102,7 +102,7 @@ rather than a preference.
 - **The standard library is thin for an all-in-one toolkit.** What ships today: general (button,
   heading, link, text), a substantial inputs group, navigation (tabs, navMenu, commandPalette),
   display (emptyState alone), feedback (bugReport alone). The layout group has been removed in full
-  and is being redesigned, and there is no table or data grid, no modal, drawer, toast or tooltip.
+  and is being redesigned, and there is no table or data grid, no dialog, drawer, toast or tooltip.
   The stated target is dashboards, CRUD and internal tools; those cannot be assembled from the
   current catalog. Tracked in detail in `todo/stdlib-components.md` - listed here because it is the
   practical blocker a team hits first.

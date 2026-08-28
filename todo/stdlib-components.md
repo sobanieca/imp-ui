@@ -31,12 +31,13 @@ without a skill file, so this is enforced rather than remembered.
 - **General** - `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
-- **Layout** - `flex` and `column` have landed, opening the `imp/std/layout` subpath and settling
-  the group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
-  nothing else (`adr/layout-two-flex-primitives.md`). `shell` - an app shell of navbar / sidebar /
-  content that works on a phone and a desktop - is the next piece; see _Layout & placement_ below.
-  **`scrollArea` is out of scope** for the same reason `virtualList` is - custom scrollbars
-  reimplement the browser's own scrolling (`adr/browser-support-baseline.md`).
+- **Layout** - `flex` and `stack` have landed, opening the `imp/std/layout` subpath and settling the
+  group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
+  nothing else (`adr/layout-two-flex-primitives.md`). `shell`, the app frame of header / rail /
+  sidebar / content / aside that works on a phone and a desktop, has landed alongside them
+  (`adr/app-shell-component.md`). **`scrollArea` is out of scope** for the same reason `virtualList`
+  is - custom scrollbars reimplement the browser's own scrolling
+  (`adr/browser-support-baseline.md`).
 - **Inputs** - `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
   _(later)_, `otpField` _(later)_, `cascader` _(later)_, `treeSelect` _(later)_. `form` and the form
@@ -50,17 +51,17 @@ without a skill file, so this is enforced rather than remembered.
   `::scroll-marker()` to be interoperable - scroll-button JavaScript in the meantime is what
   `adr/browser-support-baseline.md` rules out. `emptyState` has landed, opening the
   `imp/std/display` subpath and fixing the wording convention (`adr/translatable-by-default.md`).
-- **Feedback** - `spinner`, `progress`, `alert`, `toast`, `modal`, `drawer`, `skeleton`,
-  `popconfirm`, `result` _(later)_. How the overlays among them reach above the page is settled in
-  `todo/overlay-seam.md`, which also covers the anchored ones in _Display_ and _Navigation_.
-  `bugReport` has landed ahead of the rest, opening the `imp/std/feedback` subpath: it shares the
-  dev server's element picker and context capture through `lib/src/report.js`
-  (`adr/in-page-review-capture.md`), and it settled two things the group inherits - **an
-  asynchronous, failable action is a function prop** (`onSubmit`) rather than an `events` entry,
-  because a `CustomEvent` cannot be awaited, and **a component composes `button` rather than
-  restyling a native one** - it drives the nested button through props (a state handle for
-  `disabled` or `loading`) and focuses it through its host, which every component now supports
-  (`adr/focus-delegation.md`).
+- **Feedback** - `spinner`, `progress`, `alert`, `toast`, `drawer`, `skeleton`, `popconfirm`,
+  `result` _(later)_. Every overlay in this group builds on the seam `dialog` opened
+  (`adr/overlay-top-layer.md`), but **`dialog` itself belongs to _Layout & placement_** below: it is
+  a frame to put content in, not something the app says to the user. `bugReport` has landed ahead of
+  the rest, opening the `imp/std/feedback` subpath: it shares the dev server's element picker and
+  context capture through `lib/src/report.js` (`adr/in-page-review-capture.md`), and it settled two
+  things the group inherits - **an asynchronous, failable action is a function prop** (`onSubmit`)
+  rather than an `events` entry, because a `CustomEvent` cannot be awaited, and **a component
+  composes `button` rather than restyling a native one** - it drives the nested button through props
+  (a state handle for `disabled` or `loading`) and focuses it through its host, which every
+  component now supports (`adr/focus-delegation.md`).
 - **Navigation** - `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_,
   `floatButton` _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing
   the data-driven shape every composite widget with internal ARIA id references follows
@@ -75,23 +76,32 @@ without a skill file, so this is enforced rather than remembered.
 
 ## Layout & placement
 
-`flex` and `column` are the whole layout set and the group is deliberately staying that small
-(`adr/layout-two-flex-primitives.md`). What is still owed:
+`flex` and `stack` are the whole arrangement set and the group is deliberately staying that small
+(`adr/layout-two-flex-primitives.md`); `shell` is the app frame beside them
+(`adr/app-shell-component.md`), and `dialog` is the frame an app opens over its page. `dialog`
+landed with the overlay seam every other overlay in the catalog builds on
+(`adr/overlay-top-layer.md`): there is **no separate `modal`**, because `dialog({ modal })` is both
+the frame frozen in the centre of the page and the window the user can drag anywhere, the two
+differing only in which top-layer promotion they use. What is left of the seam - the anchored ones
+in _Display_ and _Navigation_ among them - is in `todo/overlay-seam.md`. What is still owed:
 
-- **`shell` - the app shell.** One component that gives an app a navbar, a sidebar and a content
-  area without the app assembling them, and that works on a phone as well as a desktop: the sidebar
-  becomes a drawer, the navbar keeps its trigger. This is the one place the library takes a position
-  on the shape of a whole page, so it decides its own regions rather than reviving the removed
-  frame's `navbar` / `sidebar` / `footer` sorting.
-  - It has to hold under `:host { display: contents }`: a child component's own root is the real
-    layout item and no parent selector can reach it, so every region is placed by the shell's own
-    container properties or rendered by the shell itself.
-  - A drawer that opens over the page is the first layout consumer of the overlay seam
-    (`todo/overlay-seam.md`), and the first to need a structural swap by width - which
-    `adr/responsive-fluid-values-only.md` says is a media query, not a prop.
+- **Ready-made contents for `shell`'s regions.** `shell` is pitched as the quick win for standing an
+  app up, but it only frames regions - every region is DOM the app writes. The frame is not a quick
+  win until the usual contents ship with it, so the group owes the pieces that fill it:
+  - **Nav items with icons**, for the `header` and `bottomNav` regions.
+  - **Sidebar items with icons**, grouped and with the current one marked - `navMenu`'s data shape
+    plus an `icon` per item.
+  - **A breadcrumb** for the trail above the main region. Its API is already designed in
+    `todo/breadcrumbs.md`; what is new here is that `shell` is its first call site, so the two land
+    together.
+
+  All three need `icon` in the General group first, and `shared/icons.js` is currently four internal
+  glyphs rather than a public set - so the icon question below is the blocker for this whole bullet.
+- **An icon rail, and `icon` itself.** `shell` takes a `rail` region but `navMenu` renders text
+  rows, so an icon-only rail is hand-built app code until `icon` lands in the General group.
 - **Whether a grid is ever wanted.** A dense form or a dashboard of cards is CSS grid in the app's
   own component today. That is the deliberate answer for now; revisit only with a real call site
-  that a nested `flex`/`column` genuinely cannot express.
+  that a nested `flex`/`stack` genuinely cannot express.
 - **`splitPane`** - user-resizable panes - is still wanted and is unblocked by the redesign.
 
 ## Form handling
@@ -169,8 +179,9 @@ Mobile layout is first-class, not a separate component set:
   and read it from JS. It is a value token only: **a media query cannot read a custom property**, so
   a query still needs the literal. Do not build anything that implies otherwise.
 - **Components adapt below the breakpoints they care about:** `table` switches to stacked cards or
-  horizontal scroll; `modal` goes full-screen; `drawer` becomes a bottom sheet; pickers render
-  touch-appropriate panels.
+  horizontal scroll; `dialog` goes full-screen, which drops dragging with it - there is nowhere to
+  drag a full-screen panel to; `drawer` becomes a bottom sheet; pickers render touch-appropriate
+  panels.
 - **Touch targets** meet a minimum size taken from the theme tokens.
 - **A state-shaped `breakpoint` value** (readable + watchable) is still owed, for the structural
   swaps CSS cannot express - `table`'s card mode is the first real consumer, so it lands with the
@@ -183,6 +194,16 @@ The shape every component follows - `imp-` prefixed custom elements, lazy defini
 with fallbacks, logical properties, no outer margins - is settled and recorded in
 `adr/standard-component-library.md`. What is still open here:
 
+- **A component name may not shadow a browser global.** An import binding shadows the global of the
+  same name for the whole module, so `import { alert } from 'imp/std/feedback'` makes `alert(...)`
+  later in that file the component, silently. It is the `switch` problem without the syntax error to
+  catch it, and it lands on app code rather than on imp. It has already decided one name here - the
+  overlay component is `dialog` (`todo/overlay-seam.md`) - and **`alert` in _Feedback_ above is the
+  same collision, still unresolved.** The list to check a candidate against is the one the platform
+  owns: `name`, `length`, `status`, `origin`, `event`, `open`, `close`, `focus`, `blur`, `print`,
+  `scroll`, `history`, `screen`, `location`, `top`, `parent`, `self`, `frames`, `menubar`,
+  `toolbar`. Shadowing an imp **element factory** is a different thing and is fine - the two are
+  separate namespaces and `button`, `text`, `link` and `select` already do it.
 - **Two-way binding by convention:** an input's `value`/`checked` prop accepts anything
   **state-shaped** - an object with `get`/`watch`/`set`, whether it came from
   `initState`/`useState`, `computed` (read-only controls), or user code implementing the same shape.

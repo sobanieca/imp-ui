@@ -25,10 +25,13 @@ open question left in `todo/stdlib-components.md`):
 - **Keyboard operability.** Every interaction reachable by pointer is reachable by keyboard -
   Tab/Shift-Tab order, Enter/Space activation, Arrow-key navigation for composite widgets (`tabs`,
   `radioGroup`, `menuList`, `tree`, `pagination`), Escape to dismiss overlays.
-- **Focus management.** Overlays (`modal`, `drawer`) trap focus while open, restore focus to the
-  invoking element on close, and are opened with focus moved into them. None of that is written per
-  component or shared as imp code: it comes from the platform's top layer, through the seam settled
-  in `todo/overlay-seam.md`.
+- **Focus management.** Modal overlays (`dialog({ modal: true })`, `drawer`) trap focus while open,
+  restore focus to the invoking element on close, and are opened with focus moved into them. None of
+  that is written per component or shared as imp code: it comes from the platform's top layer,
+  through the seam settled in `todo/overlay-seam.md`. A non-modal `dialog` traps nothing by design -
+  the page behind it stays operable - but it owes the one thing the platform does not give it: **its
+  drag is reachable from the keyboard**, or it is a pointer-only interaction, which the operability
+  rule above forbids.
 - **State wiring.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
   `aria-invalid`, `aria-busy`, `aria-live` for feedback (`alert`, `toast`, `spinner`) reflect the
   component's reactive state automatically - they bind to the same states that drive the visuals

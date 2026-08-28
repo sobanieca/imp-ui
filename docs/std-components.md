@@ -22,20 +22,43 @@ Every standard component is a real imp component, so it renders as its own eleme
 sealed inside it. Nothing you write on the page can leak in and break it, and nothing it defines
 leaks out onto your page.
 
+This page is the argument for the library - what holds across all of it, and the few pieces worth
+knowing before you start. It is not the catalog.
+
+## Browse the components
+
+**The catalog lives in the [component gallery](/components).** Every component is there rendered as
+itself, in light and dark, with its props, its variants and the code that produced each specimen -
+pick one, look at it, copy the call.
+
+That page is not written by hand: it is `imp preview`, the same gallery the CLI serves for your own
+components while you build them (see **[CLI](cli.md)**). So the reference you read is generated from
+the components themselves and cannot drift from them, and the tool you use to browse imp's library
+is the tool you already use to browse your own.
+
+An AI agent has a second door onto the same information: every component ships a **skill**, the
+short mechanical version - call shape, prop table, and the mistakes the component invites.
+`imp skill std/button` prints it. Your own components publish theirs the same way, by putting a
+`counter.skill.md` file next to the module (see **[Components](components.md)**).
+
 ## Where components come from
 
 `imp` and its subpaths are the framework - element factories, `component`, state, routing, theming
 (see **[Imports](imports.md)**). `imp/std` is the component library, split by group:
 
-| Import               | What it holds                                                                                                                                                                                 |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                                                                                                                            |
-| `imp/std/layout`     | `flex` and `column` - the two flex primitives                                                                                                                                                 |
-| `imp/std/inputs`     | `form` and the controls that bind to it - `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` |
-| `imp/std/display`    | `emptyState`                                                                                                                                                                                  |
-| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                                                           |
-| `imp/std/feedback`   | `bugReport`                                                                                                                                                                                   |
-| `imp/std/<group>`    | The rest, group by group, as they land                                                                                                                                                        |
+| Import               | What it holds                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                         |
+| `imp/std/layout`     | The app frame and the two arrangement primitives - `shell`, `flex`, `stack`, plus `dialog` |
+| `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...        |
+| `imp/std/display`    | Components that present content - `emptyState`, ...                                        |
+| `imp/std/navigation` | Getting around the app - `tabs`, `navMenu`, `commandPalette`, ...                          |
+| `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                    |
+| `imp/std/<group>`    | The rest, group by group, as they land                                                     |
+
+Splitting by group keeps one namespace from flooding as the catalog grows, and makes an import line
+say which part of the library a file leans on. Importing a group that does not exist yet is an error
+that tells you what does exist, so a typo never turns into a mysterious missing module.
 
 Components take the obvious names, and a few of them match an element factory - `button` is both a
 plain `<button>` from `imp/html` and the styled component from `imp/std`. They never collide,
@@ -45,15 +68,6 @@ because they arrive through different imports. In the rare file that wants both,
 import { button } from 'imp/html'
 import { button as styledButton } from 'imp/std'
 ```
-
-Importing a group that does not exist yet is an error that tells you what does exist, so a typo
-never turns into a mysterious missing module.
-
-Every component here also ships a **skill** - the short, mechanical version of this page for one
-component: call shape, prop table, and the mistakes it invites. `imp skill std/button` prints it, so
-an AI agent writing against the library can check a component before it uses it. Your own components
-publish theirs the same way, by putting a `counter.skill.md` file next to the module (see
-**[Components](components.md)**).
 
 ## The shared rules
 
@@ -102,305 +116,110 @@ component reads properly in an app with no translation files at all, and the mom
 those keys in your own translations your wording takes over, re-localizing in place when the
 language changes. See **[Translations](i18n.md)**.
 
+**Accessibility is the component's job, not yours.** The native element is rendered wherever one
+exists, so roles, states and keyboard behaviour come from the browser. Every pointer interaction has
+a keyboard equivalent, every interactive element carries an accessible name, ARIA state is bound to
+the same state that drives the visuals so the two cannot drift, and the focus ring, the contrast and
+`prefers-reduced-motion` are handled. An app assembled from these components clears the common bar
+without wiring any of it by hand.
+
 **No outer margins.** No standard component adds margin around itself. Spacing between things is the
 job of whatever lays them out, which keeps rhythm consistent instead of fighting collapsing margins.
 
-## `button`
+## Start an app with the frame
 
-The button. It renders a real `<button>`, so keyboard activation, focus rings and disabled semantics
-are the browser's own.
-
-```js
-button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
-```
-
-| Prop       | Values                                                    | Default     |                                                        |
-| ---------- | --------------------------------------------------------- | ----------- | ------------------------------------------------------ |
-| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | The visual weight and intent                           |
-| `size`     | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                                  |
-| `disabled` | boolean - **live**                                        | `false`     | Blocks interaction                                     |
-| `loading`  | boolean - **live**                                        | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
-| `block`    | boolean                                                   | `false`     | Fills the width of its container                       |
-| `label`    | a string, or a state holding one                          | -           | The accessible name, when the content is not enough    |
-| `events`   | event map                                                 | -           | Handlers, exactly as on any element                    |
-
-`variant: 'link'` is a button that reads as a link. Reach for it when the control performs an
-action - opening a panel, starting a flow - and the surrounding text calls for link weight rather
-than a filled or outlined button. It stays a real `<button>`, so it is not something a person can
-open in a new tab; use `link` for anywhere they can actually go.
-
-**There is no `type` prop, and no submit button.** A button always acts on its `click` handler.
-Because the button element lives inside the component, the browser would never associate it with a
-form on your page anyway - so imp does not pretend otherwise, and submitting is something you do in
-the handler, where an SPA does the work regardless.
-
-`loading` implies disabled, so a request in flight cannot be fired twice:
+**`shell` is the recommended way to start an app**, not one option among several: a header, a nav
+column, a content area and whatever else the page needs, already laid out, already scrolling each
+region on its own, and already working on a phone.
 
 ```js
-const sending = initState('contact.sending', false)
+import { shell } from 'imp/std/layout'
+import { navMenu } from 'imp/std/navigation'
 
-const send = async () => {
-  sending.set(true)
-  try {
-    await post('/api/contact', draft)
-  } finally {
-    sending.set(false)
-  }
-}
-
-button({ variant: 'primary', loading: sending, events: { click: send } }, 'Send')
-```
-
-## `heading`
-
-A section heading, rendered as the real `h1`-`h6` element for the level you ask for - screen readers
-and document outlines see the right structure.
-
-```js
-heading({ level: 2 }, 'Recent activity')
-```
-
-| Prop    | Values                         | Default     |                            |
-| ------- | ------------------------------ | ----------- | -------------------------- |
-| `level` | `1`-`6`                        | `1`         | The heading level, and tag |
-| `tone`  | `'default'`, `'secondary'`     | `'default'` | Full-strength or muted     |
-| `align` | `'start'`, `'center'`, `'end'` | `'start'`   | Text alignment             |
-
-Type size follows the level (`level: 1` is the largest), so headings stay in proportion across an
-app without anyone picking font sizes by hand.
-
-## `text`
-
-Body text. Renders a paragraph by default, or an inline span when you need styled text inside a
-sentence.
-
-```js
-text('Everything below is included in your plan.')
-text({ tone: 'secondary', size: 'sm' }, 'Prices exclude VAT.')
-text({ inline: true, weight: 'bold' }, 'unlimited')
-```
-
-| Prop     | Values                           | Default     |                                      |
-| -------- | -------------------------------- | ----------- | ------------------------------------ |
-| `tone`   | `'default'`, `'secondary'`       | `'default'` | Full-strength or muted text          |
-| `size`   | `'sm'`, `'md'`, `'lg'`           | `'md'`      | Type size                            |
-| `weight` | `'normal'`, `'medium'`, `'bold'` | `'normal'`  | Type weight                          |
-| `align`  | `'start'`, `'center'`, `'end'`   | `'start'`   | Text alignment                       |
-| `inline` | boolean                          | `false`     | Render a `<span>` instead of a `<p>` |
-
-Because content comes after the props, mixing plain and emphasized text reads naturally:
-
-```js
-text(
-  'You have ',
-  text({ inline: true, weight: 'bold' }, '3 days'),
-  ' left in your trial.',
+shell(
+  {
+    header: flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, logo(), userMenu()),
+    sidebar: navMenu({ label: 'Sections', items: sections, selected: current }),
+  },
+  router({ routes }),
 )
 ```
 
-## `link`
+The reason to use it is not your convenience, it is the person using your app: an imp app should
+feel like somewhere they have been before, with the nav where the nav goes and the header where the
+header goes. That only happens if the default shape is the one most apps actually ship.
 
-A link. It renders a real anchor - the URL shows in the status bar, middle-click and
-copy-link-address work - but a plain left-click inside your own app is handled by the router, so
-there is no page reload.
+Three things about it are worth knowing before you design around it:
 
-```js
-link({ href: '/settings' }, 'Settings')
-link({ href: 'https://example.com', external: true }, 'Read the docs')
-```
+**There is no `layout` prop with five named variants to learn.** The regions you pass, plus where
+the header starts, are the layout. A rail with an aside and a bottom bar is a valid combination
+nobody had to think of in advance, which is the point of not shipping the list as a prop.
 
-| Prop       | Values                           | Default     |                                                     |
-| ---------- | -------------------------------- | ----------- | --------------------------------------------------- |
-| `href`     | string                           | - required  | Where the link goes                                 |
-| `external` | boolean                          | `false`     | Opens in a new tab with `rel="noreferrer noopener"` |
-| `tone`     | `'default'`, `'secondary'`       | `'default'` | Link color or muted                                 |
-| `size`     | `'sm'`, `'md'`, `'lg'`           | `'md'`      | Type size                                           |
-| `weight`   | `'normal'`, `'medium'`, `'bold'` | `'normal'`  | Type weight                                         |
-| `events`   | event map                        | -           | Handlers, exactly as on any element                 |
+**Every region takes DOM, not data**, so the shell never has to grow a prop for what you want to put
+in one. A command palette in the header, a tenant switcher above the nav, a pair of preference
+checkboxes below it - all of them are DOM you already know how to write.
 
-In-app navigation is handed to the router (see **[Routing](routing.md)**), so `href` is written the
-same way you would write it for `navigate()` - a path like `/settings`, without your app's base
-path. imp adds that for you. Clicks are left to the browser whenever the user means it: a
-middle-click, a modifier-click, an `external` link, or an absolute URL pointing off-site.
+**It is the one component that changes its structure by width.** Below `48rem` the rail and the
+aside collapse and the sidebar becomes a modal drawer, opened from a button the shell adds to the
+header - a real `<dialog>`, so Escape, the focus trap and returning focus are the browser's job.
+Pass a `bottomNav` instead and there is no drawer at all; a bottom bar is the whole phone
+navigation.
 
-A link is a place to go. When the control performs an action instead - opening a panel, starting a
-flow - it belongs in a `button`, and `variant: 'link'` gives it link appearance without giving up
-what a button is.
+One consequence to know before you structure an app: the shell never looks inside a region, so a
+screen deeper in the tree cannot push DOM up into the sidebar. What travels upward is **data** -
+keep a nav-items state next to the shell, have each screen contribute its rows on mount and withdraw
+them on unmount, and bind that state into the menu. The rule of thumb: **you at the call site, DOM;
+a screen at runtime, data.**
 
-## Layout - `flex` and `column`, from `imp/std/layout`
+## Layout is two components, deliberately
 
-Two components lay a page out, and they are both CSS flexbox with the sharp edges filed off:
-**`flex` is a row**, **`column` is a stack**.
+Inside the frame, two components lay a page out, and they are both CSS flexbox with the sharp edges
+filed off: **`flex` is a row**, **`stack` is a column**.
 
 ```js
-import { column, flex } from 'imp/std/layout'
-
-column(
-  { gap: 5 },
-  flex(
-    { horizontalAlign: 'justify', verticalAlign: 'center' },
-    heading('Invoices'),
-    button({ variant: 'primary' }, 'New invoice'),
-  ),
-  text({ tone: 'secondary' }, 'Everything you have sent this year.'),
+stack(
+  { gap: 4 },
+  flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Team'), button('Invite')),
+  stack({ gap: 2 }, ...members.map((member) => memberRow(member))),
+  flex({ horizontalAlign: 'right', gap: 2 }, button('Cancel'), button('Save')),
 )
 ```
 
 That is the whole layout library. There is no grid, no box, and no wrapper with padding, background
-and width props - a box that needs those is a `div` in your own component, styled with the CSS you
-already know. Two primitives cover the arrangements a page actually makes, and every one of them is
-a name you do not have to look up.
+and width props. Every arrangement is rows in stacks in rows, and two primitives cover the ones a
+page actually makes - each one a name you do not have to look up.
 
-### `flex`
-
-A row. Children sit side by side in the order you pass them.
-
-```js
-flex({ gap: 2 }, button('Cancel'), button({ variant: 'primary' }, 'Save'))
-```
-
-| Prop              | Values                                       | Default     |                                                    |
-| ----------------- | -------------------------------------------- | ----------- | -------------------------------------------------- |
-| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'justify'` | `'left'`    | Where the children sit along the row               |
-| `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'stretch'` | `'stretch'` | How they line up across it                         |
-| `wrap`            | boolean                                      | `false`     | Lets a row that runs out of width break onto lines |
-| `gap`             | spacing step `0`-`6`                         | `3`         | The space between children                         |
-
-`horizontalAlign: 'justify'` pushes the children apart to the two ends of the row, with the leftover
-space shared between them - a title on the left and a button on the right is one call.
-
-### `column`
-
-A stack. Children sit one under another.
+**When you want something a row and a column cannot express, write the CSS.** A dense form, a
+dashboard of cards, a masonry wall - that is `display: grid` in your own component's `styles`, where
+it sits next to the thing it affects, is isolated from the rest of the page, and is readable by
+anyone who knows CSS. imp declines to reinvent a layout system the platform already has, and hands
+it back to you rather than wrapping it in props:
 
 ```js
-column({ gap: 4 }, heading('Settings'), text('Everything about this workspace.'))
-```
-
-| Prop              | Values                                       | Default     |                            |
-| ----------------- | -------------------------------------------- | ----------- | -------------------------- |
-| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'stretch'` | `'stretch'` | How wide each child sits   |
-| `gap`             | spacing step `0`-`6`                         | `3`         | The space between children |
-
-`'stretch'` is the default because it is what a stack usually wants: every child as wide as the
-column, so buttons and fields line up down both edges. A column has no vertical alignment, because a
-stack is exactly as tall as the things in it - when there is spare room to place things in, that is
-a row's job.
-
-### `left` means left, in every language
-
-The alignment props are physical, and they stay physical when the document reads right to left. imp
-sets `<html dir="rtl">` for a right-to-left language on its own (see
-**[Internationalization](i18n.md)**), and that mirrors the text inside your components - but it does
-not move a row's children or flip what `horizontalAlign: 'left'` means. A row keeps its first child
-on the left and a column aligned `left` stays on the left, in Arabic exactly as in English.
-
-That is deliberate: these two components place _components_ - buttons, fields, cards - not glyphs,
-so a prop called `left` that sometimes means right would be worse than useless. If you do want an
-arrangement mirrored for a right-to-left language, order the children the other way round yourself:
-
-```js
-import { dir } from 'imp/i18n'
-
-const actions = [button('Cancel'), button({ variant: 'primary' }, 'Save')]
-flex({ horizontalAlign: 'right' }, ...(dir.get() === 'rtl' ? actions.reverse() : actions))
-```
-
-### Spacing is a `gap`, and a step, not a length
-
-No standard component carries an outer margin, so the space between two of them is always the
-parent's `gap`. It is a **step on the theme's spacing scale**, `0` through `6` - not `'1rem'`:
-
-```js
-column({ gap: 5 }, ...) // correct
-column({ gap: '1.5rem' }, ...) // logged, and falls back to the default step
-```
-
-The steps from `3` up are fluid `clamp()` values that grow with the viewport (see
-**[Theming](theming.md)**), so one number is the right amount of space on a phone and on a desktop
-alike, and `gap: 0` turns spacing off.
-
-### Nesting is the whole technique
-
-Every arrangement is rows in stacks in rows. A toolbar above a body, a card with a footer of
-buttons, a form with actions to the right - all of them are two or three of these calls nested:
-
-```js
-column(
-  { gap: 4 },
-  flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Team'), button('Invite')),
-  column({ gap: 2 }, ...members.map((member) => memberRow(member))),
-  flex(
-    { horizontalAlign: 'right', gap: 2 },
-    button('Cancel'),
-    button({ variant: 'primary' }, 'Save'),
-  ),
-)
-```
-
-### Changing shape at a width
-
-No prop here varies by screen size, and none of them needs to: the spacing scale is fluid and a row
-that runs out of room can `wrap`. When a layout genuinely has to change shape - a row becoming a
-stack on a phone - that is a media query in your own component's `styles`, where it sits next to the
-thing it affects:
-
-```js
-component('invoice-filters', {
+component('invoice-grid', {
   styles: () => `
-    .filters { display: flex; flex-direction: column; gap: var(--imp-space-4); }
-
-    @media (min-width: 48rem) {
-      .filters { flex-direction: row; }
-    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
   `,
-  onMount: () => div({ class: 'filters' }, ...filters()),
+  onMount: () => div({ class: 'grid' }, ...cards()),
 })
 ```
 
-`48rem` is the width imp itself splits at, and it is the `breakpoint-desktop` token - though a media
-query needs the literal, because CSS cannot read a custom property inside one. See
-**[Theming](theming.md)**.
+Two rules follow from keeping the surface this small, and they hold across the library:
 
-## `emptyState` - from `imp/std/display`
+**Spacing is a `gap`, and a step, not a length.** No standard component carries an outer margin, so
+the space between two of them is always the parent's `gap` - a step on the theme's spacing scale,
+`0` through `6`, never `'1rem'`. The steps from `3` up are fluid `clamp()` values that grow with the
+viewport (see **[Theming](theming.md)**), so one number is the right amount of space on a phone and
+on a desktop alike.
 
-The placeholder for a list, table or search result with nothing in it: a line saying so, optional
-explanation, and whatever action gets the user out of it.
+**`left` means left, in every language.** The alignment props are physical and stay physical when
+the document reads right to left. imp sets `<html dir="rtl">` on its own and that mirrors the text
+inside your components, but it does not flip what `horizontalAlign: 'left'` means. These components
+place _components_ - buttons, fields, cards - not glyphs, so a prop called `left` that sometimes
+meant right would be worse than useless. Order the children the other way round yourself when an
+arrangement genuinely should mirror.
 
-```js
-import { emptyState } from 'imp/std/display'
-import { button } from 'imp/std'
-
-emptyState()
-emptyState({ variant: 'noResults' })
-emptyState(
-  { title: 'No invoices', description: 'Invoices appear here once you send one.' },
-  button({ variant: 'primary', events: { click: newInvoice } }, 'New invoice'),
-)
-```
-
-| Prop          | Values                   | Default   |                                               |
-| ------------- | ------------------------ | --------- | --------------------------------------------- |
-| `variant`     | `'empty'`, `'noResults'` | `'empty'` | Which of the two situations this is           |
-| `title`       | string - **live**        | see below | The line saying there is nothing              |
-| `description` | string - **live**        | -         | One sentence of explanation; omitted if unset |
-
-Children are the actions, laid out in a centered row under the text.
-
-**It has words already.** Left without a `title`, the component reads its own message key - so it
-says something sensible before you have written any translations:
-
-| `variant`     | Key                   | Falls back to    |
-| ------------- | --------------------- | ---------------- |
-| `'empty'`     | `imp.state.empty`     | Nothing here yet |
-| `'noResults'` | `imp.state.noResults` | No results       |
-
-Translate those keys in your own files to put it in your own words and every language you support
-(see **[Translations](i18n.md)**), or pass `title` when this one empty state needs to say something
-specific. A `title` you pass is text like any other - imp does not translate it for you, so reach
-for `computed([lang], () => t('invoices.empty'))` if it needs to follow the language.
-
-## Forms - from `imp/std/inputs`
+## Forms are state, not a framework
 
 A form in imp is not a special construct with its own API to learn. **Its values are ordinary imp
 state**, and each control says which field of that state it owns:
@@ -425,387 +244,54 @@ through. The form creates its state from `initialValues` when it mounts and disp
 unmounts, and each control finds the form by its position in the tree - so it keeps working however
 deeply you nest it inside layout components or your own.
 
-### Fields are addressed by path
+**`field` is a dot path** into the values, so a nested shape needs nothing extra. And because the
+values are just state, anything inside the form can read them the ordinary way - a live summary, a
+preview, or a field that depends on another.
 
-`field: 'user.firstName'` is a **dot path** into the form's values. A control reads its value by
-following the path and writes by rebuilding the object along it, leaving every other branch alone.
-Nested shapes need nothing extra:
+**Validation is declared on the field it belongs to.** `required`, `minLength`, `min`, `max` and
+`pattern` are built in; `validate` takes a function returning a message; `validateAsync` returns a
+promise for the check that has to ask the server, and it runs on blur and on submit rather than on
+every keystroke, so signing up does not fire a request per letter typed. Errors appear when they are
+useful - a field says nothing while it is being filled in for the first time - and the built-in
+messages are translatable like everything else the library says.
 
-```js
-form(
-  { initialValues: { address: { city: 'Kraków', postcode: '30-001' } } },
-  textField({ field: 'address.city', label: 'City' }),
-  textField({ field: 'address.postcode', label: 'Postcode' }),
-)
-```
+**Submitting is a button, not a `<form>` submit.** Clicking `submitButton()` re-checks every field;
+if anything fails, `onSubmit` never runs and the bad fields start showing their messages. Return a
+promise from `onSubmit` and imp waits for it, with the button spinning and further clicks ignored
+until it settles. Enter in a single-line field submits too, because people expect it to.
 
-Because the values are just state, anything inside the form can read them the ordinary way - a live
-summary, a preview, or a field that depends on another:
+**Labels are props, not wrappers.** Every control renders its own label, hint and error message. A
+`<label>` finds its input by id, and an id cannot reach across a component boundary - so in exchange
+for passing the label rather than wrapping it, the label, the hint, the error and the input are
+wired to each other correctly every time.
 
-```js
-const values = useState('imp.form')
+**A control does not need a form.** Give it `value` - a state, or a plain starting value - and it
+binds to that instead, which is what you want for a search box filtering a list. Use `field` inside
+a form and `value` outside one.
 
-text(values.text((current) => `Billing ${current.plan} to ${current.user.email}`))
-```
+## Overlays are the platform's, not a z-index war
 
-### Validation
-
-Validation is declared on the field it belongs to. `required`, `minLength`, `maxLength`, `min`,
-`max` and `pattern` are built in, and `validate` takes a function returning a message - or `null`
-when the value is fine:
-
-```js
-textField({ field: 'user.email', label: 'Email', required: true, pattern: /.+@.+\..+/ })
-numberField({ field: 'quantity', label: 'Quantity', min: 1, max: 99 })
-textField({
-  field: 'username',
-  label: 'Username',
-  validate: (value) => value?.includes(' ') ? 'No spaces, please' : null,
-})
-```
-
-**A check that has to ask the server** goes in `validateAsync`, which returns a promise:
+Anything imp opens over your page - a dialog, the shell's phone drawer - is a real `<dialog>`
+promoted into the browser's **top layer**. It cannot be clipped by an ancestor with
+`overflow: hidden`, it cannot be painted under something else, and it needs no z-index from you.
+There is no portal to render into and no stacking context to manage.
 
 ```js
-textField({
-  field: 'username',
-  label: 'Username',
-  validateAsync: async (value) => await isTaken(value) ? 'That name is taken' : null,
-})
+import { dialog } from 'imp/std/layout'
+
+dialog({ title: 'Edit user', open: editing }, form({ initialValues }, textField({ field: 'name' })))
 ```
 
-It runs on **blur and on submit**, never on every keystroke, so signing up does not fire a request
-per letter typed. While it is in flight the field is marked busy; if a submit is waiting on it, the
-submit button spins until every check has come back. A check that fails outright - the server is
-down - blocks the submit with a "could not check this" message rather than letting the value
-through. A synchronous rule that already failed skips the round trip entirely.
-
-The built-in messages are translatable like everything else the library says - they live under
-`imp.form.*` keys (see **[Translations](i18n.md)**), so you translate the key rather than passing
-wording to every field.
-
-**Errors appear when they are useful, not before.** A field says nothing while it is being filled in
-for the first time; its message appears once the field has been left, or once submit has been
-attempted. You do not have to manage that - there is no "show errors" flag to keep.
-
-### Submitting
-
-`submitButton()` is the submit action. It can sit anywhere inside the form:
-
-```js
-form(
-  { initialValues, onSubmit },
-  ...fields,
-  submitButton('Save changes'),
-  resetButton('Start over'),
-)
-```
-
-Clicking it re-checks every field. If anything fails, `onSubmit` never runs and the bad fields start
-showing their messages. If everything passes, `onSubmit` gets the values object.
-
-**Pressing Enter in a single-line field submits too** - imp implements that itself, so a one-field
-form behaves the way people expect. Enter in a `textArea` inserts a newline, as it should.
-
-If `onSubmit` returns a promise, imp waits for it: the submit button shows a spinner and further
-clicks are ignored until it settles.
-
-```js
-form({ initialValues: { email: '' }, onSubmit: async (values) => await post('/signup', values) }, …)
-```
-
-`resetButton()` puts `initialValues` back and clears the errors with them.
-
-### The controls
-
-| Control         | Holds                                                                             |
-| --------------- | --------------------------------------------------------------------------------- |
-| `textField`     | A line of text - `type` picks the keyboard: `'text'`, `'email'`, `'tel'`, `'url'` |
-| `passwordField` | A masked line of text                                                             |
-| `searchField`   | A search term                                                                     |
-| `textArea`      | Several lines of text                                                             |
-| `numberField`   | A **number** - never a string                                                     |
-| `select`        | One value out of `options`                                                        |
-| `radioGroup`    | One value out of `options`, all visible at once                                   |
-| `checkbox`      | A boolean                                                                         |
-| `toggle`        | A boolean, drawn as a switch                                                      |
-
-`select` and `radioGroup` take their choices as an `options` array - plain strings, or
-`{ value, label }` objects when the two differ.
-
-### Labels come from the control
-
-Every control renders its own label, hint and error message:
-
-```js
-textField({ field: 'email', label: 'Email', help: 'We never share it', required: true })
-```
-
-This is worth knowing rather than fighting: a `<label>` finds its input by id, and an id cannot
-reach across a component boundary. So the label is a **prop**, not something you wrap around the
-control - and in exchange the label, the hint, the error and the input are wired to each other
-correctly every time, with `aria-describedby` and `aria-invalid` kept in step with what is on
-screen. Where a control has no visible label, name it with `ariaLabel`.
-
-### Controls outside a form
-
-A control does not need a form. Give it `value` - a state, or a plain starting value - and it binds
-to that instead, which is what you want for a search box filtering a list:
-
-```js
-const query = initState('invoices.query', '')
-
-searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search…' })
-```
-
-Use `field` inside a form and `value` outside one; passing both is a mistake imp reports.
-
-## `tabs` - from `imp/std/navigation`
-
-One strip of tabs over a set of panels. You describe the tabs as data and imp renders both halves -
-the strip and the panels - wired to each other:
-
-```js
-import { tabs } from 'imp/std/navigation'
-
-tabs({
-  label: 'Account sections',
-  items: [
-    { id: 'overview', label: 'Overview', content: overviewPanel() },
-    { id: 'usage', label: 'Usage', content: usagePanel() },
-    { id: 'billing', label: 'Billing', content: billingPanel() },
-  ],
-})
-```
-
-| Prop          | Values                                      | Default            |                                           |
-| ------------- | ------------------------------------------- | ------------------ | ----------------------------------------- |
-| `items`       | array of `{ id, label, content, disabled }` | `[]`               | The tabs and their panels                 |
-| `selected`    | an item's `id` - **live**                   | first enabled item | Which panel is showing                    |
-| `orientation` | `'horizontal'`, `'vertical'`                | `'horizontal'`     | Vertical puts the strip beside the panels |
-| `label`       | string - **live**                           | -                  | Names the strip for a screen reader       |
-| `events`      | `{ select }`                                | -                  | Fires with `detail: { id, index }`        |
-
-**Why the panels are data rather than children.** A tab and its panel point at each other by id -
-`aria-controls` one way, `aria-labelledby` the other - and an id reference cannot cross a shadow
-boundary. If you passed the panels as children of one component and the tabs as children of another,
-those references would silently resolve to nothing and a screen reader would announce a tab that
-controls nothing. Keeping both halves inside one component is what makes the wiring real, so the API
-takes one `items` array.
-
-The keyboard behaviour comes with it: arrow keys move along the strip (mirrored automatically under
-`dir="rtl"`), `Home` and `End` jump to the ends, disabled items are skipped, and selection follows
-focus. Exactly one tab is in the tab order at a time, so `Tab` takes you past the strip into the
-panel rather than through every tab.
-
-Left alone, `tabs` remembers its own selection. Pass `selected` to open on a particular panel, and
-pass a **state** when the selection is something your app owns - a route, say:
-
-```js
-const openTab = initState('settings.tab', 'profile')
-
-tabs({
-  label: 'Settings',
-  selected: openTab,
-  items: [
-    { id: 'profile', label: 'Profile', content: profileForm() },
-    { id: 'security', label: 'Security', content: securityForm() },
-  ],
-  events: { select: (event) => openTab.set(event.detail.id) },
-})
-```
-
-That pair cannot loop: `select` fires only for a choice the user made, never for a change your state
-drove. Every panel is built at mount and hidden when it is not showing, so whatever is inside one -
-a half-filled form, a scroll position - is still there when you come back to it.
-
-## `navMenu` - from `imp/std/navigation`
-
-A list of places in your app, with the one you are on marked. Like `tabs`, it is data rather than
-children:
-
-```js
-import { navMenu } from 'imp/std/navigation'
-
-navMenu({
-  label: 'Sections',
-  selected: currentSection,
-  groups: [{ id: 'work', label: 'Work' }, { id: 'admin', label: 'Admin' }],
-  items: [
-    { id: 'reports', group: 'work', label: 'Reports', href: '/reports', badge: 4 },
-    { id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks' },
-    { id: 'billing', group: 'admin', label: 'Billing', href: '/billing' },
-  ],
-})
-```
-
-| Prop        | Values                                   | Default    |                                              |
-| ----------- | ---------------------------------------- | ---------- | -------------------------------------------- |
-| `items`     | array of `{ id, label, href, … }` - live | `[]`       | The destinations                             |
-| `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections                |
-| `selected`  | an item's `id` - **live**                | none       | The page you are on                          |
-| `label`     | string - **live**                        | -          | Names the navigation for a screen reader     |
-| `direction` | `'column'`, `'row'`                      | `'column'` | `column` down the side, `row` across the top |
-| `gap`       | spacing step `0`-`6`                     | `1`        | Between items and groups                     |
-
-The current item is marked with `aria-current="page"` - the thing a screen reader actually announces
-as "current page" - and the styling follows from it, so the highlight and the announcement can never
-disagree. Bind `selected` to the state your router already drives and the menu keeps itself right.
-
-Items are real links. Middle-click and ⌘-click open them in a new tab, and a plain click is reported
-as a `select` event before the link is followed, so an app doing its own routing can call
-`event.preventDefault()` and take over. There is no keyboard behaviour to learn because there is
-none to add: `Tab` and `Enter` are what links already do, and a roving-focus menu would take those
-links out of the tab order in exchange for nothing.
-
-The same component is your navigation bar with `direction: 'row'`. Put the column one down the side
-of your page and a row one across the top, and one list of destinations serves both.
-
-## `commandPalette` - from `imp/std/navigation`
-
-A search field that filters a list as you type and opens what you pick. It is what you reach for
-when your app has more places than fit in a menu:
-
-```js
-import { commandPalette } from 'imp/std/navigation'
-
-commandPalette({
-  label: 'Search',
-  placeholder: 'Search components by name or category…',
-  shortcut: 'ctrl+p',
-  items: components.map((entry) => ({
-    id: entry.id,
-    group: entry.category,
-    label: entry.name,
-    href: entry.href,
-  })),
-})
-```
-
-| Prop           | Values                                    | Default        |                                    |
-| -------------- | ----------------------------------------- | -------------- | ---------------------------------- |
-| `items`        | array of `{ id, label, group, … }` - live | `[]`           | Everything that can be found       |
-| `label`        | string - **live**                         | `'Search'`     | Names the field and the results    |
-| `placeholder`  | string - **live**                         | `'Search'`     | The ghost text in the empty field  |
-| `shortcut`     | `'ctrl+p'`, `'ctrl+k'`, …                 | -              | Focuses the field from anywhere    |
-| `limit`        | whole number                              | `50`           | How many matches are shown at once |
-| `emptyMessage` | string                                    | `'No matches'` | When nothing matches               |
-
-**An item's `group` is part of what you search.** A match runs against `group/label`, so typing
-`inp` finds everything in the `inputs` group and `tf` finds `text_field` - the matching is fuzzy,
-the characters it matched are highlighted in the result, and a match on the name outranks one on the
-group. That is the whole reason to give your items a group: it turns a category into something a
-person can type.
-
-`shortcut` is one key with optional modifiers, written lowercase and joined with `+`. Write `ctrl`
-and it matches **Ctrl and ⌘**, so the same spelling is right on every platform; the hint rendered at
-the end of the field follows suit, showing `Ctrl P` or `⌘P`. The binding is taken on the page, ahead
-of the browser's own, so `Ctrl P` opens your palette rather than the print dialog.
-
-Everything else is the combobox pattern, done properly and not by you: the field is a `combobox`
-over a `listbox`, the highlighted result is announced through `aria-activedescendant`, the number of
-matches goes out through a live region on every keystroke, Up and Down move through the matches and
-wrap, `Enter` opens the highlighted one, and `Escape` clears the query before it closes the list.
-Those wires are ids pointing at each other, which cannot cross a component boundary - the reason
-this is one component rather than a field you compose with a list of your own.
-
-An item with an `href` is followed when it is picked. Anything else - running a command, opening a
-dialog - is a `select` handler:
-
-```js
-commandPalette({
-  label: 'Run a command',
-  shortcut: 'ctrl+k',
-  items: commands.map(({ id, name, section }) => ({ id, label: name, group: section })),
-  events: { select: (event) => run(event.detail.id) },
-})
-```
-
-## `bugReport` - from `imp/std/feedback`
-
-Ships a "something is wrong here" trigger inside your app. The person using it presses the trigger,
-clicks the element the problem is about, and types a comment - and you get one plain object
-describing what they were looking at.
-
-```js
-import { bugReport } from 'imp/std/feedback'
-
-bugReport({
-  onSubmit: (report) =>
-    fetch('/api/bug-reports', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(report),
-    }),
-})
-```
-
-| Prop       | Values                           | Default     | What it does                                           |
-| ---------- | -------------------------------- | ----------- | ------------------------------------------------------ |
-| `onSubmit` | a function taking the report     | -           | Where the report goes. May be async and may reject     |
-| `as`       | `'button'`, `'link'`             | `'button'`  | How the trigger looks - both are a real button         |
-| `variant`  | any `button` variant             | `'default'` | The trigger's look, passed to `button`                 |
-| `size`     | `'sm'`, `'md'`, `'lg'`           | `'md'`      | The trigger's size                                     |
-| `label`    | a string, or a state holding one | -           | The trigger's text; with children, its accessible name |
-| `events`   | any DOM events                   | -           | Bound on the component                                 |
-
-**imp does not store the report.** There is no endpoint to configure, no queue and no local
-fallback: `onSubmit` is the whole storage story, so a report can go to your API, an issue tracker,
-`localStorage`, or nowhere at all. It may return a promise - the panel disables its buttons while it
-is pending, closes when it resolves, and shows a retryable message when it rejects, keeping what was
-typed.
-
-The report is plain JSON-safe data, captured the moment the element was picked rather than when the
-comment was finished - so it describes the screen being complained about even if the app has moved
-on since:
-
-```js
-{
-  comment: 'The save button does nothing.',
-  time: '2026-08-25T12:10:36.682Z',
-  page: 'https://acme.test/settings',
-  title: 'Settings - Acme',
-  viewport: '1440x900',
-  scroll: '0,1240',
-  scheme: 'dark',
-  motion: '',
-  lang: 'en',
-  dir: 'ltr',
-  element: {
-    path: 'body > div#app > acme-settings >> form.panel > button.save',
-    rect: '96x36 at 512,604',
-    text: 'Save changes',
-    html: '<button class="save" type="submit" disabled="">Save changes</button>',
-  },
-  state: [{ name: 'settings.profile', value: { name: 'Ada' } }],
-  controls: [{ name: 'input[name=name]', value: 'Ada', disabled: false, readOnly: false }],
-}
-```
-
-Three of those fields are what make a vague report actionable. `element.path` names the node,
-crossing into a component with `>>` so the component before the last one owns it. `state` is every
-named state in scope at that element, as plain data - close enough to a snapshot that you can put
-the values back and be looking at the same screen. `controls` is what was actually typed into the
-form the element sits in, which the markup does not carry; a password field records only its length,
-never its value.
-
-The rest is the context that usually goes unreported: the viewport and device pixel ratio, the
-scroll position, the colour scheme, whether reduced motion was on, and the page language and
-direction. "Only when narrow" and "only in dark mode" stop being something anybody has to remember
-to mention.
-
-**Whoever reports the problem never sees the element path.** Picking is visual on both ends: the
-element under the pointer is outlined, a click takes it (`Enter` takes the outlined one, `Escape`
-cancels), and it stays outlined while the comment is typed. Nothing about the DOM is put in front of
-a person who should not have to look at one.
-
-The wording is translatable like every other standard component, under `imp.bugReport.*` keys (see
-**[Translations](i18n.md)**), so a `label` prop is for changing the words in one place rather than
-for translating them.
-
-**One privacy note.** `state` and `controls` carry whatever your app put there, and imp sends none
-of it anywhere by itself. Strip what should not leave the browser inside `onSubmit`, before you send
-it.
+**`open` is the whole API.** Pass a writable state, set it to open the window, and imp sets it back
+to `false` when the person closes it - so the state is always the truth about what is on screen.
+There is no `show()` to call and no handle to keep.
+
+A modal takes the page over: the rest of the document goes inert, a backdrop dims it, focus moves in
+and returns where it came from, Escape dismisses it, and the page behind stops scrolling - almost
+all of that the browser's own modal behaviour rather than imp's. Turn `modal` off and you get the
+other window entirely: nothing behind it is blocked, the page still scrolls, you can open as many as
+you like, and the person can drag it by its title bar or move it with the arrow keys. Both animate
+themselves, and neither animates for a reader who has asked their system for reduced motion.
 
 ## Custom elements next to yours
 
