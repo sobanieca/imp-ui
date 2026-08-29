@@ -53,7 +53,8 @@ applyTheme({
   media query and calling `applyTheme`.
 - **Reference tokens with a fallback** in your own CSS: `var(--imp-color-primary, #2563eb)`.
 - **Write logical properties** - `margin-inline-*`, `inset-inline-*`, `text-align: start/end` - so
-  layouts mirror under `dir="rtl"`. imp does not set `dir` for you outside `init`.
+  layouts mirror under `dir="rtl"`; `flex` and `stack` align with `start`/`end` and mirror already.
+  imp does not set `dir` for you outside `init`.
 
 ## The tokens the built-in themes ship
 

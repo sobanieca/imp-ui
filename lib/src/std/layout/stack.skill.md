@@ -9,10 +9,10 @@ stack({ gap: 4 }, heading('Billing'), text('Your plan renews on the 1st.'))
 Call shape: `stack(props?, ...children)` - the props object, when present, must be the **first**
 argument; everything after it is a child of the stack.
 
-| Prop              | Values                                       | Default     | Notes                                  |
-| ----------------- | -------------------------------------------- | ----------- | -------------------------------------- |
-| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack                       |
-| `gap`             | spacing step `0`-`6`                         | `3`         | Space between children, from the theme |
+| Prop              | Values                                      | Default     | Notes                                  |
+| ----------------- | ------------------------------------------- | ----------- | -------------------------------------- |
+| `horizontalAlign` | `'start'`, `'end'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack                       |
+| `gap`             | spacing step `0`-`6`                        | `3`         | Space between children, from the theme |
 
 Rules an agent gets wrong:
 
@@ -20,9 +20,9 @@ Rules an agent gets wrong:
   falls back to step `3`. The scale is fluid, so one step is correct at every screen width.
 - **`horizontalAlign` is the cross axis here**, so it sizes and places each child sideways;
   `'stretch'` makes every child as wide as the stack, which is why it is the default.
-- **`left` always means left, even under `dir="rtl"`.** The alignment is physical, so a stack
-  aligned `left` stays on the left whichever way the document reads; only the text inside each child
-  mirrors.
+- **`start` and `end` follow the reading direction, they are not `left` and `right`.** A stack
+  aligned `'start'` sits on the left in English and on the right under `dir="rtl"`, so one call is
+  correct in both. Passing `'left'` or `'right'` warns and falls back.
 - **There is no `verticalAlign`.** A stack is as tall as its children; use `flex` when you need to
   place things along an axis that has spare room.
 - **Nothing else is a prop.** There is no padding, background, width or grow prop, and no `grid`

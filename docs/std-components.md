@@ -257,7 +257,7 @@ stack(
   { gap: 4 },
   flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Team'), button('Invite')),
   stack({ gap: 2 }, ...members.map((member) => memberRow(member))),
-  flex({ horizontalAlign: 'right', gap: 2 }, button('Cancel'), button('Save')),
+  flex({ horizontalAlign: 'end', gap: 2 }, button('Cancel'), button('Save')),
 )
 ```
 
@@ -288,12 +288,19 @@ the space between two of them is always the parent's `gap` - a step on the theme
 viewport (see **[Theming](theming.md)**), so one number is the right amount of space on a phone and
 on a desktop alike.
 
-**`left` means left, in every language.** The alignment props are physical and stay physical when
-the document reads right to left. imp sets `<html dir="rtl">` on its own and that mirrors the text
-inside your components, but it does not flip what `horizontalAlign: 'left'` means. These components
-place _components_ - buttons, fields, cards - not glyphs, so a prop called `left` that sometimes
-meant right would be worse than useless. Order the children the other way round yourself when an
-arrangement genuinely should mirror.
+**Alignment is `start` and `end`, never `left` and `right`.** The horizontal alignment props follow
+the reading direction rather than the screen: `horizontalAlign: 'start'` is the left edge in English
+and the right edge in Arabic, and a row lays its children out from whichever edge the language
+starts at. So the toolbar you write once - a title, then a spacer, then a button - is already
+correct in both directions, and there is nothing to reverse by hand and no `dir` to branch on. imp
+sets `<html dir="rtl">` for a right-to-left language on its own (see
+**[Internationalization](i18n.md)**), and the layout follows it the same way the text does.
+`verticalAlign` keeps `top` and `bottom`, because direction never flips the vertical axis.
+
+This is the same rule the components apply to themselves: every one of them is styled in CSS logical
+properties - `padding-inline`, `margin-block`, `inset-inline-start`, `text-align: start` - so
+nothing in the library has a left or a right baked into it. **Write your own components the same
+way** and an imp app mirrors as a whole rather than in patches.
 
 ## Forms are state, not a framework
 

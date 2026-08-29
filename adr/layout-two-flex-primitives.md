@@ -24,6 +24,11 @@ Meanwhile the two things a page actually does all day - put things in a row, put
 are one CSS declaration each, and both work perfectly through a `display: contents` host, because
 flex container properties apply to whatever the flex items turn out to be.
 
+The other thing the redesign has to settle is direction. The rest of the library is written in CSS
+logical properties and mirrors under `dir="rtl"` on its own (`standard-component-library.md`,
+`translatable-by-default.md`), so a layout pair that did not would be the one part of an imp app
+that stayed left-to-right while everything inside it turned around.
+
 ## Decision
 
 **The arrangement primitives are `flex` and `stack`, imported from `imp/std/layout`. They are CSS
@@ -31,21 +36,23 @@ flexbox with a small, closed prop set, and the library ships no third way to arr
 children.**
 
 - **`flex` is a row** (`flex-direction: row`) taking `horizontalAlign`
-  (`left`/`right`/`center`/`justify`), `verticalAlign` (`top`/`bottom`/`center`/`stretch`), `wrap`
+  (`start`/`end`/`center`/`justify`), `verticalAlign` (`top`/`bottom`/`center`/`stretch`), `wrap`
   and `gap`. **`stack` is a column** (`flex-direction: column`) taking `horizontalAlign`
-  (`left`/`right`/`center`/`stretch`) and `gap`.
-- **Alignment props are named after what the user sees**, not after the flexbox axis: a row's
-  `horizontalAlign` is its `justify-content` and its `verticalAlign` is its `align-items`, while a
-  stack's `horizontalAlign` is its `align-items`. Naming the axes physically is what makes the pair
-  learnable without knowing which axis flexbox calls "main". They are deliberately **not** the
-  `start`/`center`/`end` spelling that `text` and `heading` use for text alignment: that prop aligns
-  glyphs inside a box and follows the text direction, this one places boxes.
-- **The names are physical, and stay physical under `dir="rtl"`.** These two components place
-  components - buttons, fields, cards - not glyphs, so `left` is the left of the screen whichever
-  way the document reads. A row flips to `flex-direction: row-reverse` under `:dir(rtl)`, which
-  keeps its children in source order from the left and makes `flex-start` the left edge again; a
-  stack swaps its `left` and `right` `align-items` values the same way. `direction` itself is left
-  to inherit untouched, so text inside the children still reads right to left.
+  (`start`/`end`/`center`/`stretch`) and `gap`.
+- **The prop names are the axis the user sees**, not the flexbox axis: a row's `horizontalAlign` is
+  its `justify-content` and its `verticalAlign` is its `align-items`, while a stack's
+  `horizontalAlign` is its `align-items`. Naming the axes by what they look like is what makes the
+  pair learnable without knowing which axis flexbox calls "main".
+- **The values along the horizontal axis are `start` and `end`, and they follow the reading
+  direction.** They are the same spelling `text` and `heading` use for text alignment, and they mean
+  the same thing: the edge the language starts at. `start` is the left edge under `dir="ltr"` and
+  the right edge under `dir="rtl"`. Neither component writes a direction rule of its own - the plain
+  `flex-start` / `flex-end` values already resolve against the inherited `direction`, so a row lays
+  its children out from the right and a stack aligns to the right the moment the document reads
+  right to left. `left` and `right` are not accepted values; passing one warns and falls back the
+  way any other out-of-list value does.
+- **`verticalAlign` stays `top` and `bottom`.** Direction flips the inline axis only, so a logical
+  spelling there would be jargon with no behaviour behind it.
 - **A stack has no vertical alignment**, because a stack is as tall as its children; placing things
   in spare room along an axis is what a row is for.
 - **Spacing is `gap` only**, and it is a step `0`-`6` on the theme's spacing scale rather than a
@@ -82,8 +89,12 @@ children.**
   cards) is CSS grid in the app's own component - with the page-level exception that `shell` owns
   the grid an app frame is made of, so nobody hand-writes that one. Whether the library should own a
   grid at all is left open rather than answered badly a second time.
-- **An RTL app's layout does not mirror**, which is the deliberate cost of literal names: a toolbar
-  written as a row keeps its first child on the left in Arabic as in English, where the usual RTL
-  convention would flip it. An app that wants a mirrored arrangement orders the children the other
-  way itself, behind the active language. Only the text inside each child mirrors, which the
-  platform does on its own.
+- **An RTL app's layout mirrors on its own**, and costs nothing to write: a toolbar built as a row
+  with `horizontalAlign: 'justify'`, or a form's buttons pushed to `'end'`, is correct in Arabic and
+  in English from the same call, with no `dir.get()` branch and no reversed child list. This is the
+  same behaviour the components' own logical-property styling gives them, so an app mirrors as a
+  whole rather than in patches, and it is the direction the library steers an app author in.
+- **An arrangement that genuinely must not mirror is the app's own CSS**, the way anything outside
+  the two primitives is. That is rare - a media player's transport controls is the usual example -
+  and paying for it in a `div` with `flex-direction: row` and a physical `justify-content` is the
+  right way round, because the common case is the one that should be free.

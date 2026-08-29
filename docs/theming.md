@@ -352,4 +352,6 @@ The system color keywords worth knowing are `Canvas` / `CanvasText` for page bac
 When you write your own component styles, prefer CSS **logical properties** - `margin-inline-*`,
 `inset-inline-*`, and `text-align: start / end` rather than their left/right counterparts. Layouts
 written this way mirror automatically once the document's `dir` is right-to-left, with no extra work
-on your part. imp does not set `dir` for you - set it yourself if your app has an RTL language.
+on your part - as do `flex` and `stack`, whose `horizontalAlign` is `start` / `end` rather than left
+/ right. imp's i18n sets `dir` from the active language for you (see
+**[Internationalization](i18n.md)**); an app that does not use it sets the attribute itself.

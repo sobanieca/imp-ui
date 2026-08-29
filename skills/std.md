@@ -209,21 +209,24 @@ stack(
 
 | Prop              | Values                                       | Default     | Notes                                    |
 | ----------------- | -------------------------------------------- | ----------- | ---------------------------------------- |
-| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'justify'` | `'left'`    | Along the row; `'justify'` spreads apart |
+| `horizontalAlign` | `'start'`, `'end'`, `'center'`, `'justify'`  | `'start'`   | Along the row; `'justify'` spreads apart |
 | `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'stretch'` | `'stretch'` | Across the row                           |
 | `wrap`            | boolean                                      | `false`     | Lets the row break onto more lines       |
 | `gap`             | spacing step `0`-`6`                         | `3`         | Space between children                   |
 
 ### stack
 
-| Prop              | Values                                       | Default     | Notes                  |
-| ----------------- | -------------------------------------------- | ----------- | ---------------------- |
-| `horizontalAlign` | `'left'`, `'right'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack       |
-| `gap`             | spacing step `0`-`6`                         | `3`         | Space between children |
+| Prop              | Values                                      | Default     | Notes                  |
+| ----------------- | ------------------------------------------- | ----------- | ---------------------- |
+| `horizontalAlign` | `'start'`, `'end'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack       |
+| `gap`             | spacing step `0`-`6`                        | `3`         | Space between children |
 
 - **`gap` is a step number off the theme scale, never a length** - `gap: 4`, not `gap: '1rem'`. The
   scale is fluid, so one step is right at every width. A bad value warns and falls back to `3`.
 - **`stack` has no `verticalAlign`** - a stack is as tall as its children.
+- **`horizontalAlign` is `'start'`/`'end'`, never `'left'`/`'right'`** - it follows the reading
+  direction, so `'start'` is the right edge under `dir="rtl"` and one call is correct in both
+  directions. `verticalAlign` keeps `'top'`/`'bottom'`; direction never flips the vertical axis.
 - **Spacing between components is a `gap`**, since no standard component carries an outer margin.
 - A layout that must change shape below some width is a media query in your own component's
   `styles`; no prop varies by screen size.
