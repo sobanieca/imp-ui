@@ -89,10 +89,6 @@ is `text_field` under `inputs`.
 - **State editor** - the state the component manages, as JSON. Edit and apply (or `Ctrl`/`Cmd`+
   `Enter`) and the component updates through imp's normal fine-grained path - no remount, no reload.
   Each panel is bound to its own instance.
-- **Code tab** - the scenario's own call plus the preview file's import lines, syntax-highlighted in
-  the current theme's colours and ready to copy. It is read out of the file, so it cannot drift from
-  what rendered. Only exports written as `export const <scenario> = …` have one; a re-export through
-  `export { … }` shows a note instead.
 - **Agent instruction** - the file's `description`, ready to copy, once per page below the head
   rather than per scenario: the command to hand an agent before it writes code with this component.
   A file that declares none says so there.

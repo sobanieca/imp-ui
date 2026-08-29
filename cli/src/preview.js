@@ -218,30 +218,35 @@ function readBlockEnd(source, start) {
   return source.length
 }
 
-function readGroupedExport(source, start, scenarios) {
+function readGroupedExport(source, start, exports) {
   const close = source.indexOf('}', start)
   const end = close === -1 ? source.length : close
   for (const entry of source.slice(start + 1, end).split(',')) {
     const parts = entry.trim().split(/\s+as\s+/)
     const name = (parts.at(-1) ?? '').trim()
-    if (name) scenarios.push({ name, source: null })
+    if (name) exports.push({ name, value: null })
   }
   return end + 1
 }
 
-function readDeclaredExport(source, start, scenarios) {
+function readDeclaredExport(source, start, exports) {
   let cursor = start
   while (cursor < source.length) {
     const declared = readWord(source, cursor)
     if (!declared.word) return cursor
     const afterName = skipTrivia(source, declared.end)
     if (source[afterName] !== '=') {
-      scenarios.push({ name: declared.word, source: null })
+      exports.push({ name: declared.word, value: null })
       return afterName
     }
     const valueStart = skipTrivia(source, afterName + 1)
     const valueEnd = readExpressionEnd(source, valueStart)
-    scenarios.push({ name: declared.word, source: source.slice(valueStart, valueEnd).trim() })
+    exports.push({
+      name: declared.word,
+      value: isPreviewMetadataExport(declared.word)
+        ? source.slice(valueStart, valueEnd).trim()
+        : null,
+    })
     cursor = skipTrivia(source, valueEnd)
     if (source[cursor] !== ',') return cursor
     cursor = skipTrivia(source, cursor + 1)
@@ -249,7 +254,7 @@ function readDeclaredExport(source, start, scenarios) {
   return cursor
 }
 
-function readFunctionExport(source, start, scenarios) {
+function readFunctionExport(source, start, exports) {
   let cursor = skipTrivia(source, start)
   if (source[cursor] === '*') cursor = skipTrivia(source, cursor + 1)
   const named = readWord(source, cursor)
@@ -257,28 +262,28 @@ function readFunctionExport(source, start, scenarios) {
   const bodyStart = source.indexOf('{', named.end)
   if (bodyStart === -1) return named.end
   const bodyEnd = readBlockEnd(source, bodyStart)
-  scenarios.push({ name: named.word, source: source.slice(start, bodyEnd).trim() })
+  exports.push({ name: named.word, value: null })
   return bodyEnd
 }
 
-function readExportStatement(source, afterKeyword, scenarios) {
+function readExportStatement(source, afterKeyword, exports) {
   const start = skipTrivia(source, afterKeyword)
-  if (source[start] === '{') return readGroupedExport(source, start, scenarios)
+  if (source[start] === '{') return readGroupedExport(source, start, exports)
   const first = readWord(source, start)
   if (first.word === 'default') return first.end
   let keyword = first
   if (first.word === 'async') keyword = readWord(source, skipTrivia(source, first.end))
   if (keyword.word === 'function' || keyword.word === 'class') {
-    return readFunctionExport(source, keyword.end, scenarios)
+    return readFunctionExport(source, keyword.end, exports)
   }
   if (keyword.word === 'const' || keyword.word === 'let' || keyword.word === 'var') {
-    return readDeclaredExport(source, skipTrivia(source, keyword.end), scenarios)
+    return readDeclaredExport(source, skipTrivia(source, keyword.end), exports)
   }
   return keyword.end
 }
 
-export function extractScenarioSources(source) {
-  const scenarios = []
+function readPreviewExports(source) {
+  const exports = []
   let index = 0
   while (index < source.length) {
     const char = source[index]
@@ -299,7 +304,7 @@ export function extractScenarioSources(source) {
     if (isIdentChar(char) && !isIdentChar(source[index - 1])) {
       const { word, end } = readWord(source, index)
       if (word === 'export' && source[index - 1] !== '.') {
-        index = readExportStatement(source, end, scenarios)
+        index = readExportStatement(source, end, exports)
         continue
       }
       index = end
@@ -307,64 +312,21 @@ export function extractScenarioSources(source) {
     }
     index++
   }
-  return scenarios
+  return exports
 }
 
 export function splitPreviewExports(source) {
   const scenarios = []
   const declared = {}
-  for (const entry of extractScenarioSources(source)) {
-    if (!isPreviewMetadataExport(entry.name)) {
-      scenarios.push(entry)
+  for (const { name, value } of readPreviewExports(source)) {
+    if (!isPreviewMetadataExport(name)) {
+      scenarios.push(name)
       continue
     }
-    const value = entry.source === null ? null : parseStringLiteral(entry.source)
-    if (value !== null) declared[entry.name] = value
+    const literal = value === null ? null : parseStringLiteral(value)
+    if (literal !== null) declared[name] = literal
   }
   return { scenarios, declared }
-}
-
-export function extractImportLines(source) {
-  const lines = []
-  let index = 0
-  while (index < source.length) {
-    const char = source[index]
-    if (char === '/' && source[index + 1] === '/') {
-      while (index < source.length && source[index] !== '\n') index++
-      continue
-    }
-    if (char === '/' && source[index + 1] === '*') {
-      index += 2
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
-      index += 2
-      continue
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      index = skipStringLiteral(source, index)
-      continue
-    }
-    if (isIdentChar(char) && !isIdentChar(source[index - 1])) {
-      const { word, end } = readWord(source, index)
-      if (word !== 'import' || source[index - 1] === '.') {
-        index = end
-        continue
-      }
-      const next = skipTrivia(source, end)
-      if (source[next] === '(' || source[next] === '.') {
-        index = end
-        continue
-      }
-      let cursor = next
-      while (cursor < source.length && !`'"\``.includes(source[cursor])) cursor++
-      if (cursor >= source.length) break
-      const statementEnd = skipStringLiteral(source, cursor)
-      lines.push(source.slice(index, statementEnd))
-      index = statementEnd
-      continue
-    }
-    index++
-  }
-  return lines
 }
 
 function relativeImports(source) {
@@ -495,11 +457,7 @@ const previewMeta = async (file, root) => {
   const { scenarios, declared } = splitPreviewExports(text)
   return {
     ...previewIdentity(relative(root, file).replaceAll('\\', '/'), declared),
-    order: scenarios.map(({ name }) => name),
-    sources: Object.fromEntries(
-      scenarios.filter(({ source }) => source !== null).map(({ name, source }) => [name, source]),
-    ),
-    imports: extractImportLines(text),
+    order: scenarios,
     states: await collectStateDeclarations(file),
   }
 }

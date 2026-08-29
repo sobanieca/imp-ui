@@ -1,16 +1,13 @@
 import { component, init, mount } from 'imp'
-import { a, code as codeTag, div, el, h2, pre, span } from 'imp/html'
+import { a, div, el, h2, pre, span } from 'imp/html'
 import { initState } from 'imp/state'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { button, text } from 'imp/std'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
-import { tabs } from 'imp/std/navigation'
 import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
 import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview_theme_editor.js'
-import { copyButton } from './preview_copy.js'
-import { tokenizeJs } from './preview_highlight.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
 import { asNodes } from '../../lib/src/nodes.js'
 import { runInMountScope } from '../../lib/src/component.js'
@@ -258,52 +255,6 @@ const EDITOR_STYLES = `
 
   .message--error {
     color: var(--imp-color-danger, #dc2626);
-  }
-`
-
-const CODE_STYLES = `
-  :host {
-    display: block;
-  }
-
-  .head {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-block-end: var(--imp-space-2, 8px);
-  }
-
-  pre {
-    margin: 0;
-    box-sizing: border-box;
-    overflow: auto;
-    padding: var(--imp-space-3, 12px);
-    ${surface}
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    line-height: var(--imp-line-height-normal, 1.6);
-    tab-size: 2;
-  }
-
-  .token--keyword {
-    color: var(--imp-color-primary, #2563eb);
-    font-weight: var(--imp-font-weight-bold, 700);
-  }
-
-  .token--string,
-  .token--number,
-  .token--regexp {
-    color: var(--imp-color-danger, #dc2626);
-  }
-
-  .token--comment {
-    color: var(--imp-color-secondary, #64748b);
-    font-style: italic;
-  }
-
-  .token--punctuation {
-    color: var(--imp-color-secondary, #64748b);
   }
 `
 
@@ -615,34 +566,6 @@ const stateEditor = (nodes, declarations) => {
   return createEditor(nodes, declarations)
 }
 
-const highlighted = (snippet) =>
-  tokenizeJs(snippet).map(({ kind, text }) =>
-    kind === 'plain' ? text : span({ class: `token token--${kind}` }, text)
-  )
-
-const codeDefinition = {
-  styles: CODE_STYLES,
-  onMount: (_instance, snippet) =>
-    div(
-      div({ class: 'head' }, copyButton(snippet)),
-      pre(codeTag(highlighted(snippet))),
-    ),
-}
-
-let createCode = null
-
-const codePanel = (snippet) => {
-  createCode ??= component('imp-preview-code', codeDefinition)
-  return createCode(snippet)
-}
-
-const snippetFor = (name, meta) => {
-  const source = meta.sources?.[name]
-  if (!source) return null
-  const imports = (meta.imports ?? []).join('\n')
-  return imports ? `${imports}\n\n${source}\n` : `${source}\n`
-}
-
 const scenarioDefinition = {
   styles: SCENARIO_STYLES,
   onMount: (_instance, name, scenario, meta) => scenarioSection(name, scenario, meta),
@@ -676,36 +599,11 @@ const scenarioSection = (name, scenario, meta) => {
       pre({ class: 'failure' }, `${name} failed to build - see the terminal`),
     )
   }
-  const snippet = snippetFor(name, meta)
   return el(
     'section',
     { class: 'scenario' },
     head,
-    tabs({
-      label: `${name} views`,
-      items: [
-        {
-          id: 'preview',
-          label: 'Preview',
-          content: div(
-            { class: 'scenario-body' },
-            stagePanel(nodes),
-            stateEditor(nodes, meta.states),
-          ),
-        },
-        {
-          id: 'code',
-          label: 'Code',
-          content: snippet === null
-            ? text(
-              { tone: 'secondary', size: 'sm' },
-              `imp could not read the code behind '${name}' - only exports written as ` +
-                `'export const ${name} = …' in the preview file are shown here.`,
-            )
-            : codePanel(snippet),
-        },
-      ],
-    }),
+    div({ class: 'scenario-body' }, stagePanel(nodes), stateEditor(nodes, meta.states)),
   )
 }
 

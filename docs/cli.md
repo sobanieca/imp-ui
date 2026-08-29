@@ -758,10 +758,9 @@ imp preview --list [--json]
 
 Builds one component at a time, in isolation. `imp preview` serves each of your **preview files** as
 its own page: the one line an AI agent should read before it writes code with the component sits
-below the page head, and every named export becomes a labeled panel with two tabs - **Preview**,
-holding that component in a stage you can drag to any size with a state editor beside it, and
-**Code**, showing the call that built it. No app boot, no backend, no navigating to the right
-screen - you edit the component, the page reloads, and you see it.
+below the page head, and every named export becomes a labeled panel holding that component in a
+stage you can drag to any size, with a state editor beside it. No app boot, no backend, no
+navigating to the right screen - you edit the component, the page reloads, and you see it.
 
 It is the same dev server as `imp start` underneath, so the browser's console and network activity
 still stream to your terminal, saving any file reloads the page, your `public/favicon.svg` marks the
@@ -859,22 +858,6 @@ Each panel gets its own form bound to its own instance, so `empty` and `populate
 independently on the same page. This discovery is a convenience, not a rule about how you write
 components: a state name that is computed at runtime or built behind a helper simply won't be
 listed, and a value that isn't JSON data is shown read-only.
-
-### The code behind a scenario
-
-The **Code** tab shows what produced the panel next to it: the scenario's own call, with the preview
-file's import lines above it, and a button to copy the lot. It is read straight out of your preview
-file when the page is built, so it is the real code rather than a description of it and cannot drift
-from what you are looking at - which makes a preview page something you can hand to someone else as
-the answer to "how do I get this component to look like that?".
-
-The snippet is syntax-highlighted, and its colours come from the same theme tokens as the rest of
-the page - so the code stays readable under every theme you switch to, including the high-contrast
-ones. Keywords are bold and comments italic as well as coloured, so the highlighting still reads
-when colour is unavailable, as in Windows High Contrast mode.
-
-Only exports written as `export const <scenario> = …` have code to show; a name re-exported through
-`export { … }` gets a note instead of a snippet.
 
 ### The instruction for an agent
 

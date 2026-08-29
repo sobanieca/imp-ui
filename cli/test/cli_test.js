@@ -7,7 +7,6 @@ import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 import { formatReview, isLocalRequest, reviewFileName } from '../src/review.js'
-import { tokenizeJs } from '../src/preview_highlight.js'
 import { themeFileSource } from '../src/preview_theme_source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import impPlugin, { IMP_MODULE_EXPORTS } from '../src/lint_rules.js'
@@ -1476,28 +1475,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
             globalThis.impTextareas(editor)[0].value
           }`
         }),
-        tabs: [
-          ...globalThis.impOne('imp-tabs', scenarios[0]).shadowRoot
-            .querySelectorAll('[role="tab"]'),
-        ].map((tab) => tab.textContent),
         handles: globalThis.impOne('imp-preview-stage', scenarios[0])
           .shadowRoot.querySelectorAll('.handle').length,
-      }
-    })
-    const coded = await page.evaluate(() => {
-      const scenario = globalThis.impScenarios()[0]
-      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
-      strip.querySelectorAll('[role="tab"]')[1].click()
-      const panels = [...strip.querySelectorAll('[role="tabpanel"]')]
-      const pre = globalThis.impOne('imp-preview-code', scenario).shadowRoot.querySelector('pre')
-      return {
-        selected: [...strip.querySelectorAll('[role="tab"]')]
-          .map((tab) => tab.getAttribute('aria-selected')).join('/'),
-        shown: panels.map((panel) => (panel.hidden ? 'hidden' : 'shown')).join('/'),
-        source: pre.textContent,
-        highlighted: [...pre.querySelectorAll('span')]
-          .map((token) => `${token.classList[1].replace('token--', '')}:${token.textContent}`)
-          .join(' '),
       }
     })
     const agent = await page.evaluate(() => {
@@ -1510,8 +1489,6 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
     const edited = await page.evaluate(() => {
       const scenario = globalThis.impScenarios()[0]
-      const strip = globalThis.impOne('imp-tabs', scenario).shadowRoot
-      strip.querySelectorAll('[role="tab"]')[0].click()
       const editor = globalThis.impOne('imp-preview-state', scenario)
       const field = globalThis.impTextareas(editor)[0]
       field.value = '42'
@@ -1691,11 +1668,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `scenarios: ${counter.names.join(', ')}`,
       `rendered values: ${counter.rendered.join(', ')}`,
       `state rows: ${counter.states.join(', ')}`,
-      `tabs per scenario: ${counter.tabs.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
-      `after picking the code tab: ${coded.selected} (panels ${coded.shown})`,
-      `code shown for zero:\n${coded.source.trimEnd()}`,
-      `highlighted tokens for zero: ${coded.highlighted}`,
       `agent instruction strips on the page: ${agent.strips} (region '${agent.region}')`,
       `agent instruction: ${agent.instruction}`,
       `after setting demo.count to 42: ${edited}`,
@@ -2454,27 +2427,6 @@ Deno.test('the theme editor exports a theme file that imports back as two themes
     !source.includes("from 'imp"),
     'the exported theme file imports nothing from imp',
   )
-})
-
-Deno.test('tokenizeJs', async () => {
-  const sources = [
-    "import { button } from 'imp/std'\n\nexport const primary = () => button({ variant: 'primary' }, t('Save'))\n",
-    'const label = `${count} of ${total} - ${done ? `${done} done` : "none"}`\n',
-    '// a line comment\n/* a block\n   comment */\nconst rate = 0.5e3 + 0xff + 12_000n\n',
-    'const clean = value.replace(/[a-z/]+/gi, "") / total\n',
-    'const flags = { on: true, off: false, missing: null, unset: undefined }\n',
-  ]
-  const transcript = sources
-    .map((source) => {
-      const tokens = tokenizeJs(source)
-      const roundTrips = tokens.map(({ text }) => text).join('') === source
-      const body = tokens
-        .map(({ kind, text }) => `  ${kind}: ${JSON.stringify(text)}`)
-        .join('\n')
-      return `=== ${JSON.stringify(source)} ===\nround-trips: ${roundTrips}\n${body}`
-    })
-    .join('\n\n')
-  await assertSnapshot('tokenize-js', transcript + '\n')
 })
 
 Deno.test('the prose export tables match what imp really exports', async () => {

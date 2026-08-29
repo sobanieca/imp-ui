@@ -32,12 +32,12 @@ found the way a test file is.
   component that declares nothing still appears, labelled by its file and folder as before. The
   price is three reserved export names, which is why they are the plainest words available rather
   than a prefixed convention: a scenario worth calling `name` does not exist, and reserving the
-  obvious words keeps the file readable. Each is read by the same export scanner that slices the
-  code snippets and must be a string literal; anything else is ignored and the fallback stands,
-  since a preview page that fails to load because a label was computed would be a poor trade.
-  `description` is deliberately an **instruction to run `imp skill`**, not a summary of the
-  component: the manual already exists in the component's `*.skill.md` (`agent-skills.md`), and
-  duplicating it into the preview file would give an agent two sources that drift.
+  obvious words keeps the file readable. Each is read by the same export scanner that orders the
+  panels and must be a string literal; anything else is ignored and the fallback stands, since a
+  preview page that fails to load because a label was computed would be a poor trade. `description`
+  is deliberately an **instruction to run `imp skill`**, not a summary of the component: the manual
+  already exists in the component's `*.skill.md` (`agent-skills.md`), and duplicating it into the
+  preview file would give an agent two sources that drift.
 - **Module mocking reuses the test runner's seam.** `mockModule(specifier, factory)` is imported
   from `imp/preview` and behaves as in `imp test`: the same `imp-mock` esbuild namespace, the same
   `orig`/`spy` helpers, the same rule that a specifier is a relative module or a vendored `imp.json`
@@ -49,31 +49,15 @@ found the way a test file is.
   mocked module graph is what the browser loads and there is exactly one instance of the library
   behind the component, the chrome, and any mock. Bundles are cached per file and dropped on any
   file change, which the existing watcher already reports as a reload.
-- **Each scenario is a three-tab panel: Preview, Code and Agent.** Preview holds a drag-resizable
-  stage with the state editor beside it; Code holds the call that built the scenario; Agent holds
-  the file's `description`, copyable, so the page serves the two readers of a component - the person
-  looking at it and the agent about to write a call site - from one place. Agent repeats per panel
-  rather than sitting once in the page head because the tab strip is where a reader already looks
-  for "what else is here", and a per-file band above the panels would be read as chrome and skipped.
-  The stage is resized by dragging its right, bottom, or corner handle with pointer events (mouse
-  and touch), with a live size readout and phone/tablet/desktop presets on top of free dragging.
-  Resizing changes the parent box only, so the component re-lays-out through the real DOM path
-  (`real-dom-no-virtual-dom.md`).
-- **The code shown is sliced out of the preview file at bundle time, not described by hand.** The
-  same balanced, comment- and string-aware scanner that orders the exports also records each
-  export's initializer and the file's import statements, and both travel to the browser in the
-  generated entry's metadata alongside the scenario order and state declarations. A scenario's
-  snippet is therefore the code that ran, and the reload that rebuilds a bundle rebuilds it. Only
-  `export const <scenario> = …` forms carry a slice; a name arriving through `export { … }` is
-  listed without one and its tab says so.
-- **The snippet is highlighted by a JavaScript tokenizer imp ships itself, painted in theme
-  tokens.** A preview only ever shows JavaScript, so a small hand-written tokenizer covering
-  comments, strings and template interpolations, regular expressions, numbers, keywords and
-  punctuation buys the whole feature without pulling a highlighting library into the binary and into
-  every preview bundle. Its spans are coloured from `--imp-color-primary`, `--imp-color-danger` and
-  `--imp-color-secondary` rather than a fixed palette, so highlighting inherits every theme's
-  contrast guarantees instead of making its own, and keyword weight and comment italics carry the
-  same distinctions where colour is forced away.
+- **A scenario panel is a stage and a state editor, and nothing else.** The stage is drag-resizable
+  with the editor beside it; the file's `description` sits once below the page head, where an agent
+  about to write a call site is told where the component's manual is. A panel shows no code: the
+  workbench's job is to show what the component looks like, and the answer to "what do I write to
+  get that?" lives in the component's `*.skill.md` (`agent-skills.md`), which is written for that
+  question and cannot drift from a preview file's fixtures. The stage is resized by dragging its
+  right, bottom, or corner handle with pointer events (mouse and touch), with a live size readout
+  and phone/tablet/desktop presets on top of free dragging. Resizing changes the parent box only, so
+  the component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
 - **Every page wears the same shell, and the shell is the workbench's own.** `/` and each
   `/preview/<path>` render one frame built from a plain CSS grid the preview owns: a `<header>`
   carrying the brand, a `<nav>` holding the catalog as a `navMenu` grouped by category, an `<aside>`
@@ -109,15 +93,15 @@ found the way a test file is.
   entry whose scenarios are `null`, so one runtime renders both the catalog view and a file's
   scenarios rather than two page builders diverging. Its bundle is cached under its own key and
   served from `/@imp/preview-index.js`.
-- **The preview page is an imp app built from `imp/std`.** Its bars, tabs, stage, state editor and
-  code panel are `component()`s reading the same `--imp-*` tokens as the library
-  (`themable-by-default-tokens.md`), so the theme switcher re-skins the page along with the specimen
-  and any theme that fails here fails in an app for the same reason. Two consequences fall out of
-  `shadow-dom-isolation.md` and are the reason the page is shaped this way: content handed to a
-  standard component is moved into **that** component's shadow root, so the page's stylesheet cannot
-  reach it - the stage, editor and code panel are therefore components carrying their own styles,
-  sizing themselves through `:host` rather than being sized by their parent. Direction stays the
-  exception below: it is the one signal the page does not share with what it shows.
+- **The preview page is an imp app built from `imp/std`.** Its bars, stage and state editor are
+  `component()`s reading the same `--imp-*` tokens as the library (`themable-by-default-tokens.md`),
+  so the theme switcher re-skins the page along with the specimen and any theme that fails here
+  fails in an app for the same reason. Two consequences fall out of `shadow-dom-isolation.md` and
+  are the reason the page is shaped this way: content handed to a standard component is moved into
+  **that** component's shadow root, so the page's stylesheet cannot reach it - the stage and editor
+  are therefore components carrying their own styles, sizing themselves through `:host` rather than
+  being sized by their parent. Direction stays the exception below: it is the one signal the page
+  does not share with what it shows.
 - **The state editor is best-effort static extraction with no lint rule.** imp scans the preview
   file and the relative modules it reaches for `initState` / `useState` calls, taking the state name
   from the string literal and, for `initState`, the initial value when it parses as JSON. Nothing
@@ -169,11 +153,11 @@ real dev server, cross-cutting concerns - theming today, i18n later - are exerci
 approximated.
 
 Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
-so a regression in `button`, `select`, `textArea`, `tabs` or `navMenu` shows up while working on
-anything. The cost is the circularity: a broken standard component can break the page used to
-diagnose it. The frame itself is the preview's own markup, which keeps that surface down to the
-panels rather than the page every preview is drawn in, and the build-failure path stays raw DOM for
-the same reason, so an error always renders.
+so a regression in `button`, `select`, `textArea` or `navMenu` shows up while working on anything.
+The cost is the circularity: a broken standard component can break the page used to diagnose it. The
+frame itself is the preview's own markup, which keeps that surface down to the panels rather than
+the page every preview is drawn in, and the build-failure path stays raw DOM for the same reason, so
+an error always renders.
 
 Preview pages are bundled while the rest of development stays buildless: a preview page reflects a
 file change only after its bundle is rebuilt, which happens on the reload the watcher already

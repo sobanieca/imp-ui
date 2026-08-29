@@ -35,8 +35,8 @@ output must be inert static files.
 The pieces are already in place, and a spike confirmed the whole flow end-to-end:
 
 - `bundlePreview` returns a **self-contained** ESM bundle - imp, the component, the preview chrome,
-  the tokenizer, assets as data URLs. Scenario order, code snippets and state declarations are
-  extracted at bundle time into the entry's metadata, so nothing is fetched later.
+  assets as data URLs. Scenario order and state declarations are extracted at bundle time into the
+  entry's metadata, so nothing is fetched later.
 - `preview_runtime.js` makes **no network calls**. Its only environment couplings are
   `location.search` for the `?scenario=` isolate view and `localStorage` for theme, language and
   direction - all fine on a static host.
@@ -47,8 +47,8 @@ The pieces are already in place, and a spike confirmed the whole flow end-to-end
 
 Spike numbers over the 26 previews under `lib/src/std`: **16.3 s** cold for the full set, ~148 KB
 per page unminified, **36 KB gzipped**. The exported pages render correctly in a headless browser
-served from a plain static file server - toolbar, theme and direction pickers, Preview/Code tabs,
-the resizable stage and the state panel all work.
+served from a plain static file server - toolbar, theme and direction pickers, the resizable stage
+and the state panel all work.
 
 ## What has to change
 
