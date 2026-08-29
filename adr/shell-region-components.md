@@ -18,7 +18,7 @@ the same component.
 ## Decision
 
 **`imp/std/shell` is a component group like any other**, holding the pieces an app frame is usually
-filled with: `appLogo`, `breadcrumbs`, `userCard`, `authButton`, `themeSelect` and `langSelect`.
+filled with: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`.
 
 - **`shell` gains no props.** Every piece is DOM the app passes into a region, so the frame is
   unchanged and any piece can be swapped for the app's own without asking it for permission. The
@@ -40,7 +40,7 @@ filled with: `appLogo`, `breadcrumbs`, `userCard`, `authButton`, `themeSelect` a
   out. A remembered choice deliberately wins over the app's own `applyTheme` at startup; with no
   remembered choice, the component applies its first option only when the app has applied no theme,
   so an app's own theme is never clobbered on a first visit.
-- **An asynchronous, failable action is a function prop** - `authButton`'s `onSignIn` / `onSignOut`,
+- **An asynchronous, failable action is a function prop** - `userCard`'s `onSignIn` / `onSignOut`,
   following `bugReport`'s `onSubmit` - because a `CustomEvent` cannot be awaited. imp holds no
   session and talks to no identity provider.
 

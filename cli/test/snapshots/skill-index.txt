@@ -73,8 +73,7 @@ STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
   std/tabs           tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
   std/appLogo        appLogo - the brand block at the top of a sidebar, rail or header
   std/breadcrumbs    breadcrumbs - the trail of levels above the main region, as plain data
-  std/userCard       userCard - the signed-in person: picture, name and one line under it
-  std/authButton     authButton - one button that signs in or out, following a signed-in state
+  std/userCard       userCard - the signed-in person, or a sign-in button when nobody is
   std/themeSelect    themeSelect - a light / dark / system picker that applies and remembers the theme
   std/langSelect     langSelect - a language picker that calls setLang and remembers the choice
   std/bugReport      bugReport - a trigger that lets a person point at an element and describe what is wrong with it

@@ -66,9 +66,9 @@ without a skill file, so this is enforced rather than remembered.
   component now supports (`adr/focus-delegation.md`).
 - **Shell** - the frame's usual region contents have landed as `imp/std/shell`: `appLogo`,
   `breadcrumbs` (the trail; its picker is still owed - `todo/breadcrumbs.md`), `userCard`,
-  `authButton`, `themeSelect` and `langSelect` (`adr/shell-region-components.md`). Still wanted
-  here: a **tenant / workspace switcher**, which needs the anchored panel from
-  `todo/overlay-seam.md`, and a **notifications bell**, which wants `badge` from _Display_ first.
+  `themeSelect` and `langSelect` (`adr/shell-region-components.md`). Still wanted here: a **tenant /
+  workspace switcher**, which needs the anchored panel from `todo/overlay-seam.md`, and a
+  **notifications bell**, which wants `badge` from _Display_ first.
 - **Navigation** - `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_, `floatButton`
   _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing the data-driven
   shape every composite widget with internal ARIA id references follows (`adr/component-preview.md`

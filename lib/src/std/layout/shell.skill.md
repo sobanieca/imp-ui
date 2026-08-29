@@ -79,9 +79,9 @@ Rules an agent gets wrong:
 - **There is no width prop and no `footer` region.** Sizes are the three custom properties above;
   anything else goes in the region DOM you pass.
 - **The usual region contents already ship.** `imp/std/shell` has `appLogo`, `breadcrumbs`,
-  `userCard`, `authButton`, `themeSelect` and `langSelect`; nav rows are `navMenu` items with an
-  `icon`. Reach for those before writing a region by hand, and replace any one of them with your own
-  DOM when it does not fit.
+  `userCard`, `themeSelect` and `langSelect`; nav rows are `navMenu` items with an `icon`. Reach for
+  those before writing a region by hand, and replace any one of them with your own DOM when it does
+  not fit.
 - **The shell renders no `<nav>`** - your `navMenu` brings that. It does render `<header>`, `<main>`
   and `<aside>`, is `100dvh` tall, and scrolls each region independently.
 

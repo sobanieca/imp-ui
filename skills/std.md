@@ -10,7 +10,7 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`, `tag`                                                                                                                                         | `imp skill std/emptyState`, `std/tag`                                                                                                                                                                                 |
 | `imp/std/navigation` | `tabs`, `navMenu`                                                                                                                                           | `imp skill std/tabs`, `std/navMenu`                                                                                                                                                                                   |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `authButton`, `themeSelect`, `langSelect`                                                                             | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/authButton`, `std/themeSelect`, `std/langSelect`                                                                                                     |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                       |
 | `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
 
 Read the component's own skill before using it - this page is only the shared contract and a summary
@@ -451,24 +451,22 @@ Ready-made contents for `shell`'s regions. Each is optional: a region takes DOM,
 does not fit is replaced by your own.
 
 ```js
-import { appLogo, authButton, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
 
 appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) })
 breadcrumbs({ items: [{ id: 'home', label: 'Home', href: '/' }, { id: 'order', label: 'Order' }] })
-userCard({ name: 'Ada Lovelace', description: 'ada@example.com', picture: user.avatar })
-authButton({ signedIn: session, onSignIn: signIn, onSignOut: signOut })
+userCard({ signedIn: session, name: 'Ada Lovelace', description: user.email, onSignOut: signOut })
 themeSelect()
 langSelect({ languages: ['en', 'pl'] })
 ```
 
-| Component     | Props                                                                    |
-| ------------- | ------------------------------------------------------------------------ |
-| `appLogo`     | `label`, `tagline`, `href`, `src`, `alt`, `icon`, `compact`, `events`    |
-| `breadcrumbs` | `items` (live), `label` (live), `separator`, `events`                    |
-| `userCard`    | `name`, `description`, `picture` (all live), `href`, `compact`, `events` |
-| `authButton`  | `signedIn` (live), `onSignIn`, `onSignOut`, `variant`, `size`, `block`   |
-| `themeSelect` | `themes`, `remember`, `label` (live), `events`                           |
-| `langSelect`  | `languages`, `remember`, `label` (live), `events`                        |
+| Component     | Props                                                                                                                                     |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `appLogo`     | `label`, `tagline`, `href`, `src`, `alt`, `icon`, `compact`, `events`                                                                     |
+| `breadcrumbs` | `items` (live), `label` (live), `separator`, `events`                                                                                     |
+| `userCard`    | `signedIn`, `name`, `description`, `picture` (all live), `href`, `compact`, `onSignIn`, `onSignOut`, `variant`, `size`, `block`, `events` |
+| `themeSelect` | `themes`, `remember`, `label` (live), `events`                                                                                            |
+| `langSelect`  | `languages`, `remember`, `label` (live), `events`                                                                                         |
 
 Rules an agent gets wrong:
 
@@ -482,12 +480,15 @@ Rules an agent gets wrong:
   `localStorage`, and re-apply the remembered choice on the next mount. `remember: false` when the
   app owns it. A remembered theme wins over the app's own `applyTheme` at startup - that is the
   point of remembering it.
-- **`userCard` displays and does not act.** No menu inside it; put `authButton` beside it.
+- **`userCard` is one component with two states**: signed out it is a single sign-in button; signed
+  in it is the person, with a sign-out button beside it only when `onSignOut` is passed - leave that
+  prop off for a display-only card. `signedIn` defaults to `false`, so a card with only a `name`
+  shows the sign-in button. There is no menu inside it.
 - **`compact` on `appLogo` and `userCard` hides the words visually, not from assistive tech** - it
   is how a rail keeps its name.
 
-Full manuals: `imp skill std/appLogo` · `std/breadcrumbs` · `std/userCard` · `std/authButton` ·
-`std/themeSelect` · `std/langSelect`.
+Full manuals: `imp skill std/appLogo` · `std/breadcrumbs` · `std/userCard` · `std/themeSelect` ·
+`std/langSelect`.
 
 ## Feedback - from `imp/std/feedback`
 

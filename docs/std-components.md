@@ -182,7 +182,7 @@ without asking the frame's permission.
 ```js
 import { shell } from 'imp/std/layout'
 import { navMenu } from 'imp/std/navigation'
-import { appLogo, authButton, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
 import { icon } from 'imp/std'
 import { flex, stack } from 'imp/std/layout'
 
@@ -195,8 +195,14 @@ shell(
         { verticalAlign: 'center' },
         themeSelect(),
         langSelect({ languages: ['en', 'pl'] }),
-        userCard({ name: user.name, description: user.email, picture: user.avatar }),
-        authButton({ signedIn: session, onSignOut: signOut }),
+        userCard({
+          signedIn: session,
+          name: user.name,
+          description: user.email,
+          picture: user.avatar,
+          onSignIn: signIn,
+          onSignOut: signOut,
+        }),
       ),
     ),
     sidebar: stack(
@@ -222,14 +228,13 @@ shell(
 )
 ```
 
-| Component     | What it is                                                                     |
-| ------------- | ------------------------------------------------------------------------------ |
-| `appLogo`     | The brand block: a mark, the app name, an optional tagline, linked home        |
-| `breadcrumbs` | The trail above the main region, as plain data; the last crumb is the page     |
-| `userCard`    | Who is signed in: picture or initials, display name, and one line under it     |
-| `authButton`  | One button that signs in or out, following a `signedIn` state                  |
-| `themeSelect` | A light / dark / system picker that applies the theme and remembers the choice |
-| `langSelect`  | A language picker that calls `setLang` and remembers the choice                |
+| Component     | What it is                                                                              |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `appLogo`     | The brand block: a mark, the app name, an optional tagline, linked home                 |
+| `breadcrumbs` | The trail above the main region, as plain data; the last crumb is the page              |
+| `userCard`    | Who is signed in, with an optional sign-out button - or a sign-in button when nobody is |
+| `themeSelect` | A light / dark / system picker that applies the theme and remembers the choice          |
+| `langSelect`  | A language picker that calls `setLang` and remembers the choice                         |
 
 Sidebar and navbar rows are not a separate component: they are **`navMenu`**, whose items now take
 an `icon`, an `onClick` and a `tag`, so the same data renders a sidebar (`direction: 'column'`), a
