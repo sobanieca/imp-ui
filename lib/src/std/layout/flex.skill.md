@@ -36,7 +36,7 @@ Rules an agent gets wrong:
 
 ```js
 flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Invoices'), button('New'))
-flex({ wrap: true, gap: 2 }, ...tags.map((tag) => text(tag)))
+flex({ wrap: true, gap: 2 }, ...labels.map((label) => text(label)))
 flex(stack({ gap: 1 }, heading('Title'), text('Subtitle')), button('Edit'))
 ```
 

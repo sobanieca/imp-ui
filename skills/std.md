@@ -5,11 +5,12 @@ real imp component rendering as its own element (`<imp-button>`, …) with its s
 
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `heading`, `text`, `link`                                                                                                                         | `imp skill std/button`, `std/heading`, `std/text`, `std/link`                                                                                                                                                         |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                             |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                                                                                                          | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`                                                                                                                                                          |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `emptyState`                                                                                                                                                | `imp skill std/emptyState`                                                                                                                                                                                            |
-| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                                                                                                         | `imp skill std/tabs`, `std/navMenu`, `std/commandPalette`                                                                                                                                                             |
+| `imp/std/display`    | `emptyState`, `tag`                                                                                                                                         | `imp skill std/emptyState`, `std/tag`                                                                                                                                                                                 |
+| `imp/std/navigation` | `tabs`, `navMenu`                                                                                                                                           | `imp skill std/tabs`, `std/navMenu`                                                                                                                                                                                   |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `authButton`, `themeSelect`, `langSelect`                                                                             | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/authButton`, `std/themeSelect`, `std/langSelect`                                                                                                     |
 | `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
 
 Read the component's own skill before using it - this page is only the shared contract and a summary
@@ -111,6 +112,29 @@ link({ href: 'https://example.com', external: true }, 'Read the docs')
 
 Renders a real anchor; a plain left-click on an in-app path is handled by the router, while
 middle-click, modifier-click, `external`, and off-site URLs are left to the browser.
+
+## icon
+
+```js
+icon({ name: 'home' })
+icon({ name: 'trash', size: 'sm', label: 'Delete invoice' })
+```
+
+| Prop    | Values                            | Default | Notes                                        |
+| ------- | --------------------------------- | ------- | -------------------------------------------- |
+| `name`  | a glyph name below - **required** | -       | An unknown name is logged and draws nothing  |
+| `size`  | `'sm'`, `'md'`, `'lg'`            | `'md'`  | `1rem`, `1.25rem`, `1.5rem` square           |
+| `label` | string - **live**                 | -       | Names the glyph; without it it is decorative |
+
+The set: `home`, `search`, `settings`, `grid`, `chart`, `folder`, `file`, `box`, `tag`, `user`,
+`users`, `bell`, `mail`, `credit-card`, `plus`, `edit`, `trash`, `check`, `close`, `menu`, `filter`,
+`refresh`, `chevron-right`, `chevron-left`, `chevron-down`, `chevron-up`, `more`, `link`,
+`external-link`, `download`, `upload`, `log-in`, `log-out`, `lock`, `eye`, `sun`, `moon`, `globe`,
+`calendar`, `clock`, `info`, `help`, `warning`, `star`, `heart`.
+
+**A decorative icon takes no `label`** - name the control around it instead. There is no `src` and
+no icon font: a glyph imp does not ship is your own inline `<svg>`, and every icon-taking prop in
+the library accepts any DOM.
 
 ## shell - from `imp/std/layout`
 
@@ -251,6 +275,25 @@ Children are the actions, in a centered row under the text. With no `title` it r
 not translated for you - use `computed([lang], () => t('invoices.empty'))` if it must follow the
 language.
 
+## tag - from `imp/std/display`
+
+```js
+import { tag } from 'imp/std/display'
+
+tag('Draft')
+tag({ color: 'green', size: 'sm' }, 'Shipped')
+```
+
+| Prop    | Values                               | Default     | Notes          |
+| ------- | ------------------------------------ | ----------- | -------------- |
+| `color` | `'neutral'`, or a theme palette name | `'neutral'` | Tints the pill |
+| `size`  | `'sm'`, `'md'`, `'lg'`               | `'md'`      | The type scale |
+
+The label is the children, not a prop; render a live one with `count.text()`. `color` names one of
+the theme's 31 palette colors (`'red'`, `'green'`, `'blue'`, ...), never a CSS color; the pill is a
+30% tint of it so every one stays readable in a light or a dark theme. A `navMenu` item and group
+take the same thing as plain data: `tag: { text, color }`, drawn at the small size to match the row.
+
 ## Responsive: fluid values, and your own media query
 
 **No prop takes a per-screen value, and no component hides itself at a width.** Every prop takes one
@@ -374,33 +417,25 @@ tabs({
 ```
 
 ```js
-import { commandPalette, navMenu } from 'imp/std/navigation'
+import { navMenu } from 'imp/std/navigation'
 
 navMenu({
   label: 'Sections',
   selected: currentSection,
   groups: [{ id: 'work', label: 'Work' }],
-  items: [{ id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks', badge: 12 }],
-})
-
-commandPalette({
-  label: 'Search',
-  shortcut: 'ctrl+p',
-  items: [{ id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks' }],
+  items: [{ id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks', tag: { text: 12 } }],
 })
 ```
 
-| Component        | Props                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------- |
-| `tabs`           | `items`, `selected` (live), `orientation`, `label`, `events`                          |
-| `navMenu`        | `items` (live), `groups`, `selected` (live), `label`, `direction`, `gap`, `events`    |
-| `commandPalette` | `items` (live), `label`, `placeholder`, `shortcut`, `limit`, `emptyMessage`, `events` |
+| Component | Props                                                                              |
+| --------- | ---------------------------------------------------------------------------------- |
+| `tabs`    | `items`, `selected` (live), `orientation`, `label`, `events`                       |
+| `navMenu` | `items` (live), `groups`, `selected` (live), `label`, `direction`, `gap`, `events` |
 
 Rules an agent gets wrong:
 
 - **Panels go in `items`, never as children** - a tab and its panel reference each other by id, and
-  ids cannot cross a shadow root, so one component must render both. `commandPalette` is one
-  component for the same reason: its field and result list are wired by id.
+  ids cannot cross a shadow root, so one component must render both.
 - **`selected` is optional.** Without it `tabs` picks the first enabled item and manages selection
   itself; pass a state when the app owns the selection, and listen with `events: { select }`.
 - **`select` fires only for a user's choice**, so a state bound both ways cannot loop.
@@ -408,12 +443,51 @@ Rules an agent gets wrong:
 - **`navMenu` marks the current page with `selected`**, which writes `aria-current="page"` - never a
   class of your own. Its items are real links; a plain click reports `select` first, so
   `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a top or
-  bottom navigation bar.
-- **`commandPalette` filters its own `items`** - do not filter them yourself on every keystroke. It
-  matches `group/label` fuzzily, so a `group` is how a user searches by category. `shortcut` is
-  `'ctrl+p'`-style, where `ctrl` matches Ctrl **and** ⌘.
+  bottom navigation bar. Full manuals: `imp skill std/tabs` · `imp skill std/navMenu`.
 
-Full manuals: `imp skill std/tabs` · `imp skill std/navMenu` · `imp skill std/commandPalette`.
+## Shell parts - from `imp/std/shell`
+
+Ready-made contents for `shell`'s regions. Each is optional: a region takes DOM, so a piece that
+does not fit is replaced by your own.
+
+```js
+import { appLogo, authButton, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+
+appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) })
+breadcrumbs({ items: [{ id: 'home', label: 'Home', href: '/' }, { id: 'order', label: 'Order' }] })
+userCard({ name: 'Ada Lovelace', description: 'ada@example.com', picture: user.avatar })
+authButton({ signedIn: session, onSignIn: signIn, onSignOut: signOut })
+themeSelect()
+langSelect({ languages: ['en', 'pl'] })
+```
+
+| Component     | Props                                                                    |
+| ------------- | ------------------------------------------------------------------------ |
+| `appLogo`     | `label`, `tagline`, `href`, `src`, `alt`, `icon`, `compact`, `events`    |
+| `breadcrumbs` | `items` (live), `label` (live), `separator`, `events`                    |
+| `userCard`    | `name`, `description`, `picture` (all live), `href`, `compact`, `events` |
+| `authButton`  | `signedIn` (live), `onSignIn`, `onSignOut`, `variant`, `size`, `block`   |
+| `themeSelect` | `themes`, `remember`, `label` (live), `events`                           |
+| `langSelect`  | `languages`, `remember`, `label` (live), `events`                        |
+
+Rules an agent gets wrong:
+
+- **There is no sidebar-item or navbar-item component**: rows are `navMenu`, whose items take an
+  `icon` and an `onClick`. `direction: 'row'` makes the same data a top or bottom bar.
+- **The last crumb is the current page** - `breadcrumbs` renders it as text with
+  `aria-current="page"`, never a link, and imp does not derive the trail from the route.
+- **`onSignIn` / `onSignOut` are function props, not `events`** - return the promise and the button
+  spins until it settles. imp holds no session and talks to no identity provider.
+- **`themeSelect` and `langSelect` own their setting**: they apply it, remember it in
+  `localStorage`, and re-apply the remembered choice on the next mount. `remember: false` when the
+  app owns it. A remembered theme wins over the app's own `applyTheme` at startup - that is the
+  point of remembering it.
+- **`userCard` displays and does not act.** No menu inside it; put `authButton` beside it.
+- **`compact` on `appLogo` and `userCard` hides the words visually, not from assistive tech** - it
+  is how a rail keeps its name.
+
+Full manuals: `imp skill std/appLogo` · `std/breadcrumbs` · `std/userCard` · `std/authButton` ·
+`std/themeSelect` · `std/langSelect`.
 
 ## Feedback - from `imp/std/feedback`
 

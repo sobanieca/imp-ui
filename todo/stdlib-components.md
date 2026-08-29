@@ -28,15 +28,16 @@ by `imp skill std/<name>` (`adr/agent-skills.md`). Exporting it from a barrel is
 registration; the subject is derived from there. A test fails when a component reaches a barrel
 without a skill file, so this is enforced rather than remembered.
 
-- **General** - `icon`. `button`, `heading`, `text` and `link` have landed; the conventions they
+- **General** - `button`, `heading`, `text`, `link` and `icon` have landed; the conventions they
   fixed are recorded in `adr/standard-component-library.md` and documented in
   `docs/std-components.md`.
 - **Layout** - `flex` and `stack` have landed, opening the `imp/std/layout` subpath and settling the
   group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
   nothing else (`adr/layout-two-flex-primitives.md`). `shell`, the app frame of header / rail /
   sidebar / content / aside that works on a phone and a desktop, has landed alongside them
-  (`adr/app-shell-component.md`). **`scrollArea` is out of scope** for the same reason `virtualList`
-  is - custom scrollbars reimplement the browser's own scrolling
+  (`adr/app-shell-component.md`), and the contents its regions are usually filled with ship beside
+  it as `imp/std/shell` (`adr/shell-region-components.md`). **`scrollArea` is out of scope** for the
+  same reason `virtualList` is - custom scrollbars reimplement the browser's own scrolling
   (`adr/browser-support-baseline.md`).
 - **Inputs** - `comboBox` (autocomplete), `slider`, `datePicker`, `dateRangePicker`, `timePicker`,
   `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating`
@@ -45,12 +46,13 @@ without a skill file, so this is enforced rather than remembered.
   `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton` and `resetButton`, opening the
   `imp/std/inputs` subpath and settling the field-binding contract (`adr/state-driven-forms.md`) -
   details in _Form handling_ below.
-- **Display** - `card`, `badge`, `avatar`, `tag`, `tooltip`, `popover`, `accordion`,
-  `descriptionList`, `statistic`, `timeline` _(later)_, `image` (preview/zoom) _(later)_, `calendar`
-  _(later)_, `qrCode` _(later)_. **`carousel` waits** for `::scroll-button()` and
-  `::scroll-marker()` to be interoperable - scroll-button JavaScript in the meantime is what
-  `adr/browser-support-baseline.md` rules out. `emptyState` has landed, opening the
-  `imp/std/display` subpath and fixing the wording convention (`adr/translatable-by-default.md`).
+- **Display** - `card`, `badge`, `avatar`, `tooltip`, `popover`, `accordion`, `descriptionList`,
+  `statistic`, `timeline` _(later)_, `image` (preview/zoom) _(later)_, `calendar` _(later)_,
+  `qrCode` _(later)_. **`carousel` waits** for `::scroll-button()` and `::scroll-marker()` to be
+  interoperable - scroll-button JavaScript in the meantime is what `adr/browser-support-baseline.md`
+  rules out. `emptyState` has landed, opening the `imp/std/display` subpath and fixing the wording
+  convention (`adr/translatable-by-default.md`); `tag` landed with it, and is what a `navMenu`
+  item's `tag` data renders.
 - **Feedback** - `spinner`, `progress`, `alert`, `toast`, `drawer`, `skeleton`, `popconfirm`,
   `result` _(later)_. Every overlay in this group builds on the seam `dialog` opened
   (`adr/overlay-top-layer.md`), but **`dialog` itself belongs to _Layout & placement_** below: it is
@@ -62,12 +64,17 @@ without a skill file, so this is enforced rather than remembered.
   composes `button` rather than restyling a native one** - it drives the nested button through props
   (a state handle for `disabled` or `loading`) and focuses it through its host, which every
   component now supports (`adr/focus-delegation.md`).
-- **Navigation** - `breadcrumbs`, `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_,
-  `floatButton` _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing
-  the data-driven shape every composite widget with internal ARIA id references follows
-  (`adr/component-preview.md` is its first consumer); `navMenu` and `commandPalette` landed with it.
-  The roadmap's `menu` is **`navMenu`**: a list of destinations rendering a `<nav>` of links, not a
-  `role="menu"` of actions - that one is `dropdownMenu`.
+- **Shell** - the frame's usual region contents have landed as `imp/std/shell`: `appLogo`,
+  `breadcrumbs` (the trail; its picker is still owed - `todo/breadcrumbs.md`), `userCard`,
+  `authButton`, `themeSelect` and `langSelect` (`adr/shell-region-components.md`). Still wanted
+  here: a **tenant / workspace switcher**, which needs the anchored panel from
+  `todo/overlay-seam.md`, and a **notifications bell**, which wants `badge` from _Display_ first.
+- **Navigation** - `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_, `floatButton`
+  _(later)_. `tabs` has landed, opening the `imp/std/navigation` subpath and fixing the data-driven
+  shape every composite widget with internal ARIA id references follows (`adr/component-preview.md`
+  is its first consumer); `navMenu` landed with it. The roadmap's `menu` is **`navMenu`**: a list of
+  destinations rendering a `<nav>` of links, not a `role="menu"` of actions - that one is
+  `dropdownMenu`.
 - **Data** - `table` (sorting, filtering, pagination, row selection), `list`, `tree`, `transferList`
   _(later)_. **`virtualList` is out of scope**: windowing reimplements the browser's own scrolling,
   measurement and rendering, which `adr/browser-support-baseline.md` forbids -
@@ -85,20 +92,6 @@ the frame frozen in the centre of the page and the window the user can drag anyw
 differing only in which top-layer promotion they use. What is left of the seam - the anchored ones
 in _Display_ and _Navigation_ among them - is in `todo/overlay-seam.md`. What is still owed:
 
-- **Ready-made contents for `shell`'s regions.** `shell` is pitched as the quick win for standing an
-  app up, but it only frames regions - every region is DOM the app writes. The frame is not a quick
-  win until the usual contents ship with it, so the group owes the pieces that fill it:
-  - **Nav items with icons**, for the `header` and `bottomNav` regions.
-  - **Sidebar items with icons**, grouped and with the current one marked - `navMenu`'s data shape
-    plus an `icon` per item.
-  - **A breadcrumb** for the trail above the main region. Its API is already designed in
-    `todo/breadcrumbs.md`; what is new here is that `shell` is its first call site, so the two land
-    together.
-
-  All three need `icon` in the General group first, and `shared/icons.js` is currently four internal
-  glyphs rather than a public set - so the icon question below is the blocker for this whole bullet.
-- **An icon rail, and `icon` itself.** `shell` takes a `rail` region but `navMenu` renders text
-  rows, so an icon-only rail is hand-built app code until `icon` lands in the General group.
 - **Whether a grid is ever wanted.** A dense form or a dashboard of cards is CSS grid in the app's
   own component today. That is the deliberate answer for now; revisit only with a real call site
   that a nested `flex`/`stack` genuinely cannot express.

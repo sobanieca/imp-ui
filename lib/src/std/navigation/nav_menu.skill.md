@@ -6,10 +6,17 @@ import { navMenu } from 'imp/std/navigation'
 navMenu({
   label: 'Sections',
   selected: 'reports',
-  groups: [{ id: 'work', label: 'Work', badge: 2 }],
+  groups: [{ id: 'work', label: 'Work', tag: { text: 2 } }],
   items: [
     { id: 'reports', group: 'work', label: 'Reports', href: '/reports' },
-    { id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks', badge: 12 },
+    {
+      id: 'tasks',
+      group: 'work',
+      label: 'Tasks',
+      href: '/tasks',
+      tag: { text: 'overdue', color: 'red' },
+      icon: icon({ name: 'box' }),
+    },
     { id: 'settings', label: 'Settings', href: '/settings' },
   ],
 })
@@ -21,7 +28,7 @@ warned about and dropped.
 | Prop        | Values                                   | Default    | Notes                                           |
 | ----------- | ---------------------------------------- | ---------- | ----------------------------------------------- |
 | `items`     | array of `{ id, label, href, … }` - live | `[]`       | Pass a state to rebuild the menu after mount    |
-| `groups`    | array of `{ id, label, badge }`          | derived    | Orders and names the sections                   |
+| `groups`    | array of `{ id, label, tag }`            | derived    | Orders and names the sections                   |
 | `selected`  | an item's `id`, or a state - **live**    | none       | Gets `aria-current="page"`                      |
 | `label`     | string, or a state holding one - live    | -          | Names the `<nav>`; give one when a page has two |
 | `direction` | `'column'`, `'row'`                      | `'column'` | `column` down the side, `row` across the top    |
@@ -34,9 +41,11 @@ Each entry in `items`:
 | ---------- | ------------------------- | --------- | ---------------------------------------------- |
 | `label`    | string, or a state - live | required  | The word in the menu                           |
 | `id`       | string or number          | its index | What `selected` and `event.detail.id` refer to |
-| `href`     | string                    | -         | Without one the row is inert text, not a link  |
+| `href`     | string                    | -         | Without one the row is a button, or inert text |
+| `icon`     | DOM, or a string          | -         | Drawn before the label, in a `1.25rem` box     |
+| `onClick`  | function                  | -         | Called with `{ id, item }` when the row is hit |
 | `group`    | a group's `id`            | -         | Ungrouped items render as one unlabelled list  |
-| `badge`    | string or number          | -         | A count at the end of the row                  |
+| `tag`      | `{ text, color }`         | -         | A tag pill at the end of the row               |
 | `disabled` | boolean                   | `false`   | Rendered, not focusable, not activatable       |
 
 Rules an agent gets wrong:
@@ -51,12 +60,22 @@ Rules an agent gets wrong:
   a page cannot break that page's heading outline.
 - **It renders one flat level.** There are no submenus and no expanding items; for a menu of actions
   rather than destinations, that is a different component.
+- **An `icon` is DOM, not a name.** Pass `icon({ name: 'home' })` from `imp/std`, your own inline
+  `<svg>`, or a string to draw as a glyph. The same items then serve a sidebar, a bottom bar and an
+  icon rail.
+- **A row with an `onClick` and no `href` renders a real `<button>`** - that is how a menu carries
+  an action (open a dialog, sign out) beside its destinations. A row with neither stays inert text.
+  Activation order is `select` -> `onClick` -> the href, so cancelling `select` skips both.
 - **`direction: 'row'` is how the same menu becomes a bar rather than a list** - put the column one
   down the side of your page and the row one across the top.
 - **Listen with `events: { select }`, not `onSelect`.** It is a cancelable `CustomEvent` on the host
   with `detail: { id, item }`; the link is followed unless you call `preventDefault()`. Modifier and
   middle clicks are left to the browser, so a link still opens in a new tab.
+- **A `tag` is plain data, not a `tag()` call.** Pass `{ text, color }` and the menu builds the
+  component; `text` may be a state, and `color` is a theme palette name (`'green'`, `'red'`, ...) or
+  omitted for the muted default. A group takes the same key. There is no `size` - a nav row draws
+  its tag at the small one, to match the row. Anything without a `text` warns and is dropped.
 - Links are ordinary anchors, so **do not add your own keyboard handling** - Tab and Enter already
   work, and a roving-focus menu would take the links out of the tab order for no gain.
 
-Related: imp skill std/commandPalette - searching the same destinations instead of browsing them.
+Related: imp skill std/tag - the pill an item's `tag` data renders.

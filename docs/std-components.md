@@ -48,11 +48,12 @@ short mechanical version - call shape, prop table, and the mistakes the componen
 
 | Import               | What it holds                                                                              |
 | -------------------- | ------------------------------------------------------------------------------------------ |
-| `imp/std`            | The base set - `button`, `heading`, `text`, `link`                                         |
+| `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                 |
 | `imp/std/layout`     | The app frame and the two arrangement primitives - `shell`, `flex`, `stack`, plus `dialog` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...        |
-| `imp/std/display`    | Components that present content - `emptyState`, ...                                        |
-| `imp/std/navigation` | Getting around the app - `tabs`, `navMenu`, `commandPalette`, ...                          |
+| `imp/std/display`    | Components that present content - `emptyState`, `tag`, ...                                 |
+| `imp/std/navigation` | Getting around the app - `tabs`, `navMenu`, ...                                            |
+| `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...    |
 | `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                    |
 | `imp/std/<group>`    | The rest, group by group, as they land                                                     |
 
@@ -170,6 +171,76 @@ screen deeper in the tree cannot push DOM up into the sidebar. What travels upwa
 keep a nav-items state next to the shell, have each screen contribute its rows on mount and withdraw
 them on unmount, and bind that state into the menu. The rule of thumb: **you at the call site, DOM;
 a screen at runtime, data.**
+
+## The frame comes with its furniture
+
+A frame that only draws boxes is half a quick win, so `imp/std/shell` ships the pieces those boxes
+are usually filled with. They are deliberately plain: each one covers what most apps need, and none
+of them is required - a region takes DOM, so a piece that does not fit is replaced by your own
+without asking the frame's permission.
+
+```js
+import { shell } from 'imp/std/layout'
+import { navMenu } from 'imp/std/navigation'
+import { appLogo, authButton, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+import { icon } from 'imp/std'
+import { flex, stack } from 'imp/std/layout'
+
+shell(
+  {
+    header: flex(
+      { horizontalAlign: 'justify', verticalAlign: 'center' },
+      breadcrumbs({ items: trail }),
+      flex(
+        { verticalAlign: 'center' },
+        themeSelect(),
+        langSelect({ languages: ['en', 'pl'] }),
+        userCard({ name: user.name, description: user.email, picture: user.avatar }),
+        authButton({ signedIn: session, onSignOut: signOut }),
+      ),
+    ),
+    sidebar: stack(
+      { gap: 4 },
+      appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) }),
+      navMenu({
+        label: 'Sections',
+        selected: current,
+        items: [
+          { id: 'overview', label: 'Overview', href: '/', icon: icon({ name: 'home' }) },
+          {
+            id: 'orders',
+            label: 'Orders',
+            href: '/orders',
+            icon: icon({ name: 'box' }),
+            tag: { text: 4 },
+          },
+        ],
+      }),
+    ),
+  },
+  router({ routes }),
+)
+```
+
+| Component     | What it is                                                                     |
+| ------------- | ------------------------------------------------------------------------------ |
+| `appLogo`     | The brand block: a mark, the app name, an optional tagline, linked home        |
+| `breadcrumbs` | The trail above the main region, as plain data; the last crumb is the page     |
+| `userCard`    | Who is signed in: picture or initials, display name, and one line under it     |
+| `authButton`  | One button that signs in or out, following a `signedIn` state                  |
+| `themeSelect` | A light / dark / system picker that applies the theme and remembers the choice |
+| `langSelect`  | A language picker that calls `setLang` and remembers the choice                |
+
+Sidebar and navbar rows are not a separate component: they are **`navMenu`**, whose items now take
+an `icon`, an `onClick` and a `tag`, so the same data renders a sidebar (`direction: 'column'`), a
+top or bottom bar (`direction: 'row'`) and an icon rail. A row's `tag` is plain data -
+`tag: { text: 'new', color: 'green' }` - and the menu builds the `tag` component from it, so a count
+or a status pill needs no markup of your own; a group takes the same key. Icons come from `icon` in
+the base group, a small fixed set of line glyphs drawn in the current text color - and every
+icon-taking prop in the library accepts any DOM, so your own `<svg>` goes wherever `icon()` does.
+
+Two of these components hold state that outlives the page: `themeSelect` and `langSelect` remember
+what was chosen in `localStorage`. Pass `remember: false` when the app owns that decision instead.
 
 ## Layout is two components, deliberately
 

@@ -1452,14 +1452,6 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         globalThis.impAll('imp-select')
           .map((host) => host.shadowRoot.querySelector('select'))
           .find((control) => control.getAttribute('aria-label') === label)
-      globalThis.impPalette = () => globalThis.impOne('imp-command-palette').shadowRoot
-      globalThis.impSearch = (query) => {
-        const palette = globalThis.impPalette()
-        const field = palette.querySelector('input')
-        field.value = query
-        field.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
-        return [...palette.querySelectorAll('[role="option"]')]
-      }
       globalThis.impTextareas = (editor) =>
         [...editor.shadowRoot.querySelectorAll('imp-text-area')]
           .map((host) => host.shadowRoot.querySelector('textarea'))
@@ -1618,32 +1610,18 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     const shell = await page.evaluate(() => {
       const menu = globalThis.impOne('imp-nav-menu').shadowRoot
       const links = [...menu.querySelectorAll('.link')]
-      const parts = (node) => [...node.childNodes].map((child) => child.textContent).join(' ')
+      const deepText = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.data
+        const scope = node.shadowRoot ?? node
+        return [...scope.childNodes].map(deepText).join('')
+      }
+      const parts = (node) => [...node.childNodes].map(deepText).join(' ')
       return {
         sidebar: links.map((link) => link.textContent).join(', '),
         groups: [...menu.querySelectorAll('.group-title')].map(parts).join(', '),
         current: links.find((link) => link.hasAttribute('aria-current'))?.textContent ?? 'none',
         head: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.path').textContent,
       }
-    })
-
-    const searched = await page.evaluate(() => {
-      const field = globalThis.impPalette().querySelector('input')
-      const shown = (query) =>
-        globalThis.impSearch(query).map((option) => option.querySelector('.path').textContent)
-      const result = {
-        role: field.getAttribute('role'),
-        name: field.getAttribute('aria-label'),
-        placeholder: field.placeholder,
-        shortcutHint: globalThis.impPalette().querySelector('kbd').textContent,
-        byName: shown('todo'),
-        byCategory: shown('comp'),
-      }
-      result.active = globalThis.impPalette()
-        .querySelector('[aria-selected="true"] .path')?.textContent ?? 'none'
-      result.noMatch = shown('zzz')
-      result.expanded = field.getAttribute('aria-expanded')
-      return result
     })
 
     await page.goto(`${base}/`, { waitUntil: 'load' })
@@ -1744,12 +1722,6 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `sidebar components: ${shell.sidebar}`,
       `sidebar current: ${shell.current}`,
       `page head: ${shell.head}`,
-      `search field: ${searched.role} named '${searched.name}' (${searched.shortcutHint})`,
-      `search placeholder: ${searched.placeholder}`,
-      `searching 'todo': ${searched.byName.join(', ')}`,
-      `searching 'comp': ${searched.byCategory.join(', ')}`,
-      `searching 'zzz': ${searched.noMatch.length} matches, expanded ${searched.expanded}`,
-      `highlighted match: ${searched.active}`,
       `index headline: ${index.headline}`,
       `index cards: ${index.cards}`,
       `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,

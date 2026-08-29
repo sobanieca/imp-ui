@@ -14,11 +14,12 @@ relative path, a URL, or a version.
 | `imp/theme`          | `theme`, `applyTheme`                                                     |
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
-| `imp/std`            | `button`, `heading`, `text`, `link`                                       |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                               |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                        |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, …      |
-| `imp/std/display`    | `emptyState`                                                              |
-| `imp/std/navigation` | `tabs`, `navMenu`, `commandPalette`                                       |
+| `imp/std/display`    | `emptyState`, `tag`                                                       |
+| `imp/std/navigation` | `tabs`, `navMenu`                                                         |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `authButton`, `themeSelect`, …      |
 | `imp/std/feedback`   | `bugReport`                                                               |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/…         |
 | `imp/preview`        | `mockModule` (for `*.preview.js` files)                                   |

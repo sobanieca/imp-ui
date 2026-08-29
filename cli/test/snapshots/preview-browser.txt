@@ -35,13 +35,7 @@ sidebar groups: Widgets 1, components 1
 sidebar components: Counter, todos
 sidebar current: Counter
 page head: Widgets / Counter
-search field: combobox named 'Search components' (Ctrl P)
-search placeholder: Search components…
-searching 'todo': components/todos
-searching 'comp': components/todos
-searching 'zzz': 0 matches, expanded true
-highlighted match: components/todos
-index headline: Components - 2 previews in 2 categories - press Ctrl P to search by name or category.
+index headline: Components - 2 previews in 2 categories.
 index cards: Widgets 1 · components 1
 ?scenario=lazy panels: 1 (lazy)
 mocked todos: Buy milk, Ship imp

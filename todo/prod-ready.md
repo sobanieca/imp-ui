@@ -100,12 +100,12 @@ rather than a preference.
 ## Tier 4 - can the app be built at all
 
 - **The standard library is thin for an all-in-one toolkit.** What ships today: general (button,
-  heading, link, text), a substantial inputs group, navigation (tabs, navMenu, commandPalette),
-  display (emptyState alone), feedback (bugReport alone). The layout group has been removed in full
-  and is being redesigned, and there is no table or data grid, no dialog, drawer, toast or tooltip.
-  The stated target is dashboards, CRUD and internal tools; those cannot be assembled from the
-  current catalog. Tracked in detail in `todo/stdlib-components.md` - listed here because it is the
-  practical blocker a team hits first.
+  heading, link, text), a substantial inputs group, navigation (tabs, navMenu), display (emptyState
+  alone), feedback (bugReport alone). The layout group has been removed in full and is being
+  redesigned, and there is no table or data grid, no dialog, drawer, toast or tooltip. The stated
+  target is dashboards, CRUD and internal tools; those cannot be assembled from the current catalog.
+  Tracked in detail in `todo/stdlib-components.md` - listed here because it is the practical blocker
+  a team hits first.
 - **The accessibility baseline is a plan, not a guarantee.** `todo/accessibility.md` defines the
   contract, but its overlay and focus half cannot land until overlays land, and neither `imp lint`
   nor `imp test` runs any automated accessibility check, so nothing enforces the baseline across the

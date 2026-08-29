@@ -92,16 +92,16 @@ imports the same surface an app does.
   implementable **within** one component, never across a set of them. A bar of controls is therefore
   a plain layout box whose children each keep their own tab stop, rather than a widget shipping
   arrow-key handling that would silently skip anything it cannot reach. This is the same boundary
-  that makes `tabs`, `navMenu` and `commandPalette` data-driven: a widget holding an internal ARIA
-  reference or an internal focus order must render every part of it.
+  that makes `tabs` and `navMenu` data-driven: a widget holding an internal ARIA reference or an
+  internal focus order must render every part of it.
 
 `link` additionally hands plain left-clicks on in-app hrefs to `navigate()`
 (`client-side-router.md`), rendering a real anchor so the URL, middle-click and copy-link behave
 natively, and leaving modifier-clicks, `external` links and off-site URLs to the browser. `href` is
 written in app space, exactly as passed to `navigate()`, with the base path applied by imp. Every
-other component that renders a destination - `navMenu`'s items, `commandPalette`'s results - follows
-that same contract from one shared helper, and reports a **cancelable `select` event** before it
-follows the link, which is how an app takes navigation back.
+other component that renders a destination - `navMenu`'s items - follows that same contract from one
+shared helper, and reports a **cancelable `select` event** before it follows the link, which is how
+an app takes navigation back.
 
 ## Consequences
 

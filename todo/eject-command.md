@@ -84,7 +84,7 @@ Three kinds of import, each needing a different answer:
    `args.js` (argument dispatch, prop validation, `bindValue` / `bindText`), `css.js` (`token`,
    `focusRing`, `forcedColors`, `hiddenRule`, size rules), `layout.js`, `declarations.js` (the
    prop-to-custom-property handling of `responsive-fluid-values-only.md`), `links.js`, `icons.js`,
-   `fuzzy.js`, `path.js`. Every std component leans on this; none of it is reachable from app code.
+   `path.js`. Every std component leans on this; none of it is reachable from app code.
 
 3. **Sibling modules inside `std/`** - two sorts. Unexported implementation files that only exist to
    be shared by one family (`inputs/field.js`, `inputs/text_input.js`, `inputs/form_state.js`,

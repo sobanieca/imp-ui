@@ -2,12 +2,10 @@ import { component } from 'imp'
 import { a, div, el, pre, span } from 'imp/html'
 import { heading, text } from 'imp/std'
 import { shell, stack } from 'imp/std/layout'
-import { commandPalette, navMenu } from 'imp/std/navigation'
+import { navMenu } from 'imp/std/navigation'
 import { copyButton } from './preview_copy.js'
 
 const CATALOG_ELEMENT_ID = 'imp-preview-catalog'
-
-const SEARCH_SHORTCUT = 'ctrl+p'
 
 const BAR_STYLES = `
   .bar {
@@ -34,10 +32,6 @@ const BAR_STYLES = `
     outline-offset: 2px;
   }
 
-  .search {
-    flex: 1 1 14rem;
-    min-inline-size: 10rem;
-  }
 `
 
 const SETTINGS_STYLES = `
@@ -249,35 +243,19 @@ const componentMenu = (previews, current, { label, grouped = true }) =>
       ? categoriesOf(previews).map(({ name, entries }) => ({
         id: name,
         label: name,
-        badge: entries.length,
+        tag: { text: entries.length },
       }))
       : [],
     items: menuItems(previews, grouped),
     events: { select: openInPlace },
   })
 
-const searchField = (previews) =>
-  commandPalette({
-    label: 'Search components',
-    placeholder: 'Search components…',
-    shortcut: SEARCH_SHORTCUT,
-    items: previews.map((entry) => ({
-      id: entry.file,
-      group: entry.category,
-      label: entry.name,
-      description: entry.file,
-      href: entry.href,
-    })),
-    events: { select: openInPlace },
-  })
-
 const barDefinition = {
   styles: BAR_STYLES,
-  onMount: (_instance, previews) =>
+  onMount: (_instance, _previews) =>
     div(
       { class: 'bar' },
       a({ class: 'brand', href: '/' }, 'imp preview'),
-      div({ class: 'search' }, searchField(previews)),
     ),
 }
 
@@ -316,9 +294,7 @@ const indexDefinition = {
           { tone: 'secondary' },
           `${previews.length} preview${
             previews.length === 1 ? '' : 's'
-          } in ${categories.length} categor${
-            categories.length === 1 ? 'y' : 'ies'
-          } - press Ctrl P to search by name or category.`,
+          } in ${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}.`,
         ),
       ),
       div({ class: 'cards' }, ...cards),

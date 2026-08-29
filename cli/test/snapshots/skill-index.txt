@@ -16,61 +16,68 @@ Read one in full - no flags, the text goes to stdout:
   imp skill ./src/counter.js       a component of this project, by path to its module
 
 WRITING AN APP
-  imports             every bare specifier imp resolves, and what each one exports
-  rendering           element factories, props objects, children, and mount
-  components          custom elements with an onMount lifecycle: instance, styles, cleanup
-  state               named reactive state shared down the tree and bound straight to the DOM
-  http                the configured HTTP client a component owns, with retries and request state
-  routing             client-side routes as one plain-data table, with lazily loaded sections
-  std                 the built-in component library: text, layout, forms, navigation and empty states
-  theming             themes as plain token modules, applied at the entry point and swappable
-  i18n                t() lookups, per-language messages, and the lang attribute that drives them
-  logging             the built-in logger and the per-environment log level
-  feature-flags       flag() gates a feature per environment and imp build folds the branch away
+  imports            every bare specifier imp resolves, and what each one exports
+  rendering          element factories, props objects, children, and mount
+  components         custom elements with an onMount lifecycle: instance, styles, cleanup
+  state              named reactive state shared down the tree and bound straight to the DOM
+  http               the configured HTTP client a component owns, with retries and request state
+  routing            client-side routes as one plain-data table, with lazily loaded sections
+  std                the built-in component library: text, layout, forms, navigation and empty states
+  theming            themes as plain token modules, applied at the entry point and swappable
+  i18n               t() lookups, per-language messages, and the lang attribute that drives them
+  logging            the built-in logger and the per-environment log level
+  feature-flags      flag() gates a feature per environment and imp build folds the branch away
 
 WORKING IN AN IMP PROJECT
-  cli                 every command, and which skill covers it
-  init                scaffolding a runnable project: what imp init writes and what it refuses
-  config              the imp.json file key by key, and the --env environment files
-  start               the dev server: injected imports, live reload and the .imp/dev.log to grep
-  build               the production build, JS entries for publishing, and the offline PWA output
-  mocks               answering the app's requests from *.mock.js files instead of the network
-  preview             rendering components in isolation from a *.preview.js file
-  review              reading what the person looking at the page said, from .imp/reviews
-  testing             unit tests in-process and e2e specs against a real browser
-  dependencies        vendoring packages into dependencies/ and importing them
-  lint                the imp lint rules, what each one prevents, and how to apply fixes
-  fmt                 formatting every file type in the project with one command
-  resize              downscaling an oversized PNG or JPEG asset in place
-  skill               reading these manuals, and writing a *.skill.md for a component
-  update              pinning the imp version, pruning cached ones, and the license notices
+  cli                every command, and which skill covers it
+  init               scaffolding a runnable project: what imp init writes and what it refuses
+  config             the imp.json file key by key, and the --env environment files
+  start              the dev server: injected imports, live reload and the .imp/dev.log to grep
+  build              the production build, JS entries for publishing, and the offline PWA output
+  mocks              answering the app's requests from *.mock.js files instead of the network
+  preview            rendering components in isolation from a *.preview.js file
+  review             reading what the person looking at the page said, from .imp/reviews
+  testing            unit tests in-process and e2e specs against a real browser
+  dependencies       vendoring packages into dependencies/ and importing them
+  lint               the imp lint rules, what each one prevents, and how to apply fixes
+  fmt                formatting every file type in the project with one command
+  resize             downscaling an oversized PNG or JPEG asset in place
+  skill              reading these manuals, and writing a *.skill.md for a component
+  update             pinning the imp version, pruning cached ones, and the license notices
 
 STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
-  std/button          button - the standard button, rendered as a real `<button>`
-  std/heading         heading - a section heading, rendered as the real `h1`-`h6` element
-  std/text            text - body text, a paragraph by default or an inline span
-  std/link            link - a real anchor whose in-app clicks are handled by the router
-  std/dialog          dialog - one component for both overlay windows: the modal frame and the movable panel
-  std/flex            flex - a row of children laid out with CSS flexbox
-  std/shell           shell - the app frame: header, rail, sidebar, content, aside and a mobile drawer
-  std/stack           stack - a vertical stack of children laid out with CSS flexbox
-  std/emptyState      emptyState - the placeholder for a list, table or search result with nothing in it
-  std/checkbox        checkbox - a single boolean bound to a form field
-  std/form            form - a form whose values are ordinary imp state, addressed by field path
-  std/numberField     numberField - a numeric input that commits a number, not a string
-  std/passwordField   passwordField - a masked single-line input bound to a form field
-  std/radioGroup      radioGroup - one choice out of a few, bound to a form field
-  std/resetButton     resetButton - puts the form back to the values it started with
-  std/searchField     searchField - a search input bound to a form field or a plain state
-  std/select          select - a dropdown of choices bound to a form field
-  std/submitButton    submitButton - the button that submits the form it sits in
-  std/textArea        textArea - a multi-line text input bound to a form field
-  std/textField       textField - a single-line text input bound to a form field
-  std/toggle          toggle - a switch for a boolean that takes effect immediately
-  std/commandPalette  commandPalette - one search field that fuzzy-filters a list of destinations
-  std/navMenu         navMenu - a nav landmark of links, grouped, with the current one marked
-  std/tabs            tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
-  std/bugReport       bugReport - a trigger that lets a person point at an element and describe what is wrong with it
+  std/button         button - the standard button, rendered as a real `<button>`
+  std/heading        heading - a section heading, rendered as the real `h1`-`h6` element
+  std/text           text - body text, a paragraph by default or an inline span
+  std/link           link - a real anchor whose in-app clicks are handled by the router
+  std/icon           icon - one glyph from imp's built-in set, drawn in the current text color
+  std/dialog         dialog - one component for both overlay windows: the modal frame and the movable panel
+  std/flex           flex - a row of children laid out with CSS flexbox
+  std/shell          shell - the app frame: header, rail, sidebar, content, aside and a mobile drawer
+  std/stack          stack - a vertical stack of children laid out with CSS flexbox
+  std/emptyState     emptyState - the placeholder for a list, table or search result with nothing in it
+  std/tag            tag - a small colored label for a status, a category or a count
+  std/checkbox       checkbox - a single boolean bound to a form field
+  std/form           form - a form whose values are ordinary imp state, addressed by field path
+  std/numberField    numberField - a numeric input that commits a number, not a string
+  std/passwordField  passwordField - a masked single-line input bound to a form field
+  std/radioGroup     radioGroup - one choice out of a few, bound to a form field
+  std/resetButton    resetButton - puts the form back to the values it started with
+  std/searchField    searchField - a search input bound to a form field or a plain state
+  std/select         select - a dropdown of choices bound to a form field
+  std/submitButton   submitButton - the button that submits the form it sits in
+  std/textArea       textArea - a multi-line text input bound to a form field
+  std/textField      textField - a single-line text input bound to a form field
+  std/toggle         toggle - a switch for a boolean that takes effect immediately
+  std/navMenu        navMenu - a nav landmark of links, grouped, with the current one marked
+  std/tabs           tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
+  std/appLogo        appLogo - the brand block at the top of a sidebar, rail or header
+  std/breadcrumbs    breadcrumbs - the trail of levels above the main region, as plain data
+  std/userCard       userCard - the signed-in person: picture, name and one line under it
+  std/authButton     authButton - one button that signs in or out, following a signed-in state
+  std/themeSelect    themeSelect - a light / dark / system picker that applies and remembers the theme
+  std/langSelect     langSelect - a language picker that calls setLang and remembers the choice
+  std/bugReport      bugReport - a trigger that lets a person point at an element and describe what is wrong with it
 
 THIS PROJECT - components with a skill file · read: imp skill ./path/to/component.js
   ./test/fixtures/skill-project/counter.js  counter - a self-contained increment/decrement widget

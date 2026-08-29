@@ -29,9 +29,9 @@ current stable.
   check, no graceful-degradation tier. One code path, the current one.
 - **imp never writes JavaScript that substitutes for a platform primitive.** The line is not "no
   JavaScript" - imp is a JavaScript library - it is **what the JavaScript is for**:
-  - **Allowed: JavaScript that implements a feature.** Sorting a table, fuzzy-matching in
-    `commandPalette`, walking a `field` path, validating a form, handling a keypress. Nothing in the
-    platform does these; imp is the thing that does them.
+  - **Allowed: JavaScript that implements a feature.** Sorting a table, fuzzy-matching in a filtered
+    list, walking a `field` path, validating a form, handling a keypress. Nothing in the platform
+    does these; imp is the thing that does them.
   - **Forbidden: JavaScript that stands in for something the platform owns.** A focus trap, an
     anchor positioning engine, a stacking-order registry, a scroll virtualizer, a `:has()` shim. The
     platform owns these, and where it owns them imp calls them.

@@ -81,12 +81,8 @@ is `text_field` under `inputs`.
 ## The page
 
 - **The shell** - every page is the same frame: the catalog of components down the side, grouped by
-  category, with the one you are looking at marked; a search field across the top; and the theme,
-  language and direction pickers in a settings panel beside the page. `/` opens the catalog as a
-  card per category.
-- **Search** - press `Ctrl P` (`⌘P` on a Mac) from anywhere on the page. Matching is fuzzy over
-  `category/name` as they are shown, so `inp` lists the `Inputs` category and `tf` finds
-  `Text field`; Up and Down move, `Enter` opens, `Escape` clears.
+  category, with the one you are looking at marked; and the theme, language and direction pickers in
+  a settings panel beside the page. `/` opens the catalog as a card per category.
 - **Stage** - drag the right, bottom or corner handle to resize; `phone`, `tablet`, `desktop` jump
   to common viewports and `fit` returns to full width. The component re-lays-out live, which is how
   you find the width where it breaks.
