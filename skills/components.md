@@ -71,6 +71,10 @@ Re-inserting in a later task is a real remount (also the way to force one).
 - **A `placeholder` that renders content with a synchronous `build` is never seen** and warns. Pair
   it with an async `build` (or one returning a promise), or drop it. A `placeholder` returning
   `null` for the given arguments renders nothing and never warns.
+- **A `placeholder` cannot bind state.** It is built before the component mounts, so `state.text()`,
+  `state.view()`, `state.each()` and a state-bound prop render empty and never update inside one.
+  `initState`/`useState` throw there; a handle passed in as a factory argument does not, so imp
+  warns once naming the component. Pass a plain value and keep bindings in `build`.
 - **Resolve state, http clients and an area's `router()` before the first `await`.** `initState`,
   `useState`, `watch`, `initHttpClient`, `useHttpClient` and a table-less `router()` throw past it,
   under the `imp/state-setup-before-await`, `imp/http-client-setup-before-await` and

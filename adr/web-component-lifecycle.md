@@ -66,14 +66,16 @@ callbacks drive everything:
   time, and again at the **front of a remount's `connectedCallback`** - a connect whose element has
   already been through a mount cycle. Synchronous mounts replace it before paint; it is user-visible
   only during async mounts - the built-in skeleton/loading story. It runs outside a live mount, so
-  it takes no instance. **Rendering it on remount is what returns the host to a clean at-rest
-  state** before the new `build` runs: without it a re-inserted host would keep displaying the dead
-  mount's DOM until the new async `build` resolved. A first mount skips it because the factory
-  already populated the shadow at call time, so the placeholder is built exactly once per mount that
-  can show it, and never for a mount that is discarded. **Teardown does not render the
-  placeholder** - it empties the shadow root, dropping the outgoing subtree for collection without
-  building a throwaway skeleton a permanently-removed host would never paint. For a component with
-  no `placeholder` a remount simply starts from that emptied shadow root, so this is one rule, not a
+  it takes no instance - and, for the same reason, it holds no live content: bindings in placeholder
+  output are never activated, so imp warns once naming the component rather than leaving them
+  silently empty. **Rendering it on remount is what returns the host to a clean at-rest state**
+  before the new `build` runs: without it a re-inserted host would keep displaying the dead mount's
+  DOM until the new async `build` resolved. A first mount skips it because the factory already
+  populated the shadow at call time, so the placeholder is built exactly once per mount that can
+  show it, and never for a mount that is discarded. **Teardown does not render the placeholder** -
+  it empties the shadow root, dropping the outgoing subtree for collection without building a
+  throwaway skeleton a permanently-removed host would never paint. For a component with no
+  `placeholder` a remount simply starts from that emptied shadow root, so this is one rule, not a
   special case.
 - **`teardown(instance, ...args)`** (optional) runs on removal for resources imp cannot track,
   receiving the same instance its mount was given. It may be async; imp awaits it, and a

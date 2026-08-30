@@ -110,6 +110,13 @@ never warns. A `placeholder` is only worthwhile when `build` returns a promise -
 written `async` or just returns one (for example `build: () => loadCard().then(renderCard)`), both
 keep the placeholder up until the promise settles and neither warns.
 
+A placeholder is **at-rest content, not live content**. It is built before the component mounts, so
+the reactive constructs - `state.text()`, `state.view()`, `state.each()` and a prop bound to a state
+handle - never go live inside one: they render empty and stay empty. `initState` and `useState`
+already throw there, since a placeholder has no mount to own them, but a handle the parent passed in
+as an argument slips past that, so imp logs a one-time warning naming the component when it sees a
+binding in placeholder output. Pass a plain value instead and keep the live parts in `build`.
+
 ### `teardown(instance, ...args)` - optional
 
 Runs after the component is removed from the document, for teardown imp cannot do for you: timers,
