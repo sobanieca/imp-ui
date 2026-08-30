@@ -191,7 +191,7 @@ Rules an agent gets wrong:
   drawer closes itself.
 - **The shell is imp's only breakpoint exception** (`48rem`); do not copy that into your components.
   It renders `<header>`, `<main>`, `<aside>` but **no `<nav>`** - `navMenu` brings that.
-- **It is `100dvh` on its own host**; set `block-size` on the element to embed one in a shorter box.
+- **It is `100dvb` on its own host**; set `block-size` on the element to embed one in a shorter box.
 
 Full manual: `imp skill std/shell`.
 

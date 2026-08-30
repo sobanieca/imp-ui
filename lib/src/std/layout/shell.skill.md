@@ -83,7 +83,7 @@ Rules an agent gets wrong:
   those before writing a region by hand, and replace any one of them with your own DOM when it does
   not fit.
 - **The shell renders no `<nav>`** - your `navMenu` brings that. It does render `<header>`, `<main>`
-  and `<aside>`, is `100dvh` tall, and scrolls each region independently.
+  and `<aside>`, is `100dvb` tall, and scrolls each region independently.
 
 ```js
 shell({ rail: iconRail(), sidebar: sections(), headerSpan: 'content' }, router({ routes }))

@@ -301,7 +301,7 @@ const WIDGET_STYLES = `
     flex-direction: column;
     gap: 10px;
     inline-size: 300px;
-    max-inline-size: calc(100vw - 32px);
+    max-inline-size: calc(100dvi - 32px);
     padding: 12px;
     border: 1px solid #334155;
     border-radius: 10px;
