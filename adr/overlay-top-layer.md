@@ -110,6 +110,7 @@ at all in Firefox and animates outside the top layer in Safari.
   same title bar, same content, same close button. `modal` is read once, at mount, because switching
   it on a live dialog would mean unwinding one promotion and rebuilding the other with focus and
   scroll state to reconcile across the gap.
-- The anchored layer - `tooltip`, `dropdownMenu`, `popconfirm` - is still unbuilt and is
-  `popover="auto"` plus CSS anchor positioning rather than either helper here
-  (`todo/overlay-seam.md`).
+- The anchored layer uses neither helper here: a panel that hangs off a trigger is `popover="auto"`
+  placed by CSS anchor positioning, built as the `anchoredStyles` string builder next to them.
+  `button`'s `items` menu is its first consumer; `tooltip`, `dropdownMenu` and `popconfirm` are
+  still unbuilt (`todo/overlay-seam.md`).

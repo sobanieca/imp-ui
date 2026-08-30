@@ -91,17 +91,19 @@ const shouldExpose = (name) =>
 
 const POPOVER_OPEN = Symbol('imp.test.popoverOpen')
 
-const toggleEvent = (window, type, oldState, newState) =>
-  new window.Event(type, {
-    bubbles: false,
-    cancelable: type === 'beforetoggle',
-    oldState,
-    newState,
+const toggleEvent = (window, type, oldState, newState) => {
+  const event = new window.Event(type, { bubbles: false, cancelable: type === 'beforetoggle' })
+  Object.defineProperties(event, {
+    oldState: { value: oldState, enumerable: true },
+    newState: { value: newState, enumerable: true },
   })
+  return event
+}
 
 const installPopoverApi = (window) => {
   const prototype = window.HTMLElement.prototype
   if (prototype.showPopover) return
+  const open = []
   prototype.showPopover = function showPopover() {
     if (!this.hasAttribute('popover')) {
       throw new window.DOMException('Not supported', 'NotSupportedError')
@@ -109,20 +111,57 @@ const installPopoverApi = (window) => {
     if (this[POPOVER_OPEN]) return
     this.dispatchEvent(toggleEvent(window, 'beforetoggle', 'closed', 'open'))
     this[POPOVER_OPEN] = true
+    open.push(this)
     this.dispatchEvent(toggleEvent(window, 'toggle', 'closed', 'open'))
   }
   prototype.hidePopover = function hidePopover() {
     if (!this[POPOVER_OPEN]) return
     this.dispatchEvent(toggleEvent(window, 'beforetoggle', 'open', 'closed'))
     this[POPOVER_OPEN] = false
+    open.splice(open.indexOf(this), 1)
     this.dispatchEvent(toggleEvent(window, 'toggle', 'open', 'closed'))
   }
   prototype.togglePopover = function togglePopover(force) {
-    const open = force ?? !this[POPOVER_OPEN]
-    if (open) this.showPopover()
+    const next = force ?? !this[POPOVER_OPEN]
+    if (next) this.showPopover()
     else this.hidePopover()
     return Boolean(this[POPOVER_OPEN])
   }
+
+  const lightDismissable = () =>
+    open.filter((element) => element.getAttribute('popover') === 'auto')
+
+  const invokerTarget = (node) => {
+    const id = node.getAttribute?.('popovertarget')
+    return id ? node.getRootNode().getElementById(id) : null
+  }
+
+  const invokedFrom = (path, element) => path.some((node) => invokerTarget(node) === element)
+
+  window.document.addEventListener('pointerdown', (event) => {
+    const path = event.composedPath()
+    for (const element of lightDismissable().reverse()) {
+      if (path.includes(element) || invokedFrom(path, element)) return
+      element.hidePopover()
+    }
+  })
+
+  window.document.addEventListener('click', (event) => {
+    for (const node of event.composedPath()) {
+      const target = invokerTarget(node)
+      if (!target) continue
+      const action = node.getAttribute('popovertargetaction') ?? 'toggle'
+      if (action === 'show') target.showPopover()
+      else if (action === 'hide') target.hidePopover()
+      else target.togglePopover()
+      return
+    }
+  })
+
+  window.document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return
+    lightDismissable().at(-1)?.hidePopover()
+  })
 }
 
 const installAnimationsApi = (window) => {

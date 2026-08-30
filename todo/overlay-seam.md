@@ -40,9 +40,9 @@ August 2026 - several of the earlier assumptions here were wrong and are correct
 - **The test-DOM claims were accurate.** A probe of the vendored happy-dom confirms `showModal()`
   only sets the attribute: no focus move, no focus restore, no `inert`, no `cancel` on Escape, no
   `requestClose`, no `:modal`, no `:popover-open`, and no popover API at all. The fill now covers
-  the modal half; the popover shim still dispatches toggle events only, which is enough because the
-  seam tracks its own shown flag rather than querying `:popover-open` - **light dismiss and the
-  popover focusing steps still need emulating before `dropdownMenu`.**
+  the modal half, and the popover half carries light dismiss and Escape for `popover="auto"`,
+  `popovertarget` invocation, and `oldState` / `newState` on toggle events. Callers still track
+  their own shown flag rather than querying `:popover-open`, which the shim does not implement.
 
 ## What is built
 
@@ -52,6 +52,18 @@ window, several of which may be open at once. `shell`'s drawer uses the modal ha
 adds over the platform is backdrop dismissal, the ref-counted scroll hold, focus restore for the
 popover path, the closing slide and the drag, and nothing else.
 
+The anchored half is built too, as a second module and no runtime at all:
+`anchoredStyles({ trigger, panel, placement, align })` in `lib/src/std/shared/anchored.js` is a
+string builder - `anchor-name` on the trigger, `position-anchor` on the panel (always declared),
+`position-area` in logical keywords so RTL mirrors for free, `position-try-fallbacks` for
+collisions, and `position-visibility: anchors-visible` for a trigger that scrolls away. It also
+hides the closed panel itself - `:not(:popover-open) { display: none }` - because the UA rule that
+does that is a single-class selector, so any `display` a component sets on its own panel beats it
+and leaves the panel painted at all times. Every instance can use the same literal `--imp-anchor`
+because it is tree-scoped. `button`'s `items` menu is its first consumer: a triple-dot trigger, a
+`popover="auto"` `role="menu"` panel, roving tabindex, and `aria-expanded` written from the panel's
+own `toggle` event.
+
 ## What is left
 
 ### 1. `drawer`
@@ -60,18 +72,22 @@ Same helper, different geometry: `--overlay-offset` is the only thing that diffe
 and a bottom sheet below the breakpoint is one more offset. The shell's drawer already proves the
 path.
 
-### 2. `dropdownMenu` - the first anchored consumer
+### 2. `dropdownMenu` - the standalone menu
 
-`popover="auto"` brings the layer, light dismiss, Escape and a nesting stack; placement is CSS, so
-`anchoredStyles({ placement, align })` is a **string builder** and not a runtime - `anchor-name` on
-the trigger, `position-anchor` on the panel (always declared), `position-area` in logical keywords
-so RTL mirrors for free, `position-try-fallbacks: flip-block, flip-inline` for collisions, and
-`position-visibility: anchors-visible` to hide a panel whose trigger scrolled away. No
-`ResizeObserver`, no scroll listener, nothing to recompute. `anchor-name` is tree-scoped, so every
-instance can use the same literal `--imp-anchor` with no generated ids.
+`button({ items })` covers the split-button case with `anchoredStyles`. `dropdownMenu` is the same
+panel behind a trigger of its own, plus what the button's menu deliberately leaves out: submenus,
+typeahead, and item groups. Lift the menu markup and keyboard handling out of `button` when it lands
+rather than growing a second copy.
+
+A menu taller than the space on either side of its trigger is the case neither has settled: the
+panel is capped to the viewport and scrolls, so nothing runs off screen, but it is not capped to the
+room on the chosen side. `position-try-order: most-block-size` is the property to reach for; check
+it against the four browsers first.
 
 Placement is exempt from unit testing - happy-dom has no layout engine - so what a unit test can
-check is that a component declares the rules; where a panel lands is e2e and visual.
+check is that a component declares the rules; where a panel lands is e2e and visual, which
+`std.spec.js` does for the button menu by pinning the trigger to the top and bottom of the viewport
+and asserting which side the panel took.
 
 ### 3. `toast` - the one region
 
@@ -84,9 +100,12 @@ from plain data. It is still not a container other components render into.
 Unchanged and still the decision that cannot be retrofitted: ARIA id references do not cross a
 shadow root, and `anchor-name` / `position-anchor` resolve within one tree scope. Both force trigger
 and panel into the same shadow root, which is why the seam is a module and not an `overlay()`
-wrapper. The consequence: **`tooltip({ text }, button(...))` cannot be made correct** - the child is
-an `imp-button` host, `aria-describedby` on a roleless host is ignored, and the real `<button>` is
-one root deeper. A tooltip is therefore a prop of the component that owns the trigger,
+wrapper, and why a panel is a prop of the component that renders its trigger - `button({ items })`,
+never `menu(button(...))`.
+
+The consequence: **`tooltip({ text }, button(...))` cannot be made correct** - the child is an
+`imp-button` host, `aria-describedby` on a roleless host is ignored, and the real `<button>` is one
+root deeper. A tooltip is therefore a prop of the component that owns the trigger,
 `button({ tooltip: 'Copy' })`. `dropdownMenu({ label, items })` is unaffected, since it renders its
 own trigger.
 

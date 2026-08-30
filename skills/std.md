@@ -52,18 +52,24 @@ section(
 button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
 ```
 
-| Prop       | Values                                                    | Default     | Notes                                       |
-| ---------- | --------------------------------------------------------- | ----------- | ------------------------------------------- |
-| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                    |
-| `size`     | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                       |
-| `disabled` | boolean - **live**                                        | `false`     | Blocks interaction                          |
-| `loading`  | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy` |
-| `block`    | boolean                                                   | `false`     | Fills its container's width                 |
-| `label`    | string - **live**                                         | -           | `aria-label`, for an icon-only button       |
-| `events`   | event map                                                 | -           | Handlers, as on any element                 |
+| Prop       | Values                                                    | Default     | Notes                                        |
+| ---------- | --------------------------------------------------------- | ----------- | -------------------------------------------- |
+| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                     |
+| `size`     | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                        |
+| `disabled` | boolean - **live**                                        | `false`     | Blocks interaction                           |
+| `loading`  | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy`  |
+| `block`    | boolean                                                   | `false`     | Fills its container's width                  |
+| `label`    | string - **live**                                         | -           | `aria-label`, for an icon-only button        |
+| `items`    | `{ id?, label, icon?, onClick?, disabled? }[]`            | -           | Triple-dot trigger beside it, opening a menu |
+| `events`   | event map                                                 | -           | Handlers, as on any element                  |
 
 **No `type` prop and no submit button** - a button acts on its `click` handler; submit there.
 `variant: 'link'` is a button that reads as a link; use `link` when it is a place to go.
+
+`items` adds a second, triple-dot control next to the button. Choosing an item fires a cancellable
+`select` event on the host with `detail: { id, item }`, then calls that item's `onClick`. The panel
+is a `popover` placed by the browser - it flips above the trigger near the bottom of the screen,
+closes on Escape or a click away, and has no `placement` prop.
 
 ## heading
 

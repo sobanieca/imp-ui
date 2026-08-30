@@ -21,7 +21,11 @@ argument; everything after it is content.
 | `loading`  | boolean, or a state holding one - **live**                | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
 | `block`    | boolean                                                   | `false`     | Fills the width of its container                       |
 | `label`    | string, or a state holding one - **live**                 | -           | `aria-label` on the button - names an icon-only one    |
+| `items`    | array of menu items                                       | -           | Adds a triple-dot trigger beside it, opening a menu    |
 | `events`   | event map, e.g. `{ click: handler }`                      | -           | Handlers, exactly as on any element                    |
+
+An `items` entry is `{ id?, label, icon?, onClick?, disabled? }`. `id` defaults to the index,
+`label` is required, `icon` is a node.
 
 Rules an agent gets wrong:
 
@@ -40,6 +44,21 @@ Rules an agent gets wrong:
   calls `.focus()` on it - never reach into its `shadowRoot`.
 - Unknown props warn at mount, and an out-of-range `variant`/`size` warns and falls back.
 
+Rules for `items`:
+
+- **The menu is a second control, not a mode.** The button keeps its own `click` handler; the
+  triple-dot trigger next to it opens the menu. A button with only a menu still needs content for
+  its own label.
+- **Choosing an item fires a cancellable `select` event** on the host, with `detail: { id, item }`,
+  and then calls that item's `onClick({ id, item })`. Calling `preventDefault()` on `select` stops
+  the `onClick`.
+- **The panel is placed by the browser, not by imp** - it opens under the trigger and flips above it
+  near the bottom of the screen. There is no `placement` prop.
+- **Dismissal and layering are the platform's**: clicking away or pressing Escape closes the menu
+  and returns focus to the trigger. Do not add your own outside-click handler.
+- Arrow keys, `Home` and `End` walk the enabled items; `disabled` items are skipped.
+- `disabled` and `loading` on the button disable the triple-dot trigger too.
+
 ```js
 const sending = initState('contact.sending', false)
 
@@ -47,6 +66,16 @@ button({ variant: 'primary', loading: sending, events: { click: send } }, 'Send'
 button({ variant: 'danger', size: 'sm', events: { click: remove } }, 'Delete')
 button({ block: true, events: { click: next } }, 'Continue')
 button({ variant: 'link', events: { click: showDetails } }, 'What is this?')
+
+button({
+  variant: 'primary',
+  events: { click: save },
+  items: [
+    { id: 'draft', label: 'Save as draft', onClick: saveDraft },
+    { id: 'template', label: 'Save as template', onClick: saveTemplate },
+    { id: 'discard', label: 'Discard', disabled: true },
+  ],
+}, 'Save')
 ```
 
 Related: link (imp skill std/link)
