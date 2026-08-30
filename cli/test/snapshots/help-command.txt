@@ -7,9 +7,9 @@ imp - buildless UI toolkit
 USAGE
   imp init [dir] [--pwa]                scaffold a runnable project: a page, a counter
                                         component, a unit test and an e2e spec
-                                        (no dir: here · --pwa: installable, offline-ready)
+                                        (no dir: here | --pwa: installable, offline-ready)
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
-                     [--env <name>]     live reload, console + network → terminal
+                     [--env <name>]     live reload, console + network -> terminal
                                         (--env selects an "environments" entry
                                         from imp.json, exposed as import { env })
                      [--mock]           answer requests from the *.mock.js files in
@@ -26,30 +26,30 @@ USAGE
   imp preview [path] [--port 4517]      preview components in isolation: each *.preview.js
                      [--env <name>]     file renders its named exports as labeled, drag-resizable
                      [--list] [--json]  stages with a live state editor (no path: every preview,
-                     [--mock]           listed on an index page · --list prints what was found ·
+                     [--mock]           listed on an index page | --list prints what was found |
                      [--no-mock]        --mock serves the "mocks" folder to previewed components)
   imp review [clear]                    list what was written from the browser by the review
                                         widget the dev server puts on every page - the page,
                                         the element picked and the comment left on it
                                         (clear: delete every saved review)
   imp install [package[@version]]       vendor a dependency into dependencies/
-                                        (no version: latest · no package: update all)
+                                        (no version: latest | no package: update all)
   imp uninstall <package>               remove a vendored dependency
   imp test <file>                       run one test file: *.test.js unit in-process,
                                         *.spec.js e2e in a real browser
   imp test --unit | --e2e               run every file of that level, each in its own
                                         process, in parallel - passing files are summarized,
                                         failing files print their full output
-                                        (--jobs <n> caps parallelism · --filter <text> ·
-                                        --list prints the selected files as JSON ·
-                                        --screenshots <dir> saves a screenshot per failed e2e test ·
-                                        --video <dir> records each e2e spec as an animated GIF ·
+                                        (--jobs <n> caps parallelism | --filter <text> |
+                                        --list prints the selected files as JSON |
+                                        --screenshots <dir> saves a screenshot per failed e2e test |
+                                        --video <dir> records each e2e spec as an animated GIF |
                                         --mock / --no-mock: serve the "mocks" folder to e2e specs)
   imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
-                     [--output <path>]  keeping aspect ratio (-w & -h: fit within that box ·
-                     [--stretch]        --stretch: exact -w×-h, may distort ·
+                     [--output <path>]  keeping aspect ratio (-w & -h: fit within that box |
+                     [--stretch]        --stretch: exact -wx-h, may distort |
                                         neither -w nor -h: report current dimensions and
-                                        size, plus a recommended resize command ·
+                                        size, plus a recommended resize command |
                                         --output writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
@@ -57,7 +57,7 @@ USAGE
              [./component.js]           the documentation shipped inside this binary,
                                         written to be read before writing imp code
                                         (a path prints that component's own skill,
-                                        from the .skill.md file next to it ·
+                                        from the .skill.md file next to it |
                                         no argument: an index of everything there is)
   imp update [version] [--check]        update to the latest release (or a given version) and
                                         pin it in imp.json (--check only reports if one is available)

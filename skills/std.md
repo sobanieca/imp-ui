@@ -1,7 +1,7 @@
 # std - the built-in component library
 
 Imported from `imp/std` and its groups. Nothing to install, no CSS to include. Each component is a
-real imp component rendering as its own element (`<imp-button>`, …) with its styles sealed inside.
+real imp component rendering as its own element (`<imp-button>`, ...) with its styles sealed inside.
 
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -162,7 +162,7 @@ shell(
 | `rail`       | DOM                            | -        | Thin far-left column                                 |
 | `sidebar`    | DOM                            | -        | Nav column; a modal drawer below `48rem`             |
 | `aside`      | DOM                            | -        | Right contextual column, into `<aside>`              |
-| `bottomNav`  | DOM                            | -        | Below `48rem` only; suppresses the drawer            |
+| `bottomNav`  | DOM                            | -        | `display: none` at `>= 48rem`; suppresses the drawer |
 | `headerSpan` | `'full'`, `'content'`          | `'full'` | `'content'` starts the header after rail and sidebar |
 | `navOpen`    | boolean, or a state - **live** | `false`  | Drawer state; shell-owned when omitted               |
 | `events`     | `{ navToggle }`                | -        | `detail: { open }`, on every change the shell makes  |
@@ -186,7 +186,8 @@ Rules an agent gets wrong:
   owner key, bound into `navMenu`. **You at the call site -> DOM; a screen at runtime -> data**,
   because imp has no portal, so DOM cannot travel up out of a screen into the sidebar.
 - **`bottomNav`'s presence is the mobile switch** - passing it suppresses the drawer. There is no
-  `compact` mode prop.
+  `compact` mode prop. It is not a footer: it is `display: none` at `>= 48rem`, so anything a wide
+  screen must keep showing goes in the `header`, the `aside` or the main content.
 - **`navOpen` must be writable** (never a `computed`) if you pass it: the shell writes back when the
   drawer closes itself.
 - **The shell is imp's only breakpoint exception** (`48rem`); do not copy that into your components.
@@ -280,8 +281,8 @@ emptyState({ title: 'No invoices', description: 'They appear here once you send 
 | `description` | string - **live**        | -         | One sentence; omitted if unset   |
 
 Children are the actions, in a centered row under the text. With no `title` it reads its own key:
-`imp.state.empty` → "Nothing here yet", `imp.state.noResults` → "No results". A `title` you pass is
-not translated for you - use `computed([lang], () => t('invoices.empty'))` if it must follow the
+`imp.state.empty` -> "Nothing here yet", `imp.state.noResults` -> "No results". A `title` you pass
+is not translated for you - use `computed([lang], () => t('invoices.empty'))` if it must follow the
 language.
 
 ## tag - from `imp/std/display`
@@ -324,7 +325,7 @@ component('invoice-filters', {
       .filters { flex-direction: row; }
     }
   `,
-  onMount: () => div({ class: 'filters' }, ...filters()),
+  build: () => div({ class: 'filters' }, ...filters()),
 })
 ```
 
@@ -452,7 +453,7 @@ Rules an agent gets wrong:
 - **`navMenu` marks the current page with `selected`**, which writes `aria-current="page"` - never a
   class of your own. Its items are real links; a plain click reports `select` first, so
   `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a top or
-  bottom navigation bar. Full manuals: `imp skill std/tabs` · `imp skill std/navMenu`.
+  bottom navigation bar. Full manuals: `imp skill std/tabs` | `imp skill std/navMenu`.
 
 ## Shell parts - from `imp/std/shell`
 
@@ -496,7 +497,7 @@ Rules an agent gets wrong:
 - **`compact` on `appLogo` and `userCard` hides the words visually, not from assistive tech** - it
   is how a rail keeps its name.
 
-Full manuals: `imp skill std/appLogo` · `std/breadcrumbs` · `std/userCard` · `std/themeSelect` ·
+Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/themeSelect` |
 `std/langSelect`.
 
 ## Feedback - from `imp/std/feedback`

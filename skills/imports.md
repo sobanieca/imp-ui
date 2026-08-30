@@ -7,7 +7,7 @@ relative path, a URL, or a version.
 | Specifier            | Exports                                                                   |
 | -------------------- | ------------------------------------------------------------------------- |
 | `imp`                | `component`, `mount`, `init`, `env`, `flag`                               |
-| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`…)       |
+| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)     |
 | `imp/state`          | `initState`, `useState`, `computed`                                       |
 | `imp/router`         | `router`, `area`, `route`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
 | `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        |
@@ -16,12 +16,12 @@ relative path, a URL, or a version.
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                               |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                        |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, …      |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...    |
 | `imp/std/display`    | `emptyState`, `tag`                                                       |
 | `imp/std/navigation` | `tabs`, `navMenu`                                                         |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`         |
 | `imp/std/feedback`   | `bugReport`                                                               |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/…         |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...       |
 | `imp/preview`        | `mockModule` (for `*.preview.js` files)                                   |
 
 ```js
@@ -44,7 +44,7 @@ Rules an agent gets wrong:
 - **`button` exists twice on purpose** - the plain `<button>` from `imp/html` and the styled
   component from `imp/std`. They never collide because the specifiers differ; alias one when a file
   needs both: `import { button as styledButton } from 'imp/std'`.
-- **No other `imp/…` subpath exists.** `imp/std/data`, `imp/utils`, … fail lint with the list of
+- **No other `imp/...` subpath exists.** `imp/std/data`, `imp/utils`, ... fail lint with the list of
   real specifiers.
 - **Never `import mitt from 'npm:mitt@3.0.1'`.** Third-party packages are vendored first with
   `imp install` and imported by their bare alias - see [dependencies](dependencies.md).

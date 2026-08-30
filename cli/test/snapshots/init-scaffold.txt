@@ -82,7 +82,7 @@ import { initState } from 'imp/state'
 import { button, heading, text } from 'imp/std'
 
 export const app = component('app-root', {
-  onMount: () => {
+  build: () => {
     const clicks = initState('app.clicks', 0)
     return div(
       heading('Hello from imp'),

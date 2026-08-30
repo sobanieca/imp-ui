@@ -17,7 +17,7 @@ Nothing to configure; do not hand-split imports to "help" it.
 
 ## HTML entry - an app
 
-- Every `<script type="module" src="…">` is bundled and minified **to the same relative path**, so
+- Every `<script type="module" src="...">` is bundled and minified **to the same relative path**, so
   the HTML works unchanged. Inline module scripts are bundled and re-inlined.
 - `import()` becomes separate hashed chunks under `chunks/` that load on demand; code shared by
   several entries is emitted once.
@@ -33,12 +33,12 @@ development and production.
 
 ```
 my-app/
-  index.html            ← the entry page, at the project root (bundled, not copied)
-  app.js                ← compiled into the bundle
+  index.html            <- the entry page, at the project root (bundled, not copied)
+  app.js                <- compiled into the bundle
   public/
-    styles.css          → /styles.css
-    favicon.ico         → /favicon.ico
-    assets/logo.png     → /assets/logo.png
+    styles.css          -> /styles.css
+    favicon.ico         -> /favicon.ico
+    assets/logo.png     -> /assets/logo.png
 ```
 
 ```html
@@ -81,8 +81,8 @@ binary, none of which ship in an app. See [update](update.md).
 
 Set the `IMP_BASEPATH` environment value - see [config](config.md) - and `imp build` prefixes every
 root-absolute URL it emits: your page's `href="/styles.css"`, the PWA manifest, icons, worker and
-its precache list. External (`https://…`), protocol-relative (`//…`) and already-relative URLs are
-left alone. The router reads the same value, so assets and navigation move together; see
+its precache list. External (`https://...`), protocol-relative (`//...`) and already-relative URLs
+are left alone. The router reads the same value, so assets and navigation move together; see
 [routing](routing.md).
 
 ## JS entry - a component
@@ -93,7 +93,7 @@ left alone. The router reads the same value, so assets and navigation move toget
   component. Only the **entry module's** skill survives - a barrel re-exporting several components
   loses theirs (ambiguous star exports are dropped), so publish one entry per component or describe
   them all in the barrel's own skill. See [components](components.md).
-- **`targetImpHost: true`** in `imp.json` - see [config](config.md) - leaves every `imp` / `imp/…`
+- **`targetImpHost: true`** in `imp.json` - see [config](config.md) - leaves every `imp` / `imp/...`
   import **bare** for a host imp app to provide, so the page holds one shared copy of imp instead of
   two. The host must actually provide it (an import map or bundler alias), and your component then
   runs on the host's imp version, which may be newer than the one you built against. When in doubt,
@@ -104,7 +104,7 @@ left alone. The router reads the same value, so assets and navigation move toget
 Requires a `pwa` block with at least `name` and `icon`. In one step imp:
 
 - **generates the icon set** from that single source - 192px and 512px, a padded 512px maskable, and
-  a 180px apple-touch-icon. SVG is preferred; a raster source should be ≥512px on its longest edge
+  a 180px apple-touch-icon. SVG is preferred; a raster source should be >=512px on its longest edge
   or the build warns about upscaling;
 - **writes `manifest.webmanifest`** with the fields browsers require to offer installation;
 - **writes an offline `sw.js`** whose precache list is exactly this build's files - derived from the
@@ -137,5 +137,5 @@ at all - but the **offline** worker only ever comes from `imp build --pwa`. See 
   shell variable behind a `$env.` value stops the build rather than shipping a half-configured app.
 - **Feature flags are resolved here, not at runtime.** Every `flag('NAME')` becomes a literal and
   the dead branch - with the chunks only it reached - is dropped; the output holds no flag names or
-  values. The build prints `flags folded in - NAME off, …`. An undeclared or computed flag name
+  values. The build prints `flags folded in - NAME off, ...`. An undeclared or computed flag name
   fails the build. See [feature-flags](feature-flags.md).

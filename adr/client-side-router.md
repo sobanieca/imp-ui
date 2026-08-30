@@ -24,12 +24,12 @@ declared in one place**, not a side effect executed from anywhere.
 
 **The router is a component-shaped element you drop into your layout, fed a declarative route table
 as data.** The public surface is `router`, `area`, `navigate`, `useRoute`, and `url` - no new
-lifecycle or scheduler; a screen cleans up through the ordinary component `onUnmount`.
+lifecycle or scheduler; a screen cleans up through the ordinary component `teardown`.
 
-- **`router({ routes, placeholder, onError, onNotFound })` renders the matched screen.** It is the
+- **`router({ routes, placeholder, fallback, notFound })` renders the matched screen.** It is the
   slot the current screen appears in - everything around it, the app's own chrome, persists across
   navigations; only its contents change. It behaves like a regular imp component and takes the same
-  lifecycle options a component does (`placeholder`, `onError`), plus a single `onNotFound`. Because
+  lifecycle options a component does (`placeholder`, `fallback`), plus a single `notFound`. Because
   a router is just an element you place, an app can have none (a plain component tree, e.g. for SSR)
   or one - the documented shape is one router per app.
 
@@ -39,7 +39,7 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   don't matter), requires an equal segment count for a screen, and `decodeURIComponent`-decodes
   params. **First match wins, in the table's declaration order** - object key order is the priority
   order, so a static path listed before a param path shadows it. There is no `*` wildcard; the
-  fallback for unmatched URLs is `onNotFound`, keeping "the 404" a single named concept.
+  fallback for unmatched URLs is `notFound`, keeping "the 404" a single named concept.
   `area({ routes, root, translations })` is a validating builder that brands a table and carries the
   section's root component and translations; it exists for one use - an area's `export default` from
   its own file (below). The top-level `routes:` option is written as a plain object.
@@ -114,7 +114,7 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
 
 - **Each matched screen mounts inside an internal `imp-route` component**, which is where on-demand
   loading, the loading placeholder, the stale-navigation guard, and the error boundary come from -
-  all already provided by the component lifecycle. Its `onMount` calls the target factory with
+  all already provided by the component lifecycle. Its `build` calls the target factory with
   `{ params, query }` and returns the result: for a screen that is a `Node`, rendered synchronously
   with no placeholder flash. An area renders through the same wrapper: the area's factory awaits its
   `area()` loader for the table and returns a **nested `router` bound to the tail** (the parent
@@ -127,22 +127,22 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
   navigated away is discarded because its generation is stale.
 
 - **Per-router options travel with each screen; nothing about a router lives in module state.** The
-  `placeholder`, `onError`, and `onNotFound` a router is given are passed down to every `imp-route`
+  `placeholder`, `fallback`, and `notFound` a router is given are passed down to every `imp-route`
   it mounts (as instance arguments), not stored in a module-level global - a module-level global
   would make the router a singleton in disguise and couple a nested area's rendering to whichever
   router was constructed last. A nested area router inherits its parent router's options, so an
-  unmatched tail inside an area falls through to the app's `onNotFound` and an area's download shows
+  unmatched tail inside an area falls through to the app's `notFound` and an area's download shows
   the app's `placeholder`; a table-less `router()` in an area's `root` inherits the same way and may
   override any of the three for that section. Nothing in the implementation prevents two routers
   coexisting on a page, but that is a consequence of instance-scoped options rather than a promoted
   feature; the documented shape is one router per app.
 
-- **`onError` is a route-level error boundary; `onNotFound` is the single 404.** Because
+- **`fallback` is a route-level error boundary; `notFound` is the single 404.** Because
   `ComponentError` is a bubbling, composed event a handling component cancels, a failure in a screen
-  or any descendant that defines no `onError` of its own rises to `imp-route`, and the router
-  renders its `onError` fallback (still logged); nearest boundary wins, so a screen's own `onError`
-  handles first. `onNotFound` is the one fallback used when no pattern matches, declared alongside
-  the router's other options. All options are optional.
+  or any descendant that defines no `fallback` of its own rises to `imp-route`, and the router
+  renders its `fallback` in place of the screen (still logged); nearest boundary wins, so a screen's
+  own `fallback` handles first. `notFound` is the one screen used when no pattern matches, declared
+  alongside the router's other options. All options are optional.
 
 - **Access control is a separate primitive layered on the same wrapper (`route-guards.md`).** A
   single `guard` declared on a table entry runs inside `imp-route` before the screen factory, and
@@ -175,7 +175,7 @@ lifecycle or scheduler; a screen cleans up through the ordinary component `onUnm
 - **A screen releases its resources through the ordinary component lifecycle - no separate cleanup
   primitive.** Unmounting the screen releases its scoped state and subscriptions automatically, and
   any imperative teardown (a timer, a socket, a global imp cannot see) lives in that component's own
-  `onUnmount`. Route-lifetime state is an `initState` in the screen's own root; app-lifetime state
+  `teardown`. Route-lifetime state is an `initState` in the screen's own root; app-lifetime state
   (session, theme, cart) lives in the app root above the router, which never unmounts. An area frees
   its DOM, state, subscriptions, and its nested router's subscriptions on leave, and the sub-table's
   factory closures are GC'd - but an area's already-loaded **JavaScript module** stays in the

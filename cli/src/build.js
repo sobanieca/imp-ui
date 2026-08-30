@@ -419,7 +419,7 @@ export async function build(
     }
   }
 
-  console.log(`built ${entryName} → ${relative(Deno.cwd(), outdirPath) || '.'}/`)
+  console.log(`built ${entryName} -> ${relative(Deno.cwd(), outdirPath) || '.'}/`)
   const mocksFolder = mocksSetting(imp)?.folder
   if (mocksFolder && isHtmlEntry) {
     console.log(`  ${mocksFolder}/ left out - mocks serve in imp start`)

@@ -60,7 +60,7 @@ feeds discovery.
   file is compiled to a single esbuild bundle - cross-module imports are inlined, so there is no
   runtime module boundary to intercept the way Vitest does - `mockModule(specifier, factory)`
   happens where imp already owns the seam: resolution. Before bundling, imp statically scans the
-  file for `mockModule('…', …)` calls (string-literal specifiers only), resolves each to a
+  file for `mockModule('...', ...)` calls (string-literal specifiers only), resolves each to a
   **canonical key** - a relative path becomes the real file's absolute path
   (extension/index-resolved and `realPath`-canonicalized), a bare specifier is a dependency alias
   from `imp.json` - and reads the real module's export names through an execution-free esbuild
@@ -106,14 +106,14 @@ feeds discovery.
 - **A deliberately small matcher set.** Seven matchers survive: `toEqual`, `toContain`, `toMatch`,
   `toBeTruthy`, `toBeGreaterThan`, `toBeLessThan`, `toThrow`. Everything expressible another way was
   cut: the value-sugar (`toBeNull`/`toBeUndefined`/`toBeNaN`/`toBeDefined`, `toHaveProperty`) folds
-  into `toEqual`/optional chaining; `toBeFalsy` and the `…OrEqual` comparisons are `.not` of their
+  into `toEqual`/optional chaining; `toBeFalsy` and the `...OrEqual` comparisons are `.not` of their
   opposites; and `toBeInstanceOf`/`toBeCloseTo`/`toHaveLength` are redundant with the asymmetric
   `expect.any`/`expect.closeTo` placeholders (or a plain `.length` comparison). `toBeTruthy` stays
   even though it looks like sugar, because truthiness is a coercion rule - not equality to any
   finite value set - so no `toEqual` form expresses it correctly.
 - **Unit environment.** happy-dom provides `document`, `window`, elements, and events, installed as
   globals before a test file is imported and restored after - a fresh window per file. happy-dom's
-  window lives in a separate JS realm, so ECMAScript intrinsics (`Object`, `RegExp`, `Promise`, …)
+  window lives in a separate JS realm, so ECMAScript intrinsics (`Object`, `RegExp`, `Promise`, ...)
   are explicitly _not_ copied onto the global - only DOM and browser APIs are; `toEqual` compares by
   structural tags rather than prototype identity for the same reason.
 - **E2E environment.** Each spec file gets a fresh app instance: the `imp start` internals serve the

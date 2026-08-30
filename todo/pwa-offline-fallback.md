@@ -20,8 +20,9 @@ build, high-value, and squarely in the opinionated-default spirit of `adr/pwa-to
   matches the app without author input.
 - **An optional override**: a `pwa.offline` path in `imp.json` pointing at the author's own HTML,
   precached in its place when present.
-- **Fetch-handler wiring**: on a `navigate` request, try network → cache (shell/deep link) → offline
-  fallback, in that order, so a cached deep link still wins and the fallback is the last resort.
+- **Fetch-handler wiring**: on a `navigate` request, try network -> cache (shell/deep link) ->
+  offline fallback, in that order, so a cached deep link still wins and the fallback is the last
+  resort.
 
 ## Open questions
 

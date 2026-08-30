@@ -8,7 +8,7 @@ const render = () => {
 }
 
 const banner = component('counter-banner', {
-  onMount: () => p({ id: 'banner' }, 'inside a shadow root'),
+  build: () => p({ id: 'banner' }, 'inside a shadow root'),
 })
 
 const view = () =>

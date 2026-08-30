@@ -88,7 +88,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-state-setup-before-await', ['lint', 'app.js'], fixture('lint-state-async'))
   await test('lint-http-client-setup', ['lint', 'app.js'], fixture('lint-http-client'))
   await test('lint-router-setup-before-await', ['lint', 'app.js'], fixture('lint-router-async'))
-  await test('lint-no-root-query-in-mount', ['lint', 'app.js'], fixture('lint-root-query'))
+  await test('lint-no-root-query-in-build', ['lint', 'app.js'], fixture('lint-root-query'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
@@ -199,7 +199,7 @@ Deno.test('imp commands', async (t) => {
       const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
       const width = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]
       const height = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]
-      return `${name}: ${isPng ? 'PNG' : 'NOT PNG'} ${width}×${height}`
+      return `${name}: ${isPng ? 'PNG' : 'NOT PNG'} ${width}x${height}`
     }
     await Deno.copyFile(join(fixture('resize'), 'logo.png'), join(dir, 'logo.png'))
     const inPlace = await runImp(['resize', 'logo.png', '-w', '150'], dir)
@@ -736,7 +736,7 @@ Deno.test('imp build', async (t) => {
       const bundled = appFiles.filter((file) => file.name.endsWith('.js')).map((file) => file.name)
       await Deno.remove(project, { recursive: true })
       await Deno.remove(componentOut, { recursive: true })
-      const maskOutdir = (text) => text.replace(/→ \.\.[/\\]\S+[/\\]/g, '→ <component-out>/')
+      const maskOutdir = (text) => text.replace(/-> \.\.[/\\]\S+[/\\]/g, '-> <component-out>/')
       await assertSnapshot(
         'build-component-skill',
         maskOutdir(mask(
@@ -1201,10 +1201,10 @@ function runServiceWorker(source) {
       const response = await answered
       const type = response.headers.get('content-type') ?? '(none)'
       const slow = Date.now() - started >= 20 ? ' after the declared delay' : ''
-      return `${init?.method ?? 'GET'} ${path} → ${response.status} ${type} ${await response
+      return `${init?.method ?? 'GET'} ${path} -> ${response.status} ${type} ${await response
         .text()}${slow}`
     } catch (error) {
-      return `${init?.method ?? 'GET'} ${path} → rejected: ${error.message}`
+      return `${init?.method ?? 'GET'} ${path} -> rejected: ${error.message}`
     }
   }
 
@@ -1263,7 +1263,7 @@ const mockedRequest = async (port) => {
   const worker = runServiceWorker(
     await (await fetch(`http://127.0.0.1:${port}/@imp/sw.js`)).text(),
   )
-  return `${worker.registered.length} mock(s) registered · ${await worker.send('/api/users')}`
+  return `${worker.registered.length} mock(s) registered | ${await worker.send('/api/users')}`
 }
 
 Deno.test('--mock and --no-mock decide whether the mocks folder is served', async (t) => {
@@ -1285,7 +1285,7 @@ Deno.test('--mock and --no-mock decide whether the mocks folder is served', asyn
   for (const run of runs) {
     const server = await startServer(run.cwd, run.args)
     try {
-      lines.push(`${run.label} → ${await mockedRequest(server.port)}`)
+      lines.push(`${run.label} -> ${await mockedRequest(server.port)}`)
     } finally {
       await server.stop()
     }
@@ -1611,7 +1611,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         headline: `${rendered('imp-heading')} - ${rendered('imp-text')}`,
         cards: [...root.querySelectorAll('.card-head')]
           .map((head) => [...head.childNodes].map((child) => child.textContent).join(' '))
-          .join(' · '),
+          .join(' | '),
       }
     })
 
@@ -1653,7 +1653,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         node.textContent = text
         return node.getBoundingClientRect().width
       }
-      const result = { narrow: widthShowing('1 × 1'), wide: widthShowing('1280 × 800') }
+      const result = { narrow: widthShowing('1 x 1'), wide: widthShowing('1280 x 800') }
       node.textContent = restore
       return result
     })
@@ -2466,10 +2466,10 @@ Deno.test('the prose export tables match what imp really exports', async () => {
       for (const name of new Set([...listed, ...skillSubjects])) {
         if (!exported.includes(name)) report(`does not export '${name}'`)
       }
-      if (body.includes('…') || body.includes('...')) continue
+      if (body.includes('...') || body.includes('...')) continue
       for (const name of exported) {
         if (!listed.includes(name)) {
-          report(`exports '${name}', which the table omits - list it, or mark the list with '…'`)
+          report(`exports '${name}', which the table omits - list it, or mark the list with '...'`)
         }
         if (skillSubjects.length && !skillSubjects.includes(name)) {
           report(`exports '${name}', which the skill column omits`)
@@ -2681,7 +2681,7 @@ Deno.test('parseSpecifier', async () => {
     .map((input) => {
       const parsed = parseSpecifier(input)
       const alias = parsed ? ` alias=${defaultAlias(parsed)}` : ''
-      return `'${input}' → ${JSON.stringify(parsed)}${alias}`
+      return `'${input}' -> ${JSON.stringify(parsed)}${alias}`
     })
     .join('\n')
   await assertSnapshot('parse-specifiers', transcript + '\n')

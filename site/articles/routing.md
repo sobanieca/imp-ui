@@ -19,8 +19,8 @@ import { component, mount } from 'imp'
 import { button, div, h1, nav } from 'imp/html'
 import { navigate, router } from 'imp/router'
 
-const home = component('app-home', { onMount: () => h1('Welcome') })
-const about = component('app-about', { onMount: () => h1('About') })
+const home = component('app-home', { build: () => h1('Welcome') })
+const about = component('app-about', { build: () => h1('About') })
 
 mount(
   '#app',
@@ -35,7 +35,7 @@ mount(
         '/about': () => about(),
         '/todos/:id': ({ params }) => todoDetail(params.id),
       },
-      onNotFound: () => h1('Not found'),
+      notFound: () => h1('Not found'),
     }),
   ),
 )
@@ -84,8 +84,8 @@ router({
     '/todos/:id': ({ params }) => todoDetail(params.id),
   },
   placeholder: () => spinner(), //   shown while an area's code downloads
-  onError: (error) => errorPanel(error), // a route-level error boundary for the whole screen
-  onNotFound: () => notFound(), //   the one fallback for any unmatched URL
+  fallback: (error) => errorPanel(error), // a route-level error boundary for the whole screen
+  notFound: () => notFound(), //   the one fallback for any unmatched URL
 })
 ```
 
@@ -169,7 +169,7 @@ router({
     '/': () => home(),
     '/admin': area(() => import('./admin/routes.js')), // a lazily-loaded section
   },
-  onNotFound: () => notFound(),
+  notFound: () => notFound(),
 })
 ```
 
@@ -211,7 +211,7 @@ routes: {
 
 Still buildless - the browser loads the module itself. While it downloads, the router shows its
 `placeholder` (the screen doesn't exist yet, so there's nothing else to show); once the screen
-mounts, its own async `onMount` shows the screen's placeholder. If the user navigates away before a
+mounts, its own async `build` shows the screen's placeholder. If the user navigates away before a
 slow chunk lands, imp throws the stale chunk away so it can't flash in over a newer page. You didn't
 configure a loading boundary or a race guard; you got both.
 
@@ -222,19 +222,19 @@ concept, not a minimum size.
 
 ## Screens are self-cleaning
 
-**Release a screen's resources** by… doing nothing. Every framework eventually teaches you the
+**Release a screen's resources** by... doing nothing. Every framework eventually teaches you the
 navigation-memory-leak lesson: the interval you set, the socket you opened, the store slice you
 populated, all outliving the page that made them. In imp, a screen is a component and leaving it
 unmounts it:
 
 ```js
 const dashboard = component('app-dashboard', {
-  onMount: (instance) => {
+  build: (instance) => {
     const metrics = initState('dashboard.metrics', []) // gone when you leave /dashboard
     instance.socket = openMetricsSocket((m) => metrics.set(m))
     return metricsGrid()
   },
-  onUnmount: (instance) => instance.socket.close(), // closed on navigation away
+  teardown: (instance) => instance.socket.close(), // closed on navigation away
 })
 
 // routes: { '/dashboard': () => dashboard() }
@@ -247,16 +247,16 @@ which never unmounts. The boundary between "lives for this screen" and "lives fo
 _which component owns it_, and that's visible in your code.
 
 And for the one thing imp _can't_ see - a real global you reached for, like a `window.gtag` or a
-third-party widget booted once - you undo it in the screen's own `onUnmount`, right next to where
-you set it:
+third-party widget booted once - you undo it in the screen's own `teardown`, right next to where you
+set it:
 
 ```js
 const report = component('app-report', {
-  onMount: () => {
+  build: () => {
     window.gtag = setupAnalytics()
     return reportBody()
   },
-  onUnmount: () => delete window.gtag, // runs when the router leaves this screen
+  teardown: () => delete window.gtag, // runs when the router leaves this screen
 })
 ```
 
@@ -267,7 +267,7 @@ teardown.
 
 ## Navigation is a clean slate - but not a sledgehammer
 
-Leaving a screen wipes it. But changing only the query string - `?q=imp` → `?q=impala`, page 1 →
+Leaving a screen wipes it. But changing only the query string - `?q=imp` -> `?q=impala`, page 1 ->
 page 2 - does **not** blow the screen away and rebuild it, so your search box keeps focus, your list
 keeps its scroll, and your in-flight edits survive. The screen stays mounted and reads the live
 query from `useRoute()`. Most routers make you choose between "remount on every URL change" and a
@@ -279,25 +279,26 @@ swapping only its inner screen.)
 
 ## Loading and errors, without new components
 
-A screen loads data the way any component does - `async onMount`, with a `placeholder` for the wait:
+A screen loads data the way any component does - `async build`, with a `placeholder` for the wait:
 
 ```js
 const todoDetail = component('app-todo-detail', {
-  placeholder: () => div({ class: 'skeleton' }, 'Loading…'),
-  onMount: async (_instance, id) => {
+  placeholder: () => div({ class: 'skeleton' }, 'Loading...'),
+  build: async (_instance, id) => {
     const todo = initState('app.todo', await fetchTodo(id))
     return article(h1(todo.text((t) => t.title)))
   },
-  onError: (error) => div({ class: 'error' }, `Couldn't load: ${error.message}`),
+  fallback: (error) => div({ class: 'error' }, `Couldn't load: ${error.message}`),
 })
 ```
 
 There's no `loader` export feeding a separate data layer, no `<Await>` and `useLoaderData()`, no
-revalidation cache to invalidate. The data lives where it's used. A screen that defines `onError` is
-its own error boundary - a failed fetch renders your fallback instead of hanging on a spinner. And
-anything a screen doesn't catch itself - an area's chunk that won't download, or a nested component
-that throws with no `onError` - bubbles up to the router's own `onError`, so `router({ onError })`
-is one shared route-level boundary without a new `<ErrorBoundary>` element to wrap anything in.
+revalidation cache to invalidate. The data lives where it's used. A screen that defines `fallback`
+is its own error boundary - a failed fetch renders your fallback instead of hanging on a spinner.
+And anything a screen doesn't catch itself - an area's chunk that won't download, or a nested
+component that throws with no `fallback` - bubbles up to the router's own `fallback`, so
+`router({ fallback })` is one shared route-level boundary without a new `<ErrorBoundary>` element to
+wrap anything in.
 
 ---
 
@@ -313,7 +314,7 @@ Each omission is a category of config, indirection, or footgun you stop having:
   loading is a placeholder, errors are a boundary - the same lifecycle every imp component has - and
   navigation is `navigate` in a click handler, not a component to import.
 - **No data-layer API.** Loaders, actions, deferred data, and revalidation are replaced by "fetch in
-  the component's `onMount`," which you already know how to do.
+  the component's `build`," which you already know how to do.
 - **No manual navigation cleanup.** No `useEffect` return function to unsubscribe on route change,
   no `AbortController` you have to remember. Leaving the route _is_ the cleanup.
 
@@ -321,29 +322,29 @@ Each omission is a category of config, indirection, or footgun you stop having:
 
 ## The scoreboard
 
-| You're used to...                                       | In imp...                                                              |
-| ------------------------------------------------------- | ---------------------------------------------------------------------- |
-| A file-system routing convention + generated manifest   | a `routes` table you read, top to bottom, in one place                 |
-| A build step to code-split routes                       | `area(() => import('./routes.js'))` - buildless, on demand             |
-| `<Outlet/>` + nested layout files                       | `router()` slot + layouts that are plain functions                     |
-| Nested route trees / a route-owning "feature" module    | an area - a table entry that points at another table                   |
-| `<Suspense fallback>` around lazy routes                | the screen's `placeholder` + `router({ placeholder })` for downloads   |
-| `<ErrorBoundary>` route element                         | the screen's `onError`, or `router({ onError })` for the whole subtree |
-| `loader` / `action` / `useLoaderData` data layer        | `async onMount` - fetch where you render                               |
-| `useLocation` + `useParams` + `useSearchParams`         | `useRoute()` and the factory's `{ params, query }`                     |
-| `useEffect` cleanup / `AbortController` on route change | unmounting the screen - automatic and total                            |
-| A `NavLink` component + `isActive` render props         | a control whose `class` is a `computed` over `useRoute()`              |
-| A `NotFound` route wired up in several places           | one `router({ onNotFound })`                                           |
-| Remount-on-every-URL-change vs. update bookkeeping      | query-only changes keep the screen; path changes swap it               |
-| Two ways to code-split (lazy route _and_ nested module) | one way - an area                                                      |
-| A build that bakes in host-specific config files        | a portable bundle for any CDN; deep-link fallback is one host setting  |
+| You're used to...                                       | In imp...                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| A file-system routing convention + generated manifest   | a `routes` table you read, top to bottom, in one place                   |
+| A build step to code-split routes                       | `area(() => import('./routes.js'))` - buildless, on demand               |
+| `<Outlet/>` + nested layout files                       | `router()` slot + layouts that are plain functions                       |
+| Nested route trees / a route-owning "feature" module    | an area - a table entry that points at another table                     |
+| `<Suspense fallback>` around lazy routes                | the screen's `placeholder` + `router({ placeholder })` for downloads     |
+| `<ErrorBoundary>` route element                         | the screen's `fallback`, or `router({ fallback })` for the whole subtree |
+| `loader` / `action` / `useLoaderData` data layer        | `async build` - fetch where you render                                   |
+| `useLocation` + `useParams` + `useSearchParams`         | `useRoute()` and the factory's `{ params, query }`                       |
+| `useEffect` cleanup / `AbortController` on route change | unmounting the screen - automatic and total                              |
+| A `NavLink` component + `isActive` render props         | a control whose `class` is a `computed` over `useRoute()`                |
+| A `NotFound` route wired up in several places           | one `router({ notFound })`                                               |
+| Remount-on-every-URL-change vs. update bookkeeping      | query-only changes keep the screen; path changes swap it                 |
+| Two ways to code-split (lazy route _and_ nested module) | one way - an area                                                        |
+| A build that bakes in host-specific config files        | a portable bundle for any CDN; deep-link fallback is one host setting    |
 
 ## The bottom line
 
 One element - `router` - fed one `routes` table, plus `navigate` and the `useRoute` read. That's the
-core routing surface of imp; `areaRoutes()` and `area()` group whole sections, `onNotFound` is the
+core routing surface of imp; `areaRoutes()` and `area()` group whole sections, `notFound` is the
 single 404, `url` and `IMP_BASEPATH` handle a sub-path, and each screen cleans up in its own
-`onUnmount`. Small enough to hold in your head, explicit enough to debug by reading, and free of the
+`teardown`. Small enough to hold in your head, explicit enough to debug by reading, and free of the
 build-time machinery and cleanup bookkeeping that make routing the heaviest part of most front ends.
 
 Your URL points at a screen. Leaving the screen cleans it up. There's nothing else to learn.

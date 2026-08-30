@@ -8,7 +8,7 @@ import { createLogger, logger, logLevel, setLogLevel } from 'imp/log'
 
 logger.info('checkout opened')
 
-const log = createLogger('myapp.cart') // prefixes every message: 'myapp.cart: …'
+const log = createLogger('myapp.cart') // prefixes every message: 'myapp.cart: ...'
 log.debug('recalculating totals', { items: 3 })
 log.warn('price feed is stale')
 ```

@@ -16,7 +16,7 @@ This needs a deliberate decision, because it is a correctness edge, not a missin
 1. The new worker installs, `skipWaiting()`s, activates, and deletes the old cache.
 2. The old build's chunks are now gone from the cache **and** replaced on the server by new hashes.
 3. A user action in the still-running old page that triggers a lazy import requests an old chunk URL
-   that 404s → a runtime chunk-load failure, with no reload to rescue it.
+   that 404s -> a runtime chunk-load failure, with no reload to rescue it.
 
 Network-first navigation only recovers this on the **next full navigation**, not for an in-flight
 lazy load in the current session. For apps that never route-split this is harmless; for those that

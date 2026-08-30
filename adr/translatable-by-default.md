@@ -119,8 +119,8 @@ API it reaches for is `Intl.Locale`, to read a language's writing direction.
   Areas are expected to namespace their messages under their own top-level key; imp cannot warn
   about a collision, because a later layer shadowing an earlier one is also how an area deliberately
   overrides an app-level message.
-- **Fallback is a fixed rule, not a setting:** exact code → base language (`en-GB` → `en`) → the
-  first language declared → the key's default wording → the key itself. Because only the active
+- **Fallback is a fixed rule, not a setting:** exact code -> base language (`en-GB` -> `en`) -> the
+  first language declared -> the key's default wording -> the key itself. Because only the active
   language is resident, this chain does not reach another language's **translations**: a key missing
   from the active language falls to the wording its component declared, or to the key, which is the
   price of never holding a language nobody is reading. A key that cannot be resolved, and a group

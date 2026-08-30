@@ -9,7 +9,7 @@ The library is split by subject, so an import line says which part of imp a file
 | Specifier    | What it holds                                                             | Page                                     |
 | ------------ | ------------------------------------------------------------------------- | ---------------------------------------- |
 | `imp`        | `component`, `mount`, `init`, `env`, `flag`                               | [Components](components.md)              |
-| `imp/html`   | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, …)   | [Rendering](rendering.md)                |
+| `imp/html`   | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...) | [Rendering](rendering.md)                |
 | `imp/state`  | `initState`, `useState`, `computed`                                       | [State](state.md)                        |
 | `imp/router` | `router`, `navigate`, `useRoute`, `area`, `route`, `guard`, `wait`, `url` | [Routing](routing.md)                    |
 | `imp/theme`  | `theme`, `applyTheme`                                                     | [Theming](theming.md)                    |
@@ -52,7 +52,7 @@ to:
 error[imp/import-source]: 'div' is not exported by 'imp' - it comes from 'imp/html': import { div } from 'imp/html'
 ```
 
-`imp lint --fix` moves the name to the right import for you. An `imp/…` specifier that is not part
+`imp lint --fix` moves the name to the right import for you. An `imp/...` specifier that is not part
 of the library at all fails with the list of the ones that are, so a typo never turns into a
 mysterious missing module.
 
@@ -64,5 +64,5 @@ many of them:
 ```js
 import * as h from 'imp/html'
 
-export const card = (title) => h.article(h.h2(title), h.p('…'))
+export const card = (title) => h.article(h.h2(title), h.p('...'))
 ```

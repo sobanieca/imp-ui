@@ -2,7 +2,7 @@ $ imp build  (cwd: <tmp>, app build)
 exit code: 0
 
 --- stdout ---
-built index.html → dist/
+built index.html -> dist/
   app.js (<size>)
   chunks/hand-<hash>.js (<size>)
   chunks/widget-<hash>.js (<size>)

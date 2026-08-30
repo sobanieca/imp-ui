@@ -19,8 +19,8 @@ fires the callbacks mid-operation - any design reading `isConnected` only inside
 
 **The component belongs to its element and travels with it; subscriptions belong to its position and
 re-resolve when it changes.** A component removed and re-inserted within the same task has been
-moved: `onMount` does not re-run, and its DOM, closures, own `initState` providers with their
-current values, and pending async mount all ride along. What restarts is the subscription layer:
+moved: `build` does not re-run, and its DOM, closures, own `initState` providers with their current
+values, and pending async mount all ride along. What restarts is the subscription layer:
 
 - **Detection is the microtask guard plus a rebind path.** `disconnectedCallback` returns
   immediately when the host is already reconnected (the browser single-call reparent) and otherwise
@@ -28,7 +28,7 @@ current values, and pending async mount all ride along. What restarts is the sub
   triggers rebinding instead of a mount, synchronously at insertion. `connectedMoveCallback` does
   the same, so a `moveBefore()` reparent (where the platform preserves focus and animation state)
   rebinds identically. Both environments therefore agree: same-task move = move, longer absence =
-  unmount, and real removal tears down exactly as before - cleanups, `onUnmount`, placeholder, each
+  unmount, and real removal tears down exactly as before - cleanups, `teardown`, placeholder, each
   step fault-isolated (`error-boundaries.md`).
 - **`useState` inside a mount returns a consumer.** It has the same helper surface, but holds the
   resolved provider behind an indirection with one fan-out subscription; `get`/`set` always target
@@ -65,7 +65,7 @@ current values, and pending async mount all ride along. What restarts is the sub
   before teardown - the price of move detection that works identically in browsers and the unit
   runner. Unit tests await a settled tick before asserting unmount effects.
 - Same-task remove-and-reinsert counts as a move; re-inserting in a later task is the deliberate way
-  to force a fresh `onMount`.
+  to force a fresh `build`.
 - Consumers are one small proxy per `useState` call rather than the provider's own helper object;
   helpers are not identity-comparable across components (the name is the identity), and each mounted
   consumer costs one extra subscription hop.

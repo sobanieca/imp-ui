@@ -2,7 +2,7 @@ $ imp resize logo.png -w 9000  (cwd: test/fixtures/resize)
 exit code: 0
 
 --- stdout ---
-[INFO] logo.png is already 300×180 - requested size would upscale it, so nothing was changed
+[INFO] logo.png is already 300x180 - requested size would upscale it, so nothing was changed
 
 --- stderr ---
 (empty)

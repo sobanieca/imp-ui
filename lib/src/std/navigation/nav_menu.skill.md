@@ -25,15 +25,15 @@ navMenu({
 Call shape: `navMenu(props)` - everything is passed as props. It takes **no children**; a child is
 warned about and dropped.
 
-| Prop        | Values                                   | Default    | Notes                                           |
-| ----------- | ---------------------------------------- | ---------- | ----------------------------------------------- |
-| `items`     | array of `{ id, label, href, … }` - live | `[]`       | Pass a state to rebuild the menu after mount    |
-| `groups`    | array of `{ id, label, tag }`            | derived    | Orders and names the sections                   |
-| `selected`  | an item's `id`, or a state - **live**    | none       | Gets `aria-current="page"`                      |
-| `label`     | string, or a state holding one - live    | -          | Names the `<nav>`; give one when a page has two |
-| `direction` | `'column'`, `'row'`                      | `'column'` | `column` down the side, `row` across the top    |
-| `gap`       | spacing step `0`-`6`                     | `1`        | Between items, and between groups               |
-| `events`    | `{ select }`                             | -          | `select` fires on the host - see below          |
+| Prop        | Values                                     | Default    | Notes                                           |
+| ----------- | ------------------------------------------ | ---------- | ----------------------------------------------- |
+| `items`     | array of `{ id, label, href, ... }` - live | `[]`       | Pass a state to rebuild the menu after mount    |
+| `groups`    | array of `{ id, label, tag }`              | derived    | Orders and names the sections                   |
+| `selected`  | an item's `id`, or a state - **live**      | none       | Gets `aria-current="page"`                      |
+| `label`     | string, or a state holding one - live      | -          | Names the `<nav>`; give one when a page has two |
+| `direction` | `'column'`, `'row'`                        | `'column'` | `column` down the side, `row` across the top    |
+| `gap`       | spacing step `0`-`6`                       | `1`        | Between items, and between groups               |
+| `events`    | `{ select }`                               | -          | `select` fires on the host - see below          |
 
 Each entry in `items`:
 

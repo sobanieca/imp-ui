@@ -33,8 +33,8 @@ function warnIfUpscaling(icon, mediaType, bytes) {
   const largestTarget = Math.max(...ICON_TARGETS.map((target) => target.size))
   if (Math.max(source.width, source.height) >= largestTarget) return
   logger.warn(
-    `pwa icon ${icon} is ${source.width}×${source.height} - icons up to ` +
-      `${largestTarget}×${largestTarget} will be upscaled, so some quality loss is expected; ` +
+    `pwa icon ${icon} is ${source.width}x${source.height} - icons up to ` +
+      `${largestTarget}x${largestTarget} will be upscaled, so some quality loss is expected; ` +
       `use an SVG or a source at least ${largestTarget}px on its longest edge for sharp icons`,
   )
 }
@@ -147,7 +147,7 @@ export function pwaHeadTags({ manifestHref, themeColor, appleTouchHref, swHref =
 
 export async function validatePwaBuild(pwa, isHtmlEntry, root) {
   if (!pwa) {
-    throw new Error("--pwa requires a 'pwa' block in imp.json (name, icon, …)")
+    throw new Error("--pwa requires a 'pwa' block in imp.json (name, icon, ...)")
   }
   if (!isHtmlEntry) {
     throw new Error('--pwa applies to an HTML page - a JS component build has no PWA to emit')

@@ -80,7 +80,7 @@ rather than a preference.
 
 ## Tier 3 - operating the app once it is live
 
-- **No global error seam.** `lib/src/component.js` gives per-component `onError` boundaries
+- **No global error seam.** `lib/src/component.js` gives per-component `fallback` boundaries
   (`adr/error-boundaries.md`), but nothing catches `error` or `unhandledrejection` at the app level,
   and there is no sink API for forwarding a crash to a backend. The emit-and-subscribe shape planned
   for analytics (`todo/analytics.md`) is the right one to reuse: imp owns the plumbing, the app

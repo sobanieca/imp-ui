@@ -3,7 +3,7 @@
 Build imp's public home page and turn the existing `docs/` Markdown into a browsable HTML site. This
 is imp's own shopfront: the first thing a builder sees, and the place the docs live once published.
 
-## Markdown → HTML engine
+## Markdown -> HTML engine
 
 An engine that converts the existing `docs/*.md` into HTML pages - the same files maintainers
 already edit stay the single source of truth, and the site is generated from them rather than

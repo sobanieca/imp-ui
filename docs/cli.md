@@ -53,7 +53,7 @@ imp preview [path] [--port 4517]      preview components in isolation, one page 
 imp review [clear]                    list the reviews written from the browser
                                       (clear: delete every saved review)
 imp install [package[@version]]       vendor a dependency into dependencies/
-                                      (no version: latest · no package: update all)
+                                      (no version: latest | no package: update all)
 imp uninstall <package>               remove a vendored dependency
 imp test  <file>                      run one test file: *.test.js unit in-process,
                                       *.spec.js e2e in a real browser
@@ -190,7 +190,7 @@ imp library by path (injection is skipped for documents that already contain it)
   mount('#app', () => div(h1('hello')))
   ```
 
-  The library source is served under `/@imp/` (`/@imp/imp.js`, `/@imp/api/html.js`, …). Bare
+  The library source is served under `/@imp/` (`/@imp/imp.js`, `/@imp/api/html.js`, ...). Bare
   specifiers are used instead of injecting globals because tag factories include names like `a`,
   `b`, `i`, `p`, `time`, and `menu` that would collide on `window`.
 
@@ -200,7 +200,7 @@ imp library by path (injection is skipped for documents that already contain it)
 
 - **Network telemetry.** A service worker (registered at root scope) intercepts _all_ request
   types - `fetch`, `XMLHttpRequest`, images, scripts, navigations - and reports each as
-  `[net] METHOD url → status ms`. Requests under `/@imp/` are passed through untouched.
+  `[net] METHOD url -> status ms`. Requests under `/@imp/` are passed through untouched.
 
 Everything `imp start` prints - the browser console and error telemetry, the network telemetry, and
 its own status lines - is **also written to a log file** at `.imp/dev.log`, one entry per line, so
@@ -366,7 +366,7 @@ downstream behaves normally: an [HTTP client](http.md) retries a mocked `503`, a
 other, tagged with the file and entry that answered it:
 
 ```
-[HTTP] GET http://localhost:4507/api/users → 200 802ms (mock: mocks/users.mock.js #1)
+[HTTP] GET http://localhost:4507/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
 ```
 
 Editing a mock file reloads the browser like any other change. A file that cannot be built is
@@ -412,8 +412,8 @@ module scripts and bundles each one into minified, self-contained JavaScript:
   alias resolve exactly as they do under `imp start` - every `imp` specifier to the built-in
   library, each alias to the bundle in your `dependencies/` folder. The build runs fully offline;
   what you tested in development is what ships.
-- **Paths are preserved.** Each `<script type="module" src="…">` keeps its URL - the bundled file is
-  written to the same relative path the source file had - so the HTML works unchanged. Inline
+- **Paths are preserved.** Each `<script type="module" src="...">` keeps its URL - the bundled file
+  is written to the same relative path the source file had - so the HTML works unchanged. Inline
   `<script type="module">` blocks are bundled too and re-inlined, minified with their imports
   resolved.
 - **Code splitting.** Modules you load lazily with `import()` are split into separate chunks (under
@@ -507,12 +507,12 @@ site**. The folder name never appears in a URL:
 
 ```
 my-app/
-  index.html            ← your page, stays at the project root
-  app.js                ← compiled into the bundle
+  index.html            <- your page, stays at the project root
+  app.js                <- compiled into the bundle
   public/
-    styles.css          → /styles.css
-    favicon.ico         → /favicon.ico
-    assets/logo.png     → /assets/logo.png
+    styles.css          -> /styles.css
+    favicon.ico         -> /favicon.ico
+    assets/logo.png     -> /assets/logo.png
 ```
 
 So a page written against those URLs works in development and in production without change:
@@ -554,8 +554,9 @@ root - set the `IMP_BASEPATH` environment value for that deployment (see
 
 `imp build` then prefixes every root-absolute URL it emits, so the whole site keeps working one
 level down. A `href="/styles.css"` in your page becomes `href="/my-imp-app/styles.css"`, and the PWA
-manifest, icons, service worker and its precache list all move with it. External URLs (`https://…`),
-protocol-relative URLs (`//…`) and paths that are already relative are left exactly as written.
+manifest, icons, service worker and its precache list all move with it. External URLs
+(`https://...`), protocol-relative URLs (`//...`) and paths that are already relative are left
+exactly as written.
 
 The same value is what the router reads to strip and re-add the prefix when matching routes and
 building links, so one setting covers both your assets and your navigation. Inside a stylesheet,
@@ -574,8 +575,8 @@ stylesheet's own location and stay correct under any prefix.
 By default a JS-entry bundle carries everything it needs, including imp itself. If what you are
 building is a component meant to run inside another imp application - an application that already
 has imp - set `targetImpHost: true` in `imp.json`: bundling a JS entry then leaves every
-`import … from 'imp'` (and `'imp/…'`) in the output as a bare import for the host to resolve, and
-only your code and your dependencies are compiled in. Nothing changes in development - the dev
+`import ... from 'imp'` (and `'imp/...'`) in the output as a bare import for the host to resolve,
+and only your code and your dependencies are compiled in. Nothing changes in development - the dev
 server's import map resolves `imp` exactly as before - and nothing changes for your other
 dependencies, which are always bundled in with the versions you pinned.
 
@@ -628,7 +629,7 @@ Only `name` and `icon` are required. `icon` points at a **single** high-resoluti
 SVG (preferred, it scales to any size cleanly) or a large PNG or JPEG - and imp scales it to every
 icon the manifest and the platforms need, so there is no hand-maintained icon set to keep in sync.
 Raster sources should be at least 512px on their longest edge - the largest generated icon is
-512×512, and a smaller source has to be upscaled to reach it, which costs sharpness; the build
+512x512, and a smaller source has to be upscaled to reach it, which costs sharpness; the build
 prints a warning when that happens. The build then, in one step:
 
 - **Generates the icon set** - 192px and 512px app icons, a 512px maskable icon padded to survive
@@ -671,8 +672,8 @@ both the dev telemetry worker and the offline PWA worker claim root scope - so i
 `imp build --pwa` output and then run `imp start` on the _same host and port_, the offline worker
 installed by the production preview can linger and keep serving its cache, which looks like stale
 content or broken live reload in the dev server. It resolves itself once the dev worker takes over,
-but the production caches persist until then. If you hit it, open your browser's dev tools →
-Application → Service Workers, unregister the worker, and clear site data (or just preview
+but the production caches persist until then. If you hit it, open your browser's dev tools ->
+Application -> Service Workers, unregister the worker, and clear site data (or just preview
 production builds on a different port than `imp start`).
 
 ## `imp install` and `imp uninstall`
@@ -1087,8 +1088,8 @@ combine:
 - **One of `-w` / `-h`** - resize to that dimension and compute the other to preserve the original
   aspect ratio.
 - **Both `-w` and `-h`** - scale the image, keeping its aspect ratio, to the largest size that fits
-  within that width × height box.
-- **Both plus `--stretch`** - resize to exactly that width × height, even if it distorts the
+  within that width x height box.
+- **Both plus `--stretch`** - resize to exactly that width x height, even if it distorts the
   picture. You asked for a specific size and accept the stretch.
 - **Neither** - inspect mode; nothing is written. imp reports the image's current dimensions and
   byte size, and if the asset is oversized it also prints a ready-to-copy `imp resize` command that
@@ -1160,7 +1161,7 @@ HTML, SVG, XML, SQL, and YAML, with inline `<script>`/`<style>` blocks in HTML f
 `--check` reports files that would change without writing them and exits non-zero when formatting is
 needed - useful in CI.
 
-Options (line width, quotes, semicolons, …) come from the `fmt` block of `imp.json`, and
+Options (line width, quotes, semicolons, ...) come from the `fmt` block of `imp.json`, and
 `imp-fmt-ignore` comments protect hand-crafted layout.
 
 See **[Formatting](fmt.md)** for supported languages, all options and their defaults, ignore
@@ -1234,7 +1235,7 @@ never a range), which is what makes them reproducible.
 - **`imp update`** resolves the latest published release, downloads it, and writes it into
   `imp.json`'s `"version"` field - searching upward from the current directory for the project (so
   it works from any subdirectory) and preferring the `imp.json` at your repository root. It prints
-  what changed, e.g. `imp updated 1.2.3 → 1.3.0`. The next command you run picks up the new version
+  what changed, e.g. `imp updated 1.2.3 -> 1.3.0`. The next command you run picks up the new version
   automatically. If the project has no `imp.json`, the release is still downloaded and cached; no
   pin is written.
 - **`imp update <version>`** pins a specific version instead of the latest.

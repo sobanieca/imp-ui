@@ -2,7 +2,7 @@ $ imp build eager.js --output <component-out>  (cwd: <tmp>, component build)
 exit code: 0
 
 --- stdout ---
-built eager.js → <component-out>/
+built eager.js -> <component-out>/
   eager.js (<size>)
 
 --- stderr ---
@@ -15,7 +15,7 @@ $ imp build --output app  (cwd: <tmp>, app build)
 exit code: 0
 
 --- stdout ---
-built index.html → app/
+built index.html -> app/
   app.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   index.html (<size>)

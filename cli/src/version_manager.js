@@ -151,7 +151,7 @@ async function downloadVersion(version) {
 export async function ensureVersion(version) {
   const path = versionBinaryPath(version)
   if (await exists(path)) return path
-  console.error(dim(`imp ${version} - downloading…`))
+  console.error(dim(`imp ${version} - downloading...`))
   const downloaded = await downloadVersion(version)
   await warnStaleVersions(version)
   return downloaded
@@ -326,7 +326,7 @@ export async function update({ root, check = false, requestedVersion = null }) {
     return
   }
   const previous = await updatePin(pinPath, target)
-  const change = previous && previous !== target ? `${previous} → ${target}` : target
+  const change = previous && previous !== target ? `${previous} -> ${target}` : target
   console.log(`imp updated ${change} (pinned in ${pinPath})`)
 }
 

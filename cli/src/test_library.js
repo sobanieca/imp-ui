@@ -97,7 +97,7 @@ const matchesConstructor = (constructor, actual) => {
   }
 }
 
-const clip = (text) => text.length > 200 ? `${text.slice(0, 200)}…` : text
+const clip = (text) => text.length > 200 ? `${text.slice(0, 200)}...` : text
 
 export function stringify(value) {
   if (isAsymmetric(value)) return value.label

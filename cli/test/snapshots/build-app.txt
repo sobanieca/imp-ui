@@ -2,7 +2,7 @@ $ imp build  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-built index.html → dist/
+built index.html -> dist/
   LICENSES.txt - 2 third-party license notices, referenced from every script emitted
   LICENSES.txt (<size>)
   app.js (<size>)

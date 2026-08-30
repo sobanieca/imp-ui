@@ -7,7 +7,7 @@ export const counter = component('demo-counter', {
   styles: `
     .counter { display: flex; align-items: center; gap: 8px; font: inherit }
   `,
-  onMount(instance, props = {}) {
+  build(instance, props = {}) {
     const count = initState('demo.count', props.start ?? 0)
     return div(
       { class: 'counter' },

@@ -244,7 +244,7 @@ const usage = () =>
 
 const definition = {
   styles: EDITOR_STYLES,
-  onMount: (_instance, themeName, colorScheme) => {
+  build: (_instance, themeName, colorScheme) => {
     const draft = readDraft(themeName) ?? seedDraft(colorScheme)
 
     const apply = () => {

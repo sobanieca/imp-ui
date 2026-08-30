@@ -397,7 +397,7 @@ const describeValue = (value) => {
 
 const stageDefinition = {
   styles: STAGE_STYLES,
-  onMount: (_instance, nodes) => {
+  build: (_instance, nodes) => {
     const stage = div({ class: 'stage' }, nodes)
     stages.push(stage)
     const frame = div({ class: 'frame' }, stage)
@@ -432,7 +432,7 @@ const stageDefinition = {
     const readout = span({ class: 'readout' })
     const updateReadout = () => {
       const rect = frame.getBoundingClientRect()
-      readout.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`
+      readout.textContent = `${Math.round(rect.width)} x ${Math.round(rect.height)}`
     }
     new ResizeObserver(updateReadout).observe(frame)
     const setSize = (width, height) => {
@@ -471,7 +471,7 @@ const negated = (source) => ({
 const stateRow = (nodes, declaration, index) => {
   const draft = initState(`${DRAFT_STATE}.${index}`, declaration.initial ?? '')
   const editable = initState(`${DRAFT_STATE}.${index}.editable`, false)
-  const messageText = document.createTextNode('looking for this state…')
+  const messageText = document.createTextNode('looking for this state...')
   const message = span({ class: 'message' }, messageText)
   const field = textArea({
     ariaLabel: `${declaration.name} value as JSON`,
@@ -540,7 +540,7 @@ const stateRow = (nodes, declaration, index) => {
 
 const editorDefinition = {
   styles: EDITOR_STYLES,
-  onMount: (_instance, nodes, declarations) =>
+  build: (_instance, nodes, declarations) =>
     div(
       { class: 'editor' },
       el('h3', 'state'),
@@ -568,7 +568,7 @@ const stateEditor = (nodes, declarations) => {
 
 const scenarioDefinition = {
   styles: SCENARIO_STYLES,
-  onMount: (_instance, name, scenario, meta) => scenarioSection(name, scenario, meta),
+  build: (_instance, name, scenario, meta) => scenarioSection(name, scenario, meta),
 }
 
 let createScenario = null
@@ -645,7 +645,7 @@ const mainContent = (scenarios, meta, catalog) => {
 }
 
 const pageDefinition = {
-  onMount: (_instance, scenarios, meta, catalog) => {
+  build: (_instance, scenarios, meta, catalog) => {
     const themeChoice = initState(THEME_STATE, readStoredTheme())
     const directionChoice = initState(DIRECTION_STATE, readStoredDirection())
     const languageChoice = languages.length ? initState(LANGUAGE_STATE, readStoredLanguage()) : null

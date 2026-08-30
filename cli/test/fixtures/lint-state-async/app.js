@@ -3,7 +3,7 @@ import { div, li, ul } from 'imp/html'
 import { computed, initState, useState } from 'imp/state'
 
 export const orders = component('demo-orders', {
-  onMount: async () => {
+  build: async () => {
     const orders = initState('demo.orders', [])
     const user = useState('demo.user')
     const summary = computed([orders], (list) => list.length)

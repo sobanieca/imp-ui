@@ -6,7 +6,7 @@ imp skills - the usage manuals imp ships for the agent writing the code
 
 imp is a buildless UI toolkit: your ES modules run in the browser exactly as written - no
 compile step, no JSX, no bundler in development. Everything an app uses arrives through a
-bare specifier imp resolves ('imp', 'imp/html', 'imp/state', …), and the same imp binary
+bare specifier imp resolves ('imp', 'imp/html', 'imp/state', ...), and the same imp binary
 serves, tests, lints, formats and builds the project.
 
 Read one in full - no flags, the text goes to stdout:
@@ -18,7 +18,7 @@ Read one in full - no flags, the text goes to stdout:
 WRITING AN APP
   imports            every bare specifier imp resolves, and what each one exports
   rendering          element factories, props objects, children, and mount
-  components         custom elements with an onMount lifecycle: instance, styles, cleanup
+  components         custom elements with a build lifecycle: instance, styles, cleanup
   state              named reactive state shared down the tree and bound straight to the DOM
   http               the configured HTTP client a component owns, with retries and request state
   routing            client-side routes as one plain-data table, with lazily loaded sections
@@ -45,7 +45,7 @@ WORKING IN AN IMP PROJECT
   skill              reading these manuals, and writing a *.skill.md for a component
   update             pinning the imp version, pruning cached ones, and the license notices
 
-STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
+STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/button         button - the standard button, rendered as a real `<button>`
   std/heading        heading - a section heading, rendered as the real `h1`-`h6` element
   std/text           text - body text, a paragraph by default or an inline span
@@ -78,7 +78,7 @@ STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button
   std/langSelect     langSelect - a language picker that calls setLang and remembers the choice
   std/bugReport      bugReport - a trigger that lets a person point at an element and describe what is wrong with it
 
-THIS PROJECT - components with a skill file · read: imp skill ./path/to/component.js
+THIS PROJECT - components with a skill file | read: imp skill ./path/to/component.js
   ./test/fixtures/skill-project/counter.js  counter - a self-contained increment/decrement widget
 
 A component documents itself in a 'counter.skill.md' file next to it - write one for every

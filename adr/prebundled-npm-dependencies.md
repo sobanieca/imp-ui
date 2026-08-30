@@ -16,9 +16,9 @@ into a single minified ESM file under `cli/src/vendor/`, and imp's source import
 of the npm specifier - the same vendoring pattern as the dprint wasm plugins.
 
 - `tools/prebundle_npm_deps.js` (wired into the `compile` task) bundles each entry with the
-  in-process esbuild engine: `happy-dom` → `vendor/happy_dom.js`, `puppeteer-core` →
+  in-process esbuild engine: `happy-dom` -> `vendor/happy_dom.js`, `puppeteer-core` ->
   `vendor/puppeteer_core.js`, and eslint (`eslint/universal` + the `@eslint/js` recommended rules +
-  browser `globals`) → `vendor/eslint.js`.
+  browser `globals`) -> `vendor/eslint.js`.
 - **Exact versions are pinned in the tool itself**, mirroring how the wasm plugin pins live in
   `cli/src/fmt_plugins.js`. The packages must _not_ appear in `deno.json` imports: `deno compile`
   embeds every npm package in the workspace lockfile whether or not the module graph references it,

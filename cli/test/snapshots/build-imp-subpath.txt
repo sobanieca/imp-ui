@@ -2,7 +2,7 @@ $ imp build std-entry.js --output std  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-built std-entry.js → std/
+built std-entry.js -> std/
   std-entry.js (<size>)
 
 --- stderr ---

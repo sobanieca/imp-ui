@@ -46,7 +46,7 @@ for (const plugin of FMT_PLUGINS) {
     .replaceAll(plugin.file, latestFile)
     .replaceAll(plugin.url, latest.url)
     .replaceAll(plugin.sha256, digest)
-  console.error(`${plugin.file} → ${latestFile}`)
+  console.error(`${plugin.file} -> ${latestFile}`)
   updated++
 }
 

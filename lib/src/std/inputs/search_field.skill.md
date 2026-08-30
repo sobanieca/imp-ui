@@ -3,7 +3,7 @@
 ```js
 import { searchField } from 'imp/std/inputs'
 
-searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search…' })
+searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search...' })
 ```
 
 Call shape: `searchField(props?)` - it takes no children. It is `textField` with `type="search"`, so
@@ -47,6 +47,6 @@ Rules an agent gets wrong:
 ```js
 const query = initState('invoices.query', '')
 
-searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search…' })
+searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search...' })
 searchField({ field: 'term', label: 'Find' })
 ```

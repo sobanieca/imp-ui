@@ -10,7 +10,7 @@ This page is the map. Each command has its own manual - read that one before run
 | ------------------------------------ | -------------------------------------------------------- | ------------------------------- |
 | `imp init [dir] [--pwa]`             | scaffold a runnable project - page, component, tests     | [init](init.md)                 |
 | `imp start [file.html]`              | serve a page with live reload and terminal telemetry     | [start](start.md)               |
-| `--mock` · `--no-mock`               | answer from `*.mock.js` files, or from the real API      | [mocks](mocks.md)               |
+| `--mock` / `--no-mock`               | answer from `*.mock.js` files, or from the real API      | [mocks](mocks.md)               |
 | `imp build [file.html\|file.js]`     | production build; `--pwa` for an installable offline app | [build](build.md)               |
 | `imp preview [path]`                 | render components in isolation from `*.preview.js`       | [preview](preview.md)           |
 | `imp review [clear]`                 | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |
@@ -24,7 +24,7 @@ This page is the map. Each command has its own manual - read that one before run
 | `imp update [version]`               | update and pin the version in `imp.json`                 | [update](update.md)             |
 | `imp prune`                          | delete cached versions unused for 30+ days               | [update](update.md)             |
 | `imp licenses`                       | third-party license notices for bundled tools            | [update](update.md)             |
-| `imp help` · `imp --version`         | usage · the version this binary runs                     | -                               |
+| `imp help` / `imp --version`         | usage, or the version this binary runs                   | -                               |
 
 Configuration for all of it lives in one optional `imp.json` - every key, and the `--env`
 environment files, in [config](config.md).

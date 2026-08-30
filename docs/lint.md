@@ -20,7 +20,7 @@ Scripts with a `src` attribute are skipped (the file they point to is linted on 
 scripts whose `type` is neither a JavaScript type nor `module`.
 
 Code is linted as modern browser code: ES modules, current JavaScript syntax, and browser globals
-(`document`, `fetch`, `localStorage`, …) are all recognized.
+(`document`, `fetch`, `localStorage`, ...) are all recognized.
 
 Directories named `.git`, `node_modules`, `dist`, and `.imp` are always skipped, and so is the
 vendored `dependencies/` folder - the code in it is a package's, not yours. Additional paths can be
@@ -52,9 +52,9 @@ error[imp/no-capital-component]: 'Widget' starts with a capital letter - imp com
 
 An element takes at most one props object; everything else you pass is a child. Passing a second
 object literal is almost always a mistake - at runtime the objects are merged and later keys
-silently win. The rule flags any call to a built-in element factory (`div`, `span`, …, and the
-generic `el`) or a standard component (`button`, `emptyState`, …) that receives more than one object
-literal:
+silently win. The rule flags any call to a built-in element factory (`div`, `span`, ..., and the
+generic `el`) or a standard component (`button`, `emptyState`, ...) that receives more than one
+object literal:
 
 ```js
 div({ class: 'card' }, { onclick: open }, 'Open')
@@ -88,16 +88,16 @@ same validation then happens at runtime, where a bad name throws.
 
 ### `imp/state-setup-before-await`
 
-In an async `onMount`, state resolution must happen **before the first `await`** (see
+In an async `build`, state resolution must happen **before the first `await`** (see
 **[State](state.md)**). Past it, the mounting component is out of reach and `initState`, `useState`,
 and `watch` all throw at runtime - this rule catches them earlier, as you write them. It flags
-`initState`/`useState` calls placed after an `await` in an async `onMount`, and `watch` called there
+`initState`/`useState` calls placed after an `await` in an async `build`, and `watch` called there
 on a handle the file created with `initState`, `useState`, or `computed` (tracking the handle keeps
 unrelated third-party `.watch()` methods out of the reports):
 
 ```js
 const orders = component('my-app-orders', {
-  onMount: async () => {
+  build: async () => {
     const totals = initState('myapp.totals', [])
     const data = await fetch('/api/orders').then((response) => response.json())
     const orders = initState('myapp.orders', data)
@@ -108,10 +108,10 @@ const orders = component('my-app-orders', {
 ```
 
 ```
-error[imp/state-setup-before-await]: 'initState' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
+error[imp/state-setup-before-await]: 'initState' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
  --> src/orders.js:5:20
 
-error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async onMount - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
+error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async build - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
  --> src/orders.js:6:5
 ```
 
@@ -138,11 +138,11 @@ error[imp/http-client-name-namespace]: http client name 'api' must include a nam
 ### `imp/http-client-setup-before-await`
 
 An HTTP client is owned by the component that initializes it, so - exactly like state - it must be
-resolved **before the first `await`** of an async `onMount`:
+resolved **before the first `await`** of an async `build`:
 
 ```js
 const orders = component('my-app-orders', {
-  onMount: async () => {
+  build: async () => {
     const api = useHttpClient('myapp.api')
     const data = await api.get('/orders')
     const reports = useHttpClient('myapp.reports')
@@ -152,7 +152,7 @@ const orders = component('my-app-orders', {
 ```
 
 ```
-error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
+error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
  --> src/orders.js:5:21
 ```
 
@@ -169,7 +169,7 @@ area and reports the misleading `'routes' is required` instead:
 
 ```js
 const shell = component('admin-shell', {
-  onMount: async () => {
+  build: async () => {
     const api = useHttpClient('myapp.admin')
     const settings = await api.get('/settings')
     return div(adminNav(settings), router())
@@ -178,7 +178,7 @@ const shell = component('admin-shell', {
 ```
 
 ```
-error[imp/router-setup-before-await]: 'router' runs after an await in an async onMount - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
+error[imp/router-setup-before-await]: 'router' runs after an await in an async build - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
  --> src/admin/shell.js:5:34
 ```
 
@@ -188,19 +188,19 @@ looks nothing up, so it can be built anywhere. The rule also flags `watch` on a 
 after the first `await`, which needs a mounting component to own the subscription - bind the route
 to DOM with `text`/`view`/`each` instead, or watch it before the `await`.
 
-### `imp/no-root-query-in-mount`
+### `imp/no-root-query-in-build`
 
-While `onMount` runs, the DOM it returns is **not in the shadow root yet** - imp inserts it after
-`onMount` returns, and after the resolved promise for an async `onMount` (see
+While `build` runs, the DOM it returns is **not in the shadow root yet** - imp inserts it after
+`build` returns, and after the resolved promise for an async `build` (see
 **[Components](components.md)**). Querying `instance.root` there finds the placeholder, not your
 content. This rule flags `querySelector`, `querySelectorAll`, and `getElementById` called directly
-on the instance's `root` in an `onMount` body (it does not flag deferred access inside an event
-handler, an `instance.afterMount` callback, or the same query in `onUnmount`, where the mounted DOM
+on the instance's `root` in a `build` body (it does not flag deferred access inside an event
+handler, an `instance.afterMount` callback, or the same query in `teardown`, where the mounted DOM
 is still present):
 
 ```js
 const card = component('my-app-card', {
-  onMount: (instance) => {
+  build: (instance) => {
     const box = div(span({ class: 'label' }, 'hi'))
     instance.root.querySelector('.label').textContent = 'ready'
     return box
@@ -209,7 +209,7 @@ const card = component('my-app-card', {
 ```
 
 ```
-error[imp/no-root-query-in-mount]: the shadow root is queried in onMount before the returned DOM is placed - onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page
+error[imp/no-root-query-in-build]: the shadow root is queried in build before the returned DOM is placed - build's output fills the shadow root only after build returns (after the awaited promise resolves, for an async build), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page
  --> src/card.js:4:5
 ```
 
@@ -226,7 +226,7 @@ element names, and the leading segment doubles as your app's namespace. The rule
 `component` call whose name is written literally:
 
 ```js
-export const profile = component('profile', { onMount: () => div('…') })
+export const profile = component('profile', { build: () => div('...') })
 ```
 
 ```
@@ -234,7 +234,7 @@ error[imp/component-name]: component name 'profile' must be lowercase with at le
  --> src/profile.js:1:34
 ```
 
-A handful of names reserved by the HTML standard (`font-face`, `missing-glyph`, …) are also
+A handful of names reserved by the HTML standard (`font-face`, `missing-glyph`, ...) are also
 rejected. Dynamically built names are validated at runtime instead, where a bad name throws.
 
 ### `imp/import-source`
@@ -300,7 +300,7 @@ dependency can appear:
    --> src/app.js:1:22
   ```
 
-  An `imp/…` specifier that is not part of the library is called out for what it is, with the
+  An `imp/...` specifier that is not part of the library is called out for what it is, with the
   available ones listed:
 
   ```
@@ -367,8 +367,8 @@ imp lint --fix
 ```
 
 Only problems with a known fix are changed; anything that needs a human decision (an imp rule
-violation, an unused variable, …) is left untouched and still reported. In `.html` files the inline
-`<script>` blocks are fixed just like standalone modules. Problems you have silenced with an
+violation, an unused variable, ...) is left untouched and still reported. In `.html` files the
+inline `<script>` blocks are fixed just like standalone modules. Problems you have silenced with an
 `imp-lint-ignore` comment are never fixed, and the ignore comments themselves are preserved exactly
 as written.
 

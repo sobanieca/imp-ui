@@ -16,7 +16,7 @@ imp compares the pin against itself and, on a mismatch, fetches the pinned versi
 user) and hands off to it. There is nothing to install per project and no version manager -
 `imp start`, `imp test`, everything, runs the version the project pins.
 
-`imp update` prints what changed (`imp updated 1.2.3 → 1.3.0`) and the next command picks it up. It
+`imp update` prints what changed (`imp updated 1.2.3 -> 1.3.0`) and the next command picks it up. It
 searches upward for the project, preferring the `imp.json` at the repository root, so it works from
 any subdirectory. With no `imp.json` the release is still downloaded and cached, but no pin is
 written.

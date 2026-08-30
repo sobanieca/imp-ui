@@ -23,11 +23,11 @@ Conventions:
 | [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates          |
 | [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback    |
 | [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events        |
-| [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; onMount lifecycle    |
+| [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; build lifecycle      |
 | [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry         |
 | [focus-delegation](focus-delegation.md)                         | Hosts delegate focus to the control they render      |
 | [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind          |
-| [error-boundaries](error-boundaries.md)                         | onError boundaries via events; isolated teardown     |
+| [error-boundaries](error-boundaries.md)                         | Fallback boundaries via events; isolated teardown    |
 | [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components  |
 | [route-guards](route-guards.md)                                 | Synchronous guards over declared states, with wait   |
 

@@ -139,7 +139,7 @@ if (pending.length) {
   const entryDir = await Deno.makeTempDir()
   try {
     for (const spec of pending) {
-      console.error(`prebundling ${spec.file}…`)
+      console.error(`prebundling ${spec.file}...`)
       const size = await prebundle(spec, entryDir)
       console.error(`  ${spec.file} (${(size / 1024 / 1024).toFixed(2)} MB)`)
     }

@@ -23,10 +23,10 @@ jsonr's release mechanism.
   current version does not already exist, compiles the binary and publishes a GitHub Release tagged
   `v{version}` via `softprops/action-gh-release`. Re-pushing without bumping the version is a no-op
   (the existing-tag guard skips the release), so the pipeline is safe to run on every push.
-- **Four targets, no Windows** (matching jsonr): `x86_64`/`aarch64` × `linux`/`macos`, compiled with
-  the same `--include cli/src --include lib/src` and prebundled fmt-plugin / npm-dependency prep
-  that `deno task compile` uses. Assets are named `imp-{os}-{arch}` with `{os}` ∈ `linux`, `macos`
-  and `{arch}` ∈ `x64`, `arm64`.
+- **Four targets, no Windows** (matching jsonr): `x86_64`/`aarch64` across `linux`/`macos`, compiled
+  with the same `--include cli/src --include lib/src` and prebundled fmt-plugin / npm-dependency
+  prep that `deno task compile` uses. Assets are named `imp-{os}-{arch}` with `{os}` one of `linux`,
+  `macos` and `{arch}` one of `x64`, `arm64`.
 - **Download URLs** are therefore
   `https://github.com/sobanieca/imp-ui/releases/download/v{version}/imp-{os}-{arch}` for a pinned
   version and `.../releases/latest/download/imp-{os}-{arch}` for the newest; the latest version

@@ -2,7 +2,7 @@
 
 ## Context
 
-The library started as one bare specifier: `import { … } from 'imp'` gave you element factories,
+The library started as one bare specifier: `import { ... } from 'imp'` gave you element factories,
 `component`, `mount`, state, router, theming, logging and `env` - around a hundred names, roughly
 eighty of them tag factories (`element-factory-syntax.md`). Two problems grew out of that. The
 namespace is dominated by names nobody can list from memory, so the import line says nothing about

@@ -20,7 +20,7 @@ Skipped for a document that already contains it - you never reference the librar
 - **Console + error telemetry** - `console.*`, uncaught errors and unhandled rejections are
   forwarded to the terminal as `[browser:*]` lines.
 - **Network telemetry** - a service worker at root scope reports every request (`fetch`, XHR,
-  images, scripts, navigations) as `[net] METHOD url → status ms`. `/@imp/` requests pass through.
+  images, scripts, navigations) as `[net] METHOD url -> status ms`. `/@imp/` requests pass through.
 - **PWA manifest and icons**, generated on the fly, when `imp.json` has a `pwa` block - so the app
   is installable while you work. The **offline** service worker is build-only; see
   [build](build.md).

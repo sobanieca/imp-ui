@@ -32,7 +32,7 @@ convention, not a mechanism: a change to a feature updates both in the same comm
 deliberately unenforced, because the failure worth catching is a page left **stale**, which no test
 comparing file trees can see.
 
-**A component's skill is a `<module>.skill.md` file next to it** - `button.js` → `button.skill.md`.
+**A component's skill is a `<module>.skill.md` file next to it** - `button.js` -> `button.skill.md`.
 One convention covers imp's standard components and an app's own components, so an agent learns both
 the same way and an author has one thing to remember. The file is plain markdown: nothing is
 executed to read it, it is reviewed in the same diff as the component it describes, and `imp fmt`
@@ -40,7 +40,7 @@ formats it like any other markdown. Its first line is its summary.
 
 **`imp build` decides where that text goes by the entry it was given, not by configuration.** A JS
 entry is a component someone else will program against: imp appends each module's sidecar as
-`export const impSkill = '…'`, so the skill travels inside the bundle with no second file to
+`export const impSkill = '...'`, so the skill travels inside the bundle with no second file to
 distribute. An HTML entry is a finished app: nothing is injected, skill files are not copied into
 the output, and every module loaded into the build is stripped of skill text it already carries - an
 `export const impSkill = <literal>` initializer is emptied, and an `impSkill` specifier in a bundled

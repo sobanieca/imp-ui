@@ -1,6 +1,6 @@
 # state - named reactive state bound straight to the DOM
 
-`initState(name, initialValue)` inside a component's `onMount` - see [components](components.md) -
+`initState(name, initialValue)` inside a component's `build` - see [components](components.md) -
 creates a state owned by that component; `useState(name)` finds the nearest one above. Both return
 the same helper. No store, no provider element, no re-rendering - a `set` updates exactly the DOM
 bound to it.
@@ -11,11 +11,11 @@ import { button, div } from 'imp/html'
 import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
-  onMount: () => div(useState('myapp.user').text((u) => u.name)),
+  build: () => div(useState('myapp.user').text((u) => u.name)),
 })
 
 export const app = component('my-app-root', {
-  onMount: () => {
+  build: () => {
     const user = initState('myapp.user', { name: 'Ada' })
     return div(
       profile(),
@@ -29,15 +29,15 @@ export const app = component('my-app-root', {
 
 ## The helper
 
-| Member                      | Returns          | Where it may be called                                                  |
-| --------------------------- | ---------------- | ----------------------------------------------------------------------- |
-| `get()`                     | current value    | anywhere                                                                |
-| `set(next)`                 | -                | anywhere                                                                |
-| `watch(fn)`                 | unsubscribe fn   | in `onMount` **before the first `await`**, or in a `view`/`each` render |
-| `text(select?)`             | live text node   | built anywhere; goes live when its DOM mounts                           |
-| `view(render)`              | live region      | built anywhere                                                          |
-| `each(renderItem, getKey?)` | live list region | built anywhere                                                          |
-| the helper itself           | -                | as a **prop value**, to keep that prop live                             |
+| Member                      | Returns          | Where it may be called                                                |
+| --------------------------- | ---------------- | --------------------------------------------------------------------- |
+| `get()`                     | current value    | anywhere                                                              |
+| `set(next)`                 | -                | anywhere                                                              |
+| `watch(fn)`                 | unsubscribe fn   | in `build` **before the first `await`**, or in a `view`/`each` render |
+| `text(select?)`             | live text node   | built anywhere; goes live when its DOM mounts                         |
+| `view(render)`              | live region      | built anywhere                                                        |
+| `each(renderItem, getKey?)` | live list region | built anywhere                                                        |
+| the helper itself           | -                | as a **prop value**, to keep that prop live                           |
 
 `set(next)` replaces the whole value, synchronously notifying subscribers. Pass the next value, or a
 **function** of the current one:
@@ -64,12 +64,12 @@ user.set({ ...user.get(), theme: 'light' })
   (known to be empty) -> value, and branch where it matters; [routing](routing.md) guards read
   exactly that convention.
 - **Resolution is position-sensitive, everything else is not.** `initState`/`useState`/`watch` throw
-  after the first `await` of an async `onMount` (`imp/state-setup-before-await`) and outside a
+  after the first `await` of an async `build` (`imp/state-setup-before-await`) and outside a
   mounting component. Resolve first, `await`, then `set` and build DOM.
 - **`useState` throws if no ancestor initialized the name**; `initState` throws if the same scope
   already provides it. A nested `initState` of the same name shadows the ancestor's for its subtree.
 - **Bind props with the state itself**, never `state.get()` - `button('Save', { disabled: busy })`.
-  Binding is one-way (state → DOM): an input's keystrokes do not write back; `set` from an event.
+  Binding is one-way (state -> DOM): an input's keystrokes do not write back; `set` from an event.
 - **Never pass a state as a bare child** - `div(count)` is reported and skipped; use `count.text()`.
 - **Don't put a free-typing input inside a `view` that re-renders per keystroke** - the rebuild
   replaces the element and loses focus and caret. `set` on commit (change/blur), or use `text()`.
@@ -127,7 +127,7 @@ cannot find the name - pass the helper down as an argument instead; it works any
 Async mount, the canonical shape:
 
 ```js
-onMount: ;
+build: ;
 ;(async (instance, { id }) => {
   const orders = initState('myapp.orders', []) // resolve first - states and http clients both
   const api = useHttpClient('myapp.api') //       (see imp skill http)

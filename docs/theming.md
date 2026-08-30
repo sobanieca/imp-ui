@@ -22,7 +22,7 @@ export default {
 }
 ```
 
-- **`tokens`** is a flat map of token name → CSS value. Keys are bare names like `color-primary`;
+- **`tokens`** is a flat map of token name -> CSS value. Keys are bare names like `color-primary`;
   imp adds an `--imp-` prefix, so the CSS custom property your styles reference is
   `--imp-color-primary`. There is no nesting - one flat namespace.
 - **`name`** labels the theme, handy for a theme-switcher UI and for remembering a choice.
@@ -71,7 +71,7 @@ import { div } from 'imp/html'
 import { theme } from 'imp/theme'
 
 const badge = component('my-app-theme-badge', {
-  onMount: () => div(theme.text((t) => t.name)),
+  build: () => div(theme.text((t) => t.name)),
 })
 ```
 
@@ -231,7 +231,7 @@ file - it is a starting point, not a format it owns.
 ## Token names
 
 Token keys are bare names that imp prefixes with `--imp-`. They follow a fixed scheme - semantic
-color roles (`color-primary`, `color-secondary`, …) alongside numeric scales for spacing, radius,
+color roles (`color-primary`, `color-secondary`, ...) alongside numeric scales for spacing, radius,
 shadow, and typography - so themes stay consistent and interchangeable. Reference a token in your
 own CSS with a fallback so styles still hold up before a theme is applied:
 

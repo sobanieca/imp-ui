@@ -15,8 +15,8 @@ which this decision builds on.
 ## Decision
 
 Shared state is **named, explicit, and scoped by the DOM**. A component initializes state with
-`initState(name, initialValue)` inside its `onMount`; components mounted in its subtree obtain it
-with `useState(name)`. Both return the same helper:
+`initState(name, initialValue)` inside its `build`; components mounted in its subtree obtain it with
+`useState(name)`. Both return the same helper:
 
 - `get()` - current value.
 - `set(next)` - replaces the value with `next` (`set(42)`, `set({ ...user, name: 'x' })`). Pass a
@@ -89,14 +89,14 @@ and imp activates every subtree it places - a component's output into its shadow
 (`web-component-lifecycle.md`), DOM handed to `mount`, a region's render output. Activation
 subscribes the binding and registers its unsubscriber with the placing scope, so the component that
 mounts the DOM owns its bindings and unsubscribes them deterministically on unmount. That makes
-binding construction position-free: DOM built after an `await` in an async `onMount` goes live when
+binding construction position-free: DOM built after an `await` in an async `build` goes live when
 the resolved output mounts, with no ambient context - the DOM containment relation answers "whose
 binding is this?" where no runtime mechanism could attribute the constructing call. A `view`/`each`
 region runs its render function in a scope of its own (with the owning component's host, so nested
 `useState` resolves) and activates the nodes it inserts; nested bindings are owned by the region and
 unsubscribed when it next re-renders or when the component unmounts, whichever comes first. `watch`
 has no node to land on, so like `initState`/`useState` it requires an active mount scope and throws
-without one - module scope, an event handler, after an `await` in an async `onMount`; the whole
+without one - module scope, an event handler, after an `await` in an async `build`; the whole
 position-sensitive surface fails loudly at runtime, and the `imp/state-setup-before-await` lint rule
 flags it earlier, at write time - `initState`/`useState` calls by imported name, `watch` by tracking
 handles the file assigned from `initState`/`useState`/`computed` (so unrelated third-party
@@ -108,7 +108,7 @@ for stopping early within a mounted period.
 (`get`/`watch`/`text`/`view`/`each`; `set` throws) whose value is `compute(...sourceValues)`. It
 notifies only when the computed outcome changes - compared **structurally** (the same `valuesEqual`
 keyed `each` uses), not by reference, so a `compute` that builds a fresh object or array each run
-(`(items) => items.filter(…)`, `(u) => u.address`) stays quiet while its outcome is deep-equal.
+(`(items) => items.filter(...)`, `(u) => u.address`) stays quiet while its outcome is deep-equal.
 Reference comparison would have made every such computed state re-notify on every source set, which
 is the common case, not the corner: the whole point of the combinator is producing display-ready
 values, and display-ready values are usually freshly built. That also makes single-source computed
@@ -172,7 +172,7 @@ flags literal names statically.
   the providers at its new position (`component-moves-rebind.md`), so the nearest-provider rule
   holds wherever a mounted component currently sits.
 - Every subscription has exactly one owner and one deterministic end, at the cost of a one-time
-  activation walk over each subtree imp places. The remaining restriction is that an async `onMount`
+  activation walk over each subtree imp places. The remaining restriction is that an async `build`
   must resolve its states (`initState`/`useState`) and call `watch` before its first `await` - a
   platform gap, not a design choice: past an `await` no runtime mechanism can attribute those calls
   to the mounting component (the gap the unshipped TC39 AsyncContext proposal targets; if it lands,

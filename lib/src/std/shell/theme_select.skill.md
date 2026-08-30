@@ -34,4 +34,4 @@ Rules an agent gets wrong:
   the next load.
 - Only imp's own wording (`imp.theme.*`) is translated; a `label` you pass on a choice is yours.
 
-Related: imp skill theming - what a theme is · imp skill std/shell - the frame it usually sits in.
+Related: imp skill theming - what a theme is | imp skill std/shell - the frame it usually sits in.

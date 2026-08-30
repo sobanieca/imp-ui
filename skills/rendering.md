@@ -15,7 +15,7 @@ mount('#app', div(h1('Hello')))
 
 ```js
 el(tag, ...args) -> Node   // the primitive, for tags with no factory
-div, p, span, h1..h6, ul, li, button, input, form, table, …   // ~80 factories
+div, p, span, h1..h6, ul, li, button, input, form, table, ...   // ~80 factories
 ```
 
 Arguments dispatch **by type, in any order**:
@@ -26,7 +26,7 @@ Arguments dispatch **by type, in any order**:
 | `Node`                            | child                                                                   |
 | array                             | children, flattened recursively                                         |
 | plain object                      | props - **one object per call**; extras merge (later keys win) and warn |
-| `null`/`undefined`/`false`/`true` | skipped, so `cond && el(…)` works                                       |
+| `null`/`undefined`/`false`/`true` | skipped, so `cond && el(...)` works                                     |
 
 ```js
 p('Hello ', strong('world')) // same as p(['Hello ', strong('world')])
@@ -38,7 +38,7 @@ p('Hello ', strong('world')) // same as p(['Hello ', strong('world')])
 button({
   type: 'submit',
   disabled: true, // property-first: sets node.disabled
-  'data-id': 42, // no property → attribute
+  'data-id': 42, // no property -> attribute
   class: 'btn',
   style: { marginTop: '4px' },
   events: { click: onClick },
@@ -53,7 +53,7 @@ button({
   attributes.
 - **`class`** takes `'card'`, `['card', maybe]` (falsy dropped), or `{ active: cond }` (truthy keys
   become classes). Each form sets the class **whole**.
-- **`style`** takes a string or an object (camelCase → kebab; `--custom-props` verbatim).
+- **`style`** takes a string or an object (camelCase -> kebab; `--custom-props` verbatim).
 - **`events`** is `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` - native event
   names, **no `on` prefix**. An array's second entry is `addEventListener` options.
 - **A state may be a prop value** and the prop stays live - `div({ class: theme })`,
@@ -68,7 +68,7 @@ button({
 mount('#app', app) // selector or element; component factory, function, or Node
 const unmount = mount('#cart', () => cart({ id })) // island in server HTML
 unmount() // empties the host
-html('<b>trusted</b>') // raw HTML → DocumentFragment; trusted input only
+html('<b>trusted</b>') // raw HTML -> DocumentFragment; trusted input only
 ```
 
 `mount(target, view)` calls `view` once if it is a function, replaces the host's children with the
@@ -77,8 +77,8 @@ result, and returns an `unmount` function. The result may be a `Node`, a string,
 
 Rules an agent gets wrong:
 
-- **A plain helper function is not a component.** `card({ title }) => div(…)` is just a function -
-  lowercase, no lifecycle. Promote it to `component(…)` only when it needs mount/unmount, state
+- **A plain helper function is not a component.** `card({ title }) => div(...)` is just a function -
+  lowercase, no lifecycle. Promote it to `component(...)` only when it needs mount/unmount, state
   resolution, or a loading placeholder. See [components](components.md).
 - **Never pass two props objects** to one call (`imp/single-props-object` lint error).
 - **Never pass a state as a bare child** - `div(count)` is reported and skipped; write

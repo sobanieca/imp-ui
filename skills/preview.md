@@ -112,7 +112,7 @@ is `text_field` under `inputs`.
 
 With no path, every `*.preview.js` in the project is discovered and `/` lists them. A path narrows
 it: a preview file opens straight to it, a **component** path opens its sibling preview
-(`imp preview components/todos.js` → `components/todos.preview.js`), and a folder limits discovery.
+(`imp preview components/todos.js` -> `components/todos.preview.js`), and a folder limits discovery.
 `?scenario=<name>` - or the panel's **isolate** button - renders one scenario alone.
 
 A component is listed as **`category/name`**, taken from the file's `category` and `name` exports

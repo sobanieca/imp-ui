@@ -34,7 +34,7 @@ and `list?.length && ...` drop out cleanly without wrapper syntax.
   `style`), so a second props object is a usage error: the runtime warns and applies last-wins, and
   the `single-props-object` `imp lint` rule catches it statically, for standard components as well
   as element factories. Compose props into one object before the call
-  (`div({ ...base, ...extra }, …)`).
+  (`div({ ...base, ...extra }, ...)`).
 - The cost is a small dispatch function and one rule to learn instead of an argument signature; type
   confusion is possible in principle (e.g. an array meant as a prop value must sit inside a props
   object, not float as an argument) but rare in practice.

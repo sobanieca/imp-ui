@@ -9,7 +9,7 @@ import { button, div, nav } from 'imp/html'
 import { area, guard, navigate, route, router, useRoute, wait } from 'imp/router'
 
 const shell = component('app-shell', {
-  onMount: () =>
+  build: () =>
     div(
       nav(button('Home', { events: { click: () => navigate('/') } })),
       router({
@@ -19,9 +19,9 @@ const shell = component('app-shell', {
           '/todos/:id': ({ params }) => todoDetail(params.id),
           '/admin': area(() => import('./admin/area.js')),
         },
-        placeholder: () => div('Loading…'),
-        onError: (error) => div(error.message),
-        onNotFound: () => div('Not found'),
+        placeholder: () => div('Loading...'),
+        fallback: (error) => div(error.message),
+        notFound: () => div('Not found'),
       }),
     ),
 })
@@ -31,21 +31,21 @@ mount('#app', shell())
 
 ## API
 
-| Export                                   | What it does                                                                                        |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `placeholder`, `onError`, `onNotFound` |
-| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                          |
-| `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                                  |
-| `route({ guard, screen })`               | a guarded routes-table entry - one guard; `screen` is the factory or `area()` it maps to            |
-| `guard(states, check)`                   | a synchronous check over the states it names: `true` \| `wait` \| `false` \| `'/path'`              |
-| `wait`                                   | the verdict for "cannot decide yet" - the router keeps `placeholder` up and re-runs the guard       |
-| `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                            |
-| `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                |
-| `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                           |
+| Export                                   | What it does                                                                                       |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `placeholder`, `fallback`, `notFound` |
+| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                         |
+| `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                                 |
+| `route({ guard, screen })`               | a guarded routes-table entry - one guard; `screen` is the factory or `area()` it maps to           |
+| `guard(states, check)`                   | a synchronous check over the states it names: `true` \| `wait` \| `false` \| `'/path'`             |
+| `wait`                                   | the verdict for "cannot decide yet" - the router keeps `placeholder` up and re-runs the guard      |
+| `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                           |
+| `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`               |
+| `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                          |
 
 Router options: `placeholder` shows while an **area's** module downloads (called with
-`{ params, query }`); `onError` is a route-level error boundary called with
-`(error, { params, query })`, catching what the screen's own `onError` did not; `onNotFound` is the
+`{ params, query }`); `fallback` is a route-level error boundary called with
+`(error, { params, query })`, catching what the screen's own `fallback` did not; `notFound` is the
 single fallback for unmatched URLs.
 
 ## The route table
@@ -66,7 +66,7 @@ would also match. Trailing slashes are ignored.
 ## Rules an agent gets wrong
 
 - **A screen factory builds its screen immediately.** Never `await` in it and never `import()` in
-  it - fetch data in the screen component's async `onMount` (its `placeholder` covers the wait), and
+  it - fetch data in the screen component's async `build` (its `placeholder` covers the wait), and
   put on-demand code behind an `area()`.
 - **`area()` is the only lazy entry.** There is no lazy-screen form and no eager-area form. A
   pattern pointing at an area matches as a **prefix**; every other pattern matches exactly.
@@ -124,8 +124,8 @@ module scope). The router resolves them with `useState` at its own position, pas
 | `true` / `undefined` | render the screen                                        |
 | `wait`               | keep `placeholder`; re-run when a declared state changes |
 | `'/path'`            | `navigate(path, { replace: true })`                      |
-| `false`              | render `onNotFound`                                      |
-| anything else        | throws, route renders `onError`                          |
+| `false`              | render `notFound`                                        |
+| anything else        | throws, route renders `fallback`                         |
 
 ## Rules an agent gets wrong about guards
 
@@ -148,7 +148,7 @@ module scope). The router resolves them with `useState` at its own position, pas
 - **A guard is sync and pure.** No `await`, no fetch, no `navigate` inside it - return a path
   instead. It re-runs on every change of a declared state, so keep it a cheap comparison.
 - **Failure is closed**: a throwing guard, an unknown verdict, or a state no ancestor provides all
-  render `onError`. A guard stuck on `wait` warns after 5s naming the states; guards that redirect
+  render `fallback`. A guard stuck on `wait` warns after 5s naming the states; guards that redirect
   to each other throw after 10 hops.
 
 ## An area file
@@ -166,16 +166,16 @@ export default area({
 ```
 
 An area's `translations` are covered in [i18n](i18n.md). Areas nest to any depth, and a prefix can
-capture params (`'/org/:orgId': area(…)` - a changing prefix param remounts the section). Navigating
-inside an area keeps it mounted and swaps its inner screen.
+capture params (`'/org/:orgId': area(...)` - a changing prefix param remounts the section).
+Navigating inside an area keeps it mounted and swaps its inner screen.
 
 ## `root` - one component around a whole section
 
 ```js
 const shell = component('admin-shell', {
-  onMount: () => {
+  build: () => {
     initHttpClient('myapp.admin', { baseUrl: '/admin/api' }) // section-scoped, see imp skill http
-    return div(adminNav(), router()) // ← the section's screens render here
+    return div(adminNav(), router()) // <- the section's screens render here
   },
 })
 
@@ -183,8 +183,8 @@ export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 ```
 
 - **`router()` with no table only works inside an area's `root`** - it renders that area's own
-  routes and inherits the parent router's `placeholder`, `onError` and `onNotFound`, each
-  overridable for the section. Anywhere else, `routes` is required.
+  routes and inherits the parent router's `placeholder`, `fallback` and `notFound`, each overridable
+  for the section. Anywhere else, `routes` is required.
 - `root` is a **function** returning the component, and it receives the same `{ params, query }` a
   screen factory gets - `root: ({ params }) => orgShell(params.orgId)`.
 - What it buys over wrapping each screen by hand is **lifetime**: the root stays mounted while the
@@ -194,21 +194,22 @@ export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 
 ## Lifetimes, base path, deployment
 
-A screen is a component, so its loading is `placeholder` + async `onMount`, its errors are `onError`
-(bubbling to the router's), and its cleanup is `onUnmount`. Navigating away unmounts it: state,
+A screen is a component, so its loading is `placeholder` + async `build`, its errors are `fallback`
+(bubbling to the router's), and its cleanup is `teardown`. Navigating away unmounts it: state,
 subscriptions and DOM go with it - put screen state in the screen's root component and only app-wide
 state above the router.
 
 Scroll is managed for you (top on forward navigation, restored on back/forward). **Focus is yours**:
-focus a heading in `instance.afterMount`, or announce via a live region from `useRoute().watch(…)`.
-Do it once for all screens by giving the element the router slot renders into `tabindex: -1` and
-focusing it from `useRoute().watch(…)` when the **path** changes - compare paths (a query change
-must not steal focus from an input), skip the first call (it fires with the loaded route), and style
-that element `:focus { outline: none }` or the browser rings the whole screen on arrival.
+focus a heading in `instance.afterMount`, or announce via a live region from
+`useRoute().watch(...)`. Do it once for all screens by giving the element the router slot renders
+into `tabindex: -1` and focusing it from `useRoute().watch(...)` when the **path** changes - compare
+paths (a query change must not steal focus from an input), skip the first call (it fires with the
+loaded route), and style that element `:focus { outline: none }` or the browser rings the whole
+screen on arrival.
 
 Serving under a sub-path: set the `IMP_BASEPATH` environment value of [config](config.md) and keep
 writing app-root paths (`/todos`). imp strips and re-adds it. Only an `href` you build yourself
 needs `url('/todos')`.
 
 Deep links need the host to serve your entry HTML for unknown paths (nginx `try_files`, a
-`_redirects` file, a `404.html` copy, …). `imp start` already does this in development.
+`_redirects` file, a `404.html` copy, ...). `imp start` already does this in development.

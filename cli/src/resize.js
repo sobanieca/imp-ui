@@ -47,7 +47,7 @@ const encodeResized = (rendered, encoder) =>
 function recommend(display, source, byteSize, maxBytes) {
   const longestEdge = Math.max(source.width, source.height)
   const oversized = byteSize > maxBytes || longestEdge > RECOMMENDED_MAX_EDGE
-  logger.info(`${display} is ${source.width}×${source.height}, ${formatSize(byteSize)}`)
+  logger.info(`${display} is ${source.width}x${source.height}, ${formatSize(byteSize)}`)
   if (!oversized) {
     logger.info('already within the size budget - nothing to resize')
     return
@@ -106,7 +106,7 @@ export async function resize({ root, image, width, height, output, stretch = fal
   const target = targetDimensions(source, width, height, stretch)
   if (target.width === source.width && target.height === source.height) {
     logger.info(
-      `${display} is already ${source.width}×${source.height} - requested size would upscale it, so nothing was changed`,
+      `${display} is already ${source.width}x${source.height} - requested size would upscale it, so nothing was changed`,
     )
     return
   }
@@ -120,7 +120,7 @@ export async function resize({ root, image, width, height, output, stretch = fal
 
   const outDisplay = relative(root, outPath) || output || display
   logger.info(
-    `${display} ${source.width}×${source.height} ${formatSize(bytes.length)} → ` +
-      `${outDisplay} ${target.width}×${target.height} ${formatSize(encoded.length)}`,
+    `${display} ${source.width}x${source.height} ${formatSize(bytes.length)} -> ` +
+      `${outDisplay} ${target.width}x${target.height} ${formatSize(encoded.length)}`,
   )
 }

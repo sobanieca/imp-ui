@@ -29,7 +29,7 @@ sidebar components: Counter, todos
 sidebar current: Counter
 page head: Widgets / Counter
 index headline: Components - 2 previews in 2 categories.
-index cards: Widgets 1 · components 1
+index cards: Widgets 1 | components 1
 ?scenario=lazy panels: 1 (lazy)
 mocked todos: Buy milk, Ship imp
 mocked todos state row: demo.todos

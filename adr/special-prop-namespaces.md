@@ -19,9 +19,9 @@ These could each be separate top-level conventions, but that multiplies the rule
 
 Three reserved keys in the same props object, each with richer handling:
 
-- **`class`** accepts: `'card'` · `['card', maybe]` (falsy dropped, joined) · `{ active: cond }`
+- **`class`** accepts: `'card'` | `['card', maybe]` (falsy dropped, joined) | `{ active: cond }`
   object where each truthy entry toggles its class on.
-- **`style`** accepts: a string (set verbatim) · an object mapping `camelCase`/`--custom` keys to
+- **`style`** accepts: a string (set verbatim) | an object mapping `camelCase`/`--custom` keys to
   values (`camelCase` -> kebab; `--*` kept verbatim).
 - **`events`** is an object of native DOM event names (no `on` prefix) to either a handler `fn` or a
   `[fn, options]` pair passed straight to `addEventListener`. Custom events use the same shape

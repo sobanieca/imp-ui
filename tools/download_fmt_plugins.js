@@ -17,7 +17,7 @@ const existingChecksum = async (path) => {
 for (const plugin of FMT_PLUGINS) {
   const target = fromFileUrl(wasmUrl(plugin.file))
   if (await existingChecksum(target) === plugin.sha256) continue
-  console.error(`vendoring ${plugin.file}…`)
+  console.error(`vendoring ${plugin.file}...`)
   const response = await fetch(plugin.url)
   if (!response.ok) {
     console.error(`error: fetching ${plugin.url} failed (${response.status})`)

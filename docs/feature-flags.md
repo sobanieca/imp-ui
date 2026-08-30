@@ -73,7 +73,7 @@ flag machinery at all: no list of flag names, no values, nothing for a visitor t
 build prints what it decided, so a release tells you which gates it went out with:
 
 ```
-built index.html → dist/
+built index.html -> dist/
   flags folded in - CHECKOUT_V2 off, NEW_NAV on
 ```
 

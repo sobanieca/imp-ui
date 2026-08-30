@@ -21,7 +21,7 @@ client has one code path and never learns whether an answer was mocked.
 imp ships **`initHttpClient`, `useHttpClient` and `createHttpClient` from `imp/http`** (a new row in
 the shared subpath table, `library-import-namespaces.md`). The first pair is deliberately the one
 `initState`/`useState` already establishes: a component initializes a named, configured client in
-its `onMount`, components mounted below resolve it by name, and the client's lifetime is the
+its `build`, components mounted below resolve it by name, and the client's lifetime is the
 initializing component's lifetime. It exposes verb methods
 (`get`/`post`/`put`/`patch`/`delete`/`head`) resolving to the parsed body, plus a `request()` escape
 hatch returning the whole response for callers that need status or headers. Every cross-cutting
@@ -88,17 +88,17 @@ follows from where the provider listens, so the rules are state's, unchanged: th
 wins, an area **shadows** an app-wide client by initializing the same name, re-initializing a name
 in one scope throws, sibling instances own independent clients, resolution re-runs when a component
 moves (`component-moves-rebind.md`), both helpers throw outside a mounting component and must run
-before the first `await` of an async `onMount`, and names are namespaced - the same rule and the
-same lint treatment (`imp/http-client-name-namespace`, `imp/http-client-setup-before-await`).
-**Unmount closes the client the component created** (never a shared one): a client-wide
-`AbortController` composed into every request's signal means in-flight attempts abort, a retry
-waiting on a backoff delay stops instead of firing into a dead screen, per-request trackers are
-dropped, and a call made afterwards through a kept handle rejects rather than reaching the network.
-Closing is about stopping _work_, not reclaiming memory - nothing global holds a client, so an
-unreferenced one was always collectable; what the app could not do before was cancel what a departed
-screen had started. The same routine backs the public `close()`, with the reason it was closed
-carried into the rejection message, so "the client was closed when its component unmounted" and "the
-client was closed" are told apart at the call site.
+before the first `await` of an async `build`, and names are namespaced - the same rule and the same
+lint treatment (`imp/http-client-name-namespace`, `imp/http-client-setup-before-await`). **Unmount
+closes the client the component created** (never a shared one): a client-wide `AbortController`
+composed into every request's signal means in-flight attempts abort, a retry waiting on a backoff
+delay stops instead of firing into a dead screen, per-request trackers are dropped, and a call made
+afterwards through a kept handle rejects rather than reaching the network. Closing is about stopping
+_work_, not reclaiming memory - nothing global holds a client, so an unreferenced one was always
+collectable; what the app could not do before was cancel what a departed screen had started. The
+same routine backs the public `close()`, with the reason it was closed carried into the rejection
+message, so "the client was closed when its component unmounted" and "the client was closed" are
+told apart at the call site.
 
 **Interceptors are the extension substrate.** `onRequest` and `onResponse` - named after imp's
 existing lifecycle hooks - take a function or an ordered array, may be async, and a per-call list

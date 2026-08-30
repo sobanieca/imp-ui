@@ -8,7 +8,7 @@ wrap things in, and no re-rendering - state changes update exactly the DOM you b
 
 - State is **named**: every state has a dot-namespaced name like `myapp.user`. The namespace is
   mandatory (at least two dot-separated segments) - `imp lint` enforces it.
-- State is **owned by a component**. `initState(name, initialValue)` inside a component's `onMount`
+- State is **owned by a component**. `initState(name, initialValue)` inside a component's `build`
   ties the state to that component: its descendants reach it with `useState(name)`, and it lives as
   long as the component stays mounted. There is no global scope - app-lifetime state belongs in your
   root component, and calling `initState` outside a mounting component throws.
@@ -33,14 +33,14 @@ import { button, div } from 'imp/html'
 import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
-  onMount: () => {
+  build: () => {
     const user = useState('myapp.user')
     return div(user.text((u) => u.name))
   },
 })
 
 export const app = component('my-app-root', {
-  onMount: () => {
+  build: () => {
     const user = initState('myapp.user', { name: 'Ada', theme: 'dark' })
     return div(
       profile(),
@@ -57,7 +57,7 @@ export const app = component('my-app-root', {
 `initState(name, initialValue)` and `useState(name)` both return the same helper with the six
 entries below. `get` and `set` can be called from anywhere. `text`, `view`, and `each` return live
 DOM - build it wherever you like; it activates when a component (or `mount`) places it on the page.
-`watch` subscribes directly and lives inside a component's `onMount` (see _Cleanup_). Beyond the six
+`watch` subscribes directly and lives inside a component's `build` (see _Cleanup_). Beyond the six
 entries, the helper itself can be passed as an element **prop value** to keep that prop live - see
 _Binding props_ below.
 
@@ -105,7 +105,7 @@ hold the data and derive everything else from it.
 
 A few value-like types count as plain data too, and imp compares each by content, not by reference:
 dates - `Date` (by instant) and every Temporal type (`Temporal.PlainDate`, `Temporal.Instant`,
-`Temporal.ZonedDateTime`, `Temporal.Duration`, …) - plus `URL` (by its full href) and `RegExp` (by
+`Temporal.ZonedDateTime`, `Temporal.Duration`, ...) - plus `URL` (by its full href) and `RegExp` (by
 source and flags). Two different `Date` objects holding the same instant, or two `URL`s with the
 same href, count as unchanged wherever imp compares values.
 
@@ -124,7 +124,7 @@ Reacts to the state: runs `fn(value)` immediately with the current value, then a
 
 ```js
 const themeWatcher = component('my-app-theme-watcher', {
-  onMount: () => {
+  build: () => {
     const theme = useState('myapp.theme')
     theme.watch((value) => document.body.setAttribute('data-theme', value))
   },
@@ -137,7 +137,7 @@ chart library, sending analytics. Mount it once anywhere in scope and the side e
 long as it stays mounted.
 
 Unlike the DOM bindings below, `watch` subscribes the moment you call it, so it lives inside a
-component's `onMount` (see _Cleanup_ below) and ends with the component. It returns an unsubscribe
+component's `build` (see _Cleanup_ below) and ends with the component. It returns an unsubscribe
 function for the rare case you want to stop reacting while the component stays mounted. Subscribers
 are isolated from each other: one that throws is logged and skipped while the rest still run, and
 the `set` call itself succeeds. A subscriber may also set other states - that is how changes chain -
@@ -261,7 +261,7 @@ Two boundaries to know:
 - Binding a prop is a subscription like the DOM bindings: build the element wherever you like - the
   binding goes live when the element mounts and ends with the component that contains it (see
   _Cleanup_).
-- The binding is strictly **one-way**, state → DOM. Binding `value` on an input shows the state; it
+- The binding is strictly **one-way**, state -> DOM. Binding `value` on an input shows the state; it
   does not write keystrokes back. Set the state from an event when the value is committed, and let
   the binding carry it the other way.
 
@@ -283,7 +283,7 @@ const first = initState('myapp.first', 'Ada')
 const last = initState('myapp.last', 'Lovelace')
 
 export const nameBadge = component('my-app-name-badge', {
-  onMount: () => {
+  build: () => {
     const fullName = computed([first, last], (f, l) => `${f} ${l}`)
     return span(fullName.text())
   },
@@ -358,7 +358,7 @@ reacts to all the sources and sets it once per burst:
 const chartData = initState('myapp.chartData', null)
 
 const chartFeed = component('my-app-chart-feed', {
-  onMount: () => {
+  build: () => {
     const items = useState('myapp.items')
     const filter = useState('myapp.filter')
     let scheduled = false
@@ -386,25 +386,25 @@ Subscriptions are cleaned up **automatically** - and that works because every su
 owner, decided by **where its DOM lands**. `text()`, `view()`, `each()`, and state-bound props (on
 regular and computed states alike) are inert when you build them: they subscribe the moment imp
 mounts the DOM they belong to - as a component's output, or through `mount(...)` - and the component
-that contains them owns them. One that lands in `onMount` output ends when the component unmounts;
-one rendered inside a `view`/`each` region belongs to that region and ends when the region
-re-renders (or the component unmounts, whichever comes first - see **[Components](components.md)**);
-one mounted with `mount(...)` ends when you call the function `mount` returned. Swap whole screens
-in and out; nothing leaks and there is nothing to unhook. The flip side of inertness: DOM you insert
+that contains them owns them. One that lands in `build` output ends when the component unmounts; one
+rendered inside a `view`/`each` region belongs to that region and ends when the region re-renders
+(or the component unmounts, whichever comes first - see **[Components](components.md)**); one
+mounted with `mount(...)` ends when you call the function `mount` returned. Swap whole screens in
+and out; nothing leaks and there is nothing to unhook. The flip side of inertness: DOM you insert
 into the page yourself, without imp, never activates its bindings - let a component or `mount(...)`
 place it.
 
 `watch(fn)` is the exception, because it has no DOM to land in: it subscribes immediately and needs
-a mounting component to own it - call it in `onMount` before any `await`, or in a `view`/`each`
+a mounting component to own it - call it in `build` before any `await`, or in a `view`/`each`
 render. Called anywhere else - module scope, an event handler, after an `await` - it throws.
 
 Reading and writing are free: `get()` and `set(next)` work anywhere, any time. So the natural way to
-write an async `onMount` needs no ceremony - resolve states first, `await`, then build:
+write an async `build` needs no ceremony - resolve states first, `await`, then build:
 
 ```js
 const orderList = component('my-app-order-list', {
-  placeholder: () => div('loading orders…'),
-  onMount: async (instance, { id }) => {
+  placeholder: () => div('loading orders...'),
+  build: async (instance, { id }) => {
     const orders = initState('myapp.orders', [])
     orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
     return ul(orders.each((order) => li(order.title), (order) => order.id))
@@ -437,7 +437,7 @@ who sees the state and how long it lives:
 Aim every state at the **narrowest scope that spans its readers**, and give each screen-sized piece
 of your app a root component that owns the screen's states. Swapping screens - replacing one subtree
 with another - then releases everything the old screen created: its states, every subscription, and
-(through `onUnmount`) timers and connections.
+(through `teardown`) timers and connections.
 
 A component may also initialize a name an ancestor already provides: its subtree then sees the
 nearer state, shadowing the ancestor's - the same way a nested CSS rule wins over an outer one.
@@ -455,7 +455,7 @@ subscribes as usual.
 loaded yet":
 
 ```js
-onMount: () => {
+build: () => {
   const session = initState('myapp.session') // undefined - nothing known yet
   const api = initHttpClient('myapp.api', { baseUrl: env.API_URL })
   api.get('/session')
@@ -481,14 +481,14 @@ div(session.view((user) => (user === undefined ? spinner() : user ? profile(user
 ## Initialization and lookup rules
 
 - **Init first, use after.** `useState(name)` throws if nothing in scope has initialized that name.
-  Order follows mounting: a parent's `onMount` runs before its children mount, so children can
-  always `useState` what their ancestors initialized.
+  Order follows mounting: a parent's `build` runs before its children mount, so children can always
+  `useState` what their ancestors initialized.
 - **Init once per scope.** Calling `initState` with a name the same scope already provides throws -
   each scope initializes a name exactly once. Reach an existing state with `useState(name)` instead.
 - **Position decides, even after a move.** Moving a mounted component re-resolves its `useState`
   bindings against the ancestors at its new position, while states it initialized itself travel with
   it - see _Moving components_ in **[Components](components.md)**.
-- **Namespace anyway.** Scoping keeps unrelated states apart, but a clear prefix (`myapp.…`) keeps
+- **Namespace anyway.** Scoping keeps unrelated states apart, but a clear prefix (`myapp....`) keeps
   names honest between your own components - root-component names span the whole app and have
   nothing else protecting them.
 

@@ -2,7 +2,7 @@ $ imp build app.js --output shared  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-built app.js → shared/
+built app.js -> shared/
   LICENSES.txt - 2 third-party license notices, referenced from every script emitted
   imp imports kept bare - resolved by the imp host at runtime
   LICENSES.txt (<size>)

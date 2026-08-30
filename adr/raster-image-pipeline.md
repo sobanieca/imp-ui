@@ -12,7 +12,7 @@ image by embedding it in a wrapper SVG and rendering at a target size. But resvg
 PNG. A general resize command cannot lean on resvg alone: feeding it a JPEG and getting a PNG back
 would typically make the file larger, defeating the whole purpose of shrinking a committed asset.
 
-The obvious path - vendoring a dedicated raster codec (Photon, jSquash, …) that decodes, resizes,
+The obvious path - vendoring a dedicated raster codec (Photon, jSquash, ...) that decodes, resizes,
 and encodes across PNG/JPEG/WebP - was evaluated and rejected for the first cut: it adds a new wasm
 dependency (or several), license notices, and prebundle wiring, when the binary already carries both
 halves of a format-preserving pipeline.

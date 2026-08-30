@@ -13,12 +13,12 @@ const GROUPS = [
   { id: 'toolkit', title: 'WORKING IN AN IMP PROJECT' },
   {
     id: 'components',
-    title: "STANDARD COMPONENTS - imported from 'imp/std' · read: imp skill std/button",
+    title: "STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button",
   },
 ]
 
 const PROJECT_TITLE =
-  'THIS PROJECT - components with a skill file · read: imp skill ./path/to/component.js'
+  'THIS PROJECT - components with a skill file | read: imp skill ./path/to/component.js'
 
 const NO_PROJECT_SKILLS =
   "  (none yet - write 'counter.skill.md' next to a component and it is listed here)"
@@ -40,7 +40,7 @@ export const SKILLS = [
     name: 'components',
     group: 'app',
     aliases: ['component'],
-    summary: 'custom elements with an onMount lifecycle: instance, styles, cleanup',
+    summary: 'custom elements with a build lifecycle: instance, styles, cleanup',
   },
   {
     name: 'state',
@@ -339,7 +339,7 @@ async function summaryOf(subject) {
 async function renderSkill(subject) {
   const { retargeted, related } = retargetLinks(await readSkillText(subject.url))
   const relatedLine = related.filter((name) => name !== subject.name)
-    .map((name) => `imp skill ${name}`).join(' · ')
+    .map((name) => `imp skill ${name}`).join(' | ')
   const footer = relatedLine ? `\n\nRelated: ${relatedLine}` : ''
   if (subject.kind === 'component') return `${retargeted}${footer}`
   const banner = `imp skill: ${subject.name} - ${subject.summary} (imp ${VERSION})`
@@ -381,7 +381,7 @@ const INTRO = `imp skills - the usage manuals imp ships for the agent writing th
 
 imp is a buildless UI toolkit: your ES modules run in the browser exactly as written - no
 compile step, no JSX, no bundler in development. Everything an app uses arrives through a
-bare specifier imp resolves ('imp', 'imp/html', 'imp/state', …), and the same imp binary
+bare specifier imp resolves ('imp', 'imp/html', 'imp/state', ...), and the same imp binary
 serves, tests, lints, formats and builds the project.
 
 Read one in full - no flags, the text goes to stdout:
@@ -427,7 +427,7 @@ const looksLikeFile = (subject) =>
 async function unknownSubject(subject) {
   const names = (await allSubjects()).map(({ name }) => name).join(', ')
   return new Error(
-    `unknown skill '${subject}' - run 'imp skill' for the index · subjects: ${names} · ` +
+    `unknown skill '${subject}' - run 'imp skill' for the index | subjects: ${names} | ` +
       'for a component of this project pass its path: imp skill ./path/to/component.js',
   )
 }

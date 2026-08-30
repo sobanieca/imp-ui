@@ -252,7 +252,7 @@ const componentMenu = (previews, current, { label, grouped = true }) =>
 
 const barDefinition = {
   styles: BAR_STYLES,
-  onMount: (_instance, _previews) =>
+  build: (_instance, _previews) =>
     div(
       { class: 'bar' },
       a({ class: 'brand', href: '/' }, 'imp preview'),
@@ -261,7 +261,7 @@ const barDefinition = {
 
 const settingsDefinition = {
   styles: SETTINGS_STYLES,
-  onMount: (_instance, controls, editor) =>
+  build: (_instance, controls, editor) =>
     div(
       { class: 'settings' },
       el('h2', 'Preview'),
@@ -272,7 +272,7 @@ const settingsDefinition = {
 
 const indexDefinition = {
   styles: INDEX_STYLES,
-  onMount: (_instance, previews) => {
+  build: (_instance, previews) => {
     const categories = categoriesOf(previews)
     const cards = categories.map(({ name, entries }) =>
       div(
@@ -318,7 +318,7 @@ const agentStrip = (instruction) =>
 
 const headDefinition = {
   styles: HEAD_STYLES,
-  onMount: (_instance, entry, isolated, instruction) =>
+  build: (_instance, entry, isolated, instruction) =>
     div(
       { class: 'head' },
       div(

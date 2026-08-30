@@ -19,11 +19,11 @@ import { component, mount } from 'imp'
 import { button, div, h1, nav } from 'imp/html'
 import { navigate, router } from 'imp/router'
 
-const home = component('app-home', { onMount: () => h1('Welcome') })
-const about = component('app-about', { onMount: () => h1('About us') })
+const home = component('app-home', { build: () => h1('Welcome') })
+const about = component('app-about', { build: () => h1('About us') })
 
 const shell = component('app-shell', {
-  onMount: () =>
+  build: () =>
     div(
       nav(
         button('Home', { events: { click: () => navigate('/') } }),
@@ -34,7 +34,7 @@ const shell = component('app-shell', {
           '/': () => home(),
           '/about': () => about(),
         },
-        onNotFound: () => h1('Not found'),
+        notFound: () => h1('Not found'),
       }),
     ),
 })
@@ -93,8 +93,8 @@ the more specific one first:
 ```js
 router({
   routes: {
-    '/todos/new': () => newTodo(), // list the exact path first…
-    '/todos/:id': ({ params }) => todoDetail(params.id), // …so it wins over the param
+    '/todos/new': () => newTodo(), // list the exact path first...
+    '/todos/:id': ({ params }) => todoDetail(params.id), // ...so it wins over the param
   },
 })
 ```
@@ -104,21 +104,21 @@ it's only for exporting an **area's** own file - see _Areas_ - not something you
 
 **A screen factory builds its screen right away** - it returns DOM, and imp renders it. It isn't the
 place to `await` anything: don't fetch a screen's data there (load it in the screen component's
-async `onMount`, so the wait shows the screen's own `placeholder`), and don't `import()` there
-either. Code that should load on demand goes behind an **area**, described below - that's the one
-lazy thing in a route table.
+async `build`, so the wait shows the screen's own `placeholder`), and don't `import()` there either.
+Code that should load on demand goes behind an **area**, described below - that's the one lazy thing
+in a route table.
 
 ### Navigation is a clean slate - except query changes
 
 Navigating to a **different screen** (a different pattern, or different `:params`) mounts it fresh
 and unmounts the one you left. Navigating that changes **only the query string** keeps the current
-screen mounted - so a search or filter page that lives at `/search?q=…` doesn't lose its input
+screen mounted - so a search or filter page that lives at `/search?q=...` doesn't lose its input
 focus, scroll, or in-progress state every time a query param changes. Such a screen reads the live
 query from `useRoute()`:
 
 ```js
 const results = component('app-results', {
-  onMount: () => {
+  build: () => {
     const location = useRoute()
     return div(location.view((current) => resultList(current.query.q ?? '')))
   },
@@ -128,7 +128,7 @@ const results = component('app-results', {
 ## The router
 
 ```js
-router({ routes, placeholder, onError, onNotFound })
+router({ routes, placeholder, fallback, notFound })
 ```
 
 Drop it wherever the current screen should appear. Everything around it - a header, a sidebar, a
@@ -142,23 +142,24 @@ required:
 - **`placeholder`** - what the router shows while an **area's** code is still downloading (see
   _Areas_) or a guard is waiting for the state it reads (see _Route guards_). It's called with the
   route's `{ params, query }`.
-- **`onError`** - a route-level **error boundary**. It renders a fallback when the matched screen,
-  or any component it renders, throws during mount and doesn't handle the error itself - including
-  an area whose `import()` won't download. A screen (or any nested component) that defines its own
-  `onError` catches first; anything it doesn't handle bubbles up to the router. It's called with
-  `(error, { params, query })`, and the failure is logged either way.
-- **`onNotFound`** - the single fallback screen for any URL that matches no route in the table.
+- **`fallback`** - a route-level **error boundary**. It renders in place of the matched screen when
+  that screen, or any component it renders, throws during mount and doesn't handle the error itself,
+  including an area whose `import()` won't download. A screen (or any nested component) that defines
+  its own `fallback` catches first; anything it doesn't handle bubbles up to the router. It's called
+  with `(error, { params, query })`, and the failure is logged either way.
+- **`notFound`** - the single screen shown for any URL that matches no route in the table.
 
 ```js
 div(
   header(appNav()),
   main(router({
     routes: appRoutes,
-    placeholder: () => div({ class: 'route-loading' }, 'Loading…'),
-    onError: (error) => div({ class: 'route-error' }, `This page failed to load: ${error.message}`),
-    onNotFound: () => div({ class: 'route-404' }, 'Not found'),
+    placeholder: () => div({ class: 'route-loading' }, 'Loading...'),
+    fallback: (error) =>
+      div({ class: 'route-error' }, `This page failed to load: ${error.message}`),
+    notFound: () => div({ class: 'route-404' }, 'Not found'),
   })),
-  footer('© 2026'),
+  footer('(c) 2026'),
 )
 ```
 
@@ -177,10 +178,10 @@ const appRoutes = {
 
 ### Not found (404)
 
-Declare your not-found screen in one place with the router's `onNotFound` option:
+Declare your not-found screen in one place with the router's `notFound` option:
 
 ```js
-router({ routes: appRoutes, onNotFound: () => notFoundPage() })
+router({ routes: appRoutes, notFound: () => notFoundPage() })
 ```
 
 It renders whenever no route in the table matches the current URL. It's just a factory - no path,
@@ -202,7 +203,7 @@ router({
     '/admin': area(() => import('./admin/area.js')), // a lazily-loaded area
     '/shop': area(() => import('./shop/area.js')),
   },
-  onNotFound: () => notFound(),
+  notFound: () => notFound(),
 })
 ```
 
@@ -229,9 +230,9 @@ export default area({
 Visiting `/admin/users` matches the `/admin` prefix, loads the section's module the first time, and
 renders its `/users` screen - its code ships as one on-demand module.
 
-**Areas are always lazy - and they're the only lazy thing.** `area(() => import('./…'))` is the only
-way to point at one: its code loads the first time someone enters the section, and never ships to
-users who never do. There is no eager form and no lazy-screen form - a table entry is either a
+**Areas are always lazy - and they're the only lazy thing.** `area(() => import('./...'))` is the
+only way to point at one: its code loads the first time someone enters the section, and never ships
+to users who never do. There is no eager form and no lazy-screen form - a table entry is either a
 screen factory, which renders immediately, or an `area()`, which loads on demand. So "does this URL
 cost a download?" has a one-word answer you can read off the table.
 
@@ -243,7 +244,7 @@ and the argument says which is which.
 While the module downloads there is no screen yet, so the router's `placeholder` shows; set it and
 every area gets a loader during download, leave it off and the router is simply blank until the code
 arrives. If the user navigates away before a slow chunk lands, imp discards it - a late-arriving
-section never replaces a newer screen. Once the section's screen mounts, its own async `onMount` (if
+section never replaces a newer screen. Once the section's screen mounts, its own async `build` (if
 it has one) shows the **screen's** `placeholder` while data loads.
 
 ### A root component for the whole section
@@ -253,7 +254,7 @@ An area can name a `root` - a component every screen in the section renders insi
 ```js
 // admin/area.js
 const shell = component('admin-shell', {
-  onMount: () => div(adminNav(), router()),
+  build: () => div(adminNav(), router()),
 })
 
 export default area({
@@ -267,8 +268,8 @@ export default area({
 
 `router()` with no table is the slot the section's screens render into: it matches the tail of the
 URL against the area's own routes, the same table it would match without a root. It inherits the
-parent router's `placeholder`, `onError` and `onNotFound`, and any of them can be overridden for the
-section alone - `router({ onNotFound: () => adminNotFound() })`.
+parent router's `placeholder`, `fallback` and `notFound`, and any of them can be overridden for the
+section alone - `router({ notFound: () => adminNotFound() })`.
 
 What a root buys you over wrapping each screen by hand (`'/users': () => shell(usersList())`) is
 **lifetime**: the root stays mounted while the user moves between the section's screens, and
@@ -287,10 +288,10 @@ table finds its area through the component that is mounting, exactly as `useStat
 
 ```js
 const shell = component('admin-shell', {
-  onMount: async () => {
+  build: async () => {
     const api = useHttpClient('myapp.admin')
-    const screens = router() //                    resolve the slot first…
-    const settings = await api.get('/settings') // …then await
+    const screens = router() //                    resolve the slot first...
+    const settings = await api.get('/settings') // ...then await
     return div(adminNav(settings), screens)
   },
 })
@@ -314,7 +315,7 @@ A prefix can capture params too, and they flow into the section's screens:
 
 ```js
 '/org/:orgId': area(() => import('./org/area.js')),
-// a screen in that table sees { params: { orgId, …tail params } }
+// a screen in that table sees { params: { orgId, ...tail params } }
 ```
 
 ### Organize your files however you like
@@ -333,7 +334,7 @@ works just as well. The route table is the contract; the file layout is entirely
 
 Navigating **within** an area keeps the section mounted and only swaps its inner screen - the same
 content-keyed behavior that keeps a screen mounted across a query-only change. A prefix param
-changing (`/org/1` → `/org/2`) remounts the section. Areas nest to any depth: an area's table can
+changing (`/org/1` -> `/org/2`) remounts the section. Areas nest to any depth: an area's table can
 itself have an `area()` entry.
 
 > **Note on memory:** leaving an area releases its screens' DOM, state, subscriptions, and timers as
@@ -368,12 +369,12 @@ Read that from the inside out. `['myapp.session']` declares **which states this 
 router looks them up for you and passes their values in, in the same order. The function returns one
 of four answers:
 
-| Return              | Means                                                       |
-| ------------------- | ----------------------------------------------------------- |
-| `true` (or nothing) | allow - render the screen                                   |
-| `wait`              | "I can't decide yet" - keep the loader up and ask me again  |
-| `'/login'`          | redirect there, replacing the current history entry         |
-| `false`             | render the `onNotFound` page, as if the route did not exist |
+| Return              | Means                                                      |
+| ------------------- | ---------------------------------------------------------- |
+| `true` (or nothing) | allow - render the screen                                  |
+| `wait`              | "I can't decide yet" - keep the loader up and ask me again |
+| `'/login'`          | redirect there, replacing the current history entry        |
+| `false`             | render the `notFound` page, as if the route did not exist  |
 
 ### `wait` is what makes a synchronous guard possible
 
@@ -516,7 +517,7 @@ backend still authorizes every request - a determined visitor can always fetch t
 Guards fail closed - no failure path lets a screen through:
 
 - A guard that throws, or returns something that isn't one of the four answers, renders the router's
-  `onError`.
+  `fallback`.
 - A guard declaring a state that no component above the router provides fails the route with the
   same error `useState` gives you.
 - A guard stuck on `wait` for more than five seconds logs a warning naming the route and the states
@@ -581,27 +582,27 @@ already know:
 
 ```js
 const todoDetail = component('app-todo-detail', {
-  placeholder: () => div({ class: 'skeleton' }, 'Loading…'),
-  onMount: async (_instance, id) => {
+  placeholder: () => div({ class: 'skeleton' }, 'Loading...'),
+  build: async (_instance, id) => {
     const todo = initState('app.todo', await fetchTodo(id))
     return article(h1(todo.text((t) => t.title)))
   },
-  onError: (error) => div({ class: 'error' }, `Couldn't load this todo: ${error.message}`),
+  fallback: (error) => div({ class: 'error' }, `Couldn't load this todo: ${error.message}`),
 })
 
 // routes: { '/todos/:id': ({ params }) => todoDetail(params.id) }
 ```
 
-- **Data loading** lives in the screen's `onMount` - fetch, `await`, build. The `placeholder` shows
+- **Data loading** lives in the screen's `build` - fetch, `await`, build. The `placeholder` shows
   until it resolves. There is no separate loader or data-fetching API to learn.
 - **Waiting on a guard** uses the same `placeholder` (see _Route guards_) - the visitor sees one
   loader whether the wait is a download, a guard, or the screen's own data.
-- **Errors** - a screen that defines `onError` handles its own failures first. A failure it doesn't
+- **Errors** - a screen that defines `fallback` handles its own failures first. A failure it doesn't
   handle - an area's `import()` that won't download, or the screen (or any component it renders)
-  throwing during mount - bubbles up to the **router's** `onError`, which acts as an error boundary
+  throwing during mount - bubbles up to the **router's** `fallback`, which acts as an error boundary
   for the whole matched subtree.
 
-With no `onError` at either level, a failed screen renders nothing (the failure is still logged)
+With no `fallback` at either level, a failed screen renders nothing (the failure is still logged)
 rather than hanging on a placeholder forever.
 
 ## Screens clean up after themselves
@@ -615,25 +616,25 @@ screen's lifetime is bounded by the URL:
 - **Subscriptions** - every `watch`, `text`, `view`, `each`, and bound prop set up while the screen
   was mounted - are torn down.
 - **Timers, intervals, sockets, and globals** you reached for are undone in the screen component's
-  own `onUnmount` - each component is responsible for its own teardown.
+  own `teardown` - each component is responsible for its own teardown.
 
 ```js
 const dashboard = component('app-dashboard', {
-  onMount: (instance) => {
+  build: (instance) => {
     const metrics = initState('dashboard.metrics', []) // released when you leave the dashboard
     instance.socket = openMetricsSocket((m) => metrics.set(m))
     globalThis.gtag = setupAnalytics()
     return metricsGrid()
   },
-  onUnmount: (instance) => {
+  teardown: (instance) => {
     instance.socket.close() // closed on navigation away
     delete globalThis.gtag // undo the global you set - imp can't track it, so you do
   },
 })
 ```
 
-You don't write any special navigation cleanup: each screen is a component, so its `onUnmount` is
-the cleanup and leaving the route runs it.
+You don't write any special navigation cleanup: each screen is a component, so its `teardown` is the
+cleanup and leaving the route runs it.
 
 ## Base path (serving under a sub-directory)
 
@@ -706,7 +707,7 @@ still 404s - so deep links and refresh just work while you build.
 
 | Export                                   | Returns            | What it does                                                                                                                                  |
 | ---------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `router(options)`                        | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `onError`, `onNotFound`.                                           |
+| `router(options)`                        | a live router slot | Renders the matched screen; `options`: `routes` (required), `placeholder`, `fallback`, `notFound`.                                            |
 | `router()`                               | a live router slot | Inside an area's `root`, renders the section's own routes; inherits the parent router's options.                                              |
 | `area({ routes, root?, translations? })` | an area definition | Declares an area's own table, the component its screens render inside, and the translations it loads, for its `export default` (see _Areas_). |
 | `route({ guard, screen })`               | a guarded entry    | A routes-table entry that renders `screen` only if its one guard allows it (see _Route guards_).                                              |
@@ -726,5 +727,5 @@ still 404s - so deep links and refresh just work while you build.
 | `/todos/:id` | `/todos/42`                     | `{ params: { id: '42' }, query }` |
 
 A pattern whose target is an `area()` matches as a **prefix** - everything under it - and the tail
-is matched against that area's table. Anything that matches nothing renders the router's
-`onNotFound` screen (if you provided one).
+is matched against that area's table. Anything that matches nothing renders the router's `notFound`
+screen (if you provided one).

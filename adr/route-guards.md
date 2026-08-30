@@ -44,16 +44,16 @@ const signedIn = guard(
   `computed([a, b], (a, b) => ...)`, with `{ params, query, path }` last.
 
 - **The verdict vocabulary is `true`/`undefined` (allow), `wait`, a path string (redirect with
-  `replace: true`), and `false` (render `onNotFound`).** Anything else throws, naming the guard's
+  `replace: true`), and `false` (render `notFound`).** Anything else throws, naming the guard's
   states - a typo'd verdict must not silently read as truthy. `false` exists so a route can be
   hidden rather than refused, which is a real requirement for an admin section.
 
 - **Guards run inside the `imp-route` wrapper that already hosts every matched screen**, before the
   screen factory is called. That placement is what makes the feature small: the loading placeholder,
-  the mount-generation token that discards a stale navigation, the `onError` boundary, and a mount
+  the mount-generation token that discards a stale navigation, the `fallback` boundary, and a mount
   scope with a host all already exist there. A guard that can decide immediately returns the
   screen's DOM in the same tick, with no placeholder; a guard that returns `wait` makes the
-  wrapper's `onMount` return a promise, which is the exact path an area's chunk download already
+  wrapper's `build` return a promise, which is the exact path an area's chunk download already
   takes. **One `placeholder` covers both waits**, and the app writes no loading branch of its own.
 
 - **The declared states are watched for the life of the route, not just while deciding.** The first
@@ -74,13 +74,13 @@ const signedIn = guard(
   place a guard goes: `router({ guard })` and `area({ guard })` both throw, pointing at it. There is
   no table-wide default, no inheritance into nested areas, and no array of guards - a rejected
   design in which guards accumulated through the same per-instance options object that carries
-  `placeholder`, `onError` and `onNotFound`. **Composition belongs to the app, and needs no API**: a
+  `placeholder`, `fallback` and `notFound`. **Composition belongs to the app, and needs no API**: a
   check is a plain function, so a guard meaning "signed in and an admin" is written by calling the
   shared check and passing its verdict through. The cost is repeating
   `route({ guard: signedIn, ... })` on every protected entry of a mostly-protected app; the gain is
   that a route's own line names every condition that can redirect it, so "why did this redirect?" is
   answered by one function rather than by reconstructing what each enclosing router and area
-  contributed. `onNotFound` is never guarded.
+  contributed. `notFound` is never guarded.
 
 - **A guard on an area's entry covers the whole section and runs before the chunk downloads.**
   Because the entry's `imp-route` wraps the area, its `root` does not render until the guard allows,
@@ -99,7 +99,7 @@ const signedIn = guard(
 
 - **Everything fails closed.** A declared state that is not provided at the router's position throws
   `useState`'s existing message; a throwing check, and a check returning an unknown verdict, both
-  render `onError`. No failure path allows a screen.
+  render `fallback`. No failure path allows a screen.
 
 - **A guard stuck on `wait` warns after five seconds**, naming the path and the declared states. It
   is a warning rather than an error because a slow network is a legitimate long wait.

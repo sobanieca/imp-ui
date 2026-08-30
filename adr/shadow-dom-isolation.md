@@ -20,8 +20,8 @@ fallbacks, and the placeholder re-rendered on remount all render into the shadow
 light DOM stays empty and untouched.
 
 - **Styling is per component via a `styles` definition entry** - an optional CSS string next to
-  `onMount`. It is compiled once per component into a constructable stylesheet at define time (a
-  parse failure throws there, imp-branded) and adopted by every instance's shadow root. Sharing CSS
+  `build`. It is compiled once per component into a constructable stylesheet at define time (a parse
+  failure throws there, imp-branded) and adopted by every instance's shadow root. Sharing CSS
   between components is sharing strings - plain JS constants or modules composed into `styles` - not
   a framework mechanism.
 - **Hosts stay invisible to layout by default.** A shared default sheet with
@@ -62,8 +62,8 @@ light DOM stays empty and untouched.
   combinator in front of every e2e selector - in an imp app there is no other kind - the page handed
   to a spec pierces shadow roots by default, leaving `>>>` for naming a path when a selector is
   ambiguous.
-- `onMount` code reaching for page-wide DOM (`document.querySelector`) only sees light DOM; the
-  idioms are held references passed as args, `getRootNode().host` for a component's own host, and
-  state for anything shared.
+- `build` code reaching for page-wide DOM (`document.querySelector`) only sees light DOM; the idioms
+  are held references passed as args, `getRootNode().host` for a component's own host, and state for
+  anything shared.
 - Scoped custom-element registries - the platform's own answer to component-name collisions - attach
   to shadow roots, so this decision makes adopting them structurally possible later.

@@ -1,6 +1,6 @@
 # http - the configured HTTP client, owned by a component
 
-Everything comes from `imp/http`. `initHttpClient(name, options)` in a component's `onMount`
+Everything comes from `imp/http`. `initHttpClient(name, options)` in a component's `build`
 configures a client; `useHttpClient(name)` finds the nearest one above. Same shape as
 [state](state.md) - named, namespaced, resolved through the DOM, owned by the component that
 initialized it. Never hand-roll a `fetch` wrapper.
@@ -11,15 +11,15 @@ import { div, p } from 'imp/html'
 import { initHttpClient, useHttpClient } from 'imp/http'
 
 const profile = component('myapp-profile', {
-  onMount: async (_instance, { id }) => {
-    const api = useHttpClient('myapp.api') // resolve first…
-    const user = await api.get(`/users/${id}`) // …then await
+  build: async (_instance, { id }) => {
+    const api = useHttpClient('myapp.api') // resolve first...
+    const user = await api.get(`/users/${id}`) // ...then await
     return div(p(user.name))
   },
 })
 
 export const app = component('myapp-root', {
-  onMount: () => {
+  build: () => {
     initHttpClient('myapp.api', {
       baseUrl: env.API_URL,
       headers: { accept: 'application/json' },
@@ -52,7 +52,7 @@ Every option can be set on the client and overridden on a single call.
 
 | Option                   | Default        | Means                                                                            |
 | ------------------------ | -------------- | -------------------------------------------------------------------------------- |
-| `baseUrl`                | `''`           | paths are joined onto it; a full `https://…` path is used as given               |
+| `baseUrl`                | `''`           | paths are joined onto it; a full `https://...` path is used as given             |
 | `headers`                | `{}`           | merged per call, names lower-cased                                               |
 | `timeout`                | none           | ms **per attempt**; aborts for real, rejects with `code: 'timeout'`              |
 | `retry`                  | `1` attempt    | number of attempts, or `{ attempts, backoff, delay, maxDelay, jitter, retryOn }` |
@@ -81,7 +81,7 @@ and an empty body give `null`.
 - **Client names need a namespace** - at least two dot-separated segments (`myapp.api`, never
   `api`). Lint rule `imp/http-client-name-namespace`; runtime throws.
 - **Resolve before the first `await`.** `initHttpClient`/`useHttpClient` throw after the first
-  `await` of an async `onMount` and outside a mounting component
+  `await` of an async `build` and outside a mounting component
   (`imp/http-client-setup-before-await`). Keep the handle and call it whenever - event handlers,
   after awaits.
 - **A failure rejects.** Any non-2xx, transport failure, timeout or abort throws an `HttpError`.

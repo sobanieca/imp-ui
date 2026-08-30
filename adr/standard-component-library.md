@@ -22,7 +22,7 @@ imports the same surface an app does.
 - **The library is a separate import namespace, split by group.** The kernel is `imp` and its
   per-subject specifiers - `imp/html`, `imp/state`, `imp/router`, `imp/theme`, `imp/log`
   (`library-import-namespaces.md`). The base group is **`imp/std`**; every other group is
-  **`imp/std/<group>`** (`imp/std/inputs`, `imp/std/navigation`, …). Groups are registered as
+  **`imp/std/<group>`** (`imp/std/inputs`, `imp/std/navigation`, ...). Groups are registered as
   subpaths when they land, and an unknown subpath fails with an imp-branded error listing the ones
   that exist - in the bundler, the dev server's import map and the `imp lint` specifier check alike,
   from one shared table. Splitting by group keeps a growing catalog from flooding one namespace and
@@ -51,9 +51,9 @@ imports the same surface an app does.
   (`type-based-argument-dispatch.md`) - a plain object is props wherever it sits, everything else is
   content, and a state passed as a standalone argument is reported and skipped. `defineComponent`
   does the dispatch once for every component, through the same `splitArgsByType` that `el` uses, and
-  hands `onMount` the resolved `(instance, props, children)` - so there is one dispatch rule to
-  learn for the whole library rather than one per import, and one implementation of it rather than
-  one per component. What the components add on top is validation, not a different call shape.
+  hands `build` the resolved `(instance, props, children)` - so there is one dispatch rule to learn
+  for the whole library rather than one per import, and one implementation of it rather than one per
+  component. What the components add on top is validation, not a different call shape.
 - **Props are a closed, documented set per component**, declared as the definition's `props` list so
   that `defineComponent` can check every call against it. Standard components do not forward
   arbitrary props onto an inner element: the boundary is the point. An unknown prop, or a value

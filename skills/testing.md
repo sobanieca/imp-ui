@@ -32,20 +32,20 @@ test('adds numbers', () => {
 `test(name, fn, options?)` registers; tests run in file order, one at a time. `test.skip`,
 `test.only`. Options: `timeout` (ms; default 5s unit, 30s e2e), `fakeTimers` (unit only). Hooks
 `beforeAll`, `beforeEach`, `afterEach`, `afterAll` are file-scoped and awaited. Parameterized tests
-are a plain `for…of` loop around `test()` - there is no `each` helper.
+are a plain `for...of` loop around `test()` - there is no `each` helper.
 
 ## Assertions
 
 `expect(value)`, every matcher invertible with `.not`:
 
-| Matcher                                  | Passes when                                              |
-| ---------------------------------------- | -------------------------------------------------------- |
-| `toEqual(x)`                             | data compares by structure, everything else by identity  |
-| `toContain(x)`                           | substring, or iterable contains element                  |
-| `toMatch(pattern)`                       | string matches a RegExp or contains a substring          |
-| `toBeTruthy()`                           | truthy (`.not.toBeTruthy()` for falsy)                   |
-| `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives `≥` and `≤`)            |
-| `toThrow(message?)`                      | function throws; `await expect(fn).toThrow(…)` for async |
+| Matcher                                  | Passes when                                                |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| `toEqual(x)`                             | data compares by structure, everything else by identity    |
+| `toContain(x)`                           | substring, or iterable contains element                    |
+| `toMatch(pattern)`                       | string matches a RegExp or contains a substring            |
+| `toBeTruthy()`                           | truthy (`.not.toBeTruthy()` for falsy)                     |
+| `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives `>=` and `<=`)            |
+| `toThrow(message?)`                      | function throws; `await expect(fn).toThrow(...)` for async |
 
 **That is the whole set.** There is no `toBe`, `toBeInstanceOf`, `toBeCloseTo`, `toHaveLength`,
 `toHaveBeenCalled`:
@@ -85,7 +85,7 @@ const boom = spy(() => {
   throw new Error()
 }) // throws
 const info = spy(console, 'info') //          wraps a method in place, original still runs
-const quiet = spy(console, 'info', () => {}) // …and replaces its behavior
+const quiet = spy(console, 'info', () => {}) // ...and replaces its behavior
 
 expect(onSave.calls).toEqual([[{ id: 1 }]]) // called once with { id: 1 }
 expect(load.calls.length).toEqual(2)
@@ -112,10 +112,10 @@ mockModule('./http.js', ({ spy, orig }) => ({
 - Exports you do not return are auto-filled with fresh spies; `default` mocks a default export.
 - Mocks are scoped to one file and never leak.
 
-**A component's HTTP calls** need neither: `spy(globalThis, 'fetch', …)` stands in for the network,
-and a one-line host component owns the client (`onMount: (_instance, setup) => setup()`) since a
-client is always owned by a component. `{ fakeTimers: true }` makes retries and timeouts instant -
-`await clock.tick(delay)` between attempts. See [http](http.md).
+**A component's HTTP calls** need neither: `spy(globalThis, 'fetch', ...)` stands in for the
+network, and a one-line host component owns the client (`build: (_instance, setup) => setup()`)
+since a client is always owned by a component. `{ fakeTimers: true }` makes retries and timeouts
+instant - `await clock.tick(delay)` between attempts. See [http](http.md).
 
 ## Unit tests
 

@@ -164,7 +164,8 @@ checkboxes below it - all of them are DOM you already know how to write.
 aside collapse and the sidebar becomes a modal drawer, opened from a button the shell adds to the
 header - a real `<dialog>`, so Escape, the focus trap and returning focus are the browser's job.
 Pass a `bottomNav` instead and there is no drawer at all; a bottom bar is the whole phone
-navigation.
+navigation. It is a narrow-screen region only - it disappears again above `48rem`, so it is not the
+place for a bar a desktop layout needs to keep showing.
 
 One consequence to know before you structure an app: the shell never looks inside a region, so a
 screen deeper in the tree cannot push DOM up into the sidebar. What travels upward is **data** -
@@ -276,7 +277,7 @@ component('invoice-grid', {
   styles: () => `
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
   `,
-  onMount: () => div({ class: 'grid' }, ...cards()),
+  build: () => div({ class: 'grid' }, ...cards()),
 })
 ```
 

@@ -11,7 +11,7 @@ import { initHttpClient, useHttpClient } from 'imp/http'
 import { env } from 'imp'
 
 const app = component('my-app', {
-  onMount: () => {
+  build: () => {
     initHttpClient('myapp.api', {
       baseUrl: env.API_URL,
       headers: { accept: 'application/json' },
@@ -23,7 +23,7 @@ const app = component('my-app', {
 })
 
 const profile = component('user-profile', {
-  onMount: async (_instance, { id }) => {
+  build: async (_instance, { id }) => {
     const api = useHttpClient('myapp.api')
     const user = await api.get(`/users/${id}`)
     return card(user)
@@ -33,7 +33,7 @@ const profile = component('user-profile', {
 
 ## Mental model
 
-- **A client belongs to a component.** `initHttpClient(name, options)` in a component's `onMount`
+- **A client belongs to a component.** `initHttpClient(name, options)` in a component's `build`
   configures it; every component mounted below reaches it with `useHttpClient(name)`. It is the same
   shape as [state](state.md) - named, resolved through the DOM, owned by the component that
   initialized it.
@@ -73,7 +73,7 @@ goes away, because the root never unmounts:
 
 ```js
 component('my-app', {
-  onMount: () => {
+  build: () => {
     initHttpClient('myapp.api', { baseUrl: env.API_URL })
     return layout()
   },
@@ -86,7 +86,7 @@ the user is in that section and is gone the moment they navigate out:
 ```js
 // admin/area.js - downloaded the first time someone visits /admin
 const shell = component('admin-shell', {
-  onMount: () => {
+  build: () => {
     initHttpClient('myapp.admin', { baseUrl: '/admin/api', timeout: 5000 })
     return div(adminNav(), router())
   },
@@ -124,7 +124,7 @@ Share the same client with a component subtree by passing it to `initHttpClient`
 
 ```js
 component('my-app', {
-  onMount: () => {
+  build: () => {
     initHttpClient(sync) // provided under its own name, 'myapp.sync'
     return layout()
   },
@@ -147,10 +147,9 @@ A few rules follow from clients being owned by components, and they are the same
   their own - separate configuration, separate request state.
 - **One name per component.** Initializing the same name twice in one component throws, so an
   accidental collision fails loudly instead of silently sharing.
-- **Resolve before the first `await`.** In an `async onMount`, call `initHttpClient` /
-  `useHttpClient` before you await anything; keep the handle and call it whenever you like
-  afterwards, including in event handlers. The `imp/http-client-setup-before-await` lint rule
-  catches this at write time.
+- **Resolve before the first `await`.** In an `async build`, call `initHttpClient` / `useHttpClient`
+  before you await anything; keep the handle and call it whenever you like afterwards, including in
+  event handlers. The `imp/http-client-setup-before-await` lint rule catches this at write time.
 - **Names are namespaced** - at least two dot-separated segments (`myapp.api`), like state names.
 
 Because a client is reached through the DOM rather than imported, a plain helper module takes it as
@@ -175,7 +174,7 @@ await api.delete(`/users/${id}`)
   buffer is passed through untouched, with no content type imposed.
 - **The response body is parsed by content type** - JSON into a value, `text/*` and XML into a
   string, anything else into a `Blob`. A `204` and an empty body resolve to `null`.
-- Paths are joined onto `baseUrl`; a full URL (`https://…`) is used as given.
+- Paths are joined onto `baseUrl`; a full URL (`https://...`) is used as given.
 
 `request` returns the whole response, and takes the method as an option:
 
@@ -381,7 +380,7 @@ import { div, p } from 'imp/html'
 import { useHttpClient } from 'imp/http'
 
 const status = component('api-status', {
-  onMount: () => {
+  build: () => {
     const api = useHttpClient('myapp.api')
     return div(
       div({ class: 'spinner', hidden: computed([api.pending], (count) => count === 0) }),
@@ -416,7 +415,7 @@ import { component, mount } from 'imp'
 import { expect, spy, test } from 'imp/test'
 import { initHttpClient } from 'imp/http'
 
-const owner = component('test-owner', { onMount: (_instance, setup) => setup() })
+const owner = component('test-owner', { build: (_instance, setup) => setup() })
 
 test('retries a failing read', async ({ clock }) => {
   let attempt = 0

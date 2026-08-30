@@ -19,14 +19,14 @@ import { button, div } from 'imp/html'
 import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
-  onMount: () => {
+  build: () => {
     const user = useState('myapp.user')
     return div(user.text((u) => u.name))
   },
 })
 
 export const app = component('my-app-root', {
-  onMount: () => {
+  build: () => {
     const user = initState('myapp.user', { name: 'Ada', theme: 'dark' })
     return div(
       profile(),
@@ -268,8 +268,8 @@ away. Resolve the state, `await`, build:
 
 ```js
 const orderList = component('my-app-order-list', {
-  placeholder: () => div('loading orders…'),
-  onMount: async (instance, { id }) => {
+  placeholder: () => div('loading orders...'),
+  build: async (instance, { id }) => {
     const orders = initState('myapp.orders', [])
     orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
     return ul(orders.each((order) => li(order.title), (order) => order.id))
@@ -294,7 +294,7 @@ component that subscribes and renders nothing:
 
 ```js
 const themeWatcher = component('my-app-theme-watcher', {
-  onMount: () => {
+  build: () => {
     const theme = useState('myapp.theme')
     theme.watch((value) => document.body.setAttribute('data-theme', value))
   },

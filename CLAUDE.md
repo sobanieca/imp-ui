@@ -159,9 +159,17 @@ commit is made.
 every file, must be plain ASCII. The dash is the one that keeps slipping in: write the hyphen `-`
 and never an em dash (U+2014), an en dash (U+2013) or a Unicode hyphen (U+2010). The rest of the
 Unicode punctuation set goes the same way: `...` rather than a single-character ellipsis (U+2026),
-`"` and `'` rather than curly quotes (U+2018-U+201D), `->` rather than an arrow (U+2192), `*` or `-`
-rather than a middle dot (U+00B7). This holds everywhere - source, docs, ADRs, skills, TODOs, commit
+`"` and `'` rather than curly quotes (U+2018-U+201D), `->` rather than an arrow (U+2192), `|` rather
+than a middle dot (U+00B7). This holds everywhere - source, docs, ADRs, skills, TODOs, commit
 messages, test snapshots and user-facing strings alike - and it holds for this file too.
+
+**The rule covers punctuation, not content or the two deliberate glyph sets.** Text that is
+non-ASCII because that is what it says stays as written: a translation fixture in Arabic or Polish,
+and third-party licence text quoted verbatim. Two glyph sets are kept on purpose as well -
+`imp
+test`'s pass/fail marks (U+2713 and U+2717), which carry the result at a glance in a way a word
+does not, and the box-drawing esbuild prints in its own errors, which imp captures rather than
+authors. Nothing else earns an exception; do not add a third one without recording it here.
 
 Two reasons it is not cosmetic. Skills and CLI output print into whatever encoding the user's
 terminal happens to have, where a non-ASCII byte is a mojibake risk rather than a nicer glyph. And a

@@ -80,8 +80,8 @@ at all in Firefox and animates outside the top layer in Safari.
   is why a dragged window can still animate out from where the user left it. Position is
   per-instance and never persisted - a reopened window is centred again.
 - **A component defers an initial open to `afterMount`.** Both promotions throw `InvalidStateError`
-  on an element that is not in the document, and `onMount` returns its tree before imp puts it in
-  the shadow root - so a dialog whose `open` is already true at mount opens on the next frame rather
+  on an element that is not in the document, and `build` returns its tree before imp puts it in the
+  shadow root - so a dialog whose `open` is already true at mount opens on the next frame rather
   than during the mount that would have thrown. Only the first open needs it; every later one runs
   against a connected element.
 - **The test DOM gets a top-layer fill**, installed in `installDomEnvironment` next to the popover

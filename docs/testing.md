@@ -78,7 +78,7 @@ test('adds numbers', () => {
 
   ```js
   test('full checkout', async ({ page }) => {
-    // …
+    // ...
   }, { timeout: 120_000 })
   ```
 
@@ -89,7 +89,7 @@ Hooks run around the tests of their own file: `beforeAll`, `beforeEach`, `afterE
 (imported from `imp/test`). An async test or hook is awaited.
 
 **Parameterized tests are just a loop.** `test()` registers in call order, so there's no special
-`each` helper to learn - generate cases with a plain `for…of`:
+`each` helper to learn - generate cases with a plain `for...of`:
 
 ```js
 for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
@@ -109,7 +109,7 @@ for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
 | `toContain(x)`                           | string contains substring / iterable contains element  |
 | `toMatch(pattern)`                       | string matches a RegExp or contains a substring        |
 | `toBeTruthy()`                           | truthy (`.not.toBeTruthy()` for falsy)                 |
-| `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives you `≥` and `≤`)      |
+| `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives you `>=` and `<=`)    |
 | `toThrow(message?)`                      | function throws; optionally message contains / matches |
 
 That's the whole set. There's no `toBeInstanceOf`, `toBeCloseTo`, or `toHaveLength`: an instance or
@@ -153,15 +153,15 @@ expect(user).toEqual({ id: expect.any(Number), name: expect.stringContaining('mp
 expect(save.calls).toEqual([[expect.objectContaining({ id: 1 })]])
 ```
 
-| Placeholder                    | Matches                                                     |
-| ------------------------------ | ----------------------------------------------------------- |
-| `expect.anything()`            | anything except `null` / `undefined`                        |
-| `expect.any(Ctor)`             | a value of that type (`String`, `Number`, `Date`, a class…) |
-| `expect.stringContaining(s)`   | a string containing `s`                                     |
-| `expect.stringMatching(re)`    | a string matching a RegExp (or containing text)             |
-| `expect.arrayContaining(xs)`   | an array containing at least each of `xs`                   |
-| `expect.objectContaining(obj)` | an object with at least those properties                    |
-| `expect.closeTo(n, digits?)`   | a number within a floating-point tolerance of `n`           |
+| Placeholder                    | Matches                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
+| `expect.anything()`            | anything except `null` / `undefined`                          |
+| `expect.any(Ctor)`             | a value of that type (`String`, `Number`, `Date`, a class...) |
+| `expect.stringContaining(s)`   | a string containing `s`                                       |
+| `expect.stringMatching(re)`    | a string matching a RegExp (or containing text)               |
+| `expect.arrayContaining(xs)`   | an array containing at least each of `xs`                     |
+| `expect.objectContaining(obj)` | an object with at least those properties                      |
+| `expect.closeTo(n, digits?)`   | a number within a floating-point tolerance of `n`             |
 
 A failed assertion reports what was expected and what was received:
 
@@ -205,7 +205,7 @@ expect(fetchThing.calls.length).toEqual(2) // called twice
 
 Whatever the spy should **do**, write it as the function you pass:
 
-| You want the spy to…       | Write                                      |
+| You want the spy to...     | Write                                      |
 | -------------------------- | ------------------------------------------ |
 | do nothing, return nothing | `spy()`                                    |
 | return a value             | `spy(() => 42)`                            |
@@ -252,7 +252,7 @@ test('renders the profile without touching the network', async () => {
 ```
 
 `profile.js` reaches `http.js` through `'../http.js'` and your test through `'./http.js'` -
-different paths, **same file**, so one `mockModule('./http.js', …)` covers both. imp matches the
+different paths, **same file**, so one `mockModule('./http.js', ...)` covers both. imp matches the
 module by the file it resolves to, not by how the import is spelled.
 
 **How it works.** The factory returns the module's exports and receives `{ spy, orig }`:
@@ -280,7 +280,7 @@ part you care about. `orig()` gives you the real module; spread it and override:
 
 ```js
 mockModule('./math.js', ({ spy, orig }) => ({
-  ...orig(), // add, subtract, … stay real
+  ...orig(), // add, subtract, ... stay real
   mul: spy(() => 0), // only mul is mocked
 }))
 ```
@@ -383,7 +383,7 @@ Start the clock at a fixed instant when your code reads the wall clock - pass `n
 ```js
 test('renews the token on the first of the year', ({ clock }) => {
   expect(new Date().getFullYear()).toEqual(2030)
-  // …
+  // ...
 }, { fakeTimers: { now: new Date('2030-01-01') } })
 ```
 
@@ -552,7 +552,7 @@ array (narrowed by `--unit`/`--e2e`) for the matrix to hand out, one file per jo
 E2E suites get slow because everything runs in sequence in one browser. imp's answer: since
 `imp test <file>.spec.js` is completely self-contained, you can run every spec file on its own
 machine at the same time. Splitting your suite into one spec per user flow (login, checkout, search,
-…) turns total e2e time into the time of the slowest flow. The trade-off is that each spec repeats
+...) turns total e2e time into the time of the slowest flow. The trade-off is that each spec repeats
 its own setup (for example logging in), which is exactly what makes it independent.
 
 `imp test --e2e --list` prints the spec files as JSON, which plugs straight into a GitHub Actions

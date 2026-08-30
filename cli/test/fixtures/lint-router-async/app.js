@@ -5,7 +5,7 @@ import { useHttpClient } from 'imp/http'
 import { router, useRoute } from 'imp/router'
 
 export const section = component('demo-section', {
-  onMount: async () => {
+  build: async () => {
     const api = useHttpClient('demo.api')
     const items = useState('demo.items')
     const slot = router()

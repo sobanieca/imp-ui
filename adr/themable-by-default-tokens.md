@@ -16,7 +16,7 @@ theme swap can be a single write of variables the whole app reads.
 ## Decision
 
 A **theme is a plain JS module** the app authors and imports: its default export is an object with a
-flat `tokens` map (bare token name → CSS value), plus optional `name` and `colorScheme` metadata.
+flat `tokens` map (bare token name -> CSS value), plus optional `name` and `colorScheme` metadata.
 There is no runtime registry, no `defineTheme`, and **no built-in mode axis** - light and dark are
 simply two theme files, and an app ships as many themes as it likes. Swapping themes is swapping
 which module is applied.
@@ -28,7 +28,7 @@ resolves to the matching built-in and then treats identically. It:
 
 - writes each token as an `--imp-`-prefixed custom property on `:root` (`document.documentElement`),
   where it inherits into body and every component's shadow root. imp owns the `--imp-` prefix; token
-  keys are bare (`color-primary` → `--imp-color-primary`), one flat namespace with no dots or
+  keys are bare (`color-primary` -> `--imp-color-primary`), one flat namespace with no dots or
   nesting, matching state and message keys.
 - overwrites every token it carries and does **not** diff against the previous theme or remove any
   property. A theme is required to define the **full** token set - a partial theme is a bug in the
@@ -75,12 +75,12 @@ needs to seed from it, so hiding the exports costs nothing: the state layer deep
 it holds, so an applied built-in cannot be edited in place by one app corner and silently change
 what a later `applyTheme('imp-dark')` produces - seeding copies the tokens instead. Theming adds no
 freezing of its own. Stdlib components reference tokens through a `token('color-primary')` helper
-that expands to `var(--imp-color-primary, …)` with the fallback taken from the built-in light theme,
-so they render standalone before any theme is applied and no component can state a default the
-themes disagree with.
+that expands to `var(--imp-color-primary, ...)` with the fallback taken from the built-in light
+theme, so they render standalone before any theme is applied and no component can state a default
+the themes disagree with.
 
 The **token naming scheme is fixed** - semantic color roles, numeric scales (`space-*`, `radius-*`,
-`shadow-*`, `font-size-*`, …), and font families - but the **exact list is not enumerated up
+`shadow-*`, `font-size-*`, ...), and font families - but the **exact list is not enumerated up
 front**: each stdlib component pulls the tokens it needs into the built-in surface as it is built,
 so every `--imp-*` name lands with a real consumer. Once referenced, a name is public API.
 
@@ -96,7 +96,7 @@ keeping the secondary's hue at a capped chroma so a theme's neutrals are tinted 
 Deriving rather than tabulating is what keeps the built-in themes, the theme editor's live preview
 and the file it exports from ever disagreeing - there is one function, and all three call it.
 
-**The palette is 31 named colors carried by every theme** - `color-gray` … `color-sky`, one solid
+**The palette is 31 named colors carried by every theme** - `color-gray` ... `color-sky`, one solid
 value each, generated from a table of OKLCH hue/chroma/lightness anchors. It is the one group with
 **no consumer inside imp**, and it is in the token surface anyway: an app that needs a per-item hue
 (a tag colour, a chart series, an avatar) should reach for a themed name rather than a literal, and

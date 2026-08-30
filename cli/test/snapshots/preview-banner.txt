@@ -1,6 +1,6 @@
 [INFO] imp preview serving 2 previews from <root>/test/fixtures/preview
-  → http://localhost:<port>/
-  logs → <root>/test/fixtures/preview/.imp/dev.log
-  themes → theme/brand.js + built-ins
-  languages → en, pl, ar
-  imp auto-injected · live reload · console + network telemetry
+  -> http://localhost:<port>/
+  logs -> <root>/test/fixtures/preview/.imp/dev.log
+  themes -> theme/brand.js + built-ins
+  languages -> en, pl, ar
+  imp auto-injected | live reload | console + network telemetry

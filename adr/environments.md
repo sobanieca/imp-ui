@@ -38,8 +38,8 @@ Two constraints shaped the mechanism:
   no environment (empty object - today's behavior, no breakage for projects that never opt in). An
   unknown alias fails fast listing the defined aliases.
 - **One runtime mechanism, dev == prod.** The resolved values are injected into the HTML head as
-  `<script>globalThis.__IMP_ENV__ = { … }</script>`, ahead of the import map, identically by the dev
-  server and the production build. The imp library exports a frozen `env` object read from that
+  `<script>globalThis.__IMP_ENV__ = { ... }</script>`, ahead of the import map, identically by the
+  dev server and the production build. The imp library exports a frozen `env` object read from that
   global (empty when nothing was injected), so app code writes `import { env } from 'imp'` and never
   touches the global directly.
 - **Env files stay out of the build output.** Every file referenced by `environments` is excluded

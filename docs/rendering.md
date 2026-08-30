@@ -24,7 +24,7 @@ mount('#app', div(h1('Hello')))
   diffing.
 - Plain helper functions that bundle up elements (`card({ title }) -> div(...)`) are just
   functions - lowercase, no JSX, no framework concept. When a piece of UI needs a lifecycle or
-  state, promote it to a **component** (`component('my-app-card', …)`, see
+  state, promote it to a **component** (`component('my-app-card', ...)`, see
   **[Components](components.md)**); its factory is called the same way.
 - Arguments are dispatched by **type**, not position.
 - Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) - no
@@ -37,7 +37,7 @@ el(tag, ...args) -> Node            // the one primitive
 div, p, span, h1..h6, ul, li, button, input, form, table, ...  // ~80 tag factories
 ```
 
-Both live in `imp/html`; tags outside the factory list are built with `el('tag', …)`.
+Both live in `imp/html`; tags outside the factory list are built with `el('tag', ...)`.
 
 Argument dispatch by **type**, order irrelevant:
 
@@ -85,10 +85,10 @@ button(
   exists on the node - if the element is built **before** `customElements.define(...)`, the prop is
   not yet exposed and falls back to an attribute, so define custom elements before constructing
   nodes that pass rich/`null` props to them.
-- **`class`**: `'card'` · `['card', extra]` (falsy entries dropped, joined) · `{ active: cond }`
+- **`class`**: `'card'` | `['card', extra]` (falsy entries dropped, joined) | `{ active: cond }`
   (object - the truthy entries' names become the class). Every form sets the class whole - what you
   pass is what the element gets.
-- **`style`**: `'color:red'` · object (`camelCase` -> kebab, `--custom-props` kept verbatim).
+- **`style`**: `'color:red'` | object (`camelCase` -> kebab, `--custom-props` kept verbatim).
 - **`events`**: `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` - native DOM event
   names, **no `on` prefix**. The optional second array element is `addEventListener` options.
 - **State-valued props.** Any prop value may be a state (from `initState`/`useState`/`computed`) -

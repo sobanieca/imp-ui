@@ -17,8 +17,8 @@ export default {
 import { applyTheme, theme } from 'imp/theme'
 import dark from './dark.js'
 
-applyTheme('imp-light') // a built-in name…
-applyTheme(dark) // …or your own module
+applyTheme('imp-light') // a built-in name...
+applyTheme(dark) // ...or your own module
 theme.get().name // the active theme; also theme.watch/text/view
 ```
 

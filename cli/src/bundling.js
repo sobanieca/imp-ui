@@ -181,7 +181,7 @@ function extractMockModuleCalls(source) {
     const { first, rest } = splitFirstArgument(argumentSource)
     const specifier = parseStringLiteral(first)
     if (specifier === null) {
-      throw new Error('mockModule(specifier, …) - specifier must be a string literal')
+      throw new Error('mockModule(specifier, ...) - specifier must be a string literal')
     }
     return { specifier, factorySource: rest }
   })

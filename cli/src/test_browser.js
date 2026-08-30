@@ -149,7 +149,7 @@ export async function downloadBrowser() {
   const url =
     `https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/${build.platform}/chrome-${build.platform}.zip`
   logger.info(
-    `downloading Chrome ${CHROME_VERSION} for e2e tests (one-time, cached in ~/.imp/browser)…`,
+    `downloading Chrome ${CHROME_VERSION} for e2e tests (one-time, cached in ~/.imp/browser)...`,
   )
   const response = await fetch(url)
   if (!response.ok) {

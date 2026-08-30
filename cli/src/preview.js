@@ -695,7 +695,7 @@ export async function preview(
     bundles.clear()
     previews = await discover().catch(() => previews)
     catalog = await buildPreviewCatalog(root, previews)
-    logger.debug('change detected → reload')
+    logger.debug('change detected -> reload')
     broadcast('reload')
   })
 
@@ -707,19 +707,19 @@ export async function preview(
       port: listenPort,
       onListen: ({ port }) => {
         logger.info(`imp preview serving ${count} from ${root}`)
-        console.log(`  → http://localhost:${port}${openPath}`)
-        console.log(dim(`  logs → ${devLog.path}`))
+        console.log(`  -> http://localhost:${port}${openPath}`)
+        console.log(dim(`  logs -> ${devLog.path}`))
         if (themes.length) {
           console.log(
-            dim(`  themes → ${themes.map(({ source }) => source).join(', ')} + built-ins`),
+            dim(`  themes -> ${themes.map(({ source }) => source).join(', ')} + built-ins`),
           )
         }
         if (translations.length) {
           console.log(
-            dim(`  languages → ${translations.map(({ code }) => code).join(', ')}`),
+            dim(`  languages -> ${translations.map(({ code }) => code).join(', ')}`),
           )
         }
-        console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
+        console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
       },
     },
     createPreviewHandler({

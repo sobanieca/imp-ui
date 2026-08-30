@@ -11,7 +11,7 @@ a downscaler, not an image editor - anything beyond a straight resize is out of 
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | neither `-w` nor `-h` | **inspect mode** - reports dimensions and byte size, writes nothing, and prints a ready-to-run resize command if the asset is oversized |
 | one of `-w` / `-h`    | resizes to that dimension, computing the other from the aspect ratio                                                                    |
-| both                  | scales to the largest size that **fits inside** that width × height box                                                                 |
+| both                  | scales to the largest size that **fits inside** that width x height box                                                                 |
 | both plus `--stretch` | resizes to exactly that size, distorting the picture                                                                                    |
 
 ```

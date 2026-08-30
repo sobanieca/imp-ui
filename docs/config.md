@@ -11,7 +11,7 @@ works without it.
 }
 ```
 
-You can annotate the file freely: `//` line and `/* … */` block comments and trailing commas are
+You can annotate the file freely: `//` line and `/* ... */` block comments and trailing commas are
 accepted even though strict JSON forbids them. If you prefer, name the file `imp.jsonc` instead -
 imp looks for `imp.json` first and falls back to `imp.jsonc` in the same directory. Commands that
 edit the file for you (`imp install`, `imp uninstall`, and the version pin written by `imp update`)

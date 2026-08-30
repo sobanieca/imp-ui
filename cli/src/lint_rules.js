@@ -218,13 +218,13 @@ const createSetupBeforeAwaitRule = (
         ? callee.object.name
         : null
 
-    const isAsyncOnMount = (node) =>
+    const isAsyncBuild = (node) =>
       node.async && node.parent?.type === 'Property' && !node.parent.computed &&
       node.parent.value === node &&
-      (node.parent.key.name === 'onMount' || node.parent.key.value === 'onMount')
+      (node.parent.key.name === 'build' || node.parent.key.value === 'build')
 
     const enterFunction = (node) =>
-      functions.push({ tracked: isAsyncOnMount(node), firstAwaitEnd: null })
+      functions.push({ tracked: isAsyncBuild(node), firstAwaitEnd: null })
     const exitFunction = () => functions.pop()
 
     const markAwait = (position) => {
@@ -371,9 +371,9 @@ export default {
       setupHelpers: STATE_SETUP_HELPERS,
       handleCreators: STATE_HANDLE_CREATORS,
       setupMessage: (helper) =>
-        `'${helper}' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
+        `'${helper}' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
       watchMessage: (handle) =>
-        `'${handle}.watch' runs after an await in an async onMount - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
+        `'${handle}.watch' runs after an await in an async build - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
     }),
     'http-client-name-namespace': createLiteralNameRule(
       'imp/http',
@@ -385,7 +385,7 @@ export default {
       setupHelpers: HTTP_SETUP_HELPERS,
       handleCreators: HTTP_CLIENT_HELPERS,
       setupMessage: (helper) =>
-        `'${helper}' runs after an await in an async onMount - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
+        `'${helper}' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
       watchMessage: null,
     }),
     'router-setup-before-await': createSetupBeforeAwaitRule({
@@ -394,19 +394,19 @@ export default {
       handleCreators: ROUTE_HANDLE_CREATORS,
       appliesTo: rendersEnclosingArea,
       setupMessage: () =>
-        `'router' runs after an await in an async onMount - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable`,
+        `'router' runs after an await in an async build - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable`,
       watchMessage: (handle) =>
-        `'${handle}.watch' runs after an await in an async onMount - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead`,
+        `'${handle}.watch' runs after an await in an async build - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead`,
     }),
-    'no-root-query-in-mount': {
+    'no-root-query-in-build': {
       create(context) {
         const queryMethods = new Set(['querySelector', 'querySelectorAll', 'getElementById'])
         const frames = []
 
-        const isOnMount = (node) =>
+        const isBuild = (node) =>
           node.parent?.type === 'Property' && !node.parent.computed &&
           node.parent.value === node &&
-          (node.parent.key.name === 'onMount' || node.parent.key.value === 'onMount')
+          (node.parent.key.name === 'build' || node.parent.key.value === 'build')
 
         const rootSpecOf = (node) => {
           const first = node.params[0]
@@ -433,7 +433,7 @@ export default {
               expression.property.type === 'Identifier' && expression.property.name === 'root' &&
               expression.object.type === 'Identifier' && expression.object.name === spec.name
 
-        const enterFunction = (node) => frames.push(isOnMount(node) ? rootSpecOf(node) : null)
+        const enterFunction = (node) => frames.push(isBuild(node) ? rootSpecOf(node) : null)
         const exitFunction = () => frames.pop()
 
         return {
@@ -453,7 +453,7 @@ export default {
               context.report({
                 node,
                 message:
-                  `the shadow root is queried in onMount before the returned DOM is placed - onMount's output fills the shadow root only after onMount returns (after the awaited promise resolves, for an async onMount), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page`,
+                  `the shadow root is queried in build before the returned DOM is placed - build's output fills the shadow root only after build returns (after the awaited promise resolves, for an async build), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page`,
               })
             }
           },

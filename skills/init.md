@@ -44,7 +44,7 @@ one source image imp renders the whole icon set from. It is a build input, so it
 
 ```js
 export const app = component('app-root', {
-  onMount: () => {
+  build: () => {
     const clicks = initState('app.clicks', 0)
     return div(
       p({ id: 'clicks' }, clicks.text((value) => `Clicks: ${value}`)),

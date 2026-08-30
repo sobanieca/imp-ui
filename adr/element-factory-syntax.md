@@ -14,8 +14,8 @@ awkward to compose programmatically.
 DOM is expressed as **JavaScript function calls**:
 
 - `el(tag, ...args)` is the single primitive.
-- Per-tag shortcuts (`div`, `p`, `button`, … ~80 tags) are thin wrappers over `el`, generated from a
-  tag list.
+- Per-tag shortcuts (`div`, `p`, `button`, ... ~80 tags) are thin wrappers over `el`, generated from
+  a tag list.
 - Both are exported from the `imp/html` specifier (`library-import-namespaces.md`), which keeps the
   eighty-odd names out of the framework's own namespace.
 

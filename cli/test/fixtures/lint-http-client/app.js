@@ -5,7 +5,7 @@ import { createHttpClient, initHttpClient, useHttpClient } from 'imp/http'
 export const shared = createHttpClient('sync', { baseUrl: '/sync' })
 
 export const orders = component('demo-orders', {
-  onMount: async () => {
+  build: async () => {
     const api = initHttpClient('api', { baseUrl: '/api' })
     const admin = useHttpClient('demo.admin')
     const good = initHttpClient('demo.api', { baseUrl: '/api' })

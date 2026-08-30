@@ -55,8 +55,8 @@ native addon, no subprocess beyond the already-sanctioned browser-under-test.
 - **Config defaults** live in `test.video` (`config.js`, validated beside `test.browser`/
   `test.entry`): `enable`, `fps`, `maxDuration` (seconds), `width` (px), `quality`. Users only ever
   edit `imp.json`.
-- **Wiring** mirrors `--screenshots`: parsed in `main.js`, threaded through `runTests` →
-  `orchestrate` passthrough args → `runSpecFile`, reusing the resolved browser and page already
+- **Wiring** mirrors `--screenshots`: parsed in `main.js`, threaded through `runTests` ->
+  `orchestrate` passthrough args -> `runSpecFile`, reusing the resolved browser and page already
   established for the spec.
 
 This is a genuine extension of the `imp test` subprocess-exception surface in

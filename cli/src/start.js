@@ -59,7 +59,7 @@ function printEntry(entry) {
       ? red(entry.status)
       : green(entry.status)
     const from = entry.mock ? dim(` (mock: ${entry.mock})`) : ''
-    logger.http(`${entry.method} ${entry.url} → ${status} ${dim(entry.ms + 'ms')}${from}`)
+    logger.http(`${entry.method} ${entry.url} -> ${status} ${dim(entry.ms + 'ms')}${from}`)
   }
 }
 
@@ -415,7 +415,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
 
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, () => {
-    logger.debug('change detected → reload')
+    logger.debug('change detected -> reload')
     broadcast('reload')
   })
 
@@ -424,9 +424,9 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
       port: listenPort,
       onListen: ({ port }) => {
         logger.info(`imp start serving ${entryName} from ${root}`)
-        console.log(`  → http://localhost:${port}/`)
-        console.log(dim(`  logs → ${devLog.path}`))
-        console.log(dim('  imp auto-injected · live reload · console + network telemetry'))
+        console.log(`  -> http://localhost:${port}/`)
+        console.log(dim(`  logs -> ${devLog.path}`))
+        console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
       },
     },
     createRequestHandler({

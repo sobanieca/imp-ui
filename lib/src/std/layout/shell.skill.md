@@ -27,7 +27,7 @@ is a prop taking DOM.
 | `rail`       | DOM                            | none     | The thin far-left column                                  |
 | `sidebar`    | DOM                            | none     | The nav column; becomes a drawer below `48rem`            |
 | `aside`      | DOM                            | none     | Right contextual column, rendered into `<aside>`          |
-| `bottomNav`  | DOM                            | none     | Shown **only** below `48rem`; suppresses the drawer       |
+| `bottomNav`  | DOM                            | none     | `display: none` at `>= 48rem`; suppresses the drawer      |
 | `headerSpan` | `'full'`, `'content'`          | `'full'` | `'content'` starts the header after the rail and sidebar  |
 | `navOpen`    | boolean, or a state - **live** | `false`  | Drawer state; the shell owns one if the prop is omitted   |
 | `events`     | `{ navToggle }`                | -        | `detail: { open }`, when the shell opens or closes itself |
@@ -67,6 +67,10 @@ Rules an agent gets wrong:
   opened by a trigger the shell renders in the header. Passing `bottomNav` suppresses the drawer -
   presence is the switch, so there is no `compact` mode prop. The same `items` state can feed a
   column `navMenu` in the sidebar and a `direction: 'row'` one in `bottomNav`.
+- **`bottomNav` is not a footer, and there is no `footer` region.** It is `display: none` at
+  `>= 48rem`, so anything a wide screen must keep showing - a status bar, a player, an action row -
+  does not go there. Put that in the `header`, the `aside`, or at the end of the main content you
+  pass as children.
 - **The drawer animates itself and holds the page still.** It slides in from the inline start over
   `--imp-duration-medium` behind a fading backdrop, slides back out on Escape, on a backdrop click
   and on close, drops to an instant open under `prefers-reduced-motion: reduce`, and stops the page
@@ -76,8 +80,8 @@ Rules an agent gets wrong:
 - **`navOpen` is optional.** Without it the shell owns the drawer state; pass a **writable** state
   (never a `computed`) when the app needs to close the drawer after navigating, and listen with
   `events: { navToggle }` when it only needs to observe.
-- **There is no width prop and no `footer` region.** Sizes are the three custom properties above;
-  anything else goes in the region DOM you pass.
+- **There is no width prop.** Sizes are the three custom properties above; anything else goes in the
+  region DOM you pass.
 - **The usual region contents already ship.** `imp/std/shell` has `appLogo`, `breadcrumbs`,
   `userCard`, `themeSelect` and `langSelect`; nav rows are `navMenu` items with an `icon`. Reach for
   those before writing a region by hand, and replace any one of them with your own DOM when it does
@@ -99,6 +103,6 @@ shell({
 }, page())
 ```
 
-Related: imp skill std/navMenu - the nav rows a sidebar, rail or bottom nav is usually built from ·
-imp skill std/appLogo - the brand block for the sidebar or rail · imp skill std/breadcrumbs - the
+Related: imp skill std/navMenu - the nav rows a sidebar, rail or bottom nav is usually built from;
+imp skill std/appLogo - the brand block for the sidebar or rail; imp skill std/breadcrumbs - the
 trail above the main region.

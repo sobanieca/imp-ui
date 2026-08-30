@@ -2,7 +2,7 @@ $ imp build  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-built index.html → dist/
+built index.html -> dist/
   app.js (<size>)
   index.html (<size>)
 

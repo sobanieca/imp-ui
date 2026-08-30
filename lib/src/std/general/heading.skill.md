@@ -17,7 +17,7 @@ argument; everything after it is the heading text.
 
 Rules an agent gets wrong:
 
-- **`level` is a number, not a string** - `heading({ level: 2 }, …)`, not `level: 'h2'`.
+- **`level` is a number, not a string** - `heading({ level: 2 }, ...)`, not `level: 'h2'`.
 - **Type size follows the level**, so there is no size prop: pick the level the document outline
   needs and the scale takes care of itself.
 - **No outer margins.** The layout around it owns the spacing.

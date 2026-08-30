@@ -2,7 +2,7 @@ $ imp build app.js --output component  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-built app.js → component/
+built app.js -> component/
   LICENSES.txt - 2 third-party license notices, referenced from every script emitted
   LICENSES.txt (<size>)
   app.js (<size>)

@@ -57,7 +57,7 @@ other request, tagged with the file and entry that answered it:
 
 ```
 [INFO] mocks - 2 file(s) from mocks/ serving through the browser
-[HTTP] GET http://localhost:4507/api/users → 200 802ms (mock: mocks/users.mock.js #1)
+[HTTP] GET http://localhost:4507/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
 ```
 
 ## Rules an agent gets wrong
