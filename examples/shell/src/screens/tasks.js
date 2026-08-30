@@ -81,11 +81,6 @@ const addTask = component('todo-add', {
       align-items: flex-end;
       gap: var(--imp-space-2);
     }
-
-    .add imp-text-field {
-      flex: 1;
-      min-inline-size: 0;
-    }
   `,
   build: () => {
     const todos = useState('tasks.todos')
