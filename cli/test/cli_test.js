@@ -1876,7 +1876,9 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       const field = shadow.querySelector('textarea')
       field.value = 'The value is cut off below 320px.'
       shadow.querySelector('[data-action="save"]').click()
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      while (!shadow.querySelector('.status').textContent) {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+      }
       steps.status = shadow.querySelector('.status').textContent
       steps.viewAfterSaving = view()
       steps.outlineGone = outline().hidden
