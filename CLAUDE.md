@@ -224,6 +224,29 @@ When a case is this close, put the reasoning in the ADR rather than deciding it 
 Components with no platform counterpart at all - `comboBox`, `datePicker`, `tree` - are **in**
 scope. Nothing is being substituted for; the platform simply has no such control.
 
+## Direction and writing modes - logical always, RTL guaranteed
+
+**Write every box in logical properties and logical units.** `inline-size` / `block-size`, not
+`width` / `height`; `margin-inline-start`, not `margin-left`; `inset-block-end`, not `bottom`; `dvi`
+/ `dvb`, not `vw` / `dvh`; `position-area` in logical keywords (`block-end`, `inline-start`). The
+full decision and its scope are in `adr/logical-properties-rtl-scope.md`.
+
+- **Never feed a physical unit to a logical property.** `max-inline-size: calc(100vw - ...)` is the
+  bug this rule exists to stop - it bolts the text-flow axis to the screen's width, and it is also
+  mismeasured in plain LTR, because `vw` counts the classic scrollbar and `dvi` does not. Both
+  halves of one clamp must name the same axis.
+- **LTR and RTL are a tested guarantee.** A direction bug in a standard component is a bug, and an
+  interactive component's tests cover its mirrored geometry the way they cover its keyboard.
+- **Vertical writing modes are out of scope.** Logical properties mean `vertical-rl` does not break
+  structurally, and that is the entire commitment: do not verify a component in it, do not add a
+  test for it, and do not fix an issue that only reproduces there. Close it as out of scope.
+- **Direction is runtime state, never a build variant.** One bundle serves every direction - imp
+  ships no per-direction build and never tells an app to serve RTL from its own URL. `init` already
+  rewrites `<html dir>` when the language changes (`adr/translatable-by-default.md`).
+- **The one exception is the fluid theme scale**, whose `clamp()` values in `lib/src/theme.js` use
+  physical `vw` on purpose: they must be static, and a dynamic unit would resize every spacing token
+  as a mobile URL bar slides. Do not cite this exception anywhere else.
+
 ## Accessibility
 
 **imp supports accessibility out of the box.** An app built from standard components clears the

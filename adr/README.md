@@ -47,9 +47,10 @@ Conventions:
 
 ## Internationalization
 
-| ADR                                                   | Decision                                                                                                                          |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| [translatable-by-default](translatable-by-default.md) | `<html lang>` is the language and `<html dir>` follows it; declared per-language messages, `t()` lookup, app-supplied `imp.` keys |
+| ADR                                                             | Decision                                                                                                                          |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [translatable-by-default](translatable-by-default.md)           | `<html lang>` is the language and `<html dir>` follows it; declared per-language messages, `t()` lookup, app-supplied `imp.` keys |
+| [logical-properties-rtl-scope](logical-properties-rtl-scope.md) | Logical properties and units everywhere; LTR and RTL guaranteed, vertical writing modes out of scope                              |
 
 ## Components
 
