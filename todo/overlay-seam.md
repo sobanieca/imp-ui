@@ -86,8 +86,8 @@ it against the four browsers first.
 
 Placement is exempt from unit testing - happy-dom has no layout engine - so what a unit test can
 check is that a component declares the rules; where a panel lands is e2e and visual, which
-`std.spec.js` does for the button menu by pinning the trigger to the top and bottom of the viewport
-and asserting which side the panel took.
+`std.spec.js` does for the button menu by pinning the trigger to each edge and corner of the
+viewport and asserting which side the panel took and that it stayed on screen.
 
 ### 3. `toast` - the one region
 

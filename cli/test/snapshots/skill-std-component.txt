@@ -52,8 +52,9 @@ Rules for `items`:
 - **Choosing an item fires a cancellable `select` event** on the host, with `detail: { id, item }`,
   and then calls that item's `onClick({ id, item })`. Calling `preventDefault()` on `select` stops
   the `onClick`.
-- **The panel is placed by the browser, not by imp** - it opens under the trigger and flips above it
-  near the bottom of the screen. There is no `placement` prop.
+- **The panel is placed by the browser, not by imp** - it opens under the trigger, flips above it
+  near the bottom of the screen and flips to the other side near a left or right edge, so it is
+  never off screen. There is no `placement` prop.
 - **Dismissal and layering are the platform's**: clicking away or pressing Escape closes the menu
   and returns focus to the trigger. Do not add your own outside-click handler.
 - Arrow keys, `Home` and `End` walk the enabled items; `disabled` items are skipped.

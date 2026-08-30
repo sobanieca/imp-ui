@@ -390,10 +390,12 @@ button({
 ```
 
 The menu is in the top layer too, so nothing clips it, and **the browser places it**: it opens under
-the trigger, flips above it when the button sits near the bottom of the screen, and slides along to
-stay on screen at the edges. Clicking away or pressing Escape closes it and puts focus back on the
-trigger; arrow keys walk the items. None of that is imp code following the button around, which is
-why there is no `placement` prop to get wrong and nothing to keep in sync while the page scrolls.
+the trigger and lines up with its trailing edge, flips above the button when there is no room below,
+and opens the other way out when the button sits against the left or right of the screen - so a menu
+is never half off screen, wherever the control it belongs to happens to be. Clicking away or
+pressing Escape closes it and puts focus back on the trigger; arrow keys walk the items. None of
+that is imp code following the button around, which is why there is no `placement` prop to get wrong
+and nothing to keep in sync while the page scrolls.
 
 Because the trigger and its panel have to be rendered by the same component for the browser to tie
 them together, a menu is always a prop of the control it belongs to rather than a wrapper you put
