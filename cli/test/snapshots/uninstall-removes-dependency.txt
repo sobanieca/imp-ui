@@ -9,6 +9,8 @@ uninstalled bus (npm:mitt@3.0.1)
 
 --- files ---
 dependencies/base64/base64.js
+dependencies/base64/manifest.json
+dependencies/mitt/manifest.json
 dependencies/mitt/mitt.js
 
 --- imp.json ---

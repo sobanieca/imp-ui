@@ -1,0 +1,13 @@
+$ imp install long@5.2.3  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] 1 bundled package falls outside the licenses list (MIT, ISC):
+  long@5.2.3 is Apache-2.0
+add Apache-2.0 to 'licenses' in imp.json to allow it
+
+--- wrote dependencies/ ---
+no

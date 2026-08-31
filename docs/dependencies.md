@@ -113,15 +113,17 @@ bundle - the package you asked for and everything it pulled in:
 ```
 installed micromark (npm:micromark@4.0.2)
   dependencies/micromark/micromark.js (52.1 kB)
+  dependencies/micromark/manifest.json (packages, versions, licenses)
   bundled packages:
-    decode-named-character-reference@1.3.0
-    micromark@4.0.2
-    micromark-core-commonmark@2.0.3
+    decode-named-character-reference@1.3.0 - MIT
+    micromark@4.0.2 - MIT
+    micromark-core-commonmark@2.0.3 - MIT
     ...
 ```
 
-This listing is your audit record: read it to see what you are actually shipping, and note a
-specific version if you ever need to trace one.
+Read it to see what you are actually shipping. The same listing is written to disk, so it is still
+there long after the terminal has scrolled - see
+**[The dependency manifest](#the-dependency-manifest)**.
 
 ## Large dependencies
 
@@ -197,6 +199,99 @@ check that still looks at it is the file-size limit, since the bundle lands in g
 `imp install` keeps them, because the notice has to survive all the way to what your users download.
 `imp build` picks it up from there and collects it into your app's `LICENSES.txt` - see
 **[License notices](cli.md#license-notices)**. Leave the notice where it is.
+
+## The dependency manifest
+
+Beside every bundle sits a `manifest.json` describing it. The bundle is minified and self-contained,
+which makes it unreadable: you cannot tell by looking what went into it, and re-running
+`imp install` does not tell you either, because it resolves the latest transitive versions again
+rather than the ones you shipped. The manifest is what answers the question instead.
+
+```json
+{
+  "alias": "micromark",
+  "specifier": "npm:micromark@4.0.2",
+  "installedAt": "2026-08-27T09:14:02Z",
+  "impImports": [],
+  "packages": [
+    {
+      "registry": "npm",
+      "name": "micromark",
+      "version": "4.0.2",
+      "license": "MIT",
+      "licenseText": "..."
+    }
+  ]
+}
+```
+
+Every package that went into the bundle is listed with its exact version, its license identifier and
+that license's full text. Commit it with the bundle; `imp uninstall` removes it along with
+everything else in the folder.
+
+It is written when you install, and it describes what you installed - it is not a lock file and
+nothing reads it back to pin a version. That means you can answer, from a fresh clone and with no
+network:
+
+- **What am I shipping?** Every package and exact version, for an inventory or a software bill of
+  materials.
+- **Am I affected?** When an advisory names a package and version, the answer is in the repository
+  rather than in a rebuild.
+- **May I ship this?** Every license identifier and text, which is also what `imp build` folds into
+  your app's `LICENSES.txt`.
+
+If a package declares no license at all, `imp install` says so and names it, rather than passing
+over it quietly. That is a question to settle with the package's author before you ship.
+
+## The license policy
+
+Shipping a bundled SPA distributes every package inside it, so a copyleft dependency can oblige you
+to publish your own source. imp checks for that before it becomes your problem. The `licenses` key
+in `imp.json` says what you accept:
+
+```json
+{ "licenses": "permissive" }
+```
+
+`"permissive"` is the default, so the check is on even if you never configure it. Three tiers, each
+including the ones before it:
+
+| Value             | Accepts                                                           |
+| ----------------- | ----------------------------------------------------------------- |
+| `"permissive"`    | MIT, ISC, BSD, Apache-2.0, 0BSD, Unlicense, CC0, Zlib and similar |
+| `"weak-copyleft"` | the above plus MPL, LGPL, EPL, CDDL                               |
+| `"any"`           | everything, including GPL, AGPL and SSPL - no check               |
+
+If a tier is not the distinction you want to draw, give your own list of SPDX identifiers instead,
+and anything not on it is refused:
+
+```json
+{ "licenses": ["MIT", "ISC", "Apache-2.0"] }
+```
+
+Both `imp install` and `imp build` enforce it. Install fails before the bundle is written, so a
+package you may not ship never lands in your repository:
+
+```
+imp install axe-core
+
+  1 bundled package falls outside the 'permissive' license policy:
+    axe-core@4.8.2 is MPL-2.0, which is weak copyleft
+  set 'licenses' in imp.json to 'weak-copyleft' to allow it
+```
+
+The build runs the same check against every dependency it bundles, which is what catches a
+dependency someone else added, or a policy you tightened after the fact.
+
+Two details worth knowing:
+
+- **A choice of licenses counts as the most permissive one you could take.** A package published as
+  `(BSD-3-Clause OR GPL-2.0)` passes the permissive tier, because you may take the BSD terms.
+  Conversely a package licensed under several at once must satisfy all of them.
+- **A license imp cannot identify is reported, never silently allowed or refused.** `imp install`
+  warns and names the package; the build does not fail on it. This covers every JSR package, since
+  JSR publishes no license identifier. imp will not block you over something it merely failed to
+  read, and it will not pretend it checked.
 
 ## Choosing dependencies well
 

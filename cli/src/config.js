@@ -1,5 +1,6 @@
 import { dirname, join, resolve } from '@std/path'
 import { applyEdits, modify, parse as parseJsonc, printParseErrorCode } from './vendor/jsonc.js'
+import { DEFAULT_LICENSE_POLICY, LICENSE_POLICIES } from './license_policy.js'
 
 const isPlainObject = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -82,6 +83,8 @@ const PUBLIC_FOLDER = 'public'
 
 export const publicDirectory = (root) => resolve(root, PUBLIC_FOLDER)
 
+export const licensePolicy = (config) => config?.licenses ?? DEFAULT_LICENSE_POLICY
+
 export async function loadImpConfig(startDir) {
   const found = await findConfigFile(startDir)
   if (!found) return {}
@@ -104,6 +107,21 @@ export async function loadImpConfig(startDir) {
   for (const key of ['dependencies', 'fmt', 'lint', 'test', 'preview', 'pwa', 'environments']) {
     if (config[key] !== undefined && !isPlainObject(config[key])) {
       throw new Error(`invalid ${name} - '${key}' must be an object`)
+    }
+  }
+  if (config.licenses !== undefined) {
+    if (Array.isArray(config.licenses)) {
+      if (!config.licenses.length || config.licenses.some((id) => typeof id !== 'string')) {
+        throw new Error(
+          `invalid ${name} - 'licenses' as a list must hold one or more SPDX identifier strings`,
+        )
+      }
+    } else if (!Object.hasOwn(LICENSE_POLICIES, config.licenses)) {
+      throw new Error(
+        `invalid ${name} - 'licenses' must be ${
+          Object.keys(LICENSE_POLICIES).map((policy) => `'${policy}'`).join(', ')
+        }, or a list of SPDX identifiers`,
+      )
     }
   }
   for (const [alias, path] of Object.entries(config.environments ?? {})) {

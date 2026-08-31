@@ -31,13 +31,16 @@ The notice travels with the code, all the way to what a user downloads. Two chan
   `legalComments: 'external'`, gathers the per-output legal files it emits, splits them into
   individual comment blocks, drops duplicates, and writes them - **verbatim, never reformatted,
   truncated or summarized** - into `LICENSES.txt` at the root of the output directory. Nothing
-  configures this and nothing turns it off.
+  configures this and nothing turns it off. They are one of two sources the file merges: the other
+  is the SPDX identifier and license text recorded for every bundled package at vendor time
+  (`vendored-dependency-manifest.md`), which is what covers a package carrying no header comment at
+  all.
 - **Every emitted script points at it.** Each `.js` output - entry bundles, lazily loaded chunks,
   and the inline module scripts re-inlined into the page - opens with
   `/*! Third-party license notices: /LICENSES.txt */`, prefixed by `IMP_BASEPATH` like any other
   root-absolute URL. A reader who lands on a minified bundle can get from there to the notices.
-- **Nothing bundled, nothing written.** With no legal comments in the output, no file is produced
-  and no reference comment is added, so a build that redistributes nothing does not pretend to.
+- **Nothing bundled, nothing written.** With no notice from either source, no file is produced and
+  no reference comment is added, so a build that redistributes nothing does not pretend to.
 - **The dev-time bundlers keep stripping.** `imp start`, `imp preview`, `imp test` and the mock
   bundler stay on `legalComments: 'none'` - their output is never distributed, and the noise buys
   nothing.
@@ -55,10 +58,11 @@ covers only what the app actually serves. Neither file is derived from the other
 - A deployed imp app carries the attribution its dependencies require, without the author doing
   anything, and the set is exact because it is derived from the build graph rather than from a
   dependency list.
-- Notice detection is esbuild's: a comment is legal if it is `/*! ... */`, `//!`, or contains
-  `@license` or `@preserve`. A package whose header uses none of those markers is not collected -
-  imp does not guess, and does not read `LICENSE` files out of packages it never sees, since only
-  the bundle is vendored.
+- Comment detection is esbuild's: a comment is legal if it is `/*! ... */`, `//!`, or contains
+  `@license` or `@preserve`. A package whose header uses none of those markers contributes no
+  comment block, which used to mean it contributed nothing at all; its license now arrives from the
+  vendor-time manifest instead, read from the package's own `LICENSE` file while `imp install` still
+  has the package rather than the bundle.
 - Vendored bundles and built output grow by the size of the notices they carry. This counts toward
   the `maxFileSize` warning on `dependencies/`; it is a few hundred bytes against a limit in the
   hundreds of kilobytes.

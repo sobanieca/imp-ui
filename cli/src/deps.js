@@ -43,18 +43,37 @@ export const DATAURL_ASSET_LOADERS = loadersFor(
 const NPM_CACHE_PATH = /[/\\]npm[/\\][^/\\]+[/\\](@[^/\\]+[/\\][^/\\]+|[^/\\]+)[/\\]([^/\\]+)[/\\]/
 const JSR_CACHE_PATH = /jsr\.io\/(@[^/]+\/[^/]+)\/([^/]+)\//
 
-export function bundledPackages(metafile) {
-  const packages = new Set()
-  for (const input of Object.keys(metafile.inputs)) {
-    const npm = input.match(NPM_CACHE_PATH)
-    if (npm) {
-      packages.add(`${npm[1].replaceAll('\\', '/')}@${npm[2].split('_')[0]}`)
-      continue
+export const packageId = ({ name, version }) => `${name}@${version}`
+
+function packageRecord(input) {
+  const npm = input.match(NPM_CACHE_PATH)
+  if (npm) {
+    return {
+      registry: 'npm',
+      name: npm[1].replaceAll('\\', '/'),
+      version: npm[2].split('_')[0],
+      directory: input.slice(0, npm.index + npm[0].length),
     }
-    const jsr = input.match(JSR_CACHE_PATH)
-    if (jsr) packages.add(`${jsr[1]}@${jsr[2]}`)
   }
-  return [...packages].sort()
+  const jsr = input.match(JSR_CACHE_PATH)
+  if (jsr) {
+    return {
+      registry: 'jsr',
+      name: jsr[1],
+      version: jsr[2],
+      directory: null,
+    }
+  }
+  return null
+}
+
+export function bundledPackages(metafile) {
+  const packages = new Map()
+  for (const input of Object.keys(metafile.inputs)) {
+    const record = packageRecord(input)
+    if (record && !packages.has(packageId(record))) packages.set(packageId(record), record)
+  }
+  return [...packages.values()].sort((a, b) => packageId(a).localeCompare(packageId(b)))
 }
 
 export async function runEsbuild(options) {

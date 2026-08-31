@@ -1,9 +1,18 @@
 import { join } from '@std/path'
-import { configTargetPath, loadImpConfig, updateConfigFile } from './config.js'
-import { bundleDependency, shutdownBundler } from './deps.js'
+import { configTargetPath, licensePolicy, loadImpConfig, updateConfigFile } from './config.js'
+import { bundleDependency, packageId, shutdownBundler } from './deps.js'
+import {
+  DEPENDENCY_MANIFEST_FILE,
+  dependencyManifest,
+  manifestFileContents,
+  recordPackageLicenses,
+  unlicensedPackages,
+} from './dependency_manifest.js'
+import { licenseViolationProblem, reviewLicenses, unknownLicenseWarning } from './license_policy.js'
 import { defaultAlias, EXACT_VERSION, parseSpecifier, VALID_ALIAS } from './specifiers.js'
 import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file_size.js'
 import { logger } from './logger.js'
+import { LICENSE_NOTICES_FILE } from './license_notices.js'
 
 const NPM_REGISTRY = 'https://registry.npmjs.org'
 const JSR_REGISTRY = 'https://jsr.io'
@@ -28,10 +37,20 @@ async function latestVersion(scheme, name) {
   return latest
 }
 
-async function installOne({ root, alias, scheme, name, version, subpath, maxBytes, ignore }) {
+async function installOne(
+  { root, alias, scheme, name, version, subpath, maxBytes, ignore, policy },
+) {
   const resolvedVersion = version ?? await latestVersion(scheme, name)
   const specifier = `${scheme}:${name}@${resolvedVersion}${subpath}`
   const { files, packages, impImports } = await bundleDependency({ specifier, alias })
+  const manifest = dependencyManifest({
+    alias,
+    specifier,
+    packages: await recordPackageLicenses(packages),
+    impImports,
+  })
+  const { violations, unknown } = reviewLicenses([manifest], policy)
+  if (violations.length) throw new Error(licenseViolationProblem(violations, policy))
   const countedSize = files
     .filter((file) => !isFileSizeIgnored(join('dependencies', alias, file.name), ignore))
     .reduce((sum, file) => sum + file.contents.length, 0)
@@ -46,12 +65,27 @@ async function installOne({ root, alias, scheme, name, version, subpath, maxByte
   await Deno.remove(folder, { recursive: true }).catch(() => {})
   await Deno.mkdir(folder, { recursive: true })
   for (const file of files) await Deno.writeFile(join(folder, file.name), file.contents)
+  await Deno.writeTextFile(join(folder, DEPENDENCY_MANIFEST_FILE), manifestFileContents(manifest))
   console.log(`installed ${alias} (${specifier})`)
   for (const file of files) {
     console.log(`  dependencies/${alias}/${file.name} (${formatSize(file.contents.length)})`)
   }
+  console.log(`  dependencies/${alias}/${DEPENDENCY_MANIFEST_FILE} (packages, versions, licenses)`)
   console.log('  bundled packages:')
-  for (const bundled of packages) console.log(`    ${bundled}`)
+  for (const entry of manifest.packages) {
+    console.log(`    ${packageId(entry)} - ${entry.license ?? 'license not declared'}`)
+  }
+  const undeclared = unlicensedPackages(manifest)
+  if (undeclared.length) {
+    logger.warn(
+      `no license text found for ${
+        undeclared.join(', ')
+      } - ${LICENSE_NOTICES_FILE} will not carry a notice for ${
+        undeclared.length === 1 ? 'it' : 'them'
+      }`,
+    )
+  }
+  if (unknown.length) logger.warn(unknownLicenseWarning(unknown))
   if (impImports.length) {
     console.log(
       `  imp imports kept bare (resolved by this app at runtime): ${impImports.join(', ')}`,
@@ -109,6 +143,7 @@ export async function install({ root, packageArg = null, versionArg = null, alia
   const config = await loadImpConfig(root)
   const dependencies = config.dependencies ?? {}
   const maxBytes = maxFileBytes(config)
+  const policy = licensePolicy(config)
   const ignore = config.maxFileSizeIgnore ?? []
   const targets = []
   if (packageArg) {
@@ -125,7 +160,13 @@ export async function install({ root, packageArg = null, versionArg = null, alia
   }
   try {
     for (const target of targets) {
-      dependencies[target.alias] = await installOne({ root, maxBytes, ignore, ...target })
+      dependencies[target.alias] = await installOne({
+        root,
+        maxBytes,
+        ignore,
+        policy,
+        ...target,
+      })
     }
   } finally {
     await shutdownBundler()

@@ -3,7 +3,7 @@ exit code: 0
 
 --- stdout ---
 built app.js -> component/
-  LICENSES.txt - 2 third-party license notices, referenced from every script emitted
+  LICENSES.txt - 3 third-party license notices, referenced from every script emitted
   LICENSES.txt (<size>)
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)

@@ -441,6 +441,46 @@ Deno.test('imp install and uninstall', async (t) => {
   }
 })
 
+Deno.test('imp install license policy', async (t) => {
+  const withPolicy = async (name, licenses, args) => {
+    await t.step(name, async () => {
+      const dir = await Deno.makeTempDir()
+      await Deno.writeTextFile(
+        join(dir, 'imp.json'),
+        `${JSON.stringify({ licenses }, null, 2)}\n`,
+      )
+      const result = await runImp(args, dir)
+      const wrote = await Deno.stat(join(dir, 'dependencies')).then(() => 'yes').catch(() => 'no')
+      await Deno.remove(dir, { recursive: true })
+      await assertSnapshot(
+        name,
+        `${
+          commandTranscript(`imp ${args.join(' ')}  (cwd: <tmp>)`, result)
+        }\n--- wrote dependencies/ ---\n${wrote}\n`,
+      )
+    })
+  }
+
+  await withPolicy('license-permissive-blocks-weak-copyleft', 'permissive', [
+    'install',
+    'axe-core@4.8.2',
+  ])
+  await withPolicy('license-weak-copyleft-allows-mpl', 'weak-copyleft', [
+    'install',
+    'axe-core@4.8.2',
+  ])
+  await withPolicy('license-allow-list-blocks-apache', ['MIT', 'ISC'], ['install', 'long@5.2.3'])
+  await withPolicy('license-or-expression-takes-permissive-branch', 'permissive', [
+    'install',
+    'node-forge@0.7.0',
+  ])
+  await withPolicy('license-unknown-warns-only', 'permissive', [
+    'install',
+    'jsr:@std/encoding@1.0.10/base64',
+  ])
+  await withPolicy('license-invalid-policy-value', 'mostly-fine', ['install', 'mitt@3.0.1'])
+})
+
 Deno.test('imp test', async (t) => {
   const test = async (name, args, cwd) => {
     await t.step(name, async () => {

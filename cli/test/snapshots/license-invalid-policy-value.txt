@@ -1,0 +1,11 @@
+$ imp install mitt@3.0.1  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] invalid imp.json - 'licenses' must be 'permissive', 'weak-copyleft', 'any', or a list of SPDX identifiers
+
+--- wrote dependencies/ ---
+no

@@ -59,20 +59,31 @@ my-app/
 
 ## License notices - `LICENSES.txt`
 
-Legal comments (`/*! ... */`, `//!`, `@license`, `@preserve`) are **collected, never stripped**.
-Every one found in code that reached the output is written verbatim into `LICENSES.txt` at the root
-of the output directory, duplicates merged, and every emitted `.js` file - bundles, chunks, and
-inline module scripts re-inlined into the page - opens with:
+`LICENSES.txt` is written verbatim at the root of the output directory from two merged sources:
+
+| Source                                                                        | Covers                                          |
+| ----------------------------------------------------------------------------- | ----------------------------------------------- |
+| `dependencies/<alias>/manifest.json` recorded by `imp install`                | SPDX id + license text of every bundled package |
+| Legal comments in the bundled code (`/*! */`, `//!`, `@license`, `@preserve`) | Notices the source itself must carry            |
+
+Duplicates within each source are merged; the two sources are **not** deduplicated against each
+other, so a package may appear twice. Every emitted `.js` file - bundles, chunks, and inline module
+scripts re-inlined into the page - opens with:
 
 ```js
 /*! Third-party license notices: /LICENSES.txt */
 ```
 
-Under `IMP_BASEPATH` that reference is prefixed like any other root-absolute URL. If nothing in the
-bundle carries a notice, no file and no comment are emitted. Nothing configures this.
+Under `IMP_BASEPATH` that reference is prefixed like any other root-absolute URL. If neither source
+yields a notice, no file and no comment are emitted. Nothing configures this.
 
-`imp install` leaves a package's notice in the vendored bundle so the build can find it later. Do
-not strip it by hand.
+- Only dependencies the build actually linked contribute - a declared but unimported one is dropped
+  and contributes nothing.
+- The build **fails** if a bundled package falls outside the `licenses` policy in `imp.json`
+  (default `"permissive"`) - see [dependencies](dependencies.md). Nothing is emitted.
+- A bundled dependency with no `manifest.json` **warns** and its licenses are missing from the file.
+  Fix it with `imp install`, never by hand-writing the manifest.
+- `imp install` also leaves a package's notice in the vendored bundle. Do not strip it by hand.
 
 Not to be confused with `imp licenses`, which prints the notices for the tools inside the imp
 binary, none of which ship in an app. See [update](update.md).

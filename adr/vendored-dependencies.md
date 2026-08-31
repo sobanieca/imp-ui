@@ -42,10 +42,11 @@ Dependencies are vendored: resolved, bundled, and committed into the repository,
   `imp install` (all) and `imp install <package>` (one) are the sole dependency-update path. (The
   unrelated `imp update` command updates the pinned imp _version_, not dependencies -
   `version-pinning-self-delegation.md`.)
-- **No lock file and no resolved-graph manifest.** The committed bundle is the frozen state;
-  transitive versions are whatever was latest at install/update time. Reproducibility comes from the
-  committed bytes, not from tracking every transitive version. The printed resolution at install
-  time is the audit record.
+- **No lock file.** The committed bundle is the frozen state; transitive versions are whatever was
+  latest at install/update time. Reproducibility comes from the committed bytes, not from tracking
+  every transitive version. What the resolution _was_ is recorded beside each bundle
+  (`vendored-dependency-manifest.md`) - that manifest describes the committed bytes and never
+  constrains the next install, so it is not a lock file and does not act as one.
 - **`imp` is the only external while vendoring.** `imp install` never resolves the bare specifier
   `imp` against a registry: `imp` is reserved - rejected as an alias and as an `imp.json` dependency
   key - and always denotes the imp library. A bare `imp` import in a package is kept in the vendored

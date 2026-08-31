@@ -4,8 +4,10 @@ exit code: 0
 --- stdout ---
 installed base64 (jsr:@std/encoding@1.0.10/base64)
   dependencies/base64/base64.js (2.3 kB)
+  dependencies/base64/manifest.json (packages, versions, licenses)
   bundled packages:
-    @std/encoding@1.0.10
+    @std/encoding@1.0.10 - license not declared
+[WARN] could not identify the license of @std/encoding@1.0.10 - check the terms yourself; imp cannot hold it to the 'licenses' policy
 
 --- stderr ---
 (empty)
@@ -14,7 +16,10 @@ installed base64 (jsr:@std/encoding@1.0.10/base64)
 
 --- files ---
 dependencies/base64/base64.js
+dependencies/base64/manifest.json
 dependencies/bus/bus.js
+dependencies/bus/manifest.json
+dependencies/mitt/manifest.json
 dependencies/mitt/mitt.js
 
 --- imp.json ---

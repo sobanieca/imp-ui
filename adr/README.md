@@ -81,6 +81,8 @@ Conventions:
 | [in-process-toolchain](in-process-toolchain.md)                       | fmt and lint run in-process, no subprocess                       |
 | [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin            |
 | [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile            |
+| [vendored-dependency-manifest](vendored-dependency-manifest.md)       | Each vendored bundle records its packages, versions, licenses    |
+| [license-policy-gate](license-policy-gate.md)                         | 'licenses' in imp.json; install and build refuse a violation     |
 | [production-bundling](production-bundling.md)                         | imp build from vendored bundles + baked-in library               |
 | [public-folder-static-assets](public-folder-static-assets.md)         | public/ is the site root; IMP_BASEPATH prefixes built URLs       |
 | [pwa-toolkit](pwa-toolkit.md)                                         | imp build --pwa: manifest, icons, build-graph SW                 |

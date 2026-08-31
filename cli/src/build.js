@@ -10,7 +10,7 @@ import {
   toFileUrl,
 } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { loadImpConfig, mocksSetting, publicDirectory } from './config.js'
+import { licensePolicy, loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { resolveEntryPath } from './entry.js'
 import { basePathOf, siteUrl } from './base_path.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
@@ -21,10 +21,14 @@ import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
   LICENSE_NOTICES_FILE,
+  licenseNoticeCount,
   licenseNoticesFile,
   licenseNoticesReference,
   splitLicenseNotices,
 } from './license_notices.js'
+import { readDependencyManifest, recordedNotices } from './dependency_manifest.js'
+import { licenseViolationProblem, reviewLicenses } from './license_policy.js'
+import { logger } from './logger.js'
 import {
   APPLE_TOUCH_ICON,
   buildManifest,
@@ -181,6 +185,7 @@ async function buildEntryPoints(
       platform: 'browser',
       target: 'es2022',
       legalComments: 'external',
+      metafile: true,
       write: false,
       outdir,
       chunkNames: 'chunks/[name]-[hash]',
@@ -190,6 +195,19 @@ async function buildEntryPoints(
   } finally {
     await shutdownBundler()
   }
+}
+
+async function bundledDependencyManifests({ root, dependencies, metafile }) {
+  const inputs = Object.keys(metafile.inputs).map(asPosix)
+  const manifests = []
+  const unrecorded = []
+  for (const alias of Object.keys(dependencies)) {
+    if (!inputs.some((input) => input.endsWith(`dependencies/${alias}/${alias}.js`))) continue
+    const manifest = await readDependencyManifest(root, alias)
+    if (manifest) manifests.push(manifest)
+    else unrecorded.push(alias)
+  }
+  return { manifests, unrecorded }
 }
 
 function assertEveryFlagFolded(outputFiles) {
@@ -341,8 +359,25 @@ export async function build(
   assertEveryFlagFolded(result.outputFiles)
 
   const base = basePathOf(resolvedEnv)
-  const { code: outputFiles, notices } = splitLicenseNotices(result.outputFiles)
-  const noticeReference = notices.length
+  const { code: outputFiles, notices: embedded } = splitLicenseNotices(result.outputFiles)
+  const { manifests, unrecorded } = await bundledDependencyManifests({
+    root,
+    dependencies,
+    metafile: result.metafile,
+  })
+  if (unrecorded.length) {
+    logger.warn(
+      `no manifest.json for ${unrecorded.join(', ')} - the licenses of ${
+        unrecorded.length === 1 ? 'that dependency are' : 'those dependencies are'
+      } missing from ${LICENSE_NOTICES_FILE}; run 'imp install' to record them`,
+    )
+  }
+  const policy = licensePolicy(imp)
+  const { violations } = reviewLicenses(manifests, policy)
+  if (violations.length) throw new Error(licenseViolationProblem(violations, policy))
+  const notices = { recorded: recordedNotices(manifests), embedded }
+  const noticeCount = licenseNoticeCount(notices)
+  const noticeReference = noticeCount
     ? licenseNoticesReference(siteUrl(base, LICENSE_NOTICES_FILE))
     : ''
   const withNoticeReference = (text) => new TextEncoder().encode(noticeReference + text)
@@ -364,7 +399,7 @@ export async function build(
     )
     written.push(asPosix(relative(outdirPath, file.path)))
   }
-  if (notices.length) {
+  if (noticeCount) {
     await Deno.writeTextFile(join(outdirPath, LICENSE_NOTICES_FILE), licenseNoticesFile(notices))
     written.push(LICENSE_NOTICES_FILE)
   }
@@ -427,8 +462,8 @@ export async function build(
   if (base && isHtmlEntry) {
     console.log(`  base path ${base} - root-absolute urls prefixed for a sub-path deployment`)
   }
-  if (notices.length) {
-    const count = `${notices.length} third-party license notice${notices.length === 1 ? '' : 's'}`
+  if (noticeCount) {
+    const count = `${noticeCount} third-party license notice${noticeCount === 1 ? '' : 's'}`
     console.log(`  ${LICENSE_NOTICES_FILE} - ${count}, referenced from every script emitted`)
   }
   const flagNames = Object.keys(flags)

@@ -34,6 +34,10 @@ based on where you are.
   `imp uninstall`; you normally never edit it by hand. Each alias is exposed to the browser through
   the injected import map, so you write `import mitt from 'mitt'`. See
   **[Managing dependencies](dependencies.md)**.
+- **`licenses`** - the license terms you accept from vendored dependencies. Either a tier -
+  `"permissive"` (the default), `"weak-copyleft"`, or `"any"` - or your own list of SPDX
+  identifiers, e.g. `["MIT", "ISC", "Apache-2.0"]`. `imp install` and `imp build` both refuse a
+  package that falls outside it. See **[The license policy](dependencies.md#the-license-policy)**.
 - **`targetImpHost`** - set to `true` when what you build is meant to run inside another imp
   application: `imp build` then keeps `imp` imports bare for that host to provide instead of
   compiling its own copy in. See

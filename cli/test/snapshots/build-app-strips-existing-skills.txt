@@ -2,6 +2,7 @@ $ imp build  (cwd: <tmp>, app build)
 exit code: 0
 
 --- stdout ---
+[WARN] no manifest.json for widget - the licenses of that dependency are missing from LICENSES.txt; run 'imp install' to record them
 built index.html -> dist/
   app.js (<size>)
   chunks/hand-<hash>.js (<size>)

@@ -4,13 +4,15 @@ exit code: 0
 --- stdout ---
 installed mitt (npm:mitt@3.0.1)
   dependencies/mitt/mitt.js (323 B)
+  dependencies/mitt/manifest.json (packages, versions, licenses)
   bundled packages:
-    mitt@3.0.1
+    mitt@3.0.1 - MIT
 
 --- stderr ---
 (empty)
 
 --- files ---
+dependencies/mitt/manifest.json
 dependencies/mitt/mitt.js
 
 --- imp.json ---

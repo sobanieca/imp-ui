@@ -44,25 +44,54 @@ import mitt from 'mitt'
 
 ## What you get in the repo
 
-`dependencies/<alias>/` holds the self-contained bundle plus any assets the package needs (`.wasm`,
-CSS, fonts) as sibling files, so deleting the folder removes the dependency completely. The default
-alias is the package name (or the last path segment for a subpath install), and it is both the
-import specifier and the folder name.
-
-Every install prints the files written and every package version that went into the bundle - read it
-as the audit record:
+`dependencies/<alias>/` holds the self-contained bundle, a `manifest.json`, and any assets the
+package needs (`.wasm`, CSS, fonts) as sibling files, so deleting the folder removes the dependency
+completely. The default alias is the package name (or the last path segment for a subpath install),
+and it is both the import specifier and the folder name.
 
 ```
 installed micromark (npm:micromark@4.0.2)
   dependencies/micromark/micromark.js (52.1 kB)
+  dependencies/micromark/manifest.json (packages, versions, licenses)
   bundled packages:
-    micromark@4.0.2
-    micromark-core-commonmark@2.0.3
+    micromark@4.0.2 - MIT
+    micromark-core-commonmark@2.0.3 - MIT
 ```
 
-The bundle keeps the package's own license notice (`/*! ... */`, `@license`) where the package put
-it, so `imp build` can collect it into the app's `LICENSES.txt` - see [build](build.md). Never strip
-it out.
+`manifest.json` records the same resolution on disk: alias, resolved specifier, install timestamp,
+kept bare `imp` imports, and every bundled package with its registry, exact version, SPDX identifier
+and full license text.
+
+- **Commit it with the bundle.** It is the only record of what the minified bundle contains -
+  re-running `imp install` re-resolves transitive versions to latest and cannot reproduce it.
+- **It is not a lock file.** Nothing reads it back to pin anything; it describes the committed
+  bytes.
+- **Read it to answer "which versions of what, under what license".** `imp build` folds its licenses
+  into the app's `LICENSES.txt` - see [build](build.md).
+- **Never hand-edit or delete it.** A bundled dependency with no manifest makes `imp build` warn and
+  drops its licenses from `LICENSES.txt`. `imp install` rewrites it.
+
+The bundle also keeps the package's own license notice (`/*! ... */`, `@license`) where the package
+put it. Never strip it out.
+
+## License policy - `licenses` in `imp.json`
+
+`imp install` and `imp build` both refuse a package outside the policy. Default is `"permissive"`,
+so the gate is on with no config.
+
+| Value                    | Accepts                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `"permissive"` (default) | MIT, ISC, BSD-*, Apache-2.0, 0BSD, Unlicense, CC0, Zlib |
+| `"weak-copyleft"`        | the above plus MPL-_, LGPL-_, EPL-_, CDDL-_             |
+| `"any"`                  | everything, including GPL, AGPL, SSPL - no check        |
+| `["MIT", "ISC", ...]`    | exactly these SPDX identifiers, nothing else            |
+
+- **Install fails before writing.** No bundle, no `imp.json` entry - the rejected package leaves no
+  trace. Fix by widening `licenses` or choosing another package; never by hand-editing a manifest.
+- **`OR` takes the most permissive branch, `AND` must satisfy all.** `(BSD-3-Clause OR GPL-2.0)`
+  passes `"permissive"`.
+- **An unidentifiable license warns, never blocks** - including every JSR package, since JSR
+  publishes no identifier. Check those terms yourself.
 
 A bundle over `maxFileSize` (200 kB default) warns, because it lands in git. Raise `maxFileSize` or
 list the folder in `maxFileSizeIgnore` in `imp.json` to accept it - the same limit `imp lint`

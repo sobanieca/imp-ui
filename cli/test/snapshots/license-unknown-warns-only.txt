@@ -1,0 +1,16 @@
+$ imp install jsr:@std/encoding@1.0.10/base64  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+installed base64 (jsr:@std/encoding@1.0.10/base64)
+  dependencies/base64/base64.js (2.3 kB)
+  dependencies/base64/manifest.json (packages, versions, licenses)
+  bundled packages:
+    @std/encoding@1.0.10 - license not declared
+[WARN] could not identify the license of @std/encoding@1.0.10 - check the terms yourself; imp cannot hold it to the 'licenses' policy
+
+--- stderr ---
+(empty)
+
+--- wrote dependencies/ ---
+yes

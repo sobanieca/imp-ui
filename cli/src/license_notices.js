@@ -11,6 +11,12 @@ below, one block per notice, exactly as its authors wrote it. Ship this file
 alongside the build: the licenses it lists require the notice to travel with the
 code. Every script imp emitted points back here.`
 
+const RECORDED_HEADING = `Packages bundled into this build
+
+Recorded when each dependency was installed, one block per package.`
+
+const EMBEDDED_HEADING = `Notices carried in the bundled code`
+
 function noticeBlocksIn(text) {
   return (text.match(NOTICE_BLOCK) ?? []).map((block) => block.trim()).filter(Boolean)
 }
@@ -28,6 +34,13 @@ export function splitLicenseNotices(outputFiles) {
   return { code, notices: [...notices] }
 }
 
-export const licenseNoticesFile = (notices) => `${[HEADER, ...notices].join('\n\n')}\n`
+export function licenseNoticesFile({ recorded, embedded }) {
+  const sections = [HEADER]
+  if (recorded.length) sections.push(RECORDED_HEADING, ...recorded)
+  if (embedded.length) sections.push(EMBEDDED_HEADING, ...embedded)
+  return `${sections.join('\n\n')}\n`
+}
+
+export const licenseNoticeCount = ({ recorded, embedded }) => recorded.length + embedded.length
 
 export const licenseNoticesReference = (href) => `/*! Third-party license notices: ${href} */\n`

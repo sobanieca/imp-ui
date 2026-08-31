@@ -11,23 +11,24 @@ tried when `imp.json` is absent.
 
 ## Every key
 
-| Key                 | Type                                   | Default   | Read by                                                        |
-| ------------------- | -------------------------------------- | --------- | -------------------------------------------------------------- |
-| `version`           | exact version string                   | -         | every command (self-delegation); written by `imp update`       |
-| `dependencies`      | alias -> exact `npm:`/`jsr:` specifier | `{}`      | `imp start`, `imp build`, `imp lint`; written by `imp install` |
-| `targetImpHost`     | boolean                                | `false`   | `imp build` with a **JS** entry                                |
-| `fmt`               | object                                 | see below | `imp fmt`                                                      |
-| `lint`              | object                                 | `{}`      | `imp lint`                                                     |
-| `test`              | object                                 | `{}`      | `imp test`                                                     |
-| `preview`           | object                                 | `{}`      | `imp preview`                                                  |
-| `pwa`               | object                                 | -         | `imp start`, `imp build --pwa`                                 |
-| `environments`      | alias -> env file path                 | `{}`      | `imp start`, `imp build`, `imp preview` (`--env`)              |
-| `flags`             | array of feature flag names            | `[]`      | `imp start`, `imp build` (folds them), `imp preview`           |
-| `mocks`             | `{ folder, enabled }`, both required   | -         | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)   |
-| `maxFileSize`       | bytes                                  | `204800`  | `imp lint` (errors), `imp install` (warns)                     |
-| `maxFileSizeIgnore` | array of repo-relative paths           | `[]`      | the same size check                                            |
-| `maxLogEntries`     | number                                 | `4000`    | `imp start` (`.imp/dev.log`)                                   |
-| `devServerPort`     | number                                 | `4507`    | `imp start` (`--port` wins)                                    |
+| Key                 | Type                                   | Default      | Read by                                                        |
+| ------------------- | -------------------------------------- | ------------ | -------------------------------------------------------------- |
+| `version`           | exact version string                   | -            | every command (self-delegation); written by `imp update`       |
+| `dependencies`      | alias -> exact `npm:`/`jsr:` specifier | `{}`         | `imp start`, `imp build`, `imp lint`; written by `imp install` |
+| `licenses`          | tier string or SPDX id array           | `permissive` | `imp install`, `imp build` (both error on a violation)         |
+| `targetImpHost`     | boolean                                | `false`      | `imp build` with a **JS** entry                                |
+| `fmt`               | object                                 | see below    | `imp fmt`                                                      |
+| `lint`              | object                                 | `{}`         | `imp lint`                                                     |
+| `test`              | object                                 | `{}`         | `imp test`                                                     |
+| `preview`           | object                                 | `{}`         | `imp preview`                                                  |
+| `pwa`               | object                                 | -            | `imp start`, `imp build --pwa`                                 |
+| `environments`      | alias -> env file path                 | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)              |
+| `flags`             | array of feature flag names            | `[]`         | `imp start`, `imp build` (folds them), `imp preview`           |
+| `mocks`             | `{ folder, enabled }`, both required   | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)   |
+| `maxFileSize`       | bytes                                  | `204800`     | `imp lint` (errors), `imp install` (warns)                     |
+| `maxFileSizeIgnore` | array of repo-relative paths           | `[]`         | the same size check                                            |
+| `maxLogEntries`     | number                                 | `4000`       | `imp start` (`.imp/dev.log`)                                   |
+| `devServerPort`     | number                                 | `4507`       | `imp start` (`--port` wins)                                    |
 
 ## A file using everything
 

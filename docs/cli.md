@@ -459,10 +459,15 @@ Most open-source licenses - MIT, BSD, Apache-2.0 - let you ship the code on one 
 copyright and permission notice travels with it. Minifiers throw those notices away by default,
 which quietly leaves the build you deploy out of compliance.
 
-`imp build` keeps them. While bundling, it collects every legal comment it finds in the code that
-made it into the output - the `/*! ... */`, `//!`, `@license` and `@preserve` blocks that libraries
-use to mark their notices - and writes them to **`LICENSES.txt`** at the root of the output
-directory:
+`imp build` keeps them, and writes them to **`LICENSES.txt`** at the root of the output directory.
+It draws on two sources, because neither alone is complete:
+
+- **The license recorded for every package you vendored.** `imp install` reads each package's
+  license identifier and full license text when it resolves the package, and records them beside the
+  bundle. This is the half that catches the common case - a small package whose license lives in a
+  `LICENSE` file and nowhere in its code.
+- **The legal comments carried in the bundled code** - the `/*! ... */`, `//!`, `@license` and
+  `@preserve` blocks libraries use to mark a notice that must travel with the source itself.
 
 ```
 Third-party license notices
@@ -472,13 +477,30 @@ below, one block per notice, exactly as its authors wrote it. Ship this file
 alongside the build: the licenses it lists require the notice to travel with the
 code. Every script imp emitted points back here.
 
-/*! mitt v3.0.1 | MIT License | https://github.com/developit/mitt */
+Packages bundled into this build
+
+Recorded when each dependency was installed, one block per package.
+
+mitt@3.0.1 - MIT
+
+MIT License
+
+Copyright (c) 2021 Jason Miller
+...
+
+Notices carried in the bundled code
 
 /*! @license DOMPurify 3.4.14 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 */
 ```
 
 Each notice is reproduced verbatim, exactly as its author wrote it - imp never reformats, truncates
-or summarizes license text. Identical notices are listed once.
+or summarizes license text. Identical notices are listed once. A package may appear in both
+sections: its header banner and its license file are separate notices, and imp reproduces what it
+found rather than deciding one of them is redundant.
+
+Only the dependencies your code actually imports are listed. A dependency declared in `imp.json` but
+never imported is dropped from the build, so it contributes no notice. If a bundled dependency is
+missing its recorded licenses, the build warns and names it - run `imp install` to record them.
 
 Every JavaScript file the build emits - the bundles, the lazily loaded chunks, and the inline module
 scripts re-inlined into your page - starts with a comment naming the file:

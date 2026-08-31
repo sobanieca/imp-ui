@@ -19,22 +19,6 @@ architectural decision it introduces as an ADR). When the last one goes, delete 
 The same family as the attribution gap, and the tier most likely to be a hard procurement blocker
 rather than a preference.
 
-- **Attribution is still structurally incomplete after the notices work.**
-  `cli/src/license_notices.js` harvests only legal comments that survive minification
-  (`legalComments` in `cli/src/build.js` and `cli/src/deps.js`). A package whose license lives in a
-  `LICENSE` file, with no `/*! */` or `@license` header in its sources - the common shape for small
-  MIT packages - contributes nothing to `LICENSES.txt`. The complete fix belongs at vendor time:
-  `imp install` already resolves the exact package set (`bundledPackages` in `cli/src/deps.js`), so
-  it can fetch each package's SPDX identifier and license text and record them beside the bundle,
-  and `imp build` can merge those recorded notices with the legal comments it finds. Extends
-  `adr/third-party-attribution.md` from imp's own redistribution to the app's.
-- **Nothing records the resolved transitive graph.** `adr/vendored-dependencies.md` deliberately has
-  no lock file, and `imp install` only prints the resolution to stdout. So there is no SBOM, no
-  vulnerability scanning path, no `imp audit`, and no way to answer "which versions of what am I
-  shipping?" from a fresh clone - the printed audit record does not survive the terminal scrollback.
-  One per-dependency manifest written next to each vendored bundle (packages, exact versions, SPDX
-  ids, resolve timestamp) closes attribution, SBOM and audit together, and does not reintroduce a
-  lock file: the committed bytes remain the frozen state, the manifest only describes them.
 - **No integrity or provenance check on install.** `latestVersion` in `cli/src/install.js` and the
   bundler's package fetches trust TLS alone - no npm `dist.integrity` verification, no provenance or
   attestation check. `imp update` already verifies the binary it downloads against its published
@@ -45,9 +29,10 @@ rather than a preference.
   download path in imp verifies against it (`adr/binary-distribution.md`). The first command a new
   user runs is the only unverified one. One-line fix, outsized value. (The script also prints a
   non-ASCII check mark, against the repo's ASCII rule.)
-- **No license policy gate.** Teams need "fail the build on AGPL/GPL/unknown" as a build-time check,
-  not a report read after the fact. Cheap once the vendor-time SPDX data of the first two items
-  exists.
+- **Nothing consumes the recorded graph.** The per-dependency manifests answer "which versions of
+  what am I shipping" only to a reader who opens them. There is no `imp audit`, no SBOM export in a
+  standard interchange format (CycloneDX or SPDX), and no vulnerability-scanning path - each is now
+  a transform over data already committed in the repository rather than new plumbing.
 
 ## Tier 2 - what `imp build` emits
 
@@ -124,16 +109,12 @@ rather than a preference.
 
 ## Suggested order
 
-Finish attribution the vendor-time way so that it also produces the resolved-graph manifest (tier 1,
-first two items) - one change answers legal, SBOM and audit at once. Then source maps and the global
-error seam, which together make a live app debuggable. Then CSP and hashed entry files. Then the
-layout group, which is what unblocks building the app in the first place. `install.sh` checksum
-verification is independent of all of it and should just be done.
+Source maps and the global error seam next, which together make a live app debuggable. Then CSP and
+hashed entry files. Then the layout group, which is what unblocks building the app in the first
+place. `install.sh` checksum verification is independent of all of it and should just be done.
 
 ## ADR impact
 
-Several of these land decisions worth recording: a vendor-time license and package manifest (extends
-or replaces `adr/third-party-attribution.md` and amends `adr/vendored-dependencies.md`'s "no
-resolved-graph manifest" clause), a source map policy, a CSP and inline-script hashing decision for
-`adr/production-bundling.md`, and an error-reporting seam alongside the analytics ADR. Each belongs
-in `adr/` when the corresponding item lands, not before.
+Several of these land decisions worth recording: a source map policy, a CSP and inline-script
+hashing decision for `adr/production-bundling.md`, and an error-reporting seam alongside the
+analytics ADR. Each belongs in `adr/` when the corresponding item lands, not before.

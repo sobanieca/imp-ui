@@ -1,0 +1,13 @@
+$ imp install axe-core@4.8.2  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] 1 bundled package falls outside the 'permissive' license policy:
+  axe-core@4.8.2 is MPL-2.0, which is weak copyleft
+set 'licenses' in imp.json to 'weak-copyleft' to allow it
+
+--- wrote dependencies/ ---
+no
