@@ -30,6 +30,14 @@ async function listFiles(dir, prefix = '') {
   return found
 }
 
+const withoutDownloadNoise = (result) => ({
+  ...result,
+  stderr: result.stderr
+    .split('\n')
+    .filter((line) => !/^Download(ing)? /.test(line))
+    .join('\n'),
+})
+
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[a-zA-Z]`, 'g')
 
 const normalize = (text) =>
@@ -341,14 +349,6 @@ Deno.test('imp commands', async (t) => {
 Deno.test('imp install and uninstall', async (t) => {
   const dir = await Deno.makeTempDir()
 
-  const withoutDownloadNoise = (result) => ({
-    ...result,
-    stderr: result.stderr
-      .split('\n')
-      .filter((line) => !/^Download(ing)? /.test(line))
-      .join('\n'),
-  })
-
   const maskLatest = (text) =>
     text
       .replace(/@\d+\.\d+\.\d+([-+][\w.-]+)?/g, '@<latest>')
@@ -449,7 +449,7 @@ Deno.test('imp install license policy', async (t) => {
         join(dir, 'imp.json'),
         `${JSON.stringify({ licenses }, null, 2)}\n`,
       )
-      const result = await runImp(args, dir)
+      const result = withoutDownloadNoise(await runImp(args, dir))
       const wrote = await Deno.stat(join(dir, 'dependencies')).then(() => 'yes').catch(() => 'no')
       await Deno.remove(dir, { recursive: true })
       await assertSnapshot(
