@@ -310,6 +310,93 @@ dependency can appear:
 
 The rule checks static imports, re-exports, and dynamic `import()` calls with a literal specifier.
 
+## Dead code across the project
+
+Every rule above judges one file on its own. Two further checks judge the project as a whole: imp
+follows every import from your starting points and reports the code nothing reaches.
+
+The starting points are found for you:
+
+- every module `<script>` in an HTML page - the file a `src` points at, and the imports of an inline
+  block;
+- every `*.test.js` and `*.spec.js` test, every `*.preview.js` preview, and every `*.mock.js` mock;
+- every script under `public/`, which ships verbatim and may be loaded by anything;
+- anything you list in `publicExports` (below).
+
+If a project has none of these - no page, no tests, nothing declared public - there is nothing to
+start from and both checks are skipped.
+
+### `imp/unreachable-module`
+
+A module no chain of imports reaches from a starting point. Nothing loads it, so it ships in no
+bundle and runs nowhere:
+
+```
+error[imp/unreachable-module]: nothing imports src/orphan.js - no entry page, test or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/orphan.js:1:1
+```
+
+### `imp/unused-export`
+
+A name a reachable module exports that no other module imports. The code around it may well run -
+this export of it does not:
+
+```js
+export const greeting = 'hello'
+
+export const unusedHelper = (text) => text.trim()
+```
+
+```
+error[imp/unused-export]: 'unusedHelper' is exported by src/lib.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/lib.js:3:14
+```
+
+A starting point's own exports are never flagged - nothing is expected to import them.
+
+Both checks always read the whole project, even when you pass paths, because a single file cannot
+tell you what the rest of the project imports. Paths under `exclude` are still followed, so excluded
+code still counts as importing yours; they are just never reported.
+
+### Declaring exports the project itself does not use
+
+Code consumed from outside - a module another repo imports, a page loaded by a path imp cannot see -
+has no importer to find. List it under `publicExports` and it counts as used:
+
+```json
+{
+  "lint": {
+    "publicExports": ["src/sdk.js", "src/plugin.js#register"]
+  }
+}
+```
+
+A bare path (a file or a folder) makes the whole file public: it is never unreachable and none of
+its exports are flagged. Add `#name` to make just that one export public, leaving every other export
+in the file checked as usual.
+
+### What `import()` does to the checks
+
+A dynamic `import()` is followed when imp can read the path:
+
+- **A literal** - `import('./admin/area.js')`, the shape `area()` and translation loaders already
+  use - is followed like a static import. Since the names taken off the loaded module are usually
+  computed, every export of that module counts as used.
+- **A template with a literal folder** - ``import(`./locales/${code}.js`)`` - could load any module
+  in `./locales/`, so the whole folder counts as loaded and used.
+- **A computed specifier** - `import(path)` - could load anything. imp cannot tell what is dead, so
+  it turns `imp/unreachable-module` off for that run and says so rather than guessing:
+
+  ```
+  note: imp/unreachable-module is skipped - src/app.js:7:31 imports a computed specifier, so imp cannot tell which modules it loads
+  ```
+
+  `imp/unused-export` keeps running on the modules it can still reach: deleting an export it flags
+  breaks the build loudly, while deleting a module it cannot see breaks a route silently.
+
+One more approximation worth knowing: `export * from './x.js'` counts every export of `x` as used,
+because the names travelling through it are not written down anywhere.
+
 ## Configuration
 
 Extra lint configuration lives under `lint` in `imp.json` and is layered on top of the base set:
@@ -326,6 +413,8 @@ Extra lint configuration lives under `lint` in `imp.json` and is layered on top 
 - **`rules`** - per-rule severities: `"off"`, `"warn"`, or `"error"`. Warnings are reported but do
   not fail the command; errors make it exit non-zero.
 - **`exclude`** - project-relative paths to skip.
+- **`publicExports`** - paths whose exports are used from outside the project, each optionally
+  naming a single export with `#`, as described above.
 
 imp's own rules are always applied as errors and cannot be reconfigured - for a deliberate one-off
 exception, use an ignore comment (below).

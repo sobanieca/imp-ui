@@ -43,8 +43,8 @@ based on where you are.
   compiling its own copy in. See
   **[Targeting an imp host](cli.md#targeting-an-imp-host--sharing-the-hosts-imp)**.
 - **`fmt`** - formatting options for `imp fmt`. See **[Formatting](fmt.md)**.
-- **`lint`** - extra lint configuration (`rules`, `exclude`); the imp rule set is always applied on
-  top. See **[Linting](lint.md)**.
+- **`lint`** - extra lint configuration (`rules`, `exclude`, and `publicExports` for code consumed
+  from outside the project); the imp rule set is always applied on top. See **[Linting](lint.md)**.
 - **`test`** - testing options for `imp test` (`entry`, `browser`, `exclude`, and a `video` block
   for recording e2e specs as GIFs). See **[Testing](testing.md)**.
 - **`preview`** - options for `imp preview`; `exclude` is an array of paths whose `*.preview.js`

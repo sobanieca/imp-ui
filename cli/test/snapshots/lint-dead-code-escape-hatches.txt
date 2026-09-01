@@ -1,0 +1,38 @@
+--- reported ---
+$ imp lint  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/unused-export]: 'external' is exported by src/lib.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/lib.js:3:14
+
+error[imp/unreachable-module]: nothing imports src/sdk.js - no entry page, test or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/sdk.js:1:1
+
+Found 2 problems
+Checked 4 files
+
+--- publicExports ---
+$ imp lint  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Checked 4 files
+
+--- computed dynamic import ---
+$ imp lint  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+note: imp/unreachable-module is skipped - src/app.js:3:31 imports a computed specifier, so imp cannot tell which modules it loads
+
+Checked 5 files

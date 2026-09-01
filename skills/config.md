@@ -60,7 +60,8 @@ tried when `imp.json` is absent.
   },
   "lint": {
     "rules": { "no-unused-vars": "off", "eqeqeq": "warn" },
-    "exclude": ["legacy/"]
+    "exclude": ["legacy/"],
+    "publicExports": ["src/sdk.js", "src/plugin.js#register"]
   },
   "test": {
     "entry": "index.html",

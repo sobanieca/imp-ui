@@ -11,6 +11,7 @@ import { themeFileSource } from '../src/preview_theme_source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import impPlugin, { IMP_MODULE_EXPORTS } from '../src/lint_rules.js'
 import { MAX_FILE_SIZE_RULE } from '../src/lint.js'
+import { UNREACHABLE_MODULE_RULE, UNUSED_EXPORT_RULE } from '../src/dead_code.js'
 import { IMP_MODULES, IMP_TOOLING_MODULES } from '../src/specifiers.js'
 import { defaultTokens } from '../../lib/src/theme.js'
 import { VERSION } from '../src/version.js'
@@ -103,6 +104,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))
   await test('lint-imports-removed', ['lint', 'app.js'], fixture('legacy-imports'))
   await test('lint-ignore-directive', ['lint', 'app.js'], fixture('lint-ignore'))
+  await test('lint-dead-code', ['lint'], fixture('lint-dead-code'))
   await test('lint-path-not-found', ['lint', 'missing.js'], fixture('basic'))
   await test('lint-invalid-imp-json', ['lint', 'app.js'], fixture('broken-config'))
   await test('fmt-check-clean', ['fmt', '--check', 'app.js'], fixture('basic'))
@@ -327,6 +329,47 @@ Deno.test('imp commands', async (t) => {
       }\n--- one path ignored ---\n${
         commandTranscript('imp lint app.js  (cwd: <tmp>)', partiallyIgnored)
       }\n--- limit raised ---\n${commandTranscript('imp lint app.js  (cwd: <tmp>)', raised)}`,
+    )
+  })
+
+  await t.step('lint-dead-code-escape-hatches', async () => {
+    const dir = await Deno.makeTempDir()
+    await Deno.mkdir(join(dir, 'src'))
+    await Deno.writeTextFile(
+      join(dir, 'index.html'),
+      '<!doctype html>\n<script type="module" src="/src/app.js"></script>\n',
+    )
+    await Deno.writeTextFile(
+      join(dir, 'src', 'app.js'),
+      "import { used } from './lib.js'\n\nconsole.log(used)\n",
+    )
+    await Deno.writeTextFile(
+      join(dir, 'src', 'lib.js'),
+      'export const used = 1\n\nexport const external = 2\n',
+    )
+    await Deno.writeTextFile(join(dir, 'src', 'sdk.js'), "export const open = () => 'ok'\n")
+
+    const reported = await runImp(['lint'], dir)
+
+    await Deno.writeTextFile(
+      join(dir, 'imp.json'),
+      '{ "lint": { "publicExports": ["src/sdk.js", "src/lib.js#external"] } }\n',
+    )
+    const granted = await runImp(['lint'], dir)
+
+    await Deno.writeTextFile(join(dir, 'src', 'never.js'), 'export const gone = 3\n')
+    await Deno.writeTextFile(
+      join(dir, 'src', 'app.js'),
+      "import { used } from './lib.js'\n\nexport const load = (name) => import(name)\n\nconsole.log(used)\n",
+    )
+    const computed = await runImp(['lint'], dir)
+
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'lint-dead-code-escape-hatches',
+      `--- reported ---\n${commandTranscript('imp lint  (cwd: <tmp>)', reported)}\n` +
+        `--- publicExports ---\n${commandTranscript('imp lint  (cwd: <tmp>)', granted)}\n` +
+        `--- computed dynamic import ---\n${commandTranscript('imp lint  (cwd: <tmp>)', computed)}`,
     )
   })
 
@@ -2572,7 +2615,11 @@ Deno.test('the prose token tables match the built-in themes', async () => {
 })
 
 Deno.test('the lint prose documents exactly the rules that run', async () => {
-  const ruleNames = Object.keys(impPlugin.rules).map((name) => `imp/${name}`)
+  const ruleNames = [
+    ...Object.keys(impPlugin.rules).map((name) => `imp/${name}`),
+    UNREACHABLE_MODULE_RULE,
+    UNUSED_EXPORT_RULE,
+  ]
   const notARule = new Set([...Object.keys(IMP_MODULES), ...Object.keys(IMP_TOOLING_MODULES)])
   const problems = []
   for (const page of ['skills/lint.md', 'docs/lint.md']) {

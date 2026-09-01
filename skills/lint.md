@@ -57,12 +57,53 @@ Checked 8 files
 
 An ignored path may be an exact file or a folder. Outside a git repository the scan is skipped.
 
+## Dead code (project-wide)
+
+Two checks read the whole project, not one file, and run even when you pass paths. Starting points:
+module `<script>` in any HTML page (`src` or inline), every `*.test.js` / `*.spec.js` /
+`*.preview.js` / `*.mock.js`, every script under `public/`, and every `publicExports` entry. No
+starting point anywhere - both are skipped.
+
+| Rule                     | Flags                                                  | Fix                                                 |
+| ------------------------ | ------------------------------------------------------ | --------------------------------------------------- |
+| `imp/unreachable-module` | a module no import chain reaches from a starting point | delete the file, or declare it in `publicExports`   |
+| `imp/unused-export`      | an export of a reachable module that nothing imports   | delete the export, or declare it in `publicExports` |
+
+A starting point's own exports are never flagged. `exclude`d paths are still followed, never
+reported.
+
+Escape hatch for code consumed from outside the project - a bare path makes the whole file public,
+`#name` makes one export public and leaves the rest checked:
+
+```json
+{ "lint": { "publicExports": ["src/sdk.js", "src/plugin.js#register"] } }
+```
+
+`import()` handling: a literal specifier is followed and marks all of the target's exports used; a
+template with a literal folder (`` `./locales/${code}.js` ``) marks that folder loaded and used; a
+computed specifier (`import(path)`) turns `imp/unreachable-module` off for the run with a printed
+note, leaving `imp/unused-export` on. `export * from './x.js'` marks every export of `x` used.
+
+```
+error[imp/unreachable-module]: nothing imports src/orphan.js - no entry page, test or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/orphan.js:1:1
+
+error[imp/unused-export]: 'unusedHelper' is exported by src/lib.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/lib.js:3:14
+```
+
 ## Configuration and suppression
 
 Under `lint` in `imp.json` - see [config](config.md):
 
 ```json
-{ "lint": { "rules": { "no-unused-vars": "off", "eqeqeq": "warn" }, "exclude": ["legacy/"] } }
+{
+  "lint": {
+    "rules": { "no-unused-vars": "off", "eqeqeq": "warn" },
+    "exclude": ["legacy/"],
+    "publicExports": ["src/sdk.js"]
+  }
+}
 ```
 
 Severities are `"off"`, `"warn"`, `"error"`; an invalid `lint` block fails the command with an
