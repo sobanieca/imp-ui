@@ -4,6 +4,8 @@ import impPlugin, { dependencyPinProblem } from './lint_rules.js'
 import { findConfigFile, loadImpConfig } from './config.js'
 import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file_size.js'
 import { collectFiles } from './walk.js'
+import { htmlScripts, isJavaScriptType } from './html_scripts.js'
+import { reportDeadCode } from './dead_code.js'
 
 const LINT_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
 
@@ -54,20 +56,8 @@ const rewriteIgnoreDirectives = (source) => {
   return { text, restore }
 }
 
-export const scriptBlocks = (html) => {
-  const blocks = []
-  const pattern = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi
-  for (const match of html.matchAll(pattern)) {
-    const attributes = match[1]
-    if (/\bsrc\s*=/i.test(attributes)) continue
-    const type = attributes.match(/\btype\s*=\s*["']?([^"'\s>]+)/i)?.[1]?.toLowerCase()
-    if (type && type !== 'module' && type !== 'text/javascript') continue
-    const bodyStart = match.index + match[0].indexOf('>') + 1
-    const lineOffset = html.slice(0, bodyStart).split('\n').length - 1
-    blocks.push({ text: match[2], lineOffset, start: bodyStart, end: bodyStart + match[2].length })
-  }
-  return blocks
-}
+export const scriptBlocks = (html) =>
+  htmlScripts(html).filter((script) => script.src === null && isJavaScriptType(script.type))
 
 async function trackedFiles(root) {
   const command = new Deno.Command('git', {
@@ -139,6 +129,7 @@ export async function lint({ root, paths, fix = false }) {
   }
 
   errors += await reportOversizedFiles(root, imp)
+  errors += await reportDeadCode({ root, config: imp, configName })
 
   const reportMessages = (file, messages, lineOffset = 0) => {
     for (const message of messages) {

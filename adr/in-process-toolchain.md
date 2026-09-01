@@ -33,7 +33,8 @@ bundler, and assertions all still run in-process.
 - **`imp lint`** runs ESLint's core `Linter` (`eslint/universal` - pure JS, no filesystem) with the
   `@eslint/js` recommended rules, browser globals, and imp's own rules from `cli/src/lint_rules.js`.
   HTML files are linted by extracting inline `<script>` blocks and remapping diagnostics to their
-  original lines. imp's file walker feeds both commands.
+  original lines, and the same embedded `Linter` drives the whole-project dead-code pass
+  (`project-wide-dead-code.md`). imp's file walker feeds both commands.
 - **Directives are imp-branded:** formatter ignore comments are configured as `imp-fmt-ignore` /
   `imp-fmt-ignore-file`, and `imp-lint-ignore` / `imp-lint-ignore-file` comments are rewritten to
   the engine's directive syntax before linting.

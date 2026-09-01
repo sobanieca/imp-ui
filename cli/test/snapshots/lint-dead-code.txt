@@ -1,0 +1,18 @@
+$ imp lint  (cwd: test/fixtures/lint-dead-code)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/unused-export]: 'unusedHelper' is exported by src/lib.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/lib.js:3:14
+
+error[imp/unreachable-module]: nothing imports src/orphan.js - no entry page, test or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/orphan.js:1:1
+
+error[imp/unused-export]: 'stale' is exported by src/util/format.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/util/format.js:3:14
+
+Found 3 problems
+Checked 6 files

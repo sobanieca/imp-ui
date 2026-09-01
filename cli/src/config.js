@@ -179,6 +179,15 @@ export async function loadImpConfig(startDir) {
     throw new Error(`invalid ${name} - 'test.exclude' must be an array of strings`)
   }
   if (
+    config.lint?.publicExports !== undefined &&
+    (!Array.isArray(config.lint.publicExports) ||
+      config.lint.publicExports.some((entry) => typeof entry !== 'string' || entry === ''))
+  ) {
+    throw new Error(
+      `invalid ${name} - 'lint.publicExports' must be an array of paths, each optionally naming one export like 'src/sdk.js#register'`,
+    )
+  }
+  if (
     config.preview?.exclude !== undefined &&
     (!Array.isArray(config.preview.exclude) ||
       config.preview.exclude.some((entry) => typeof entry !== 'string'))

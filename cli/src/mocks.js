@@ -3,7 +3,7 @@ import { denoPlugin } from '@deno/esbuild-plugin'
 import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
 import { impResolverPlugin } from './bundling.js'
 
-const MOCK_FILE_SUFFIX = '.mock.js'
+export const MOCK_FILE_SUFFIX = '.mock.js'
 
 const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules', 'dist', '.imp'])
 
