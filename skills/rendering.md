@@ -75,6 +75,12 @@ html('<b>trusted</b>') // raw HTML -> DocumentFragment; trusted input only
 result, and returns an `unmount` function. The result may be a `Node`, a string, or an array;
 `null`/`undefined`/`false` entries are skipped. A selector matching nothing throws.
 
+The first `mount` adopts one document rule, `body { margin: 0 }`, in a cascade layer of imp's own -
+without it the UA's 8px body margin makes a `100dvb` app taller than the window and scrolls the
+page. **Do not write your own `body { margin: 0 }`, and do not reach for `!important` to override
+imp's:** unlayered CSS beats a layer, so a plain `body { margin: 2rem }` in the app's stylesheet
+already wins.
+
 Rules an agent gets wrong:
 
 - **A plain helper function is not a component.** `card({ title }) => div(...)` is just a function -
