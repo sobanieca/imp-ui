@@ -29,8 +29,8 @@ registration; the subject is derived from there. A test fails when a component r
 without a skill file, so this is enforced rather than remembered.
 
 - **General** - `button`, `heading`, `text`, `link` and `icon` have landed; the conventions they
-  fixed are recorded in `adr/standard-component-library.md` and documented in
-  `docs/std-components.md`.
+  fixed are recorded in `adr/standard-component-library.md` and `adr/bundled-icon-set.md`, and
+  documented in `docs/std-components.md`.
 - **Layout** - `flex` and `stack` have landed, opening the `imp/std/layout` subpath and settling the
   group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
   nothing else (`adr/layout-two-flex-primitives.md`). `shell`, the app frame of header / rail /

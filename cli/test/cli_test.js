@@ -2688,6 +2688,8 @@ Deno.test('an app carries only the parts of imp it imports', async () => {
         "mount(document.body, button('hi'))\n",
       buttonAndLink: "import { mount } from 'imp'\nimport { button, link } from 'imp/std'\n" +
         "mount(document.body, button('hi'), link({ href: '/x' }, 'x'))\n",
+      oneIcon: "import { mount } from 'imp'\nimport { icon } from 'imp/std'\n" +
+        "import { luHouse } from 'imp/icons'\nmount(document.body, icon(luHouse))\n",
     }
     const size = {}
     for (const [name, source] of Object.entries(entries)) {
@@ -2711,6 +2713,11 @@ Deno.test('an app carries only the parts of imp it imports', async () => {
       size.buttonAndLink - size.button > 2 * KB,
       `adding link to a button-only entry costs ${size.buttonAndLink - size.button} B - link and ` +
         'the router it pulls are already in the button bundle, so imp/std is not shaking per export',
+    )
+    check(
+      size.oneIcon < 25 * KB,
+      `an entry drawing one Lucide icon builds ${size.oneIcon} B - over 25 kB means the whole ` +
+        '434 kB icon table came with it, so imp/icons is not shaking per export',
     )
   } finally {
     await Deno.remove(dir, { recursive: true })

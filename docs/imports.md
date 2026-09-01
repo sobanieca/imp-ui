@@ -16,6 +16,7 @@ The library is split by subject, so an import line says which part of imp a file
 | `imp/i18n`   | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       | [Translations](i18n.md)                  |
 | `imp/log`    | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       | [Logging](logging.md)                    |
 | `imp/http`   | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        | [HTTP](http.md)                          |
+| `imp/icons`  | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                  | [Standard components](std-components.md) |
 | `imp/std`    | The standard component library, split by group                            | [Standard components](std-components.md) |
 | `imp/test`   | `test`, `expect`, `spy`, `mockModule`, and the hooks                      | [Testing](testing.md)                    |
 

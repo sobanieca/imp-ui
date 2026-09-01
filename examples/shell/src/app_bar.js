@@ -1,6 +1,7 @@
 import { component } from 'imp'
 import { div } from 'imp/html'
 import { icon } from 'imp/std'
+import { luCheck } from 'imp/icons'
 import { appLogo, themeSelect, userCard } from 'imp/std/shell'
 
 export const appBar = component('app-bar', {
@@ -33,7 +34,7 @@ export const appBar = component('app-bar', {
         appLogo({
           label: 'imp tasks',
           tagline: 'shell example',
-          icon: icon({ name: 'check', size: 'lg' }),
+          icon: icon(luCheck, { size: 'lg' }),
         }),
       ),
       div(

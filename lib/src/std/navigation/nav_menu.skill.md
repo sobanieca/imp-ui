@@ -2,6 +2,8 @@
 
 ```js
 import { navMenu } from 'imp/std/navigation'
+import { icon } from 'imp/std'
+import { luBox } from 'imp/icons'
 
 navMenu({
   label: 'Sections',
@@ -15,7 +17,7 @@ navMenu({
       label: 'Tasks',
       href: '/tasks',
       tag: { text: 'overdue', color: 'red' },
-      icon: icon({ name: 'box' }),
+      icon: icon(luBox),
     },
     { id: 'settings', label: 'Settings', href: '/settings' },
   ],
@@ -60,9 +62,9 @@ Rules an agent gets wrong:
   a page cannot break that page's heading outline.
 - **It renders one flat level.** There are no submenus and no expanding items; for a menu of actions
   rather than destinations, that is a different component.
-- **An `icon` is DOM, not a name.** Pass `icon({ name: 'home' })` from `imp/std`, your own inline
-  `<svg>`, or a string to draw as a glyph. The same items then serve a sidebar, a bottom bar and an
-  icon rail.
+- **An `icon` is DOM, not a name.** Pass `icon(luHouse)` - the component from `imp/std`, the drawing
+  from `imp/icons` - or your own inline `<svg>`. The same items then serve a sidebar, a bottom bar
+  and an icon rail.
 - **A row with an `onClick` and no `href` renders a real `<button>`** - that is how a menu carries
   an action (open a dialog, sign out) beside its destinations. A row with neither stays inert text.
   Activation order is `select` -> `onClick` -> the href, so cancelling `select` skips both.
