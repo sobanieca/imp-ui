@@ -42,6 +42,12 @@ Rules an agent gets wrong:
 - **`onSignIn` / `onSignOut` are function props, not `events` entries**, because signing in is
   asynchronous and can fail. **Return the promise**: the button shows its spinner until it settles,
   and a rejection is logged rather than swallowed.
+- **Inside `shell` you do not call this** - pass
+  `account: { name, description, picture, href,
+  onSignIn, onSignOut }` and `signedIn`, and the
+  frame builds the card and places it for you - beside the navbar on a wide screen, inside the
+  hamburger drawer on a phone. Reach for `userCard` directly in a frame of your own, or anywhere a
+  person is displayed.
 - **imp holds no session.** The component reads `signedIn` and calls your handler - it never talks
   to an identity provider, stores a token or redirects. Flip `signedIn` yourself when the handler
   finishes.
@@ -55,4 +61,5 @@ Rules an agent gets wrong:
   person once.
 - **`name` is app data and is not translated** - do not route it through `t()`.
 
-Related: imp skill std/button - the control it composes.
+Related: imp skill std/button - the control it composes; imp skill std/shell - the frame that builds
+one from its `account` prop.

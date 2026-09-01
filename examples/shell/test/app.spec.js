@@ -8,14 +8,13 @@ const rowTitles = (page) =>
     (rows) => rows.map((row) => row.shadowRoot.querySelector('.title').textContent),
   )
 
+const filterLink = (href) => `imp-shell >>> nav[aria-label="Filters"] a[href="${href}"]`
+
 const sidebarCount = (page, href) =>
-  page.$eval(
-    `nav[aria-label="Sections"] a[href="${href}"] imp-tag`,
-    (node) => node.shadowRoot.textContent.trim(),
-  )
+  page.$eval(`${filterLink(href)} imp-tag`, (node) => node.shadowRoot.textContent.trim())
 
 const openSection = async (page, href) => {
-  await page.click(`nav[aria-label="Sections"] a[href="${href}"]`)
+  await page.click(filterLink(href))
   await page.waitForSelector('#add-task >>> input')
 }
 
@@ -41,12 +40,36 @@ test('a new task shows up on the list and in the sidebar count', async ({ page }
   expect(await sidebarCount(page, '/')).toEqual('5')
 })
 
-test('the bottom bar carries the same sections for small screens', async ({ page }) => {
-  const compact = await page.$$eval(
-    'nav[aria-label="Sections, compact"] a',
+test('the sidebar becomes the bottom bar and the navbar a drawer', async ({ page }) => {
+  const top = await page.$$eval(
+    'imp-shell >>> nav[aria-label="Sections"] a',
     (links) => links.map((anchor) => anchor.getAttribute('href')),
   )
-  expect(compact).toEqual(['/', '/active', '/done', '/settings'])
+  expect(top).toEqual(['/', '/settings'])
+
+  const topOf = (selector) => page.$eval(selector, (node) => node.getBoundingClientRect().top)
+  const visible = (selector) => page.$eval(selector, (node) => node.checkVisibility())
+  const sidebar = 'imp-shell >>> .sidebar'
+  const bottomBar = 'imp-shell >>> .bottombar'
+  const main = 'imp-shell >>> .main'
+
+  await page.setViewport({ width: 800, height: 600 })
+  expect(await visible(sidebar)).toEqual(true)
+  expect(await visible(bottomBar)).toEqual(false)
+
+  await page.setViewport({ width: 420, height: 720 })
+  await page.waitForSelector('imp-shell >>> .bottombar .link')
+  expect(await visible(sidebar)).toEqual(false)
+  expect(await topOf(bottomBar) > await topOf(main)).toBeTruthy()
+
+  await page.click('imp-shell >>> .hamburger')
+  expect(await page.$eval('imp-shell >>> .bar-nav', (node) => node.parentElement.className))
+    .toEqual('drawer-nav')
+  expect(await page.$eval('imp-shell >>> .tools', (node) => node.parentElement.className))
+    .toEqual('drawer-tools')
+
+  await page.keyboard.press('Escape')
+  await page.setViewport({ width: 800, height: 600 })
 })
 
 test('the shell fills the viewport, so the page itself never scrolls', async ({ page }) => {

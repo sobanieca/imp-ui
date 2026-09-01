@@ -129,101 +129,143 @@ job of whatever lays them out, which keeps rhythm consistent instead of fighting
 
 ## Start an app with the frame
 
-**`shell` is the recommended way to start an app**, not one option among several: a header, a nav
-column, a content area and whatever else the page needs, already laid out, already scrolling each
-region on its own, and already working on a phone.
+**`shell` is the recommended way to start an app**, not one option among several: a brand block, a
+top-level navbar, a nav column, a content area, the signed-in person and whatever else the page
+needs, already laid out, already scrolling each region on its own, and already working on a phone.
 
 ```js
 import { shell } from 'imp/std/layout'
-import { navMenu } from 'imp/std/navigation'
 
 shell(
   {
-    header: flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, logo(), userMenu()),
-    sidebar: navMenu({ label: 'Sections', items: sections, selected: current }),
+    logo: appLogo({ label: 'Acme' }),
+    navbar: {
+      label: 'Sections',
+      selected: section,
+      items: [
+        {
+          id: 'reports',
+          label: 'Reports',
+          icon: icon({ name: 'chart' }),
+          groups: [
+            { label: 'Money', items: [{ id: 'revenue', label: 'Revenue', href: '/revenue' }] },
+            { label: 'People', items: [{ id: 'churn', label: 'Churn', href: '/churn' }] },
+          ],
+        },
+        { id: 'directory', label: 'Directory', href: '/directory' },
+      ],
+    },
+    sidebar: { label: 'Reports', selected: page },
+    extras: themeSelect(),
+    account: { name: user.name, description: user.email, onSignOut: signOut },
+    signedIn: session,
   },
   router({ routes }),
 )
 ```
 
 The reason to use it is not your convenience, it is the person using your app: an imp app should
-feel like somewhere they have been before, with the nav where the nav goes and the header where the
-header goes. That only happens if the default shape is the one most apps actually ship.
+feel like somewhere they have been before, with the nav where the nav goes and the brand where the
+brand goes. That only happens if the default shape is the one most apps actually ship.
 
-Three things about it are worth knowing before you design around it:
+**One nav tree drives three surfaces.** You describe the navigation once, as data. The top-level
+entries are your **sections** - the handful of destinations that are always there. A section can
+carry its own `groups` of items, and that is what the sidebar shows while that section is current.
+So the bar lists the sections, the column lists what is inside the current one, and on a phone the
+bottom bar lists the same items. Nothing is declared twice, and a change to the tree lands
+everywhere at once.
 
-**There is no `layout` prop with five named variants to learn.** The regions you pass, plus where
-the header starts, are the layout. A rail with an aside and a bottom bar is a valid combination
-nobody had to think of in advance, which is the point of not shipping the list as a prop.
+**A section with no groups gets no sidebar** - not an empty one, none at all, with the content
+taking the full width. Try it: moving between a section that has a sidebar and one that does not is
+supposed to shift the layout, because that shift is how you feel the context change. Never fake it
+with a column holding a single link.
 
-**Every region takes DOM, not data**, so the shell never has to grow a prop for what you want to put
-in one. A command palette in the header, a tenant switcher above the nav, a pair of preference
-checkboxes below it - all of them are DOM you already know how to write.
+**Or skip sections entirely.** Pass `sidebar` with its own `groups` and no `navbar`, and you get the
+one-level layout: no top bar at all, the logo at the head of the column and the account at its foot.
+Same component, and which props you pass is the arrangement:
 
-**It is the one component that changes its structure by width.** Below `48rem` the rail and the
-aside collapse and the sidebar becomes a modal drawer, opened from a button the shell adds to the
-header - a real `<dialog>`, so Escape, the focus trap and returning focus are the browser's job.
-Pass a `bottomNav` instead and there is no drawer at all; a bottom bar is the whole phone
-navigation. It is a narrow-screen region only - it disappears again above `48rem`, so it is not the
-place for a bar a desktop layout needs to keep showing.
+| What you pass                          | What you get                                               |
+| -------------------------------------- | ---------------------------------------------------------- |
+| `navbar` whose sections carry `groups` | A top bar of sections and a column for the current one     |
+| `navbar` whose sections carry none     | A top bar, no column, content full width                   |
+| `sidebar` with `groups`, no `navbar`   | No bar: the logo heads the column and the account foots it |
 
-One consequence to know before you structure an app: the shell never looks inside a region, so a
-screen deeper in the tree cannot push DOM up into the sidebar. What travels upward is **data** -
-keep a nav-items state next to the shell, have each screen contribute its rows on mount and withdraw
-them on unmount, and bind that state into the menu. The rule of thumb: **you at the call site, DOM;
-a screen at runtime, data.**
+A **row** is `{ id, label, href, icon, tag, onClick }` and may hold `children`, which render
+indented under a caret and collapse by default. It is the same shape a standalone `navMenu` takes,
+so nothing new to learn. The frame draws the rows itself - it has to, because it draws each level
+more than once, and it cannot make a second presentation out of markup you handed it. `account` is
+data for the same reason: `{ name, description, picture, href, onSignIn, onSignOut }`.
+
+**`logo`, `aside` and `extras` are still plain DOM**, so a contextual panel, a command palette or a
+pair of pickers is markup you already know how to write, and the shell places it without looking
+inside. The sidebar takes `footer` rows of its own for the settings-and-help pair that usually sits
+at the bottom of a nav column.
+
+**It is the one component that changes its structure by width**, and on a phone it changes into the
+shape a phone app has. The top bar becomes a hamburger and a two-line title - the section over the
+row you are on - because on a phone the frame should tell you where you are. The **sidebar becomes
+the bottom bar**, where a thumb can reach it: four rows and then a **More** button opening a sheet
+with the rest. The **sections, the pickers and the account card move into the hamburger drawer** - a
+real `<dialog>`, so Escape, the focus trap and returning focus are the browser's job. The aside
+goes. When the current section has no sidebar, the bottom bar carries the sections instead. Nothing
+is dropped; it is folded up.
+
+On the desktop the column collapses to an icon rail from a toggle in its head, which also names the
+section you are in.
+
+Three custom properties tune the frame; set them anywhere above it:
+
+| Property                          | Default | What it sizes                                  |
+| --------------------------------- | ------- | ---------------------------------------------- |
+| `--imp-shell-sidebar-inline-size` | `16rem` | The nav column, and the drawer                 |
+| `--imp-shell-aside-inline-size`   | `20rem` | The contextual column                          |
+| `--imp-shell-bottom-bar-items`    | `4`     | Rows in the phone's bottom bar before **More** |
+
+**Authentication is one prop.** `signedIn: false` withholds the nav, the bottom bar and the aside,
+closes the drawer if it was open, and leaves a single top bar carrying the logo and the sign-in
+button - so an app with a signed-out state does not need a second layout for it. Leave `signedIn`
+off entirely and there is no auth concept at all.
+
+Two things to know before you structure an app. The fold is a **media query**, so a shell embedded
+in a panel narrower than `48rem` on a wide screen keeps its desktop layout - give a frame the room a
+frame needs. And a screen deeper in the tree cannot push markup up into the nav; what travels upward
+is **data**. Keep a nav state next to the shell, have each screen contribute its rows on mount and
+withdraw them on unmount, and hand that state to the shell as `items`. The rule of thumb: **you at
+the call site, a literal array; a screen at runtime, a state.**
 
 ## The frame comes with its furniture
 
 A frame that only draws boxes is half a quick win, so `imp/std/shell` ships the pieces those boxes
 are usually filled with. They are deliberately plain: each one covers what most apps need, and none
-of them is required - a region takes DOM, so a piece that does not fit is replaced by your own
-without asking the frame's permission.
+of them is required - the `logo`, `aside` and `extras` regions take DOM, so a piece that does not
+fit is replaced by your own without asking the frame's permission.
 
 ```js
 import { shell } from 'imp/std/layout'
-import { navMenu } from 'imp/std/navigation'
-import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+import { appLogo, langSelect, themeSelect } from 'imp/std/shell'
 import { icon } from 'imp/std'
-import { flex, stack } from 'imp/std/layout'
 
 shell(
   {
-    header: flex(
-      { horizontalAlign: 'justify', verticalAlign: 'center' },
-      breadcrumbs({ items: trail }),
-      flex(
-        { verticalAlign: 'center' },
-        themeSelect(),
-        langSelect({ languages: ['en', 'pl'] }),
-        userCard({
-          signedIn: session,
-          name: user.name,
-          description: user.email,
-          picture: user.avatar,
-          onSignIn: signIn,
-          onSignOut: signOut,
-        }),
-      ),
-    ),
-    sidebar: stack(
-      { gap: 4 },
-      appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) }),
-      navMenu({
-        label: 'Sections',
-        selected: current,
-        items: [
-          { id: 'overview', label: 'Overview', href: '/', icon: icon({ name: 'home' }) },
-          {
-            id: 'orders',
-            label: 'Orders',
-            href: '/orders',
-            icon: icon({ name: 'box' }),
-            tag: { text: 4 },
-          },
-        ],
-      }),
-    ),
+    logo: appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) }),
+    navbar: {
+      label: 'Sections',
+      selected: section,
+      items: [
+        { id: 'reports', label: 'Reports', href: '/reports', icon: icon({ name: 'chart' }) },
+        { id: 'orders', label: 'Orders', href: '/orders', icon: icon({ name: 'box' }) },
+      ],
+    },
+    sidebar: { label: 'Reports', selected: current },
+    extras: [themeSelect(), langSelect({ languages: ['en', 'pl'] })],
+    account: {
+      name: user.name,
+      description: user.email,
+      picture: user.avatar,
+      onSignIn: signIn,
+      onSignOut: signOut,
+    },
+    signedIn: session,
   },
   router({ routes }),
 )
@@ -237,13 +279,21 @@ shell(
 | `themeSelect` | A light / dark / system picker that applies the theme and remembers the choice          |
 | `langSelect`  | A language picker that calls `setLang` and remembers the choice                         |
 
-Sidebar and navbar rows are not a separate component: they are **`navMenu`**, whose items now take
-an `icon`, an `onClick` and a `tag`, so the same data renders a sidebar (`direction: 'column'`), a
-top or bottom bar (`direction: 'row'`) and an icon rail. A row's `tag` is plain data -
-`tag: { text: 'new', color: 'green' }` - and the menu builds the `tag` component from it, so a count
-or a status pill needs no markup of your own; a group takes the same key. Icons come from `icon` in
-the base group, a small fixed set of line glyphs drawn in the current text color - and every
-icon-taking prop in the library accepts any DOM, so your own `<svg>` goes wherever `icon()` does.
+`userCard` is the odd one out: inside `shell` you never call it, because the frame builds it from
+your `account` data - and moves that same card into the drawer on a phone. Reach for it directly
+when you are writing your own frame, or anywhere else a person is shown.
+
+Sidebar and navbar rows are not a separate component either: they are the items in the tree you hand
+the frame, the same ones **`navMenu`** takes when you want a menu somewhere that is not the frame. A
+row's `tag` is plain data - `tag: { text: 'new', color: 'green' }` - and the `tag` component is
+built from it, so a count or a status pill needs no markup of your own; a group takes the same key.
+Icons come from `icon` in the base group, a small fixed set of line glyphs drawn in the current text
+color - and every icon-taking prop in the library accepts any DOM, so your own `<svg>` goes wherever
+`icon()` does.
+
+A page's own furniture - a breadcrumb trail, a page title, a toolbar of actions - is not frame
+chrome and has no region of its own. It goes at the top of the main content you pass as children,
+which is where it belongs: it changes with the screen, and the frame does not.
 
 Two of these components hold state that outlives the page: `themeSelect` and `langSelect` remember
 what was chosen in `localStorage`. Pass `remember: false` when the app owns that decision instead.

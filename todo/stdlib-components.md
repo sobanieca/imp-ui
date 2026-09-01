@@ -33,8 +33,8 @@ without a skill file, so this is enforced rather than remembered.
   `docs/std-components.md`.
 - **Layout** - `flex` and `stack` have landed, opening the `imp/std/layout` subpath and settling the
   group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
-  nothing else (`adr/layout-two-flex-primitives.md`). `shell`, the app frame of header / rail /
-  sidebar / content / aside that works on a phone and a desktop, has landed alongside them
+  nothing else (`adr/layout-two-flex-primitives.md`). `shell`, the app frame of logo / navbar /
+  sidebar / content / aside / account that works on a phone and a desktop, has landed alongside them
   (`adr/app-shell-component.md`), and the contents its regions are usually filled with ship beside
   it as `imp/std/shell` (`adr/shell-region-components.md`). **`scrollArea` is out of scope** for the
   same reason `virtualList` is - custom scrollbars reimplement the browser's own scrolling

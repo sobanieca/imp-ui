@@ -58,14 +58,13 @@ found the way a test file is.
   right, bottom, or corner handle with pointer events (mouse and touch), with a live size readout
   and phone/tablet/desktop presets on top of free dragging. Resizing changes the parent box only, so
   the component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
-- **Every page wears the same shell, and the shell is the workbench's own.** `/` and each
-  `/preview/<path>` render one frame built from a plain CSS grid the preview owns: a `<header>`
-  carrying the brand, a `<nav>` holding the catalog as a `navMenu` grouped by category, an `<aside>`
-  holding the theme, language and direction pickers plus the theme editor, a `<footer>`, and the
-  page itself in `<main>`. Navigating between components is therefore one click from anywhere. The
-  frame is the preview's own markup rather than a standard component, so the workbench never depends
-  on a layout component to render the page used to diagnose one. The shell is pinned `dir="ltr"` on
-  its host, so the direction control still applies to the stage alone.
+- **Every page wears the same frame, and the frame is `shell`.** `/` and each `/preview/<path>`
+  render one `shell`: the brand block as its `logo`, the catalog as its `sidebar` data grouped by
+  category, the theme, language and direction pickers plus the theme editor in its `aside`, and the
+  page itself as its content. Navigating between components is therefore one click from anywhere.
+  The workbench eating imp's own frame is deliberate - a regression in it shows up while working on
+  anything - and the frame is pinned `dir="ltr"` on its host, so the direction control still applies
+  to the stage alone.
 - **The settings panel edits the applied theme, token by token.** The pickers choose which theme is
   applied; the editor below them lists every token the applied theme wrote, grouped by kind, and
   writes each change straight back through `applyTheme` so the page and the specimen re-skin as the
@@ -153,11 +152,9 @@ real dev server, cross-cutting concerns - theming today, i18n later - are exerci
 approximated.
 
 Building the page from `imp/std` makes the workbench a consumer of the library it exists to develop,
-so a regression in `button`, `select`, `textArea` or `navMenu` shows up while working on anything.
-The cost is the circularity: a broken standard component can break the page used to diagnose it. The
-frame itself is the preview's own markup, which keeps that surface down to the panels rather than
-the page every preview is drawn in, and the build-failure path stays raw DOM for the same reason, so
-an error always renders.
+so a regression in `shell`, `button`, `select` or `textArea` shows up while working on anything. The
+cost is the circularity: a broken standard component can break the page used to diagnose it. The
+build-failure path therefore stays raw DOM, so an error always renders.
 
 Preview pages are bundled while the rest of development stays buildless: a preview page reflects a
 file change only after its bundle is rebuilt, which happens on the reload the watcher already

@@ -144,54 +144,99 @@ the library accepts any DOM.
 
 ## shell - from `imp/std/layout`
 
-**Build an app's frame with `shell`; do not hand-assemble a header-and-sidebar grid.** Regions take
-DOM, main content is the children.
+**Build an app's frame with `shell`; do not hand-assemble a header-and-sidebar grid.** One nav tree
+as data drives the bar, the column and the phone's bottom bar; `logo`, `aside` and `extras` are DOM;
+main content is the children.
 
 ```js
 import { shell } from 'imp/std/layout'
 
 shell(
-  { header: bar(), sidebar: navMenu({ label: 'Sections', items, selected }) },
+  {
+    logo: appLogo({ label: 'Acme' }),
+    navbar: {
+      label: 'Sections',
+      selected: section,
+      items: [
+        {
+          id: 'reports',
+          label: 'Reports',
+          groups: [{
+            label: 'Money',
+            items: [{ id: 'revenue', label: 'Revenue', href: '/revenue' }],
+          }],
+        },
+        { id: 'directory', label: 'Directory', href: '/directory' },
+      ],
+    },
+    sidebar: { label: 'Reports', selected: page },
+    extras: themeSelect(),
+    account: { name: 'Ada Lovelace', onSignOut },
+    signedIn,
+  },
   router({ routes }),
 )
 ```
 
-| Prop         | Values                         | Default  | Notes                                                |
-| ------------ | ------------------------------ | -------- | ---------------------------------------------------- |
-| `header`     | DOM                            | -        | Rendered into `<header>`                             |
-| `rail`       | DOM                            | -        | Thin far-left column                                 |
-| `sidebar`    | DOM                            | -        | Nav column; a modal drawer below `48rem`             |
-| `aside`      | DOM                            | -        | Right contextual column, into `<aside>`              |
-| `bottomNav`  | DOM                            | -        | `display: none` at `>= 48rem`; suppresses the drawer |
-| `headerSpan` | `'full'`, `'content'`          | `'full'` | `'content'` starts the header after rail and sidebar |
-| `navOpen`    | boolean, or a state - **live** | `false`  | Drawer state; shell-owned when omitted               |
-| `events`     | `{ navToggle }`                | -        | `detail: { open }`, on every change the shell makes  |
+| Prop       | Values                         | Default | Notes                                                 |
+| ---------- | ------------------------------ | ------- | ----------------------------------------------------- |
+| `logo`     | DOM                            | -       | Heads the bar, the column, or the drawer              |
+| `navbar`   | **data** `{ items, ... }`      | -       | The sections; each may declare its own `groups`       |
+| `sidebar`  | **data** `{ selected, ... }`   | -       | Names, marks and foots the second level               |
+| `aside`    | DOM                            | -       | Right contextual column, into `<aside>`               |
+| `account`  | **data** `{ name, ... }`       | -       | The person; becomes a `userCard`                      |
+| `extras`   | DOM, or an array of it         | -       | Theme/language pickers, anything; sits by the account |
+| `signedIn` | boolean, or a state - **live** | `true`  | `false` withholds the nav; logo and sign-in remain    |
+| `navOpen`  | boolean, or a state - **live** | `false` | Drawer state; shell-owned when omitted                |
+| `events`   | `{ navToggle, select }`        | -       | `{ open }` on every drawer change; `{ id, item }`     |
 
-| Layout                   | Props                                        |
-| ------------------------ | -------------------------------------------- |
-| Sidebar + top navbar     | `header`, `sidebar`                          |
-| Full-height sidebar      | `header`, `sidebar`, `headerSpan: 'content'` |
-| Rail + secondary sidebar | `rail`, `sidebar`, `headerSpan: 'content'`   |
-| Layout with right aside  | `header`, `sidebar`, `aside`                 |
-| Mobile bottom navigation | `header`, `sidebar`, `bottomNav`             |
+`navbar`: `items` (sections, live), `selected` (live), `label`. `sidebar`: `selected` (live),
+`label`, `footer` rows - plus `groups` / `items` **only when there is no `navbar`**, which is the
+sidebar-only layout; beside one they warn and are dropped.
 
-Widths are custom properties, not props: `--imp-shell-rail-inline-size` (`3.5rem`),
-`--imp-shell-sidebar-inline-size` (`16rem`), `--imp-shell-aside-inline-size` (`20rem`).
+Section: `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. Row:
+`{ id, label, icon, href, onClick, tag, disabled, children? }`. Group:
+`{ id?, label, tag?, items }`.
+
+`account` keys are `userCard` props: `name`, `description`, `picture`, `href`, `onSignIn`,
+`onSignOut`. Any other key warns.
+
+| Layout                 | Props                                | What you get                                    |
+| ---------------------- | ------------------------------------ | ----------------------------------------------- |
+| Sections with sidebars | `navbar`, sections carrying `groups` | Top bar of sections, column for the current one |
+| Sections only          | `navbar`, no section carrying groups | Top bar, no column, content full width          |
+| Sidebar only           | `sidebar` with `groups` / `items`    | No bar: logo heads the column, account foots it |
+
+Sizes are custom properties, not props: `--imp-shell-sidebar-inline-size` (`16rem`),
+`--imp-shell-aside-inline-size` (`20rem`), `--imp-shell-bottom-bar-items` (`4`, clamped 3-5).
 
 Rules an agent gets wrong:
 
-- **Regions are DOM, not data**, so arbitrary content in one needs no new prop. Main content is the
-  children: `shell({ sidebar }, page())`. There is no `layout` enum and no `footer` region.
-- **The nav item registry is the data half**: a plain-data state each screen contributes to under an
-  owner key, bound into `navMenu`. **You at the call site -> DOM; a screen at runtime -> data**,
-  because imp has no portal, so DOM cannot travel up out of a screen into the sidebar.
-- **`bottomNav`'s presence is the mobile switch** - passing it suppresses the drawer. There is no
-  `compact` mode prop. It is not a footer: it is `display: none` at `>= 48rem`, so anything a wide
-  screen must keep showing goes in the `header`, the `aside` or the main content.
+- **Put the second level inside the section**, as `groups`, and drive `navbar.selected` and
+  `sidebar.selected` from the route. Do not keep two arrays in sync by hand.
+- **The nav is data, not DOM.** Do not pass a `navMenu` - a node in `navbar` or `sidebar` warns and
+  is dropped. The shell draws the rows because it draws each level more than once. `account` is data
+  for the same reason. Main content is the children: `shell({ navbar }, page())`. There is no
+  `header`, `footer` or `layout` prop - breadcrumbs and page toolbars go atop the main content.
+- **A section with no groups renders no sidebar at all** and content goes full width; do not fake a
+  column with one row. **A section is always activatable** even with no `href`, because choosing it
+  is what changes the sidebar.
+- **`children` nest one level, collapsed by default**, behind a caret with `aria-expanded`; they
+  never appear in the bottom bar.
+- **Below `48rem`** the top bar becomes a hamburger plus a two-line title (section over row); the
+  sidebar becomes the bottom bar, capped at `--imp-shell-bottom-bar-items` with a **More** bottom
+  sheet and groups flattened; the sections, `extras` and the account move into the drawer; the aside
+  goes. With no sidebar for the current section, the bottom bar carries the **sections** and the
+  drawer holds only the chrome.
+- **The desktop column collapses to an icon rail** from a toggle in its head - shell state, no prop.
+- **`signedIn: false` withholds the nav, bottom bar and aside** and leaves one top bar with the logo
+  and the sign-in button (`account.onSignIn`). Omit `signedIn` for an app with no auth.
 - **`navOpen` must be writable** (never a `computed`) if you pass it: the shell writes back when the
   drawer closes itself.
-- **The shell is imp's only breakpoint exception** (`48rem`); do not copy that into your components.
-  It renders `<header>`, `<main>`, `<aside>` but **no `<nav>`** - `navMenu` brings that.
+- **The shell is imp's only breakpoint exception** (`48rem`), and it is a **media query** - a shell
+  embedded in a panel narrower than that on a wide screen keeps its desktop layout. Do not copy the
+  exception into your own components. It renders `<header>`, `<main>`, `<aside>` and the `<nav>` of
+  each level, named from that level's `label`.
 - **It is `100dvb` on its own host**; set `block-size` on the element to embed one in a shorter box.
 
 Full manual: `imp skill std/shell`.
@@ -452,13 +497,14 @@ Rules an agent gets wrong:
 - Arrow keys, `Home`/`End` and RTL mirroring come with it - write no key handling.
 - **`navMenu` marks the current page with `selected`**, which writes `aria-current="page"` - never a
   class of your own. Its items are real links; a plain click reports `select` first, so
-  `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a top or
-  bottom navigation bar. Full manuals: `imp skill std/tabs` | `imp skill std/navMenu`.
+  `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a bar.
+  **Do not pass one to `shell`** - the frame takes the same data and draws the rows itself. Full
+  manuals: `imp skill std/tabs` | `imp skill std/navMenu`.
 
 ## Shell parts - from `imp/std/shell`
 
-Ready-made contents for `shell`'s regions. Each is optional: a region takes DOM, so a piece that
-does not fit is replaced by your own.
+Ready-made contents for `shell`'s regions. Each is optional: `logo`, `aside` and `extras` take DOM,
+so a piece that does not fit is replaced by your own.
 
 ```js
 import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
@@ -480,8 +526,9 @@ langSelect({ languages: ['en', 'pl'] })
 
 Rules an agent gets wrong:
 
-- **There is no sidebar-item or navbar-item component**: rows are `navMenu`, whose items take an
-  `icon` and an `onClick`. `direction: 'row'` makes the same data a top or bottom bar.
+- **There is no sidebar-item or navbar-item component**: a row is a nav item, whose shape takes an
+  `icon` and an `onClick`. Inside `shell` you hand those items to the frame; `navMenu` is for a menu
+  outside it.
 - **The last crumb is the current page** - `breadcrumbs` renders it as text with
   `aria-current="page"`, never a link, and imp does not derive the trail from the route.
 - **`onSignIn` / `onSignOut` are function props, not `events`** - return the promise and the button
@@ -495,7 +542,9 @@ Rules an agent gets wrong:
   prop off for a display-only card. `signedIn` defaults to `false`, so a card with only a `name`
   shows the sign-in button. There is no menu inside it.
 - **`compact` on `appLogo` and `userCard` hides the words visually, not from assistive tech** - it
-  is how a rail keeps its name.
+  is how a mark-only brand block keeps its name.
+- **Inside `shell` you do not call `userCard`**: pass the frame's `account` data and it builds the
+  card and places it, in the bar on a wide screen and in the drawer on a phone.
 
 Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/themeSelect` |
 `std/langSelect`.

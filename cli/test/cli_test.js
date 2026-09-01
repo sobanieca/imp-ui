@@ -1625,7 +1625,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
 
     const shell = await page.evaluate(() => {
-      const menu = globalThis.impOne('imp-nav-menu').shadowRoot
+      const menu = globalThis.impOne('imp-shell').shadowRoot.querySelector('.sidebar')
       const links = [...menu.querySelectorAll('.link')]
       const deepText = (node) => {
         if (node.nodeType === Node.TEXT_NODE) return node.data

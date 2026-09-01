@@ -61,13 +61,16 @@ Rules an agent gets wrong:
 - **It renders one flat level.** There are no submenus and no expanding items; for a menu of actions
   rather than destinations, that is a different component.
 - **An `icon` is DOM, not a name.** Pass `icon({ name: 'home' })` from `imp/std`, your own inline
-  `<svg>`, or a string to draw as a glyph. The same items then serve a sidebar, a bottom bar and an
-  icon rail.
+  `<svg>`, or a string to draw as a glyph.
 - **A row with an `onClick` and no `href` renders a real `<button>`** - that is how a menu carries
   an action (open a dialog, sign out) beside its destinations. A row with neither stays inert text.
   Activation order is `select` -> `onClick` -> the href, so cancelling `select` skips both.
-- **`direction: 'row'` is how the same menu becomes a bar rather than a list** - put the column one
-  down the side of your page and the row one across the top.
+- **`direction: 'row'` is how the same menu becomes a bar rather than a list.**
+- **Do not pass a `navMenu` to `shell`.** The frame takes the same
+  `{ label, items, groups,
+  selected }` as data and draws the rows itself, because it draws each
+  nav level twice; a node in `navbar` or `sidebar` warns and is dropped. Use `navMenu` for a menu
+  outside the frame.
 - **Listen with `events: { select }`, not `onSelect`.** It is a cancelable `CustomEvent` on the host
   with `detail: { id, item }`; the link is followed unless you call `preventDefault()`. Modifier and
   middle clicks are left to the browser, so a link still opens in a new tab.

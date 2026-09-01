@@ -1,7 +1,7 @@
 # shell example - a small todo app
 
-A four-screen todo app built on `shell`, so the header, the sidebar and the bottom bar can be looked
-at in one running page rather than in isolated previews.
+A four-screen todo app built on `shell`, so the navbar, the sidebar and the account chrome can be
+looked at in one running page rather than in isolated previews.
 
 ```
 imp start        serve it with live reload
@@ -11,18 +11,22 @@ imp test --e2e   the browser spec
 
 ## What it shows
 
-- **`shell` holds the frame.** `src/app.js` passes `header`, `sidebar` and `bottomNav` as DOM and
-  the router slot as the main content. Nothing below the shell knows where it is rendered.
-- **The same sections feed the sidebar and the bottom bar.** `src/nav.js` builds one list of
-  sections into two `navMenu` calls - a grouped column with live counts for the sidebar, a
-  short-labelled `direction: 'row'` one for the bottom bar. Passing `bottomNav` suppresses the
-  mobile drawer, so below `48rem` the sidebar is replaced rather than hidden behind a trigger.
-- **The marked section comes from the route.** `selected` is a `computed` over `useRoute()`, so
-  `aria-current` follows navigation instead of being set by hand.
+- **`shell` holds the frame.** `src/app.js` passes `logo`, `navbar`, `sidebar`, `extras` and
+  `account`, with the router slot as the main content. Nothing below the shell knows where it is
+  rendered.
+- **One nav tree, three surfaces.** `src/nav.js` declares the sections once: Tasks carries its own
+  `groups` of filters, Settings carries none. The frame lists the sections in the top bar, the
+  current section's filters in the column, and the same filters in the bottom bar on a phone.
+- **A section without groups gets no sidebar.** Open Settings and the column is gone, not empty, and
+  the content takes the full width.
+- **The marked rows come from the route.** `navbar.selected` and `sidebar.selected` are `computed`
+  over `useRoute()`, so `aria-current` follows navigation instead of being set by hand.
 - **The counts are live.** Each count is a `computed` over the todo state, handed to a nav item as
-  `tag: { text }`, so adding or ticking a task updates both menus.
-- **The header is an app component.** `src/app_bar.js` is a plain component holding `appLogo`,
-  `themeSelect` and `userCard` - a region is DOM, so the shell never needs a prop for what is in it.
+  `tag: { text }`, so adding or ticking a task updates the sidebar.
+- **The account is data too.** `account: { name, description }` is all the app passes and the frame
+  builds the `userCard`. Shrink the window past `48rem` and the frame folds into a phone app: the
+  filters become the bottom bar, the top bar becomes a hamburger and a two-line title, and the
+  sections, the theme picker and the card move into the drawer.
 
 ## Layout note
 

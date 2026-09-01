@@ -288,7 +288,7 @@ you retune it. It is there so that a media query you write in your own component
 repeat a number imp already has an opinion about. Use it anywhere a length goes:
 
 ```css
-.rail {
+.side-panel {
   max-inline-size: calc(var(--imp-breakpoint-desktop) / 3);
 }
 ```

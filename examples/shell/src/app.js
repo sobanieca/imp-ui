@@ -1,11 +1,10 @@
 import { component } from 'imp'
 import { router, useRoute } from 'imp/router'
 import { computed, initState } from 'imp/state'
-import { heading, link } from 'imp/std'
+import { heading, icon, link } from 'imp/std'
 import { shell, stack } from 'imp/std/layout'
-import { navMenu } from 'imp/std/navigation'
-import { appBar } from './app_bar.js'
-import { navGroups, navItems, sectionFor } from './nav.js'
+import { appLogo, themeSelect } from 'imp/std/shell'
+import { filterFor, sectionFor, sections } from './nav.js'
 import { isActive, isDone, seedTodos } from './todos.js'
 import { tasks } from './screens/tasks.js'
 import { settings } from './screens/settings.js'
@@ -21,7 +20,6 @@ export const app = component('app-root', {
   build: () => {
     const todos = initState('tasks.todos', seedTodos())
     const route = useRoute()
-    const selected = computed([route], ({ path }) => sectionFor(path))
     const counts = {
       all: computed([todos], (items) => items.length),
       active: computed([todos], (items) => items.filter(isActive).length),
@@ -30,19 +28,22 @@ export const app = component('app-root', {
 
     return shell(
       {
-        header: appBar(),
-        sidebar: navMenu({
+        logo: appLogo({
+          label: 'imp tasks',
+          tagline: 'shell example',
+          icon: icon({ name: 'check', size: 'lg' }),
+        }),
+        navbar: {
           label: 'Sections',
-          groups: navGroups,
-          items: navItems(counts, { grouped: true }),
-          selected,
-        }),
-        bottomNav: navMenu({
-          label: 'Sections, compact',
-          direction: 'row',
-          items: navItems({}, { grouped: false, short: true }),
-          selected,
-        }),
+          items: sections(counts),
+          selected: computed([route], ({ path }) => sectionFor(path)),
+        },
+        sidebar: {
+          label: 'Filters',
+          selected: computed([route], ({ path }) => filterFor(path)),
+        },
+        extras: themeSelect(),
+        account: { name: 'Ada Lovelace', description: 'ada@example.com' },
       },
       router({
         routes: {

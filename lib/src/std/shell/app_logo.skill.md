@@ -1,4 +1,4 @@
-# appLogo - the brand block at the top of a sidebar, rail or header
+# appLogo - the brand block at the head of a navbar or sidebar
 
 ```js
 import { appLogo } from 'imp/std/shell'
@@ -26,11 +26,11 @@ Rules an agent gets wrong:
 - **It is a link by default**, to `/`. An in-app path is routed by imp on a plain left-click and
   left to the browser on a modifier-click; `href: null` makes it a plain box for a page that is
   already home.
-- **`compact` hides the words visually, not from assistive tech**, so a rail logo is still named.
-  Use it for `shell`'s `rail` region.
+- **`compact` hides the words visually, not from assistive tech**, so a mark-only logo is still
+  named. Use it where the brand block has no room for words.
 - **`alt` stays empty when a `label` is present** - the name is already text beside the image, and
   repeating it makes a screen reader say it twice.
 - **It has no size props.** The mark is `1.75rem`; a bigger brand block is your own DOM in the
   region.
 
-Related: imp skill std/shell - the frame this sits in.
+Related: imp skill std/shell - the frame this sits in, as its `logo` prop.

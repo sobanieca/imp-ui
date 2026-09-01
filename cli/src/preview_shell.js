@@ -250,6 +250,17 @@ const componentMenu = (previews, current, { label, grouped = true }) =>
     events: { select: openInPlace },
   })
 
+const catalogSidebar = (previews, current) => ({
+  label: 'Components',
+  selected: current,
+  groups: categoriesOf(previews).map(({ name, entries }) => ({
+    id: name,
+    label: name,
+    tag: { text: entries.length },
+    items: entries.map((entry) => ({ id: entry.file, label: entry.name, href: entry.href })),
+  })),
+})
+
 const barDefinition = {
   styles: BAR_STYLES,
   build: (_instance, _previews) =>
@@ -364,18 +375,10 @@ export const previewShell = ({ catalog, controls, editor, content }) => {
   const hasPreviews = catalog.previews.length > 0
   const host = shell(
     {
-      header: previewBar(catalog.previews),
-      sidebar: hasPreviews
-        ? stack(
-          { gap: 3 },
-          componentMenu(catalog.previews, catalog.current, { label: 'Components' }),
-          text(
-            { size: 'sm', tone: 'secondary' },
-            `${catalog.previews.length} component${catalog.previews.length === 1 ? '' : 's'}`,
-          ),
-        )
-        : null,
+      logo: previewBar(catalog.previews),
+      sidebar: hasPreviews ? catalogSidebar(catalog.previews, catalog.current) : null,
       aside: previewSettings(controls, editor),
+      events: { select: openInPlace },
     },
     stack({ gap: 4 }, content),
   )

@@ -6,11 +6,6 @@ const shellRoot = (root) => root.shadowRoot.querySelector('imp-shell').shadowRoo
 
 const region = (root, selector) => shellRoot(root).querySelector(selector)
 
-const menu = (root, label) =>
-  [...shellRoot(root).querySelectorAll('imp-nav-menu')].find((host) =>
-    host.shadowRoot.querySelector('nav')?.getAttribute('aria-label') === label
-  )
-
 const collectDeep = (node, tag) => {
   const root = node.shadowRoot ?? node
   const found = [...root.querySelectorAll(tag)]
@@ -20,7 +15,9 @@ const collectDeep = (node, tag) => {
   return found
 }
 
-const links = (root, label) => [...menu(root, label).shadowRoot.querySelectorAll('a')]
+const menu = (root, label) => shellRoot(root).querySelector(`nav[aria-label="${label}"]`)
+
+const links = (root, label) => [...menu(root, label).querySelectorAll('a')]
 
 const hrefs = (root, label) => links(root, label).map((anchor) => anchor.getAttribute('href'))
 
@@ -35,26 +32,29 @@ beforeEach(() => {
   history.replaceState(null, '', '/')
 })
 
-test('the shell frames the screen with a header, a sidebar and a bottom bar', () => {
+test('the shell frames the screen with a navbar, a sidebar and the account chrome', () => {
   const root = render()
-  expect(region(root, '.header')).toEqual(expect.anything())
+  expect(region(root, '.topbar')).toEqual(expect.anything())
   expect(region(root, '.sidebar')).toEqual(expect.anything())
-  expect(region(root, '.bottom')).toEqual(expect.anything())
   expect(region(root, '.main')).toEqual(expect.anything())
+  expect(region(root, '.bar-logo imp-app-logo')).toEqual(expect.anything())
+  expect(region(root, '.tools imp-user-card')).toEqual(expect.anything())
 })
 
-test('the sidebar and the bottom bar are fed by the same sections', () => {
+test('the navbar carries the top level and the sidebar the filters under it', () => {
   const root = render()
-  expect(hrefs(root, 'Sections')).toEqual(['/', '/active', '/done', '/settings'])
-  expect(hrefs(root, 'Sections, compact')).toEqual(hrefs(root, 'Sections'))
+  expect(hrefs(root, 'Sections')).toEqual(['/', '/settings'])
+  expect(hrefs(root, 'Filters')).toEqual(['/', '/active', '/done'])
 })
 
-test('the section for the current path is the marked one', () => {
+test('the section and the filter for the current path are the marked ones', () => {
   const root = render()
-  const current = links(root, 'Sections')
-    .filter((anchor) => anchor.getAttribute('aria-current') === 'page')
-    .map((anchor) => anchor.getAttribute('href'))
-  expect(current).toEqual(['/'])
+  const marked = (label) =>
+    links(root, label)
+      .filter((anchor) => anchor.getAttribute('aria-current') === 'page')
+      .map((anchor) => anchor.getAttribute('href'))
+  expect(marked('Sections')).toEqual(['/'])
+  expect(marked('Filters')).toEqual(['/'])
 })
 
 test('the screen lists the seeded tasks', () => {

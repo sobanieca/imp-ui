@@ -2,10 +2,10 @@
 
 ## Context
 
-`shell` frames an app in named regions and never looks inside one (`app-shell-component.md`). That
-is the right boundary for the frame, and it leaves every app writing the same six pieces of DOM by
-hand: a brand block, nav rows with icons, a breadcrumb trail, the signed-in person, a sign-out
-button, and the theme and language pickers. `todo/stdlib-components.md` recorded the gap as
+`shell` frames an app in named regions (`app-shell-component.md`). The nav levels it draws itself,
+from data; the rest of a region is DOM the frame places without looking inside. That leaves every
+app writing the same pieces by hand: a brand block, a breadcrumb trail, the signed-in person, a
+sign-out button, and the theme and language pickers. `todo/stdlib-components.md` recorded the gap as
 "ready-made contents for `shell`'s regions" and named its blocker: nav rows want an icon per
 destination, and imp had four private glyphs rather than a public `icon`.
 
@@ -23,10 +23,11 @@ filled with: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect
 - **`shell` gains no props.** Every piece is DOM the app passes into a region, so the frame is
   unchanged and any piece can be swapped for the app's own without asking it for permission. The
   group's name says where they are usually used, not where they may be used.
-- **Nav rows are not a new component.** A sidebar row, a navbar row and a bottom-bar row are
-  `navMenu` items, which now take an `icon` (any DOM) and an `onClick`; a row with an `onClick` and
-  no `href` renders a real `<button>`, which is how a menu carries an action beside its
-  destinations. One data shape drives the sidebar, the bar and the rail.
+- **Nav rows are not a new component.** A sidebar row and a navbar row are nav items, which take an
+  `icon` (any DOM) and an `onClick`; a row with an `onClick` and no `href` renders a real
+  `<button>`, which is how a menu carries an action beside its destinations. One data shape drives
+  the column, the bar, the drawer and the phone's bottom bar, and `shell` and `navMenu` render it
+  through one shared row builder.
 - **`icon` lands in the General group** with a fixed set of line glyphs drawn in `currentColor`.
   Every icon-taking prop in the library accepts **any DOM**, so `icon` is a convenience and never a
   requirement, and a component that needs a glyph internally still draws its own rather than
@@ -46,8 +47,8 @@ filled with: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect
 
 ## Consequences
 
-- The frame is a quick win rather than an empty grid: `shell` plus this group plus `navMenu` stands
-  an app up without hand-written region markup.
+- The frame is a quick win rather than an empty grid: `shell` plus this group stands an app up
+  without hand-written region markup.
 - The group is the first one named after a **place** rather than a kind of thing. That is accepted:
   the alternative was scattering six components across General, Display and Navigation, where the
   pieces that go together would no longer be found together.
