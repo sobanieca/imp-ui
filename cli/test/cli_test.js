@@ -11,7 +11,11 @@ import { themeFileSource } from '../src/preview_theme_source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import impPlugin, { IMP_MODULE_EXPORTS } from '../src/lint_rules.js'
 import { MAX_FILE_SIZE_RULE } from '../src/lint.js'
-import { UNREACHABLE_MODULE_RULE, UNUSED_EXPORT_RULE } from '../src/dead_code.js'
+import {
+  COMPUTED_IMPORT_RULE,
+  UNREACHABLE_MODULE_RULE,
+  UNUSED_EXPORT_RULE,
+} from '../src/dead_code.js'
 import { IMP_MODULES, IMP_TOOLING_MODULES } from '../src/specifiers.js'
 import { defaultTokens } from '../../lib/src/theme.js'
 import { VERSION } from '../src/version.js'
@@ -364,12 +368,25 @@ Deno.test('imp commands', async (t) => {
     )
     const computed = await runImp(['lint'], dir)
 
+    await Deno.mkdir(join(dir, 'src', 'pages'))
+    await Deno.rename(join(dir, 'src', 'never.js'), join(dir, 'src', 'pages', 'home.js'))
+    await Deno.writeTextFile(
+      join(dir, 'src', 'app.js'),
+      "import { used } from './lib.js'\n\nexport const load = (name) => import(`./pages/${name}.js`)\n\nconsole.log(used)\n",
+    )
+    const folder = await runImp(['lint'], dir)
+
     await Deno.remove(dir, { recursive: true })
     await assertSnapshot(
       'lint-dead-code-escape-hatches',
       `--- reported ---\n${commandTranscript('imp lint  (cwd: <tmp>)', reported)}\n` +
         `--- publicExports ---\n${commandTranscript('imp lint  (cwd: <tmp>)', granted)}\n` +
-        `--- computed dynamic import ---\n${commandTranscript('imp lint  (cwd: <tmp>)', computed)}`,
+        `--- computed dynamic import ---\n${
+          commandTranscript('imp lint  (cwd: <tmp>)', computed)
+        }\n` +
+        `--- folder named in a template ---\n${
+          commandTranscript('imp lint  (cwd: <tmp>)', folder)
+        }`,
     )
   })
 
@@ -2619,6 +2636,7 @@ Deno.test('the lint prose documents exactly the rules that run', async () => {
     ...Object.keys(impPlugin.rules).map((name) => `imp/${name}`),
     UNREACHABLE_MODULE_RULE,
     UNUSED_EXPORT_RULE,
+    COMPUTED_IMPORT_RULE,
   ]
   const notARule = new Set([...Object.keys(IMP_MODULES), ...Object.keys(IMP_TOOLING_MODULES)])
   const problems = []

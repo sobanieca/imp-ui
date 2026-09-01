@@ -312,8 +312,9 @@ The rule checks static imports, re-exports, and dynamic `import()` calls with a 
 
 ## Dead code across the project
 
-Every rule above judges one file on its own. Two further checks judge the project as a whole: imp
-follows every import from your starting points and reports the code nothing reaches.
+Every rule above judges one file on its own. Three further checks judge the project as a whole: imp
+follows every import from your starting points, reports the code nothing reaches, and reports the
+one import shape it cannot follow.
 
 The starting points are found for you:
 
@@ -324,7 +325,7 @@ The starting points are found for you:
 - anything you list in `publicExports` (below).
 
 If a project has none of these - no page, no tests, nothing declared public - there is nothing to
-start from and both checks are skipped.
+start from and the project checks are skipped.
 
 ### `imp/unreachable-module`
 
@@ -352,11 +353,32 @@ error[imp/unused-export]: 'unusedHelper' is exported by src/lib.js but nothing i
  --> src/lib.js:3:14
 ```
 
-A starting point's own exports are never flagged - nothing is expected to import them.
+A starting point's own exports are never flagged - nothing is expected to import them. And only
+imports imp can actually reach count: a module nothing loads may import all it likes, its imports
+keep no other module's exports alive, so one dead file cannot hide a second.
 
-Both checks always read the whole project, even when you pass paths, because a single file cannot
-tell you what the rest of the project imports. Paths under `exclude` are still followed, so excluded
-code still counts as importing yours; they are just never reported.
+### `imp/computed-import`
+
+An `import()` whose specifier imp cannot read - a variable, a call, a template with no folder in
+front of the placeholder. It could load anything, so imp will not guess; it reports the call and the
+two checks above carry on as if it loaded nothing:
+
+```js
+export const load = (name) => import(name)
+```
+
+```
+error[imp/computed-import]: import() takes a computed specifier, so imp cannot tell which module it loads - name the folder in a template like import(`./pages/${name}.js`), or list the modules it loads in "publicExports" in imp.json
+ --> src/app.js:3:31
+```
+
+The fix is the one the message names: put the folder into the template so imp can follow it, or list
+what the call loads under `publicExports`. Either way every module the call can reach is accounted
+for, and nothing it loads is reported as dead.
+
+All three checks always read the whole project, even when you pass paths, because a single file
+cannot tell you what the rest of the project imports. Paths under `exclude` are still followed, so
+excluded code still counts as importing yours; they are just never reported.
 
 ### Declaring exports the project itself does not use
 
@@ -384,18 +406,19 @@ A dynamic `import()` is followed when imp can read the path:
   computed, every export of that module counts as used.
 - **A template with a literal folder** - ``import(`./locales/${code}.js`)`` - could load any module
   in `./locales/`, so the whole folder counts as loaded and used.
-- **A computed specifier** - `import(path)` - could load anything. imp cannot tell what is dead, so
-  it turns `imp/unreachable-module` off for that run and says so rather than guessing:
+- **A computed specifier** - `import(path)` - is not followed at all; it is the error
+  `imp/computed-import` above.
 
-  ```
-  note: imp/unreachable-module is skipped - src/app.js:7:31 imports a computed specifier, so imp cannot tell which modules it loads
-  ```
+`export * from './x.js'` is followed name by name: importing `format` from a barrel that re-exports
+`./format.js` counts `format` as used there and nothing else, so an export nothing takes off the
+barrel is still reported.
 
-  `imp/unused-export` keeps running on the modules it can still reach: deleting an export it flags
-  breaks the build loudly, while deleting a module it cannot see breaks a route silently.
+Only imports imp can actually reach count. A module nothing loads may import all it likes - its
+imports do not keep another module's exports alive, so one dead file cannot hide a second.
 
-One more approximation worth knowing: `export * from './x.js'` counts every export of `x` as used,
-because the names travelling through it are not written down anywhere.
+A module imp cannot parse is reported by the per-file rules as usual, and the two project checks
+stand down for that run - a file that does not parse could import anything - with a `note:` saying
+which file it was. Fix the syntax error and they come back.
 
 ## Configuration
 

@@ -10,10 +10,12 @@ import { publicDirectory } from './config.js'
 
 export const UNREACHABLE_MODULE_RULE = 'imp/unreachable-module'
 export const UNUSED_EXPORT_RULE = 'imp/unused-export'
+export const COMPUTED_IMPORT_RULE = 'imp/computed-import'
 
 const GRAPH_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
 const SCRIPT_EXTENSIONS = new Set(['js', 'mjs', 'cjs'])
 const ALL_EXPORTS = Symbol('all exports')
+const DEFAULT_EXPORT = 'default'
 
 const extensionOf = (path) => path.slice(path.lastIndexOf('.') + 1).toLowerCase()
 
@@ -49,6 +51,9 @@ const exportedName = (specifier) => specifier.exported.name ?? specifier.exporte
 
 const importedName = (specifier) => specifier.local.name ?? specifier.local.value
 
+const literalSpecifier = (source) =>
+  source?.type === 'Literal' && typeof source.value === 'string' ? source.value : null
+
 const templatePrefix = (source) => {
   const head = source.quasis[0]?.value.cooked ?? ''
   const cut = head.lastIndexOf('/')
@@ -57,9 +62,8 @@ const templatePrefix = (source) => {
 
 const moduleVisitor = (record) => {
   const addImport = (source, names) => {
-    if (source?.type === 'Literal' && typeof source.value === 'string') {
-      record.imports.push({ specifier: source.value, names })
-    }
+    const specifier = literalSpecifier(source)
+    if (specifier !== null) record.imports.push({ specifier, names })
   }
   return {
     ImportDeclaration(node) {
@@ -71,7 +75,7 @@ const moduleVisitor = (record) => {
         }
         names.push(
           specifier.type === 'ImportDefaultSpecifier'
-            ? 'default'
+            ? DEFAULT_EXPORT
             : specifier.imported.name ?? specifier.imported.value,
         )
       }
@@ -90,22 +94,26 @@ const moduleVisitor = (record) => {
       }
     },
     ExportAllDeclaration(node) {
-      addImport(node.source, ALL_EXPORTS)
       if (node.exported) {
+        addImport(node.source, ALL_EXPORTS)
         record.exports.push({ name: exportedName(node), loc: node.exported.loc.start })
+        return
       }
+      const specifier = literalSpecifier(node.source)
+      if (specifier !== null) record.starExports.push(specifier)
     },
     ExportDefaultDeclaration(node) {
-      record.exports.push({ name: 'default', loc: node.loc.start })
+      record.exports.push({ name: DEFAULT_EXPORT, loc: node.loc.start })
     },
     ImportExpression(node) {
-      if (node.source.type === 'Literal' && typeof node.source.value === 'string') {
-        record.imports.push({ specifier: node.source.value, names: ALL_EXPORTS })
+      const specifier = literalSpecifier(node.source)
+      if (specifier !== null) {
+        record.imports.push({ specifier, names: ALL_EXPORTS })
         return
       }
       const prefix = node.source.type === 'TemplateLiteral' ? templatePrefix(node.source) : null
       if (prefix) record.folderImports.push(prefix)
-      else record.opaqueImports.push(node.loc.start)
+      else record.computedImports.push(node.loc.start)
     },
   }
 }
@@ -113,8 +121,9 @@ const moduleVisitor = (record) => {
 const emptyRecord = () => ({
   imports: [],
   exports: [],
+  starExports: [],
   folderImports: [],
-  opaqueImports: [],
+  computedImports: [],
   parsed: true,
 })
 
@@ -149,6 +158,14 @@ const matchesPath = (relativePath, prefix) =>
 const isExcluded = (relativePath, exclude) =>
   exclude.some((entry) => matchesPath(relativePath, entry.replace(/\/+$/, '')))
 
+const scriptSourcePath = (src) => {
+  try {
+    return decodeURIComponent(src.split(/[?#]/)[0])
+  } catch {
+    return null
+  }
+}
+
 export async function reportDeadCode({ root, config, configName }) {
   const lintConfig = config.lint ?? {}
   const grants = parseGrants(lintConfig.publicExports ?? [])
@@ -167,28 +184,46 @@ export async function reportDeadCode({ root, config, configName }) {
   const linter = new Linter()
   const modules = new Map()
   const roots = new Set()
-  const usedNames = new Map()
-  const opaqueImports = []
+  const findings = []
+  const relativeTo = (file) => relative(projectRoot, file)
+  const hint = `add it to "publicExports" in ${configName} if it is used from outside the project`
+  const computedImportMessage =
+    'import() takes a computed specifier, so imp cannot tell which module it loads - name the folder in a template like import(`./pages/${name}.js`), or list the modules it loads in "publicExports" in ' +
+    configName
 
-  const grantsFor = (file) => {
-    const relativePath = relative(projectRoot, file)
-    return grants.filter((grant) => matchesPath(relativePath, grant.path))
+  const grantsFor = (file) => grants.filter((grant) => matchesPath(relativeTo(file), grant.path))
+
+  const reportComputedImports = (file, record, lineOffset = 0) => {
+    const relativePath = relativeTo(file)
+    if (isExcluded(relativePath, exclude)) return
+    for (const loc of record.computedImports) {
+      findings.push({
+        rule: COMPUTED_IMPORT_RULE,
+        path: relativePath,
+        line: loc.line + lineOffset,
+        column: loc.column + 1,
+        message: computedImportMessage,
+      })
+    }
   }
 
-  const markUsed = (file, names) => {
-    const used = usedNames.get(file) ?? new Set()
-    usedNames.set(file, used)
-    if (names === ALL_EXPORTS) used.add(ALL_EXPORTS)
-    else for (const name of names) used.add(name)
+  const skipUnparsed = (file) => {
+    console.error(
+      `note: the dead code checks are skipped - ${
+        relativeTo(file)
+      } does not parse, so imp cannot tell what it imports\n`,
+    )
+    return 0
   }
 
   for (const file of scripts) {
     const record = collectModule(linter, await Deno.readTextFile(file), file)
-    if (!record.parsed) return 0
+    if (!record.parsed) return skipUnparsed(file)
     modules.set(file, record)
-    if (isDevelopmentEntry(file) || matchesPath(file, publicFolder)) roots.add(file)
-    if (grantsFor(file).length) roots.add(file)
-    opaqueImports.push(...record.opaqueImports.map((loc) => ({ file, loc })))
+    if (isDevelopmentEntry(file) || matchesPath(file, publicFolder) || grantsFor(file).length) {
+      roots.add(file)
+    }
+    reportComputedImports(file, record)
   }
 
   const resolveEdge = async (fromDirectory, specifier) => {
@@ -197,30 +232,38 @@ export async function reportDeadCode({ root, config, configName }) {
     return resolved && modules.has(resolved) ? resolved : null
   }
 
-  const addRecordEdges = async (record, directory, targets) => {
+  const edgesOf = async (record, directory) => {
+    const edges = []
     for (const { specifier, names } of record.imports) {
       const target = await resolveEdge(directory, specifier)
-      if (!target) continue
-      markUsed(target, names)
-      targets.add(target)
+      if (target) edges.push({ target, names })
     }
     for (const prefix of record.folderImports) {
       const folder = resolve(directory, prefix).replace(/[/\\]+$/, '')
       for (const other of scripts) {
-        if (!matchesPath(other, folder)) continue
-        markUsed(other, ALL_EXPORTS)
-        targets.add(other)
+        if (matchesPath(other, folder)) edges.push({ target: other, names: ALL_EXPORTS })
       }
     }
+    return edges
   }
 
   const edges = new Map()
+  const starTargets = new Map()
   for (const [file, record] of modules) {
-    const targets = new Set()
-    await addRecordEdges(record, dirname(file), targets)
-    edges.set(file, targets)
+    const directory = dirname(file)
+    const fileEdges = await edgesOf(record, directory)
+    const stars = []
+    for (const specifier of record.starExports) {
+      const target = await resolveEdge(directory, specifier)
+      if (!target) continue
+      stars.push(target)
+      fileEdges.push({ target, names: [] })
+    }
+    edges.set(file, fileEdges)
+    starTargets.set(file, stars)
   }
 
+  const pageEdges = []
   for (const file of files) {
     if (isScript(file)) continue
     const html = await Deno.readTextFile(file)
@@ -229,7 +272,8 @@ export async function reportDeadCode({ root, config, configName }) {
       if (!isModuleType(script.type)) continue
       if (script.src !== null) {
         if (!script.src || !isLocalScriptSource(script.src)) continue
-        const path = decodeURIComponent(script.src.split(/[?#]/)[0])
+        const path = scriptSourcePath(script.src)
+        if (path === null) continue
         const target = await resolveModuleFile(
           path.startsWith('/') ? join(projectRoot, path.slice(1)) : resolve(directory, path),
         )
@@ -238,33 +282,61 @@ export async function reportDeadCode({ root, config, configName }) {
       }
       if (!script.text.trim()) continue
       const record = collectModule(linter, script.text, `${file}.js`)
-      if (!record.parsed) continue
-      opaqueImports.push(...record.opaqueImports.map((loc) => ({ file, loc })))
-      const targets = new Set()
-      await addRecordEdges(record, directory, targets)
-      for (const target of targets) roots.add(target)
+      if (!record.parsed) return skipUnparsed(file)
+      reportComputedImports(file, record, script.lineOffset)
+      for (const edge of await edgesOf(record, directory)) {
+        roots.add(edge.target)
+        pageEdges.push(edge)
+      }
     }
   }
 
   if (!roots.size) return 0
 
+  const usedNames = new Map()
+  const usedOf = (file) => {
+    let used = usedNames.get(file)
+    if (!used) {
+      used = new Set()
+      usedNames.set(file, used)
+    }
+    return used
+  }
+  const declares = (file, name) => modules.get(file).exports.some((entry) => entry.name === name)
+
+  const markUsed = (file, names) => {
+    const used = usedOf(file)
+    if (names === ALL_EXPORTS) {
+      if (used.has(ALL_EXPORTS)) return
+      used.add(ALL_EXPORTS)
+      for (const target of starTargets.get(file)) markUsed(target, ALL_EXPORTS)
+      return
+    }
+    for (const name of names) {
+      if (used.has(name)) continue
+      used.add(name)
+      if (name === DEFAULT_EXPORT || declares(file, name)) continue
+      for (const target of starTargets.get(file)) markUsed(target, [name])
+    }
+  }
+
+  for (const { target, names } of pageEdges) markUsed(target, names)
   const reachable = new Set()
   const queue = [...roots]
   while (queue.length) {
     const file = queue.pop()
     if (reachable.has(file)) continue
     reachable.add(file)
-    for (const target of edges.get(file) ?? []) queue.push(target)
+    for (const { target, names } of edges.get(file)) {
+      markUsed(target, names)
+      queue.push(target)
+    }
   }
 
-  const findings = []
-  const hint = `add it to "publicExports" in ${configName} if it is used from outside the project`
-
   for (const file of scripts) {
-    const relativePath = relative(projectRoot, file)
+    const relativePath = relativeTo(file)
     if (isExcluded(relativePath, exclude)) continue
     if (!reachable.has(file)) {
-      if (opaqueImports.length) continue
       findings.push({
         rule: UNREACHABLE_MODULE_RULE,
         path: relativePath,
@@ -275,11 +347,11 @@ export async function reportDeadCode({ root, config, configName }) {
       })
       continue
     }
-    if (roots.has(file) && !grantsFor(file).length) continue
-    const used = usedNames.get(file) ?? new Set()
-    if (used.has(ALL_EXPORTS)) continue
     const fileGrants = grantsFor(file)
+    if (roots.has(file) && !fileGrants.length) continue
     if (fileGrants.some((grant) => grant.name === null)) continue
+    const used = usedOf(file)
+    if (used.has(ALL_EXPORTS)) continue
     const granted = new Set(fileGrants.map((grant) => grant.name))
     for (const { name, loc } of modules.get(file).exports) {
       if (used.has(name) || granted.has(name)) continue
@@ -298,17 +370,6 @@ export async function reportDeadCode({ root, config, configName }) {
   for (const finding of findings) {
     console.error(`error[${finding.rule}]: ${finding.message}`)
     console.error(` --> ${finding.path}:${finding.line}:${finding.column}\n`)
-  }
-
-  if (opaqueImports.length) {
-    const [{ file, loc }] = opaqueImports.sort((a, b) =>
-      a.file.localeCompare(b.file) || a.loc.line - b.loc.line
-    )
-    console.error(
-      `note: ${UNREACHABLE_MODULE_RULE} is skipped - ${relative(projectRoot, file)}:${loc.line}:${
-        loc.column + 1
-      } imports a computed specifier, so imp cannot tell which modules it loads\n`,
-    )
   }
 
   return findings.length

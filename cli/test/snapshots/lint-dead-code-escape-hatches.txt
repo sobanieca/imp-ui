@@ -27,12 +27,27 @@ Checked 4 files
 
 --- computed dynamic import ---
 $ imp lint  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/computed-import]: import() takes a computed specifier, so imp cannot tell which module it loads - name the folder in a template like import(`./pages/${name}.js`), or list the modules it loads in "publicExports" in imp.json
+ --> src/app.js:3:31
+
+error[imp/unreachable-module]: nothing imports src/never.js - no entry page, test or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/never.js:1:1
+
+Found 2 problems
+Checked 5 files
+
+--- folder named in a template ---
+$ imp lint  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
 (empty)
 
 --- stderr ---
-note: imp/unreachable-module is skipped - src/app.js:3:31 imports a computed specifier, so imp cannot tell which modules it loads
-
 Checked 5 files
