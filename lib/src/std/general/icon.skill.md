@@ -1,47 +1,45 @@
-# icon - one glyph from imp's built-in set, drawn in the current text color
+# icon - one Lucide icon, sized and coloured from the theme
 
 ```js
 import { icon } from 'imp/std'
+import { luHouse, luTrash, luUser } from 'imp/icons'
 
-icon({ name: 'home' })
-icon({ name: 'trash', size: 'sm', label: 'Delete invoice' })
+icon(luHouse)
+icon(luUser, { size: 'lg', color: 'primary' })
+icon(luTrash, { size: 'sm', label: 'Delete invoice' })
 ```
 
-Call shape: `icon(props)` - it takes no content.
+Call shape: `icon(drawing)`, `icon(drawing, props)` or `icon(props)` - it takes no content. The icon
+itself comes from `imp/icons`, never from a string: run 'imp skill icons' for the naming scheme.
 
-| Prop    | Values                            | Default | Notes                                        |
-| ------- | --------------------------------- | ------- | -------------------------------------------- |
-| `name`  | a glyph name below - **required** | -       | An unknown name is logged and draws nothing  |
-| `size`  | `'sm'`, `'md'`, `'lg'`            | `'md'`  | `1rem`, `1.25rem`, `1.5rem` square           |
-| `label` | string, or a state - **live**     | -       | Names the glyph; without it it is decorative |
+| Prop    | Values                                    | Default     | Notes                                               |
+| ------- | ----------------------------------------- | ----------- | --------------------------------------------------- |
+| `icon`  | an export from `imp/icons` - **required** | -           | Also accepted positionally; a missing one is logged |
+| `size`  | `'sm'`, `'md'`, `'lg'`, or any CSS length | `'md'`      | `1rem`, `1.25rem`, `1.5rem` square                  |
+| `color` | a colour name below, or `'current'`       | `'current'` | `'current'` inherits the surrounding text colour    |
+| `label` | string, or a state - **live**             | -           | Names the icon; without it it is decorative         |
 
-The set, all 24x24 line glyphs stroked in `currentColor`:
-
-| Group      | Names                                                                         |
-| ---------- | ----------------------------------------------------------------------------- |
-| App        | `home`, `search`, `settings`, `grid`, `chart`, `folder`, `file`, `box`, `tag` |
-| People     | `user`, `users`, `bell`, `mail`, `credit-card`                                |
-| Actions    | `plus`, `edit`, `trash`, `check`, `close`, `menu`, `filter`, `refresh`        |
-| Movement   | `chevron-right`, `chevron-left`, `chevron-down`, `chevron-up`, `more`         |
-| Links      | `link`, `external-link`, `download`, `upload`                                 |
-| Account    | `log-in`, `log-out`, `lock`, `eye`                                            |
-| Appearance | `sun`, `moon`, `globe`                                                        |
-| Time       | `calendar`, `clock`                                                           |
-| Status     | `info`, `help`, `warning`, `star`, `heart`                                    |
+`color` names a theme token, never a CSS colour: `'primary'`, `'secondary'`, `'text'`, `'link'`,
+`'border'`, `'danger'`, `'success'`, `'warning'`, `'info'`, and every palette hue - `'gray'`,
+`'mauve'`, `'slate'`, `'sage'`, `'olive'`, `'sand'`, `'tomato'`, `'red'`, `'ruby'`, `'crimson'`,
+`'pink'`, `'plum'`, `'purple'`, `'violet'`, `'iris'`, `'indigo'`, `'blue'`, `'cyan'`, `'teal'`,
+`'jade'`, `'green'`, `'grass'`, `'bronze'`, `'gold'`, `'brown'`, `'orange'`, `'amber'`, `'yellow'`,
+`'lime'`, `'mint'`, `'sky'`.
 
 Rules an agent gets wrong:
 
-- **A decorative icon takes no `label`.** Passing one makes it `role="img"` and announced; leave it
-  off beside a text label, which is the usual case. An icon-only control is named on the **control**
+- **The icon is an imported name, not a string.** `icon('home')` draws nothing and logs. Import
+  `luHouse` from `imp/icons` and pass the value, so the bundler ships that one drawing.
+- **Never `import * as icons from 'imp/icons'`** - a namespace import pins all 1791 icons into the
+  app. Import each name.
+- **A decorative icon takes no `label`.** An icon-only control is named on the **control**
   (`button({ label })`), not on the icon inside it.
-- **The set is deliberately small and fixed.** There is no `src`, no icon font and no sprite sheet.
-  A glyph imp does not ship is your own inline `<svg>` - every prop that takes an icon in this
-  library takes **any DOM node**, so `icon()` is a convenience, not a requirement.
-- **It inherits the text color** and never takes a color prop. Color it by coloring the box around
-  it.
-- **Sizes are the three steps.** For a glyph that must track a font size, wrap it and set
-  `inline-size` yourself.
-- Importing `icon` costs the whole glyph table (one module of path data), so a component that needs
-  one glyph internally draws it itself.
+- **`color` is a token name.** An arbitrary CSS colour is logged and ignored - colour the box around
+  the icon and leave it on `'current'`.
+- **Every icon is a 24x24 square** stroked in the current colour, so `size` sets both axes and a
+  drawing is never squashed. Do not set `inline-size` yourself.
+- **Every icon-taking prop in the library accepts any DOM node**, so an icon Lucide does not draw is
+  your own inline `<svg>` - `icon()` is a convenience, not a requirement.
 
-Related: imp skill std/navMenu - nav items take an `icon` per destination.
+Related: imp skill icons - the export naming scheme and the whole set. imp skill std/navMenu - nav
+items take an `icon` per destination. imp skill theming - where the colour names come from.

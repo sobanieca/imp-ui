@@ -7,6 +7,7 @@ ending, not a failure.
 
 ```js
 import { shell } from 'imp/std/layout'
+import { luChartColumn } from 'imp/icons'
 
 shell(
   {
@@ -18,7 +19,7 @@ shell(
         {
           id: 'reports',
           label: 'Reports',
-          icon: icon({ name: 'chart' }),
+          icon: icon(luChartColumn),
           groups: [
             { label: 'Money', items: [{ id: 'revenue', label: 'Revenue', href: '/revenue' }] },
           ],

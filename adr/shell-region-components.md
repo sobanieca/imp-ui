@@ -7,7 +7,7 @@ from data; the rest of a region is DOM the frame places without looking inside. 
 app writing the same pieces by hand: a brand block, a breadcrumb trail, the signed-in person, a
 sign-out button, and the theme and language pickers. `todo/stdlib-components.md` recorded the gap as
 "ready-made contents for `shell`'s regions" and named its blocker: nav rows want an icon per
-destination, and imp had four private glyphs rather than a public `icon`.
+destination, and imp had four private marks rather than a public `icon`.
 
 Two shapes were available. The pieces could be **props on `shell`** (`shell({ logo, user })`), which
 would sort content by name again and re-open the question the frame ADR closed. Or they could be
@@ -28,10 +28,10 @@ filled with: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect
   `<button>`, which is how a menu carries an action beside its destinations. One data shape drives
   the column, the bar, the drawer and the phone's bottom bar, and `shell` and `navMenu` render it
   through one shared row builder.
-- **`icon` lands in the General group** with a fixed set of line glyphs drawn in `currentColor`.
-  Every icon-taking prop in the library accepts **any DOM**, so `icon` is a convenience and never a
-  requirement, and a component that needs a glyph internally still draws its own rather than
-  importing the table.
+- **`icon` lands in the General group**, drawing one icon in `currentColor` from a value the app
+  imports (`bundled-icon-set.md`). Every icon-taking prop in the library accepts **any DOM**, so
+  `icon` is a convenience and never a requirement, and a component that needs a mark internally
+  still draws its own rather than importing one.
 - **`breadcrumbs` ships as the trail only**, in this group rather than in `imp/std/navigation`: it
   is a region's content, and its sibling-picker half is still blocked on the anchored-overlay seam
   (`todo/breadcrumbs.md`). Deriving a trail from the route stays out of the component, so an app
@@ -52,9 +52,8 @@ filled with: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect
 - The group is the first one named after a **place** rather than a kind of thing. That is accepted:
   the alternative was scattering six components across General, Display and Navigation, where the
   pieces that go together would no longer be found together.
-- `icon`'s glyph table is one module of path data, so importing `icon` costs the whole set. The
-  fixed, deliberately small set keeps that cost bounded, and the DOM-accepting props keep it
-  optional.
+- `icon` costs only the icons an app names, because each one is its own export
+  (`bundled-icon-set.md`), and the DOM-accepting props keep even that optional.
 - Two components now write to `localStorage`, which imp had not used before. Both keys are
   namespaced (`imp.theme`, `imp.lang`), reads and writes are wrapped, and a storage-less browser
   degrades to session-only behaviour rather than failing.

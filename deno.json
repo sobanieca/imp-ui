@@ -7,6 +7,7 @@
     "preview": "deno task compile && ./imp preview lib/src/std",
     "start": "deno task compile && cd examples/shell && ../../imp start",
     "size": "deno run -A tools/check_binary_size.js",
+    "lucide": "deno run -A --no-lock tools/vendor_lucide.js",
     "test": "deno task test:lib && deno task test:lib:e2e && deno task test:cli",
     "test:cli": "deno task compile && deno test -A cli/test/cli_test.js",
     "test:cli:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update",
@@ -25,6 +26,7 @@
   "lint": {
     "exclude": [
       "cli/test/fixtures/",
+      "lib/src/icons/lucide_icons.js",
       "cli/src/vendor/",
       ".claude/worktrees/"
     ]
@@ -36,6 +38,7 @@
     "exclude": [
       "cli/test/fixtures/",
       "cli/test/snapshots/",
+      "lib/src/icons/lucide_icons.js",
       "cli/src/vendor/",
       ".claude/worktrees/"
     ]

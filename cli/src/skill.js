@@ -76,6 +76,12 @@ export const SKILLS = [
     summary: 'the built-in component library: text, layout, forms, navigation and empty states',
   },
   {
+    name: 'icons',
+    group: 'app',
+    aliases: ['imp/icons', 'lucide'],
+    summary: 'the Lucide icon set as tree-shaken exports, drawn by icon',
+  },
+  {
     name: 'theming',
     group: 'app',
     aliases: ['theme', 'imp/theme', 'tokens'],

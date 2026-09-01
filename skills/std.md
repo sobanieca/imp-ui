@@ -122,24 +122,27 @@ middle-click, modifier-click, `external`, and off-site URLs are left to the brow
 ## icon
 
 ```js
-icon({ name: 'home' })
-icon({ name: 'trash', size: 'sm', label: 'Delete invoice' })
+import { icon } from 'imp/std'
+import { luHouse, luTrash } from 'imp/icons'
+
+icon(luHouse)
+icon(luTrash, { size: 'sm', color: 'danger', label: 'Delete invoice' })
 ```
 
-| Prop    | Values                            | Default | Notes                                        |
-| ------- | --------------------------------- | ------- | -------------------------------------------- |
-| `name`  | a glyph name below - **required** | -       | An unknown name is logged and draws nothing  |
-| `size`  | `'sm'`, `'md'`, `'lg'`            | `'md'`  | `1rem`, `1.25rem`, `1.5rem` square           |
-| `label` | string - **live**                 | -       | Names the glyph; without it it is decorative |
+| Prop    | Values                                    | Default     | Notes                                       |
+| ------- | ----------------------------------------- | ----------- | ------------------------------------------- |
+| `icon`  | an export from `imp/icons` - **required** | -           | Also accepted positionally                  |
+| `size`  | `'sm'`, `'md'`, `'lg'`, or a CSS length   | `'md'`      | `1rem`, `1.25rem`, `1.5rem` square          |
+| `color` | a theme colour name, or `'current'`       | `'current'` | `'primary'`, `'danger'`, any palette hue    |
+| `label` | string - **live**                         | -           | Names the icon; without it it is decorative |
 
-The set: `home`, `search`, `settings`, `grid`, `chart`, `folder`, `file`, `box`, `tag`, `user`,
-`users`, `bell`, `mail`, `credit-card`, `plus`, `edit`, `trash`, `check`, `close`, `menu`, `filter`,
-`refresh`, `chevron-right`, `chevron-left`, `chevron-down`, `chevron-up`, `more`, `link`,
-`external-link`, `download`, `upload`, `log-in`, `log-out`, `lock`, `eye`, `sun`, `moon`, `globe`,
-`calendar`, `clock`, `info`, `help`, `warning`, `star`, `heart`.
+**The whole of Lucide is built in**: 1791 icons from `imp/icons`, named `lu` plus the Lucide name in
+PascalCase. The icon is an imported name, not a string, so the bundle carries only what you draw -
+never `import * as icons from 'imp/icons'`. The naming scheme and the licence obligation are in
+[icons](icons.md).
 
 **A decorative icon takes no `label`** - name the control around it instead. There is no `src` and
-no icon font: a glyph imp does not ship is your own inline `<svg>`, and every icon-taking prop in
+no icon font: an icon Lucide does not draw is your own inline `<svg>`, and every icon-taking prop in
 the library accepts any DOM.
 
 ## shell - from `imp/std/layout`
@@ -508,8 +511,10 @@ so a piece that does not fit is replaced by your own.
 
 ```js
 import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+import { icon } from 'imp/std'
+import { luBox } from 'imp/icons'
 
-appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) })
+appLogo({ label: 'Acme', icon: icon(luBox, { size: 'lg' }) })
 breadcrumbs({ items: [{ id: 'home', label: 'Home', href: '/' }, { id: 'order', label: 'Order' }] })
 userCard({ signedIn: session, name: 'Ada Lovelace', description: user.email, onSignOut: signOut })
 themeSelect()

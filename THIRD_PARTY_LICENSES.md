@@ -1,9 +1,9 @@
 # Third-party licenses
 
 imp is distributed as a single self-contained binary. That binary, and the vendored files it is
-compiled from, **redistribute** other people's code - pre-bundled npm packages, WebAssembly
-formatter plugins, and (downloaded on first use) a Chrome for Testing build. Every one of those
-carries a license whose notice obligations imp must honor to stay distributable.
+compiled from, **redistribute** other people's work - pre-bundled npm packages, WebAssembly
+formatter plugins, the Lucide icon set, and (downloaded on first use) a Chrome for Testing build.
+Every one of those carries a license whose notice obligations imp must honor to stay distributable.
 
 This file lists every third-party component imp bundles or downloads, its version, and its license,
 followed by the full text of each license. imp's own code is licensed under the MIT License (see
@@ -33,6 +33,7 @@ Run `imp licenses` to print this notice from the binary.
 | lax-sql (SQL)                 | 0.3.0   | MIT          | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
 | @zip-js/zip-js                | 2.8.7   | BSD-3-Clause | https://github.com/gildas-lormeau/zip.js               |
 | @resvg/resvg-wasm             | 2.6.2   | MPL-2.0      | https://github.com/yisibl/resvg-js                     |
+| Lucide (icons)                | 1.38.0  | ISC, MIT     | https://lucide.dev                                     |
 | @std (Deno standard library)  | -       | MIT          | https://github.com/denoland/std                        |
 | @deno/esbuild-plugin          | -       | MIT          | https://github.com/denoland/deno_esbuild               |
 | Chrome for Testing (download) | pinned  | BSD-3-Clause | https://github.com/GoogleChromeLabs/chrome-for-testing |
@@ -46,6 +47,13 @@ Under the Mozilla Public License 2.0, the source form of `@resvg/resvg-wasm` mus
 it is retrievable at its published version from https://github.com/yisibl/resvg-js and the npm
 registry. imp ships the WebAssembly build unmodified.
 
+imp bundles **only Lucide's icons**, not its runtime code or its web font. Lucide is ISC, and the
+icons it inherited from the Feather project are MIT (c) Cole Bemis - both notices are reproduced
+below and both travel with the artwork. The drawings themselves are unchanged; imp reshapes each one
+into a list of `[element, attributes]` pairs and renames it from `user` to `luUser`. Every app built
+with `imp build` carries the notice into its own `LICENSES.txt`, so the attribution reaches whoever
+the app is served to.
+
 ---
 
 ## MIT License
@@ -54,8 +62,8 @@ Applies to: happy-dom (© David Ortner and contributors), eslint and @eslint/js 
 and other contributors), globals (© Sindre Sorhus), gifenc (© Matt DesLauriers), esbuild-wasm (©
 Evan Wallace), @dprint/formatter and dprint-plugin-typescript / -json / -markdown (© David Sherret
 and dprint contributors), malva / markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (©
-Bartłomiej Iwańczuk and dprint contributors), @std (© the Deno authors), and @deno/esbuild-plugin (©
-the Deno authors).
+Bartłomiej Iwańczuk and dprint contributors), @std (© the Deno authors), @deno/esbuild-plugin (© the
+Deno authors), and the Feather-derived Lucide icons (© 2013-present Cole Bemis).
 
 ```
 MIT License
@@ -77,6 +85,31 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+---
+
+## ISC License
+
+Applies to: the Lucide icons (© 2026 Lucide Icons and Contributors). The icons Lucide inherited from
+Feather are additionally covered by the MIT License above.
+
+```
+ISC License
+
+Copyright (c) 2026 Lucide Icons and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
 ---
