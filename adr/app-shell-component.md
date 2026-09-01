@@ -57,7 +57,7 @@ the library's single sanctioned breakpoint.**
   CSS cannot resolve `--imp-breakpoint-desktop` inside a media query. The exception stops here and
   is not a precedent other components copy.
 - **The shell owns the frame, not the landmarks inside it.** It renders `<header>`, `<main>` and
-  `<aside>`, is `100dvh` tall on its own host, and scrolls each region independently. It renders no
+  `<aside>`, is `100dvb` tall on its own host, and scrolls each region independently. It renders no
   `<nav>`: the app's `navMenu` brings that, and a shell-supplied one would double the landmark.
 - **The recommendation is part of the decision.** Docs and skills say to reach for `shell` first and
   customize it rather than replace it, because an imp app should put the nav where the nav goes.
@@ -78,6 +78,10 @@ the library's single sanctioned breakpoint.**
 - The drawer is the overlay seam's first consumer and owns none of the overlay behaviour: its
   promotion, its backdrop dismissal, its page-scroll hold and its motion are calls into
   `overlay-top-layer.md`. What stays shell code is the region move and the `navOpen` bookkeeping.
-- `100dvh` on the host means the page itself stops scrolling. Embedding a shell in a shorter box - a
-  preview card, a docs example - is a `block-size` set on the element, which wins over the host
-  rule.
+- `100dvb` on the host means the page itself stops scrolling - but only because `mount` zeroes the
+  UA's default `body` margin, which would otherwise make the shell 16px taller than the window and
+  put a scrollbar on every imp app. The shell cannot reach that box itself, so the reset is a
+  document rule imp adopts in a cascade layer of its own on the first `mount`; unlayered app CSS
+  beats it, so an app that wants a body margin still just writes one. Embedding a shell in a shorter
+  box - a preview card, a docs example - is a `block-size` set on the element, which wins over the
+  host rule.

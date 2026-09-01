@@ -110,3 +110,9 @@ html('<b>trusted</b>') // raw HTML -> DocumentFragment (trusted input only)
 result, and returns an `unmount` function that empties the host. The result may be a `Node`, a
 string (becomes a text node), or an array of either; `null`/`undefined`/`false` entries are skipped.
 A `target` selector that matches nothing throws.
+
+The first `mount` also zeroes the browser's default `body` margin, so a full-height app - anything
+built on [shell](std-components.md) - meets the edges of the window instead of leaving an
+eight-pixel gutter that pushes a scrollbar onto a page which should not scroll. The rule sits in a
+cascade layer of imp's own, which unlayered CSS always beats: write `body { margin: 2rem }` in your
+own stylesheet and you get your margin back, no `!important` needed.

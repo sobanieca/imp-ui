@@ -48,3 +48,11 @@ test('the bottom bar carries the same sections for small screens', async ({ page
   )
   expect(compact).toEqual(['/', '/active', '/done', '/settings'])
 })
+
+test('the shell fills the viewport, so the page itself never scrolls', async ({ page }) => {
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement
+    return root.scrollHeight - root.clientHeight
+  })
+  expect(overflow).toEqual(0)
+})
