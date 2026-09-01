@@ -1899,26 +1899,38 @@ Deno.test('the review widget picks an element in the preview page', async () => 
         return null
       }
       const outline = () => shadow.querySelector('.outline')
+      const waitFor = async (description, ready) => {
+        const deadline = Date.now() + 10000
+        while (!ready()) {
+          if (Date.now() > deadline) throw new Error(`timed out waiting for ${description}`)
+          await new Promise((resolve) => setTimeout(resolve, 20))
+        }
+      }
       const steps = { hiddenAtFirst: shadow.querySelector('.panel').hidden }
       shadow.querySelector('.toggle').click()
       steps.openedView = view()
       steps.expanded = shadow.querySelector('.toggle').getAttribute('aria-expanded')
-      shadow.querySelector('[data-action="pick"]').click()
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      steps.pickingView = view()
+      await waitFor(
+        'the demo component to render',
+        () => deep(document, 'demo-counter')?.shadowRoot?.querySelector('#value'),
+      )
       const target = deep(document, 'demo-counter').shadowRoot.querySelector('#value')
-      target.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, composed: true }))
+      shadow.querySelector('[data-action="pick"]').click()
+      steps.pickingView = view()
+      await waitFor('the element picker to start listening', () => {
+        target.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, composed: true }))
+        return !outline().hidden
+      })
       steps.highlighted = !outline().hidden
       target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      await waitFor('the commenting view', () => view() === 'commenting')
       steps.commentingView = view()
       steps.outlineKept = !outline().hidden
       steps.locatorShown = shadow.textContent.includes('>>')
       const field = shadow.querySelector('textarea')
       field.value = 'The value is cut off below 320px.'
       shadow.querySelector('[data-action="save"]').click()
-      while (!shadow.querySelector('.status').textContent) {
-        await new Promise((resolve) => setTimeout(resolve, 20))
-      }
+      await waitFor('the review to be saved', () => shadow.querySelector('.status').textContent)
       steps.status = shadow.querySelector('.status').textContent
       steps.viewAfterSaving = view()
       steps.outlineGone = outline().hidden
@@ -1941,6 +1953,7 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       `review files written: ${files.length}`,
       '',
       written
+        .replace(/^ *\[HTTP\] .*\n/gm, '')
         .replace(/^time: .*$/m, 'time: <timestamp>')
         .replace(/^element: .*(?=demo-counter)/m, 'element: ... ')
         .replace(/^rect: \d+x\d+ at \d+,\d+$/m, 'rect: <w>x<h> at <x>,<y>')
