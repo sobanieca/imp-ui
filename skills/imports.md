@@ -14,7 +14,8 @@ relative path, a URL, or a version.
 | `imp/theme`          | `theme`, `applyTheme`                                                     |
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                               |
+| `imp/icons`          | `faUser`, `farStar`, `fabGithub`, ... - the Font Awesome Free set         |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`, `faIcon`                     |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                        |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...    |
 | `imp/std/display`    | `emptyState`, `tag`                                                       |
@@ -34,7 +35,8 @@ One subject per specifier, each with its own manual: [rendering](rendering.md) f
 [components](components.md) for `component`, [state](state.md) for `imp/state`,
 [routing](routing.md) for `imp/router`, [http](http.md) for `imp/http`, [theming](theming.md) for
 `imp/theme`, [i18n](i18n.md) for `imp/i18n`, [logging](logging.md) for `imp/log`, [std](std.md) for
-`imp/std`, [testing](testing.md) for `imp/test`, and [feature-flags](feature-flags.md) for `flag`.
+`imp/std`, [icons](icons.md) for `imp/icons`, [testing](testing.md) for `imp/test`, and
+[feature-flags](feature-flags.md) for `flag`.
 
 Rules an agent gets wrong:
 

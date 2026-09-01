@@ -5,7 +5,7 @@ real imp component rendering as its own element (`<imp-button>`, ...) with its s
 
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                             |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`, `faIcon`                                                                                                       | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`, `std/faIcon`                                                                                                                               |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                                                                                                          | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`                                                                                                                                                          |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`, `tag`                                                                                                                                         | `imp skill std/emptyState`, `std/tag`                                                                                                                                                                                 |
@@ -139,8 +139,30 @@ The set: `home`, `search`, `settings`, `grid`, `chart`, `folder`, `file`, `box`,
 `calendar`, `clock`, `info`, `help`, `warning`, `star`, `heart`.
 
 **A decorative icon takes no `label`** - name the control around it instead. There is no `src` and
-no icon font: a glyph imp does not ship is your own inline `<svg>`, and every icon-taking prop in
-the library accepts any DOM.
+no icon font, and every icon-taking prop in the library accepts any DOM, so your own inline `<svg>`
+goes wherever `icon()` does.
+
+## faIcon
+
+```js
+import { faIcon } from 'imp/std'
+import { fabGithub, faUser } from 'imp/icons'
+
+faIcon(faUser)
+faIcon(fabGithub, { size: 'lg', color: 'primary', label: 'Source on GitHub' })
+```
+
+| Prop    | Values                                    | Default     | Notes                                            |
+| ------- | ----------------------------------------- | ----------- | ------------------------------------------------ |
+| `icon`  | an export from `imp/icons` - **required** | -           | Also accepted positionally                       |
+| `size`  | `'sm'`, `'md'`, `'lg'`, or a CSS length   | `'md'`      | Block size; the width follows the glyph's aspect |
+| `color` | a theme colour name, or `'current'`       | `'current'` | `'primary'`, `'danger'`, any palette hue         |
+| `label` | string - **live**                         | -           | Names the icon; without it it is decorative      |
+
+**Anything the `icon` set does not cover is here**: all 2163 icons of Font Awesome Free, built in.
+The icon is an imported name, not a string, so the bundle carries only what you draw - never
+`import * as icons from 'imp/icons'`. The naming scheme and the licence obligation are in
+[icons](icons.md).
 
 ## shell - from `imp/std/layout`
 

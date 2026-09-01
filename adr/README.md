@@ -63,6 +63,7 @@ Conventions:
 | [shell-region-components](shell-region-components.md)           | `imp/std/shell`: the frame's usual contents as their own group                   |
 | [overlay-top-layer](overlay-top-layer.md)                       | Overlays promoted in place; shared seam of plain functions, no portal            |
 | [state-driven-forms](state-driven-forms.md)                     | Form values are named state; controls bind one field by dot path                 |
+| [bundled-icon-set](bundled-icon-set.md)                         | Font Awesome Free in the binary; one export per icon, drawn by `faIcon`          |
 
 ## Library
 

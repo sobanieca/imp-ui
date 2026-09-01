@@ -48,7 +48,7 @@ short mechanical version - call shape, prop table, and the mistakes the componen
 
 | Import               | What it holds                                                                              |
 | -------------------- | ------------------------------------------------------------------------------------------ |
-| `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                 |
+| `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`, `faIcon`                       |
 | `imp/std/layout`     | The app frame and the two arrangement primitives - `shell`, `flex`, `stack`, plus `dialog` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...        |
 | `imp/std/display`    | Components that present content - `emptyState`, `tag`, ...                                 |
@@ -241,12 +241,55 @@ Sidebar and navbar rows are not a separate component: they are **`navMenu`**, wh
 an `icon`, an `onClick` and a `tag`, so the same data renders a sidebar (`direction: 'column'`), a
 top or bottom bar (`direction: 'row'`) and an icon rail. A row's `tag` is plain data -
 `tag: { text: 'new', color: 'green' }` - and the menu builds the `tag` component from it, so a count
-or a status pill needs no markup of your own; a group takes the same key. Icons come from `icon` in
-the base group, a small fixed set of line glyphs drawn in the current text color - and every
-icon-taking prop in the library accepts any DOM, so your own `<svg>` goes wherever `icon()` does.
+or a status pill needs no markup of your own; a group takes the same key. Icons come from `icon` or
+`faIcon` in the base group - and every icon-taking prop in the library accepts any DOM, so your own
+`<svg>` goes wherever they do.
 
 Two of these components hold state that outlives the page: `themeSelect` and `langSelect` remember
 what was chosen in `localStorage`. Pass `remember: false` when the app owns that decision instead.
+
+## Two ways to draw an icon
+
+`icon` is a small fixed set of line glyphs - around forty names covering the things an app interface
+keeps needing, drawn in the current text color. It is addressed by a string,
+`icon({ name: 'home' })`, and it exists so a nav row or an empty state needs no icon decision at
+all.
+
+`faIcon` is the other end: the whole of **Font Awesome Free 7**, 2163 icons across the Solid,
+Regular and Brands styles, built in. There is nothing to install, no icon font to load and no CSS
+file to include.
+
+```js
+import { faIcon } from 'imp/std'
+import { fabGithub, farStar, faUser } from 'imp/icons'
+
+faIcon(faUser)
+faIcon(farStar, { size: 'lg', color: 'warning' })
+faIcon(fabGithub, { label: 'Source on GitHub' })
+```
+
+An icon is an **imported name**, not a string, and that is the whole design. The export is the style
+prefix plus the Font Awesome name in PascalCase - `fa` for Solid, `far` for Regular, `fab` for
+Brands - so `user-group` is `faUserGroup`, the outline star is `farStar` and the X logo is
+`fabXTwitter`. Search the free set on fontawesome.com and the name you read off the page is the name
+you import.
+
+Naming them one by one is what keeps the bundle small: your build carries the path data for the
+icons you actually imported and nothing else. An app that draws one icon ships a few hundred bytes
+of artwork, not the 1.5 MB the full set weighs. The cost of that is one rule - never
+`import * as icons from 'imp/icons'`, because a namespace import asks for all of it.
+
+`size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length; the width follows each
+icon's own aspect ratio, so a wide glyph is never squashed into a square. `color` names a **theme
+token** rather than a CSS color - `'primary'`, `'danger'`, `'success'`, any palette hue - so icons
+re-skin with the theme like everything else in the library. The default, `'current'`, inherits the
+surrounding text color, which is what an icon inside a button or a menu row wants.
+
+Font Awesome Free's icons are licensed CC BY 4.0, which requires the attribution to travel with what
+you ship. `imp build` handles it: the notice goes into `LICENSES.txt` in the output directory and
+every emitted script points at it. Deploy that file along with the rest of the build. Brand icons
+are a further caveat that is yours rather than imp's - they are trademarks of the companies they
+depict, so use one only to refer to that company, product or service.
 
 ## Layout is two components, deliberately
 

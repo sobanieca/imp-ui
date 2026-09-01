@@ -35,7 +35,8 @@ Rules an agent gets wrong:
   off beside a text label, which is the usual case. An icon-only control is named on the **control**
   (`button({ label })`), not on the icon inside it.
 - **The set is deliberately small and fixed.** There is no `src`, no icon font and no sprite sheet.
-  A glyph imp does not ship is your own inline `<svg>` - every prop that takes an icon in this
+  A glyph that is not on this list comes from `faIcon`, which draws the whole of Font Awesome Free -
+  run 'imp skill icons'. Or write your own inline `<svg>`: every prop that takes an icon in this
   library takes **any DOM node**, so `icon()` is a convenience, not a requirement.
 - **It inherits the text color** and never takes a color prop. Color it by coloring the box around
   it.
@@ -44,4 +45,5 @@ Rules an agent gets wrong:
 - Importing `icon` costs the whole glyph table (one module of path data), so a component that needs
   one glyph internally draws it itself.
 
-Related: imp skill std/navMenu - nav items take an `icon` per destination.
+Related: imp skill icons - the Font Awesome Free set, for anything not on this list. imp skill
+std/navMenu - nav items take an `icon` per destination.

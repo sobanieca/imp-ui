@@ -28,9 +28,9 @@ by `imp skill std/<name>` (`adr/agent-skills.md`). Exporting it from a barrel is
 registration; the subject is derived from there. A test fails when a component reaches a barrel
 without a skill file, so this is enforced rather than remembered.
 
-- **General** - `button`, `heading`, `text`, `link` and `icon` have landed; the conventions they
-  fixed are recorded in `adr/standard-component-library.md` and documented in
-  `docs/std-components.md`.
+- **General** - `button`, `heading`, `text`, `link`, `icon` and `faIcon` have landed; the
+  conventions they fixed are recorded in `adr/standard-component-library.md` and
+  `adr/bundled-icon-set.md`, and documented in `docs/std-components.md`.
 - **Layout** - `flex` and `stack` have landed, opening the `imp/std/layout` subpath and settling the
   group's shape: two flex primitives, alignment named physically, spacing as a `gap` step, and
   nothing else (`adr/layout-two-flex-primitives.md`). `shell`, the app frame of header / rail /

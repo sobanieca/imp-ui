@@ -76,6 +76,12 @@ export const SKILLS = [
     summary: 'the built-in component library: text, layout, forms, navigation and empty states',
   },
   {
+    name: 'icons',
+    group: 'app',
+    aliases: ['imp/icons', 'font-awesome', 'fontawesome'],
+    summary: 'the Font Awesome Free set as tree-shaken exports, drawn by faIcon',
+  },
+  {
     name: 'theming',
     group: 'app',
     aliases: ['theme', 'imp/theme', 'tokens'],
