@@ -2,47 +2,51 @@
 
 ## Context
 
-A project's settings live in a single hand-authored file at the project root. Two forces shaped how
-imp reads and writes it:
+The settings of a project live in one file that a person writes, at the project root. Two forces
+shaped how imp reads that file, and how it writes it:
 
-- **Monorepos and subdirectories.** A repository may hold several imp apps, each in its own folder
-  with its own config and `dependencies/`. Commands are run from wherever the developer happens to
-  be - often a nested subfolder, not the app root. Reading config only from the current working
-  directory silently yielded an empty config when run one level too deep, dropping the project's
-  dependencies, lint/fmt settings, and version pin with no error. Only `imp update` searched upward;
-  every other command did not, so behavior was inconsistent.
-- **Hand-authored config wants comments.** Strict JSON forbids comments and trailing commas, which
-  users reasonably want for annotating why a dependency is pinned or a path is excluded. At the same
-  time, `imp install`, `imp uninstall`, and the `imp update` version pin rewrite the file
-  programmatically; a naive serialize-and-overwrite discards any comments the user wrote.
+- **A monorepo and a subdirectory.** A repository can hold several imp apps. Each one sits in its
+  own folder, with its own config and its own `dependencies/`. A developer runs a command from
+  wherever they are, and that is often a nested subfolder, not the app root. When imp read the
+  config from the current working directory only, a run one level too deep gave an empty config,
+  with no error. That dropped the dependencies of the project, the lint and fmt settings, and the
+  version pin. Only `imp update` searched upward. No other command did, so the behaviour was
+  inconsistent.
+- **A config that a person writes needs comments.** Strict JSON forbids a comment and a trailing
+  comma. A user reasonably wants both, to note why a dependency is pinned, or why a path is
+  excluded. At the same time, `imp install`, `imp uninstall` and the version pin of `imp update`
+  rewrite the file from code. A simple serialize and overwrite would discard every comment that the
+  user wrote.
 
 ## Decision
 
-- **One config, discovered by upward search.** Every command resolves the config by walking up from
-  its starting directory to the nearest folder containing `imp.json` or `imp.jsonc`, stopping at the
-  repository root (a directory containing `.git`). This makes all commands behave the same from any
-  subfolder, and lets each app in a monorepo carry its own config discovered independently. The
-  dev/build server root for `imp start` / `imp build` stays the entry file's directory - discovery
-  affects where config is read, not what is served or built.
-- **JSONC parsing.** Config is parsed as JSONC (`//` and `/* */` comments and trailing commas
-  tolerated) via the vendored `jsonc-parser`, not `JSON.parse`. `imp.json` is checked first, then
-  `imp.jsonc` in the same directory.
-- **Comment-preserving edits.** Programmatic writes (`imp install`, `imp uninstall`, the
-  `imp update` version pin) apply targeted `jsonc-parser` edits to the existing file text, touching
-  only the keys they change and leaving surrounding comments and formatting intact. New dependency
-  entries are inserted in alphabetical position; the version pin is inserted at the top. When no
-  config file exists, these commands create `imp.json` (never `imp.jsonc`).
+- **There is one config, and imp discovers it by a search upward.** Every command resolves the
+  config by a walk up from its starting directory. It stops at the nearest folder that contains
+  `imp.json` or `imp.jsonc`, and at the repository root, which is a directory that contains `.git`.
+  So every command behaves the same way from any subfolder, and each app in a monorepo carries its
+  own config, which imp discovers on its own. The server root for `imp start` and `imp build` stays
+  the directory of the entry file. The discovery affects where imp reads the config, not what imp
+  serves or builds.
+- **imp parses the config as JSONC.** It tolerates a `//` comment, a `/* */` comment and a trailing
+  comma. It uses the vendored `jsonc-parser`, not `JSON.parse`. imp checks `imp.json` first, and
+  then `imp.jsonc` in the same directory.
+- **An edit from code keeps the comments.** `imp install`, `imp uninstall` and the version pin of
+  `imp update` apply targeted `jsonc-parser` edits to the existing text of the file. They touch only
+  the keys that they change, and they leave the comments and the formatting around those keys as
+  they are. imp inserts a new dependency entry in alphabetical position. It inserts the version pin
+  at the top. When no config file exists, these commands create `imp.json`, and never `imp.jsonc`.
 
 ## Consequences
 
-- Commands work from any subfolder of a project, and a monorepo of independent imp apps needs no
-  special configuration - each folder's `imp.json`/`imp.jsonc` and `dependencies/` are found based
-  on where the command runs.
-- Users can comment and trailing-comma their config freely, in either `imp.json` or `imp.jsonc`, and
-  imp's own edits preserve those comments rather than flattening the file.
-- Config error messages name the actual file found (`imp.json` or `imp.jsonc`).
-- `jsonc-parser` is pre-bundled into the binary like every other runtime npm dependency (see
-  [prebundled-npm-dependencies](prebundled-npm-dependencies.md)).
-- Inline trailing comments can occasionally shift to an adjacent line when a new sibling key is
-  inserted next to them - comments are never lost, but their exact placement is not guaranteed
-  across a programmatic edit.
+- A command works from any subfolder of a project. A monorepo of independent imp apps needs no
+  special configuration. imp finds the `imp.json` or `imp.jsonc` of each folder, and its
+  `dependencies/`, from where the command runs.
+- A user can write a comment and a trailing comma freely, in `imp.json` or in `imp.jsonc`. The edits
+  of imp keep those comments. imp does not flatten the file.
+- An error message about the config names the file that imp found, which is `imp.json` or
+  `imp.jsonc`.
+- imp pre-bundles `jsonc-parser` into the binary, like every other runtime npm dependency. See
+  [prebundled-npm-dependencies](prebundled-npm-dependencies.md).
+- A trailing comment on a line can sometimes move to the next line, when imp inserts a new sibling
+  key beside it. imp never loses a comment, but an edit from code does not guarantee its exact
+  place.

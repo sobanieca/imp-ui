@@ -2,54 +2,58 @@
 
 ## Context
 
-imp ships as a single self-contained binary produced by `deno compile`. For the binary to be
-installable, updatable, and pinnable (`version-pinning-self-delegation.md`), releases need
-predictable, per-version, per-platform download URLs and an automated way to produce them. The
-sibling project `sobanieca/jsonr` already solves this the same way - a GitHub Actions workflow that
-compiles the binary for each target on push to `main` and attaches the assets to a tagged release -
-and reusing that proven shape avoids inventing a bespoke pipeline.
+imp ships as one self-contained binary that `deno compile` produces. A person must be able to
+install the binary, update it, and pin it, see `version-pinning-self-delegation.md`. So a release
+needs a download URL that is predictable, per version and per platform. It also needs an automated
+way to produce that URL. The sibling project `sobanieca/jsonr` already solves this in the same way.
+A GitHub Actions workflow compiles the binary for each target on a push to `main`, and attaches the
+assets to a tagged release. imp reuses that proven shape, and invents no pipeline of its own.
 
 ## Decision
 
-imp binaries are built and published from the `sobanieca/imp-ui` GitHub repository, mirroring
-jsonr's release mechanism.
+imp builds and publishes its binaries from the `sobanieca/imp-ui` GitHub repository. The mechanism
+mirrors the release mechanism of jsonr.
 
-- **Version source of truth is `deno.json`'s `"version"` field.** It is baked into the binary by
-  importing it (`import denoJson from '../../deno.json' with { type: 'json' }`), so `imp --version`
-  and the self-delegation comparison read the same value the release is tagged with. Unlike jsonr -
-  which duplicates the version into a `src/version.js` and runs a `check-version` job to keep the
-  two in sync - imp imports `deno.json` directly, so no consistency check is needed.
-- **A `Release` workflow on push to `main`** runs formatting/lint checks, then, when a tag for the
-  current version does not already exist, compiles the binary and publishes a GitHub Release tagged
-  `v{version}` via `softprops/action-gh-release`. Re-pushing without bumping the version is a no-op
-  (the existing-tag guard skips the release), so the pipeline is safe to run on every push.
-- **Four targets, no Windows** (matching jsonr): `x86_64`/`aarch64` across `linux`/`macos`, compiled
-  with the same `--include cli/src --include lib/src` and prebundled fmt-plugin / npm-dependency
-  prep that `deno task compile` uses. Assets are named `imp-{os}-{arch}` with `{os}` one of `linux`,
-  `macos` and `{arch}` one of `x64`, `arm64`.
-- **Download URLs** are therefore
-  `https://github.com/sobanieca/imp-ui/releases/download/v{version}/imp-{os}-{arch}` for a pinned
-  version and `.../releases/latest/download/imp-{os}-{arch}` for the newest; the latest version
-  number resolves from `https://api.github.com/repos/sobanieca/imp-ui/releases/latest` (`tag_name`,
-  leading `v` stripped).
-- **An `install.sh`** detects OS/arch via `uname`, downloads the matching latest asset, and installs
-  it to `INSTALL_DIR` (default `/usr/local/bin`, using `sudo` when needed) - the one-line install
-  documented in `docs/cli.md`.
-- **Per-asset SHA-256 checksums.** Each binary is published alongside an `imp-{os}-{arch}.sha256`
-  asset (`sha256sum` output). This is the one place imp deliberately diverges from jsonr, which
-  ships no checksums: because imp owns both the release workflow and the on-demand download path
-  (`version-pinning-self-delegation.md`), it verifies every downloaded binary against its published
-  checksum before installing it, so a truncated or tampered download fails loudly instead of
-  running.
+- **The `"version"` field of `deno.json` is the source of truth.** imp puts it into the binary by an
+  import, as in `import denoJson from '../../deno.json' with { type: 'json' }`. So `imp --version`,
+  and the comparison for self-delegation, read the same value that the release is tagged with. jsonr
+  copies its version into a `src/version.js`, and runs a `check-version` job to keep the two the
+  same. imp imports `deno.json` directly, so it needs no such check.
+- **A `Release` workflow runs on a push to `main`.** It runs the formatting checks and the lint
+  checks. Then, when no tag for the current version exists, it compiles the binary and publishes a
+  GitHub Release, tagged `v{version}`, through `softprops/action-gh-release`. A second push with no
+  change of the version does nothing, because the guard for an existing tag skips the release. So
+  the pipeline is safe to run on every push.
+- **There are four targets, and no Windows.** That matches jsonr. The targets are `x86_64` and
+  `aarch64`, across `linux` and `macos`. imp compiles them with the same
+  `--include cli/src --include lib/src`, and with the same preparation of the prebundled fmt plugins
+  and npm dependencies, as `deno task compile`. imp names an asset `imp-{os}-{arch}`. `{os}` is
+  `linux` or `macos`. `{arch}` is `x64` or `arm64`.
+- **The download URLs follow from that.** For a pinned version, it is
+  `https://github.com/sobanieca/imp-ui/releases/download/v{version}/imp-{os}-{arch}`. For the newest
+  version, it is `.../releases/latest/download/imp-{os}-{arch}`. imp resolves the latest version
+  number from `https://api.github.com/repos/sobanieca/imp-ui/releases/latest`, from `tag_name`, with
+  the leading `v` removed.
+- **An `install.sh` script detects the OS and the architecture with `uname`.** It downloads the
+  matching latest asset, and installs it to `INSTALL_DIR`. The default is `/usr/local/bin`, and the
+  script uses `sudo` when it must. That is the one-line install that `docs/cli.md` documents.
+- **Each asset has a SHA-256 checksum.** imp publishes each binary with an `imp-{os}-{arch}.sha256`
+  asset, which holds the output of `sha256sum`. This is the one place where imp deliberately differs
+  from jsonr, which ships no checksum. imp owns the release workflow and the on-demand download
+  path, see `version-pinning-self-delegation.md`. So it verifies every downloaded binary against its
+  published checksum before it installs the binary. A download that is truncated, or changed, then
+  fails with a message. It does not run.
 
 ## Consequences
 
-- Every release exposes stable, guessable URLs, which is exactly what the version manager needs to
-  fetch and cache a pinned or latest binary without a registry or index.
-- Releasing is fully automated from a single `deno.json` version bump; forgetting to tag or to build
-  a platform cannot happen, and an unbumped push does not spuriously re-release.
-- Windows users are unsupported until a Windows target is added to the workflow and the
-  platform-slug map; the CLI already fails fast with a clear message on unsupported platforms.
-- Downloaded binaries are integrity-checked against their published SHA-256, so a corrupted or
-  tampered asset is rejected rather than executed; the trade-off is that a release missing its
-  `.sha256` asset cannot be fetched on demand, which the workflow guarantees never happens.
+- Every release exposes a stable URL that you can construct. That is exactly what the version
+  manager needs, to fetch and cache a pinned or a latest binary, with no registry and no index.
+- A release is fully automated from one change to the version in `deno.json`. Nobody can forget to
+  tag, or to build a platform. A push with no change of the version does not release again by
+  mistake.
+- A Windows user is unsupported until somebody adds a Windows target to the workflow, and to the map
+  of platform names. The CLI already fails immediately, with a clear message, on an unsupported
+  platform.
+- imp checks the integrity of a downloaded binary against its published SHA-256. So imp rejects an
+  asset that is corrupt or changed, instead of running it. The trade is that imp cannot fetch a
+  release that has no `.sha256` asset on demand. The workflow guarantees that this never happens.

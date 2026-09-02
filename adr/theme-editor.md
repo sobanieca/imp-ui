@@ -2,71 +2,78 @@
 
 ## Context
 
-A theme is a flat map of around ninety tokens (`themable-by-default-tokens.md`). That shape is right
-for the runtime - one write of custom properties re-skins everything - and wrong for a person
-starting a theme: nobody picks ninety colors, and the ones that matter (an accent, a neutral, how
-round and how deep the chrome is) are buried among the ones that follow from them.
+A theme is a flat map of about ninety tokens, see `themable-by-default-tokens.md`. That shape is
+correct for the runtime, because one write of the custom properties re-skins everything. It is wrong
+for a person who starts a theme. Nobody selects ninety colours. The colours that matter are an
+accent, a neutral, how round the chrome is, and how deep it is. Those sit among the colours that
+follow from them.
 
-The first editor took the shape of the data rather than the shape of the decision: it listed every
-applied token as a text field, so tweaking an accent meant editing `color-primary`, `-hover`,
-`-active`, `color-on-primary`, `color-link` and `color-focus-ring` by hand and keeping them
-consistent, per theme, twice over for light and dark. It could only ever produce the theme it was
-already showing, which made it a token inspector, not an authoring tool.
+The first editor took the shape of the data, and not the shape of the decision. It listed every
+applied token as a text field. So a change to an accent meant an edit of `color-primary`,
+`color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-link` and
+`color-focus-ring` by hand, and it meant keeping those consistent. A person did that per theme, and
+twice, for light and for dark. That editor could only ever produce the theme that it already showed.
+So it was a token inspector, and not a tool for authoring.
 
-Where such a tool should live was also open: `todo/theme-editor.md` scoped it as a deliverable of
-the public site, which would have meant a second implementation of the live preview - a page
-rendering real components under a candidate theme - next to the one `imp preview` already is.
+Where such a tool must live was also open. `todo/theme-editor.md` scoped it as a deliverable of the
+public site. That would mean a second implementation of the live preview, which is a page that
+renders real components under a candidate theme, beside the page that `imp preview` already is.
 
 ## Decision
 
-**The theme editor is part of `imp preview`**, beside the theme switcher, and the public site embeds
-that same preview rather than hosting an editor of its own. The preview page is already an imp app
-built from `imp/std`, so it is already the live preview an editor needs; adding a panel to it costs
-nothing that has to be kept in sync.
+**The theme editor is part of `imp preview`**, beside the theme switcher. The public site embeds
+that same preview, and it hosts no editor of its own. The preview page is already an imp app, built
+from `imp/std`. So it is already the live preview that an editor needs. A panel on that page costs
+nothing that somebody must keep in step.
 
-**It exposes the decision, not the data - four knobs and a mode:**
+**The editor exposes the decision, not the data. It has four knobs and a mode:**
 
-- **mode** (`light` / `dark`) selects which of the two themes is being edited and previewed. Base
-  colors are held **per mode**, so a dark theme is not forced to be a function of the light one;
-  radius and shadow are shared, because they are geometry and an app has one answer for both.
-- **primary** and **secondary** colors, from which every other color token is derived.
-- **border radius** (`none` | `small` | `medium` | `large` | `full`) and **shadow** (`none` | `soft`
-  | `strong`), each a step that rewrites the whole matching scale.
+- **mode**, which is `light` or `dark`, selects which of the two themes the editor edits and
+  previews. The editor holds the base colours **per mode**. So a dark theme is not forced to be a
+  function of the light theme. The radius and the shadow are shared, because they are geometry, and
+  an app has one answer for both modes.
+- **primary** and **secondary** are colours, and the editor derives every other colour token from
+  them.
+- **border radius**, which is `none`, `small`, `medium`, `large` or `full`, and **shadow**, which is
+  `none`, `soft` or `strong`. Each one is a step, and it rewrites the whole matching scale.
 
-The per-token list is **removed, not hidden behind an "advanced" section**. Anything the knobs
-cannot express is edited in the exported file, where the change is durable and reviewable, rather
-than in a browser panel whose state lives in `localStorage`.
+The editor **removes the list per token. It does not hide it behind an advanced section.** Anything
+that the knobs cannot express, a person edits in the exported file. There the change is durable, and
+a reviewer can read it. It is not in a browser panel whose state lives in `localStorage`.
 
-**The output is an ordinary theme module, not an imp-specific artifact.** _copy_ puts the whole file
-on the clipboard and _download theme.js_ writes it to disk; both produce the same source: a shared
-`palette` object of the 31 named colors, a `light` and a `dark` export spreading it, and
-`export default light`. It imports nothing from imp, so it cannot fall behind an imp version, and it
-is laid out to be edited by hand afterwards - the palette sits at the top precisely because the
-editor will never rewrite it. The panel prints the two lines that use the file
-(`await init({ theme: light })`), because a downloaded file with no instruction is a file nobody
-wires up.
+**The output is an ordinary theme module, and not an artifact that belongs to imp.** _copy_ puts the
+whole file on the clipboard. _download theme.js_ writes it to disk. Both produce the same source. It
+holds a shared `palette` object of the 31 named colours, a `light` export and a `dark` export that
+spread that object, and `export default light`. The file imports nothing from imp. So it cannot fall
+behind an imp version. Its layout suits an edit by hand afterwards, and the palette sits at the top
+for exactly that reason, because the editor will never rewrite it. The panel prints the two lines
+that use the file, which are `await init({ theme: light })`. A downloaded file with no instruction
+is a file that nobody connects.
 
-**Drafts are per selected theme and live in `localStorage`.** Opening the editor on a theme seeds it
-from that theme's own tokens - primary and secondary read off the applied values, radius and shadow
-matched back to a step - so the editor starts from what is on screen rather than from a default, and
-_reset_ drops the draft and returns to the picked theme.
+**A draft belongs to the selected theme, and it lives in `localStorage`.** When you open the editor
+on a theme, imp seeds the draft from the tokens of that theme. It reads the primary and the
+secondary colour off the applied values, and it matches the radius and the shadow back to a step. So
+the editor starts from what is on the screen, and not from a default. _reset_ drops the draft, and
+returns to the selected theme.
 
-**The derivation is the library's, not the editor's.** The editor calls the same function the
-built-in themes call (`themable-by-default-tokens.md`), so what it previews, what it exports, and
-what `applyTheme('imp-light')` produces can never disagree. The editor holds no color math.
+**The derivation belongs to the library, and not to the editor.** The editor calls the same function
+that the built-in themes call, see `themable-by-default-tokens.md`. So what it previews, what it
+exports, and what `applyTheme('imp-light')` produces, can never differ. The editor holds no colour
+mathematics.
 
 ## Consequences
 
-- Writing a theme is picking two colors and two steps and pressing copy; the result is reviewable
-  source in the app's repo, not state in a browser.
-- There is one live preview in the project. The site gets the editor by embedding `imp preview`, and
-  a component added to the stdlib shows up in the editor's preview for free.
-- The editor cannot express a token outside its four knobs - a different type scale, a bespoke
-  `color-warning` - and deliberately does not try. That work belongs in the exported file, which is
-  why the export is a plain module rather than a serialized editor state that only the editor can
-  read back.
-- Because drafts are keyed by the selected theme and never written back to any file, a preview
-  session cannot silently modify an app's real theme module.
-- A theme file exported today keeps working after the derivation changes, since it carries literal
-  values. The converse is the cost: a theme file does **not** pick up an improved derivation, and
-  re-exporting is how an app opts into one.
+- To write a theme, a person selects two colours and two steps, and presses copy. The result is
+  source in the repository of the app, and a reviewer can read it. It is not state in a browser.
+- There is one live preview in the project. The site gets the editor by an embed of `imp preview`.
+  When somebody adds a component to the standard library, that component appears in the preview of
+  the editor with no extra work.
+- The editor cannot express a token outside its four knobs, such as a different type scale, or a
+  `color-warning` of your own. It deliberately does not try. That work belongs in the exported file.
+  That is why the export is a plain module, and not a serialized state that only the editor can read
+  back.
+- A draft is keyed by the selected theme, and imp never writes it back to a file. So a preview
+  session cannot change the real theme module of an app with no message.
+- A theme file that you export today keeps working after the derivation changes, because it carries
+  literal values. The cost is the opposite case. A theme file does **not** take an improved
+  derivation. To take one, an app exports the file again.

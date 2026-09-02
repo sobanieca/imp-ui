@@ -578,6 +578,7 @@ Deno.test('imp test', async (t) => {
   await test('preview-none-found', ['preview'], fixture('basic'))
   await test('preview-theme-not-found', ['preview'], fixture('preview-bad-theme'))
   await test('preview-translations-not-found', ['preview'], fixture('preview-bad-translations'))
+  await test('preview-groups-not-found', ['preview'], fixture('preview-bad-groups'))
   await test('preview-bad-port', ['preview', '--port', 'abc'], fixture('preview'))
 })
 
@@ -1640,16 +1641,28 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
 
     const themed = await page.evaluate(() => {
-      const picker = globalThis.impPicker('Theme')
+      const switcher = globalThis.impAll('imp-button')
+        .find((node) => node.shadowRoot.querySelector('[role="menuitem"]') !== null)
+      const shadow = switcher.shadowRoot
+      const items = () => [...shadow.querySelectorAll('[role="menuitem"]')]
+      const selected = () => shadow.querySelector('.label').textContent
+      const surface = () =>
+        getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
       const apply = (value) => {
-        picker.value = value
-        picker.dispatchEvent(new Event('change'))
-        return getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
+        items().find((item) => item.textContent === value).click()
+        return surface()
       }
+      const iconOf = (item) => item.querySelector('imp-icon') !== null
+      const initial = selected()
+      const dark = apply('imp-dark')
+      shadow.querySelector('.button:not(.more)').click()
+      const stepped = selected()
       return {
-        options: [...picker.options].map((option) => option.value),
-        selected: picker.value,
-        dark: apply('imp-dark'),
+        options: items().map((item) => item.textContent),
+        icons: items().every(iconOf),
+        selected: initial,
+        dark,
+        stepped,
         custom: apply('brand'),
       }
     })
@@ -1687,16 +1700,21 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
 
     const shell = await page.evaluate(() => {
       const menu = globalThis.impOne('imp-shell').shadowRoot.querySelector('.sidebar')
-      const links = [...menu.querySelectorAll('.link')]
+      const links = [...menu.querySelectorAll('li.child .link')]
       const deepText = (node) => {
         if (node.nodeType === Node.TEXT_NODE) return node.data
         const scope = node.shadowRoot ?? node
         return [...scope.childNodes].map(deepText).join('')
       }
-      const parts = (node) => [...node.childNodes].map(deepText).join(' ')
+      const parts = (link) =>
+        `${link.querySelector('.label').textContent} ${deepText(link.querySelector('.tag'))}`
       return {
         sidebar: links.map((link) => link.textContent).join(', '),
-        groups: [...menu.querySelectorAll('.group-title')].map(parts).join(', '),
+        groups: [...menu.querySelectorAll('li:not(.child) .link')].map(parts).join(', '),
+        groupIcons: [...menu.querySelectorAll('li:not(.child) .link')]
+          .map((link) => link.querySelector('.icon imp-icon')?.shadowRoot?.querySelector('svg'))
+          .map((svg) => (svg ? `${svg.querySelectorAll('*').length} shapes` : 'no icon'))
+          .join(', '),
         current: links.find((link) => link.hasAttribute('aria-current'))?.textContent ?? 'none',
         head: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.path').textContent,
       }
@@ -1784,7 +1802,10 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `lang/dir/stage after pinning ltr: ${localized.pinnedLtr}`,
       `lang/dir/stage back on auto: ${localized.backToAuto}`,
       `lang/dir/stage back on en: ${localized.backToEnglish}`,
-      `theme options: ${themed.options.join(', ')} (selected ${themed.selected})`,
+      `theme options: ${
+        themed.options.join(', ')
+      } (selected ${themed.selected}, every item has an icon: ${themed.icons})`,
+      `theme after one step from imp-dark: ${themed.stepped}`,
       `imp-dark surface token: ${themed.dark}`,
       `brand surface token: ${themed.custom}`,
       `theme editor knobs: ${themeEdits.knobs}`,
@@ -1793,6 +1814,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `after switching the editor to dark: ${themeEdits.darkSurface}`,
       `theme editor usage line: ${themeEdits.usage}`,
       `sidebar groups: ${shell.groups}`,
+      `sidebar group icons: ${shell.groupIcons}`,
       `sidebar components: ${shell.sidebar}`,
       `sidebar current: ${shell.current}`,
       `page head: ${shell.head}`,

@@ -1,7 +1,7 @@
 # logging - the built-in logger and the per-environment level
 
-imp routes its own diagnostics through one logger, and your app imports the same one from `imp/log`,
-so everything an imp app writes honors a single level set per environment.
+imp sends its own diagnostics to one logger. Your app imports the same logger from `imp/log`. So
+every message that an imp app writes obeys one level, and you set that level per environment.
 
 ```js
 import { createLogger, logger, logLevel, setLogLevel } from 'imp/log'
@@ -13,21 +13,22 @@ log.debug('recalculating totals', { items: 3 })
 log.warn('price feed is stale')
 ```
 
-| Member               | Notes                                                        |
-| -------------------- | ------------------------------------------------------------ |
-| `logger`             | the ready-made logger                                        |
-| `createLogger(name)` | a logger prefixing its first argument with `name:`           |
-| `setLogLevel(level)` | change the level at runtime (handy from the browser console) |
-| `logLevel()`         | the active level                                             |
+| Member               | Notes                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| `logger`             | the ready-made logger                                              |
+| `createLogger(name)` | a logger that puts `name:` in front of its first argument          |
+| `setLogLevel(level)` | changes the level at runtime, for example from the browser console |
+| `logLevel()`         | the active level                                                   |
 
-Every logger has `debug`, `info`, `warn`, `error`, each taking any number of arguments like the
-console. `debug`/`info` go to `console.log`, `warn` to `console.warn`, `error` to `console.error`.
+Every logger has `debug`, `info`, `warn` and `error`. Each one takes any number of arguments, like
+the console. `debug` and `info` go to `console.log`, `warn` goes to `console.warn`, and `error` goes
+to `console.error`.
 
 ## Levels
 
-`debug` < `info` < `warn` < `error`. A message is written only at or above the active level, which
-defaults to **`info`**. Set it per environment with `IMP_LOG_LEVEL` in an environment file (see
-[config](config.md)):
+The order is `debug` < `info` < `warn` < `error`. imp writes a message only at the active level or
+above it. The default level is **`info`**. To set the level per environment, put `IMP_LOG_LEVEL` in
+an environment file, see [config](config.md):
 
 ```json
 {
@@ -36,22 +37,25 @@ defaults to **`info`**. Set it per environment with `IMP_LOG_LEVEL` in an enviro
 }
 ```
 
-Filtering the browser console by `imp:` shows only the library's messages; by your prefix, only
-yours. In development every console message is also written to `.imp/dev.log` by `imp start`, one
-entry per line - grep that file instead of watching the terminal.
+To see only the library's messages, filter the browser console by `imp:`. To see only your own
+messages, filter by your prefix. In development, `imp start` also writes every console message to
+`.imp/dev.log`, one entry per line. Search that file instead of watching the terminal.
 
 ## What `debug` traces
 
-Turning the level to `debug` is the fastest way to see why a binding updates too often or not at
-all. imp then logs:
+Set the level to `debug` to find why a binding updates too often, or does not update. imp then logs:
 
-- **state reads** - every `get()` with its value;
-- **state sets** - every applied `set()`, plus the ones skipped as structurally equal;
-- **subscriptions** - every `watch` attaching and detaching (including those `text`, `view`, `each`
-  and bound props create) and each notification with its subscriber count;
-- **state lifecycle** - states initialized, resolved, and rebound after a component moves;
-- **computed states** - every recompute, including unchanged results;
-- **component lifecycle** - defined, mounted, unmounted, rebound after a move.
+- **state reads.** Every `get()` with its value.
+- **state sets.** Every applied `set()`, and the ones that imp skips because they are structurally
+  equal.
+- **subscriptions.** Every `watch` that attaches and detaches, and each notification with its
+  subscriber count. This includes the subscriptions that `text`, `view`, `each` and bound props
+  create.
+- **state lifecycle.** The states that imp initializes, resolves and rebinds after a component
+  moves.
+- **computed states.** Every recompute, and also the ones with an unchanged result.
+- **component lifecycle.** The components that imp defines, mounts, unmounts and rebinds after a
+  move.
 
-Everything at `warn` and `error` - invalid state values, failed subscribers, mount failures - shows
-at the default level, so a silent console means imp found nothing wrong.
+Everything at `warn` and `error` shows at the default level. This covers invalid state values,
+failed subscribers and mount failures. So a silent console means that imp found no problem.

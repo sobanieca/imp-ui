@@ -2,168 +2,185 @@
 
 ## Context
 
-imp needed first-class testing without breaking its constraints: the compiled binary embeds no Deno
-tooling (`deno test` is not part of `denort`), users never see Deno or configure a third-party
-framework, and the toolchain runs in-process (`in-process-toolchain.md`). Components touch the real
-DOM directly (`real-dom-no-virtual-dom.md`), so unit tests need a real-enough DOM, and e2e tests
-need a real browser. E2E suites also had to parallelize across CI machines, since sequential browser
-runs dominate CI time.
+imp needed first-class testing, and it could not break its constraints. The compiled binary embeds
+no tooling of Deno, because `deno test` is not part of `denort`. A user never sees Deno, and never
+configures a third-party framework. The toolchain runs in process, see `in-process-toolchain.md`. A
+component touches the real DOM directly, see `real-dom-no-virtual-dom.md`. So a unit test needs a
+DOM that is real enough, and an e2e test needs a real browser. An e2e suite also had to run in
+parallel across the machines of a CI system, because a browser run in sequence dominates the time of
+CI.
 
 ## Decision
 
-One command, `imp test`, with the level chosen by file name - `*.test.js` runs in-process against a
-simulated DOM, `*.spec.js` runs against a served app in headless Chrome. Both import their API from
-`imp/test` (`cli/src/test_library.js`): `test`/`test.only`/`test.skip` with per-test timeouts,
-`beforeAll`/`beforeEach`/`afterEach`/`afterAll`, and an `expect` matcher set. imp's file walker
-feeds discovery.
+There is one command, `imp test`, and the name of a file chooses the level. A `*.test.js` file runs
+in process, against a simulated DOM. A `*.spec.js` file runs against a served app, in a headless
+Chrome. Both import their API from `imp/test`, which is `cli/src/test_library.js`. That API holds
+`test`, `test.only` and `test.skip`, with a timeout per test. It holds `beforeAll`, `beforeEach`,
+`afterEach` and `afterAll`. It holds a set of `expect` matchers. The file walker of imp feeds the
+discovery.
 
-- **One file per process is the isolation primitive; `imp test` fans out across processes for a
-  whole level.** A single `imp test <file>` runs exactly that one file, in-process, and exits with
-  its result - the runner, bundler, server, and browser stay single-process, so a file's globals,
-  timers, module graph, and (for e2e) its server and browser never leak into another file. That
-  worker invocation is also the unit imp schedules: running a whole level requires an explicit level
-  flag, and imp then discovers every file of that kind and **spawns one `imp test <file>` subprocess
-  per file**, running them through a bounded pool (`--jobs <n>`, defaulting to
-  `navigator.hardwareConcurrency`). Passing files are summarized to a single line; a failing file's
-  full child output is reproduced verbatim, and the aggregate exits `1` if any file failed. This is
-  a **deliberate subprocess exception** to the in-process rule (`in-process-toolchain.md`): the CLI
-  reinvokes itself - the compiled binary via `Deno.execPath()`, dev mode via
-  `deno run <mainModule>` - rather than delegating to an external tool, and the one-file-per-process
-  isolation is exactly what makes fanning out to subprocesses equivalent to running each file alone.
-  - **A bare `imp test` refuses to guess.** With no level flag and more than one candidate file
-    (`imp test`, a directory, several paths) imp prints the three ways to run - `--unit`, `--e2e`,
-    or a single file - and exits **non-zero** without running anything, so it never silently runs a
-    partial or unintended subset and a stray `imp test` in a CI step fails loudly rather than
-    passing green having run nothing. A path narrows discovery (`imp test --e2e checkout/`); a
-    single resolved file with no flag is unambiguous and runs in-process.
-  - **`--list` stays the machine-readable surface for cross-machine fan-out.** It emits the selected
-    files as a JSON array (narrowed by `--unit`/`--e2e`) so a CI matrix can put one file per job on
-    its own runner - parallelism imp cannot schedule because it spans machines. `--jobs` handles the
-    single-machine case; `--list` handles the multi-machine case.
+- **One file per process is the primitive of isolation. `imp test` fans out across processes for a
+  whole level.** A single `imp test <file>` runs exactly that one file, in process, and exits with
+  its result. The runner, the bundler, the server and the browser stay in one process. So the
+  globals, the timers and the module graph of a file, and for an e2e file its server and its
+  browser, never leak into another file. That invocation of a worker is also the unit that imp
+  schedules. To run a whole level needs an explicit flag for the level. imp then discovers every
+  file of that kind, and **starts one `imp test <file>` subprocess per file**. It runs them through
+  a pool with a limit, which `--jobs <n>` sets, and which defaults to
+  `navigator.hardwareConcurrency`. imp summarizes a file that passes in one line. It reproduces the
+  full output of a child process that failed, without a change. The aggregate exits `1` when a file
+  failed. This is a **deliberate exception about a subprocess**, against the rule of
+  `in-process-toolchain.md`. The CLI invokes itself again. The compiled binary uses
+  `Deno.execPath()`, and development mode uses `deno run <mainModule>`. It does not delegate to an
+  external tool. The isolation of one file per process is exactly what makes a fan-out to a
+  subprocess equivalent to a run of each file alone.
+  - **A bare `imp test` refuses to guess.** With no flag for a level, and with more than one
+    candidate file, imp prints the three ways to run. Those are `--unit`, `--e2e`, and a single
+    file. imp then exits with a **non-zero** code, and runs nothing. That case covers a bare
+    `imp test`, a directory, and several paths. So imp never runs a partial or unintended subset in
+    silence, and a stray `imp test` in a CI step fails loudly, in place of passing green with
+    nothing run. A path narrows the discovery, as in `imp test --e2e checkout/`. One resolved file,
+    with no flag, is unambiguous, and it runs in process.
+  - **`--list` stays the machine-readable surface, for a fan-out across machines.** It emits the
+    selected files as a JSON array, narrowed by `--unit` or `--e2e`. So a CI matrix can put one file
+    per job, on its own runner. imp cannot schedule that parallelism, because it spans machines.
+    `--jobs` handles the case on one machine, and `--list` handles the case across machines.
 
-  The reason imp schedules the within-machine fan-out itself - rather than leaving every caller to
-  wire up `xargs -P` - is local ergonomics: a developer or AI agent running the whole suite gets
-  parallel results and failure-only detail from one command, while the isolation guarantees and the
-  per-file exit code that CI depends on are unchanged.
+  imp schedules the fan-out inside one machine itself, in place of leaving every caller to write
+  `xargs -P`. The reason is local ergonomics. A developer, or an AI agent, that runs the whole suite
+  gets parallel results, and detail for a failure only, from one command. The guarantees of
+  isolation, and the exit code per file that CI depends on, do not change.
 
-- **Mocking is two concepts - `spy` and `mockModule` - kept deliberately small.** A `spy(fn?)` is a
-  function that records its calls in a plain `spy.calls` array; its behavior is just the function
-  passed to it, so there are no `.mockReturnValue`/`.mockImplementation`-style configurators, and
-  call assertions reuse the existing `expect` matchers (`toEqual`/`toContain` on `.calls`) rather
-  than a bespoke `toHaveBeenCalled*` family. The same verb, dispatched on argument types
-  (`type-based-argument-dispatch.md`), wraps a method in place - `spy(obj, method[, impl])` -
-  instead of a separate `spyOn`. The runner owns lifecycle: it registers every spy in the
-  `Symbol.for` registry and, after each test, clears all `.calls` and restores any method wrapped
-  **during** a running test (module-level wraps persist), so there is no manual reset/restore
-  surface.
-- **Module mocking is a bundle-time resolver rewrite, not a runtime registry.** Because each test
-  file is compiled to a single esbuild bundle - cross-module imports are inlined, so there is no
-  runtime module boundary to intercept the way Vitest does - `mockModule(specifier, factory)`
-  happens where imp already owns the seam: resolution. Before bundling, imp statically scans the
-  file for `mockModule('...', ...)` calls (string-literal specifiers only), resolves each to a
-  **canonical key** - a relative path becomes the real file's absolute path
-  (extension/index-resolved and `realPath`-canonicalized), a bare specifier is a dependency alias
-  from `imp.json` - and reads the real module's export names through an execution-free esbuild
-  metafile pass. A resolver plugin then redirects **every** import that resolves to that key, at any
-  depth in the graph, to a generated virtual module: it runs the factory once (fed `{ spy, orig }`),
-  exports exactly the real module's names, and auto-fills any the factory omits with fresh `spy()`
-  spies. `orig()` is a live `import` of the real file, so partial mocks
-  (`{ ...orig(), one: spy() }`) keep the rest real. Keying by resolved file - not by the specifier
-  string - is what makes `'../http.js'` and `'./http.js'` collapse to one mock, and what makes an
-  npm/jsr dependency mockable by its alias. The factory is inlined into the virtual module (it runs
-  before the module under test loads, matching jest's evaluation order), so it cannot close over
-  test-file locals - the same constraint jest imposes.
-- **Execution model.** The runner is imp's own, in-process. Each test file is bundled by the
-  embedded esbuild engine (resolving `imp`, `imp/test`, vendored dependency aliases, and relative
-  imports - same resolution as `imp build`) and executed via a `data:` URL dynamic import, which
-  works identically under `deno run` and inside the compiled binary. Registration flows through a
-  `Symbol.for`-keyed global registry, so the bundled copy of `imp/test` and the CLI share state
-  without sharing module identity.
-- **Fuzzy matching via asymmetric placeholders.** `expect.any`/`anything`/`stringContaining`/
-  `stringMatching`/`arrayContaining`/`objectContaining`/`closeTo` return marker objects (tagged with
-  a `Symbol.for` key so they survive the realm boundary) that `deepEqual` short-circuits on, calling
-  their `match(actual)`. Because they hook `deepEqual`, they compose everywhere structural equality
-  runs - inside `toEqual`, `toContain`, and `spy.calls` assertions - rather than being a parallel
-  matcher family.
-- **Results are human-readable stdout only - no report files.** The runner emits no machine-readable
-  report format: there is no `--reporter`, and no JUnit or JSON output. Each `imp test <file>`
-  prints per-test pass/fail lines and a one-line summary to stdout, and exits `0`/`1`; a failing
-  test prints its name and assertion message inline on stdout. A level run (`--unit`/`--e2e`) layers
-  on top of this without inventing a new format: it prints one `✓ <file>` line per passing file and,
-  for each failing file, the failing worker's own stdout verbatim, then an aggregate summary - full
-  detail only where a run went red. This is a deliberate simplification - the primary consumer is an
-  AI coding agent that drives imp turn by turn and reads plain stdout logs, so a structured report
-  format is complexity that consumer never uses, and CI that wants pass/fail reads the same stdout
-  and exit code. The one machine-readable surface that remains is `--list`, which emits the pre-run
-  file _selection_ as a JSON array for fan-out across a CI matrix; it describes what _would_ run,
-  not how a run went.
-- **One equality matcher.** `expect` exposes a single `toEqual` rather than a `toBe`/`toEqual` pair:
-  it is structural for data (primitives via `Object.is`; arrays, plain objects, `Map`, `Set`,
-  `Date`, `RegExp` by value) and falls back to identity for everything else (DOM nodes - matched via
-  `nodeType`/`nodeName` - class instances, functions). This removes the most common assertion
-  footgun and fixes a real one: the old key-based deep-equal reported two distinct empty-keyed DOM
-  nodes as equal.
-- **A deliberately small matcher set.** Seven matchers survive: `toEqual`, `toContain`, `toMatch`,
-  `toBeTruthy`, `toBeGreaterThan`, `toBeLessThan`, `toThrow`. Everything expressible another way was
-  cut: the value-sugar (`toBeNull`/`toBeUndefined`/`toBeNaN`/`toBeDefined`, `toHaveProperty`) folds
-  into `toEqual`/optional chaining; `toBeFalsy` and the `...OrEqual` comparisons are `.not` of their
-  opposites; and `toBeInstanceOf`/`toBeCloseTo`/`toHaveLength` are redundant with the asymmetric
-  `expect.any`/`expect.closeTo` placeholders (or a plain `.length` comparison). `toBeTruthy` stays
-  even though it looks like sugar, because truthiness is a coercion rule - not equality to any
-  finite value set - so no `toEqual` form expresses it correctly.
-- **Unit environment.** happy-dom provides `document`, `window`, elements, and events, installed as
-  globals before a test file is imported and restored after - a fresh window per file. happy-dom's
-  window lives in a separate JS realm, so ECMAScript intrinsics (`Object`, `RegExp`, `Promise`, ...)
-  are explicitly _not_ copied onto the global - only DOM and browser APIs are; `toEqual` compares by
-  structural tags rather than prototype identity for the same reason.
-- **E2E environment.** Each spec file gets a fresh app instance: the `imp start` internals serve the
-  entry page (default `index.html`, `test.entry` in `imp.json`) on an ephemeral port with the
-  standard injection, so browser console and network telemetry stream to the terminal during runs;
-  puppeteer-core drives a headless browser; tests receive `{ page, browser, baseUrl }` and share the
-  page within a file (a spec reads as one user session). Failing tests save a screenshot under
-  `.imp/screenshots/`. Nothing is shared between spec files, so `imp test <file>.spec.js` is a
-  self-contained CI job; `imp test --e2e --list` emits the spec list as JSON for one-job-per-spec
-  GitHub Actions matrices.
-- **Browser resolution**, in order: `test.browser` in `imp.json`, the `IMP_BROWSER` environment
-  variable, an installed Chrome/Chromium (covers GitHub Actions runners out of the box), else a
-  Chrome for Testing build pinned by version and per-platform sha256 in `cli/src/test_browser.js`,
-  downloaded once into the per-user `~/.imp/browser/` cache (never inside a project,
-  `vendored-dependencies.md`) and extracted with a pure-JS unzip.
-- **`imp test` has two sanctioned subprocess exceptions** to `in-process-toolchain.md`: the e2e
-  browser (the system under test, not a delegated tool) and the level fan-out (imp reinvoking itself
-  as one worker per file). Both keep the actual work in-process - within any single
-  `imp test <file>` worker the runner, bundler, server, and assertions all run in-process, and a
-  unit worker spawns nothing at all. The subprocesses are the browser under test and imp's own
-  copies, never an external toolchain.
+- **Mocking is two concepts, `spy` and `mockModule`, and imp keeps both small.** A `spy(fn?)` is a
+  function that records its calls, in a plain `spy.calls` array. Its behaviour is the function that
+  you passed to it. So there is no configurator in the style of `.mockReturnValue` or
+  `.mockImplementation`. An assertion about a call reuses the existing `expect` matchers, with
+  `toEqual` or `toContain` on `.calls`. It does not use a family of `toHaveBeenCalled*` matchers.
+  The same verb wraps a method in place, as `spy(obj, method[, impl])`, and imp dispatches that on
+  the types of the arguments, see `type-based-argument-dispatch.md`. There is no separate `spyOn`.
+  The runner owns the lifecycle. It registers every spy in the registry of `Symbol.for`. After each
+  test it clears every `.calls` array, and restores any method that somebody wrapped **during** a
+  running test. A wrap at module level stays. So there is no surface to reset or to restore by hand.
+- **A module mock is a rewrite of the resolution at bundle time, and not a registry at runtime.**
+  imp compiles each test file into one esbuild bundle. An import across modules is inlined. So there
+  is no module boundary at runtime to intercept, in the way that Vitest intercepts one. So
+  `mockModule(specifier, factory)` happens where imp already owns the seam, which is the resolution.
+  Before it bundles, imp scans the file statically for a `mockModule('...', ...)` call. It reads a
+  string literal as a specifier, and nothing else. It resolves each specifier to a **canonical
+  key**. A relative path becomes the absolute path of the real file, after imp resolves an extension
+  or an index, and canonicalizes it with `realPath`. A bare specifier is a dependency alias from
+  `imp.json`. imp reads the export names of the real module through a pass over an esbuild metafile,
+  and it executes nothing. A plugin for the resolution then redirects **every** import that resolves
+  to that key, at any depth in the graph, to a generated virtual module. That module runs the
+  factory once, and feeds it `{ spy, orig }`. It exports exactly the names of the real module, and
+  fills any name that the factory omitted with a fresh `spy()`. `orig()` is a live `import` of the
+  real file. So a partial mock, such as `{ ...orig(), one: spy() }`, keeps the rest real. To key by
+  the resolved file, and not by the string of the specifier, is what makes `'../http.js'` and
+  `'./http.js'` collapse to one mock. It is also what makes an npm or jsr dependency mockable by its
+  alias. imp inlines the factory into the virtual module. So the factory runs before the module
+  under test loads, which matches the order of evaluation in jest. So the factory cannot close over
+  a local variable of the test file, and jest imposes the same constraint.
+- **The model of execution is imp's own runner, in process.** imp bundles each test file with the
+  embedded esbuild engine. That resolves `imp`, `imp/test`, a vendored dependency alias, and a
+  relative import, with the same resolution as `imp build`. imp then executes the bundle through a
+  dynamic import of a `data:` URL. That works in the same way under `deno run`, and inside the
+  compiled binary. The registration flows through a global registry, keyed by `Symbol.for`. So the
+  bundled copy of `imp/test` and the CLI share state, and they do not share a module identity.
+- **A fuzzy match is an asymmetric placeholder.** `expect.any`, `expect.anything`,
+  `expect.stringContaining`, `expect.stringMatching`, `expect.arrayContaining`,
+  `expect.objectContaining` and `expect.closeTo` return a marker object. imp tags each one with a
+  `Symbol.for` key, so the marker survives the boundary of a realm. `deepEqual` stops on such a
+  marker, and calls its `match(actual)`. They hook `deepEqual`. So they compose everywhere that
+  structural equality runs, which is inside `toEqual`, inside `toContain`, and in an assertion over
+  `spy.calls`. They are not a parallel family of matchers.
+- **The results are readable text on stdout, and there is no report file.** The runner emits no
+  machine-readable format for a report. There is no `--reporter`, and there is no JUnit or JSON
+  output. Each `imp test <file>` prints a line per test, with a pass or a fail, and a summary of one
+  line, to stdout. It exits `0` or `1`. A failing test prints its name, and the message of the
+  assertion, inline on stdout. A run of a level, with `--unit` or `--e2e`, sits on top of that, and
+  invents no format. It prints one `✓ <file>` line per passing file. For each failing file, it
+  prints the stdout of the failing worker, without a change. It then prints an aggregate summary. So
+  there is full detail only where a run went red. That is a deliberate simplification. The main
+  consumer is an AI coding agent that drives imp turn by turn, and that reads plain logs on stdout.
+  So a structured format for a report is complexity that this consumer never uses. A CI system that
+  wants a pass or a fail reads the same stdout, and the same exit code. The one machine-readable
+  surface that remains is `--list`. It emits the _selection_ of files before a run, as a JSON array,
+  for a fan-out across a CI matrix. It describes what _would_ run, and not how a run went.
+- **There is one matcher for equality.** `expect` exposes one `toEqual`, and not a pair of `toBe`
+  and `toEqual`. It is structural for data. It compares a primitive with `Object.is`, and it
+  compares an array, a plain object, a `Map`, a `Set`, a `Date` and a `RegExp` by value. It falls
+  back to identity for everything else. That covers a DOM node, which imp matches through `nodeType`
+  and `nodeName`, a class instance, and a function. That removes the most common trap in an
+  assertion, and it fixes a real one. The old deep equality, which compared by key, reported two
+  different DOM nodes with no keys as equal.
+- **The set of matchers is deliberately small.** Seven matchers survive. Those are `toEqual`,
+  `toContain`, `toMatch`, `toBeTruthy`, `toBeGreaterThan`, `toBeLessThan` and `toThrow`. imp cut
+  everything that another form expresses. The sugar over a value folds into `toEqual`, or into
+  optional chaining. That covers `toBeNull`, `toBeUndefined`, `toBeNaN`, `toBeDefined` and
+  `toHaveProperty`. `toBeFalsy`, and a comparison that ends in `OrEqual`, are the `.not` of their
+  opposite. `toBeInstanceOf`, `toBeCloseTo` and `toHaveLength` are redundant beside the asymmetric
+  placeholders `expect.any` and `expect.closeTo`, or beside a plain comparison of `.length`.
+  `toBeTruthy` stays, although it looks like sugar. Truthiness is a rule of coercion, and not
+  equality to a finite set of values. So no form of `toEqual` expresses it correctly.
+- **The unit environment comes from happy-dom.** It provides `document`, `window`, the elements and
+  the events. imp installs them as a global before it imports a test file, and restores them after.
+  So each file gets a fresh window. The window of happy-dom lives in a separate JS realm. So imp
+  explicitly does _not_ copy an ECMAScript intrinsic onto the global. That covers `Object`, `RegExp`
+  and `Promise`. imp copies a DOM API and a browser API only. `toEqual` compares by a structural
+  tag, and not by the identity of a prototype, for the same reason.
+- **The e2e environment gives each spec file a fresh instance of the app.** The internals of
+  `imp start` serve the entry page on an ephemeral port, with the standard injection. The default
+  page is `index.html`, and `test.entry` in `imp.json` overrides it. So the console of the browser,
+  and the network telemetry, stream to the terminal during a run. puppeteer-core drives a headless
+  browser. A test receives `{ page, browser, baseUrl }`, and the tests in a file share the page. So
+  a spec reads as one session of one user. A failing test saves a screenshot under
+  `.imp/screenshots/`. Nothing is shared between two spec files. So `imp test <file>.spec.js` is a
+  self-contained job for CI. `imp test --e2e --list` emits the list of specs as JSON, for a matrix
+  in GitHub Actions with one job per spec.
+- **imp resolves the browser in this order.** First it uses `test.browser` in `imp.json`. Then it
+  uses the `IMP_BROWSER` environment variable. Then it uses an installed Chrome or Chromium, which
+  covers a GitHub Actions runner with no setup. Otherwise it uses a Chrome for Testing build. imp
+  pins that build by version, and by a sha256 hash per platform, in `cli/src/test_browser.js`. imp
+  downloads it once, into the cache for that user at `~/.imp/browser/`, and never inside a project,
+  see `vendored-dependencies.md`. imp extracts it with an unzip in pure JavaScript.
+- **`imp test` has two approved exceptions about a subprocess**, against `in-process-toolchain.md`.
+  The first is the e2e browser, which is the system under test, and not a delegated tool. The second
+  is the fan-out over a level, where imp invokes itself again, as one worker per file. Both keep the
+  real work in process. Inside any single `imp test <file>` worker, the runner, the bundler, the
+  server and the assertions all run in process. A unit worker starts nothing. The subprocesses are
+  the browser under test, and copies of imp itself. They are never an external toolchain.
 
 ## Consequences
 
-- Unit tests run fast and offline anywhere the binary runs; dev mode and the compiled binary share
-  one code path. E2E total time in CI drops to the slowest spec file, at the deliberate cost of each
-  spec repeating its own setup state (e.g. logging in) - that repetition is what makes specs
-  independently schedulable.
-- A bare `imp test` no longer runs the suite; it asks which level to run. Running a level is now a
-  single command (`imp test --unit` / `--e2e`) that fans out across local processes; existing
-  pipelines that relied on a bare `imp test` running everything must add the level flag (or keep
-  feeding `imp test --list` into a CI matrix for cross-machine fan-out). A single file is still the
-  unit of both isolation and the per-file exit code - a level run is just many such single-file
-  processes scheduled together, so no two files ever share one process's globals, timers, server, or
-  browser.
-- The fan-out makes imp spawn copies of itself, so it depends on being able to reinvoke its own
-  entrypoint - `Deno.execPath()` for the compiled binary, `deno run <mainModule>` from source. A
-  level run's cost is one process per file plus, for e2e, one browser and server per concurrent
-  file; `--jobs` bounds that, and CI that needs cross-machine spread still uses `--list` rather than
-  a large local `--jobs`.
-- Test files are bundled before running, so failures report per test with assertion detail but
-  without original file/line stack traces - the per-file granularity and test names carry location.
-- Mocking is resolved per file, which fits the one-file-per-process isolation model: a `mockModule`
-  applies to every test in its file and cannot leak across files, but mocks are fixed for the file
-  rather than swappable per test - a spy's behavior is chosen when it is created, and the runner
-  clears `.calls` between tests so no manual reset is needed. The scan is static, so `mockModule`
-  must be called by that name with a string-literal specifier; when a file declares no mocks the
-  resolver hooks are not installed and bundling is unchanged.
-- happy-dom and puppeteer-core add ~3 MB to the binary as pre-bundled vendor files
-  (`prebundled-npm-dependencies.md`); the pinned Chrome download is ~190 MB once per user per pinned
-  version, and platforms without a pinned build must configure `test.browser`.
-- A checksum pin means imp releases, not ambient browser updates, decide the managed e2e browser
-  version; bumping it is a one-file change (version + hashes).
+- A unit test runs fast, and offline, anywhere that the binary runs. Development mode and the
+  compiled binary share one code path. The total e2e time in CI falls to the time of the slowest
+  spec file. The deliberate cost is that each spec repeats its own setup state, such as a sign-in.
+  That repetition is what makes a spec schedulable on its own.
+- A bare `imp test` no longer runs the suite. It asks which level to run. To run a level is now one
+  command, which is `imp test --unit` or `imp test --e2e`, and it fans out across local processes.
+  An existing pipeline that relied on a bare `imp test` to run everything must add the flag for the
+  level. It can also keep feeding `imp test --list` into a CI matrix, for a fan-out across machines.
+  One file is still the unit of the isolation, and of the exit code per file. A run of a level is
+  many such processes for one file, scheduled together. So no two files ever share the globals, the
+  timers, the server or the browser of one process.
+- The fan-out makes imp start copies of itself. So it depends on the ability to invoke its own entry
+  point again. That is `Deno.execPath()` for the compiled binary, and `deno run <mainModule>` from
+  source. A run of a level costs one process per file. For an e2e run it also costs one browser and
+  one server per file that runs at the same time. `--jobs` limits that. A CI system that needs a
+  spread across machines still uses `--list`, and not a large local `--jobs`.
+- imp bundles a test file before it runs it. So a failure reports per test, with the detail of the
+  assertion, and with no stack trace to the original file and line. The granularity per file, and
+  the name of the test, carry the location.
+- imp resolves a mock per file, and that fits the model of one file per process. A `mockModule`
+  applies to every test in its file, and it cannot leak across files. But a mock is fixed for the
+  file, and it is not swappable per test. The behaviour of a spy is chosen when somebody creates it,
+  and the runner clears `.calls` between two tests. So nobody resets a spy by hand. The scan is
+  static. So somebody must call `mockModule` by that name, with a string literal as the specifier.
+  When a file declares no mock, imp installs no hook in the resolver, and the bundling does not
+  change.
+- happy-dom and puppeteer-core add about 3 MB to the binary, as pre-bundled vendor files, see
+  `prebundled-npm-dependencies.md`. The pinned Chrome download is about 190 MB, once per user, per
+  pinned version. A platform with no pinned build must configure `test.browser`.
+- A pin by checksum means that a release of imp decides the version of the managed e2e browser, and
+  an update of a browser on the machine does not. To move that version is a change to one file,
+  which holds the version and the hashes.

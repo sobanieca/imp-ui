@@ -4,34 +4,36 @@
 imp resize <image> [-w <px>] [-h <px>] [--output <path>] [--stretch]
 ```
 
-For the common repository bloat: an image committed far larger than the page ever displays it. It is
-a downscaler, not an image editor - anything beyond a straight resize is out of scope.
+`imp resize` corrects the most common cause of repository bloat. An image is committed much larger
+than the page shows it. The command is a downscaler, not an image editor. Any operation other than a
+resize is out of scope.
 
-| Flags given           | What happens                                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| neither `-w` nor `-h` | **inspect mode** - reports dimensions and byte size, writes nothing, and prints a ready-to-run resize command if the asset is oversized |
-| one of `-w` / `-h`    | resizes to that dimension, computing the other from the aspect ratio                                                                    |
-| both                  | scales to the largest size that **fits inside** that width x height box                                                                 |
-| both plus `--stretch` | resizes to exactly that size, distorting the picture                                                                                    |
+| Flags given           | What happens                                                                                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| neither `-w` nor `-h` | **inspect mode**. imp reports the dimensions and the byte size. It writes no file. If the asset is oversized, it prints a resize command that you can run. |
+| one of `-w` / `-h`    | imp resizes to that dimension. It computes the other dimension from the aspect ratio.                                                                      |
+| both                  | imp scales to the largest size that **fits inside** that width x height box.                                                                               |
+| both plus `--stretch` | imp resizes to exactly that size. The picture is distorted.                                                                                                |
 
 ```
-imp resize assets/hero.png                 # check first - this is the natural first step
+imp resize assets/hero.png                 # check first, this is the natural first step
 imp resize assets/hero.png -w 1200         # then downscale in place
 imp resize assets/hero.png -w 1200 --output assets/hero-small.png
 ```
 
 ## Rules an agent gets wrong
 
-- **The file is overwritten by default.** That fits the purpose - shrinking a committed asset - but
-  pass `--output` when the original must survive. Either way imp reports before and after.
-- **It never upscales.** A request larger than the source is clamped to the source.
-- **Aspect ratio is always preserved** unless you explicitly pass `--stretch`.
-- **Only static PNG and JPEG.** WebP, GIF, and animated images (animated PNG included) are detected
-  and rejected with a message rather than silently losing frames or changing format.
-- **Quality is prioritised over the last byte** - minimal compression, pixels only. For fine-grained
-  control of compression or quality, use a dedicated image tool.
-- Inspect mode doubles as a quick way to read any PNG or JPEG's dimensions from the terminal.
+- **imp overwrites the file by default.** This fits the purpose of the command, which is to shrink a
+  committed asset. To keep the original, pass `--output`. In both cases imp reports the size before
+  and after.
+- **imp never upscales.** imp clamps a request that is larger than the source to the source size.
+- **imp always keeps the aspect ratio.** To change it, pass `--stretch`.
+- **imp accepts static PNG and JPEG only.** imp detects WebP, GIF and animated images, and animated
+  PNG. It rejects them with a message. It does not remove frames or change the format in silence.
+- **imp keeps the quality high.** It applies minimal compression and changes the pixels only. For
+  control of the compression or the quality, use a dedicated image tool.
+- You can also use inspect mode to read the dimensions of any PNG or JPEG from the terminal.
 
-An asset over `maxFileSize` (200 kB by default) fails [lint](lint.md) - resizing it is usually the
-right fix, and exempting it in `maxFileSizeIgnore`, see [config](config.md), is the deliberate
-alternative.
+An asset that is larger than `maxFileSize` fails [lint](lint.md). The default limit is 200 kB.
+Usually the correct fix is to resize the asset. The other option is to add an exemption in
+`maxFileSizeIgnore`, see [config](config.md).

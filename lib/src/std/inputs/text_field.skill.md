@@ -6,7 +6,7 @@ import { textField } from 'imp/std/inputs'
 textField({ field: 'user.email', label: 'Email', type: 'email', required: true })
 ```
 
-Call shape: `textField(props?)` - it takes no children.
+The call shape is `textField(props?)`. It takes no children.
 
 | Prop        | Values                                     | Notes                                        |
 | ----------- | ------------------------------------------ | -------------------------------------------- |
@@ -18,31 +18,33 @@ Call shape: `textField(props?)` - it takes no children.
 | `required`  | boolean                                    | Marks it and validates that it is filled in  |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                           |
 
-Also: `type` (`'text'`, `'email'`, `'tel'`, `'url'`; default `'text'`), `placeholder`, `readonly`,
-`autocomplete`.
+The other props are `type`, which is `'text'`, `'email'`, `'tel'` or `'url'` and defaults to
+`'text'`, and `placeholder`, `readonly` and `autocomplete`.
 
-Validation props: `required`, `minLength`, `maxLength`, `min`, `max`, `pattern` (a RegExp) and
-`validate` - a function returning a message string, or `null` when the value is fine. Messages come
-from the `imp.form.*` keys, so translate those rather than hardcoding wording.
+The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern`, which is a
+RegExp, and `validate`. `validate` is a function. It returns a message string, or `null` when the
+value is correct. The messages come from the `imp.form.*` keys. Translate those keys. Do not write
+fixed wording.
 
-`validateAsync` takes the same shape but returns a **promise** of a message or `null`, and runs only
-on **blur and submit** - never on every keystroke. A sync failure skips it, submit waits for it, and
-a rejected promise reports `imp.form.checkFailed` rather than letting the value through.
+`validateAsync` has the same shape, but it returns a **promise** of a message or of `null`. It runs
+on **blur and on submit** only, never on a keystroke. A synchronous failure skips it. A submit waits
+for it. A rejected promise reports `imp.form.checkFailed`, and the value does not pass.
 
 Rules an agent gets wrong:
 
-- **`field` and `value` are alternatives.** Inside a form use `field`; passing both warns and
+- **`field` and `value` are alternatives.** Inside a form, use `field`. With both, imp warns and
   `field` wins. A `field` with no form around it is an error.
-- **An error only shows once the field has been left or submit was attempted**, so a form does not
-  shout at someone still filling in the first box.
-- **`label` renders a real `<label>` inside this component.** Do not wrap the control in your own
-  label - a label outside cannot reach the input across the shadow boundary.
+- **An error shows only after the person leaves the field, or tries to submit.** So the form does
+  not report a problem while the person still fills in the first box.
+- **`label` renders a real `<label>` inside this component.** Do not put your own label around the
+  control. A label outside cannot reach the input across the shadow boundary.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
-- Unknown props warn at mount, and an out-of-range value warns and falls back.
-- **`type` is for the keyboard and the browser's autofill, not validation.** `type: 'email'` does
-  not check the address - add `pattern` or `validate` if you need that.
-- **It commits on every keystroke**, so the form state is always current; the input is updated in
-  place, so the caret never jumps.
+- imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
+  to the default.
+- **`type` sets the keyboard and the autofill of the browser. It does not validate.**
+  `type: 'email'` does not check the address. Add `pattern` or `validate` for that.
+- **The control commits on every keystroke**, so the form state is always current. imp updates the
+  input in place, so the caret never jumps.
 
 ```js
 textField({ field: 'name', label: 'Full name', required: true })

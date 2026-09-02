@@ -5,39 +5,40 @@ imp lint [...paths]
 imp lint --fix [...paths]
 ```
 
-`imp lint` checks your code with a standard recommended rule set plus imp's own rules. The linter is
-built into the `imp` binary - there is nothing to install or configure, it works offline, and a
-given imp release lints the same way on every machine.
+`imp lint` checks your code with a standard recommended rule set, and with the rules of imp. The
+linter is part of the `imp` binary. There is nothing to install and nothing to configure, it works
+offline, and one imp release lints the same way on every machine.
 
-Given paths (files or directories) are checked; with no paths, the whole project is. The command
-exits with an error if a given path does not exist.
+imp checks the paths that you give. A path can be a file or a directory. With no path, imp checks
+the whole project. The command exits with an error when a path does not exist.
 
 ## What gets linted
 
-`imp lint` checks `.js`, `.mjs`, and `.cjs` files - and `.html` files too: inline `<script>` blocks
-are linted like any other module, with problems reported at their real line in the HTML file.
-Scripts with a `src` attribute are skipped (the file they point to is linted on its own), as are
-scripts whose `type` is neither a JavaScript type nor `module`.
+`imp lint` checks a `.js`, `.mjs` and `.cjs` file. It also checks an `.html` file. imp lints an
+inline `<script>` block like any other module, and reports a problem at its real line in the HTML
+file. imp skips a script with a `src` attribute, because it lints the file that the attribute points
+at on its own. imp also skips a script whose `type` is neither a JavaScript type nor `module`.
 
-Code is linted as modern browser code: ES modules, current JavaScript syntax, and browser globals
-(`document`, `fetch`, `localStorage`, ...) are all recognized.
+imp lints the code as modern browser code. It recognizes ES modules, current JavaScript syntax, and
+the browser globals such as `document`, `fetch` and `localStorage`.
 
-Directories named `.git`, `node_modules`, `dist`, and `.imp` are always skipped, and so is the
-vendored `dependencies/` folder - the code in it is a package's, not yours. Additional paths can be
-skipped with `exclude` (see _Configuration_ below).
+imp always skips the directories `.git`, `node_modules`, `dist` and `.imp`. It also skips the
+vendored `dependencies/` folder, because the code there belongs to a package, not to you. To skip
+more paths, use `exclude`. See _Configuration_ below.
 
 ## The rule set
 
-The base is a standard recommended rule set for JavaScript. Rule names follow the widely used ESLint
-naming, so any rule you know from that ecosystem is spelled the same here.
+The base is a standard recommended rule set for JavaScript. The rule names follow the ESLint naming,
+which many people know. So a rule from that ecosystem has the same name here.
 
-On top of the base set, imp's own rules are always applied as errors:
+imp adds its own rules on top of the base set, and it always applies them as errors:
 
 ### `imp/no-capital-component`
 
-imp components are lowercase functions - element factories and `component()` factories alike - and
-there is no JSX, so a capitalized function name signals a habit from another framework. The rule
-flags function declarations and function-valued variables whose name starts with a capital letter:
+An imp component is a lowercase function. That is true of an element factory and of a `component()`
+factory. There is no JSX. So a function name that starts with a capital letter comes from the habit
+of another framework. The rule reports a function declaration, and a function-valued variable, whose
+name starts with a capital letter:
 
 ```js
 const Widget = () => div('widget')
@@ -50,11 +51,11 @@ error[imp/no-capital-component]: 'Widget' starts with a capital letter - imp com
 
 ### `imp/single-props-object`
 
-An element takes at most one props object; everything else you pass is a child. Passing a second
-object literal is almost always a mistake - at runtime the objects are merged and later keys
-silently win. The rule flags any call to a built-in element factory (`div`, `span`, ..., and the
-generic `el`) or a standard component (`button`, `emptyState`, ...) that receives more than one
-object literal:
+An element takes at most one props object. Everything else that you pass is a child. A second object
+literal is nearly always a mistake. At runtime imp merges the objects, and a later key wins with no
+message. The rule reports a call that receives more than one object literal. That covers a call to a
+built-in element factory, such as `div`, `span` and the generic `el`, and a call to a standard
+component, such as `button` and `emptyState`:
 
 ```js
 div({ class: 'card' }, { onclick: open }, 'Open')
@@ -65,14 +66,14 @@ error[imp/single-props-object]: multiple props objects passed to 'div' - pass a 
  --> src/app.js:1:26
 ```
 
-Merge the properties into one object instead. For `el`, the leading tag argument is ignored, so only
-the object literals after it are counted.
+Merge the properties into one object instead. For `el`, imp ignores the tag argument at the front.
+It counts only the object literals after it.
 
 ### `imp/state-name-namespace`
 
-State names must carry a namespace: at least two non-empty dot-separated segments, like `myapp.user`
-(see **[State](state.md)**). The rule checks every `initState`/`useState` call whose name is written
-literally:
+A state name must carry a namespace. That is two or more dot-separated segments that are not empty,
+such as `myapp.user`. See **[State](state.md)**. The rule checks every `initState` and `useState`
+call whose name is a literal:
 
 ```js
 const user = initState('user', { name: 'Ada' })
@@ -83,17 +84,17 @@ error[imp/state-name-namespace]: state name 'user' must include a namespace - us
  --> src/app.js:1:24
 ```
 
-Names built dynamically (a variable, a template with expressions) are not checked statically - the
-same validation then happens at runtime, where a bad name throws.
+imp does not check a name that you build dynamically, such as a variable or a template with an
+expression. The runtime does the same validation, and a bad name throws there.
 
 ### `imp/state-setup-before-await`
 
-In an async `build`, state resolution must happen **before the first `await`** (see
-**[State](state.md)**). Past it, the mounting component is out of reach and `initState`, `useState`,
-and `watch` all throw at runtime - this rule catches them earlier, as you write them. It flags
-`initState`/`useState` calls placed after an `await` in an async `build`, and `watch` called there
-on a handle the file created with `initState`, `useState`, or `computed` (tracking the handle keeps
-unrelated third-party `.watch()` methods out of the reports):
+In an async `build`, the state resolution must happen **before the first `await`**. See
+**[State](state.md)**. After that point, the component that mounts is out of reach, and `initState`,
+`useState` and `watch` all throw at runtime. This rule catches them earlier, while you write them.
+It reports an `initState` or `useState` call after an `await` in an async `build`. It also reports a
+`watch` call there, on a handle that the file created with `initState`, `useState` or `computed`.
+imp tracks the handle, so an unrelated third-party `.watch()` method stays out of the report:
 
 ```js
 const orders = component('my-app-orders', {
@@ -115,16 +116,16 @@ error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an as
  --> src/orders.js:6:5
 ```
 
-Initialize the state with an empty value first, `await` the data, then `set` it in - the handle
-lives on in the closure, and reads and writes are allowed anywhere. Only resolution and `watch` are
-position-sensitive: the DOM you build from the handles (`text`/`view`/`each`, bound props) can come
-after the `await` and goes live when the component mounts it.
+Initialize the state with an empty value first. Then `await` the data, and `set` it in. The handle
+lives on in the closure, and a read and a write are allowed anywhere. Only the resolution and
+`watch` depend on the position. The DOM that you build from the handles, with `text`, `view`, `each`
+and a bound prop, can come after the `await`. It goes live when the component mounts it.
 
 ### `imp/http-client-name-namespace`
 
-HTTP client names follow the same rule as state names - at least two non-empty dot-separated
-segments, like `myapp.api` (see **[HTTP](http.md)**). The rule checks every
-`initHttpClient`/`useHttpClient`/`createHttpClient` call whose name is written literally:
+An HTTP client name follows the same rule as a state name. It needs two or more dot-separated
+segments that are not empty, such as `myapp.api`. See **[HTTP](http.md)**. The rule checks every
+`initHttpClient`, `useHttpClient` and `createHttpClient` call whose name is a literal:
 
 ```js
 const api = initHttpClient('api', { baseUrl: '/api' })
@@ -137,8 +138,8 @@ error[imp/http-client-name-namespace]: http client name 'api' must include a nam
 
 ### `imp/http-client-setup-before-await`
 
-An HTTP client is owned by the component that initializes it, so - exactly like state - it must be
-resolved **before the first `await`** of an async `build`:
+The component that initializes an HTTP client owns it. So, exactly like a state, you must resolve it
+**before the first `await`** of an async `build`:
 
 ```js
 const orders = component('my-app-orders', {
@@ -156,16 +157,16 @@ error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await i
  --> src/orders.js:5:21
 ```
 
-Resolve every client you need up front; the handles work anywhere afterwards, including in event
-handlers and after any number of `await`s. `createHttpClient` is not flagged - a client you own
-yourself needs no mounting component and can be built anywhere.
+Resolve every client that you need at the start. The handles then work anywhere, also in an event
+handler and after any number of `await` calls. imp does not report `createHttpClient`. A client that
+you own yourself needs no component that mounts, and you can build it anywhere.
 
 ### `imp/router-setup-before-await`
 
-A `router()` with no `routes` renders the routes of the **area around it**, which it finds through
-the mounting component - so in an area's `root` it is position-sensitive in exactly the way state
-and clients are (see **[Routing](routing.md)**). Called after the first `await`, it cannot see the
-area and reports the misleading `'routes' is required` instead:
+A `router()` with no `routes` renders the routes of the **area around it**. It finds that area
+through the component that mounts. So in the `root` of an area, it depends on the position, exactly
+as a state and a client do. See **[Routing](routing.md)**. After the first `await` it cannot see the
+area, and it reports the misleading message `'routes' is required`:
 
 ```js
 const shell = component('admin-shell', {
@@ -182,21 +183,21 @@ error[imp/router-setup-before-await]: 'router' runs after an await in an async b
  --> src/admin/shell.js:5:34
 ```
 
-Build the slot first and use it afterwards - `const screens = router()` above the `await`, then
-`div(adminNav(settings), screens)`. A `router({ routes })` with its own table is **not** flagged: it
-looks nothing up, so it can be built anywhere. The rule also flags `watch` on a `useRoute()` handle
-after the first `await`, which needs a mounting component to own the subscription - bind the route
-to DOM with `text`/`view`/`each` instead, or watch it before the `await`.
+Build the slot first, and use it later. Write `const screens = router()` above the `await`, and then
+`div(adminNav(settings), screens)`. imp does **not** report a `router({ routes })` with its own
+table, because it looks nothing up, so you can build it anywhere. The rule also reports a `watch` on
+a `useRoute()` handle after the first `await`. That subscription needs a component that mounts to
+own it. Bind the route to DOM with `text`, `view` or `each` instead, or watch it before the `await`.
 
 ### `imp/no-root-query-in-build`
 
-While `build` runs, the DOM it returns is **not in the shadow root yet** - imp inserts it after
-`build` returns, and after the resolved promise for an async `build` (see
-**[Components](components.md)**). Querying `instance.root` there finds the placeholder, not your
-content. This rule flags `querySelector`, `querySelectorAll`, and `getElementById` called directly
-on the instance's `root` in a `build` body (it does not flag deferred access inside an event
-handler, an `instance.afterMount` callback, or the same query in `teardown`, where the mounted DOM
-is still present):
+While `build` runs, the DOM that it returns is **not yet in the shadow root**. imp inserts the DOM
+after `build` returns, and after the promise resolves for an async `build`. See
+**[Components](components.md)**. A query on `instance.root` there finds the placeholder, not your
+content. This rule reports `querySelector`, `querySelectorAll` and `getElementById`, called directly
+on the `root` of the instance in the body of `build`. It does not report a later access inside an
+event handler, or inside an `instance.afterMount` callback. It also does not report the same query
+in `teardown`, where the mounted DOM is still present:
 
 ```js
 const card = component('my-app-card', {
@@ -213,17 +214,17 @@ error[imp/no-root-query-in-build]: the shadow root is queried in build before th
  --> src/card.js:4:5
 ```
 
-Keep a reference to the node you build and mutate it directly, or run the query from
-`instance.afterMount(callback)`, which imp flushes on the next frame once your DOM is placed - the
-fixes are spelled out under _The instance_ and _Running code after the DOM is placed_ in
-**[Components](components.md)**.
+Keep a reference to the node that you build, and change it directly. You can also run the query from
+`instance.afterMount(callback)`, which imp flushes on the next frame after it places your DOM.
+**[Components](components.md)** describes both fixes, under _The instance_ and _How to run code
+after imp places the DOM_.
 
 ### `imp/component-name`
 
-Component names become real element tags, so they must be lowercase with at least one dash, like
-`my-app-profile` (see **[Components](components.md)**) - that is what makes them valid custom
-element names, and the leading segment doubles as your app's namespace. The rule checks every
-`component` call whose name is written literally:
+A component name becomes a real element tag. So it must be lowercase, and it must hold at least one
+dash, such as `my-app-profile`. See **[Components](components.md)**. That is what makes the name a
+valid custom element name, and the first segment is also the namespace of your app. The rule checks
+every `component` call whose name is a literal:
 
 ```js
 export const profile = component('profile', { build: () => div('...') })
@@ -234,15 +235,16 @@ error[imp/component-name]: component name 'profile' must be lowercase with at le
  --> src/profile.js:1:34
 ```
 
-A handful of names reserved by the HTML standard (`font-face`, `missing-glyph`, ...) are also
-rejected. Dynamically built names are validated at runtime instead, where a bad name throws.
+imp also rejects a small set of names that the HTML standard reserves, such as `font-face` and
+`missing-glyph`. The runtime validates a name that you build dynamically, and a bad name throws
+there.
 
 ### `imp/import-source`
 
-imp's library is split by subject - `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
-`imp/i18n`, `imp/log`, `imp/http` (see **[Imports](imports.md)**) - and each name has exactly one
-home. Importing a name from a sibling specifier would fail at runtime with a missing-export error
-that says nothing about where to look, so the rule names the right specifier instead:
+The library of imp is split by subject: `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
+`imp/i18n`, `imp/log` and `imp/http`. See **[Imports](imports.md)**. Each name has exactly one home.
+An import of a name from a sibling specifier fails at runtime, with a missing-export error that does
+not say where to look. So the rule names the correct specifier instead:
 
 ```js
 import { component, div } from 'imp'
@@ -253,20 +255,20 @@ error[imp/import-source]: 'div' is not exported by 'imp' - it comes from 'imp/ht
  --> src/app.js:1:21
 ```
 
-`imp lint --fix` repairs it for you: the name is moved to an import of the right specifier, merged
-into one you already have if it is there, and the line it came from disappears when nothing is left
-on it.
+`imp lint --fix` repairs the import for you. It moves the name to an import of the correct
+specifier, and merges it into an import that you already have. The line that the name came from
+disappears when nothing is left on it.
 
-Only imp's own specifiers are checked, so a name your app or a dependency happens to share with an
-imp export is never flagged.
+imp checks its own specifiers only. So imp never reports a name that your app, or a dependency,
+shares with an imp export.
 
 ### `imp/icons-by-name`
 
-`imp/icons` holds the whole Lucide set - 1791 icons, 434 kB of drawing data - and an app pays only
-for the ones it names, because the build keeps each icon it can see imported and drops the rest (see
-**[Standard components](std-components.md)**). Anything that reaches for the module as a whole
-defeats that: a namespace import, an `export *` re-export, or a dynamic `import()`. The rule flags
-all three:
+`imp/icons` holds the whole Lucide set. That is 1791 icons, and 434 kB of drawing data. An app pays
+only for the icons that it names, because the build keeps each icon that it sees imported and drops
+the rest. See **[Standard components](std-components.md)**. Anything that takes the module as a
+whole defeats that. There are three such forms: a namespace import, an `export *` re-export and a
+dynamic `import()`. The rule reports all three:
 
 ```js
 import * as icons from 'imp/icons'
@@ -281,27 +283,28 @@ error[imp/icons-by-name]: 'import * as icons' reaches for the whole 'imp/icons' 
  --> src/icons.js:1:8
 ```
 
-Import each icon by name - `import { luHouse, luStar } from 'imp/icons'` - and re-export by name the
-same way if a module of your own collects them.
+Import each icon by name, as in `import { luHouse, luStar } from 'imp/icons'`. When a module of your
+own collects the icons, re-export them by name in the same way.
 
 ### `imp/exact-dependency-versions`
 
-Dependencies are vendored: declared under `dependencies` in `imp.json` and bundled into your
-project's `dependencies/` folder by `imp install` (see
-**[Managing dependencies](dependencies.md)**). This rule enforces that model in all three places a
-dependency can appear:
+imp vendors a dependency. You declare it under `dependencies` in `imp.json`, and `imp install`
+bundles it into the `dependencies/` folder of your project. See
+**[Managing dependencies](dependencies.md)**. This rule enforces that model in all three places
+where a dependency can appear:
 
-- **Pins in `imp.json` must be exact.** Every `dependencies` entry must be an `npm:`/`jsr:`
-  specifier with an exact version (`npm:mitt@3.0.1` - never `npm:mitt@3`, `npm:mitt@^3.0.1`, or a
-  bare `npm:mitt`). There is no lock file: the exact pin plus the committed bundle are what make
-  resolution reproducible.
+- **A pin in `imp.json` must be exact.** Every `dependencies` entry must be an `npm:` or `jsr:`
+  specifier with an exact version, such as `npm:mitt@3.0.1`. Never write `npm:mitt@3`,
+  `npm:mitt@^3.0.1` or a bare `npm:mitt`. There is no lock file. The exact pin and the committed
+  bundle are what make the resolution reproducible.
 
   ```
   error[imp/exact-dependency-versions]: dependency 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) - the vendored bundle in dependencies/ is built from this pin (e.g. 'npm:dayjs@1.0.0'); run 'imp install' to re-resolve and re-pin it
    --> imp.json:1:1
   ```
 
-- **No inline `npm:`/`jsr:` specifiers in code.** Dependencies are installed, not imported by URL:
+- **Write no inline `npm:` or `jsr:` specifier in code.** You install a dependency. You do not
+  import it by URL:
 
   ```js
   import mitt from 'npm:mitt@3.0.1'
@@ -312,8 +315,9 @@ dependency can appear:
    --> src/app.js:1:18
   ```
 
-- **Bare imports must be declared.** A bare specifier (anything that is not relative, absolute, a
-  URL, or part of imp itself - `imp` and its subpaths) must match a declared dependency alias:
+- **A bare import must be declared.** A bare specifier must match a declared dependency alias. A
+  bare specifier is anything that is not relative, not absolute, not a URL, and not part of imp
+  itself, which is `imp` and its subpaths:
 
   ```js
   import confetti from 'canvas-confetti'
@@ -324,47 +328,55 @@ dependency can appear:
    --> src/app.js:1:22
   ```
 
-  An `imp/...` specifier that is not part of the library is called out for what it is, with the
-  available ones listed:
+  imp reports an `imp/...` specifier that is not part of the library for what it is, and lists the
+  specifiers that exist:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/navigation', 'imp/std/feedback', 'imp/test', 'imp/preview'
+  error[imp/exact-dependency-versions]: 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/navigation', 'imp/std/shell', 'imp/std/feedback', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 
-The rule checks static imports, re-exports, and dynamic `import()` calls with a literal specifier.
+The rule checks a static import, a re-export, and a dynamic `import()` call with a literal
+specifier.
 
 ## Dead code across the project
 
-Every rule above judges one file on its own. Three further checks judge the project as a whole: imp
-follows every import from your starting points, reports the code nothing reaches, and reports the
-one import shape it cannot follow.
+Every rule above judges one file on its own. Three more checks judge the project as a whole. imp
+follows every import from your starting points. It reports the code that nothing reaches, and it
+reports the one import shape that it cannot follow.
 
-The starting points are found for you:
+imp finds the starting points for you:
 
-- every module `<script>` in an HTML page - the file a `src` points at, and the imports of an inline
-  block;
+- every `<script>` in an HTML page. That is the file that a `src` points at, module or classic, and
+  the imports of an inline module block;
 - every `*.test.js` and `*.spec.js` test, every `*.preview.js` preview, and every `*.mock.js` mock;
-- every script under `public/`, which ships verbatim and may be loaded by anything;
-- anything you list in `publicExports` (below).
+- every module that `imp.json` gives to `imp preview`. Those are the `preview.themes`,
+  `preview.translations` and `preview.groups` files;
+- every script under `public/`, which ships without a change and which anything can load;
+- anything that you list in `publicExports`, described below.
 
-If a project has none of these - no page, no tests, nothing declared public - there is nothing to
-start from and the project checks are skipped.
+When a project has none of these, there is nothing to start from, and imp skips the project checks.
+That is a project with no page, no test and nothing declared public.
+
+imp follows an import only. A module that loads in another way is invisible to the walk. Examples
+are `new Worker('./worker.js')`, `new URL('./chunk.js', import.meta.url)`, and a path that you build
+at runtime and fetch. imp reports such a module as unreachable until you list it under
+`publicExports`.
 
 ### `imp/unreachable-module`
 
-A module no chain of imports reaches from a starting point. Nothing loads it, so it ships in no
-bundle and runs nowhere:
+This rule reports a module that no chain of imports reaches from a starting point. Nothing loads it.
+So it ships in no bundle, and it runs nowhere:
 
 ```
-error[imp/unreachable-module]: nothing imports src/orphan.js - no entry page, test or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+error[imp/unreachable-module]: nothing imports src/orphan.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
  --> src/orphan.js:1:1
 ```
 
 ### `imp/unused-export`
 
-A name a reachable module exports that no other module imports. The code around it may well run -
-this export of it does not:
+This rule reports a name that a reachable module exports, and that no other module imports. The code
+around the export can run. This export does not:
 
 ```js
 export const greeting = 'hello'
@@ -377,15 +389,15 @@ error[imp/unused-export]: 'unusedHelper' is exported by src/lib.js but nothing i
  --> src/lib.js:3:14
 ```
 
-A starting point's own exports are never flagged - nothing is expected to import them. And only
-imports imp can actually reach count: a module nothing loads may import all it likes, its imports
-keep no other module's exports alive, so one dead file cannot hide a second.
+imp never reports the exports of a starting point, because nothing must import them. Only an import
+that imp can reach counts. A module that nothing loads can import as much as it wants. Its imports
+keep no export of another module alive. So one dead file cannot hide a second dead file.
 
 ### `imp/computed-import`
 
-An `import()` whose specifier imp cannot read - a variable, a call, a template with no folder in
-front of the placeholder. It could load anything, so imp will not guess; it reports the call and the
-two checks above carry on as if it loaded nothing:
+This rule reports an `import()` whose specifier imp cannot read. That is a variable, a call, or a
+template with no folder in front of the placeholder. The call could load anything, and imp does not
+guess. imp reports the call, and the two checks above continue as if the call loaded nothing:
 
 ```js
 export const load = (name) => import(name)
@@ -396,18 +408,19 @@ error[imp/computed-import]: import() takes a computed specifier, so imp cannot t
  --> src/app.js:3:31
 ```
 
-The fix is the one the message names: put the folder into the template so imp can follow it, or list
-what the call loads under `publicExports`. Either way every module the call can reach is accounted
-for, and nothing it loads is reported as dead.
+The message names the fix. Put the folder into the template, so imp can follow it. Or list what the
+call loads under `publicExports`. In both cases imp accounts for every module that the call can
+reach, and it reports nothing that the call loads as dead.
 
-All three checks always read the whole project, even when you pass paths, because a single file
-cannot tell you what the rest of the project imports. Paths under `exclude` are still followed, so
-excluded code still counts as importing yours; they are just never reported.
+All three checks always read the whole project, also when you pass paths. One file cannot tell you
+what the rest of the project imports. imp still follows a path under `exclude`, so excluded code
+still counts as an importer of your code. imp only never reports an excluded path.
 
 ### Declaring exports the project itself does not use
 
-Code consumed from outside - a module another repo imports, a page loaded by a path imp cannot see -
-has no importer to find. List it under `publicExports` and it counts as used:
+Code that something outside the project uses has no importer for imp to find. Examples are a module
+that another repository imports, and a page that loads by a path that imp cannot see. List such code
+under `publicExports`, and imp counts it as used:
 
 ```json
 {
@@ -417,36 +430,37 @@ has no importer to find. List it under `publicExports` and it counts as used:
 }
 ```
 
-A bare path (a file or a folder) makes the whole file public: it is never unreachable and none of
-its exports are flagged. Add `#name` to make just that one export public, leaving every other export
-in the file checked as usual.
+A bare path, which is a file or a folder, makes the whole file public. imp never reports it as
+unreachable, and it reports none of its exports. Add `#name` to make one export public. imp then
+checks every other export in the file as usual.
 
 ### What `import()` does to the checks
 
-A dynamic `import()` is followed when imp can read the path:
+imp follows a dynamic `import()` when it can read the path:
 
-- **A literal** - `import('./admin/area.js')`, the shape `area()` and translation loaders already
-  use - is followed like a static import. Since the names taken off the loaded module are usually
-  computed, every export of that module counts as used.
-- **A template with a literal folder** - ``import(`./locales/${code}.js`)`` - could load any module
-  in `./locales/`, so the whole folder counts as loaded and used.
-- **A computed specifier** - `import(path)` - is not followed at all; it is the error
-  `imp/computed-import` above.
+- imp follows **a literal**, such as `import('./admin/area.js')`, like a static import. That is the
+  shape that `area()` and a translation loader already use. The names that you take off the loaded
+  module are usually computed. So every export of that module counts as used.
+- **A template with a literal folder**, such as ``import(`./locales/${code}.js`)``, could load any
+  module in `./locales/`. So the whole folder counts as loaded and used.
+- imp does not follow **a computed specifier**, such as `import(path)`. That is the
+  `imp/computed-import` error above.
 
-`export * from './x.js'` is followed name by name: importing `format` from a barrel that re-exports
-`./format.js` counts `format` as used there and nothing else, so an export nothing takes off the
-barrel is still reported.
+imp follows `export * from './x.js'` name by name. An import of `format` from a barrel that
+re-exports `./format.js` counts `format` as used there, and nothing else. So imp still reports an
+export that nothing takes off the barrel.
 
-Only imports imp can actually reach count. A module nothing loads may import all it likes - its
-imports do not keep another module's exports alive, so one dead file cannot hide a second.
+Only an import that imp can reach counts. A module that nothing loads can import as much as it
+wants. Its imports keep no export of another module alive. So one dead file cannot hide a second
+dead file.
 
-A module imp cannot parse is reported by the per-file rules as usual, and the two project checks
-stand down for that run - a file that does not parse could import anything - with a `note:` saying
-which file it was. Fix the syntax error and they come back.
+The per-file rules report a module that imp cannot parse, as usual. The two project checks stop for
+that run, because a file that does not parse could import anything. imp prints a `note:` line that
+says which file it was. Fix the syntax error, and the checks come back.
 
 ## Configuration
 
-Extra lint configuration lives under `lint` in `imp.json` and is layered on top of the base set:
+More lint configuration lives under `lint` in `imp.json`. imp applies it on top of the base set:
 
 ```json
 {
@@ -457,17 +471,18 @@ Extra lint configuration lives under `lint` in `imp.json` and is layered on top 
 }
 ```
 
-- **`rules`** - per-rule severities: `"off"`, `"warn"`, or `"error"`. Warnings are reported but do
-  not fail the command; errors make it exit non-zero.
-- **`exclude`** - project-relative paths to skip.
-- **`publicExports`** - paths whose exports are used from outside the project, each optionally
-  naming a single export with `#`, as described above.
+- **`rules`** sets the severity of each rule, which is `"off"`, `"warn"` or `"error"`. imp reports a
+  warning, and a warning does not fail the command. An error makes the command exit with a non-zero
+  code.
+- **`exclude`** lists the project-relative paths to skip.
+- **`publicExports`** lists the paths whose exports something outside the project uses. Each path
+  can name a single export with `#`, as described above.
 
-imp's own rules are always applied as errors and cannot be reconfigured - for a deliberate one-off
-exception, use an ignore comment (below).
+imp always applies its own rules as errors, and you cannot reconfigure them. For a deliberate
+exception in one place, use an ignore comment, described below.
 
-An invalid `lint` block (an unknown rule, a bad severity) fails the command with a message
-explaining what is wrong:
+An invalid `lint` block, such as an unknown rule or a bad severity, fails the command. The message
+explains what is wrong:
 
 ```
 error: invalid lint configuration in imp.json - Key "rules": Key "eqeqeq": Expected severity of "off", 0, "warn", 1, "error", or 2.
@@ -475,40 +490,40 @@ error: invalid lint configuration in imp.json - Key "rules": Key "eqeqeq": Expec
 
 ## Suppressing findings in code
 
-To suppress a finding, put an ignore comment on the line above. A rule list is optional and
-comma-separated; without one, everything on that line is ignored:
+To suppress a finding, put an ignore comment on the line above. A rule list is optional, and you
+separate the names with a comma. With no list, imp ignores everything on that line:
 
 ```js
 // imp-lint-ignore no-capital-component
 const Widget = () => div('widget')
 ```
 
-To disable linting for a whole file (optionally only for the listed rules), put the file-level
-directive anywhere in the file:
+To stop the linting of a whole file, put the file-level directive anywhere in the file. You can also
+list the rules to stop:
 
 ```js
 // imp-lint-ignore-file
 ```
 
-imp rule names can be written bare (`no-capital-component`) or fully qualified
-(`imp/no-capital-component`) - both work.
+You can write the name of an imp rule bare, as `no-capital-component`, or in full, as
+`imp/no-capital-component`. Both forms work.
 
 ## Applying fixes
 
-Many rules know how to repair the code they flag. Run `imp lint --fix` to apply every available
-autofix and rewrite the affected files in place:
+Many rules know how to repair the code that they report. Run `imp lint --fix` to apply every
+available autofix. imp rewrites the affected files in place:
 
 ```
 imp lint --fix
 ```
 
-Only problems with a known fix are changed; anything that needs a human decision (an imp rule
-violation, an unused variable, ...) is left untouched and still reported. In `.html` files the
-inline `<script>` blocks are fixed just like standalone modules. Problems you have silenced with an
-`imp-lint-ignore` comment are never fixed, and the ignore comments themselves are preserved exactly
-as written.
+imp changes only a problem that has a known fix. It leaves anything that needs a decision from a
+person, and it still reports it. Examples are a violation of an imp rule and an unused variable. In
+an `.html` file, imp fixes an inline `<script>` block like a standalone module. imp never fixes a
+problem that you silenced with an `imp-lint-ignore` comment, and it keeps the ignore comments
+exactly as you wrote them.
 
-After a fix run, the summary counts the files that changed alongside the problems that remain:
+After a fix run, the summary counts the files that changed, and the problems that remain:
 
 ```
 Fixed 1 file
@@ -516,13 +531,13 @@ Found 1 problem
 Checked 8 files
 ```
 
-The exit code follows the same rule as a plain run: `1` if any error remains after fixing, `0`
-otherwise. It is good practice to commit or stash your work before a `--fix` run so the rewrites are
-easy to review.
+The exit code follows the same rule as a plain run. It is `1` when an error remains after the fix,
+and `0` otherwise. Commit or stash your work before a `--fix` run, so the rewrites are easy to
+review.
 
 ## Output and exit code
 
-Each finding is printed with its severity, rule name, and location:
+imp prints each finding with its severity, its rule name and its location:
 
 ```
 warning[eqeqeq]: Expected '===' and instead saw '=='.
@@ -532,5 +547,5 @@ Found 1 problem
 Checked 8 files
 ```
 
-The command exits `0` when there are no findings or only warnings, and `1` when there is at least
-one error.
+The command exits `0` when there is no finding, or only a warning. It exits `1` when there is at
+least one error.

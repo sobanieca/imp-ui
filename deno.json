@@ -4,7 +4,7 @@
     "imp": "deno task compile && ./imp",
     "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
     "compile": "deno run -A tools/compile.js",
-    "preview": "deno task compile && ./imp preview lib/src/std",
+    "preview": "deno task compile && cd lib/src/std && ../../../imp preview",
     "start": "deno task compile && cd examples/shell && ../../imp start",
     "size": "deno run -A tools/check_binary_size.js",
     "lucide": "deno run -A --no-lock tools/vendor_lucide.js",

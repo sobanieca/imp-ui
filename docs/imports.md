@@ -1,10 +1,10 @@
 # imp-ui - Imports
 
-Everything imp gives you arrives through a bare specifier that imp resolves for you - in development
-through the import map `imp start` injects, in production through the bundle `imp build` produces.
-There is nothing to install and nothing to configure.
+Everything that imp gives you arrives through a bare specifier that imp resolves for you. In
+development it uses the import map that `imp start` injects. In production it uses the bundle that
+`imp build` produces. There is nothing to install and nothing to configure.
 
-The library is split by subject, so an import line says which part of imp a file leans on:
+The library is split by subject. So an import line says which part of imp a file uses:
 
 | Specifier    | What it holds                                                             | Page                                     |
 | ------------ | ------------------------------------------------------------------------- | ---------------------------------------- |
@@ -20,7 +20,7 @@ The library is split by subject, so an import line says which part of imp a file
 | `imp/std`    | The standard component library, split by group                            | [Standard components](std-components.md) |
 | `imp/test`   | `test`, `expect`, `spy`, `mockModule`, and the hooks                      | [Testing](testing.md)                    |
 
-A typical screen imports from the two or three of them it actually uses:
+A typical screen imports from the two or three specifiers that it uses:
 
 ```js
 import { component } from 'imp'
@@ -28,39 +28,39 @@ import { button, div, h1 } from 'imp/html'
 import { initState } from 'imp/state'
 ```
 
-## Why it is split
+## Why the library is split
 
-- **The tag factories are most of the surface.** One factory per HTML tag is close to eighty names;
-  keeping them behind `imp/html` leaves the framework itself small enough to hold in your head.
-- **A name can mean two things at two levels.** `button` is both a plain `<button>` from `imp/html`
-  and the styled component from `imp/std`. They never collide, because they arrive through different
-  specifiers, and the import line says which one a file is using. When a file wants both, alias one:
+- **The tag factories are most of the surface.** One factory per HTML tag is nearly eighty names.
+  They stay behind `imp/html`, so the framework itself is small enough to remember.
+- **A name can mean two things at two levels.** `button` is a plain `<button>` from `imp/html`, and
+  it is the styled component from `imp/std`. The two never collide, because they arrive through
+  different specifiers, and the import line says which one a file uses. When a file wants both, give
+  one an alias:
 
   ```js
   import { button } from 'imp/html'
   import { button as styledButton } from 'imp/std'
   ```
 
-- **Imports document a file.** Seeing `imp/router` and `imp/state` at the top of a module tells you
-  what it does before you read a line of it.
+- **The imports document a file.** When you see `imp/router` and `imp/state` at the top of a module,
+  you know what the module does before you read a line of it.
 
-## When you get it wrong
+## When you get an import wrong
 
-Importing a name from the wrong specifier is caught by `imp lint`, which names the one it belongs
-to:
+`imp lint` catches a name that comes from the wrong specifier, and it names the correct one:
 
 ```
 error[imp/import-source]: 'div' is not exported by 'imp' - it comes from 'imp/html': import { div } from 'imp/html'
 ```
 
-`imp lint --fix` moves the name to the right import for you. An `imp/...` specifier that is not part
-of the library at all fails with the list of the ones that are, so a typo never turns into a
-mysterious missing module.
+`imp lint --fix` moves the name to the correct import for you. An `imp/...` specifier that is not
+part of the library fails, and the error lists the real specifiers. So a spelling mistake never
+becomes a missing module that is hard to explain.
 
 ## Namespace imports
 
-Every subpath can also be imported whole, which reads well for the tag factories in a file that uses
-many of them:
+You can also import every subpath as a whole. This reads well for the tag factories, in a file that
+uses many of them:
 
 ```js
 import * as h from 'imp/html'

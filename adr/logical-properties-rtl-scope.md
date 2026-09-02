@@ -2,73 +2,77 @@
 
 ## Context
 
-imp writes logical properties already, and `translatable-by-default.md` derives `<html dir>` from
-the active language's script rather than a hand-kept list. What was never stated is how far that
-reaches, and the omission cost real bugs: `anchored.js` clamped `max-inline-size` against `100vw`
-while clamping `max-block-size` against `100dvb` in the same rule, and `dialog`, `shell` and
-`bugReport` carried the same mix. Every one of them is a logical property fed a physical unit - two
-different axes bolted together, correct only by the coincidence that they line up in horizontal
-writing modes.
+imp already writes logical properties. `translatable-by-default.md` derives `<html dir>` from the
+script of the active language, and not from a list that somebody keeps by hand. Nobody stated how
+far that reaches, and the omission cost real bugs. `anchored.js` clamped `max-inline-size` against
+`100vw`, while it clamped `max-block-size` against `100dvb`, in the same rule. `dialog`, `shell` and
+`bugReport` carried the same mixture. Each one is a logical property fed a physical unit. That bolts
+two different axes together, and it is correct only because the two happen to line up in a
+horizontal writing mode.
 
-An unstated scope invites two opposite mistakes, and the codebase had both. One is reaching for
-`width` and `100vw` because no one reads a dashboard vertically, which quietly breaks RTL and
-mismeasures the viewport. The other is treating "we use logical properties" as a promise that
-`vertical-rl` is a supported mode, which invites open-ended work on a mode no app UI uses: vertical
-text in Japanese is a print and literary convention - novels, manga, editorial - and CJK web
-applications lay their chrome out horizontally like every other app.
+A scope that nobody states invites two opposite mistakes, and the codebase had both. The first is to
+use `width` and `100vw`, because nobody reads a dashboard vertically. That quietly breaks RTL, and
+it measures the viewport wrongly. The second is to read "we use logical properties" as a promise
+that `vertical-rl` is a supported mode. That invites work with no end, on a mode that no app UI
+uses. Vertical text in Japanese is a convention of print and of literature. It appears in a novel,
+in manga, and in editorial writing. A CJK web application lays its chrome out horizontally, like
+every other app.
 
-The alternative that gets proposed when the cost feels high is to drop the shared codebase and ship
-a build per direction, an RTL app on its own URL. It does not survive contact with what imp is. imp
-is a library, so the split does not remove work from imp - it exports it to every app built on imp,
-as two bundles, two deploys, redirects and split analytics. Direction is already runtime state here,
-because language is: `init` rewrites `dir` whenever the language changes. And direction is not even
-constant within one page - a bilingual dashboard, an Arabic UI quoting an English error, and the
-platform's `dir="auto"` on user content are all normal, and none of them is expressible as which URL
-the user is on. A second build is also a second code path, which `browser-support-baseline.md`
-forbids outright.
+When the cost feels high, somebody proposes to drop the shared codebase, and to ship a build per
+direction, with an RTL app on its own URL. That does not survive contact with what imp is. imp is a
+library. So the split removes no work from imp. It exports the work to every app that is built on
+imp, as two bundles, two deploys, a redirect and split analytics. Direction is already state at
+runtime here, because language is. `init` rewrites `dir` whenever the language changes. Direction is
+also not constant inside one page. A bilingual dashboard, an Arabic UI that quotes an English error,
+and the `dir="auto"` of the platform on content that a user typed, are all normal. None of them can
+be expressed as the URL that the user is on. A second build is also a second code path, and
+`browser-support-baseline.md` forbids that.
 
 ## Decision
 
-**Every box imp styles is written in logical properties and logical units, and imp guarantees LTR
-and RTL. Vertical writing modes are not guaranteed, not tested, and not in scope.**
+**imp writes every box that it styles in logical properties and logical units. imp guarantees LTR
+and RTL. imp does not guarantee a vertical writing mode. It does not test one, and one is not in
+scope.**
 
-- **Logical everywhere, with no physical escape hatch in component CSS.** `inline-size` and
-  `block-size` over `width` and `height`, `margin-inline-start` over `margin-left`,
-  `inset-block-end` over `bottom`, `dvi` and `dvb` over `vw` and `dvh`, `position-area` in logical
-  keywords (`block-end`, `inline-start`) so an anchored panel mirrors for free. A logical property
-  fed a physical unit is the specific bug this rule exists to stop; the two halves of one clamp must
-  name the same axis.
+- **Everything is logical, and component CSS has no physical escape hatch.** Write `inline-size` and
+  `block-size` in place of `width` and `height`. Write `margin-inline-start` in place of
+  `margin-left`. Write `inset-block-end` in place of `bottom`. Write `dvi` and `dvb` in place of
+  `vw` and `dvh`. Write `position-area` in logical keywords, such as `block-end` and `inline-start`,
+  so that an anchored panel mirrors with no extra work. A logical property that you feed a physical
+  unit is the exact bug that this rule exists to stop. The two halves of one clamp must name the
+  same axis.
 - **LTR and RTL are a tested guarantee.** `flex` and `stack` assert real mirrored geometry under
-  `dir="rtl"` in the e2e suite, and `i18n` asserts the derivation that sets the attribute. A
-  direction bug in a standard component is a bug.
-- **Vertical writing modes get correctness by construction and nothing else.** Logical properties
-  mean `vertical-rl` does not break structurally, and that is the whole of the commitment: no
-  component is verified in it, no test pins it, and no effort is spent making one correct there. An
-  issue that only reproduces in a vertical writing mode is closed as out of scope rather than fixed.
-  An app whose chrome must be vertical should not use imp.
-- **Direction is runtime state, never a build variant.** One bundle serves every direction. imp
-  ships no per-direction build, no direction-specific stylesheet, and no guidance to serve an RTL
-  app from its own URL.
-- **The fluid theme scale is the one deliberate exception.** `theme.js` sizes its spacing clamps
-  with `vw`, which is physical, because those values must also be _static_: a dynamic unit would
-  resize every spacing token continuously as a mobile URL bar slides. If the scale is ever made
-  logical it becomes `vi`, never `dvi`. Nothing else in the library may cite this exception.
+  `dir="rtl"`, in the e2e suite. `i18n` asserts the derivation that sets the attribute. A bug about
+  direction in a standard component is a bug.
+- **A vertical writing mode gets correctness by construction, and nothing else.** Logical properties
+  mean that `vertical-rl` does not break the structure, and that is the whole commitment. Nobody
+  verifies a component in that mode. No test pins it. Nobody spends effort to make a component
+  correct there. An issue that reproduces only in a vertical writing mode is closed as out of scope,
+  and not fixed. An app whose chrome must be vertical must not use imp.
+- **Direction is state at runtime, and never a variant of a build.** One bundle serves every
+  direction. imp ships no build per direction, no stylesheet for a direction, and no advice to serve
+  an RTL app from its own URL.
+- **The fluid scale of the theme is the one deliberate exception.** `theme.js` sizes its spacing
+  clamps with `vw`, which is physical, because those values must also be _static_. A dynamic unit
+  would resize every spacing token as a URL bar on a phone slides. If somebody ever makes the scale
+  logical, it becomes `vi`, and never `dvi`. Nothing else in the library can cite this exception.
 
 ## Consequences
 
-- **RTL costs a naming convention and nothing else** - no branch, no feature flag, no second
-  stylesheet, no build matrix, paid once when a declaration is written. That is what makes the
-  guarantee affordable, and it is why it is a guarantee rather than a best effort.
-- **The rule pays off in plain horizontal LTR**, which is the argument that holds even if no one
-  ever runs imp vertically: `100vw` includes the classic scrollbar and `100dvi` does not, so a
-  `max-inline-size` clamped in `vw` over-reports the space it is bounding and pushes the page into
-  horizontal overflow - the exact thing the clamp was there to prevent. The logical unit is also the
-  correctly measured one.
-- **The scope line stops work rather than starting it.** Without it, every component invites a pass
-  of `vertical-rl` polish that no user asked for; with it, that pass is out of scope by default and
-  RTL is what gets the test.
-- A **vertical mode inside an app's own content** is unaffected. An app is free to set
-  `writing-mode` on prose it renders; what is unguaranteed is imp's chrome around it.
-- The guarantee can be widened later at the cost of a test suite, not a rewrite, because the
-  declarations are already logical. Promoting vertical writing modes to supported means adding
-  coverage and reconsidering the `theme.js` exception - it does not mean touching the components.
+- **RTL costs a naming convention, and nothing else.** There is no branch, no feature flag, no
+  second stylesheet, and no matrix of builds. You pay the cost once, when you write a declaration.
+  That is what makes the guarantee affordable, and it is why it is a guarantee, and not a best
+  effort.
+- **The rule pays off in plain horizontal LTR.** That is the argument that holds even when nobody
+  runs imp vertically. `100vw` includes the classic scrollbar, and `100dvi` does not. So a
+  `max-inline-size` that you clamp in `vw` over-reports the space that it bounds. It then pushes the
+  page into horizontal overflow, which is exactly what the clamp was there to prevent. The logical
+  unit is also the unit that measures correctly.
+- **The line of the scope stops work, and does not start it.** Without that line, every component
+  invites a pass of polish for `vertical-rl` that no user asked for. With it, such a pass is out of
+  scope by default, and RTL gets the test.
+- A **vertical mode inside the content of an app** is unaffected. An app can set `writing-mode` on
+  the prose that it renders. What imp does not guarantee is its own chrome around that prose.
+- Somebody can widen the guarantee later, at the cost of a test suite, and not a rewrite, because
+  the declarations are already logical. To promote a vertical writing mode to supported means to add
+  coverage, and to reconsider the exception in `theme.js`. It does not mean to touch the components.

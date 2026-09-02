@@ -6,10 +6,11 @@ import { radioGroup } from 'imp/std/inputs'
 radioGroup({ field: 'size', label: 'Size', options: ['small', 'medium', 'large'] })
 ```
 
-Call shape: `radioGroup(props?)` - the choices are the `options` prop, never children.
+The call shape is `radioGroup(props?)`. The choices are the `options` prop, never children.
 
-It renders a real `<fieldset>` with the label as its `<legend>`, so the group is announced as one
-thing, and the radios share a name - arrow keys move between them for free.
+The component renders a real `<fieldset>`, with the label as its `<legend>`. So a screen reader
+announces the group as one control. The radios share a name, so the arrow keys move between them
+without extra code.
 
 | Prop        | Values                                     | Notes                                       |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
@@ -21,22 +22,26 @@ thing, and the radios share a name - arrow keys move between them for free.
 | `required`  | boolean                                    | Marks it and validates that it is filled in |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                          |
 
-Also: `options` - plain strings or `{ value, label, disabled }` objects - `orientation`
-(`'vertical'` default, or `'horizontal'`), and `validate`.
+The other props are `options`, `orientation` and `validate`. `options` is an array of plain strings,
+or of `{ value, label, disabled }` objects. `orientation` is `'vertical'`, the default, or
+`'horizontal'`.
 
 Rules an agent gets wrong:
 
-- **`field` and `value` are alternatives.** Inside a form use `field`; passing both warns and
+- **`field` and `value` are alternatives.** Inside a form, use `field`. With both, imp warns and
   `field` wins. A `field` with no form around it is an error.
-- **An error only shows once the field has been left or submit was attempted**, so a form does not
-  shout at someone still filling in the first box.
-- **The `label` becomes the `<legend>`** naming the whole group; each option gets its own label.
+- **An error shows only after the person leaves the field, or tries to submit.** So the form does
+  not report a problem while the person still fills in the first box.
+- **The `label` becomes the `<legend>`**, and it names the whole group. Each option gets its own
+  label.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
-- Unknown props warn at mount, and an out-of-range value warns and falls back.
-- **Choices go in `options`, not in children.**
-- **All of them are visible at once**, so keep it to a handful - use `select` past five or six.
-- **Arrow keys move the choice, Tab leaves the group.** That is the native behaviour, and imp does
-  not override it.
+- imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
+  to the default.
+- **The choices go in `options`, not in the children.**
+- **Every option is visible at the same time.** So keep the list short. Above five or six options,
+  use `select`.
+- **The arrow keys move the choice. Tab leaves the group.** That is the native behaviour, and imp
+  does not override it.
 
 ```js
 radioGroup({ field: 'size', label: 'Size', options: ['small', 'medium', 'large'], required: true })

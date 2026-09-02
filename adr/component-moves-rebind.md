@@ -2,73 +2,81 @@
 
 ## Context
 
-State resolution binds at mount: `useState` bubbles a `StateSubscription` event and answers with the
-nearest provider at that moment (`event-propagated-state.md`). When moves were invisible to the
-lifecycle, a component moved into a different subtree kept the states of its original ancestors - a
-card dragged to another column still followed the first column's sorting state, and a provider
-unmounting left movers holding zombie states no lookup could reach. The opposite extreme, remounting
-on every move, re-resolves providers automatically but destroys everything the component carries:
-unsaved input text, focus, closure variables, its own states, in-flight async mounts - a drag
-between columns would wipe a half-written draft. A further constraint is environmental: browsers
-flush custom-element reactions after a single-call reparent completes (so `disconnectedCallback`
-sees the host already connected at its new position), while the unit runner's DOM implementation
-fires the callbacks mid-operation - any design reading `isConnected` only inside
-`disconnectedCallback` would behave differently in unit tests and browsers.
+imp binds a state at the moment of the mount. `useState` bubbles a `StateSubscription` event, and
+the nearest provider at that moment answers, see `event-propagated-state.md`. While the lifecycle
+could not see a move, a component that moved into a different subtree kept the states of its
+original ancestors. A card that a person dragged to another column still followed the sorting state
+of the first column. When a provider unmounted, a component that had moved held a dead state, and no
+lookup could reach it. The opposite extreme was to remount on every move. That resolves a provider
+automatically, and it destroys everything that the component carries. It destroys unsaved input
+text, the focus, a closure variable, the states of the component itself, and an async mount in
+flight. A drag between two columns would then delete a draft that is half written. There is a
+further constraint, and it comes from the environment. A browser flushes the reactions of a custom
+element after a reparent that one call performs. So `disconnectedCallback` sees the host already
+connected at its new position. The DOM implementation of the unit runner fires those callbacks in
+the middle of the operation. So a design that reads `isConnected` inside `disconnectedCallback` only
+would behave differently in a unit test and in a browser.
 
 ## Decision
 
-**The component belongs to its element and travels with it; subscriptions belong to its position and
-re-resolve when it changes.** A component removed and re-inserted within the same task has been
-moved: `build` does not re-run, and its DOM, closures, own `initState` providers with their current
-values, and pending async mount all ride along. What restarts is the subscription layer:
+**A component belongs to its element, and it travels with the element. A subscription belongs to the
+position of the component, and it resolves again when that position changes.** A component that
+somebody removes and inserts again inside the same task has moved. `build` does not run again. Its
+DOM, its closures, its own `initState` providers with their current values, and its pending async
+mount, all travel with it. What restarts is the subscription layer:
 
-- **Detection is the microtask guard plus a rebind path.** `disconnectedCallback` returns
-  immediately when the host is already reconnected (the browser single-call reparent) and otherwise
-  defers teardown one microtask; a `connectedCallback` that finds the component still mounted
-  triggers rebinding instead of a mount, synchronously at insertion. `connectedMoveCallback` does
-  the same, so a `moveBefore()` reparent (where the platform preserves focus and animation state)
-  rebinds identically. Both environments therefore agree: same-task move = move, longer absence =
-  unmount, and real removal tears down exactly as before - cleanups, `teardown`, placeholder, each
-  step fault-isolated (`error-boundaries.md`).
-- **`useState` inside a mount returns a consumer.** It has the same helper surface, but holds the
-  resolved provider behind an indirection with one fan-out subscription; `get`/`set` always target
-  the currently bound provider. The host keeps a rebind registry - the mount scope registers each
-  consumer's rebind, and `view`/`each` render scopes register theirs per render, removed when the
-  region rebuilds. Outside any mount scope `useState` still returns the page-scoped state directly;
-  there is no position to rebind.
-- **A rebind is a fresh lookup from the host.** Each registered rebind re-dispatches the
-  subscription event from the component's own host, swaps to the provider that answers, and notifies
-  the consumer's subscribers only when the newly resolved value differs from the last delivered one.
-  Because two providers rarely share references, this comparison is structural: plain objects and
-  arrays are compared recursively by content, value objects (Date, URL, RegExp, Temporal) by their
-  value, and everything else (other class instances, functions) by `Object.is` - when equality
-  cannot be established, the binding re-fires. So bindings update in place and a `view`/`each`
-  region re-renders on move only when its value actually changed; a move between providers holding
-  equal plain data leaves the region's DOM untouched. On a move the structural walk runs only on
-  rebinds - gesture-frequency events - and is the same `valuesEqual` comparison `set` and `computed`
-  use (`state-plain-data-values.md`). If nothing at the new position provides the name, an error is
-  logged and the previous binding is kept.
+- **The detection is a guard on a microtask, plus a rebind path.** `disconnectedCallback` returns
+  immediately when the host is already connected again, which is the reparent that a browser
+  performs in one call. Otherwise it delays the teardown by one microtask. A `connectedCallback`
+  that finds the component still mounted starts a rebind, and not a mount. It does that
+  synchronously, at the insertion. `connectedMoveCallback` does the same. So a reparent through
+  `moveBefore()`, where the platform keeps the focus and the state of an animation, rebinds in the
+  same way. Both environments then agree. A move inside one task is a move. A longer absence is an
+  unmount. A real removal tears the component down exactly as before, through the cleanups,
+  `teardown` and the placeholder. Each step is isolated against a fault, see `error-boundaries.md`.
+- **`useState` inside a mount returns a consumer.** That consumer has the same surface as a helper.
+  It holds the resolved provider behind one indirection, with one fan-out subscription. `get` and
+  `set` always target the provider that is bound now. The host keeps a registry of rebinds. The
+  mount scope registers the rebind of each consumer. A `view` or `each` render scope registers its
+  own rebinds per render, and imp removes them when the region rebuilds. Outside any mount scope,
+  `useState` still returns the state at page scope directly. There is no position to rebind.
+- **A rebind is a new lookup from the host.** Each registered rebind dispatches the subscription
+  event again, from the host of the component. It swaps to the provider that answers. It notifies
+  the subscribers of the consumer only when the newly resolved value differs from the last value
+  that it delivered. Two providers rarely share a reference. So this comparison is structural. imp
+  compares a plain object and an array recursively, by content. It compares a value object, such as
+  a `Date`, a `URL`, a `RegExp` or a Temporal value, by its value. It compares everything else, such
+  as another class instance and a function, with `Object.is`. When imp cannot establish equality,
+  the binding fires again. So a binding updates in place, and a `view` or `each` region renders
+  again on a move only when its value really changed. A move between two providers that hold equal
+  plain data leaves the DOM of the region as it is. On a move, the structural walk runs on the
+  rebinds only, and those happen at the frequency of a gesture. It is the same `valuesEqual`
+  comparison that `set` and `computed` use, see `state-plain-data-values.md`. When nothing at the
+  new position provides the name, imp logs an error and keeps the previous binding.
 
 ## Consequences
 
-- The nearest-provider rule holds by position for mounted components: a card dropped into another
-  column follows that column's state in the same gesture, and zombie bindings cannot arise from
-  moves.
-- Moves preserve what users care about with zero wiring: input text, focus-adjacent DOM state, and
-  the component's own accumulated state survive; only position-derived bindings change. DOM nested
-  in a `view`/`each` region is rebuilt only when the region's bound value structurally differs at
-  the new position - the region's normal re-render rule, made move-tolerant for plain data. State
-  values holding non-plain objects re-render on every provider change; state is expected to be plain
-  data. Cyclic values are treated as never equal - the comparison bails out instead of recursing
-  forever, at worst re-firing a binding that plain data would have kept.
-- Removal cleanup is deferred one microtask, so a just-removed component can observe one final `set`
-  before teardown - the price of move detection that works identically in browsers and the unit
-  runner. Unit tests await a settled tick before asserting unmount effects.
-- Same-task remove-and-reinsert counts as a move; re-inserting in a later task is the deliberate way
-  to force a fresh `build`.
-- Consumers are one small proxy per `useState` call rather than the provider's own helper object;
-  helpers are not identity-comparable across components (the name is the identity), and each mounted
-  consumer costs one extra subscription hop.
-- Keyed `each` (`event-propagated-state.md`) builds on the same foundation: preserved items keep
-  their DOM across changes and reorders, and any component hosts among them rebind wherever they
-  land - a reorder is a chain of moves, not rebuilds.
+- The rule of the nearest provider holds by position, for a mounted component. A card that a person
+  drops into another column follows the state of that column, in the same gesture. A move cannot
+  create a dead binding.
+- A move keeps what a user cares about, and nobody connects anything. The input text survives. The
+  DOM state next to the focus survives. The state that the component accumulated survives. Only a
+  binding that comes from the position changes. imp rebuilds DOM nested in a `view` or `each` region
+  only when the bound value of the region differs structurally at the new position. That is the
+  normal rule for a new render of the region, and it now tolerates a move for plain data. A state
+  value that holds an object that is not plain renders again on every change of provider. A state is
+  expected to hold plain data. imp treats a cyclic value as never equal. The comparison stops
+  instead of recursing forever. In the worst case it fires a binding again that plain data would
+  have kept.
+- imp delays the cleanup of a removal by one microtask. So a component that imp just removed can see
+  one final `set` before its teardown. That is the price of a detection of a move that works in the
+  same way in a browser and in the unit runner. A unit test awaits a settled tick before it asserts
+  an effect of an unmount.
+- A removal and an insertion inside the same task count as a move. An insertion in a later task is
+  the deliberate way to force a new `build`.
+- A consumer is one small proxy per `useState` call, and not the helper object of the provider. Two
+  helpers are not comparable by identity across two components, because the name is the identity.
+  Each mounted consumer costs one extra hop of a subscription.
+- A keyed `each`, see `event-propagated-state.md`, builds on the same foundation. imp keeps the DOM
+  of a preserved item across a change and across a reorder. Any component host among those items
+  rebinds wherever it lands. A reorder is a chain of moves, and not a chain of rebuilds.

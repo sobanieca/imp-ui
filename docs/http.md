@@ -1,9 +1,10 @@
 # imp-ui - HTTP
 
-A configured HTTP client, so your app talks to its backend without hand-rolling `fetch` wrappers.
-You describe the network layer once - base URL, headers, retries, timeouts - and call it everywhere.
-Loading and error state come with it, ready to bind to the DOM, and the whole app can run against
-[mock responses](cli.md#mock-responses--mockjs) with no backend at all.
+imp gives you a configured HTTP client. So your app talks to its backend, and you write no `fetch`
+wrapper. You describe the network layer once, with a base URL, headers, retries and timeouts, and
+you call it everywhere. The loading state and the error state come with it, ready to bind to the
+DOM. The whole app can also run against [mock responses](cli.md#mock-responses--mockjs), with no
+backend.
 
 ```js
 import { component } from 'imp'
@@ -31,45 +32,47 @@ const profile = component('user-profile', {
 })
 ```
 
-## Mental model
+## The mental model
 
-- **A client belongs to a component.** `initHttpClient(name, options)` in a component's `build`
-  configures it; every component mounted below reaches it with `useHttpClient(name)`. It is the same
-  shape as [state](state.md) - named, resolved through the DOM, owned by the component that
-  initialized it.
-- **Its lifetime is that component's lifetime.** When the owner unmounts, the client goes with it:
-  requests in flight are cancelled and retries stop. Nothing to dispose by hand.
-- **Unless you take the lifetime yourself.** `createHttpClient(name, options)` builds a client
-  anywhere - module scope, a worker - that lives until you `close()` it, and it can be shared into a
-  component subtree without becoming the subtree's to end.
-- **A client is named** (`'myapp.api'`), with the same namespaced names states use. The name labels
-  its request state and is how a component asks for _this_ client.
-- **Verbs return the body.** `get`, `post`, `put`, `patch`, `delete`, and `head` resolve to the
+- **A client belongs to a component.** `initHttpClient(name, options)` in the `build` of a component
+  configures the client. Every component that mounts below it reaches the client with
+  `useHttpClient(name)`. The shape is the same as [state](state.md). The client is named, imp
+  resolves it through the DOM, and the component that initialized it owns it.
+- **The client lives as long as that component.** When the owner unmounts, the client goes with it.
+  imp cancels the requests in flight, and the retries stop. There is nothing to dispose of by hand.
+- **You can take the lifetime yourself.** `createHttpClient(name, options)` builds a client
+  anywhere, at module scope or in a worker. That client lives until you call `close()`. You can
+  share it into a component subtree, and the subtree does not end it.
+- **A client is named**, such as `'myapp.api'`. It uses the same namespaced names as a state. The
+  name labels the request state of the client, and it is how a component asks for _this_ client.
+- **A verb returns the body.** `get`, `post`, `put`, `patch`, `delete` and `head` resolve to the
   parsed response body. When you need the status or the headers, `request` gives you the whole
   response.
-- **A failure rejects.** Any non-2xx status, transport failure, timeout, or abort rejects with an
-  `HttpError` carrying everything about what went wrong. There are no `if (response.ok)` checks to
-  forget.
-- **Every call goes to the network.** The client holds no response cache and does not join identical
-  requests together - a call you make is a request that is sent. Two components that each ask for
-  `/users` at mount make two requests; when that matters, load the data once in a component above
-  them and pass it down, or hold it in [state](state.md) they share.
-- **Every call is identified.** imp generates a UUID per call and sends it as `x-request-id`, so the
-  request in your network panel and the line in your backend's log share a name. Rename the header
-  or turn it off with `requestId`.
-- **Everything is declared once, overridable per call.** Every option below can be set on the client
-  and overridden on a single call.
-- **Requests and responses are plain data** - `{ method, url, headers, body, signal, meta }` in,
-  `{ status, statusText, ok, url, method, headers, body }` out, with header names lower-cased. That
-  is what interceptors read and rewrite. An interceptor may be an `async` function, so it can await
-  work - refreshing a token, reading from storage - before the call continues.
+- **A failure rejects.** Any status that is not 2xx, a transport failure, a timeout and an abort all
+  reject with an `HttpError`. That error carries everything about the failure. There is no
+  `if (response.ok)` check that you can forget.
+- **Every call goes to the network.** The client holds no response cache, and it does not join two
+  identical requests. A call that you make is a request that imp sends. Two components that each ask
+  for `/users` at mount make two requests. When that matters, load the data once in a component
+  above them and pass it down, or hold it in a [state](state.md) that they share.
+- **Every call has an identity.** imp generates a UUID per call and sends it as `x-request-id`. So
+  the request in your network panel and the line in the log of your backend share a name. To rename
+  the header, or to turn it off, use `requestId`.
+- **You declare everything once, and you can override it per call.** You can set every option below
+  on the client, and override it on a single call.
+- **A request and a response are plain data.** A request is
+  `{ method, url, headers, body, signal, meta }`, and a response is
+  `{ status, statusText, ok, url, method, headers, body }`. imp lower-cases the header names. That
+  is what an interceptor reads and rewrites. An interceptor can be an `async` function. So it can
+  await work, such as a token refresh or a read from storage, before the call continues.
 
 ## Where a client lives
 
-You decide a client's reach by choosing which component initializes it - there is no other scope.
+You decide the reach of a client when you choose the component that initializes it. There is no
+other scope.
 
-**An app-wide client** is one your root component initializes. It spans the whole tree and never
-goes away, because the root never unmounts:
+**An app-wide client** is a client that your root component initializes. It covers the whole tree,
+and it never goes away, because the root never unmounts:
 
 ```js
 component('my-app', {
@@ -80,8 +83,8 @@ component('my-app', {
 })
 ```
 
-**A section-wide client** is one an [area's](routing.md) root component initializes. It exists while
-the user is in that section and is gone the moment they navigate out:
+**A section-wide client** is a client that the root component of an [area](routing.md) initializes.
+It exists while the user is in that section, and it is gone the moment when they navigate out:
 
 ```js
 // admin/area.js - downloaded the first time someone visits /admin
@@ -95,21 +98,22 @@ const shell = component('admin-shell', {
 export default area({ root: () => shell(), routes: adminRoutes })
 ```
 
-The section's screens render into the `router()` inside `admin-shell`, so every one of them reaches
-the client with `useHttpClient('myapp.admin')` - and nothing outside `/admin` can. The shell stays
-mounted while the user moves between admin screens, so they share one client; it unmounts when they
-leave the section.
+The screens of the section render into the `router()` inside `admin-shell`. So every one of them
+reaches the client with `useHttpClient('myapp.admin')`, and nothing outside `/admin` can. The shell
+stays mounted while the user moves between the admin screens, so those screens share one client. The
+shell unmounts when the user leaves the section.
 
 That is the whole lifetime story. When `admin-shell` unmounts:
 
-- every request still in flight is **cancelled** - the calls reject with `code: 'aborted'`, and any
-  retry waiting on a backoff delay stops instead of firing later;
-- the request state of every tracked call is **dropped**;
-- a call made afterwards through a handle you kept rejects instead of quietly hitting the network.
+- imp **cancels** every request that is still in flight. The calls reject with `code: 'aborted'`,
+  and a retry that waits on a backoff delay stops instead of firing later.
+- imp **drops** the request state of every tracked call.
+- A later call through a handle that you kept rejects. It does not go to the network.
 
-**A client you own yourself** is the third option, for the cases a component cannot cover - a client
-you hand to a worker, or one that must survive navigation on purpose. `createHttpClient` builds one
-anywhere, including at module scope, and it is yours until you `close()` it:
+**A client that you own yourself** is the third option. It covers the cases that a component cannot,
+such as a client that you hand to a worker, or a client that must survive a navigation on purpose.
+`createHttpClient` builds one anywhere, including at module scope. It is yours until you call
+`close()`:
 
 ```js
 // api.js
@@ -120,7 +124,8 @@ import { sync } from './api.js'
 self.onmessage = async ({ data }) => postMessage(await sync.get(`/orders/${data.id}`))
 ```
 
-Share the same client with a component subtree by passing it to `initHttpClient` instead of options:
+To share the same client with a component subtree, pass it to `initHttpClient` in place of the
+options:
 
 ```js
 component('my-app', {
@@ -131,32 +136,34 @@ component('my-app', {
 })
 ```
 
-Below that component, `useHttpClient('myapp.sync')` reaches it like any other client - one client,
-one set of request state, shared by your worker and your components.
+Below that component, `useHttpClient('myapp.sync')` reaches the client like any other client. There
+is one client and one set of request state, shared by your worker and your components.
 
-**A shared client is not closed when that component unmounts.** That is the deliberate trade: imp
-cannot know whether your worker is still using it, so `createHttpClient` hands you the lifetime and
-`close()` is how you end it - cancelling everything in flight and rejecting later calls. Reach for
-it only when something outside the DOM shares the client; a client used by components alone belongs
-to a component.
+**imp does not close a shared client when that component unmounts.** That is the deliberate trade.
+imp cannot know whether your worker still uses the client. So `createHttpClient` gives you the
+lifetime, and `close()` is how you end it. `close()` cancels everything in flight and rejects a
+later call. Use this form only when something outside the DOM shares the client. A client that only
+components use belongs to a component.
 
-A few rules follow from clients being owned by components, and they are the same ones states follow:
+A few rules follow from a component owning a client. They are the same rules that a state follows:
 
-- **The nearest client wins.** If an area initializes `myapp.api` and the app root already has one,
-  components inside the area get the area's. Two sibling areas initializing the same name each get
-  their own - separate configuration, separate request state.
-- **One name per component.** Initializing the same name twice in one component throws, so an
-  accidental collision fails loudly instead of silently sharing.
-- **Resolve before the first `await`.** In an `async build`, call `initHttpClient` / `useHttpClient`
-  before you await anything; keep the handle and call it whenever you like afterwards, including in
-  event handlers. The `imp/http-client-setup-before-await` lint rule catches this at write time.
-- **Names are namespaced** - at least two dot-separated segments (`myapp.api`), like state names.
+- **The nearest client wins.** When an area initializes `myapp.api` and the app root already has
+  one, a component inside the area gets the client of the area. Two sibling areas that initialize
+  the same name each get their own client, with separate configuration and separate request state.
+- **One name per component.** A second initialization of the same name in one component throws. So
+  an accidental collision fails with a message, instead of sharing in silence.
+- **Resolve before the first `await`.** In an `async build`, call `initHttpClient` or
+  `useHttpClient` before you await anything. Keep the handle and call it at any time after that,
+  including in an event handler. The `imp/http-client-setup-before-await` lint rule catches this
+  while you write.
+- **A name is namespaced.** It has two or more dot-separated segments, such as `myapp.api`, like a
+  state name.
 
-Because a client is reached through the DOM rather than imported, a plain helper module takes it as
-an argument (`loadUsers(api, page)`) instead of importing it - the component that resolved the
-client passes it in.
+imp reaches a client through the DOM, and you do not import it. So a plain helper module takes the
+client as an argument, as in `loadUsers(api, page)`. The component that resolved the client passes
+it in.
 
-## Calling
+## How to call
 
 Every verb takes a path and an options object:
 
@@ -167,16 +174,17 @@ await api.patch(`/users/${id}`, { body: { name: 'Grace' }, headers: { 'if-match'
 await api.delete(`/users/${id}`)
 ```
 
-- **`query`** is appended to the URL. `null` and `undefined` values are skipped; an array repeats
-  the key.
-- **`body`** - a plain object or array is serialized as JSON and given a
-  `content-type: application/json` header. A `FormData`, `URLSearchParams`, `Blob`, string, or
-  buffer is passed through untouched, with no content type imposed.
-- **The response body is parsed by content type** - JSON into a value, `text/*` and XML into a
-  string, anything else into a `Blob`. A `204` and an empty body resolve to `null`.
-- Paths are joined onto `baseUrl`; a full URL (`https://...`) is used as given.
+- **`query`** goes onto the end of the URL. imp skips a `null` or `undefined` value. An array
+  repeats the key.
+- **`body`.** imp serializes a plain object or an array as JSON, and gives it a
+  `content-type: application/json` header. It passes `FormData`, `URLSearchParams`, `Blob`, a string
+  and a buffer through without a change, and it imposes no content type on them.
+- **imp parses the response body by its content type.** It parses JSON into a value, `text/*` and
+  XML into a string, and anything else into a `Blob`. A `204` response, and an empty body, resolve
+  to `null`.
+- imp joins a path onto `baseUrl`. It uses a full URL, such as `https://...`, as you give it.
 
-`request` returns the whole response, and takes the method as an option:
+`request` returns the whole response, and it takes the method as an option:
 
 ```js
 const response = await api.request('/users', { method: 'POST', body: draft })
@@ -187,31 +195,32 @@ response.body // { id: 'u1', name: 'Ada' }
 
 ## Request ids
 
-Every call carries an `x-request-id` header holding a UUID imp generated for it, so the request you
-see in the network panel and the line it wrote in your backend's log share a name. There is nothing
-to switch on:
+Every call carries an `x-request-id` header. It holds a UUID that imp generated for the call. So the
+request in your network panel, and the line that it wrote in the log of your backend, share a name.
+There is nothing to turn on:
 
 ```js
 await api.get('/users') // x-request-id: 2f5a3c1e-9d84-4a17-b0f2-6c1de0b3a7e4
 ```
 
-- **One id per call, not per attempt.** A retried request keeps the id it started with, so three
-  tries read as the one call they are.
-- **Rename the header** when your backend reads a different one - on the client or on a single call:
+- **There is one id per call, not per attempt.** A retried request keeps the id that it started
+  with. So three tries read as the one call that they are.
+- **Rename the header** when your backend reads a different one. Do it on the client, or on a single
+  call:
 
   ```js
   initHttpClient('myapp.api', { baseUrl, requestId: 'x-correlation-id' })
   await api.get('/users', { requestId: 'x-correlation-id' })
   ```
 
-- **Turn it off** with `requestId: false`. Worth reaching for on a cross-origin API you do not
-  control: a custom header makes the browser send a CORS preflight, and a server that does not list
-  the header in `Access-Control-Allow-Headers` will refuse the call.
-- **An id you set yourself wins.** Put the header in the client's `headers` or the call's and imp
-  leaves it alone, which is how you carry an id you already have - one a server-rendered page handed
-  you, or a trace id from elsewhere in your system.
-- **Interceptors and mock handlers see it** like any other header, so `onRequest` can log it and a
-  mock can echo it back.
+- **Turn the header off** with `requestId: false`. This is worth doing on a cross-origin API that
+  you do not control. A custom header makes the browser send a CORS preflight, and a server that
+  does not list the header in `Access-Control-Allow-Headers` refuses the call.
+- **An id that you set yourself wins.** Put the header in the `headers` of the client, or of the
+  call, and imp leaves it as it is. That is how you carry an id that you already have, such as one
+  from a server-rendered page, or a trace id from elsewhere in your system.
+- **An interceptor and a mock handler see the id** like any other header. So `onRequest` can log it,
+  and a mock can send it back.
 
 ## When a call fails
 
@@ -226,7 +235,7 @@ try {
 }
 ```
 
-An `HttpError` carries:
+An `HttpError` carries these fields:
 
 | Field             | What it holds                                                         |
 | ----------------- | --------------------------------------------------------------------- |
@@ -235,7 +244,7 @@ An `HttpError` carries:
 | `method`, `url`   | The call that failed                                                  |
 | `headers`, `body` | The response, when there was one - a parsed error body is right there |
 
-`request` throws on the same failures as the verbs; it differs only in what it gives you on success.
+`request` throws on the same failures as a verb. It differs only in what it gives you on success.
 
 ## Retries
 
@@ -246,32 +255,34 @@ const api = initHttpClient('myapp.api', {
 })
 ```
 
-- **`attempts`** counts total tries, not extra ones (`3` means at most three requests). `retry: 3`
-  is shorthand for `{ attempts: 3 }`.
-- **`backoff`** is `'exponential'` (doubling from `delay`) or `'fixed'`, capped by `maxDelay` (30
-  seconds).
-- **`jitter`** is on by default and randomizes every wait to somewhere between half the computed
-  backoff and all of it - a `delay` of `300` waits 150-300 ms before the second attempt, 300-600 ms
-  before the third.
+- **`attempts`** counts the total tries, not the extra ones. So `3` means at most three requests.
+  `retry: 3` is short for `{ attempts: 3 }`.
+- **`backoff`** is `'exponential'`, which doubles from `delay`, or `'fixed'`. `maxDelay` caps it at
+  30 seconds.
+- **`jitter`** is on by default. It randomizes every wait to a value between half of the computed
+  backoff and all of it. With a `delay` of `300`, imp waits 150 ms to 300 ms before the second
+  attempt, and 300 ms to 600 ms before the third.
 
-  It exists because an outage is rarely yours alone. When a backend goes down for a few seconds,
-  every browser talking to it fails at roughly the same instant, and without jitter every one of
-  them retries on exactly the same schedule: a wave at 300 ms, another at 600 ms, another at 1.2 s.
-  The server comes back up into a synchronized spike - the "thundering herd" - and falls over again,
-  which re-syncs everyone for the next round. Randomizing each client's wait smears that spike into
-  a trickle the recovering server can absorb, and the more clients share the failure (a deploy, a
-  rate limit, a dropped connection) the more it matters. The same applies within one page: several
-  components that failed on mount will otherwise retry in lockstep.
+  Jitter exists because an outage is rarely yours alone. When a backend goes down for a few seconds,
+  every browser that talks to it fails at nearly the same moment. Without jitter, every one of them
+  retries on exactly the same schedule. There is a wave at 300 ms, another at 600 ms, and another at
+  1.2 s. The server comes back into a synchronized spike, which is the thundering herd, and it fails
+  again. That failure synchronizes everyone for the next round. When each client waits a random
+  time, the spike becomes a slow flow that the recovering server can accept. The more clients that
+  share the failure, the more this matters. A deploy, a rate limit and a dropped connection all do
+  it. The same applies inside one page. Several components that failed on mount otherwise retry
+  together.
 
-  Turn it off with `jitter: false` when you want exact, reproducible timing - a test asserting
-  _when_ a retry fires, or a measurement where the randomness is just noise.
-- **`retryOn`** is a list of statuses, or a function deciding from
-  `{ status, error, attempt, request }`. Left out, imp retries `408`, `429`, `500`, `502`, `503`,
-  `504`, plus network failures and timeouts.
-- **`Retry-After`** on a `429` or `503` is honoured over the computed backoff, in seconds or as a
-  date. It is used as given - no jitter - since the server has named the moment it wants you back.
-- **Only idempotent verbs retry.** `get`, `head`, `put`, and `delete` follow the client's policy;
-  `post` and `patch` are sent once unless that call passes `retry` itself:
+  Turn jitter off with `jitter: false` when you want exact, reproducible timing. Examples are a test
+  that asserts _when_ a retry fires, and a measurement where the randomness is only noise.
+- **`retryOn`** is a list of statuses, or a function that decides from
+  `{ status, error, attempt, request }`. When you leave it out, imp retries `408`, `429`, `500`,
+  `502`, `503` and `504`, and also a network failure and a timeout.
+- **imp obeys `Retry-After`** on a `429` or a `503`, and prefers it to the computed backoff. The
+  header holds a number of seconds or a date. imp uses the value as it is, with no jitter, because
+  the server named the moment when it wants you back.
+- **Only an idempotent verb retries.** `get`, `head`, `put` and `delete` follow the policy of the
+  client. imp sends `post` and `patch` once, unless that call passes `retry` itself:
 
   ```js
   await api.post('/reports', { body: draft, retry: { attempts: 3 } })
@@ -279,10 +290,11 @@ const api = initHttpClient('myapp.api', {
 
 ## Timeouts and cancelling
 
-`timeout` sets a per-attempt budget in milliseconds, on the client or on one call. When it expires
-the request is genuinely aborted, not just abandoned, and the call rejects with `code: 'timeout'`.
+`timeout` sets a budget per attempt, in milliseconds. Set it on the client or on one call. When the
+budget expires, imp truly aborts the request. It does not only stop waiting. The call rejects with
+`code: 'timeout'`.
 
-Your own `signal` composes with it - the request ends when either fires:
+Your own `signal` composes with the timeout. The request ends when either one fires:
 
 ```js
 const controller = new AbortController()
@@ -290,19 +302,20 @@ const users = api.get('/users', { signal: controller.signal, timeout: 2000 })
 controller.abort()
 ```
 
-A call you aborted rejects with `code: 'aborted'` and is never retried. A timeout is retried like
-any other failure.
+A call that you aborted rejects with `code: 'aborted'`, and imp never retries it. imp retries a
+timeout like any other failure.
 
-**You rarely need to cancel by hand.** When the component that owns the client unmounts, everything
-still in flight is aborted for you - that is what makes a screen's requests stop when the user
-navigates away. Reach for your own `signal` for the cases the client's lifetime does not cover: a
-search-as-you-type call superseded by the next keystroke, or a request you want a cancel button for.
+**Usually you do not cancel by hand.** When the component that owns the client unmounts, imp aborts
+everything that is still in flight. That is what stops the requests of a screen when the user
+navigates away. Use your own `signal` for the cases that the lifetime of the client does not cover.
+Two examples are a search-as-you-type call that the next keystroke replaces, and a request that
+needs a cancel button.
 
 ## Interceptors
 
-`onRequest` and `onResponse` are the way to change what is sent and what comes back. Both take a
-function or an array of them, both may be async, and a per-call hook **adds to** the client's rather
-than replacing it.
+`onRequest` and `onResponse` are how you change what imp sends and what comes back. Each one takes a
+function, or an array of functions. Each one can be async. A per-call hook **runs in addition to**
+the hook of the client. It does not replace it.
 
 ```js
 const api = initHttpClient('myapp.api', {
@@ -315,20 +328,22 @@ const api = initHttpClient('myapp.api', {
 })
 ```
 
-- **`onRequest`** receives the fully-formed request -
-  `{ method, url, headers, body, signal, meta }` - after imp has resolved the URL, merged the
-  headers, and serialized the body, but before it goes out. Return it changed, or return a
-  replacement. Throwing stops the call before any network traffic.
-- **`onResponse`** receives `(response, request)` after the body is parsed and before anything else
-  sees it. Return the response, changed or replaced. Throwing turns a transport success into a
-  failed call - how you reject a `200` that carries an error envelope.
-- **Order is defined.** `onRequest` runs _inside_ the retry loop, starting from the call's headers
-  each attempt, so a token refreshed by a hook applies to the next try. `onResponse` runs _before_
-  retry decisions and request state, so what it returns is what both see.
-- **A hung hook aborts like a hung request** - the timeout budget covers hook time too.
-- Mocked responses travel the same hooks as real ones.
+- **`onRequest`** receives the complete request, `{ method, url, headers, body, signal, meta }`. imp
+  has resolved the URL, merged the headers and serialized the body, and the request has not gone
+  out. Return the request changed, or return a replacement. A throw stops the call before any
+  network traffic.
+- **`onResponse`** receives `(response, request)` after imp parses the body, and before anything
+  else sees it. Return the response, changed or replaced. A throw turns a transport success into a
+  failed call. That is how you reject a `200` that carries an error envelope.
+- **The order is defined.** `onRequest` runs _inside_ the retry loop, and it starts from the headers
+  of the call on each attempt. So a token that a hook refreshes applies to the next try.
+  `onResponse` runs _before_ imp decides on a retry, and before it updates the request state. So
+  what it returns is what both see.
+- **A hook that hangs aborts like a request that hangs.** The timeout budget covers the time of a
+  hook.
+- A mocked response travels through the same hooks as a real one.
 
-Auth refresh, envelope unwrapping, request signing, and logging are all just hooks:
+An auth refresh, an envelope unwrap, a request signature and logging are all hooks:
 
 ```js
 let refreshing = null
@@ -346,10 +361,10 @@ const api = initHttpClient('myapp.api', {
 })
 ```
 
-## Running without a backend
+## How to run without a backend
 
-Nothing on the client. You describe mock answers in `*.mock.js` files and point `imp.json` at the
-folder holding them; `imp start` answers matching requests itself:
+You change nothing on the client. Describe the mock answers in a `*.mock.js` file, and point
+`imp.json` at the folder that holds them. `imp start` then answers a matching request itself:
 
 ```js
 // mocks/users.mock.js
@@ -362,17 +377,18 @@ export const mocks = [
 ]
 ```
 
-Your client keeps its real `baseUrl` and your components keep their real calls - nothing in your
-source knows about it, and nothing about mocking ships. Which mode a run is in is decided when you
-start the server (`imp start --mock`, `imp start --no-mock`, or the default in your `imp.json`).
-Because the answers arrive as ordinary responses, everything on this page still applies to them: a
-mocked `503` retries, a `delay` keeps `pending` up, and your interceptors run. See
+Your client keeps its real `baseUrl`, and your components keep their real calls. Nothing in your
+source knows about the mocks, and nothing about mocking ships. You decide the mode when you start
+the server, with `imp start --mock`, `imp start --no-mock`, or the default in your `imp.json`. The
+answers arrive as ordinary responses. So everything on this page still applies to them. A mocked
+`503` retries, a `delay` keeps `pending` above zero, and your interceptors run. See
 **[Mock responses](cli.md#mock-responses--mockjs)** for the full format.
 
 ## Request state
 
-Every client publishes its own state, shaped exactly like [state](state.md) - `get`, `watch`,
-`text`, `view`, `each` - so you bind it instead of threading loading flags through your components:
+Every client publishes its own state. The shape is exactly that of a [state](state.md), with `get`,
+`watch`, `text`, `view` and `each`. So you bind the state, instead of passing a loading flag through
+your components:
 
 ```js
 import { computed } from 'imp/state'
@@ -390,10 +406,10 @@ const status = component('api-status', {
 })
 ```
 
-- **`api.pending`** - how many calls are in flight right now.
-- **`api.lastError`** - the most recent failure as plain data
-  (`{ message, status, code, method, url, body }`), or `null`. It clears when a later call succeeds,
-  and `api.clearError()` dismisses it by hand.
+- **`api.pending`** is the number of calls in flight now.
+- **`api.lastError`** is the most recent failure as plain data, in the shape
+  `{ message, status, code, method, url, body }`, or `null`. It clears when a later call succeeds.
+  `api.clearError()` dismisses it by hand.
 
 For one spinner on one request, name that call:
 
@@ -403,12 +419,12 @@ await api.patch(`/users/${id}`, { body: changes, track: 'users.save' })
 const { pending, lastError } = api.tracked('users.save')
 ```
 
-`tracked` returns the same pair for that name; untracked calls cost nothing.
+`tracked` returns the same pair for that name. A call that you do not track costs nothing.
 
 ## Testing
 
-Unit tests can stand in for the network by spying on `fetch`, and virtual time makes retries and
-timeouts instant (see **[Testing](testing.md)**):
+A unit test can replace the network with a spy on `fetch`. Virtual time makes a retry and a timeout
+instant. See **[Testing](testing.md)**:
 
 ```js
 import { component, mount } from 'imp'
@@ -444,15 +460,15 @@ test('retries a failing read', async ({ clock }) => {
 }, { fakeTimers: true })
 ```
 
-A client is owned by a component, so a test mounts a small host to initialize it in - the same
-one-liner works for every test in the file, and removing the host from the DOM is how you test that
-unmounting cancels what was in flight.
+A component owns a client. So a test mounts a small host to initialize the client in. The same short
+host works for every test in the file. To test that an unmount cancels what was in flight, remove
+the host from the DOM.
 
-End-to-end specs run against the served app, so they get your `*.mock.js` files without a stub of
-any kind - see **[Mock responses](cli.md#mock-responses--mockjs)**.
+An end-to-end spec runs against the served app. So it gets your `*.mock.js` files, with no stub. See
+**[Mock responses](cli.md#mock-responses--mockjs)**.
 
 ## Debugging
 
-Set `IMP_LOG_LEVEL` to `debug` and the client traces itself in the console: every retry with the
-delay before it, and where a client was resolved from. Mocked answers are reported in the terminal
-by the file that produced them. See **[Logging](logging.md)**.
+Set `IMP_LOG_LEVEL` to `debug`, and the client traces itself in the console. It logs every retry
+with the delay before it, and where it resolved a client from. The terminal reports a mocked answer,
+with the file that produced it. See **[Logging](logging.md)**.

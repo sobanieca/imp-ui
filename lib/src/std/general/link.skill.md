@@ -6,8 +6,8 @@ import { link } from 'imp/std'
 link({ href: '/settings' }, 'Settings')
 ```
 
-Call shape: `link(props?, ...children)` - the props object, when present, must be the **first**
-argument; everything after it is the link text.
+The call shape is `link(props?, ...children)`. When a props object is present, it must be the
+**first** argument. Everything after it is the link text.
 
 | Prop       | Values                               | Default     | Notes                                               |
 | ---------- | ------------------------------------ | ----------- | --------------------------------------------------- |
@@ -20,16 +20,18 @@ argument; everything after it is the link text.
 
 Rules an agent gets wrong:
 
-- **An in-app `href` is written like a `navigate()` path** - `/settings`, without the app's base
-  path, which imp adds for you.
-- **Do not call `navigate()` from a click handler on a link.** A plain left-click on an in-app href
-  is already routed without a page reload; a handler that navigates again double-navigates.
-- **Off-site links are left to the browser** - an absolute URL, an `external: true` link, a
-  middle-click or a modifier-click all behave natively.
-- **`href` is required**: without it the component warns and renders text that cannot be followed.
-- The accessible name is the link text; write where it goes, not "click here".
-- **A control that performs an action is not a link** - no `href`, no `<a>`. Use button (imp skill
-  std/button) with `variant: 'link'` to get link appearance on a real button.
+- **Write an in-app `href` like a `navigate()` path**, as in `/settings`. Leave out the base path of
+  the app. imp adds it for you.
+- **Do not call `navigate()` from a click handler on a link.** imp already routes a plain left-click
+  on an in-app href, with no page reload. A handler that navigates again navigates twice.
+- **The browser handles an off-site link.** An absolute URL, an `external: true` link, a
+  middle-click and a click with a modifier key all behave natively.
+- **`href` is necessary.** Without it, the component warns and renders text that a person cannot
+  follow.
+- The accessible name is the link text. Write where the link goes. Do not write "click here".
+- **A control that performs an action is not a link.** It takes no `href` and it is not an `<a>`.
+  Use button (imp skill std/button) with `variant: 'link'` to get the appearance of a link on a real
+  button.
 
 ```js
 link({ href: 'https://example.com', external: true }, 'Read the docs')

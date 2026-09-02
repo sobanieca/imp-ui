@@ -1,25 +1,27 @@
 # `imp eject` - take a standard component into the project
 
-A standard component is a closed box: a fixed prop set, sealed internals, styling reachable only
-through tokens (`adr/standard-component-library.md`). That is the right default, and it is also a
-dead end the moment an app needs a variant the props do not have - a third button size, a select
-that renders an avatar next to each option, a form that submits on blur. Today the only way out is
-to rewrite the component from scratch against the public kernel API, without the CSS, the ARIA
-wiring, the responsive prop handling or the tests that the shipped one already has.
+A standard component is a closed box. It has a fixed set of props, sealed internals, and styling
+that you reach through a token only, see `adr/standard-component-library.md`. That is the correct
+default. It is also a dead end, the moment when an app needs a variant that the props do not have.
+Three examples are a third size of a button, a select that renders an avatar beside each option, and
+a form that submits on a blur. Today the only way out is to write the component again, from nothing,
+against the public API of the kernel. You then have no CSS, no wiring of ARIA, no handling of a
+responsive prop, and none of the tests that the shipped component already has.
 
-`imp eject` turns that dead end into a door. It copies a standard component's real source into the
-project as ordinary app code the developer owns from then on - imports rewritten to public
-specifiers, element name renamed, its skill and preview files alongside it - so the escape hatch
-costs one command instead of a reimplementation.
+`imp eject` turns that dead end into a door. It copies the real source of a standard component into
+the project, as ordinary app code, which the developer owns from then on. It rewrites the imports to
+a public specifier. It renames the element. It puts the skill file, and the preview file, beside the
+component. So the escape hatch costs one command, in place of a new implementation.
 
 ```
 imp eject <component> [--to <dir>] [--as <name>] [--rewrite-imports] [--dry-run]
 ```
 
-`<component>` is written the way `imp skill` already names one - `std/button`, or just `button`. The
-component's source is already inside the binary (`lib/src` is compiled in, which is how
-`imp skill std/button` finds its sidecar), so eject reads the exact source of the version the user
-is running - no download, no network, no second copy of the library to keep in sync.
+You write `<component>` in the way that `imp skill` already names one. That is `std/button`, or just
+`button`. The source of the component is already inside the binary, because imp compiles `lib/src`
+in. That is how `imp skill std/button` finds its sidecar. So eject reads the exact source of the
+version that the user runs. There is no download, no network, and no second copy of the library to
+keep in step.
 
 ## What it writes
 
@@ -31,16 +33,17 @@ imp eject std/button --to src/components
   src/components/button.preview.js    its preview, so 'imp preview' renders it
 ```
 
-The sidecars are the reason this feels finished rather than dumped: the project skill index already
-lists every `*.skill.md` in the project, and `imp preview` already picks up every `*.preview.js`, so
-an ejected component arrives with a manual an agent can read and a stage to develop it on. Both need
-the same rewriting the source does - the skill's `import { button } from 'imp/std'` line and the
-preview's imports are wrong the second the file lands.
+The sidecars are the reason why this feels finished, in place of dumped. The skill index of the
+project already lists every `*.skill.md` file in the project. `imp preview` already finds every
+`*.preview.js` file. So an ejected component arrives with a manual that an agent can read, and with
+a stage to develop it on. Both files need the same rewriting as the source. The
+`import { button } from 'imp/std'` line of the skill, and the imports of the preview, are wrong the
+moment when the file lands.
 
 ## The hard part: what a component actually imports
 
-`button.js` is 200 lines that import from seven places, and only one of those is a specifier an app
-can write:
+`button.js` is 200 lines. It imports from seven places, and only one of those is a specifier that an
+app can write:
 
 ```js
 import { defineComponent } from '../shared/define.js'
@@ -57,12 +60,12 @@ import {
 } from '../shared/css.js'
 ```
 
-Three kinds of import, each needing a different answer:
+There are three kinds of import, and each one needs a different answer:
 
-1. **Kernel modules reached by path.** `../../api/html.js`, `../../api/state.js`,
-   `../../api/i18n.js`, `../../router.js`, `../../theme.js`, `../../render.js`,
-   `../../component.js`, `../../logger.js`. These are the public library seen from inside, so they
-   rewrite to the public specifier by table:
+1. **A module of the kernel that a path reaches.** Those are `../../api/html.js`,
+   `../../api/state.js`, `../../api/i18n.js`, `../../router.js`, `../../theme.js`,
+   `../../render.js`, `../../component.js` and `../../logger.js`. Each one is the public library,
+   seen from inside. So each one rewrites to a public specifier, through a table:
 
    | Internal path                     | Ejected import                 |
    | --------------------------------- | ------------------------------ |
@@ -74,131 +77,145 @@ Three kinds of import, each needing a different answer:
    | `api/theme.js`                    | `imp/theme`                    |
    | `logger.js` (`impLogger`)         | `imp/log`, renamed to `logger` |
 
-   `impLogger` -> `logger` is a rename, not just a move: the `imp` prefix on every warning is imp's,
-   and an ejected component's warnings are the app's. Two names in this group have **no public
-   home** and are the reason the table is not the whole story: `defaultTokens` from `theme.js` (what
-   `token()` reads its fallbacks from) and `isPlainObject` / `isStateShaped` / `splitArgsByType`
-   from `render.js`, which `library-import-namespaces.md` deliberately stopped exporting.
+   `impLogger` becomes `logger`, and that is a rename, and not only a move. The `imp` prefix on
+   every warning belongs to imp, and a warning from an ejected component belongs to the app. Two
+   names in this group have **no public home**, and they are the reason why the table is not the
+   whole story. The first is `defaultTokens`, from `theme.js`, which is what `token()` reads its
+   fallbacks from. The second is the group of `isPlainObject`, `isStateShaped` and
+   `splitArgsByType`, from `render.js`, which `library-import-namespaces.md` deliberately stopped
+   exporting.
 
-2. **The shared authoring layer** - `std/shared/*.js`: `define.js` (`defineComponent`, `tagFor`),
-   `args.js` (argument dispatch, prop validation, `bindValue` / `bindText`), `css.js` (`token`,
-   `focusRing`, `forcedColors`, `hiddenRule`, size rules), `layout.js`, `declarations.js` (the
-   prop-to-custom-property handling of `responsive-fluid-values-only.md`), `links.js`, `icons.js`,
-   `path.js`. Every std component leans on this; none of it is reachable from app code.
+2. **The shared layer for authoring**, which is `std/shared/*.js`. It holds `define.js`, with
+   `defineComponent` and `tagFor`. It holds `args.js`, with the dispatch of an argument, the
+   validation of a prop, and `bindValue` and `bindText`. It holds `css.js`, with `token`,
+   `focusRing`, `forcedColors`, `hiddenRule` and the rules for a size. It also holds `layout.js`,
+   `declarations.js`, which handles a prop as a custom property, see
+   `responsive-fluid-values-only.md`, and `links.js`, `icons.js` and `path.js`. Every std component
+   uses this layer. App code can reach none of it.
 
-3. **Sibling modules inside `std/`** - two sorts. Unexported implementation files that only exist to
-   be shared by one family (`inputs/field.js`, `inputs/text_input.js`, `inputs/form_state.js`,
-   `inputs/checkable.js`, `inputs/control_css.js`, `layout/bar.js`, `layout/frame.js`), and exported
-   components a component composes (`submitButton` imports `general/button.js`).
+3. **A sibling module inside `std/`**, and there are two sorts. The first is a file of an
+   implementation that imp does not export, and that exists to be shared by one family. Those are
+   `inputs/field.js`, `inputs/text_input.js`, `inputs/form_state.js`, `inputs/checkable.js`,
+   `inputs/control_css.js`, `layout/bar.js` and `layout/frame.js`. The second is a component that
+   imp exports, and that another component composes. `submitButton` imports `general/button.js`.
 
 ## How the shared layer should be handled
 
-Three options; the middle one is the recommendation.
+There are three options, and the middle one is the recommendation.
 
-- **Copy it into the project alongside the component.** Honest and dependency-free, but ejecting
-  `button` drops five files the user never asked to own, ejecting a second component either
-  duplicates them or silently shares an earlier copy, and edits to a copied `css.js` change every
-  ejected component at once. It also does not work as stated: `args.js` needs `splitArgsByType` and
-  `css.js` needs `defaultTokens`, so the copy would have to reach further into the kernel and drag
-  parts of `render.js` and `theme.js` with it.
+- **Copy the layer into the project, beside the component.** That is honest, and it needs no
+  dependency. But to eject `button` then drops five files that the user never asked to own. To eject
+  a second component either duplicates those files, or shares an earlier copy with no message. An
+  edit to a copied `css.js` also changes every ejected component at once. The option also does not
+  work as stated. `args.js` needs `splitArgsByType`, and `css.js` needs `defaultTokens`. So the copy
+  would have to reach further into the kernel, and pull parts of `render.js` and `theme.js` with it.
 
-- **Promote it to a public specifier, `imp/kit`** - the component-authoring kit the standard library
-  itself is built on: `defineComponent`, `token`, `focusRing`, `forcedColors`, `hiddenRule`,
-  `oneOf`, `bindValue`, `bindText`, and the responsive prop resolver. Then an ejected component is
-  **one file** whose imports are all public, which is what makes the result readable, diffable
-  against the next imp version, and the same shape whether one component is ejected or ten. It earns
-  its keep independently of eject: an app writing its own themed component today hand-writes
-  `var(--imp-color-primary, #2563eb)` and its own focus ring, and would rather call `token()` and
-  `focusRing()` - the same values, checked against the theme, impossible to typo. A new subject gets
-  its own bare specifier (`library-import-namespaces.md`), so this is `imp/kit` rather than a
-  subpath under `imp/std`, where `imp/std/<group>` means a catalog group.
+- **Promote the layer to a public specifier, `imp/kit`.** That is the kit for authoring a component,
+  and the standard library itself is built on it. It holds `defineComponent`, `token`, `focusRing`,
+  `forcedColors`, `hiddenRule`, `oneOf`, `bindValue`, `bindText`, and the resolver for a responsive
+  prop. An ejected component is then **one file**, and all of its imports are public. That is what
+  makes the result readable. It is also what lets a person compare it against the next version of
+  imp. It also gives the same shape, whether somebody ejects one component or ten. The kit earns its
+  place without eject. An app that writes its own themed component today writes
+  `var(--imp-color-primary, #2563eb)` by hand, and its own focus ring. That app would prefer to call
+  `token()` and `focusRing()`. Those give the same values, checked against the theme, and nobody can
+  misspell them. A new subject gets its own bare specifier, see `library-import-namespaces.md`. So
+  this is `imp/kit`, and not a subpath under `imp/std`, where `imp/std/<group>` means a group of the
+  catalog.
 
-  The cost is real and should be weighed when this is picked up: it is a public API surface that has
-  to stay stable, with a `docs/` page, a `skills/` page, an `import-source` lint table entry, and
-  `defineComponent` in particular being a design that was never written to be seen from outside.
-  Keep the kit to what an ejected component provably needs - the closure above is small and
-  mechanical to check.
+  The cost is real, and somebody must weigh it when they take this up. It is a public API surface,
+  and it must stay stable. It needs a page in `docs/`, a page in `skills/`, and an entry in the
+  table of the `import-source` lint rule. `defineComponent` in particular is a design that nobody
+  wrote to be seen from outside. Keep the kit to what an ejected component provably needs. The
+  closure above is small, and a person can check it mechanically.
 
-- **Flatten everything into one bundled file.** Rejected: the whole point of ejecting is that the
-  developer reads and edits the result, and an inlined 900-line file with the helpers of five
-  modules pasted at the top is not that.
+- **Flatten everything into one bundled file.** imp rejects that. The whole point of an eject is
+  that the developer reads and edits the result. A file of 900 lines, with the helpers of five
+  modules at the top, is not that.
 
-For group 3, **unexported family modules are copied** next to the component (they are that
-component's implementation, not a shared layer), and **exported siblings keep importing `imp/std`**
-so ejecting `submitButton` does not silently fork `button` too. `--deep` can eject a whole family
-later, if anyone asks for it.
+For group 3, **imp copies a family module that it does not export** beside the component. Such a
+module is the implementation of that component, and not a shared layer. **A sibling that imp exports
+keeps its import of `imp/std`.** So an eject of `submitButton` does not fork `button` with no
+message. A `--deep` flag can eject a whole family later, when somebody asks for it.
 
 ## Renaming is not optional
 
-Two collisions make an unrenamed copy actively broken, and both are silent:
+Two collisions make a copy that nobody renamed actively broken, and both are silent:
 
-- **The element name.** `defineComponent` derives `imp-button` from the export name, and
-  `component()` answers a second definition of a name it already holds with
-  `component 'imp-button' is already
-  defined - reusing it and ignoring the new definition`. So an
-  app that ejects `button` and still imports anything from `imp/std` that renders a button gets
-  whichever definition mounted first - the user edits their ejected file and sees no change. The
-  ejected component must therefore define its own element name, and imp reserves the `imp-` prefix
-  anyway. `--as <name>` sets both the export and the element name; without it, eject renames the tag
-  but keeps the export name.
+- **The name of the element.** `defineComponent` derives `imp-button` from the name of the export.
+  `component()` answers a second definition of a name that it already holds with
+  `component 'imp-button' is already defined - reusing it and ignoring the new definition`. So an
+  app that ejects `button`, and that still imports anything from `imp/std` that renders a button,
+  gets whichever definition mounted first. The user then edits their ejected file, and sees no
+  change. So an ejected component must define its own name for an element. imp also reserves the
+  `imp-` prefix. `--as <name>` sets the name of the export, and the name of the element. Without
+  that flag, eject renames the tag, and keeps the name of the export.
 
-- **The message keys.** Every std component declares its own English wording under an `imp.` key
-  through `defaultMessages`, and `defaultMessages` is last-writer-wins per key - so an ejected
-  component that keeps `imp.form.checkFailed` fights the library's copy over one key, with load
-  order deciding. Eject rewrites the key namespace along with the name.
+- **The keys of the messages.** Every std component declares its own English wording, under an
+  `imp.` key, through `defaultMessages`. In `defaultMessages`, the last writer wins, per key. So an
+  ejected component that keeps `imp.form.checkFailed` fights the copy of the library, over one key,
+  and the order of the load decides the winner. So eject rewrites the namespace of the key, with the
+  name.
 
 ## What makes it smooth
 
-- **The call sites.** After ejecting, every `import { button } from 'imp/std'` in the project is
-  still pointing at the library. Eject reports each one, and `--rewrite-imports` fixes them in place
-  - the same AST-based rewriting `imp lint --fix` already does for `imp/import-source`. Off by
-    default: a file importing both the element factory and the component needs a human eye.
-- **The printed next step.** Eject ends by printing what it wrote, the new import line, the new
-  element name, and the one sentence that matters: this file is yours now, `imp update` will not
-  touch it, and it will not gain the fixes the shipped component gets.
-- **`--dry-run`** prints the same report and writes nothing, so an agent can look before it leaps.
-- **Refusing to overwrite.** An existing target file stops the command with the path named, rather
-  than discarding edits the user made after their first eject.
-- **Recording it.** An `ejected` map in `imp.json` (component -> path -> imp version it was taken
-  from) is what a later `imp eject --diff` would need to show what changed upstream since. Worth
-  writing from the start even if the diff view lands later; decide whether it is worth the config
-  key when the command is designed.
+- **The call sites.** After an eject, every `import { button } from 'imp/std'` in the project still
+  points at the library. Eject reports each one. `--rewrite-imports` fixes them in place, through
+  the same rewriting over an AST that `imp lint --fix` already does for `imp/import-source`. That
+  flag is off by default. A file that imports the element factory and the component both needs the
+  eye of a person.
+- **The next step, printed.** Eject ends by printing what it wrote, the new import line, and the new
+  name of the element. It also prints the one sentence that matters. This file is yours now.
+  `imp update` will not touch it. It will not receive the fixes that the shipped component receives.
+- **`--dry-run`** prints the same report, and writes nothing. So an agent can look before it acts.
+- **A refusal to overwrite.** A target file that already exists stops the command, and the message
+  names the path. imp does not discard an edit that the user made after their first eject.
+- **A record of the eject.** An `ejected` map in `imp.json` maps a component, to a path, to the imp
+  version that it came from. A later `imp eject --diff` would need that map, to show what changed
+  upstream since. It is worth writing from the start, also when the view of the diff lands later.
+  Decide whether it is worth the key in the config, when somebody designs the command.
 
 ## The guarantee
 
-A test ejects **every** component in every `imp/std` barrel into a scratch project and builds it.
-That is the only way the rewrite table stays honest as components land: a new component reaching for
-one more kernel internal fails the test that day, naming the import, rather than producing a broken
-eject a year later. It is the same enforcement shape as the test that fails when a barrel export
-arrives without a skill file.
+A test ejects **every** component of every `imp/std` barrel, into a scratch project, and builds the
+result. That is the only way in which the table of the rewrite stays honest, while components land.
+A new component that reaches for one more internal of the kernel fails the test on that day, and the
+message names the import. It does not produce a broken eject, a year later. That is the same shape
+of enforcement as the test that fails when an export of a barrel arrives with no skill file.
 
 ## Docs, skills and help
 
-A user-facing command, so it lands with its `docs/cli.md` usage block and prose, a `skills/eject.md`
-registered in `cli/src/skill.js`, and the CLI help entry. `docs/std-components.md` gains the escape
-hatch paragraph - when to eject rather than request a prop - and `skills/std.md` gains the
-mechanical version of it. If `imp/kit` lands with it, that is a `docs/` page and a `skills/` page of
-its own, plus its row in the `import-source` table.
+This is a command that a user sees. So it lands with its block of usage, and its prose, in
+`docs/cli.md`. It lands with a `skills/eject.md` page, which somebody registers in
+`cli/src/skill.js`. It lands with its entry in the help of the CLI. `docs/std-components.md` gains a
+paragraph about the escape hatch, which says when to eject, in place of asking for a prop.
+`skills/std.md` gains the mechanical version of that paragraph. When `imp/kit` lands with the
+command, that kit needs a page in `docs/`, a page in `skills/`, and its row in the table of
+`import-source`.
 
 ## ADR impact
 
-Once it ships, `adr/standard-component-library.md` grows the eject seam - the closed prop set stays
-closed precisely because there is a documented way out - and if `imp/kit` lands, its row belongs in
-`adr/library-import-namespaces.md` and the shared-helper layer it exposes in the std ADR.
+After the command ships, `adr/standard-component-library.md` grows the seam of the eject. The closed
+set of props stays closed exactly because there is a documented way out. When `imp/kit` lands, its
+row belongs in `adr/library-import-namespaces.md`. The layer of shared helpers that it exposes
+belongs in the ADR about the standard library.
 
 ## Open questions
 
-- **Where do ejected files go by default?** `src/components/` matches what `imp init` scaffolds, but
-  nothing in imp knows a project's layout. Decide between a fixed default with `--to` to override,
-  and a `components` key in `imp.json`.
-- **What prefix does the renamed element get?** A fixed `app-`, the project folder name, or a
-  configured prefix. This is the same question an app author answers when naming their own
-  components, so whatever is decided should be what `skills/components.md` teaches.
-- **Do the tests come too?** The standard components are covered by imp's own test suite, which the
-  user does not get. Ejecting a component silently drops it out from under that coverage. Emitting a
-  starting `*.test.js` with the role, accessible-name and keyboard assertions the accessibility
-  baseline requires would keep the guarantee with the code - but those tests are written against
-  imp's internal test layout, so this needs a look before promising it.
-- **What else is ejectable?** A built-in theme (`imp eject theme imp-light` -> a token module to
-  tweak, which is close to what the preview's theme editor exports) and the `imp init` templates are
-  the obvious candidates. Keep the first release to components; the noun in the command leaves room.
+- **Where does an ejected file go by default?** `src/components/` matches what `imp init` scaffolds.
+  But nothing in imp knows the layout of a project. Decide between a fixed default, with `--to` to
+  override it, and a `components` key in `imp.json`.
+- **Which prefix does the renamed element get?** It can be a fixed `app-`, the name of the folder of
+  the project, or a prefix that somebody configures. An author of an app answers the same question
+  when they name their own component. So whatever somebody decides must be what
+  `skills/components.md` teaches.
+- **Do the tests come as well?** The test suite of imp covers the standard components, and the user
+  does not get that suite. To eject a component drops it out from under that coverage, with no
+  message. imp could emit a `*.test.js` file to start from, with the assertions about a role, an
+  accessible name, and the keyboard, that the accessibility baseline requires. That would keep the
+  guarantee with the code. But somebody wrote those tests against the internal layout of the tests
+  of imp. So this needs a look, before anybody promises it.
+- **What else can somebody eject?** The obvious candidates are a built-in theme, and the templates
+  of `imp init`. `imp eject theme imp-light` would give a module of tokens to change, and that is
+  close to what the theme editor of the preview exports. Keep the first release to a component. The
+  noun in the command leaves room for more.

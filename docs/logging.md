@@ -1,12 +1,12 @@
 # imp-ui - Logging
 
-imp ships a small built-in logger. The library routes all of its own diagnostics through it, and
-your app can import the same logger for its own messages, so everything an imp app writes to the
-browser console honors one log level - set per environment, without touching code.
+imp has a small built-in logger. The library sends all of its own diagnostics through it. Your app
+can import the same logger for its own messages. So everything that an imp app writes to the browser
+console obeys one log level. You set that level per environment, and you do not change the code.
 
-## Using the logger
+## How to use the logger
 
-Import the ready-made `logger`, or create a named one that prefixes every message:
+Import the ready-made `logger`, or create a named logger that puts a prefix on every message:
 
 ```js
 import { createLogger, logger } from 'imp/log'
@@ -18,24 +18,25 @@ log.debug('recalculating totals', { items: 3 })
 log.warn('price feed is stale - using cached prices')
 ```
 
-A logger has four methods - `debug`, `info`, `warn`, and `error` - each accepting any number of
-arguments, exactly like the console: strings, objects, errors. A named logger prefixes its first
-argument (`myapp.cart: recalculating totals`), so filtering the console by your prefix shows only
-your messages; filtering by `imp:` shows only the library's.
+A logger has four methods: `debug`, `info`, `warn` and `error`. Each one accepts any number of
+arguments, exactly like the console. An argument can be a string, an object or an error. A named
+logger puts its name in front of the first argument, as in `myapp.cart: recalculating totals`. So a
+filter on your prefix shows only your messages, and a filter on `imp:` shows only the messages of
+the library.
 
-Messages go to the browser console: `debug` and `info` through `console.log`, `warn` through
-`console.warn`, and `error` through `console.error`, so the console's own severity filters and
-stack-trace handling keep working.
+The messages go to the browser console. `debug` and `info` go through `console.log`, `warn` goes
+through `console.warn`, and `error` goes through `console.error`. So the severity filters of the
+console, and its handling of a stack trace, continue to work.
 
 ## Log levels
 
-Four levels, in order: `debug` < `info` < `warn` < `error`. A message is written only when its level
-is at or above the active level. The default level is `info` - imp's warnings and errors show, debug
-tracing stays quiet.
+There are four levels, in this order: `debug` < `info` < `warn` < `error`. imp writes a message only
+when its level is at the active level or above it. The default level is `info`. So the warnings and
+the errors of imp show, and the debug tracing stays quiet.
 
-Set the level per environment through the `IMP_LOG_LEVEL` value in an environment file (see
-_Environments_ in **[Configuration](config.md)**) - debug tracing in dev, warnings and errors in
-prod:
+To set the level per environment, use the `IMP_LOG_LEVEL` value in an environment file. See
+_Environments_ in **[Configuration](config.md)**. Use debug tracing in development, and warnings and
+errors in production:
 
 ```json
 {
@@ -44,8 +45,8 @@ prod:
 }
 ```
 
-The level can also be changed at runtime - handy from the browser console while debugging a running
-app:
+You can also change the level at runtime. This helps from the browser console while you debug a
+running app:
 
 ```js
 import { logLevel, setLogLevel } from 'imp/log'
@@ -56,19 +57,20 @@ logLevel() // 'debug'
 
 ## What imp logs at the debug level
 
-With `IMP_LOG_LEVEL` set to `debug`, imp traces its own activity - the fastest way to see why a
-binding updates too often, or not at all:
+With `IMP_LOG_LEVEL` set to `debug`, imp traces its own activity. This is the fastest way to see why
+a binding updates too often, or does not update:
 
-- **State reads** - every `get()`, with the value returned.
-- **State sets** - every applied `set()`, with the new value, plus sets that were skipped because
-  the new value was identical or structurally equal to the current one.
-- **Subscriptions** - every `watch` attaching and detaching (including the ones `text`, `view`,
-  `each`, and state-bound props create), and each notification with its subscriber count.
-- **State lifecycle** - states being initialized and resolved, and consumers rebinding after a
-  component moves.
-- **Computed states** - every recompute, including ones whose result was unchanged.
-- **Component lifecycle** - components being defined, mounted, unmounted, and rebinding their
-  subscriptions after a move.
+- **State reads.** Every `get()`, with the value that it returned.
+- **State sets.** Every applied `set()`, with the new value. imp also logs a set that it skipped
+  because the new value is identical to the current one, or structurally equal to it.
+- **Subscriptions.** Every `watch` that attaches and detaches, and each notification with its
+  subscriber count. This includes the subscriptions that `text`, `view`, `each` and a state-bound
+  prop create.
+- **State lifecycle.** The states that imp initializes and resolves, and the consumers that bind
+  again after a component moves.
+- **Computed states.** Every recompute, and also the ones whose result did not change.
+- **Component lifecycle.** The components that imp defines, mounts and unmounts, and the components
+  that bind their subscriptions again after a move.
 
-Everything at `warn` and `error` - invalid state values, failed subscribers, mount failures, and the
-like - shows at the default level.
+Everything at `warn` and `error` shows at the default level. That covers an invalid state value, a
+failed subscriber, a mount failure and similar problems.

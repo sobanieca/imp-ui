@@ -2,58 +2,65 @@
 
 ## Context
 
-The same source often needs to ship against different configuration - a different API URL in dev,
-stage, and prod - without editing code between targets. Frontend config is not secret (everything
-reaches the browser), so the need is to select a named value set at build/serve time and expose it
-to app code, not to hide it.
+The same source often must ship against different configuration. An example is a different API URL
+in development, in staging and in production. Nobody wants to edit code between two targets.
+Frontend config is not secret, because everything reaches the browser. So the need is to select a
+named set of values at build time or serve time, and to expose it to app code. The need is not to
+hide the values.
 
 Two constraints shaped the mechanism:
 
-- **`imp start` serves raw ES modules** with an injected import map and does no bundling, while
-  `imp build` runs esbuild. A compile-time-only approach (esbuild `define` / `import.meta.env`)
-  would work in the bundle but not in the raw dev server, forcing two divergent code paths and
-  dev/prod skew.
-- **Users only edit `imp.json`.** Following the hide-Deno translation model, environment selection
-  and configuration must be expressed in imp's own config, not a Deno- or bundler-specific file.
+- **`imp start` serves raw ES modules**, with an injected import map, and it bundles nothing.
+  `imp build` runs esbuild. An approach that works only at compile time, such as the `define` option
+  of esbuild, or `import.meta.env`, would work in the bundle but not in the raw dev server. That
+  would force two different code paths, and it would make development differ from production.
+- **A user edits `imp.json` only.** imp follows the model that hides Deno. So the selection and the
+  configuration of an environment must appear in the config of imp, and not in a file that belongs
+  to Deno or to a bundler.
 
 ## Decision
 
-- **Named environments in `imp.json`.** An `environments` map pairs each alias with a path to an env
-  file of values: `{ "dev": "env/dev.json", "prod": "env/prod.json" }`. `loadImpConfig` validates
-  `environments` is an object of string paths; the referenced files are read and resolved only when
-  an environment is actually selected.
-- **JSON or `.env` files.** A referenced file whose name is `.env`, ends in `.env`, or starts with
-  `.env.` is parsed as a dotenv file (`KEY=VALUE` lines, `#` comments, `export` prefixes, and
-  single/double-quoted values), where every value is a string; any other path is parsed as JSON,
-  which additionally carries number and boolean values. imp's dotenv parser deliberately does **no**
-  `$VAR` expansion of its own, so a `$env.NAME` reference reaches the resolver verbatim and behaves
-  identically in both formats.
-- **Flat value bag, string/number/boolean.** Each env file is a flat set of values; nested objects
-  and arrays (in JSON) are rejected. A string of the form `$env.NAME` resolves at build/serve time
-  from the shell (`Deno.env.get`); any other string is a literal. Referencing an unset `$env.NAME`
-  is a fail-fast error naming the alias, the key, and the variable - a half-populated environment is
-  worse than a stopped build.
-- **Selection precedence.** `--env <alias>` on `imp start`/`imp build` wins; otherwise the `IMP_ENV`
-  shell variable (for CI); otherwise an alias literally named `default` if one is defined; otherwise
-  no environment (empty object - today's behavior, no breakage for projects that never opt in). An
-  unknown alias fails fast listing the defined aliases.
-- **One runtime mechanism, dev == prod.** The resolved values are injected into the HTML head as
-  `<script>globalThis.__IMP_ENV__ = { ... }</script>`, ahead of the import map, identically by the
-  dev server and the production build. The imp library exports a frozen `env` object read from that
-  global (empty when nothing was injected), so app code writes `import { env } from 'imp'` and never
-  touches the global directly.
-- **Env files stay out of the build output.** Every file referenced by `environments` is excluded
-  from the static copy into the build output directory - it is build-time config, like `imp.json`.
-- **A value that switches a feature on or off is a flag, not an env value.** Names listed in
-  `imp.json`'s `flags` are removed from the injected `env` object and read through `flag()` instead,
-  which `imp build` resolves and folds away; see `adr/feature-flags.md`.
+- **`imp.json` holds named environments.** An `environments` map pairs each alias with a path to a
+  file of values, as in `{ "dev": "env/dev.json", "prod": "env/prod.json" }`. `loadImpConfig`
+  validates that `environments` is an object of string paths. imp reads and resolves a referenced
+  file only when somebody selects that environment.
+- **A file is JSON or a `.env` file.** imp parses a referenced file as a dotenv file when its name
+  is `.env`, or ends in `.env`, or starts with `.env.`. That format holds `KEY=VALUE` lines, a `#`
+  comment, an `export` prefix, and a value in single or double quotes. Every value in it is a
+  string. imp parses any other path as JSON, which also carries a number and a boolean. The dotenv
+  parser of imp deliberately does **no** expansion of a `$VAR` of its own. So a `$env.NAME`
+  reference reaches the resolver without a change, and it behaves the same way in both formats.
+- **The values are a flat set of a string, a number or a boolean.** Each env file is flat. imp
+  rejects a nested object and an array in JSON. A string of the form `$env.NAME` resolves at build
+  time or at serve time, from the shell, through `Deno.env.get`. Any other string is a literal. A
+  reference to a `$env.NAME` that is not set is an error that stops the command immediately. The
+  message names the alias, the key and the variable. An environment that is half filled is worse
+  than a build that stops.
+- **The selection has a precedence.** `--env <alias>` on `imp start` or `imp build` wins. Then comes
+  the `IMP_ENV` shell variable, which helps in CI. Then comes an alias named `default`, when
+  somebody defined one. Otherwise there is no environment, and `env` is an empty object. That is the
+  behaviour of today, and a project that never opts in does not break. An unknown alias fails
+  immediately, and imp lists the aliases that exist.
+- **There is one runtime mechanism, and development equals production.** imp injects the resolved
+  values into the head of the HTML, as `<script>globalThis.__IMP_ENV__ = { ... }</script>`, in front
+  of the import map. The dev server and the production build inject it in the same way. The library
+  of imp exports a frozen `env` object, read from that global, and it is empty when imp injected
+  nothing. So app code writes `import { env } from 'imp'`, and never touches the global.
+- **An env file stays out of the build output.** imp excludes every file that `environments`
+  references from the static copy into the output directory. It is config for build time, like
+  `imp.json`.
+- **A value that turns a feature on or off is a flag, not an env value.** imp removes a name that
+  `flags` lists in `imp.json` from the injected `env` object. You read such a name through `flag()`,
+  which `imp build` resolves and folds away. See `adr/feature-flags.md`.
 
 ## Consequences
 
-- One authoring API and one behavior across `imp start` and `imp build`; no bundler-vs-dev-server
-  skew. `env` values are always read at runtime - nothing about them is folded or tree-shaken, which
-  is why anything meant to remove code from a production build goes through `flag()` instead.
-- Env values ship to the browser and are fully readable by any visitor. `$env.` keeps values out of
-  the repo; it does not make them private. Only publishable keys and public config belong here.
-- Env files holding `$env.` secrets or per-developer values should be git-ignored; they are read at
-  build/serve time from wherever they sit on disk.
+- There is one authoring API, and one behaviour, across `imp start` and `imp build`. The bundler and
+  the dev server do not differ. imp always reads an `env` value at runtime. It folds nothing away,
+  and a bundler shakes nothing out. That is why anything that must remove code from a production
+  build goes through `flag()` instead.
+- An env value ships to the browser, and any visitor can read it. `$env.` keeps a value out of the
+  repository. It does not make the value private. Only a publishable key, and public config, belong
+  here.
+- An env file that holds a `$env.` secret, or a value per developer, must go into `.gitignore`. imp
+  reads such a file at build time or at serve time, from wherever it sits on disk.

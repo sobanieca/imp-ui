@@ -1,9 +1,9 @@
 # imp-ui - Rendering
 
-How imp turns element-factory calls into real DOM. imp is buildless: no compile step, no JSX - plain
-JavaScript ES modules that run directly in the browser. The element factories come from
-**`imp/html`** and `mount` comes from **`imp`**, both bare specifiers imp resolves for you (see
-**[Imports](imports.md)** for the full map):
+This page explains how imp turns a call to an element factory into real DOM. imp is buildless. There
+is no compile step and no JSX. Your code is plain JavaScript ES modules that run directly in the
+browser. The element factories come from **`imp/html`**, and `mount` comes from **`imp`**. Both are
+bare specifiers that imp resolves for you. See **[Imports](imports.md)** for the full map:
 
 ```js
 import { mount } from 'imp'
@@ -12,23 +12,23 @@ import { div, h1 } from 'imp/html'
 mount('#app', div(h1('Hello')))
 ```
 
-> Scope: this page covers building DOM from factory calls. Components with a lifecycle (mount,
-> loading, unmount) are covered in **[Components](components.md)**; mapping URLs to screens is
-> covered in **[Routing](routing.md)**; theming is covered in **[Theming](theming.md)** and
-> translated text in **[Translations](i18n.md)**.
+> Scope: this page covers how to build DOM from a factory call. **[Components](components.md)**
+> covers a component with a lifecycle of mount, loading and unmount. **[Routing](routing.md)**
+> covers how to map a URL to a screen. **[Theming](theming.md)** covers theming, and
+> **[Translations](i18n.md)** covers translated text.
 
-## Mental model
+## The mental model
 
-- `el()` and the tag factories are **eager**: they return actual `Node`s the moment you call them.
-  You hold the reference and mutate it with normal DOM APIs - there is no virtual DOM and no
-  diffing.
-- Plain helper functions that bundle up elements (`card({ title }) -> div(...)`) are just
-  functions - lowercase, no JSX, no framework concept. When a piece of UI needs a lifecycle or
-  state, promote it to a **component** (`component('my-app-card', ...)`, see
-  **[Components](components.md)**); its factory is called the same way.
-- Arguments are dispatched by **type**, not position.
-- Prop keys are HTML attribute names **verbatim** (`class`, `for`, `data-id`, `aria-label`) - no
-  aliases.
+- `el()` and the tag factories are **eager**. They return a real `Node` the moment when you call
+  them. You hold the reference and change it with the normal DOM APIs. There is no virtual DOM and
+  no diffing.
+- A plain helper function that groups elements, such as `card({ title }) -> div(...)`, is a function
+  only. Its name is lowercase. There is no JSX and no framework concept. When a piece of UI needs a
+  lifecycle or state, make it a **component** with `component('my-app-card', ...)`. See
+  **[Components](components.md)**. You call its factory in the same way.
+- imp dispatches an argument by **type**, not by position.
+- A prop key is the HTML attribute name **exactly**, such as `class`, `for`, `data-id` and
+  `aria-label`. There is no alias.
 
 ## Elements
 
@@ -37,9 +37,9 @@ el(tag, ...args) -> Node            // the one primitive
 div, p, span, h1..h6, ul, li, button, input, form, table, ...  // ~80 tag factories
 ```
 
-Both live in `imp/html`; tags outside the factory list are built with `el('tag', ...)`.
+Both live in `imp/html`. For a tag with no factory, use `el('tag', ...)`.
 
-Argument dispatch by **type**, order irrelevant:
+imp dispatches an argument by **type**, and the order does not matter:
 
 | Arg type                          | Meaning                                                                      |
 | --------------------------------- | ---------------------------------------------------------------------------- |
@@ -49,7 +49,7 @@ Argument dispatch by **type**, order irrelevant:
 | plain object                      | props (one object per call - extras merge with later keys winning, and warn) |
 | `null`/`undefined`/`false`/`true` | skipped (so `cond && el(...)` works)                                         |
 
-Inline text mixes with elements in document order - both forms work:
+Inline text mixes with elements in document order. Both forms work:
 
 ```js
 p(['Hello ', strong('world')])
@@ -72,30 +72,34 @@ button(
 )
 ```
 
-- **Verbatim names.** Keys are the HTML attribute names exactly: `class`, `for`, `data-*`, `aria-*`.
-  No camelCase aliases.
-- **Property-first.** If the name exists as a JS property on the node it is assigned as a property
-  (`disabled`, `checked`, `value`, `selected`, custom-element props). Otherwise it becomes an
-  attribute. `null`/`undefined`/`false` removes; `true` sets a bare attribute. `list` and `form` are
-  always attributes.
-- **`null` on properties.** For **built-in** elements a `null`/`undefined` property value is coerced
-  to `''` (avoids the literal `"null"` string that non-`[LegacyNullToEmptyString]` IDL setters would
-  produce). For **custom elements** (hyphenated tag, or `is=`) the raw value is passed through, so a
-  setter typed as `T | null` receives real `null`. Caveat: this only applies once the property
-  exists on the node - if the element is built **before** `customElements.define(...)`, the prop is
-  not yet exposed and falls back to an attribute, so define custom elements before constructing
-  nodes that pass rich/`null` props to them.
-- **`class`**: `'card'` | `['card', extra]` (falsy entries dropped, joined) | `{ active: cond }`
-  (object - the truthy entries' names become the class). Every form sets the class whole - what you
-  pass is what the element gets.
-- **`style`**: `'color:red'` | object (`camelCase` -> kebab, `--custom-props` kept verbatim).
-- **`events`**: `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }` - native DOM event
-  names, **no `on` prefix**. The optional second array element is `addEventListener` options.
-- **State-valued props.** Any prop value may be a state (from `initState`/`useState`/`computed`) -
-  the prop then stays **live**, re-applied on every change, with each form keeping its usual meaning
-  (`div({ class: theme })`, `input({ disabled: busy })`). The binding goes live when a component (or
-  `mount`) places the element and ends with it; a state passed as a standalone argument instead of a
-  prop value is reported and skipped. See **[State](state.md)** - _Binding props_.
+- **Names are exact.** A key is the HTML attribute name, such as `class`, `for`, `data-*` and
+  `aria-*`. There is no camelCase alias.
+- **imp sets a property first.** If the name exists as a JS property on the node, imp assigns the
+  property. This covers `disabled`, `checked`, `value`, `selected` and a prop of a custom element.
+  Otherwise the name becomes an attribute. `null`, `undefined` and `false` remove the attribute.
+  `true` sets a bare attribute. `list` and `form` are always attributes.
+- **`null` on a property.** For a **built-in** element, imp converts a `null` or `undefined`
+  property value to `''`. This avoids the literal string `"null"` that an IDL setter without
+  `[LegacyNullToEmptyString]` would produce. For a **custom element**, which is a hyphenated tag or
+  a tag with `is=`, imp passes the raw value. So a setter typed as `T | null` receives a real
+  `null`. There is one condition. This applies only after the property exists on the node. When you
+  build the element **before** `customElements.define(...)`, the property does not exist yet, and
+  the prop becomes an attribute. So define a custom element before you build a node that passes a
+  rich value or a `null` to it.
+- **`class`** takes `'card'`, or `['card', extra]`, where imp drops a falsy entry and joins the
+  rest, or `{ active: cond }`, where the name of each truthy entry becomes a class. Every form sets
+  the class as a whole. What you pass is what the element gets.
+- **`style`** takes `'color:red'`, or an object. In an object, imp converts a `camelCase` key to
+  kebab case, and keeps a `--custom-prop` name as it is.
+- **`events`** is `{ click: fn, 'custom-event': fn, input: [fn, { once: true }] }`. Use a native DOM
+  event name, with **no `on` prefix**. The optional second element of an array is the options object
+  for `addEventListener`.
+- **A prop value can be a state**, from `initState`, `useState` or `computed`. The prop then stays
+  **live**, and imp applies it again on every change. Each form keeps its usual meaning, as in
+  `div({ class: theme })` and `input({ disabled: busy })`. The binding goes live when a component,
+  or `mount`, places the element, and it ends with that element. imp reports and skips a state that
+  you pass as a standalone argument in place of a prop value. See **[State](state.md)**, _Binding
+  props_.
 
 ## Mounting
 
@@ -106,13 +110,14 @@ unmount() // clears the host
 html('<b>trusted</b>') // raw HTML -> DocumentFragment (trusted input only)
 ```
 
-`mount(target, view)` runs `view` once (if a function), replaces the host's children with the
-result, and returns an `unmount` function that empties the host. The result may be a `Node`, a
-string (becomes a text node), or an array of either; `null`/`undefined`/`false` entries are skipped.
-A `target` selector that matches nothing throws.
+`mount(target, view)` runs `view` once, when `view` is a function. It replaces the children of the
+host with the result, and returns an `unmount` function that empties the host. The result can be a
+`Node`, a string, which becomes a text node, or an array of either. imp skips a `null`, `undefined`
+or `false` entry. A `target` selector that matches nothing throws.
 
-The first `mount` also zeroes the browser's default `body` margin, so a full-height app - anything
-built on [shell](std-components.md) - meets the edges of the window instead of leaving an
-eight-pixel gutter that pushes a scrollbar onto a page which should not scroll. The rule sits in a
-cascade layer of imp's own, which unlayered CSS always beats: write `body { margin: 2rem }` in your
-own stylesheet and you get your margin back, no `!important` needed.
+The first `mount` also sets the default `body` margin of the browser to zero. So a full-height app,
+which is anything built on [shell](std-components.md), reaches the edges of the window. Without the
+rule, an eight-pixel gutter remains, and it puts a scrollbar on a page that must not scroll. The
+rule sits in a cascade layer of imp's own, and unlayered CSS always wins against a layer. Write
+`body { margin: 2rem }` in your own stylesheet and you get your margin back. You do not need
+`!important`.

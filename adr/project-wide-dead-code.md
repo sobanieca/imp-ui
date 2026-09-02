@@ -2,69 +2,80 @@
 
 ## Context
 
-ESLint's recommended set already reports dead code inside a file: `no-unused-vars` for a local or an
-import nothing reads, `no-unreachable` for a statement after a `return`. What it cannot report is
-dead code between files - an export nothing imports, a module nothing loads - because every core
-rule sees one file at a time and has no notion that other files exist.
+The recommended set of ESLint already reports dead code inside one file. `no-unused-vars` reports a
+local or an import that nothing reads. `no-unreachable` reports a statement after a `return`. What
+that set cannot report is dead code between two files. It cannot report an export that nothing
+imports, or a module that nothing loads. Every core rule sees one file at a time, and it has no
+notion that other files exist.
 
-Nothing off the shelf closes that gap here. `eslint-plugin-import`'s `no-unused-modules` needs real
-filesystem access and a Node-semantics resolver, while imp embeds `eslint/universal` - the
-filesystem-free `Linter` (`in-process-toolchain.md`) - and resolves `imp/...`, vendored
-`dependencies/`, and imp.json aliases by its own rules. A standalone tool like knip would be a
-second Node process, contradicting a binary that works offline with nothing installed.
+Nothing that exists closes that gap here. The `no-unused-modules` rule of `eslint-plugin-import`
+needs real access to the filesystem, and a resolver with the semantics of Node. imp embeds
+`eslint/universal`, which is the `Linter` with no filesystem, see `in-process-toolchain.md`. imp
+also resolves `imp/...`, the vendored `dependencies/`, and an alias from `imp.json`, by its own
+rules. A separate tool such as knip would be a second Node process. That contradicts a binary that
+works offline, with nothing installed.
 
 ## Decision
 
-`imp lint` runs a whole-project pass alongside the per-file one, reporting three error-severity
-findings: `imp/unreachable-module` for a module no import chain reaches, `imp/unused-export` for an
-exported name no reachable module imports, and `imp/computed-import` for a dynamic `import()` whose
-specifier imp cannot read. The pass parses every project module with the same embedded Linter (a
-collector rule over the AST, no second parser), resolves relative specifiers with imp's own module
-resolution, and walks the graph from starting points it discovers: module `<script>` tags in any
-HTML page, `*.test.js` / `*.spec.js` / `*.preview.js` / `*.mock.js`, every script under `public/`
-(which ships verbatim, so anything may load it), and `lint.publicExports` in imp.json. A project
-with no starting point is skipped entirely. The pass always reads the whole project, even when paths
-are given, because reachability is not a per-file fact.
+`imp lint` runs a pass over the whole project, beside the pass over each file. It reports three
+findings, each at error severity. `imp/unreachable-module` reports a module that no chain of imports
+reaches. `imp/unused-export` reports an exported name that no reachable module imports.
+`imp/computed-import` reports a dynamic `import()` whose specifier imp cannot read.
 
-The walk decides reachability and usage together: an import counts as a reference only when the
-importing module is itself reached from a starting point. This is what makes the two findings
-consistent with each other - a module reported unreachable cannot at the same time be keeping
-another module's export alive, so deleting what the first finding names never surfaces a second
-finding it had been hiding.
+The pass parses every module of the project with the same embedded `Linter`. It uses a collector
+rule over the AST, and there is no second parser. It resolves a relative specifier with the module
+resolution of imp. It then walks the graph, from the starting points that it discovers. The starting
+points are these. Every `<script>` tag in an HTML page. Every `*.test.js`, `*.spec.js`,
+`*.preview.js` and `*.mock.js` file. The modules that `preview.themes`, `preview.translations` and
+`preview.groups` name in `imp.json`. Every script under `public/`. Every entry of
+`lint.publicExports` in `imp.json`. A preview module is a starting point because nothing in the app
+imports a groups module, and `imp preview` bundles it. A script under `public/` ships without a
+change, so anything can load it. imp skips the pass completely for a project with no starting point.
+The pass always reads the whole project, also when you give paths, because reachability is not a
+fact about one file.
 
-`lint.publicExports` is the escape hatch for code the project itself cannot use: a bare path makes a
-whole file public, and `path.js#name` makes one export public while the rest of the file stays
-checked.
+The walk decides reachability and usage together. An import counts as a reference only when a
+starting point reaches the importing module. That is what makes the two findings consistent with
+each other. A module that imp reports as unreachable cannot at the same time keep the export of
+another module alive. So when you delete what the first finding names, no second finding appears
+that the first one had hidden.
 
-Dynamic `import()` is followed as far as its specifier can be read, and no further:
+`lint.publicExports` is the escape hatch for code that the project itself cannot use. A bare path
+makes a whole file public. A `path.js#name` entry makes one export public, and imp still checks the
+rest of the file.
 
-- a **literal** specifier is a normal edge, and marks every export of the target used, since the
-  names taken off a loaded module are usually computed;
-- a **template with a literal folder prefix** marks that folder loaded and its exports used;
-- a **computed** specifier is not followed. It is reported as `imp/computed-import`, naming the two
-  ways out - a folder in the template, or the targets in `publicExports` - and the other two checks
-  run as if the call loaded nothing.
+imp follows a dynamic `import()` as far as it can read the specifier, and no further:
 
-`export * from './x.js'` is resolved name by name: a name imported from the barrel that the barrel
-does not declare itself is looked for in each star target, so the origin module's exports are still
-checked individually. Only `import * as ns` and a literal `import()` mark a module's exports used
-wholesale.
+- A **literal** specifier is a normal edge. It marks every export of the target as used, because the
+  names that you take off a loaded module are usually computed.
+- A **template with a literal folder in front** marks that folder as loaded, and its exports as
+  used.
+- imp does not follow a **computed** specifier. It reports `imp/computed-import`, and names the two
+  ways out, which are a folder in the template, and the targets in `publicExports`. The other two
+  checks then run as if the call loaded nothing.
 
-A module that does not parse stops the pass for that run with a printed note: the per-file rules
-already report the syntax error, and a file that cannot be read could import anything.
+imp resolves `export * from './x.js'` name by name. When you import a name from a barrel, and the
+barrel does not declare that name itself, imp looks for the name in each star target. So imp still
+checks the exports of the origin module one by one. Only `import * as ns`, and a literal `import()`,
+mark the exports of a module as used as a whole.
+
+A module that does not parse stops the pass for that run, and imp prints a note. The rules that read
+one file already report the syntax error, and a file that imp cannot read could import anything.
 
 ## Consequences
 
-- Dead code fails CI at the same severity as imp's other rules, and the pass costs one extra parse
-  of the project per run - acceptable at the scale of buildless projects imp targets.
-- Uncertainty is always a finding, never a silent gap. A computed `import()` is an error rather than
-  a reason to switch a check off, because the alternative - leaving one check running while another
-  is suppressed by the same unknown - reports an inconsistent picture: an export the hidden module
-  might well use is flagged, while the module itself is not. Naming the folder in a template is a
-  small edit that gives imp the whole picture back, and it is what the message asks for.
-- Precision over recall still holds: all exports used behind a dynamic import, a whole folder used
-  behind a template, are approximations that under-report. imp never tells anyone to delete live
-  code.
-- Reachability is only as good as the discovered starting points, so any project loading code by a
-  path imp cannot see must declare it in `publicExports`. That key is the single pressure valve for
-  every false positive any of the three checks can produce.
+- Dead code fails CI at the same severity as the other rules of imp. The pass costs one extra parse
+  of the project per run. That is acceptable at the scale of the buildless projects that imp
+  targets.
+- Uncertainty is always a finding, and never a silent gap. A computed `import()` is an error, and
+  not a reason to turn a check off. The alternative would leave one check running while the same
+  unknown suppressed another check. That reports an inconsistent picture. imp would report an export
+  that the hidden module may well use, and it would not report the module itself. To name the folder
+  in a template is a small edit, and it gives imp the whole picture back. That is what the message
+  asks for.
+- Precision still comes before recall. To mark every export as used behind a dynamic import, and to
+  mark a whole folder as used behind a template, are approximations that report too little. imp
+  never tells a person to delete live code.
+- Reachability is only as good as the starting points that imp discovers. So a project that loads
+  code by a path that imp cannot see must declare that path in `publicExports`. That key is the one
+  release valve for every false positive that the three checks can produce.

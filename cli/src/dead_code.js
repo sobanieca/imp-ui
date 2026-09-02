@@ -2,7 +2,7 @@ import { dirname, join, relative, resolve, SEPARATOR } from '@std/path'
 import { browserGlobals, Linter } from './vendor/eslint.js'
 import { resolveModuleFile } from './bundling.js'
 import { collectFiles } from './walk.js'
-import { htmlScripts, isLocalScriptSource, isModuleType } from './html_scripts.js'
+import { htmlScripts, isJavaScriptType, isLocalScriptSource, isModuleType } from './html_scripts.js'
 import { isSpecFile, isUnitFile } from './test.js'
 import { isPreviewFile } from './preview.js'
 import { MOCK_FILE_SUFFIX } from './mocks.js'
@@ -25,6 +25,12 @@ const isDevelopmentEntry = (path) =>
   isUnitFile(path) || isSpecFile(path) || isPreviewFile(path) || path.endsWith(MOCK_FILE_SUFFIX)
 
 const isRelative = (specifier) => specifier.startsWith('./') || specifier.startsWith('../')
+
+const previewModules = (preview = {}) => [
+  ...(preview.themes ?? []),
+  ...Object.values(preview.translations ?? {}),
+  ...(typeof preview.groups === 'string' ? [preview.groups] : []),
+]
 
 const declaredNames = (declaration) => {
   if (!declaration) return []
@@ -226,6 +232,11 @@ export async function reportDeadCode({ root, config, configName }) {
     reportComputedImports(file, record)
   }
 
+  for (const path of previewModules(config.preview)) {
+    const target = await resolveModuleFile(resolve(projectRoot, path))
+    if (target && modules.has(target)) roots.add(target)
+  }
+
   const resolveEdge = async (fromDirectory, specifier) => {
     if (!isRelative(specifier)) return null
     const resolved = await resolveModuleFile(resolve(fromDirectory, specifier))
@@ -269,7 +280,7 @@ export async function reportDeadCode({ root, config, configName }) {
     const html = await Deno.readTextFile(file)
     const directory = dirname(file)
     for (const script of htmlScripts(html)) {
-      if (!isModuleType(script.type)) continue
+      if (!isJavaScriptType(script.type)) continue
       if (script.src !== null) {
         if (!script.src || !isLocalScriptSource(script.src)) continue
         const path = scriptSourcePath(script.src)
@@ -280,7 +291,7 @@ export async function reportDeadCode({ root, config, configName }) {
         if (target && modules.has(target)) roots.add(target)
         continue
       }
-      if (!script.text.trim()) continue
+      if (!isModuleType(script.type) || !script.text.trim()) continue
       const record = collectModule(linter, script.text, `${file}.js`)
       if (!record.parsed) return skipUnparsed(file)
       reportComputedImports(file, record, script.lineOffset)
@@ -343,7 +354,7 @@ export async function reportDeadCode({ root, config, configName }) {
         line: 1,
         column: 1,
         message:
-          `nothing imports ${relativePath} - no entry page, test or public export reaches it; delete it, or ${hint}`,
+          `nothing imports ${relativePath} - no entry page, test, preview setting or public export reaches it; delete it, or ${hint}`,
       })
       continue
     }

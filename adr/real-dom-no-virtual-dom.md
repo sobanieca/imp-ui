@@ -2,31 +2,33 @@
 
 ## Context
 
-A rendering layer can produce either a virtual representation of the UI that is diffed against the
-previous one and reconciled into the DOM (React-style), or real DOM nodes directly. The virtual-DOM
-route brings a diffing algorithm, a reconciliation model, and a component-instance lifecycle -
-non-trivial machinery that AI agents (the primary authors) and human readers must hold in their
-heads, and the source of most "why did this re-render" surprises.
+A rendering layer can produce two things. It can produce a virtual representation of the UI, which
+the framework diffs against the previous one and reconciles into the DOM, in the manner of React. Or
+it can produce real DOM nodes directly. The virtual-DOM route brings a diffing algorithm, a
+reconciliation model, and a lifecycle for a component instance. That machinery is not small. An AI
+agent, which is the main author here, and a human reader must both hold it in their heads. It is
+also the source of most surprises about why a component rendered again.
 
-imp-ui's guiding principle is simplicity over capability and "boring on purpose" - no novel
-rendering algorithm, and explicitly real DOM with no diffing.
+The guiding principle of imp-ui is simplicity above capability, and it is deliberately boring. So
+there is no new rendering algorithm. imp uses real DOM, with no diffing.
 
 ## Decision
 
-`el(tag, ...)` and the tag factories return **actual DOM `Node`s**. There is no virtual DOM, no
-diffing, and no reconciliation. UI is composed from plain functions that run and return the nodes
-they built; callers may hold the reference and mutate it imperatively. Components with a lifecycle
-are real custom elements (`web-component-lifecycle.md`) - still actual DOM, still no diffing.
+`el(tag, ...)` and the tag factories return **real DOM `Node` objects**. There is no virtual DOM, no
+diffing and no reconciliation. You compose the UI from plain functions. Each function runs and
+returns the nodes that it built. A caller can hold the reference and change it directly. A component
+with a lifecycle is a real custom element, see `web-component-lifecycle.md`. That is still real DOM,
+and there is still no diffing.
 
-`mount(target, view)` runs `view` once and inserts the resulting nodes. Updates to already-built DOM
-are made by mutating specific nodes/attributes directly - never by re-diffing markup.
+`mount(target, view)` runs `view` once, and inserts the resulting nodes. To update DOM that already
+exists, you change a specific node or attribute directly. imp never diffs markup again.
 
 ## Consequences
 
-- No diff/reconcile code to write, document, or reason about. Output is inspectable with normal DOM
-  tools.
-- Imperative DOM manipulation with normal DOM APIs is a first-class, supported path.
-- Because there is no whole-tree re-render, updates target specific nodes/attributes directly; there
-  is no automatic child reconciliation for structural/list changes.
-- Holding stale references to nodes that later get replaced is a foot-gun the framework does not
-  protect against - the trade-off accepted for simplicity.
+- There is no diff or reconcile code to write, to document, or to reason about. You inspect the
+  output with the normal DOM tools.
+- Direct DOM manipulation with the normal DOM APIs is a first-class, supported path.
+- Nothing renders the whole tree again. So an update targets a specific node or attribute. There is
+  no automatic reconciliation of children for a structural change or a list change.
+- A stale reference to a node that imp later replaces is a problem that the framework does not
+  protect against. That is the trade that imp accepts for simplicity.

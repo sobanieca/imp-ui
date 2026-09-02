@@ -2,143 +2,229 @@
 
 ## Context
 
-The layout group is `flex` and `stack` and nothing else (`layout-two-flex-primitives.md`), which is
-right for arranging things inside a page and says nothing about the shape of a whole one. Every app
-still needs the same frame - a brand block, a top-level nav, a nav column for what is under it, a
-content area, sometimes a contextual aside, and somewhere to put the signed-in person - and without
-a component for it every app hand-assembles a CSS grid, gets the scroll containers and the phone
-treatment slightly wrong, and lands somewhere different from the app next to it.
+The layout group is `flex` and `stack`, and nothing else, see `layout-two-flex-primitives.md`. That
+is correct for the arrangement of things inside a page, and it says nothing about the shape of a
+whole page. Every app still needs the same frame. That frame holds a brand block, a nav at the top
+level, a nav column for what sits under it, a content area, and a place for the signed-in person.
+With no component for that frame, every app assembles a CSS grid by hand. It then gets the scroll
+containers, and the treatment on a phone, slightly wrong, and it lands somewhere different from the
+app beside it.
 
-Sorting an app's children into slots by an argument's shape is the part not worth reviving: it hides
-where things go, and it makes the frame's regions a function of what was passed rather than a
-decision the component owns.
+One part is not worth reviving. That is to sort the children of an app into a slot, by the shape of
+an argument. It hides where things go. It also makes the regions of the frame a function of what
+somebody passed, in place of a decision that the component owns.
 
-Four further constraints came from the rest of the library. A `:host { display: contents }` child
-puts its real box inside its own shadow root, so a parent selector cannot reach it - a frame must
-therefore render the box each region sits in. `responsive-fluid-values-only.md` says no component
-changes structure by width, and yet a phone cannot show a sidebar, a top bar and a row of pickers at
-once. imp writes no focus trap (`browser-support-baseline.md`), so a drawer has to be a real
-`<dialog>`. And a frame that only relocates opaque DOM cannot make a wide-screen control into a
-narrow-screen one.
+Four more constraints came from the rest of the library. A child with `:host { display: contents }`
+puts its real box inside its own shadow root. So a selector from a parent cannot reach it. A frame
+must therefore render the box that each region sits in. `responsive-fluid-values-only.md` says that
+no component changes its structure by width. And yet a phone cannot show a sidebar, a top bar and a
+row of pickers at the same time. imp writes no focus trap, see `browser-support-baseline.md`. So a
+drawer must be a real `<dialog>`. And a frame that only moves opaque DOM cannot turn a control for a
+wide screen into a control for a narrow one.
 
 ## Decision
 
-**`shell` is the app frame: one nav tree driving three surfaces, chrome the frame places itself,
-main content as children, and the library's single sanctioned breakpoint.**
+**`shell` is the app frame. It has one nav tree that drives three surfaces. It places the chrome
+itself. The main content is its children. It holds the one breakpoint that imp approves.**
 
-- **One nav tree, three surfaces.** `navbar.items` are the sections; a section may carry its own
-  `groups` of `items`, and that is what the sidebar shows while that section is current. The bar
-  lists the sections, the sidebar lists the current section's groups, the phone's bottom bar lists
-  that section's items. **Nothing is declared twice**, so a nav change lands on every surface at
-  once and no app keeps two arrays in sync from the route by hand.
-- **A section with no groups renders no sidebar at all**, and the content takes the full width. The
-  frame does not fake a column holding one row: the layout shift is the signal that the context
-  changed. This is the one thing the two-prop shape could not express, because presence of the
-  sidebar was the app's decision rather than the tree's.
-- **`sidebar` names the second level rather than supplying it.** Beside a `navbar` it carries only
-  `label`, `selected` and the `footer` rows; its `groups` and `items` warn and are dropped, because
-  a section declares its own. **Without a `navbar` it carries the whole column**, which is the
-  sidebar-only layout - one component, two arrangements, no second frame component and no `layout`
-  enum. Two components were considered and rejected: the fold, the drawer, the bottom bar, the aside
-  and the account are the bulk of the code and would have been duplicated to vary one axis.
-- **A region takes DOM; a role the frame must re-present takes data.** `logo`, `aside` and `extras`
-  are arbitrary DOM the shell wraps, sizes, places, moves and scrolls without looking inside. The
-  nav and the `account` are **data**, because the shell renders each of them more than once and
-  cannot make a second presentation out of DOM it was handed: the bar row is also a drawer column,
-  the sidebar column is also a length-capped bottom bar, the account is a `userCard` in the bar and
-  the same card in the drawer. **That is the line: placing or moving DOM is free, making a second
-  presentation of it is not.**
-- **Nav data is `navMenu`'s data, extended.** The row shape is item for item the one `navMenu`
-  takes, plus `children` for one level of nesting, so the same array drives the frame or a
-  standalone menu and the two components share one row renderer rather than two that drift.
-- **A section is always activatable.** With no `href` and no `onClick` it still renders a button and
-  reports `select`, because choosing a section is what changes the sidebar - an inert section would
-  make the tree unusable.
-- **The shell owns where the chrome sits, and it depends on what else was passed.** With a navbar,
-  the logo heads it and `extras` plus the account sit at its end. With only a sidebar, the logo
-  heads the column and the chrome foots it, and no bar is rendered at all.
+- **There is one nav tree, and three surfaces.** `navbar.items` are the sections. A section can
+  carry its own `groups` of `items`, and that is what the sidebar shows while the section is
+  current. The bar lists the sections. The sidebar lists the groups of the current section. The
+  bottom bar of a phone lists the items of that section. **You declare nothing twice.** So a change
+  to the nav lands on every surface at once, and no app keeps two arrays in step from the route, by
+  hand.
+- **A section with no groups renders no sidebar**, and the content takes the full width. The frame
+  does not imitate a column that holds one row. The change of layout is the signal that the context
+  changed. That is the one thing that the shape with two props could not express, because the
+  presence of the sidebar was a decision of the app, in place of a fact of the tree.
+- **The sidebar carries two app-wide slots, and they are not per section.** Those are the `footer`
+  rows of the sidebar, and its `extras`, which are DOM. Both stay whichever section is current. A
+  help link, a support card and an upgrade prompt belong to the app, and a person expects them in
+  one place. They are the one thing that keeps the column on the screen, in a section with no
+  groups. A column that shows app-wide content is not the false column above. `extras` sits below
+  the rows, and above the footer. The icon rail hides `extras`, because arbitrary DOM has no form as
+  an icon. On a phone both fold into the drawer. The footer rows go below the sections. imp merges
+  the `extras` of the sidebar with the `extras` of the shell, above the account. So the drawer is
+  the one place that holds everything that is not the current section.
+- **`sidebar` names the second level. It does not supply it.** Beside a `navbar` it carries `label`,
+  `selected`, and the app-wide `extras` and `footer`, and nothing else. imp warns about its `groups`
+  and its `items`, and drops them, because a section declares its own. **With no `navbar` it carries
+  the whole column**, and that is the sidebar-only layout. There is one component, with two
+  arrangements. There is no second component for the frame, and there is no `layout` enum. imp
+  considered two components, and rejected them. The fold, the drawer, the bottom bar and the account
+  are most of the code, and somebody would duplicate all of it to vary one axis.
+- **A region takes DOM. A role that the frame must present again takes data.** `logo` and `extras`
+  are any DOM. The shell wraps it, sizes it, places it, moves it and scrolls it, and it does not
+  look inside. The nav, and the `account`, are **data**. The shell renders each of them more than
+  once, and it cannot make a second presentation out of DOM that somebody handed it. The row of the
+  bar is also a column of the drawer. The column of the sidebar is also a bottom bar with a capped
+  length. The account is a `userCard` in the bar, and the same card in the drawer. **That is the
+  line. To place or to move DOM is free. To make a second presentation of it is not.**
+- **The DOM of a region lands inside the shadow root of the shell, and page CSS does not reach it,
+  by design.** imp appends `logo`, `extras`, the `extras` of the sidebar, and the main content, into
+  the tree of the frame. So a rule in the stylesheet of the app never styles them. Only an inherited
+  property, and an `--imp-*` custom property, cross the boundary, see `shadow-dom-isolation.md`.
+  That is the intended contract, and not a cost to hide. What goes into a region is an imp
+  component. That is `appLogo`, `themeSelect`, `userCard`, or a `component()` of the app. A
+  component carries its styles in its own shadow root. So it looks the same in the bar, in the
+  column and in the drawer, and the frame and the page know nothing about it. Raw DOM in a region
+  gets an inline style, or nothing. The fix for a region that needs styling is to make it a
+  component. The fix is never to open the tree of the shell to page CSS.
+- **The nav data is plain rows, and not a menu component.** A row is
+  `{ id, label, href, icon, tag, onClick, disabled }`, with `children` for one level of nesting. imp
+  ships no separate menu of destinations. The frame is where the destinations of an app live, and
+  one renderer of a row serves every presentation of them.
+- **A section is always activatable.** With no `href` and no `onClick`, it still renders a button,
+  and reports `select`. A choice of section is what changes the sidebar. An inert section would make
+  the tree unusable.
+- **The shell owns where the chrome sits, and that depends on what else you passed.** With a navbar,
+  the logo heads the bar, and `extras` with the account sit at its end. With a sidebar only, the
+  logo heads the column, the chrome sits at its foot, and imp renders no bar.
 - **Below `48rem` the frame folds into a phone app.** The top bar becomes a hamburger and a two-line
-  title - the section over the current row - because on a phone the frame should say where you are,
-  which a brand block does not. The **sidebar becomes the bottom bar**: those are the destinations
-  inside the section you are already in, so they are the ones worth a thumb's reach. It is capped at
-  `--imp-shell-bottom-bar-items` rows plus a **More** button opening a bottom sheet with the rest,
-  and groups flatten there, because a bottom bar is a row of destinations and not an outline. The
-  **sections, `extras` and the account move into the hamburger drawer**. The aside is gone. **When
-  the current section has no sidebar the bottom bar carries the sections instead**, and the drawer
-  then holds only the chrome - a row is one node and lives in one place at a time.
-- **The bottom bar's length is a custom property, not a prop.** `--imp-shell-bottom-bar-items` (`4`,
-  clamped to 3-5) is read from the shell's computed style, so a page tunes it in CSS next to the two
-  width properties rather than the frame growing a knob.
-- **The sidebar collapses to an icon rail** from a toggle in its head, which also names the current
-  section. Collapse is shell state with no prop and no event: it is a view preference of the frame,
-  not something an app routes on. **Drag-to-resize is deliberately not built** - a width is a custom
-  property, and a pointer-driven splitter is a component of its own if it is ever wanted.
-- **`signedIn` is the whole auth story, and it is one boolean.** `false` withholds the nav, the
-  bottom bar and the aside, closes the drawer, and falls back to a single top bar holding the logo
-  and the sign-in button - which is `account.onSignIn`, so the signed-out frame is the same props
-  with one flag flipped rather than a second layout.
+  title, with the section over the current row. On a phone, the frame must say where you are, and a
+  brand block does not. The **sidebar becomes the bottom bar**. Those are the destinations inside
+  the section that you are already in. So they are the ones that are worth a thumb. imp caps the
+  bottom bar at `--imp-shell-bottom-bar-items` rows, plus a **More** button, which opens a bottom
+  sheet with the rest. The groups flatten there, because a bottom bar is a row of destinations, and
+  not an outline. A parent row with `children` sits in the bottom bar like any row. A tap on it
+  there opens its children in that same sheet, under the label of the parent. The one level of
+  nesting that a phone gets is a sheet, and not an outline either. On a desktop, the parent of the
+  selected row starts expanded. So the row that is current is never hidden behind a collapsed caret.
+  The **sections, the footer rows, both sets of `extras`, and the account, move into the hamburger
+  drawer**. **When the current section has no sidebar, the bottom bar carries the sections
+  instead**, and the drawer then holds the chrome only. A row is one node, and it lives in one place
+  at a time.
+- **The length of the bottom bar is a custom property, and not a prop.**
+  `--imp-shell-bottom-bar-items` defaults to `4`, and imp clamps it between 3 and 5. imp reads it
+  from the computed style of the shell. So a page tunes it in CSS, beside the two properties for a
+  width, and the frame grows no knob.
+- **The sidebar collapses to an icon rail**, from a toggle in its head. That head also names the
+  current section. The collapse is state of the shell, with no prop and no event. It is a preference
+  about the view of the frame, and not something that an app routes on. **The toggle exists only
+  when every row can survive the rail.** Each row of the current section, and each footer row, must
+  carry an `icon`. A rail of empty rows shows nothing. So a column with one row that has no icon
+  keeps its width, and offers no toggle. A change of section that lands on such a column expands the
+  rail again. The rail keeps the icons of the rows, and the icons of the footer, and hides
+  everything else. It hides the logo, the name of the section, the `extras` of the sidebar, and the
+  `extras` and the account card of the shell, at the foot of the column. Arbitrary DOM, and the name
+  of a person, have no form as an icon, and a rail is a strip of icons, or it is not a rail. **imp
+  deliberately does not build a drag to resize.** A width is a custom property. A splitter that a
+  pointer drives is a component of its own, if somebody ever wants one.
+- **`signedIn` is the whole story about authentication, and it is one boolean.** `false` withholds
+  the nav and the bottom bar. It closes the drawer. It falls back to one top bar, which holds the
+  logo and the sign-in button. That button is `account.onSignIn`. So the signed-out frame is the
+  same props, with one flag changed, and not a second layout.
 - **The shell owns the drawer, and the drawer is a `<dialog>`.** The top layer, `inert` on the rest
-  of the page, focus entry, focus restore and Escape are the platform's. The shell adds backdrop
-  dismissal, closes itself when the viewport crosses back to desktop, and closes when a row in it is
-  chosen. `navOpen` is shell-owned by default, overridable with a writable state, and `navToggle`
-  reports every change the shell makes itself. **The drawer is the first consumer of the overlay
-  seam** (`overlay-top-layer.md`), so the backdrop dismissal, the hold on the page scroll and the
-  motion are shared code rather than shell code. **The More sheet is a plain `popover`** with a
-  `popovertarget` invoker, so its light dismiss, its Escape and its focus order are the platform's.
-  Being in the top layer it sits at the foot of the viewport rather than of an embedded frame; that
-  is the platform's positioning and the shell does not fight it.
-- **Every row is built once and afterwards only moved.** Each section's sidebar is built when the
-  items data changes, so switching sections, crossing the breakpoint and expanding a parent row all
-  re-parent or unhide existing nodes. This is not an optimisation: a media-query listener and a
-  click handler run **outside a mount scope**, where rebuilding a row that binds a state would throw
-  (`state-plain-data-values.md`), and `component-moves-rebind.md` keeps what a row holds working
-  across the move.
-- **This is the one component that changes structure by width**, and its query lives in its own
-  `styles` against the literal `48rem` - shared with the `matchMedia` query from one constant, since
-  CSS cannot resolve `--imp-breakpoint-desktop` inside a media query. A container query would fold
-  an embedded frame correctly too, and was considered and not taken: it would replace the one
-  documented breakpoint with a per-instance rule and a `ResizeObserver`, for a case - a shell inside
-  a narrow panel - that only imp's own preview stage has. The consequence is accepted below.
-- **The shell renders the landmarks, including the `<nav>` ones.** It renders `<header>`, `<main>`
-  and `<aside>`, is `100dvb` tall on its own host, scrolls each region independently, and names each
-  nav level from that level's `label`, falling back to a translated default.
-- **A page's own furniture is not frame chrome.** There is no `header` region and no `footer`, so a
-  breadcrumb trail, a page title or a toolbar of actions goes at the top of the main content. They
-  change with the screen; the frame does not.
-- **The recommendation is part of the decision.** Docs and skills say to reach for `shell` first and
-  customize it rather than replace it, because an imp app should put the nav where the nav goes.
-  Writing your own frame is a supported ending, not a failure, and is said as plainly.
+  of the page, the entry of the focus, the restore of the focus, and Escape, all belong to the
+  platform. The shell adds a dismissal from the backdrop. It closes itself when the viewport crosses
+  back to a desktop width. It closes when a person chooses a row inside it. `navOpen` belongs to the
+  shell by default, and a writable state overrides it. `navToggle` reports every change that the
+  shell makes itself. **The drawer is the first consumer of the overlay seam**, see
+  `overlay-top-layer.md`. So the dismissal from the backdrop, the hold on the page scroll, and the
+  motion, are shared code, and not code of the shell. **The More sheet is a plain `popover`**, with
+  a `popovertarget` invoker. So its light dismissal, its Escape, and its focus order, belong to the
+  platform. It is in the top layer. So it sits at the foot of the viewport, and not at the foot of
+  an embedded frame. That is the positioning of the platform, and the shell does not fight it.
+- **imp builds every row once, and afterwards it only moves that row.** imp builds the sidebar of
+  each section when the data of the items changes. So a change of section, a crossing of the
+  breakpoint, and an expansion of a parent row, all reparent an existing node, or unhide one. This
+  is not an optimization. A listener on a media query, and a click handler, run **outside a mount
+  scope**. There, to rebuild a row that binds a state would throw, see `state-plain-data-values.md`.
+  `component-moves-rebind.md` keeps what a row holds working, across the move.
+- **This is the one component that changes its structure by width.** Its query lives in its own
+  `styles`, against the literal `48rem`. It shares that literal with the `matchMedia` query, from
+  one constant, because CSS cannot resolve `--imp-breakpoint-desktop` inside a media query. A
+  container query would also fold an embedded frame correctly. imp considered that, and did not take
+  it. It would replace the one documented breakpoint with a rule per instance, and a
+  `ResizeObserver`, for a case that only the preview stage of imp has, which is a shell inside a
+  narrow panel. The consequence is accepted below.
+- **The shell renders the landmarks, and that includes the `<nav>` landmarks.** It renders
+  `<header>` and `<main>`. It is `100dvb` tall on its own host. It scrolls each region on its own.
+  It names each level of the nav from the `label` of that level, and falls back to a translated
+  default.
+- **There is no aside region, because a region of the frame must work on a phone.** The frame of imp
+  exists so that one call makes an app suit a desktop and a phone at the same time, and nobody
+  designs anything twice. Every region that the shell owns has a form for a phone. The bar folds
+  into the drawer. The sidebar becomes the bottom bar. The account moves into the drawer. A
+  contextual side column has no such form. It is an idea from the desktop. On a phone there is no
+  room beside the content. There are two honest answers, and both are wrong here. To hide the column
+  means that the frame drops content that the app put there, with no message. To stack it under the
+  page is not a decision for a frame to make. A region with no form for a phone would make the frame
+  encourage a layout that breaks at the fold, and that is the opposite of its purpose. So the shell
+  offers no such region. What would live there has two homes, and both belong to the app:
+  - **Content that comes and goes is a `drawer`**, see `overlay-top-layer.md`. That covers filters,
+    an inspector and a detail view. Mount the drawer in the main content, and open it from a control
+    there. It is an overlay in the top layer. It slides in over the frame, from the inline end, and
+    it is the same panel on a phone.
+  - **Content that must stand beside the page is a layout that the app writes, inside the main
+    content.** That is a `flex` of the page and its side column, and a media query of the app
+    decides when the column wraps below the page, see `responsive-fluid-values-only.md`. The
+    `<main>` of the shell is a plain scrolling box. So a page with two columns inside it is ordinary
+    CSS. The app knows what the column holds. So the app chooses what happens to it on a phone.
+- **The phone drawer of the shell is not the `drawer` component.** Its hamburger names the drawer
+  with `aria-controls`, and that reference cannot cross a shadow root, see
+  `shadow-dom-isolation.md`. So the two must share one root.
+- **The furniture of a page is not the chrome of the frame.** There is no `header` region, and there
+  is no `footer`. So a breadcrumb trail, a page title, and a toolbar of actions, go at the top of
+  the main content. They change with the screen, and the frame does not.
+- **`gap` is the one knob for a frame that floats, and it carries the radius with it.** Step `0` is
+  the edge-to-edge frame, with hairline dividers. Any other step, on the shared spacing scale,
+  insets the frame. It pulls the bar, the column and the bottom bar apart, into bordered panels,
+  rounded with `radius-lg`. imp ties the radius to the gap, in place of offering it on its own,
+  because a rounded corner against the edge of a screen looks broken. So the radius of a theme
+  reaches the frame only when there is room for it, and a theme with `radius: none` floats square
+  panels. imp writes the gap as a margin on each panel, and not as a grid `gap`. So a region that
+  imp does not render leaves no gap behind. The content is deliberately not a panel. It sits on the
+  background. So a person sees a moving backdrop, in place of glimpsing it between two cards, and a
+  page that wants a card draws one. The phone drawer floats with the panels. It is inset by the gap,
+  bordered and rounded. A gapped frame also publishes `--imp-shell-frame-gap` and
+  `--imp-shell-frame-radius`. Those are inherited custom properties. A `drawer` that somebody mounts
+  anywhere inside reads them, and floats in the same way. So the one contextual panel lines up with
+  the frame that it opens over, and the shell does not know that it exists.
+- **The background is a theme token first, and a DOM node second.** The frame paints
+  `background-app`, which is the one token that is a CSS `background`, and not a colour. A gradient
+  in a theme is the common case, and it needs no prop. Every chrome panel paints
+  `color-surface-sunken` over it. So the bar stays readable on any backdrop. `background` takes one
+  DOM node, for what CSS cannot draw, such as shapes that drift on a timer, or a canvas. imp
+  stretches that node to the frame. It paints it under the panels, from inside the stacking context
+  of the shell. It hides the node from assistive technology, as decoration.
+- **The recommendation is part of the decision.** The documentation and the skills say to use
+  `shell` first, and to customize it, in place of replacing it. An imp app must put the nav where a
+  nav goes. To write your own frame is a supported result, and not a failure, and imp says that as
+  plainly.
 
 ## Consequences
 
-- An app's frame is one call, and two apps built with imp look like the same kind of software
-  without either author deciding to make them.
-- **The nav being data costs the arbitrary widget in a nav region.** A tenant switcher above the
-  sections, or a checkbox below them, has nowhere in the frame to go; it belongs at the top of the
-  main content, or in `extras`. That is the price of a bottom bar the frame can count, cap and
-  overflow, and of a nav it can present three ways.
-- **Every section's sidebar is built at mount, not on demand.** A tree with many sections pays for
-  all of them upfront. Nav trees are small and the alternative - building on section change - throws
-  outside a mount scope, so the cost is accepted.
-- **The row renderer is shared between `shell` and `navMenu`**, so a shell pulls the nav-row code -
-  and `tag` behind it - into every bundle that uses the frame, alongside the `userCard` and `button`
-  that `account` already pulls. That is accepted: the frame is the recommended way to start an app,
-  and an app with a frame has nav rows and buttons.
-- **The fold is a media query, so an embedded shell does not fold with its box.** A shell in a panel
-  narrower than `48rem` on a wide screen keeps its desktop layout and crowds its top bar. imp's own
-  component preview is where this shows; an app that embeds a frame in a narrow panel should give it
-  the room a frame needs.
-- **A screen cannot push DOM up into the nav**, because imp ships no portal
-  (`todo/overlay-seam.md`). Cross-screen contribution is a nav-item state contributed to under an
-  owner key, which is why the plain-data rule (`state-plain-data-values.md`) governs the tree.
-- **Chrome that moves between parents is moved, not duplicated**, so the same `extras` node lives in
-  the bar on a wide screen and in the drawer on a narrow one. Anything in a region must therefore
-  survive being re-parented, which `component-moves-rebind.md` guarantees for imp components and
-  does not for raw DOM holding untracked listeners.
-- `100dvb` on the host means the page itself stops scrolling - but only because `mount` zeroes the
-  UA's default `body` margin, which would otherwise make the shell 16px taller than the window and
-  put a scrollbar on every imp app. The shell cannot reach that box itself, so the reset is a
-  document rule imp adopts in a cascade layer of its own on the first `mount`; unlayered app CSS
-  beats it, so an app that wants a body margin still just writes one. Embedding a shell in a shorter
-  box - a preview card, a docs example - is a `block-size` set on the element, which wins over the
-  host rule.
+- The frame of an app is one call. Two apps that somebody builds with imp look like the same kind of
+  software, and neither author decided to make them look alike.
+- **The nav is data, and that costs the arbitrary widget in a nav region.** A switcher of tenants
+  above the sections, or a checkbox below them, has no place in the frame. It belongs at the top of
+  the main content, or in `extras`. That is the price of a bottom bar that the frame can count, cap
+  and overflow, and of a nav that the frame can present in three ways.
+- **imp builds the sidebar of every section at the mount, and not on demand.** A tree with many
+  sections pays for all of them at the start. A nav tree is small. The alternative is to build on a
+  change of section, and that throws outside a mount scope. So imp accepts the cost.
+- **The renderer of a row lives with the shell.** So a shell pulls the code of a nav row, and the
+  `tag` behind it, into every bundle that uses the frame. It does that beside the `userCard` and the
+  `button` that `account` already pulls in. imp accepts that. The frame is the recommended way to
+  start an app, and an app with a frame has a nav row and a button.
+- **The fold is a media query. So an embedded shell does not fold with its box.** A shell in a panel
+  narrower than `48rem`, on a wide screen, keeps its desktop layout, and crowds its top bar. The
+  component preview of imp is where that shows. An app that embeds a frame in a narrow panel must
+  give the frame the room that a frame needs.
+- **A screen cannot push DOM up into the nav**, because imp ships no portal, see
+  `todo/overlay-seam.md`. A contribution across screens is a state of a nav item, which a screen
+  contributes to, under a key for its owner. That is why the rule about plain data, see
+  `state-plain-data-values.md`, governs the tree.
+- **imp moves the chrome that changes parent. It does not duplicate it.** So the same `extras` node
+  lives in the bar on a wide screen, and in the drawer on a narrow one. Anything in a region must
+  therefore survive a change of parent. `component-moves-rebind.md` guarantees that for an imp
+  component. It does not guarantee it for raw DOM that holds a listener that imp does not track.
+- `100dvb` on the host means that the page itself stops scrolling. That works only because `mount`
+  sets the default `body` margin of the user agent to zero. That margin would otherwise make the
+  shell 16px taller than the window, and put a scrollbar on every imp app. The shell cannot reach
+  that box itself. So the reset is a document rule that imp adopts, in a cascade layer of its own,
+  on the first `mount`. Unlayered CSS of an app wins against it. So an app that wants a margin on
+  the body still writes one. To embed a shell in a shorter box, such as a preview card, or an
+  example in the documentation, is a `block-size` on the element, and that wins against the rule on
+  the host.

@@ -2,157 +2,171 @@
 
 ## Context
 
-Every app that outgrows one language needs three things: somewhere to put the strings, a way to look
-one up, and a notion of "the current language". The usual answer is a library that brings its own
-store, its own reactive layer, its own message format, and a family of formatting helpers - `t`,
-plus wrappers for numbers, dates, relative time and plural selection, plus setters for the active
-and fallback locale. imp already owns the reactive half: a state graph with fine-grained text
-bindings (`event-propagated-state.md`). What it lacked was a place to keep the current language.
+Every app that grows past one language needs three things. It needs a place to put the strings. It
+needs a way to look one up. It needs a notion of "the current language". The usual answer is a
+library that brings its own store, its own reactive layer, its own message format, and a family of
+helpers for formatting. That family holds `t`, plus a wrapper for a number, a date, a relative time
+and the selection of a plural, plus a setter for the active locale and for the fallback locale. imp
+already owns the reactive half, which is a graph of states with fine-grained bindings for text, see
+`event-propagated-state.md`. What imp lacked was a place to keep the current language.
 
-The formatting half is deliberately **out of scope for this decision**. Number, date and plural
-rules are locale data with real subtlety, and a wrong abstraction over them is worse than none - so
-this ADR covers lookup and lifetime only, and leaves formatting to the app, which can reach for the
-platform's `Intl` directly.
+The half about formatting is deliberately **out of scope for this decision**. The rules for a
+number, a date and a plural are locale data with real subtlety. A wrong abstraction over them is
+worse than none. So this ADR covers the lookup and the lifetime only. It leaves the formatting to
+the app, which can use the `Intl` object of the platform directly.
 
 The web platform already has the missing place.
 
-`<html lang>` is the standard declaration of a document's language: it drives `:lang()` in CSS,
-hyphenation, spellcheck and screen-reader pronunciation, and it is observable through
-`MutationObserver`. Inventing a second, imp-private notion of "current locale" beside it would leave
-two sources of truth that have to be kept in step by hand.
+`<html lang>` is the standard declaration of the language of a document. It drives `:lang()` in CSS,
+hyphenation, the spell check, and the pronunciation of a screen reader. A `MutationObserver` can
+also observe it. To invent a second, private notion of "the current locale" beside that attribute
+would leave two sources of truth, and somebody would keep them in step by hand.
 
 ## Decision
 
-i18n ships as **six names on `imp/i18n`** - `t`, `lang`, `dir`, `setLang`, `missingMessages`,
-`defaultMessages` - plus `translations` and `dir` options on `init`, and `translations` on `area`.
-There is deliberately **no register call for a language's translations**: an app declares its
-languages where it declares everything else about itself, and imp owns loading and dropping them.
-`defaultMessages` is not that call - it registers a **component's own fallback wording**, which
-belongs to the component rather than to any language the app declares (see below). The whole module
-is built on the DOM and plain objects - it carries no locale data of its own, and the one platform
-API it reaches for is `Intl.Locale`, to read a language's writing direction.
+The i18n subject ships as **six names on `imp/i18n`**. Those are `t`, `lang`, `dir`, `setLang`,
+`missingMessages` and `defaultMessages`. It also adds the `translations` and `dir` options on
+`init`, and the `translations` option on `area`. There is deliberately **no register call for the
+translations of a language**. An app declares its languages where it declares everything else about
+itself, and imp owns the load and the drop. `defaultMessages` is not that call. It registers the
+**fallback wording of a component**, which belongs to the component, and not to any language that
+the app declares. See below. The whole module is built on the DOM and on plain objects. It carries
+no locale data of its own. The one API of the platform that it uses is `Intl.Locale`, to read the
+writing direction of a language.
 
-- **`<html lang>` is the language.** `lang.get()` and `t()` read the attribute on every call, so
-  they can never disagree with the document. `setLang(code)` writes it - and only it; writing the
-  attribute by any other means works identically, because a `MutationObserver` on it feeds imp's
-  state and triggers the same load. When the attribute is unset, `navigator.language` is used, so an
-  app that declares its languages and never calls `setLang` already serves the visitor's preferred
-  language.
+- **`<html lang>` is the language.** `lang.get()` and `t()` read the attribute on every call. So
+  they can never disagree with the document. `setLang(code)` writes the attribute, and it writes
+  nothing else. To write the attribute in another way works in the same manner, because a
+  `MutationObserver` on it feeds the state of imp, and starts the same load. When the attribute is
+  not set, imp uses `navigator.language`. So an app that declares its languages, and that never
+  calls `setLang`, already serves the preferred language of the visitor.
 
-- **`<html dir>` is the direction, and it is derived from the language.** Direction is not a second
-  thing to configure: wherever imp writes `lang` it writes `dir`, resolved through
-  `Intl.Locale#getTextInfo()` so it follows the **script** rather than a hand-kept list of
-  right-to-left languages (`az-Arab` is RTL, `az-Latn` is not) - with a small base-language set as a
-  fallback for engines that predate the API. `init` applies it whether or not a language was given,
-  so the attribute is always present before the app mounts and imp-rendered content never paints the
-  wrong way round. `dir` is a read-only state of the same shape as `lang`. An app that needs the
-  direction fixed regardless of language pins it with `init({ dir })`, which then wins over
-  derivation for the life of the app; a _part_ of a page that needs its own direction uses the `dir`
-  attribute on that element, and text whose direction depends on its content uses the platform's
-  `dir="auto"` - neither needs anything from imp. Writing `<html dir>` by hand is respected until
-  the language next changes, at which point derivation takes over again: the language is the input,
-  so a language change is what recomputes it. The corollary is that **imp's own styles are written
-  in logical properties** (`padding-inline`, `text-align: start`), because setting the attribute is
-  worthless if the components under it are hardcoded to one direction.
+- **`<html dir>` is the direction, and imp derives it from the language.** The direction is not a
+  second thing to configure. Wherever imp writes `lang`, it writes `dir`. imp resolves the direction
+  through `Intl.Locale#getTextInfo()`. So it follows the **script**, and not a list of right-to-left
+  languages that somebody keeps by hand. `az-Arab` is RTL, and `az-Latn` is not. imp keeps a small
+  set of base languages as a fallback, for an engine that is older than the API. `init` applies the
+  direction, with or without a language. So the attribute is always present before the app mounts,
+  and content that imp renders never paints in the wrong direction. `dir` is a read-only state, of
+  the same shape as `lang`. An app that needs a fixed direction, whatever the language, pins it with
+  `init({ dir })`. That pin then wins against the derivation, for the life of the app. A _part_ of a
+  page that needs its own direction uses the `dir` attribute on that element. Text whose direction
+  depends on its content uses the `dir="auto"` of the platform. Neither one needs anything from imp.
+  imp respects a `<html dir>` that somebody writes by hand, until the language next changes. At that
+  point the derivation takes over again, because the language is the input, and a change of language
+  is what recomputes the direction. It follows that **imp writes its own styles in logical
+  properties**, such as `padding-inline` and `text-align: start`. To set the attribute is worthless
+  when the components under it are fixed to one direction.
 
-- **A component's words work the way its design tokens do.** A component reads its colors from
-  `var(--imp-color-text, #0f172a)` - the app's value when the theme defines one, a built-in fallback
-  when it does not. Text that is not the app's to invent (`No results`, `Cancel`, `Rows per page`)
-  has the same shape: it is looked up through `t()` under an `imp.`-prefixed key, and the component
-  **declares its own English wording** for the keys it reads through `defaultMessages` - a flat map
-  of dotted key to string, registered where the component defines its element, so a module nobody
-  renders stays free of side effects (`standard-component-library.md`). An app translation of the
-  key shadows that wording, per key and per language, the way a token overrides a fallback. The
-  prefix is a namespace, not a mechanism - nothing in the lookup treats `imp.` specially; it keeps
-  the library's keys clear of the app's exactly as `--imp-*` does for tokens.
+- **The words of a component work in the way that its design tokens work.** A component reads its
+  colours from `var(--imp-color-text, #0f172a)`. That is the value of the app, when the theme
+  defines one, and a built-in fallback when it does not. Text that the app must not invent has the
+  same shape. Examples are `No results`, `Cancel` and `Rows per page`. imp looks that text up
+  through `t()`, under a key with an `imp.` prefix. The component **declares its own English
+  wording** for the keys that it reads, through `defaultMessages`. That is a flat map, from a dotted
+  key to a string, and the component registers it where it defines its element. So a module that
+  nobody renders stays free of a side effect, see `standard-component-library.md`. A translation of
+  the key by an app shadows that wording, per key and per language, in the way that a token
+  overrides a fallback. The prefix is a namespace, and not a mechanism. Nothing in the lookup treats
+  `imp.` specially. It keeps the keys of the library clear of the keys of the app, exactly as
+  `--imp-*` does for a token.
 
-  What is rejected is a **catalog of languages inside the library**: that makes imp ship a chunk per
-  language whether or not the app is read in any of them, and puts imp in the business of
-  maintaining translations for every language it guesses at. One English string beside the component
-  that reads it has neither cost - it ships only when that component does, it is one line in the
-  file already open, and it only ever picks a register (_Delete_ or _Remove_? _OK_ or _Got it_?) in
-  the one language imp's authors can check, as a fallback the app overrides key by key. The
-  alternative for an untranslated key was rendering `imp.state.empty` to a reader, which is worse
-  than English wording in a Polish page. The cost to accept is that an untranslated key is no longer
-  loud: it is reported through the logger at **debug** level, because an app deliberately leaning on
-  the built-in wording is not making a mistake. `missingMessages()` returns the declared keys the
-  active language does not translate, for an app that wants to check its coverage. A key with no
-  default wording still warns and renders as itself.
+  imp rejects a **catalog of languages inside the library**. That would make imp ship a chunk per
+  language, whether or not somebody reads the app in that language. It would also put imp in the
+  business of maintaining a translation for every language that it guesses at. One English string,
+  beside the component that reads it, has neither cost. It ships only when that component ships. It
+  is one line in the file that is already open. It selects a register only in the one language that
+  the authors of imp can check. Is it _Delete_ or _Remove_? Is it _OK_ or _Got it_? It is a
+  fallback, and an app overrides it key by key. The alternative for a key with no translation was to
+  render `imp.state.empty` to a reader, and that is worse than English wording in a Polish page. imp
+  accepts one cost. A key with no translation is no longer loud. imp reports it through the logger,
+  at **debug** level, because an app that leans on the built-in wording on purpose makes no mistake.
+  `missingMessages()` returns the declared keys that the active language does not translate, for an
+  app that wants to check its coverage. A key with no default wording still gives a warning, and
+  renders as itself.
 
-- **Translations are declared, not registered - and only the active language is loaded.** `init` and
-  `area` both take `translations` as a **map of language code to loader**, and imp calls exactly one
-  of them: the entry matching the current language (plus its base language, so `en-GB` can be a
-  handful of overrides rather than a full copy of `en`). `init` loads before the app mounts, an area
-  loads before its first screen paints, so nothing ever paints untranslated. This is why `setLang`
-  is **async**: switching language means loading every live scope's messages for the target
-  language, and only then writing the attribute and dropping the previous ones, which makes the
-  switch atomic from the DOM's point of view. A loader is a dynamic `import()` of the file and
-  nothing else: one way to write it, one thing for the bundler to split, and no second loading
-  mechanism to document or explain.
-- **`lang` is a read-only state**, the same shape `theme` has (`themable-by-default-tokens.md`), so
-  `lang.text(() => t('todo.title'))` re-localizes one text node in place - no re-render, and no
-  reactive machinery invented for i18n.
-- **A language's messages are a plain nested object**, written and imported like any other module.
-  Messages loaded later shadow earlier ones key by key, so an area can override a message the app
-  defines. `t('todo.title')` walks the dot path to a **string**; an object at the end of that path
-  is a group, and naming one is an error.
-- **A message is looked up and interpolated, never selected between.** `t(key, params)` takes an
-  optional plain object of `{name}` placeholder values, substituted with `String(value)`; an
-  unmatched placeholder is left in the output rather than blanked, so a typo is visible. There is no
-  plural selection, no number or date formatting, and no locale-aware anything: those are the app's
-  to do, with `Intl` if it wants. This is a **deliberate v1 boundary** - the alternative was
-  inventing conventions (a magic `count` param, a forms-object shape) whose failure modes are silent
-  wrong grammar or a raw key, which is a poor trade for a feature an app can express itself.
-- **What is loaded is a stack of layers, and each is individually removable.** Messages are not
-  merged into one object; every load pushes a layer, and lookup walks the layers newest-first,
-  taking the first that resolves the whole dot path. That gives the same result as a deep merge for
-  every lookup - a partial override still falls through to the layer beneath it for keys it does not
-  carry - while remaining reversible, which a destructive merge is not. Dropping a scope removes
-  exactly the layers it added.
-- **An area's messages live exactly as long as the area.** The router owns the lifetime
-  (`client-side-router.md`): it loads the area's messages on entry and drops them through the route
-  page's own cleanup on exit, the same unmount that releases the section's DOM and state. App code
-  writes no lifecycle for it. Dropping removes them from lookups; it does not free memory, because
-  the module holding them stays in the browser's registry for the life of the page, exactly as an
-  area's code does. The win is in what is **downloaded** - a section never visited, or a language
-  never selected, is never downloaded - and in keeping a section's keys from resolving outside it.
-  Areas are expected to namespace their messages under their own top-level key; imp cannot warn
-  about a collision, because a later layer shadowing an earlier one is also how an area deliberately
-  overrides an app-level message.
-- **Fallback is a fixed rule, not a setting:** exact code -> base language (`en-GB` -> `en`) -> the
-  first language declared -> the key's default wording -> the key itself. Because only the active
-  language is resident, this chain does not reach another language's **translations**: a key missing
-  from the active language falls to the wording its component declared, or to the key, which is the
-  price of never holding a language nobody is reading. A key that cannot be resolved, and a group
-  named where a message was expected, are reported once through the built-in logger
-  (`built-in-logger.md`), so a missing translation degrades to readable text or a visible, greppable
-  string instead of an exception.
+- **An app declares a translation. It does not register one. imp loads the active language only.**
+  `init` and `area` both take `translations` as a **map of a language code to a loader**. imp calls
+  exactly one loader. That is the entry that matches the current language, with the entry of its
+  base language. So `en-GB` can be a few overrides, in place of a full copy of `en`. `init` loads
+  before the app mounts. An area loads before its first screen paints. So nothing ever paints
+  untranslated. That is why `setLang` is **async**. To change the language means to load the
+  messages of every live scope, for the target language. Only then does imp write the attribute, and
+  drop the previous messages. So the change is atomic, from the point of view of the DOM. A loader
+  is a dynamic `import()` of the file, and nothing else. There is one way to write it, one thing for
+  the bundler to split, and no second mechanism of loading to document or to explain.
+- **`lang` is a read-only state**, of the same shape as `theme`, see
+  `themable-by-default-tokens.md`. So `lang.text(() => t('todo.title'))` localizes one text node
+  again, in place. Nothing renders again, and nobody invented reactive machinery for i18n.
+- **The messages of a language are a plain nested object.** Somebody writes them, and imports them,
+  like any other module. A set of messages that loads later shadows an earlier set, key by key. So
+  an area can override a message that the app defines. `t('todo.title')` walks the dotted path to a
+  **string**. An object at the end of that path is a group, and to name a group is an error.
+- **imp looks a message up, and interpolates it. It never selects between two messages.**
+  `t(key, params)` takes an optional plain object of values for a `{name}` placeholder. imp
+  substitutes each one with `String(value)`. imp leaves a placeholder with no match in the output,
+  and does not blank it. So a spelling mistake is visible. There is no selection of a plural, no
+  formatting of a number or a date, and nothing that depends on a locale. Those belong to the app,
+  which can use `Intl`. That is a **deliberate boundary of version 1**. The alternative was to
+  invent a convention, such as a magic `count` parameter, or the shape of an object of forms. The
+  failure modes of such a convention are wrong grammar with no message, or a raw key. That is a poor
+  trade for a feature that an app can express itself.
+- **What imp loads is a stack of layers, and it can remove each one on its own.** imp does not merge
+  the messages into one object. Every load pushes a layer. A lookup walks the layers, from the
+  newest to the oldest, and takes the first layer that resolves the whole dotted path. That gives
+  the same result as a deep merge, for every lookup. A partial override still falls through to the
+  layer below it, for a key that it does not carry. It also stays reversible, and a destructive
+  merge is not. To drop a scope removes exactly the layers that it added.
+- **The messages of an area live exactly as long as the area.** The router owns the lifetime, see
+  `client-side-router.md`. It loads the messages of the area on entry. It drops them through the
+  cleanup of the route page on exit, which is the same unmount that releases the DOM and the state
+  of the section. App code writes no lifecycle for that. To drop the messages removes them from a
+  lookup. It does not free memory, because the module that holds them stays in the registry of the
+  browser, for the life of the page, exactly as the code of an area does. The gain is in what imp
+  **downloads**. A section that nobody visits, and a language that nobody selects, are never
+  downloaded. The other gain is that the keys of a section stop resolving outside it. imp expects an
+  area to put its messages under a top-level key of its own. imp cannot warn about a collision,
+  because a later layer that shadows an earlier one is also how an area overrides a message of the
+  app on purpose.
+- **The fallback is a fixed rule, and not a setting.** The chain is the exact code, then the base
+  language, so `en-GB` falls to `en`, then the first language that the app declared, then the
+  default wording of the key, then the key itself. imp holds the active language only. So this chain
+  does not reach the **translations** of another language. A key that the active language lacks
+  falls to the wording that its component declared, or to the key. That is the price of never
+  holding a language that nobody reads. imp reports a key that it cannot resolve, and a group that
+  it found where it expected a message, once, through the built-in logger, see `built-in-logger.md`.
+  So a missing translation becomes readable text, or a visible string that somebody can search for,
+  and not an exception.
 
 ## Consequences
 
-- The whole subject is six names, no dependency and no locale data; the message format is "a JS
-  object of strings", so there is nothing to learn, generate or compile, and a language's messages
-  can be split across files, lazily imported or built at runtime like any other value.
-- An app declares its languages once, in `init` and in each `area`, and never writes loading or
-  teardown code: what is downloaded, when, and what is dropped all follow from where it was
-  declared. The cost is that `setLang` is async, so a switch is `await setLang(code)`.
-- Apps that never switch language at runtime can ignore all of it and reload the page instead -
-  `init({ lang })` starts in whichever language was chosen. Live switching is the same feature with
-  the strings bound through `lang`, which is the rule the standard components follow so they
-  re-localize in place.
-- Because the attribute is the source of truth, a value read is always current, while notification
-  of an _external_ write costs one microtask (`MutationObserver` timing). Code that switches
-  language through `setLang` sees both synchronously.
-- Right-to-left support costs an app nothing it would not do anyway: declare the translations, write
-  logical CSS, and the layout follows the reader. The cost is that `<html dir>` is imp's to write -
-  an app that wants it otherwise pins it rather than fighting for the attribute.
-- imp carries no locale data, and no wording beyond one English string per key a component of its
-  own reads, so a build contains exactly the languages the app wrote plus the words of the
-  components it renders. An app that never translates anything still reads properly; an app that
-  translates everything ships nothing extra worth measuring. The cost is that a forgotten
-  translation is invisible to a reader of English; `missingMessages()` reports it when asked, and a
-  component's key list stays small and grows only when it genuinely needs a word.
-- **What imp does not do yet, and knows it:** plural selection, number and date formatting, and
-  relative time. Each needs `Intl` and a set of conventions worth designing on their own; an app
-  that needs one today writes it against `lang.get()`. Nothing in this decision blocks adding them
-  later - `t()` returning a plain string is a floor, not a ceiling.
+- The whole subject is six names, with no dependency and no locale data. The message format is a
+  JavaScript object of strings. So there is nothing to learn, to generate or to compile. The
+  messages of a language can also be split across files, imported lazily, or built at runtime, like
+  any other value.
+- An app declares its languages once, in `init` and in each `area`. It never writes code for loading
+  or for teardown. What imp downloads, when it downloads it, and what it drops, all follow from the
+  place where the app declared the language. The cost is that `setLang` is async. So a change is
+  `await setLang(code)`.
+- An app that never changes language at runtime can ignore all of that, and reload the page instead.
+  `init({ lang })` starts in whichever language somebody chose. A change in place is the same
+  feature, with the strings bound through `lang`. That is the rule that the standard components
+  follow, so they localize again in place.
+- The attribute is the source of truth. So a value that you read is always current. A notification
+  about a write from **outside** costs one microtask, because of the timing of a `MutationObserver`.
+  Code that changes the language through `setLang` sees both parts synchronously.
+- Support for right to left costs an app nothing that it would not do anyway. Declare the
+  translations, write logical CSS, and the layout follows the reader. The cost is that imp writes
+  `<html dir>`. An app that wants a different value pins it. It does not fight for the attribute.
+- imp carries no locale data. It carries no wording beyond one English string per key that a
+  component of imp reads. So a build contains exactly the languages that the app wrote, plus the
+  words of the components that it renders. An app that translates nothing still reads correctly. An
+  app that translates everything ships nothing extra that is worth measuring. The cost is that a
+  forgotten translation is invisible to a reader of English. `missingMessages()` reports it when you
+  ask. The list of keys of a component also stays small, and it grows only when the component really
+  needs a word.
+- **imp does not do these things yet, and it knows that.** It does not select a plural. It does not
+  format a number or a date. It does not format a relative time. Each one needs `Intl`, and a set of
+  conventions that somebody must design on its own. An app that needs one today writes it against
+  `lang.get()`. Nothing in this decision blocks the addition of one later. A `t()` that returns a
+  plain string is a floor, and not a ceiling.

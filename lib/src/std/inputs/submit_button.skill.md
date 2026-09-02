@@ -6,11 +6,12 @@ import { submitButton } from 'imp/std/inputs'
 submitButton('Save changes')
 ```
 
-Call shape: `submitButton(props?, ...children)` - children are the label.
+The call shape is `submitButton(props?, ...children)`. The children are the label.
 
-It finds the form around it by position, so it works at any depth - inside a `flex`, a `grid`, or
-anything else. Clicking it validates every field and runs the form's `onSubmit` only if they all
-pass. While an async `onSubmit` is in flight it shows a spinner and refuses further clicks.
+The button finds the form around it by position. So it works at any depth, inside a `flex`, a grid
+or anything else. A click validates every field. It runs the `onSubmit` of the form only when every
+field passes. While an async `onSubmit` is in flight, the button shows a spinner and refuses another
+click.
 
 | Prop       | Values                                          | Default     | Notes                 |
 | ---------- | ----------------------------------------------- | ----------- | --------------------- |
@@ -20,14 +21,14 @@ pass. While an async `onSubmit` is in flight it shows a spinner and refuses furt
 
 Rules an agent gets wrong:
 
-- **It must be inside a `form`.** Rendering one anywhere else is an error telling you so.
-- **There is no `events: { click }` and no `onSubmit` here.** The handler belongs on the form; this
-  button only asks the form to submit.
-- **Do not disable it while the form is invalid.** Let the click happen so every bad field starts
-  showing its message - that is how the user finds out what is wrong.
-- **The spinner is automatic** from the form's submitting state; do not also pass `loading`, which
-  is not a prop here.
-- Enter in any single-line field submits too, so this button is not the only way in.
+- **The button must be inside a `form`.** Anywhere else, imp reports an error that says so.
+- **There is no `events: { click }` and no `onSubmit` on this button.** The handler belongs on the
+  form. This button only asks the form to submit.
+- **Do not disable the button while the form is invalid.** Let the click happen. Every bad field
+  then starts to show its message, and that is how the person learns what is wrong.
+- **The spinner is automatic**, from the submitting state of the form. Do not pass `loading`. It is
+  not a prop here.
+- Enter in any single-line field also submits. So this button is not the only way to submit.
 
 ```js
 form(

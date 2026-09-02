@@ -6,8 +6,9 @@ import { emptyState } from 'imp/std/display'
 emptyState()
 ```
 
-Call shape: `emptyState(props?, ...children)` - the props object, when present, must be the
-**first** argument; children are the actions, laid out in a centered row under the text.
+The call shape is `emptyState(props?, ...children)`. When a props object is present, it must be the
+**first** argument. The children are the actions. imp lays them out in a centered row under the
+text.
 
 | Prop          | Values                                    | Default   | Notes                                         |
 | ------------- | ----------------------------------------- | --------- | --------------------------------------------- |
@@ -17,13 +18,14 @@ Call shape: `emptyState(props?, ...children)` - the props object, when present, 
 
 Rules an agent gets wrong:
 
-- **It imports from `imp/std/display`**, not from `imp/std`.
-- **It already has words.** With no `title`, `variant: 'empty'` reads the message key
-  `imp.state.empty` (falling back to "Nothing here yet") and `'noResults'` reads
-  `imp.state.noResults` ("No results") - translate those keys instead of hardcoding a title.
-- **A `title` you pass is plain text**: imp does not translate it. To follow the language, pass
+- **Import the component from `imp/std/display`**, not from `imp/std`.
+- **The component already has words.** With no `title`, `variant: 'empty'` reads the message key
+  `imp.state.empty` and falls back to "Nothing here yet". `'noResults'` reads `imp.state.noResults`
+  and falls back to "No results". Translate those keys. Do not write a fixed title.
+- **A `title` that you pass is plain text.** imp does not translate it. To follow the language, pass
   `computed([lang], () => t('invoices.empty'))`.
-- Unknown props warn at mount, and an out-of-range `variant` warns and falls back.
+- imp warns about an unknown prop at mount. It warns about a `variant` outside the list, and falls
+  back to the default.
 
 ```js
 emptyState({ variant: 'noResults' })

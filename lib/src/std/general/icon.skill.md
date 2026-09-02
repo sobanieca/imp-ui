@@ -9,8 +9,9 @@ icon(luUser, { size: 'lg', color: 'primary' })
 icon(luTrash, { size: 'sm', label: 'Delete invoice' })
 ```
 
-Call shape: `icon(drawing)`, `icon(drawing, props)` or `icon(props)` - it takes no content. The icon
-itself comes from `imp/icons`, never from a string: run 'imp skill icons' for the naming scheme.
+The call shape is `icon(drawing)`, `icon(drawing, props)` or `icon(props)`. The component takes no
+content. The icon comes from `imp/icons`, never from a string. Run 'imp skill icons' for the naming
+scheme.
 
 | Prop    | Values                                    | Default     | Notes                                               |
 | ------- | ----------------------------------------- | ----------- | --------------------------------------------------- |
@@ -19,27 +20,27 @@ itself comes from `imp/icons`, never from a string: run 'imp skill icons' for th
 | `color` | a colour name below, or `'current'`       | `'current'` | `'current'` inherits the surrounding text colour    |
 | `label` | string, or a state - **live**             | -           | Names the icon; without it it is decorative         |
 
-`color` names a theme token, never a CSS colour: `'primary'`, `'secondary'`, `'text'`, `'link'`,
-`'border'`, `'danger'`, `'success'`, `'warning'`, `'info'`, and every palette hue - `'gray'`,
-`'mauve'`, `'slate'`, `'sage'`, `'olive'`, `'sand'`, `'tomato'`, `'red'`, `'ruby'`, `'crimson'`,
-`'pink'`, `'plum'`, `'purple'`, `'violet'`, `'iris'`, `'indigo'`, `'blue'`, `'cyan'`, `'teal'`,
-`'jade'`, `'green'`, `'grass'`, `'bronze'`, `'gold'`, `'brown'`, `'orange'`, `'amber'`, `'yellow'`,
-`'lime'`, `'mint'`, `'sky'`.
+`color` names a theme token, never a CSS colour. The names are `'primary'`, `'secondary'`, `'text'`,
+`'link'`, `'border'`, `'danger'`, `'success'`, `'warning'` and `'info'`, and every palette hue:
+`'gray'`, `'mauve'`, `'slate'`, `'sage'`, `'olive'`, `'sand'`, `'tomato'`, `'red'`, `'ruby'`,
+`'crimson'`, `'pink'`, `'plum'`, `'purple'`, `'violet'`, `'iris'`, `'indigo'`, `'blue'`, `'cyan'`,
+`'teal'`, `'jade'`, `'green'`, `'grass'`, `'bronze'`, `'gold'`, `'brown'`, `'orange'`, `'amber'`,
+`'yellow'`, `'lime'`, `'mint'` and `'sky'`.
 
 Rules an agent gets wrong:
 
-- **The icon is an imported name, not a string.** `icon('home')` draws nothing and logs. Import
-  `luHouse` from `imp/icons` and pass the value, so the bundler ships that one drawing.
-- **Never `import * as icons from 'imp/icons'`** - a namespace import pins all 1791 icons into the
-  app. Import each name.
-- **A decorative icon takes no `label`.** An icon-only control is named on the **control**
-  (`button({ label })`), not on the icon inside it.
-- **`color` is a token name.** An arbitrary CSS colour is logged and ignored - colour the box around
-  the icon and leave it on `'current'`.
-- **Every icon is a 24x24 square** stroked in the current colour, so `size` sets both axes and a
+- **The icon is an imported name, not a string.** `icon('home')` draws nothing and logs an error.
+  Import `luHouse` from `imp/icons` and pass the value. The bundler then ships that one drawing.
+- **Never write `import * as icons from 'imp/icons'`.** A namespace import pins all 1791 icons into
+  the app. Import each name.
+- **A decorative icon takes no `label`.** Name an icon-only control on the **control** itself, with
+  `button({ label })`. Do not name the icon inside it.
+- **`color` is a token name.** imp logs any other CSS colour and ignores it. To use another colour,
+  colour the box around the icon and leave the icon on `'current'`.
+- **Every icon is a 24x24 square** stroked in the current colour. So `size` sets both axes, and a
   drawing is never squashed. Do not set `inline-size` yourself.
-- **Every icon-taking prop in the library accepts any DOM node**, so an icon Lucide does not draw is
-  your own inline `<svg>` - `icon()` is a convenience, not a requirement.
+- **Every icon prop in the library accepts any DOM node.** So an icon that Lucide does not draw is
+  your own inline `<svg>`. `icon()` is a convenience, not a requirement.
 
-Related: imp skill icons - the export naming scheme and the whole set. imp skill std/navMenu - nav
-items take an `icon` per destination. imp skill theming - where the colour names come from.
+Related: imp skill icons - the export naming scheme and the whole set. imp skill std/shell - nav
+rows take an `icon` per destination. imp skill theming - where the colour names come from.

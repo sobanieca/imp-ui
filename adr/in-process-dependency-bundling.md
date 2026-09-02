@@ -2,53 +2,54 @@
 
 ## Context
 
-`imp install` turns each `npm:`/`jsr:` dependency into a browser-ready, minified ESM bundle vendored
-under `dependencies/` (`vendored-dependencies.md`). The original implementation used native
-`esbuild` with `@luca/esbuild-deno-loader`. Both fail inside the single self-contained binary that
-`deno compile` produces:
+`imp install` turns each `npm:` and `jsr:` dependency into a minified ESM bundle that the browser
+can run. It vendors that bundle under `dependencies/`, see `vendored-dependencies.md`. The first
+implementation used native `esbuild` with `@luca/esbuild-deno-loader`. Both fail inside the one
+self-contained binary that `deno compile` produces:
 
-- **Native esbuild spawns a subprocess.** It launches a platform executable and talks to it over a
-  pipe; inside the compiled binary that spawn fails
-  (`Cannot read properties of undefined (reading
-  'unref')`), contradicting
-  `in-process-toolchain.md`, which requires the binary to spawn nothing.
-- **`@luca/esbuild-deno-loader` cannot resolve dependencies there.** Its portable loader needs a
-  `node_modules` directory and its native loader shells out to the `deno` binary - neither exists on
-  an end user's machine running only the imp binary.
+- **Native esbuild starts a subprocess.** It launches an executable for the platform, and talks to
+  it over a pipe. Inside the compiled binary, that launch fails with
+  `Cannot read properties of undefined (reading 'unref')`. That also contradicts
+  `in-process-toolchain.md`, which requires the binary to start no process.
+- **`@luca/esbuild-deno-loader` cannot resolve a dependency there.** Its portable loader needs a
+  `node_modules` directory. Its native loader calls the `deno` binary. Neither one exists on the
+  machine of an end user who runs only the imp binary.
 
-Hand-writing imp's own esbuild resolver-loader (npm registry metadata, semver, tarball fetch and
-in-process extraction, jsr manifests, transitive resolution, `exports` maps) was scoped but is a
-large, high-risk reimplementation of a package manager.
+imp scoped a resolver-loader of its own for esbuild. That would cover npm registry metadata, semver,
+a tarball fetch with an in-process extraction, a jsr manifest, transitive resolution and an
+`exports` map. That is a large implementation of a package manager, and the risk is high.
 
 ## Decision
 
-Dependency bundling runs fully in-process, with no hand-rolled resolver:
+Dependency bundling runs fully in process, and imp writes no resolver of its own:
 
-- **Engine:** `esbuild-wasm`, loaded as the ESM browser build with a manually supplied wasm module
-  and `worker: false` (`esbuild.initialize({ wasmModule, worker: false })`). This is the one
-  esbuild-wasm entry that works both under `deno run` and compiled - the default entry spawns a
-  worker script absent from the binary's virtual filesystem. The wasm is embedded by
-  `deno compile --include src` reaching the whole `src/` tree, and the esbuild-wasm asset is
-  embedded as part of its npm package.
-- **Resolver-loader:** the official `@deno/esbuild-plugin` (built on `@deno/loader`, a wasm build of
-  the same Rust crates Deno itself uses). It resolves and fetches `npm:` specifiers from
-  `registry.npmjs.org` and `jsr:` specifiers from `jsr.io` itself, over the network, requiring no
-  `node_modules`, no lockfile, and no ambient `deno`.
+- **The engine is `esbuild-wasm`.** imp loads the ESM browser build, supplies the wasm module by
+  hand, and sets `worker: false`, as in `esbuild.initialize({ wasmModule, worker: false })`. That is
+  the one esbuild-wasm entry that works under `deno run` and after a compile. The default entry
+  starts a worker script, and that script is absent from the virtual filesystem of the binary.
+  `deno compile --include src` reaches the whole `src/` tree, and embeds the wasm. The npm package
+  of esbuild-wasm carries its asset, and that asset is embedded as part of the package.
+- **The resolver-loader is the official `@deno/esbuild-plugin`.** That plugin is built on
+  `@deno/loader`, which is a wasm build of the same Rust crates that Deno itself uses. It resolves
+  and fetches an `npm:` specifier from `registry.npmjs.org`, and a `jsr:` specifier from `jsr.io`,
+  by itself, over the network. It needs no `node_modules`, no lock file, and no `deno` on the
+  machine.
 
-`cli/src/deps.js` initializes esbuild-wasm lazily and bundles each installed specifier with
-`[denoPlugin()]`, minified, emitting non-JS assets (wasm, images, fonts, css) as sibling files in
-the dependency's vendor folder.
+`cli/src/deps.js` initializes esbuild-wasm on first use. It bundles each installed specifier with
+`[denoPlugin()]`, minified. It emits a non-JS asset, such as a wasm file, an image, a font or a
+stylesheet, as a sibling file in the vendor folder of the dependency.
 
 ## Consequences
 
-- The compiled binary is self-contained for bundling: no ambient `deno`, no `node_modules`, no
-  subprocess. This removes the last subprocess dependency the CLI had, fully satisfying
-  `in-process-toolchain.md`.
-- Unlike fmt and lint, `imp install` needs the network: it fetches packages from the npm and jsr
-  registries. Downloads land in Deno's per-user global cache (`DENO_DIR`), never inside the project;
-  the only project-visible output is the vendored bundle (`vendored-dependencies.md`).
-- wasm esbuild is roughly an order of magnitude slower than native esbuild; that cost is paid once
-  per `imp install`, never while serving or in CI.
-- Resolution semantics match Deno's own, since the plugin uses Deno's resolver crates - the same
-  behavior apps get from imp. The engine and resolver are reused by `imp build`
-  (`production-bundling.md`).
+- The compiled binary is self-contained for bundling. It needs no `deno` on the machine, no
+  `node_modules` and no subprocess. That removes the last subprocess that the CLI depended on, and
+  it fully satisfies `in-process-toolchain.md`.
+- `imp install` needs the network, and `imp fmt` and `imp lint` do not. It fetches a package from
+  the npm registry and from the jsr registry. A download lands in the global cache of Deno for that
+  user, which is `DENO_DIR`. It never lands inside the project. The only output that the project
+  sees is the vendored bundle, see `vendored-dependencies.md`.
+- esbuild in wasm is about ten times slower than native esbuild. imp pays that cost once per
+  `imp install`. It never pays it while it serves, or in CI.
+- The resolution semantics match those of Deno, because the plugin uses the resolver crates of Deno.
+  That is the same behaviour that an app gets from imp. `imp build` reuses the same engine and the
+  same resolver, see `production-bundling.md`.

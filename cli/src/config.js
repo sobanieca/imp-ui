@@ -203,6 +203,11 @@ export async function loadImpConfig(startDir) {
       `invalid ${name} - 'preview.themes' must be an array of paths to theme modules`,
     )
   }
+  if (config.preview?.groups !== undefined && typeof config.preview.groups !== 'string') {
+    throw new Error(
+      `invalid ${name} - 'preview.groups' must be a path to a module exporting the component groups`,
+    )
+  }
   if (config.test?.video !== undefined) {
     if (!isPlainObject(config.test.video)) {
       throw new Error(`invalid ${name} - 'test.video' must be an object`)

@@ -22,6 +22,12 @@ const PAGE_SELECTOR_METHODS = new Set([
 const RETURNS_HANDLE = new Set(['$', 'waitForSelector'])
 const RETURNS_HANDLE_LIST = new Set(['$$'])
 
+const framePolled = (property, rest) => {
+  if (property !== 'waitForSelector') return rest
+  const [options, ...others] = rest
+  return [{ polling: 'raf', ...options }, ...others]
+}
+
 const wrapHandle = (handle) => handle && piercingProxy(handle, HANDLE_SELECTOR_METHODS)
 
 function piercingProxy(target, selectorMethods) {
@@ -31,7 +37,11 @@ function piercingProxy(target, selectorMethods) {
       if (typeof value !== 'function') return value
       if (!selectorMethods.has(property)) return value.bind(object)
       return async (selector, ...rest) => {
-        const result = await value.call(object, piercingSelector(selector), ...rest)
+        const result = await value.call(
+          object,
+          piercingSelector(selector),
+          ...framePolled(property, rest),
+        )
         if (RETURNS_HANDLE.has(property)) return wrapHandle(result)
         if (RETURNS_HANDLE_LIST.has(property)) return result.map(wrapHandle)
         return result

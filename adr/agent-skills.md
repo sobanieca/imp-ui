@@ -2,110 +2,120 @@
 
 ## Context
 
-imp assumes app code is largely written by AI coding agents. An agent cannot browse a documentation
-site while it works, and even when it can, it reads whatever version is published rather than the
-version the project runs. Without a local, versioned way to learn a feature - or a component - an
-agent writes code from a stale memory of it.
+imp assumes that an AI coding agent writes most of the app code. An agent cannot browse a
+documentation site while it works. Even when it can, it reads whichever version somebody published,
+and not the version that the project runs. With no local, versioned way to learn a feature, or a
+component, an agent writes code from a stale memory of it.
 
-Two bodies of text are needed and they have different owners. **Subjects** (state, routing, the CLI)
-are imp's. `docs/` explains them to a person, in prose written to be read start to finish - and that
-is the wrong shape for an agent, which needs the call shape, the table, and the rule it would
-otherwise get wrong, not the rationale between them. Serving one text to both readers made every
-page a compromise: too long to be cheap context, too terse to teach a newcomer. **Components** are
-different again: a component's manual is per-component, it is owned by whoever wrote the component -
-imp for the standard library, the app author for everything else - and it must survive being
-published to another imp app, where the consumer has no access to the source tree.
+Two bodies of text are necessary, and they have different owners. A **subject**, such as the state,
+the routing or the CLI, belongs to imp. `docs/` explains a subject to a person, in prose that
+somebody must read from start to end. That is the wrong shape for an agent. An agent needs the call
+shape, the table, and the rule that it would otherwise get wrong. It does not need the rationale
+between them. To serve one text to both readers made every page a compromise. It was too long to be
+cheap context, and too short to teach a newcomer. A **component** is different again. The manual of
+a component belongs to that component. Its owner is whoever wrote the component, which is imp for
+the standard library, and the author of the app for everything else. That manual must also survive a
+publication to another imp app, where the consumer has no access to the source tree.
 
 ## Decision
 
-**`skills/` is the subject corpus, written for an agent.** One page per subject, kept short and
-mechanical: the imports, the API tables, the rules an agent gets wrong, a worked example.
-`deno compile` includes the `skills/` tree in the binary the same way `THIRD_PARTY_LICENSES.md` is
-included for `imp licenses`, and `imp skill` reads it from there - no network, no project files, the
-version that shipped with the binary being run. `docs/` is no longer compiled in; it is the
-human-facing site and nothing reads it at runtime.
+**`skills/` is the corpus of subjects, and imp writes it for an agent.** There is one page per
+subject. Each page is short and mechanical. It gives the imports, the API tables, the rules that an
+agent gets wrong, and a worked example. `deno compile` includes the `skills/` tree in the binary, in
+the same way as it includes `THIRD_PARTY_LICENSES.md` for `imp licenses`. `imp skill` reads the
+pages from there. There is no network, and there are no project files. The version is the version
+that shipped with the binary that runs. imp no longer compiles `docs/` in. `docs/` is the site for a
+person, and nothing reads it at runtime.
 
-**The two corpora are otherwise independent.** They reach their readers through different channels -
-`skills/` through the binary, `docs/` through the published site - so neither dictates the other's
-structure, and one subject may map to one page here and part of a page there. What ties them is a
-convention, not a mechanism: a change to a feature updates both in the same commit. That is
-deliberately unenforced, because the failure worth catching is a page left **stale**, which no test
-comparing file trees can see.
+**The two corpora are otherwise independent.** They reach their readers through different channels.
+`skills/` travels in the binary, and `docs/` travels through the published site. So neither one
+dictates the structure of the other, and one subject can map to one page here, and to part of a page
+there. A convention ties them, and not a mechanism. A change to a feature updates both, in the same
+commit. imp deliberately does not enforce that. The failure that is worth catching is a page that is
+**stale**, and no test that compares two file trees can see that.
 
-**A component's skill is a `<module>.skill.md` file next to it** - `button.js` -> `button.skill.md`.
-One convention covers imp's standard components and an app's own components, so an agent learns both
-the same way and an author has one thing to remember. The file is plain markdown: nothing is
-executed to read it, it is reviewed in the same diff as the component it describes, and `imp fmt`
-formats it like any other markdown. Its first line is its summary.
+**The skill of a component is a `<module>.skill.md` file beside it.** So `button.js` gets
+`button.skill.md`. One convention covers the standard components of imp, and the components of an
+app. So an agent learns both in the same way, and an author remembers one thing. The file is plain
+markdown. imp executes nothing to read it. A reviewer sees it in the same diff as the component that
+it describes. `imp fmt` formats it like any other markdown file. Its first line is its summary.
 
-**`imp build` decides where that text goes by the entry it was given, not by configuration.** A JS
-entry is a component someone else will program against: imp appends each module's sidecar as
-`export const impSkill = '...'`, so the skill travels inside the bundle with no second file to
-distribute. An HTML entry is a finished app: nothing is injected, skill files are not copied into
-the output, and every module loaded into the build is stripped of skill text it already carries - an
-`export const impSkill = <literal>` initializer is emptied, and an `impSkill` specifier in a bundled
-module's export clause is removed so the string behind it tree-shakes away. A module that declares
-`impSkill` itself alongside a sidecar is a build error pointing at the sidecar, keeping one concept
-rather than two.
+**`imp build` decides where that text goes, from the entry that you gave it, and not from a
+configuration.** A JS entry is a component that somebody else programs against. imp appends the
+sidecar of each module as `export const impSkill = '...'`. So the skill travels inside the bundle,
+and there is no second file to distribute. An HTML entry is a finished app. imp injects nothing. It
+copies no skill file into the output. It also removes the skill text that a module already carries,
+for every module that enters the build. imp empties the initializer of an
+`export const impSkill = <literal>` declaration. It also removes an `impSkill` specifier from the
+export clause of a bundled module, so a bundler shakes the string behind it away. A module that
+declares `impSkill` itself, beside a sidecar, is a build error, and the message points at the
+sidecar. That keeps one concept, and not two.
 
-Doing both - never injecting, and stripping what arrives - is what makes the app guarantee
-structural rather than best-effort. Tree-shaking alone is not enough: an unreferenced `impSkill` is
-dropped from a statically imported module, but a **dynamically imported** module becomes its own
-chunk whose exports are preserved - measured on esbuild 0.28.1, with code splitting on as imp builds
-it - so an app that lazy-loads a pre-built component would otherwise ship the prose.
+To do both, and to inject nothing and remove what arrives, is what makes the guarantee for an app
+structural, in place of a best effort. Tree-shaking alone is not enough. A bundler drops an
+`impSkill` that nothing references from a module that somebody imports statically. But a module that
+somebody imports **dynamically** becomes its own chunk, and the bundler keeps the exports of that
+chunk. imp measured that on esbuild 0.28.1, with code splitting on, as imp builds it. So an app that
+loads a pre-built component lazily would otherwise ship the prose.
 
-`imp skill` is the single reading surface over both:
+`imp skill` is the one surface for reading both corpora:
 
-- **One registry in `cli/src/skill.js`, and one derivation.** `SKILLS` carries what cannot be read
-  off the tree - a subject's group, its aliases (`imp/state`, `state.md`, `router`) and its one-line
-  summary; the page itself is `skills/<subject>.md`, so a subject names its own file. Standard
-  components are not listed at all: their subjects are read out of the `imp/std` barrels at run
-  time, following `export *`, so `std/button` and its sidecar `std/general/button.skill.md` - plus
-  the `button` and `imp/std/button` aliases - all follow from the one `export { button }` line.
-  Adding a component to a barrel is the whole registration. Tests assert the derived set against the
-  barrels' real exports and that every subject's page exists, so neither a new subject nor a new
-  standard component can land without its skill.
-- **No argument prints an index** - one line per subject and component, plus every module in the
-  project with a skill file next to it, discovered with the shared walker. Discovery costs one cheap
-  call, learning costs one more; dumping a whole catalog would cost a few hundred kB of context to
-  answer "what exists?".
-- **A subject prints its manual with a banner**, verbatim from the page, with cross-document links
-  rewritten into the command that prints the target (`Rendering (imp skill rendering)`), gathered
-  again into a `Related:` line at the foot of the page, and markdown tables re-aligned where a
-  rewrite changed their width. **A skill file prints verbatim**, imp's and the project's alike - it
-  is already titled and summarized by its author.
-- **A component is asked for by file** - `imp skill ./components/counter.js`, or the skill file
-  itself. Nothing is bundled or imported to answer; the sidecar is read straight off disk. A missing
-  skill file exits non-zero naming the file to write, so "no skill yet" is distinguishable from a
-  real failure.
-- **No flags, stdout only.** Skill text is the only thing on stdout; diagnostics go to stderr with
-  exit code 1. Running the command and reading the output is the entire interface.
-- **`imp` with no arguments points agents at it.** The usage text ends with a line addressed to an
-  AI agent telling it to run `imp skill` before writing code, so the entry point is discoverable
-  from the one command anything runs first.
+- **There is one registry, in `cli/src/skill.js`, and one derivation.** `SKILLS` carries what nobody
+  can read off the tree. That is the group of a subject, its aliases, such as `imp/state`,
+  `state.md` and `router`, and its summary of one line. The page itself is `skills/<subject>.md`. So
+  a subject names its own file. imp does not list a standard component there at all. imp reads the
+  subject of a standard component out of the `imp/std` barrels at runtime, and follows an
+  `export *`. So `std/button`, its sidecar at `std/general/button.skill.md`, and the `button` and
+  `imp/std/button` aliases, all follow from the one `export { button }` line. To add a component to
+  a barrel is the whole registration. A test asserts the derived set against the real exports of the
+  barrels. Another test asserts that the page of every subject exists. So a new subject, and a new
+  standard component, cannot land without a skill.
+- **With no argument, imp prints an index.** That is one line per subject and per component, plus
+  every module in the project that has a skill file beside it. imp discovers those with the shared
+  walker. To discover what exists costs one cheap call, and to learn one part costs one more call.
+  To print a whole catalog would cost a few hundred kB of context, to answer the question "what
+  exists?".
+- **For a subject, imp prints its manual with a banner.** The page prints without a change, except
+  for two rewrites. imp rewrites a link between two documents into the command that prints the
+  target, as in `Rendering (imp skill rendering)`. imp gathers those targets again into a `Related:`
+  line at the foot of the page. imp also aligns a markdown table again, where a rewrite changed its
+  width. **A skill file prints without a change**, for imp and for the project. Its author already
+  gave it a title and a summary.
+- **You ask for a component by file**, as in `imp skill ./components/counter.js`, or by the skill
+  file itself. imp bundles nothing, and imports nothing, to answer. It reads the sidecar off disk. A
+  missing skill file exits with a non-zero code, and imp names the file to write. So a tool can tell
+  "no skill yet" from a real failure.
+- **There is no flag, and there is stdout only.** Skill text is the only thing on stdout. A
+  diagnostic goes to stderr, with exit code 1. To run the command and to read the output is the
+  whole interface.
+- **`imp` with no argument points an agent at the command.** The last line of the usage text is
+  addressed to an AI agent. It tells the agent to run `imp skill` before it writes code. So the
+  entry point is discoverable from the one command that anything runs first.
 
 ## Consequences
 
-- One source of truth per audience unit. Each subject is written twice on purpose - once for a
-  person in `docs/`, once for an agent in `skills/` - and a component's manual sits next to the
-  component and is reviewed in the same diff.
-- **A feature is not done until both pages are updated.** That is the cost of the split, and it is
-  carried by review rather than by tooling.
-- `docs/` is free to grow pages the binary never carries (a philosophy page, a landing page), and
-  `skills/` is free to carry pages no reader needs.
-- `skills/` pages are read as plain text in a terminal, so they stay concrete and self-contained -
-  call shapes, prop tables, the rules an agent gets wrong - and avoid anything that only works on a
-  website.
-- The binary grows by the `skills/` tree and the sidecars (~110 kB against ~150 MB), which is
-  immaterial against `binary-size-limit.json` - and under half of what shipping `docs/` cost.
-- Shipping a standard component now means shipping its skill file; the same is expected of an app's
-  components, though nothing forces it - a component without one is simply absent from the index.
-- Zero skill bytes reach an end-user app, whatever it is assembled from: nothing is injected into a
-  page build, skill files are excluded from what it copies to its output, and skills baked into
-  third-party bundles are stripped on the way in.
-- A published bundle carries the skill of its **entry module only**. Components re-exported through
-  a barrel lose theirs - two `export *` sources exporting `impSkill` make the name ambiguous, and
-  ambiguous star exports are dropped - so a multi-component package either describes itself in the
-  skill next to its entry, or publishes one entry per component.
-- A published component's skill is only as fresh as the bundle it shipped in - the text is baked in
-  at build time, like the code beside it.
+- There is one source of truth per audience. Somebody writes each subject twice, on purpose. Once
+  for a person, in `docs/`, and once for an agent, in `skills/`. The manual of a component sits
+  beside the component, and a reviewer sees it in the same diff.
+- **A feature is not done until both pages are updated.** That is the cost of the split. A review
+  carries that cost, and tooling does not.
+- `docs/` can grow a page that the binary never carries, such as a page about the philosophy, or a
+  landing page. `skills/` can carry a page that no reader needs.
+- A page in `skills/` is read as plain text, in a terminal. So it stays concrete and self-contained.
+  It holds a call shape, a prop table, and the rules that an agent gets wrong. It avoids anything
+  that only works on a website.
+- The binary grows by the `skills/` tree and the sidecars, which is about 110 kB against about 150
+  MB. That is immaterial against `binary-size-limit.json`. It is also less than half of what `docs/`
+  cost.
+- To ship a standard component now means to ship its skill file. imp expects the same of the
+  components of an app, and nothing forces it. A component with no skill file is simply absent from
+  the index.
+- No byte of skill text reaches an app of an end user, whatever that app is assembled from. imp
+  injects nothing into a page build. It excludes a skill file from what it copies into the output.
+  It removes a skill that a third-party bundle carries, on the way in.
+- A published bundle carries the skill of its **entry module** only. A component that a barrel
+  re-exports loses its skill. Two `export *` sources that export `impSkill` make the name ambiguous,
+  and a bundler drops an ambiguous star export. So a package with several components either
+  describes itself in the skill beside its entry, or publishes one entry per component.
+- The skill of a published component is only as fresh as the bundle that it shipped in. imp bakes
+  the text in at build time, like the code beside it.

@@ -53,8 +53,9 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/link           link - a real anchor whose in-app clicks are handled by the router
   std/icon           icon - one Lucide icon, sized and coloured from the theme
   std/dialog         dialog - one component for both overlay windows: the modal frame and the movable panel
+  std/drawer         drawer - a panel that slides in from the side of the screen, modal or not, on any width
   std/flex           flex - a row of children laid out with CSS flexbox
-  std/shell          shell - the app frame: one nav tree, logo, content, aside, account, and the phone fold
+  std/shell          shell - the app frame: one nav tree, logo, content, account, and the phone fold
   std/stack          stack - a vertical stack of children laid out with CSS flexbox
   std/emptyState     emptyState - the placeholder for a list, table or search result with nothing in it
   std/tag            tag - a small colored label for a status, a category or a count
@@ -70,7 +71,6 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/textArea       textArea - a multi-line text input bound to a form field
   std/textField      textField - a single-line text input bound to a form field
   std/toggle         toggle - a switch for a boolean that takes effect immediately
-  std/navMenu        navMenu - a nav landmark of links, grouped, with the current one marked
   std/tabs           tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
   std/appLogo        appLogo - the brand block at the head of a navbar or sidebar
   std/breadcrumbs    breadcrumbs - the trail of levels above the main region, as plain data

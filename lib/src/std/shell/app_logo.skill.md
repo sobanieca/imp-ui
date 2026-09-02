@@ -9,7 +9,7 @@ appLogo({ label: 'Acme', tagline: 'Operations', icon: icon(luBox) })
 appLogo({ label: 'Acme', src: '/logo.svg' })
 ```
 
-Call shape: `appLogo(props)` - it takes no content.
+The call shape is `appLogo(props)`. It takes no content.
 
 | Prop      | Values                        | Default | Notes                                        |
 | --------- | ----------------------------- | ------- | -------------------------------------------- |
@@ -24,14 +24,14 @@ Call shape: `appLogo(props)` - it takes no content.
 
 Rules an agent gets wrong:
 
-- **It is a link by default**, to `/`. An in-app path is routed by imp on a plain left-click and
-  left to the browser on a modifier-click; `href: null` makes it a plain box for a page that is
-  already home.
-- **`compact` hides the words visually, not from assistive tech**, so a mark-only logo is still
-  named. Use it where the brand block has no room for words.
-- **`alt` stays empty when a `label` is present** - the name is already text beside the image, and
-  repeating it makes a screen reader say it twice.
-- **It has no size props.** The mark is `1.75rem`; a bigger brand block is your own DOM in the
-  region.
+- **The logo is a link by default**, to `/`. imp routes an in-app path on a plain left-click, and
+  leaves a click with a modifier key to the browser. `href: null` makes the logo a plain box. Use
+  that on a page that is already the home page.
+- **`compact` hides the words visually, not from assistive technology.** So a logo with a mark only
+  still has a name. Use it where the brand block has no room for words.
+- **Keep `alt` empty when a `label` is present.** The name is already text beside the image. A
+  repeat makes a screen reader say the name twice.
+- **The component has no size prop.** The mark is `1.75rem`. For a larger brand block, put your own
+  DOM in the region.
 
 Related: imp skill std/shell - the frame this sits in, as its `logo` prop.

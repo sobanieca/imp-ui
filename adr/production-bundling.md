@@ -2,77 +2,84 @@
 
 ## Context
 
-Development is buildless: `imp start` serves source files verbatim and injects an import map that
-points `imp` at the served library and each `imp.json` dependency alias at its vendored
-`dependencies/<alias>/` bundle (`vendored-dependencies.md`). Production needs the opposite shape:
-self-contained, minified static files with no import map and no imp runtime, uploadable to any
-static host. The output must resolve specifiers exactly as development did, or what was tested is
-not what ships. The bundling engine question was already settled for `imp install`: esbuild-wasm
-plus `@deno/esbuild-plugin`, fully in-process (`in-process-dependency-bundling.md`); Deno's own
-bundling utilities remain unavailable inside a compiled binary (`deno bundle` is stripped from
-`denort`, and `Deno.bundle()` throws in compiled binaries, probed against Deno 2.9).
+Development is buildless. `imp start` serves a source file without a change, and injects an import
+map. That map points `imp` at the served library, and points each dependency alias from `imp.json`
+at its vendored `dependencies/<alias>/` bundle, see `vendored-dependencies.md`. Production needs the
+opposite shape. It needs self-contained, minified static files, with no import map and no imp
+runtime, that you can upload to any static host. The output must resolve a specifier exactly as
+development did. Otherwise what you tested is not what you ship. The question of the bundling engine
+was already settled for `imp install`. It is esbuild-wasm with `@deno/esbuild-plugin`, fully in
+process, see `in-process-dependency-bundling.md`. The bundling utilities of Deno are still not
+available inside a compiled binary. `deno bundle` is removed from `denort`, and `Deno.bundle()`
+throws in a compiled binary. imp probed both against Deno 2.9.
 
 ## Decision
 
-The command is named `imp build`, not `imp bundle`, because bundling JavaScript is only part of
-producing a deployable site: it owns the whole production-output step and is expected to emit other
-generated files alongside the bundled code (planned PWA support, for example, would add a manifest,
-icons, and a service worker). `build` names that whole step.
+The command is `imp build`, and not `imp bundle`. To bundle JavaScript is only part of the
+production of a site that you can deploy. The command owns the whole step that produces the
+production output, and it is expected to emit other generated files beside the bundled code. Planned
+PWA support, for example, adds a manifest, icons and a service worker. `build` names that whole
+step.
 
-`imp build [file.html|file.js] [--output dist]` reuses the `imp install` engine to build the app's
-own module graph, resolving bare specifiers the same way the dev import map does - offline, with an
-imp-owned esbuild resolver that intercepts before the Deno resolver:
+`imp build [file.html|file.js] [--output dist]` reuses the engine of `imp install` to build the
+module graph of the app. It resolves a bare specifier in the same way as the import map of the dev
+server, offline. An esbuild resolver that imp owns intercepts before the resolver of Deno:
 
-- **`imp` resolves to the library source baked into the binary**, loaded from the compiled binary's
-  virtual filesystem. Entry points and library modules are addressed as absolute `file://` URLs;
-  local entry paths are resolved against the project before bundling, because relative paths would
-  otherwise resolve into that virtual filesystem instead of the project.
-- **Each dependency alias resolves to its vendored `dependencies/<alias>/` bundle.** No registry is
-  contacted; a declared alias with no vendored bundle fails the build with a hint to run
+- **`imp` resolves to the library source that imp baked into the binary.** imp loads it from the
+  virtual filesystem of the compiled binary. imp addresses an entry point and a library module as an
+  absolute `file://` URL. imp resolves a local entry path against the project before it bundles,
+  because a relative path would otherwise resolve into that virtual filesystem, and not into the
+  project.
+- **Each dependency alias resolves to its vendored `dependencies/<alias>/` bundle.** imp contacts no
+  registry. A declared alias with no vendored bundle fails the build, and the message suggests
   `imp install`.
 - **An HTML entry keeps its URLs.** Every `<script type="module">` with a local `src` becomes an
-  entry point whose bundled output is written to the same project-relative path, so the HTML ships
-  unchanged; inline module scripts are bundled as additional entries and re-inlined. Lazily loaded
-  modules (`import()`) and code shared between entry points split into content-hashed files under
-  `chunks/`.
-- **Static assets ship from `public/`**, whose contents are copied to the output root unchanged and
-  are the only files copied - see `public-folder-static-assets.md`. The output directory (default
-  `dist/`, replaced on each run) is the complete uploadable site.
-- **A JS entry emits a self-contained module**: imp and all dependencies compiled in, so an imp
-  component can be dropped into any application without a runtime. No files are copied in this mode.
-- **`targetImpHost: true` in `imp.json` (JS entries only) keeps `imp` imports out of the bundle** as
-  bare specifiers for the host context to resolve - the dev server's import map and a host app's own
-  `imp build` both resolve bare `imp`, so a component can share the host's single copy of imp
-  instead of carrying its own. imp is the only import that can stay bare: declared dependencies are
-  always compiled in with their vendored, pinned versions, keeping the option a single boolean
-  instead of a per-import list. An HTML entry compiles imp in regardless - the page is its own host,
-  and its production output has no import map that could resolve a bare import.
+  entry point. imp writes its bundled output to the same project-relative path. So the HTML ships
+  without a change. imp bundles an inline module script as another entry, and inlines it again. A
+  module that loads lazily, through `import()`, and code that two entry points share, both go into a
+  file under `chunks/`, with a content hash.
+- **A static asset ships from `public/`.** imp copies its contents to the root of the output,
+  without a change, and it copies nothing else. See `public-folder-static-assets.md`. The output
+  directory, which is `dist/` by default and which imp replaces on each run, is the complete site to
+  upload.
+- **A JS entry emits a self-contained module.** imp compiles in imp and every dependency. So you can
+  drop an imp component into any application, and it needs no runtime. imp copies no file in this
+  mode.
+- **`targetImpHost: true` in `imp.json`, for a JS entry only, keeps an `imp` import out of the
+  bundle**, as a bare specifier for the host context to resolve. The import map of the dev server,
+  and the `imp build` of a host app, both resolve a bare `imp`. So a component can share the single
+  copy of imp of the host, in place of its own copy. `imp` is the only import that can stay bare.
+  imp always compiles a declared dependency in, at the vendored, pinned version. That keeps the
+  option one boolean, and not a list per import. An HTML entry compiles imp in anyway. The page is
+  its own host, and its production output has no import map that could resolve a bare import.
 
 ## Consequences
 
-- Production builds are offline and deterministic from the repository state: `imp.json` pins plus
-  committed `dependencies/` bundles fully determine the input, so no lock file is needed
-  (`vendored-dependencies.md`).
-- Dev and prod resolve specifiers identically; the shipped output needs no import map and no imp
-  runtime.
-- Dead-code elimination reaches the library itself, not only the app: no library module does work
-  when it is imported, so an app carries only the subjects and components it uses
-  (`tree-shakeable-library.md`).
-- Entry files keep stable, source-derived names - HTML never has to be rewritten, but entries get no
-  content-hash cache busting; only chunks and emitted assets are hashed.
-- Each vendored bundle enters the graph as one opaque, already-minified module: it is emitted once
-  and shared across all chunks, but a transitive package duplicated across two different vendored
-  bundles stays duplicated in the output - accepted deliberately
-  (`transitive-duplication-accepted.md`) - and tree-shaking inside vendored bundles is limited to
-  what their bundled form exposes.
-- Bundles built for an imp host trade the frozen-version guarantee for sharing: the component runs
-  against whatever imp version the host provides, so version skew between author and host becomes
-  possible - a contract self-contained bundles never have. In exchange the host page holds one imp
-  instance, which matters once imp carries shared state. The skew is confined to imp: every other
-  dependency ships frozen inside the bundle, at the cost of possible duplicates between host and
-  component (`transitive-duplication-accepted.md`).
-- `imp install` closes the consumer side of this contract: while vendoring it treats `imp` as
-  external, so a published bundle built with `targetImpHost` keeps its bare `imp` imports instead of
-  resolving them against a registry (`vendored-dependencies.md`).
-- wasm esbuild is roughly an order of magnitude slower than native esbuild; the cost is paid per
-  `imp build` run, never while serving.
+- A production build is offline, and it is deterministic from the state of the repository. The pins
+  in `imp.json`, and the committed bundles in `dependencies/`, fully determine the input. So imp
+  needs no lock file, see `vendored-dependencies.md`.
+- Development and production resolve a specifier in the same way. The output that you ship needs no
+  import map, and no imp runtime.
+- The dead-code elimination reaches the library itself, and not only the app. No library module does
+  work when somebody imports it. So an app carries only the subjects and the components that it
+  uses, see `tree-shakeable-library.md`.
+- An entry file keeps a stable name that comes from the source. So nobody has to rewrite the HTML.
+  An entry therefore gets no content hash to break a cache. imp hashes a chunk and an emitted asset
+  only.
+- Each vendored bundle enters the graph as one opaque module that imp already minified. imp emits it
+  once, and shares it across all the chunks. But a transitive package that two different vendored
+  bundles hold stays duplicated in the output. imp accepts that deliberately, see
+  `transitive-duplication-accepted.md`. The tree-shaking inside a vendored bundle is also limited to
+  what its bundled form exposes.
+- A bundle that you build for an imp host trades the guarantee of a frozen version for sharing. The
+  component runs against the imp version that the host provides. So the version of the author and
+  the version of the host can differ. A self-contained bundle never has that contract. In exchange,
+  the host page holds one instance of imp, and that matters when imp carries shared state. The
+  difference of version is limited to imp. Every other dependency ships frozen inside the bundle, at
+  the cost of a possible duplicate between the host and the component, see
+  `transitive-duplication-accepted.md`.
+- `imp install` closes the consumer side of this contract. While it vendors a package, it treats
+  `imp` as external. So a published bundle that somebody built with `targetImpHost` keeps its bare
+  `imp` imports. imp does not resolve them against a registry. See `vendored-dependencies.md`.
+- esbuild in wasm is about ten times slower than native esbuild. imp pays that cost per `imp build`
+  run, and never while it serves.

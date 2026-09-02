@@ -1,7 +1,7 @@
 # routing - one plain-data route table, with lazily loaded areas
 
-Everything comes from `imp/router`. `router()` is the slot the matched screen renders into; drop it
-in your layout and everything around it stays put across navigations.
+Everything comes from `imp/router`. `router()` is the slot where the matched screen renders. Put it
+in your layout. Everything around it stays in place across a navigation.
 
 ```js
 import { component, mount } from 'imp'
@@ -43,16 +43,16 @@ mount('#app', shell())
 | `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`               |
 | `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                          |
 
-Router options: `placeholder` shows while an **area's** module downloads (called with
-`{ params, query }`); `fallback` is a route-level error boundary called with
-`(error, { params, query })`, catching what the screen's own `fallback` did not; `notFound` is the
-single fallback for unmatched URLs.
+These are the router options. `placeholder` shows while the module of an **area** downloads, and imp
+calls it with `{ params, query }`. `fallback` is an error boundary at route level, and imp calls it
+with `(error, { params, query })`. It catches what the `fallback` of the screen did not catch.
+`notFound` is the one fallback for a URL that matches nothing.
 
 ## The route table
 
-A pattern is a URL path; `:name` segments capture values. The target is a factory receiving one
-argument, `{ params, query }` - `params` values are URL-decoded strings, `query` is the query string
-parsed **at the moment the screen is entered**.
+A pattern is a URL path. A `:name` segment captures a value. The target is a factory that receives
+one argument, `{ params, query }`. A `params` value is a URL-decoded string. `query` is the query
+string, parsed **at the moment when the user enters the screen**.
 
 | Pattern      | Matches                         | Factory sees                      |
 | ------------ | ------------------------------- | --------------------------------- |
@@ -60,34 +60,36 @@ parsed **at the moment the screen is entered**.
 | `/todos`     | exactly `/todos` (or `/todos/`) | `{ params: {}, query }`           |
 | `/todos/:id` | `/todos/42`                     | `{ params: { id: '42' }, query }` |
 
-**First match wins**, in the order the keys are written - put a static path before a param path that
-would also match. Trailing slashes are ignored.
+**The first match wins**, in the order in which you write the keys. Put a static path before a param
+path that would also match. imp ignores a trailing slash.
 
 ## Rules an agent gets wrong
 
-- **A screen factory builds its screen immediately.** Never `await` in it and never `import()` in
-  it - fetch data in the screen component's async `build` (its `placeholder` covers the wait), and
-  put on-demand code behind an `area()`.
-- **`area()` is the only lazy entry.** There is no lazy-screen form and no eager-area form. A
-  pattern pointing at an area matches as a **prefix**; every other pattern matches exactly.
-- **An area's own routes are written relative to the prefix** (`'/users'` inside `/admin` serves
-  `/admin/users`).
-- **A table-less `router()` is position-sensitive like `useState`** - it finds its area through the
-  mounting component, so in an async `root` it must be called **before the first `await`**; keep the
-  slot in a variable and use it after. Past the await it throws `'routes' is required`, which reads
-  as if the table were missing. Lint rule `imp/router-setup-before-await`. A `router({ routes })`
-  looks nothing up and can be built anywhere.
-- **A query-only change keeps the current screen mounted** - read the live query from `useRoute()`,
-  not from the factory's `query`, on a screen whose query can change while it stays up. Changing the
-  pattern or a `:param` mounts a fresh screen and unmounts the old one.
+- **A screen factory builds its screen immediately.** Never `await` in it, and never `import()` in
+  it. Fetch the data in the async `build` of the screen component, where its `placeholder` covers
+  the wait. Put on-demand code behind an `area()`.
+- **`area()` is the only lazy entry.** There is no lazy screen form, and no eager area form. A
+  pattern that points at an area matches as a **prefix**. Every other pattern matches exactly.
+- **Write the routes of an area relative to the prefix.** So `'/users'` inside `/admin` serves
+  `/admin/users`.
+- **A `router()` with no table depends on its position, like `useState`.** It finds its area through
+  the component that mounts. So in an async `root` you must call it **before the first `await`**.
+  Keep the slot in a variable and use it later. After the await it throws `'routes' is required`,
+  which reads as if the table were missing. The lint rule is `imp/router-setup-before-await`. A
+  `router({ routes })` looks nothing up, so you can build it anywhere.
+- **A change of the query only keeps the current screen mounted.** On a screen whose query can
+  change while the screen stays up, read the live query from `useRoute()`, not from the `query` of
+  the factory. A change of the pattern or of a `:param` mounts a new screen and unmounts the old
+  one.
 - **There is no link component.** Call `navigate()` from a click handler, or use `link` from
-  `imp/std`. Use `{ replace: true }` after a login redirect. Navigating to the current URL is a
-  no-op.
-- **Shared layout is a plain function** you call from each factory - there is no layout route.
-- **imp has no folder convention.** An area is a routing concept, not a directory; point each
-  `import()` wherever the module actually is.
-- Leaving an area releases its screens' state and DOM, but the browser keeps the downloaded module
-  for the life of the page - lazy areas save the **download**, not the heap.
+  `imp/std`. Use `{ replace: true }` after a login redirect. A navigation to the current URL does
+  nothing.
+- **A shared layout is a plain function** that you call from each factory. There is no layout route.
+- **imp has no folder convention.** An area is a routing concept, not a directory. Point each
+  `import()` at the real location of the module.
+- When the user leaves an area, imp releases the state and the DOM of its screens. The browser keeps
+  the downloaded module for the life of the page. So a lazy area saves the **download**, not the
+  heap.
 
 ## Guards
 
@@ -115,9 +117,9 @@ router({
 })
 ```
 
-`guard(states, check)` - `states` is a non-empty array of **state names** (not handles: a table is
-module scope). The router resolves them with `useState` at its own position, passes their values
-**positionally**, then `{ params, query, path }` last.
+In `guard(states, check)`, `states` is a non-empty array of **state names**, not handles, because a
+table is at module scope. The router resolves the names with `useState` at its own position. It
+passes the values **by position**, and passes `{ params, query, path }` last.
 
 | Verdict              | Effect                                                   |
 | -------------------- | -------------------------------------------------------- |
@@ -129,27 +131,31 @@ module scope). The router resolves them with `useState` at its own position, pas
 
 ## Rules an agent gets wrong about guards
 
-- **A route has exactly one guard, declared on the route.** There is no `router({ guard })` and no
-  `area({ guard })` - both throw, pointing at `route()`. No inheritance, no stacking, no array.
-  Compose by sharing a plain check function between guards, as above.
-- **There is no pending state in imp.** `initState('myapp.session')` with no initial value is just
-  `undefined`; the guard is the only place that decides `undefined` means "not loaded". Return
-  `wait` for it explicitly - a guard that reads `undefined` without checking will deny or throw, and
-  it will never wait.
-- **Sign out with `set(null)`, not by clearing to `undefined`.** `null` is an answer a guard acts on
-  (redirect); `undefined` only makes it wait, and **`wait` is ignored once the screen is showing** -
-  only a redirect leaves a mounted screen. `false` after mount is an error for the same reason.
-- **Declare every state the check reads.** Undeclared states are neither passed in nor watched, so
-  the guard goes stale. Do not call `useState` inside a check - it works on entry and throws on
-  re-check.
-- **Guard the entry, not the area file**: `route({ guard, screen: area(() => import(...)) })` covers
-  the section's root and every screen in it, and decides before the chunk downloads. A route inside
-  the area may carry its own, narrower guard. Neither is authorization - the server still checks.
-- **A guard is sync and pure.** No `await`, no fetch, no `navigate` inside it - return a path
-  instead. It re-runs on every change of a declared state, so keep it a cheap comparison.
-- **Failure is closed**: a throwing guard, an unknown verdict, or a state no ancestor provides all
-  render `fallback`. A guard stuck on `wait` warns after 5s naming the states; guards that redirect
-  to each other throw after 10 hops.
+- **A route has exactly one guard, and you declare it on the route.** There is no
+  `router({ guard })` and no `area({ guard })`. Both throw and point at `route()`. There is no
+  inheritance, no stacking and no array. To compose, share a plain check function between two
+  guards, as above.
+- **imp has no pending state.** `initState('myapp.session')` with no initial value is `undefined`.
+  The guard is the only place that decides that `undefined` means "not loaded". Return `wait` for it
+  explicitly. A guard that reads `undefined` without a check denies the route or throws, and it
+  never waits.
+- **Sign out with `set(null)`. Do not clear the value to `undefined`.** `null` is an answer that a
+  guard acts on, and it redirects. `undefined` only makes the guard wait, and **imp ignores `wait`
+  after the screen is showing**. Only a redirect removes a mounted screen. `false` after mount is an
+  error for the same reason.
+- **Declare every state that the check reads.** imp does not pass in or watch an undeclared state,
+  so the guard becomes stale. Do not call `useState` inside a check. It works on entry and throws on
+  a re-check.
+- **Guard the entry, not the area file.** `route({ guard, screen: area(() => import(...)) })` covers
+  the root of the section and every screen in it, and it decides before the chunk downloads. A route
+  inside the area can carry its own, narrower guard. Neither guard is authorization. The server must
+  still check.
+- **A guard is synchronous and pure.** Do not `await` in it, do not fetch in it, and do not call
+  `navigate` in it. Return a path instead. It runs again on every change of a declared state, so
+  keep it a cheap comparison.
+- **A failure closes the route.** A guard that throws, an unknown verdict, and a state that no
+  ancestor provides all render `fallback`. A guard that stays on `wait` gives a warning after 5s
+  that names the states. Two guards that redirect to each other throw after 10 hops.
 
 ## An area file
 
@@ -165,9 +171,9 @@ export default area({
 })
 ```
 
-An area's `translations` are covered in [i18n](i18n.md). Areas nest to any depth, and a prefix can
-capture params (`'/org/:orgId': area(...)` - a changing prefix param remounts the section).
-Navigating inside an area keeps it mounted and swaps its inner screen.
+[i18n](i18n.md) covers the `translations` of an area. An area nests to any depth, and a prefix can
+capture a param, as in `'/org/:orgId': area(...)`. A prefix param that changes remounts the section.
+A navigation inside an area keeps the area mounted and swaps its inner screen.
 
 ## `root` - one component around a whole section
 
@@ -182,34 +188,37 @@ const shell = component('admin-shell', {
 export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 ```
 
-- **`router()` with no table only works inside an area's `root`** - it renders that area's own
-  routes and inherits the parent router's `placeholder`, `fallback` and `notFound`, each overridable
-  for the section. Anywhere else, `routes` is required.
-- `root` is a **function** returning the component, and it receives the same `{ params, query }` a
-  screen factory gets - `root: ({ params }) => orgShell(params.orgId)`.
-- What it buys over wrapping each screen by hand is **lifetime**: the root stays mounted while the
-  user moves between the section's screens and unmounts when they leave. So it is where a
-  section-wide [http](http.md) client, a section-scoped [state](state.md), or a layout that must
-  keep its scroll position belongs. A prefix param that changes remounts the area, root included.
+- **A `router()` with no table works only inside the `root` of an area.** It renders the routes of
+  that area. It inherits the `placeholder`, the `fallback` and the `notFound` of the parent router,
+  and you can override each one for the section. Everywhere else, `routes` is necessary.
+- `root` is a **function** that returns the component. It receives the same `{ params, query }` as a
+  screen factory, as in `root: ({ params }) => orgShell(params.orgId)`.
+- The gain over wrapping each screen by hand is the **lifetime**. The root stays mounted while the
+  user moves between the screens of the section, and it unmounts when the user leaves. So the root
+  is the place for a section-wide [http](http.md) client, a section-scoped [state](state.md), or a
+  layout that must keep its scroll position. A prefix param that changes remounts the area, and the
+  root with it.
 
 ## Lifetimes, base path, deployment
 
-A screen is a component, so its loading is `placeholder` + async `build`, its errors are `fallback`
-(bubbling to the router's), and its cleanup is `teardown`. Navigating away unmounts it: state,
-subscriptions and DOM go with it - put screen state in the screen's root component and only app-wide
-state above the router.
+A screen is a component. So its loading is a `placeholder` and an async `build`, its errors go to
+its `fallback` and then to the `fallback` of the router, and its cleanup is `teardown`. A navigation
+away unmounts the screen, with its state, its subscriptions and its DOM. Put the state of a screen
+in the root component of that screen. Put only app-wide state above the router.
 
-Scroll is managed for you (top on forward navigation, restored on back/forward). **Focus is yours**:
-focus a heading in `instance.afterMount`, or announce via a live region from
-`useRoute().watch(...)`. Do it once for all screens by giving the element the router slot renders
-into `tabindex: -1` and focusing it from `useRoute().watch(...)` when the **path** changes - compare
-paths (a query change must not steal focus from an input), skip the first call (it fires with the
-loaded route), and style that element `:focus { outline: none }` or the browser rings the whole
-screen on arrival.
+imp manages the scroll for you. It goes to the top on a forward navigation, and it restores the
+position on a back or forward navigation. **The focus is yours to manage.** Focus a heading in
+`instance.afterMount`, or announce the change through a live region from `useRoute().watch(...)`. To
+do this once for every screen, give the element that the router slot renders into `tabindex: -1`.
+Focus that element from `useRoute().watch(...)` when the **path** changes. Compare the paths,
+because a query change must not take the focus from an input. Skip the first call, because it fires
+with the loaded route. Style that element with `:focus { outline: none }`, or the browser draws a
+ring around the whole screen on arrival.
 
-Serving under a sub-path: set the `IMP_BASEPATH` environment value of [config](config.md) and keep
-writing app-root paths (`/todos`). imp strips and re-adds it. Only an `href` you build yourself
-needs `url('/todos')`.
+To serve the app under a sub-path, set the `IMP_BASEPATH` environment value of [config](config.md).
+Continue to write a path from the app root, such as `/todos`. imp removes and adds the prefix. Only
+an `href` that you build yourself needs `url('/todos')`.
 
-Deep links need the host to serve your entry HTML for unknown paths (nginx `try_files`, a
-`_redirects` file, a `404.html` copy, ...). `imp start` already does this in development.
+A deep link needs the host to serve your entry HTML for an unknown path. Use `try_files` in nginx, a
+`_redirects` file, a copy named `404.html`, or the equivalent on your host. `imp start` already does
+this in development.

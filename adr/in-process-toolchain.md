@@ -2,57 +2,62 @@
 
 ## Context
 
-imp is distributed as a single self-contained binary produced by `deno compile`. That build embeds
-the CLI into `denort`, a stripped runtime with none of Deno's tooling subcommands - there is no lint
-or fmt code inside the binary, and the runtime-side `Deno.lint` API is gated to `deno test`. The
-original implementation delegated `imp lint` / `imp fmt` to `Deno.execPath()`, which works from
-source but self-recurses unboundedly in a compiled binary. Alternatives - downloading a `deno`
-binary into a managed cache, embedding oxlint/oxfmt native binaries, requiring a user-installed
-Deno, or becoming a Vite plugin - all either need network access at runtime, spawn external
-processes, or break the principle that Deno stays an implementation detail.
+imp is distributed as one self-contained binary that `deno compile` produces. That build embeds the
+CLI into `denort`, which is a reduced runtime with none of the tooling subcommands of Deno. There is
+no lint code and no fmt code inside the binary, and the runtime `Deno.lint` API is limited to
+`deno test`. The first implementation delegated `imp lint` and `imp fmt` to `Deno.execPath()`. That
+works from source, but in a compiled binary it calls itself without an end. imp evaluated the
+alternatives. Each one fails. A download of a `deno` binary into a managed cache needs the network
+at runtime. An embedded native binary of oxlint or oxfmt starts a process. A requirement that the
+user installs Deno, and a move to a Vite plugin, both break the principle that Deno stays an
+implementation detail.
 
 ## Decision
 
-Everything `imp fmt` and `imp lint` do runs in-process via wasm and pure-JS engines embedded in the
-binary at compile time. The imp binary never spawns a subprocess for its own toolchain - the
-deliberate exceptions both belong to `imp test` (`two-level-testing.md`): launching the e2e browser,
-which is the system under test rather than a delegated tool, and the level fan-out, where
-`imp test --unit`/`--e2e` reinvokes imp itself as one `imp test <file>` worker per file to run a
-whole level in parallel. Neither shells out to an external tool - the browser is the system under
-test, the workers are imp's own copies - and within any single worker the test runner, server,
-bundler, and assertions all still run in-process.
+Everything that `imp fmt` and `imp lint` do runs in process, through a wasm engine and a pure
+JavaScript engine that imp embeds in the binary at compile time. The imp binary never starts a
+subprocess for its own toolchain. There are two deliberate exceptions, and both belong to
+`imp test`, see `two-level-testing.md`. The first is the launch of the e2e browser, which is the
+system under test and not a delegated tool. The second is the fan-out over a level, where
+`imp test --unit` and `imp test --e2e` invoke imp again, as one `imp test <file>` worker per file,
+to run a whole level in parallel. Neither one calls an external tool. The browser is the system
+under test, and a worker is a copy of imp. Inside any single worker, the test runner, the server,
+the bundler and the assertions all still run in process.
 
-- **`imp fmt`** drives dprint wasm plugins through `@dprint/formatter`'s multi-plugin context - the
-  same engines `deno fmt` multiplexes, including the identical third-party crates for CSS (`malva`),
-  HTML (`markup_fmt`), and YAML (`pretty_yaml`). The JavaScript plugin runs with its `deno` preset
-  so JS output matches `deno fmt`. TypeScript is deliberately out of scope for both commands - imp
-  is buildless, apps are plain JavaScript. Embedded `<script>`/`<style>` in HTML are formatted via
-  the context's host delegation. Plugin wasm files are pinned by version and checksum in
-  `cli/src/fmt_plugins.js`, downloaded by `tools/download_fmt_plugins.js`, and embedded with
-  `deno compile --include`.
-- **`imp lint`** runs ESLint's core `Linter` (`eslint/universal` - pure JS, no filesystem) with the
-  `@eslint/js` recommended rules, browser globals, and imp's own rules from `cli/src/lint_rules.js`.
-  HTML files are linted by extracting inline `<script>` blocks and remapping diagnostics to their
-  original lines, and the same embedded `Linter` drives the whole-project dead-code pass
-  (`project-wide-dead-code.md`). imp's file walker feeds both commands.
-- **Directives are imp-branded:** formatter ignore comments are configured as `imp-fmt-ignore` /
-  `imp-fmt-ignore-file`, and `imp-lint-ignore` / `imp-lint-ignore-file` comments are rewritten to
-  the engine's directive syntax before linting.
+- **`imp fmt` drives the dprint wasm plugins**, through the multi-plugin context of
+  `@dprint/formatter`. Those are the same engines that `deno fmt` uses. They include the same
+  third-party crates for CSS, which is `malva`, for HTML, which is `markup_fmt`, and for YAML, which
+  is `pretty_yaml`. The JavaScript plugin runs with its `deno` preset, so the JavaScript output
+  matches `deno fmt`. TypeScript is deliberately out of scope for both commands. imp is buildless,
+  and an app is plain JavaScript. imp formats an embedded `<script>` and `<style>` in HTML through
+  the host delegation of the context. `cli/src/fmt_plugins.js` pins each plugin wasm file by version
+  and by checksum. `tools/download_fmt_plugins.js` downloads them, and `deno compile --include`
+  embeds them.
+- **`imp lint` runs the core `Linter` of ESLint.** That is `eslint/universal`, which is pure
+  JavaScript and needs no filesystem. imp runs it with the recommended rules of `@eslint/js`, the
+  browser globals, and the rules of imp from `cli/src/lint_rules.js`. imp lints an HTML file by
+  extracting each inline `<script>` block, and by mapping a diagnostic back to its original line.
+  The same embedded `Linter` drives the dead-code pass over the whole project, see
+  `project-wide-dead-code.md`. The file walker of imp feeds both commands.
+- **The directives carry the imp brand.** imp configures the ignore comments of the formatter as
+  `imp-fmt-ignore` and `imp-fmt-ignore-file`. imp rewrites an `imp-lint-ignore` and an
+  `imp-lint-ignore-file` comment to the directive syntax of the engine, before it lints.
 
 ## Consequences
 
-- The binary is fully self-contained and works offline: no toolchain downloads, no ambient `deno`,
-  no version skew between imp and its tools - an imp release pins its formatter and linter behavior.
-  `deno task imp` in this repo runs that same compiled binary, so there is no second code path that
-  could drift from it.
-- `imp fmt` formats CSS/HTML/YAML out of the box (stock `deno fmt` gates these behind unstable
-  flags) and `imp lint` covers inline scripts in HTML, which `deno lint` cannot.
-- Lint rule names follow ESLint conventions, and new imp rules are written against ESLint's plugin
-  API. Linting is slower than native-Rust linters - acceptable at the scale of buildless projects
-  imp targets, with oxlint available as a future drop-in if that changes.
-- The wasm plugins add ~10 MB and the pre-bundled ESLint ~1.3 MB to the binary
-  (`prebundled-npm-dependencies.md`). `deno run -A tools/download_fmt_plugins.js` and
-  `deno run -A tools/prebundle_npm_deps.js` must run before compiling (wired into the `compile`
-  task, which every task that invokes imp goes through).
-- User-supplied lint plugins (dynamic import of user JS inside a compiled binary) are not supported
-  until verified separately.
+- The binary is fully self-contained, and it works offline. There is no toolchain to download, no
+  `deno` on the machine, and no difference of version between imp and its tools. An imp release pins
+  the behaviour of its formatter and of its linter. `deno task imp` in this repository runs that
+  same compiled binary. So there is no second code path that could differ from it.
+- `imp fmt` formats CSS, HTML and YAML with no setup, and a plain `deno fmt` puts these behind an
+  unstable flag. `imp lint` covers an inline script in HTML, and `deno lint` cannot.
+- A lint rule name follows the conventions of ESLint, and somebody writes a new imp rule against the
+  plugin API of ESLint. Linting is slower than a native linter in Rust. That is acceptable at the
+  scale of the buildless projects that imp targets. oxlint is available as a replacement later, if
+  that changes.
+- The wasm plugins add about 10 MB to the binary. The pre-bundled ESLint adds about 1.3 MB, see
+  `prebundled-npm-dependencies.md`. `deno run -A tools/download_fmt_plugins.js` and
+  `deno run -A tools/prebundle_npm_deps.js` must run before a compile. The `compile` task runs both,
+  and every task that invokes imp goes through that task.
+- imp does not support a lint plugin that a user supplies. That would need a dynamic import of user
+  JavaScript inside a compiled binary, and imp must verify that separately.

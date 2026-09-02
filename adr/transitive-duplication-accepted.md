@@ -2,47 +2,50 @@
 
 ## Context
 
-Every vendored dependency is a self-contained, minified bundle (`vendored-dependencies.md`), so two
-dependencies that share a transitive package each carry their own copy of it, and `imp build`
-produces the production output from those bundles as opaque modules (`production-bundling.md`) - the
-copies are invisible to the bundler and ship once per vendored bundle. Eliminating them was scoped,
-and every viable direction surrenders a core guarantee:
+Every vendored dependency is a self-contained, minified bundle, see `vendored-dependencies.md`. So
+two dependencies that share a transitive package each carry their own copy of it. `imp build`
+produces the production output from those bundles, and it treats each one as an opaque module, see
+`production-bundling.md`. So the copies are invisible to the bundler, and each vendored bundle ships
+its own copy. imp scoped the removal of those copies. Every workable direction gives up a core
+guarantee:
 
-- **Re-resolving `imp.json` pins at bundle time** would let esbuild see the full package graph and
-  dedupe naturally, but it breaks offline bundling on a cold cache and reintroduces the silent
-  transitive drift that vendoring was adopted to end - the shipped graph would no longer be the
-  committed bytes.
-- **Vendoring unbundled per-package module trees** would make shared packages visible and
-  deduplicable, but reopens the package-tree-in-git problem and gives up the one-small-file-per-
-  dependency property that makes committing `dependencies/` cheap.
+- **A new resolution of the `imp.json` pins at bundle time** would let esbuild see the full package
+  graph and remove the duplicates naturally. But it breaks an offline bundle on a cold cache. It
+  also brings back the silent drift of a transitive version, which is what vendoring removed. The
+  shipped graph would no longer be the committed bytes.
+- **A vendored tree of unbundled modules per package** would make a shared package visible, and
+  possible to deduplicate. But it opens the problem of a package tree in git again. It also gives up
+  the property of one small file per dependency, which is what makes a commit of `dependencies/`
+  cheap.
 
 ## Decision
 
-The duplication is accepted as a deliberate choice of imp's architecture - neither `imp install` nor
-`imp build` dedupes transitive packages across vendored bundles, and no dedupe mechanism is planned.
-imp's dependency model is intentionally hostile to the dependency profile where this cost would
-matter: apps are expected to keep external dependencies to a minimum and let an agent write small
-purpose-built modules instead of reaching for the registry. A project lean enough to fit that model
-has little or no transitive overlap to dedupe; a project where the duplication hurts is carrying
-more dependencies than imp encourages, and the growing bundle weight is the signal, not a tooling
-gap.
+imp accepts the duplication as a deliberate choice of its architecture. Neither `imp install` nor
+`imp build` removes a duplicate transitive package across two vendored bundles, and imp plans no
+mechanism to do so. The dependency model of imp is deliberately unfriendly to the dependency profile
+where this cost would matter. imp expects an app to keep its external dependencies to a minimum, and
+to let an agent write a small module for one purpose instead of going to the registry. A project
+that is lean enough for that model has little or no transitive overlap to remove. A project where
+the duplication hurts carries more dependencies than imp encourages. The growing weight of the
+bundle is the signal, and it is not a gap in the tooling.
 
-The cost stays bounded and visible rather than managed:
+The cost stays limited and visible. imp does not manage it:
 
-- `imp install` prints every transitive package (`name@version`) that goes into each vendored
-  bundle, so overlap between dependencies is apparent at install time.
-- Within one production build, each vendored bundle is emitted exactly once across all chunks
-  (`production-bundling.md`); only copies _between_ different vendored bundles are duplicated.
-- Singleton-style libraries that rely on shared module state were already documented as a poor fit
-  (`vendored-dependencies.md`); duplication of stateless code costs bytes, never correctness.
+- `imp install` prints every transitive package, as `name@version`, that goes into each vendored
+  bundle. So an overlap between two dependencies is visible at install time.
+- Inside one production build, imp emits each vendored bundle exactly once across all the chunks,
+  see `production-bundling.md`. Only a copy _between_ two different vendored bundles is a duplicate.
+- A library in the style of a singleton depends on shared module state. `vendored-dependencies.md`
+  already documents that such a library is a poor fit. A duplicate of stateless code costs bytes,
+  and never correctness.
 
 ## Consequences
 
-- Offline, byte-reproducible installs and builds are preserved unconditionally - the properties the
-  rejected designs would have traded away.
-- The bundler stays simple: vendored bundles need no package-identity analysis, manifest, or
-  cross-bundle graph surgery.
-- Apps with many overlapping dependencies pay for them in shipped bytes. The mitigation is the
-  documented guidance to choose and minimize dependencies, not tooling.
-- If imp's philosophy on dependency counts ever changes, this decision has to be revisited together
-  with `vendored-dependencies.md`, since the acceptance rests on that model.
+- An install and a build stay offline and reproducible byte for byte, without a condition. Those are
+  the properties that the rejected designs would give up.
+- The bundler stays simple. A vendored bundle needs no analysis of package identity, no manifest,
+  and no surgery on a graph across two bundles.
+- An app with many overlapping dependencies pays for them in the bytes that it ships. The answer is
+  the documented guidance to select few dependencies. The answer is not tooling.
+- If the philosophy of imp about the number of dependencies ever changes, somebody must reconsider
+  this decision together with `vendored-dependencies.md`. The acceptance rests on that model.

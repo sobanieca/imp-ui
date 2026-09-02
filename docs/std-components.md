@@ -1,7 +1,7 @@
 # imp-ui - Standard components
 
-imp ships a component library in the box, imported from **`imp/std`** - there is no UI package to
-add, no CSS file to include, and no build step to configure:
+imp ships a component library, and you import it from **`imp/std`**. There is no UI package to add,
+no CSS file to include, and no build step to configure:
 
 ```js
 import { mount } from 'imp'
@@ -18,52 +18,54 @@ mount(
 )
 ```
 
-Every standard component is a real imp component, so it renders as its own element with its styles
-sealed inside it. Nothing you write on the page can leak in and break it, and nothing it defines
-leaks out onto your page.
+Every standard component is a real imp component. So it renders as its own element, with its styles
+sealed inside it. Nothing that you write on the page can reach in and break it, and nothing that it
+defines reaches out onto your page.
 
-This page is the argument for the library - what holds across all of it, and the few pieces worth
-knowing before you start. It is not the catalog.
+This page is the argument for the library. It gives what holds across all of it, and the few pieces
+that are worth knowing before you start. It is not the catalog.
 
 ## Browse the components
 
-**The catalog lives in the [component gallery](/components).** Every component is there rendered as
-itself, in light and dark, with its props, its variants and the code that produced each specimen -
-pick one, look at it, copy the call.
+**The catalog lives in the [component gallery](/components).** Every component renders there as
+itself, in light and in dark. The gallery gives its props, its variants, and the code that produced
+each specimen. Select a component, look at it, and copy the call.
 
-That page is not written by hand: it is `imp preview`, the same gallery the CLI serves for your own
-components while you build them (see **[CLI](cli.md)**). So the reference you read is generated from
-the components themselves and cannot drift from them, and the tool you use to browse imp's library
-is the tool you already use to browse your own.
+Nobody writes that page by hand. It is `imp preview`, the same gallery that the CLI serves for your
+own components while you build them. See **[CLI](cli.md)**. So imp generates the reference that you
+read from the components themselves, and it cannot differ from them. The tool that you use to browse
+the library of imp is the tool that you already use to browse your own components.
 
-An AI agent has a second door onto the same information: every component ships a **skill**, the
-short mechanical version - call shape, prop table, and the mistakes the component invites.
-`imp skill std/button` prints it. Your own components publish theirs the same way, by putting a
-`counter.skill.md` file next to the module (see **[Components](components.md)**).
+An AI agent has a second door onto the same information. Every component ships a **skill**, which is
+the short mechanical version: the call shape, the prop table, and the mistakes that the component
+invites. `imp skill std/button` prints it. Your own components publish a skill in the same way. Put
+a `counter.skill.md` file next to the module. See **[Components](components.md)**.
 
 ## Where components come from
 
-`imp` and its subpaths are the framework - element factories, `component`, state, routing, theming
-(see **[Imports](imports.md)**). `imp/std` is the component library, split by group:
+`imp` and its subpaths are the framework. They hold the element factories, `component`, the state,
+the routing and the theming. See **[Imports](imports.md)**. `imp/std` is the component library,
+split by group:
 
-| Import               | What it holds                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------ |
-| `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                 |
-| `imp/std/layout`     | The app frame and the two arrangement primitives - `shell`, `flex`, `stack`, plus `dialog` |
-| `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...        |
-| `imp/std/display`    | Components that present content - `emptyState`, `tag`, ...                                 |
-| `imp/std/navigation` | Getting around the app - `tabs`, `navMenu`, ...                                            |
-| `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...    |
-| `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                    |
-| `imp/std/<group>`    | The rest, group by group, as they land                                                     |
+| Import               | What it holds                                                                                                           |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                                              |
+| `imp/std/layout`     | The app frame, the two arrangement primitives and the two overlay frames - `shell`, `flex`, `stack`, `dialog`, `drawer` |
+| `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...                                     |
+| `imp/std/display`    | Components that present content - `emptyState`, `tag`, ...                                                              |
+| `imp/std/navigation` | Getting around the app - `tabs`, ...                                                                                    |
+| `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...                                 |
+| `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                                                 |
+| `imp/std/<group>`    | The rest, group by group, as they land                                                                                  |
 
-Splitting by group keeps one namespace from flooding as the catalog grows, and makes an import line
-say which part of the library a file leans on. Importing a group that does not exist yet is an error
-that tells you what does exist, so a typo never turns into a mysterious missing module.
+The split by group keeps one namespace from filling up as the catalog grows. It also makes an import
+line say which part of the library a file uses. An import of a group that does not exist yet is an
+error, and the message lists the groups that exist. So a spelling mistake never becomes a missing
+module that is hard to explain.
 
-Components take the obvious names, and a few of them match an element factory - `button` is both a
-plain `<button>` from `imp/html` and the styled component from `imp/std`. They never collide,
-because they arrive through different imports. In the rare file that wants both, alias one:
+A component takes the obvious name, and a few names match an element factory. `button` is a plain
+`<button>` from `imp/html`, and it is the styled component from `imp/std`. The two never collide,
+because they arrive through different imports. In the rare file that wants both, give one an alias:
 
 ```js
 import { button } from 'imp/html'
@@ -72,30 +74,30 @@ import { button as styledButton } from 'imp/std'
 
 ## The shared rules
 
-A handful of conventions hold for every component in the library, so once you have used one you can
+A few conventions hold for every component in the library. So after you use one component, you can
 predict the rest.
 
-**Props and children are told apart by type, exactly as on an element.** A plain object is props;
-strings, elements and other components are content. Arguments are matched by what they are, not
-where they sit, so a component call reads the same way `div()` does:
+**imp separates props from children by type, exactly as on an element.** A plain object is props. A
+string, an element and another component are content. imp matches an argument by what it is, not by
+where it sits. So a call to a component reads the same way as a call to `div()`:
 
 ```js
 button({ variant: 'danger' }, 'Delete') // props, then content
 button('Delete') // content only
 ```
 
-One props object per call. A second one is merged with later keys winning, reported in the console,
-and caught statically by the `imp/single-props-object` lint rule (see **[Linting](lint.md)**) - so
-compose props into a single object before the call.
+Pass one props object per call. imp merges a second object, and a later key wins. imp reports the
+merge in the console, and the `imp/single-props-object` lint rule catches it statically. See
+**[Linting](lint.md)**. So compose the props into a single object before the call.
 
-**Only the documented props.** Standard components accept a fixed, documented set of props rather
-than forwarding anything you hand them to some inner element. An unrecognized prop, or a prop set to
-a value outside its allowed list, is logged with the accepted values and the component falls back to
-its default - your app keeps running.
+**A component accepts the documented props only.** A standard component accepts a fixed, documented
+set of props. It does not forward whatever you hand it to some inner element. imp logs a prop that
+it does not recognize, and a prop with a value outside its allowed list. The log names the accepted
+values, and the component uses its default. Your app continues to run.
 
-**Props that change take state.** Props documented as **live** accept a value or a piece of state.
-Given state, the component subscribes to it and updates that one attribute in place - nothing is
-re-rendered, and nothing you focused or typed into is disturbed:
+**A prop that changes takes a state.** A prop that the documentation marks as **live** accepts a
+value or a state. With a state, the component subscribes to it and updates that one attribute in
+place. Nothing renders again, and imp disturbs nothing that you focused or typed into:
 
 ```js
 const saving = initState('billing.saving', false)
@@ -105,33 +107,36 @@ button({ variant: 'primary', loading: saving }, 'Save')
 saving.set(true) // the button is now busy - no re-render
 ```
 
-**They are themed, not styled by you.** Every component reads its colors, spacing, radii and type
-from the `--imp-*` design tokens (see **[Theming](theming.md)**), so applying a theme re-skins the
-whole library at once. They also use CSS logical properties throughout, so they mirror correctly
-when the document's `dir` is right-to-left.
+**A component is themed. You do not style it.** Every component reads its colours, its spacing, its
+radii and its type from the `--imp-*` design tokens. See **[Theming](theming.md)**. So a new theme
+re-skins the whole library at once. Every component also uses CSS logical properties. So it mirrors
+correctly when the `dir` of the document is right to left.
 
-**Their words are translatable, and already written.** Text that belongs to a component rather than
-to you - an empty table's **No results**, a dialog's **Cancel** - works the way the tokens do: the
-component looks the word up under an `imp.` key and ships the English wording as its fallback. So a
-component reads properly in an app with no translation files at all, and the moment you write one of
-those keys in your own translations your wording takes over, re-localizing in place when the
-language changes. See **[Translations](i18n.md)**.
+**The words of a component are translatable, and imp already wrote them.** Some text belongs to a
+component, not to you. Examples are the **No results** of an empty table and the **Cancel** of a
+dialog. That text works as the tokens work. The component finds the word under an `imp.` key, and it
+ships the English wording as its fallback. So a component reads correctly in an app with no
+translation file. The moment when you write one of those keys in your own translations, your wording
+takes over, and it localizes again in place when the language changes. See
+**[Translations](i18n.md)**.
 
-**Accessibility is the component's job, not yours.** The native element is rendered wherever one
-exists, so roles, states and keyboard behaviour come from the browser. Every pointer interaction has
-a keyboard equivalent, every interactive element carries an accessible name, ARIA state is bound to
-the same state that drives the visuals so the two cannot drift, and the focus ring, the contrast and
-`prefers-reduced-motion` are handled. An app assembled from these components clears the common bar
-without wiring any of it by hand.
+**Accessibility is the job of the component, not yours.** imp renders the native element wherever
+one exists. So the roles, the states and the keyboard behaviour come from the browser. Every pointer
+interaction has a keyboard equivalent. Every interactive element carries an accessible name. imp
+binds the ARIA state to the same state that drives the visuals, so the two cannot differ. imp
+handles the focus ring, the contrast and `prefers-reduced-motion`. An app that you assemble from
+these components clears the common bar, and you connect none of it by hand.
 
-**No outer margins.** No standard component adds margin around itself. Spacing between things is the
-job of whatever lays them out, which keeps rhythm consistent instead of fighting collapsing margins.
+**A component has no outer margin.** No standard component adds a margin around itself. Spacing
+between two things is the job of whatever lays them out. That keeps the rhythm consistent, and it
+avoids a fight with collapsing margins.
 
 ## Start an app with the frame
 
-**`shell` is the recommended way to start an app**, not one option among several: a brand block, a
-top-level navbar, a nav column, a content area, the signed-in person and whatever else the page
-needs, already laid out, already scrolling each region on its own, and already working on a phone.
+**`shell` is the recommended way to start an app.** It is not one option among several. It gives you
+a brand block, a top-level navbar, a nav column, a content area, the signed-in person, and whatever
+else the page needs. imp lays all of that out, scrolls each region on its own, and makes it work on
+a phone.
 
 ```js
 import { luChartColumn } from 'imp/icons'
@@ -165,25 +170,36 @@ shell(
 )
 ```
 
-The reason to use it is not your convenience, it is the person using your app: an imp app should
-feel like somewhere they have been before, with the nav where the nav goes and the brand where the
-brand goes. That only happens if the default shape is the one most apps actually ship.
+The reason to use `shell` is not your convenience. It is the person who uses your app. An imp app
+must feel like a place where they have been before, with the nav where a nav goes and the brand
+where a brand goes. That happens only when the default shape is the shape that most apps ship.
 
 **One nav tree drives three surfaces.** You describe the navigation once, as data. The top-level
-entries are your **sections** - the handful of destinations that are always there. A section can
-carry its own `groups` of items, and that is what the sidebar shows while that section is current.
-So the bar lists the sections, the column lists what is inside the current one, and on a phone the
-bottom bar lists the same items. Nothing is declared twice, and a change to the tree lands
+entries are your **sections**, which are the few destinations that are always there. A section can
+carry its own `groups` of items. That is what the sidebar shows while the section is current. So the
+bar lists the sections, the column lists what is inside the current section, and on a phone the
+bottom bar lists the same items. You declare nothing twice, and a change to the tree arrives
 everywhere at once.
 
-**A section with no groups gets no sidebar** - not an empty one, none at all, with the content
-taking the full width. Try it: moving between a section that has a sidebar and one that does not is
-supposed to shift the layout, because that shift is how you feel the context change. Never fake it
-with a column holding a single link.
+**A section with no groups gets no sidebar.** It does not get an empty one. It gets none, and the
+content takes the full width. Try it. A move between a section that has a sidebar and a section that
+does not is meant to change the layout, because that change is how a person feels the context
+change. Never imitate a sidebar with a column that holds one link.
 
-**Or skip sections entirely.** Pass `sidebar` with its own `groups` and no `navbar`, and you get the
-one-level layout: no top bar at all, the logo at the head of the column and the account at its foot.
-Same component, and which props you pass is the arrangement:
+**Some things do not belong to a section.** A help link, a support card, an upgrade prompt and a
+note about what is new belong to the app. A person expects to find them in the same place, whatever
+they look at. The sidebar takes two app-wide slots for them. The `footer` rows are the
+settings-and-help pair at the foot of most nav columns. `extras` is a block of your own DOM, below
+the rows and above the footer. Both stay in place while the sections change. Both also keep the
+column on the screen, in a section that has no groups of its own. That column is not false. It shows
+the app-wide items. On a phone they are not lost either. The footer rows and the `extras` join the
+hamburger drawer, and imp merges the `extras` of the sidebar with the `extras` of the shell, above
+the account card. So the drawer becomes the one place that holds everything that is not the current
+section.
+
+**Or leave the sections out.** Pass `sidebar` with its own `groups`, and no `navbar`. You then get
+the one-level layout: no top bar, the logo at the head of the column, and the account at its foot.
+It is the same component, and the props that you pass are the arrangement:
 
 | What you pass                          | What you get                                               |
 | -------------------------------------- | ---------------------------------------------------------- |
@@ -191,55 +207,144 @@ Same component, and which props you pass is the arrangement:
 | `navbar` whose sections carry none     | A top bar, no column, content full width                   |
 | `sidebar` with `groups`, no `navbar`   | No bar: the logo heads the column and the account foots it |
 
-A **row** is `{ id, label, href, icon, tag, onClick }` and may hold `children`, which render
-indented under a caret and collapse by default. It is the same shape a standalone `navMenu` takes,
-so nothing new to learn. The frame draws the rows itself - it has to, because it draws each level
-more than once, and it cannot make a second presentation out of markup you handed it. `account` is
-data for the same reason: `{ name, description, picture, href, onSignIn, onSignOut }`.
+A **row** is `{ id, label, href, icon, tag, onClick }`. It can hold `children`. imp renders the
+children indented under a caret, and collapses them by default. The one that holds the selected row
+starts expanded. A parent needs no `href` of its own. It is a button that expands its children. On a
+phone the parents are the bottom bar. A tap on one opens its children in the **More** sheet. So a
+column of collapsible groups folds into something that a thumb can use. The frame draws the rows
+itself. It must, because it draws each level more than once, and it cannot make a second
+presentation out of markup that you handed it. `account` is data for the same reason:
+`{ name, description, picture, href, onSignIn, onSignOut }`.
 
-**`logo`, `aside` and `extras` are still plain DOM**, so a contextual panel, a command palette or a
-pair of pickers is markup you already know how to write, and the shell places it without looking
-inside. The sidebar takes `footer` rows of its own for the settings-and-help pair that usually sits
-at the bottom of a nav column.
+**`logo` and `extras` are plain DOM.** So a brand block, a command palette or a pair of pickers is
+markup that you already know how to write, and the shell places it without a look inside. The
+`extras` block of the sidebar, described above, is the same. Know one thing. The frame puts that DOM
+inside its own component tree, where your page stylesheet cannot reach it. Only an inherited text
+property and a custom property of the theme cross over. That is deliberate. What goes in a region
+must be a component, such as `appLogo`, `themeSelect` or one of your own. A component brings its own
+styles with it. So it looks the same in the bar, in the column and in the drawer of a phone. When
+you start to write a page rule for something in `extras`, put it in a component instead.
 
-**It is the one component that changes its structure by width**, and on a phone it changes into the
-shape a phone app has. The top bar becomes a hamburger and a two-line title - the section over the
-row you are on - because on a phone the frame should tell you where you are. The **sidebar becomes
-the bottom bar**, where a thumb can reach it: four rows and then a **More** button opening a sheet
-with the rest. The **sections, the pickers and the account card move into the hamburger drawer** - a
-real `<dialog>`, so Escape, the focus trap and returning focus are the browser's job. The aside
-goes. When the current section has no sidebar, the bottom bar carries the sections instead. Nothing
-is dropped; it is folded up.
+**There is no aside region, and that is deliberate.** The frame exists so that one call makes an app
+suit a desktop and a phone at the same time. That is why every region that it owns has a phone form.
+The bar folds into a drawer, the sidebar becomes the bottom bar, and the account moves. A contextual
+side column has no phone form. On a phone there is no room beside the content. The frame would have
+to hide what you put there, or stack it under the page without knowing what it is. So the shell
+offers no such region, instead of a region that works on a wide screen only. The content that would
+go there has two homes, and both are yours:
 
-On the desktop the column collapses to an icon rail from a toggle in its head, which also names the
-section you are in.
+- **Content that comes and goes is a `drawer`.** Filters, an inspector and a detail view are
+  examples. Mount the drawer in the main content, and open it from a control there. It slides in
+  over the frame, from the end of the line. It works the same way on a phone and on a desktop, and
+  the frame never moves under it.
+- **Content that must stand beside the page goes inside the main content, as your own layout.** Use
+  a `flex` of the page and its column, and let a media query in your component decide when the
+  column wraps below the page. The `<main>` of the shell is a plain scrolling box. So a page with
+  two columns inside it is ordinary CSS. You know what the column holds, so you decide what a phone
+  does with it.
 
-Three custom properties tune the frame; set them anywhere above it:
+```js
+shell(
+  { navbar, sidebar, account },
+  flex({ gap: 4 }, page(), div({ class: 'aside' }, filters())),
+)
+```
+
+**The shell is the one component that changes its structure by width.** On a phone it becomes the
+shape that a phone app has. The top bar becomes a hamburger and a two-line title, with the section
+over the row that you are on. On a phone the frame must tell you where you are. The **sidebar
+becomes the bottom bar**, where a thumb can reach it. That is four rows, and then a **More** button
+that opens a sheet with the rest. The **sections, the footer rows, the pickers, the `extras` of the
+sidebar and the account card move into the hamburger drawer**. That drawer is a real `<dialog>`. So
+Escape, the focus trap and the return of the focus are the job of the browser. When the current
+section has no sidebar, the bottom bar carries the sections instead. imp drops nothing. It folds
+everything up.
+
+On a desktop the column collapses to an icon rail, from a toggle in its head. That head also names
+the section that you are in. The toggle is there only when every row in the column has an `icon`.
+That means the rows of the section and the footer rows. A rail of blank rows would show nothing. So
+a column with a row that has no icon stays open. When the column collapses, the rail keeps the icons
+and hides the rest: the logo, the name of the section, the `extras` of the sidebar, and the pickers
+and the account card at the foot.
+
+Two custom properties tune the frame; set them anywhere above it:
 
 | Property                          | Default | What it sizes                                  |
 | --------------------------------- | ------- | ---------------------------------------------- |
 | `--imp-shell-sidebar-inline-size` | `16rem` | The nav column, and the drawer                 |
-| `--imp-shell-aside-inline-size`   | `20rem` | The contextual column                          |
 | `--imp-shell-bottom-bar-items`    | `4`     | Rows in the phone's bottom bar before **More** |
 
-**Authentication is one prop.** `signedIn: false` withholds the nav, the bottom bar and the aside,
-closes the drawer if it was open, and leaves a single top bar carrying the logo and the sign-in
-button - so an app with a signed-out state does not need a second layout for it. Leave `signedIn`
-off entirely and there is no auth concept at all.
+**The frame can float.** By default the bar, the column and the bottom bar of a phone meet the edges
+of the screen, and each other, with hairline dividers. Pass `gap`, which is a step on the same
+spacing scale that `flex` and `stack` take. The frame then insets itself by that much, and pulls
+those regions apart into bordered panels. It rounds each panel with the `radius-lg` of the theme.
+That is the only way in which the corner radius of a theme reaches the frame. At `gap: 0` a rounded
+corner would sit against the edge of the screen, so imp draws none. A theme with `radius: none`
+floats square panels. Your content is not a panel. It sits directly on the background. So a page
+that wants a card draws one. The drawer of a phone floats with the rest, inset by the same gap and
+rounded in the same way. A `drawer` that you mount inside the frame does the same. The frame gives
+it the inset and the radius through two custom properties. So a contextual panel lines up with the
+column that it slides in beside.
 
-Two things to know before you structure an app. The fold is a **media query**, so a shell embedded
-in a panel narrower than `48rem` on a wide screen keeps its desktop layout - give a frame the room a
-frame needs. And a screen deeper in the tree cannot push markup up into the nav; what travels upward
-is **data**. Keep a nav state next to the shell, have each screen contribute its rows on mount and
-withdraw them on unmount, and hand that state to the shell as `items`. The rule of thumb: **you at
-the call site, a literal array; a screen at runtime, a state.**
+```js
+shell({ logo: brand(), navbar, sidebar, account, gap: 3 }, page())
+```
+
+**What the frame sits on is a theme token.** The shell paints `background-app`. Every built-in theme
+sets that token to its `color-surface`, and the token accepts anything that a CSS `background`
+accepts: a flat colour, a gradient or an image. Every chrome panel paints `color-surface-sunken`
+over it. So the background shows through the gaps, and behind the content. For most apps, a gradient
+in a theme is the whole story. For a backdrop that CSS cannot draw, pass `background`. Examples are
+shapes that drift on a timer, a canvas and a particle field. `background` is one DOM node that the
+shell stretches to the frame, and keeps under everything, including the panels and the drawer. It is
+decorative, and imp hides it from assistive technology. So put nothing interactive in it.
+
+```js
+// theme.js
+tokens: { ...light.tokens, 'background-app': 'linear-gradient(135deg, #dbeafe, #ffffff 60%)' }
+
+// or, for a moving backdrop
+shell({ navbar, sidebar, gap: 3, background: driftingShapes() }, page())
+```
+
+**Authentication is one prop.** `signedIn: false` withholds the nav and the bottom bar. It closes
+the drawer when the drawer was open. It leaves one top bar, with the logo and the sign-in button. So
+an app with a signed-out state does not need a second layout for it. Leave `signedIn` out
+completely, and there is no authentication concept.
+
+Know two things before you structure an app. First, the fold is a **media query**. So a shell inside
+a panel narrower than `48rem`, on a wide screen, keeps its desktop layout. Give a frame the room
+that a frame needs. Second, a screen deeper in the tree cannot push markup up into the nav. What
+travels upward is **data**. Keep a nav state next to the shell. Let each screen contribute its rows
+on mount, and withdraw them on unmount. Hand that state to the shell as `items`. The rule is this:
+**at the call site you write a literal array. At runtime a screen writes a state.**
+
+The withdrawal runs in `teardown`, after the screen has left the page. That is too late to look a
+state up, because no ancestor is left to find it in. So resolve the state in `build`. Keep the
+handle on the instance. Write through the handle in `teardown`. A handle that you already hold reads
+and writes anywhere.
+
+```js
+const projectScreen = component('acme-project', {
+  build: async (instance, projectId) => {
+    instance.project = useState('acme.nav.project')
+    const project = await api.get(`/projects/${projectId}`)
+    instance.project.set({ id: projectId, name: project.name })
+    return overview(project)
+  },
+  teardown: (instance) => instance.project.set(null),
+})
+```
+
+The owner of the shell computes its `items` from that state. A `computed` over `acme.nav.project`
+adds the `/projects/{id}/...` rows while a project is open, and drops them when the state is `null`.
 
 ## The frame comes with its furniture
 
-A frame that only draws boxes is half a quick win, so `imp/std/shell` ships the pieces those boxes
-are usually filled with. They are deliberately plain: each one covers what most apps need, and none
-of them is required - the `logo`, `aside` and `extras` regions take DOM, so a piece that does not
-fit is replaced by your own without asking the frame's permission.
+A frame that only draws boxes is half of a quick win. So `imp/std/shell` ships the pieces that
+usually fill those boxes. They are deliberately plain. Each one covers what most apps need, and none
+of them is necessary. The `logo` and `extras` regions take DOM. So you replace a piece that does not
+fit with your own, and you ask the frame for no permission.
 
 ```js
 import { shell } from 'imp/std/layout'
@@ -281,29 +386,30 @@ shell(
 | `themeSelect` | A light / dark / system picker that applies the theme and remembers the choice          |
 | `langSelect`  | A language picker that calls `setLang` and remembers the choice                         |
 
-`userCard` is the odd one out: inside `shell` you never call it, because the frame builds it from
-your `account` data - and moves that same card into the drawer on a phone. Reach for it directly
-when you are writing your own frame, or anywhere else a person is shown.
+`userCard` is the exception. Inside `shell` you never call it, because the frame builds it from your
+`account` data. The frame also moves that same card into the drawer on a phone. Call `userCard`
+directly when you write your own frame, or anywhere else that shows a person.
 
-Sidebar and navbar rows are not a separate component either: they are the items in the tree you hand
-the frame, the same ones **`navMenu`** takes when you want a menu somewhere that is not the frame. A
-row's `tag` is plain data - `tag: { text: 'new', color: 'green' }` - and the `tag` component is
-built from it, so a count or a status pill needs no markup of your own; a group takes the same key.
-Icons come from `icon` in the base group - and every icon-taking prop in the library accepts any
-DOM, so your own `<svg>` goes wherever `icon()` does.
+A sidebar row and a navbar row are not a separate component either. They are the items in the tree
+that you hand to the frame. There is no separate menu component, because the frame is where the
+destinations of an app live. The `tag` of a row is plain data, such as
+`tag: { text: 'new', color: 'green' }`. imp builds the `tag` component from it. So a count or a
+status pill needs no markup of your own. A group takes the same key. An icon comes from `icon` in
+the base group. Every icon prop in the library accepts any DOM, so your own `<svg>` goes wherever
+`icon()` goes.
 
-A page's own furniture - a breadcrumb trail, a page title, a toolbar of actions - is not frame
-chrome and has no region of its own. It goes at the top of the main content you pass as children,
-which is where it belongs: it changes with the screen, and the frame does not.
+The furniture of a page is not frame chrome, and it has no region of its own. A breadcrumb trail, a
+page title and a toolbar of actions are examples. They go at the top of the main content that you
+pass as children. That is where they belong. They change with the screen, and the frame does not.
 
-Two of these components hold state that outlives the page: `themeSelect` and `langSelect` remember
-what was chosen in `localStorage`. Pass `remember: false` when the app owns that decision instead.
+Two of these components hold state that lives longer than the page. `themeSelect` and `langSelect`
+remember the choice in `localStorage`. Pass `remember: false` when the app owns that decision.
 
 ## Icons are built in, and you pay only for the ones you draw
 
-The whole of **Lucide** - 1791 icons, the set behind a good share of the interfaces you have used -
-ships inside imp. There is nothing to install, no icon font to load, no sprite sheet to host and no
-CSS file to include.
+The whole of **Lucide** ships inside imp. That is 1791 icons, and it is the set behind a good share
+of the interfaces that you have used. There is nothing to install, no icon font to load, no sprite
+sheet to host, and no CSS file to include.
 
 ```js
 import { icon } from 'imp/std'
@@ -314,33 +420,33 @@ icon(luStar, { size: 'lg', color: 'warning' })
 icon(luTrash, { size: 'sm', label: 'Delete invoice' })
 ```
 
-An icon is an **imported name**, not a string, and that is the whole design. The export is `lu` plus
-the Lucide name in PascalCase, so `house` is `luHouse`, `chart-column` is `luChartColumn` and
-`trash-2` is `luTrash2`. Search the set at <https://lucide.dev/icons> and the name you read off the
-page is the name you import.
+An icon is an **imported name**, not a string. That is the whole design. The export is `lu` plus the
+Lucide name in PascalCase. So `house` is `luHouse`, `chart-column` is `luChartColumn`, and `trash-2`
+is `luTrash2`. Search the set at <https://lucide.dev/icons>. The name that you read off the page is
+the name that you import.
 
-Naming them one by one is what keeps the bundle small: your build carries the drawing data for the
-icons you actually imported and nothing else. An app that draws one icon ships a few hundred bytes
-of artwork, not the 434 kB the full set weighs. The cost of that is one rule - never
+The names, one by one, are what keep the bundle small. Your build carries the drawing data for the
+icons that you imported, and nothing else. An app that draws one icon ships a few hundred bytes of
+artwork, not the 434 kB of the full set. The cost is one rule. Never write
 `import * as icons from 'imp/icons'`, because a namespace import asks for all of it. `imp lint`
-holds the line for you: a namespace import, an `export *` re-export or a dynamic `import()` of
-`imp/icons` is an `imp/icons-by-name` error (see **[Linting](lint.md)**).
+holds that line for you. A namespace import, an `export *` re-export and a dynamic `import()` of
+`imp/icons` are each an `imp/icons-by-name` error. See **[Linting](lint.md)**.
 
-`size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length; every Lucide icon is
-square, so one length sets both axes. `color` names a **theme token** rather than a CSS color -
-`'primary'`, `'danger'`, `'success'`, any palette hue - so icons re-skin with the theme like
-everything else in the library. The default, `'current'`, inherits the surrounding text color, which
-is what an icon inside a button or a menu row wants.
+`size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length. Every Lucide icon is
+square, so one length sets both axes. `color` names a **theme token**, not a CSS colour. The names
+are `'primary'`, `'danger'`, `'success'` and any palette hue. So an icon re-skins with the theme,
+like everything else in the library. The default is `'current'`. It takes the colour of the text
+around it, which is what an icon inside a button, or inside a menu row, needs.
 
-Lucide is ISC-licensed and the icons it inherited from Feather are MIT; both ask that the copyright
-notice travel with what you ship. `imp build` handles it: the notice goes into `LICENSES.txt` in the
-output directory and every emitted script points at it. Deploy that file along with the rest of the
-build.
+Lucide uses the ISC licence, and the icons that it inherited from Feather use MIT. Both licences ask
+you to ship the copyright notice with what you distribute. `imp build` does this. The notice goes
+into `LICENSES.txt` in the output directory, and every emitted script points at that file. Deploy
+the file with the rest of the build.
 
 ## Layout is two components, deliberately
 
-Inside the frame, two components lay a page out, and they are both CSS flexbox with the sharp edges
-filed off: **`flex` is a row**, **`stack` is a column**.
+Inside the frame, two components lay a page out. Both are CSS flexbox with the sharp edges removed.
+**`flex` is a row.** **`stack` is a column.**
 
 ```js
 stack(
@@ -352,14 +458,14 @@ stack(
 ```
 
 That is the whole layout library. There is no grid, no box, and no wrapper with padding, background
-and width props. Every arrangement is rows in stacks in rows, and two primitives cover the ones a
-page actually makes - each one a name you do not have to look up.
+and width props. Every arrangement is rows inside stacks inside rows. Two primitives cover the
+arrangements that a page really makes, and neither name needs a search.
 
-**When you want something a row and a column cannot express, write the CSS.** A dense form, a
-dashboard of cards, a masonry wall - that is `display: grid` in your own component's `styles`, where
-it sits next to the thing it affects, is isolated from the rest of the page, and is readable by
-anyone who knows CSS. imp declines to reinvent a layout system the platform already has, and hands
-it back to you rather than wrapping it in props:
+**When a row and a column cannot express what you want, write the CSS.** A dense form, a dashboard
+of cards and a masonry wall are examples. Write `display: grid` in the `styles` of your own
+component. There it sits next to the thing that it affects, it is isolated from the rest of the
+page, and anybody who knows CSS can read it. imp does not build again a layout system that the
+platform already has. It gives the system back to you, instead of wrapping it in props:
 
 ```js
 component('invoice-grid', {
@@ -372,30 +478,30 @@ component('invoice-grid', {
 
 Two rules follow from keeping the surface this small, and they hold across the library:
 
-**Spacing is a `gap`, and a step, not a length.** No standard component carries an outer margin, so
-the space between two of them is always the parent's `gap` - a step on the theme's spacing scale,
-`0` through `6`, never `'1rem'`. The steps from `3` up are fluid `clamp()` values that grow with the
-viewport (see **[Theming](theming.md)**), so one number is the right amount of space on a phone and
-on a desktop alike.
+**Spacing is a `gap`, and it is a step, not a length.** No standard component carries an outer
+margin. So the space between two of them is always the `gap` of the parent. That is a step on the
+spacing scale of the theme, from `0` to `6`. It is never `'1rem'`. The steps from `3` up are fluid
+`clamp()` values that grow with the viewport. See **[Theming](theming.md)**. So one number is the
+correct amount of space on a phone and on a desktop.
 
 **Alignment is `start` and `end`, never `left` and `right`.** The horizontal alignment props follow
-the reading direction rather than the screen: `horizontalAlign: 'start'` is the left edge in English
-and the right edge in Arabic, and a row lays its children out from whichever edge the language
-starts at. So the toolbar you write once - a title, then a spacer, then a button - is already
-correct in both directions, and there is nothing to reverse by hand and no `dir` to branch on. imp
-sets `<html dir="rtl">` for a right-to-left language on its own (see
-**[Internationalization](i18n.md)**), and the layout follows it the same way the text does.
-`verticalAlign` keeps `top` and `bottom`, because direction never flips the vertical axis.
+the reading direction, not the screen. `horizontalAlign: 'start'` is the left edge in English, and
+the right edge in Arabic. A row lays its children out from the edge where the language starts. So
+the toolbar that you write once, with a title, a spacer and a button, is already correct in both
+directions. There is nothing to reverse by hand, and there is no `dir` to branch on. imp sets
+`<html dir="rtl">` for a right-to-left language on its own. See **[Internationalization](i18n.md)**.
+The layout then follows the attribute, as the text does. `verticalAlign` keeps `top` and `bottom`,
+because the direction never mirrors the vertical axis.
 
-This is the same rule the components apply to themselves: every one of them is styled in CSS logical
-properties - `padding-inline`, `margin-block`, `inset-inline-start`, `text-align: start` - so
-nothing in the library has a left or a right baked into it. **Write your own components the same
-way** and an imp app mirrors as a whole rather than in patches.
+The components apply the same rule to themselves. imp styles every one of them in CSS logical
+properties, such as `padding-inline`, `margin-block`, `inset-inline-start` and `text-align: start`.
+So nothing in the library has a left or a right fixed into it. **Write your own components the same
+way.** An imp app then mirrors as a whole, and not in parts.
 
 ## Forms are state, not a framework
 
-A form in imp is not a special construct with its own API to learn. **Its values are ordinary imp
-state**, and each control says which field of that state it owns:
+A form in imp is not a special construct with an API of its own to learn. **Its values are ordinary
+imp state.** Each control says which field of that state it owns:
 
 ```js
 import { form, select, submitButton, textField } from 'imp/std/inputs'
@@ -412,42 +518,43 @@ form(
 )
 ```
 
-That is the whole setup. There is no store to create, no field to register, no `onChange` to thread
-through. The form creates its state from `initialValues` when it mounts and disposes it when it
-unmounts, and each control finds the form by its position in the tree - so it keeps working however
-deeply you nest it inside layout components or your own.
+That is the whole setup. There is no store to create, no field to register, and no `onChange` to
+pass through your code. The form creates its state from `initialValues` when it mounts, and releases
+the state when it unmounts. Each control finds the form by its position in the tree. So a control
+keeps working, however deep you nest it inside a layout component, or inside one of your own.
 
-**`field` is a dot path** into the values, so a nested shape needs nothing extra. And because the
-values are just state, anything inside the form can read them the ordinary way - a live summary, a
-preview, or a field that depends on another.
+**`field` is a dot path** into the values. So a nested shape needs nothing more. The values are a
+state. So anything inside the form can read them in the ordinary way. That covers a live summary, a
+preview, and a field that depends on another field.
 
-**Validation is declared on the field it belongs to.** `required`, `minLength`, `min`, `max` and
-`pattern` are built in; `validate` takes a function returning a message; `validateAsync` returns a
-promise for the check that has to ask the server, and it runs on blur and on submit rather than on
-every keystroke, so signing up does not fire a request per letter typed. Errors appear when they are
-useful - a field says nothing while it is being filled in for the first time - and the built-in
-messages are translatable like everything else the library says.
+**You declare the validation on the field that it belongs to.** `required`, `minLength`, `min`,
+`max` and `pattern` are built in. `validate` takes a function that returns a message.
+`validateAsync` returns a promise, for a check that must ask the server. It runs on blur and on
+submit, not on every keystroke. So a sign-up does not send a request for each letter typed. An error
+appears when it is useful. A field says nothing while a person fills it in for the first time. The
+built-in messages are translatable, like everything else that the library says.
 
-**Submitting is a button, not a `<form>` submit.** Clicking `submitButton()` re-checks every field;
-if anything fails, `onSubmit` never runs and the bad fields start showing their messages. Return a
-promise from `onSubmit` and imp waits for it, with the button spinning and further clicks ignored
-until it settles. Enter in a single-line field submits too, because people expect it to.
+**A submit is a button, not a `<form>` submit.** A click on `submitButton()` checks every field
+again. When one field fails, `onSubmit` does not run, and the bad fields start to show their
+messages. Return a promise from `onSubmit`, and imp waits for it. The button spins, and imp ignores
+another click until the promise settles. Enter in a single-line field also submits, because people
+expect that.
 
-**Labels are props, not wrappers.** Every control renders its own label, hint and error message. A
-`<label>` finds its input by id, and an id cannot reach across a component boundary - so in exchange
-for passing the label rather than wrapping it, the label, the hint, the error and the input are
-wired to each other correctly every time.
+**A label is a prop, not a wrapper.** Every control renders its own label, its hint and its error
+message. A `<label>` finds its input by id, and an id cannot cross a component boundary. So you pass
+the label instead of putting it around the control. In exchange, imp connects the label, the hint,
+the error and the input correctly every time.
 
-**A control does not need a form.** Give it `value` - a state, or a plain starting value - and it
-binds to that instead, which is what you want for a search box filtering a list. Use `field` inside
-a form and `value` outside one.
+**A control does not need a form.** Give it `value`, which is a state or a plain starting value. It
+then binds to that value. This is what a search box that filters a list needs. Use `field` inside a
+form, and `value` outside one.
 
 ## Overlays are the platform's, not a z-index war
 
-Anything imp opens over your page - a dialog, the shell's phone drawer - is a real `<dialog>`
-promoted into the browser's **top layer**. It cannot be clipped by an ancestor with
-`overflow: hidden`, it cannot be painted under something else, and it needs no z-index from you.
-There is no portal to render into and no stacking context to manage.
+Anything that imp opens over your page is a real `<dialog>`, promoted into the **top layer** of the
+browser. That covers a dialog, a drawer and the phone drawer of the shell. An ancestor with
+`overflow: hidden` cannot clip it. Nothing paints over it. It needs no z-index from you. There is no
+portal to render into, and no stacking context to manage.
 
 ```js
 import { dialog } from 'imp/std/layout'
@@ -455,19 +562,42 @@ import { dialog } from 'imp/std/layout'
 dialog({ title: 'Edit user', open: editing }, form({ initialValues }, textField({ field: 'name' })))
 ```
 
-**`open` is the whole API.** Pass a writable state, set it to open the window, and imp sets it back
-to `false` when the person closes it - so the state is always the truth about what is on screen.
-There is no `show()` to call and no handle to keep.
+**`open` is the whole API.** Pass a writable state, and set it to open the window. imp sets it back
+to `false` when the person closes the window. So the state is always the truth about what is on the
+screen. There is no `show()` to call, and no handle to keep.
 
-A modal takes the page over: the rest of the document goes inert, a backdrop dims it, focus moves in
-and returns where it came from, Escape dismisses it, and the page behind stops scrolling - almost
-all of that the browser's own modal behaviour rather than imp's. Turn `modal` off and you get the
-other window entirely: nothing behind it is blocked, the page still scrolls, you can open as many as
-you like, and the person can drag it by its title bar or move it with the arrow keys. Both animate
-themselves, and neither animates for a reader who has asked their system for reduced motion.
+A modal takes the page over. The rest of the document becomes inert, a backdrop dims it, the focus
+moves in and returns where it came from, Escape dismisses the modal, and the page behind it stops
+scrolling. Nearly all of that is the modal behaviour of the browser, not of imp. Turn `modal` off,
+and you get the other window. Nothing behind it is blocked, the page still scrolls, you can open as
+many windows as you want, and the person can drag one by its title bar, or move it with the arrow
+keys. Both windows animate themselves, and neither animates for a reader who asked their system for
+reduced motion.
 
-A panel that hangs off a control works the same way. Give a button a list of `items` and it grows a
-triple-dot control beside it that opens them as a menu:
+**A drawer is the same window, docked to the side.** Use it for filters, an inspector, a detail
+view, and anything else that belongs beside the page instead of in the middle of it. It slides in
+from the end of the line, which is the right edge in English and the left edge under `dir="rtl"`.
+There is no prop to select a side. The contextual panel has one place, and a menu from the other
+side is the drawer of the frame. The width of a drawer is a custom property,
+`--imp-drawer-inline-size`. imp caps it, so a phone keeps a narrow part of the page visible. There
+is no separate phone mode, because the same panel on a narrow screen already is one. `modal` and
+`open` work exactly as on a dialog. A modal drawer adds `pin`. That is a toggle in its bar, and it
+keeps the drawer open when the person clicks outside it. Use it for a panel that they still work in.
+While the drawer is pinned, only Escape and the close button close it.
+
+```js
+import { drawer } from 'imp/std/layout'
+
+drawer({ title: 'Filters', open: filtering }, form({ initialValues: filters }, ...fields))
+drawer(
+  { title: 'Filters', open: filtering, pin: true },
+  form({ initialValues: filters }, ...fields),
+)
+drawer({ title: 'Details', modal: false, open: inspecting }, details())
+```
+
+A panel that hangs from a control works the same way. Give a button a list of `items`. It then grows
+a triple-dot control beside it, and that control opens the items as a menu:
 
 ```js
 button({
@@ -479,28 +609,41 @@ button({
 }, 'Save')
 ```
 
-The menu is in the top layer too, so nothing clips it, and **the browser places it**: it opens under
-the trigger and lines up with its trailing edge, flips above the button when there is no room below,
-and opens the other way out when the button sits against the left or right of the screen - so a menu
-is never half off screen, wherever the control it belongs to happens to be. Clicking away or
-pressing Escape closes it and puts focus back on the trigger; arrow keys walk the items. None of
-that is imp code following the button around, which is why there is no `placement` prop to get wrong
-and nothing to keep in sync while the page scrolls.
+`menuTrigger` selects what opens that menu. The default is `'more'`, which is the triple-dot control
+above. Pass `'hover'` when you want a dropdown instead. The button then carries no second control.
+It opens the menu itself, when the pointer goes over it, and when it takes the focus:
 
-Because the trigger and its panel have to be rendered by the same component for the browser to tie
-them together, a menu is always a prop of the control it belongs to rather than a wrapper you put
-around one.
+```js
+button({
+  menuTrigger: 'hover',
+  items: themes.map((name) => ({ id: name, label: name, onClick: () => use(name) })),
+}, 'Theme')
+```
+
+A hover menu keeps the focus on the button when it opens. So the person can read the list, and still
+`Tab` past the button. `ArrowDown` and `ArrowUp` walk into the menu from the button.
+
+The menu is in the top layer as well, so nothing clips it. **The browser places it.** It opens under
+the trigger, and lines up with the trailing edge of the trigger. It flips above the button when
+there is no room below. It opens the other way when the button sits against the left or the right of
+the screen. So a menu is never half off the screen, wherever its control sits. A click away, or the
+Escape key, closes the menu and puts the focus back on the trigger. The arrow keys walk the items.
+None of that is imp code that follows the button. That is why there is no `placement` prop to get
+wrong, and nothing to keep in step while the page scrolls.
+
+The browser can connect a trigger and its panel only when one component renders both. So a menu is
+always a prop of the control that it belongs to. It is never a wrapper that you put around one.
 
 ## Custom elements next to yours
 
-Each standard component defines its own element the first time you call it - `button` renders as
-`<imp-button>`, `heading` as `<imp-heading>`, and so on. Two things follow from that:
+Each standard component defines its own element the first time when you call it. `button` renders as
+`<imp-button>`, and `heading` renders as `<imp-heading>`. Two things follow from that:
 
-- **The `imp-` prefix is reserved.** Name your own components with your app's prefix
-  (`my-app-profile`) as usual and there is nothing to think about.
-- **Nothing is registered until it is used.** A component you never call never defines an element
-  and never compiles its stylesheet, so importing a whole group costs you nothing at startup.
+- **The `imp-` prefix is reserved.** Name your own components with the prefix of your app, such as
+  `my-app-profile`, as usual. Then there is nothing to think about.
+- **imp registers nothing until you use it.** A component that you never call defines no element and
+  compiles no stylesheet. So an import of a whole group costs you nothing at startup.
 
-Because a component's content lives inside its own element, reading it from the outside means
-piercing that boundary - `host.textContent` is empty by design. Tests walk `shadowRoot`, and
-end-to-end selectors use the deep combinator (see **[Testing](testing.md)**).
+The content of a component lives inside its own element. So to read the content from outside, you go
+through that boundary. `host.textContent` is empty by design. A test walks the `shadowRoot`. An
+end-to-end selector uses the deep combinator. See **[Testing](testing.md)**.

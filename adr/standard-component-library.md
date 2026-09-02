@@ -2,133 +2,147 @@
 
 ## Context
 
-imp is an all-in-one toolkit, so an app should be buildable without assembling a component stack or
-pulling a third-party UI package (`todo/stdlib-components.md` holds the full catalog this grows
-into). The kernel already supplies everything such a library needs - element factories, components
-with shadow-scoped `styles` (`shadow-dom-isolation.md`), named state (`event-propagated-state.md`),
-and `--imp-*` design tokens (`themable-by-default-tokens.md`) - so the question was not what to
-build on but what shape the components take, how they are packaged, and what an app is allowed to
-assume about all of them at once. The first group answers that for every group after it, so the
-conventions land with the first components rather than after the catalog is written.
+imp is a complete toolkit. So a person must be able to build an app without assembling a stack of
+components, and without a third-party UI package. `todo/stdlib-components.md` holds the full catalog
+that this grows into. The kernel already supplies everything that such a library needs. It supplies
+the element factories, a component with `styles` that are scoped by a shadow root, see
+`shadow-dom-isolation.md`, a named state, see `event-propagated-state.md`, and the `--imp-*` design
+tokens, see `themable-by-default-tokens.md`. So the question was not what to build on. The question
+was what shape a component takes, how imp packages it, and what an app can assume about all of them
+at once. The first group answers that for every group after it. So the conventions land with the
+first components, and not after somebody writes the catalog.
 
 ## Decision
 
-Standard components are **ordinary imp components built on the public kernel API only**, shipped in
-imp itself. They live under `lib/src/std/<group>/`, one file per component, grouped by the catalog's
-own taxonomy (`general`, `layout`, `inputs`, `display`, `feedback`, `navigation`, `data`), so
-folders, docs sections and catalog entries stay one-to-one. Nothing in `std/` is privileged: it
-imports the same surface an app does.
+A standard component is an **ordinary imp component, built on the public API of the kernel only**,
+and imp ships it. Those components live under `lib/src/std/<group>/`, with one file per component.
+imp groups them by the taxonomy of the catalog, which is `general`, `layout`, `inputs`, `display`,
+`feedback`, `navigation` and `data`. So a folder, a section of the documentation and an entry of the
+catalog map one to one. Nothing in `std/` is privileged. It imports the same surface as an app.
 
-- **The library is a separate import namespace, split by group.** The kernel is `imp` and its
-  per-subject specifiers - `imp/html`, `imp/state`, `imp/router`, `imp/theme`, `imp/log`
-  (`library-import-namespaces.md`). The base group is **`imp/std`**; every other group is
-  **`imp/std/<group>`** (`imp/std/inputs`, `imp/std/navigation`, ...). Groups are registered as
-  subpaths when they land, and an unknown subpath fails with an imp-branded error listing the ones
-  that exist - in the bundler, the dev server's import map and the `imp lint` specifier check alike,
-  from one shared table. Splitting by group keeps a growing catalog from flooding one namespace and
-  makes an import line say which part of the library a file leans on.
-- **Names are the natural ones** - `button`, `text`, `link`, `form`, `select` - precisely because
-  the namespace is separate: a std component may shadow a bare element factory from `imp/html`,
-  since the two never arrive through the same specifier. A file needing both aliases one at the
-  import. The only hard limit is JS reserved words, which cannot be import bindings.
+- **The library is a separate import namespace, split by group.** The kernel is `imp`, with its
+  specifiers per subject, which are `imp/html`, `imp/state`, `imp/router`, `imp/theme` and
+  `imp/log`, see `library-import-namespaces.md`. The base group is **`imp/std`**. Every other group
+  is **`imp/std/<group>`**, such as `imp/std/inputs` and `imp/std/navigation`. imp registers a group
+  as a subpath when the group lands. An unknown subpath fails with an error that carries the imp
+  brand, and that lists the subpaths that exist. That happens in the bundler, in the import map of
+  the dev server, and in the specifier check of `imp lint`, from one shared table. The split by
+  group keeps a catalog that grows from filling one namespace. It also makes an import line say
+  which part of the library a file uses.
+- **The names are the natural ones**, such as `button`, `text`, `link`, `form` and `select`. That is
+  possible exactly because the namespace is separate. A std component can shadow a bare element
+  factory from `imp/html`, because the two never arrive through the same specifier. A file that
+  needs both gives one an alias at the import. The one hard limit is a reserved word of JavaScript,
+  which cannot be an import binding.
 
-- **Every standard component is a `component()`**, not a bare helper function - including lifeless
-  ones like `text`. A themed control needs hover, focus and disabled rules, and a component's
-  `styles` entry is imp's only styling channel (`shadow-dom-isolation.md`); a helper returning a raw
-  element could only carry inline styles, or would require imp to inject a global stylesheet, which
-  `shadow-dom-isolation.md` deliberately removed. Shared CSS is shared **strings** composed into
-  several `styles` entries, as that ADR prescribes.
-- **imp claims the `imp-` element-name prefix.** Components are named `imp-button`, `imp-text`, and
-  so on - the same namespacing rule apps follow, with the prefix reserved for the library.
-- **Elements are defined on first use, not on import.** A component export is a plain function -
-  `export const button = (...args) => defineComponent('button', () => definition)(...args)` - and
-  `defineComponent` memoizes the element by name, building the definition, its CSS string and its
-  default messages the first time the component is rendered. Nothing runs when the module loads, so
-  an app carries only the components it actually uses (`tree-shakeable-library.md`); that is also
-  why the definition's `styles` is a function rather than a string. The element name is derived from
-  the export name - `radioGroup` defines `imp-radio-group` - so the two cannot drift.
-- **Components dispatch their arguments by type, exactly as the element factories do**
-  (`type-based-argument-dispatch.md`) - a plain object is props wherever it sits, everything else is
-  content, and a state passed as a standalone argument is reported and skipped. `defineComponent`
-  does the dispatch once for every component, through the same `splitArgsByType` that `el` uses, and
-  hands `build` the resolved `(instance, props, children)` - so there is one dispatch rule to learn
-  for the whole library rather than one per import, and one implementation of it rather than one per
-  component. What the components add on top is validation, not a different call shape.
-- **Props are a closed, documented set per component**, declared as the definition's `props` list so
-  that `defineComponent` can check every call against it. Standard components do not forward
-  arbitrary props onto an inner element: the boundary is the point. An unknown prop, or a value
-  outside a prop's allowed list, is **logged through the shared `impLogger` and the component
-  continues** with its default - consistent with the log-and-continue posture of the rest of the
-  library, and never fatal for a cosmetic mistake.
-- **Props documented as _live_ accept a state-shaped value** (anything with `get`/`watch`) as well
-  as a plain one. The component subscribes with `watch` and updates the single element property in
-  place, never through a region rebuild, so focus and caret survive. This is the readable half of
-  the two-way binding contract the input group will complete; the writable half (how a control
-  commits back into one field of a form state) stays open until controls exist that need it.
-- **Every value that could be themed comes from a token**, referenced as `token('name')`, which
-  expands to `var(--imp-name, fallback)` so a component still renders standalone. The fallback is
-  read from the built-in light theme rather than written at the call site, so no component can
-  disagree with the theme about what a token defaults to, and `token()` throws on a name no theme
-  defines. Each new token is added to **both** built-in themes when its first consumer lands.
-  Styling uses **logical properties only**.
-- **No standard component carries an outer margin.** Spacing between components belongs to the
-  layout parents of the `layout` group, so an app never fights collapsing margins or per-component
-  spacing props. That group also fixes how the library handles viewport width: the theme's spacing
-  scale is fluid, so most layout needs no breakpoint at all, and a layout that must change shape at
-  a width is a media query the app writes in its own component (`responsive-fluid-values-only.md`).
-- **Every word a component shows goes through `t()` under an `imp.` key, bound through `lang`**
-  (`lang.text(() => t('imp.state.empty'))` rather than a bare `t()`), so a language switch
-  re-localizes it in place. The component **declares its own English wording** for the keys it reads
-  by passing `defaultMessages` as the first-use hook of `defineComponent`, so it runs once with the
-  element registration and module scope stays free of calls - and an app's translation of the key
-  shadows it, exactly as a theme's token overrides the fallback in `token('color-text')`
-  (`translatable-by-default.md`). Wording therefore lives in the file that renders it: adding a key
-  is one line in one component. Text the **app** passes in (a `title` prop, children) is the app's
-  to translate; a component never translates values handed to it.
+- **Every standard component is a `component()`, and not a bare helper function.** That includes a
+  component with no life of its own, such as `text`. A themed control needs a rule for hover, for
+  focus and for disabled. The `styles` entry of a component is the only channel for styling in imp,
+  see `shadow-dom-isolation.md`. A helper that returns a raw element could carry an inline style
+  only, or it would need imp to inject a global stylesheet, and `shadow-dom-isolation.md`
+  deliberately removed that. Shared CSS is a shared **string**, which somebody composes into several
+  `styles` entries, as that ADR prescribes.
+- **imp claims the `imp-` prefix for an element name.** A component is named `imp-button`,
+  `imp-text`, and so on. That is the same rule of namespacing that an app follows, and imp reserves
+  the prefix for the library.
+- **imp defines an element on first use, and not at import.** A component export is a plain
+  function, as in
+  `export const button = (...args) => defineComponent('button', () => definition)(...args)`.
+  `defineComponent` memoizes the element by name. It builds the definition, its CSS string and its
+  default messages, the first time when somebody renders the component. Nothing runs when the module
+  loads. So an app carries only the components that it uses, see `tree-shakeable-library.md`. That
+  is also why the `styles` of a definition is a function, and not a string. imp derives the element
+  name from the export name. So `radioGroup` defines `imp-radio-group`, and the two cannot differ.
+- **A component dispatches its arguments by type, exactly as an element factory does**, see
+  `type-based-argument-dispatch.md`. A plain object is props, wherever it sits. Everything else is
+  content. imp reports a state that you pass as a standalone argument, and skips it.
+  `defineComponent` does the dispatch once for every component, through the same `splitArgsByType`
+  that `el` uses. It hands `build` the resolved `(instance, props, children)`. So there is one rule
+  of dispatch to learn for the whole library, and not one per import. There is also one
+  implementation of that rule, and not one per component. What a component adds on top is
+  validation, and not a different call shape.
+- **A component has a closed, documented set of props.** Each component declares that set as the
+  `props` list of its definition. So `defineComponent` can check every call against it. A standard
+  component does not forward an arbitrary prop onto an inner element. The boundary is the point. imp
+  **logs an unknown prop, and a value outside the allowed list of a prop, through the shared
+  `impLogger`, and the component continues** with its default. That is consistent with the
+  log-and-continue posture of the rest of the library, and it is never fatal for a mistake about
+  appearance.
+- **A prop that the documentation marks as _live_ accepts a value with the shape of a state**, which
+  is anything with `get` and `watch`, and it also accepts a plain value. The component subscribes
+  with `watch`, and updates the one element property in place. It never rebuilds a region. So the
+  focus and the caret survive. That is the readable half of the two-way binding contract that the
+  input group completes. The writable half, which is how a control commits back into one field of a
+  form state, stays open until a control exists that needs it.
+- **Every value that somebody could theme comes from a token.** A component references it as
+  `token('name')`, which expands to `var(--imp-name, fallback)`. So a component still renders on its
+  own. imp reads the fallback from the built-in light theme, and nobody writes it at the call site.
+  So no component can disagree with the theme about the default of a token. `token()` throws on a
+  name that no theme defines. Somebody adds each new token to **both** built-in themes, when its
+  first consumer lands. The styling uses **logical properties only**.
+- **No standard component carries an outer margin.** The space between two components belongs to a
+  layout parent from the `layout` group. So an app never fights a collapsing margin, and it never
+  fights a spacing prop per component. That group also fixes how the library handles the width of a
+  viewport. The spacing scale of the theme is fluid, so most layouts need no breakpoint at all. A
+  layout that must change shape at a width is a media query that the app writes in its own
+  component, see `responsive-fluid-values-only.md`.
+- **Every word that a component shows goes through `t()`, under an `imp.` key, and it is bound
+  through `lang`.** A component writes `lang.text(() => t('imp.state.empty'))`, and not a bare
+  `t()`. So a change of language localizes the word again, in place. The component **declares its
+  own English wording** for the keys that it reads. It passes `defaultMessages` as the first-use
+  hook of `defineComponent`. So that runs once, with the registration of the element, and module
+  scope stays free of a call. A translation of the key by an app shadows the wording, exactly as a
+  token of a theme overrides the fallback in `token('color-text')`, see
+  `translatable-by-default.md`. So the wording lives in the file that renders it. To add a key is
+  one line, in one component. Text that the **app** passes in, such as a `title` prop or a child, is
+  the app's to translate. A component never translates a value that somebody hands to it.
 
-- **A composite widget cannot move focus between the components inside it.** A control renders its
-  focusable element inside its own shadow root, and a `display: contents` host cannot be focused in
-  its place, so roving tabindex - the ARIA pattern for a menu bar or a radio-styled group - is only
-  implementable **within** one component, never across a set of them. A bar of controls is therefore
-  a plain layout box whose children each keep their own tab stop, rather than a widget shipping
-  arrow-key handling that would silently skip anything it cannot reach. This is the same boundary
-  that makes `tabs` and `navMenu` data-driven: a widget holding an internal ARIA reference or an
-  internal focus order must render every part of it.
+- **A composite widget cannot move the focus between the components inside it.** A control renders
+  its focusable element inside its own shadow root. A host with `display: contents` cannot be
+  focused in place of that element. So a roving tabindex, which is the ARIA pattern for a menu bar,
+  or for a group in the style of radio buttons, is implementable **inside** one component only, and
+  never across a set of them. So a bar of controls is a plain layout box, and each child keeps its
+  own tab stop. It is not a widget that ships handling of the arrow keys, which would silently skip
+  anything that it cannot reach. That is the same boundary that makes `tabs`, and the nav of
+  `shell`, driven by data. A widget that holds an internal ARIA reference, or an internal order of
+  the focus, must render every part of it.
 
-`link` additionally hands plain left-clicks on in-app hrefs to `navigate()`
-(`client-side-router.md`), rendering a real anchor so the URL, middle-click and copy-link behave
-natively, and leaving modifier-clicks, `external` links and off-site URLs to the browser. `href` is
-written in app space, exactly as passed to `navigate()`, with the base path applied by imp. Every
-other component that renders a destination - `navMenu`'s items - follows that same contract from one
-shared helper, and reports a **cancelable `select` event** before it follows the link, which is how
-an app takes navigation back.
+`link` also gives a plain left-click on an in-app href to `navigate()`, see `client-side-router.md`.
+It renders a real anchor. So the URL, a middle-click and a copy of the link all behave natively. It
+leaves a click with a modifier key, an `external` link and an off-site URL to the browser. You write
+`href` in the space of the app, exactly as you pass it to `navigate()`, and imp applies the base
+path. Every other component that renders a destination follows that same contract, from one shared
+helper. That covers the nav rows of `shell`, and `breadcrumbs`. Each one reports a **cancelable
+`select` event** before it follows the link, and that is how an app takes the navigation back.
 
 ## Consequences
 
-- An app gets buttons, headings and text with one import and no CSS setup, and every component
-  re-skins with a theme swap because all of them read the same tokens.
-- Adding a group means adding a subpath to the shared table; forgetting to breaks resolution
-  everywhere at once rather than in one of the three resolvers, and the failure is a clear message
-  rather than a missing-module error.
-- The kernel namespace stays small, and a file's imports say whether it is using imp or imp's
-  components. The cost is one more specifier to know, and an alias in the rare file that wants both
-  `button` the element and `button` the component.
-- Component internals are sealed: a standard component's content is not visible as
-  `host.textContent`, page CSS cannot restyle its inner element, and tests must pierce the shadow
-  root. This is the same contract app components already have.
-- Each standard component costs one extra element in the tree, and native couplings that cannot
-  cross a shadow boundary are given up rather than faked. **`button` has no `type` prop and is never
-  a native submit button:** its `<button>` sits one shadow root deeper than any `<form>` an app or
-  `formBox` could write, so form association can never resolve and a `type: 'submit'` would be
-  silently inert. Buttons act on their `click` handler and the form layer submits from there, which
-  is what its state-driven design does anyway. The cost is that **implicit submission** - Enter in a
-  text field - must be implemented by the form layer rather than coming from the platform; it was
-  never available here, since std inputs are equally unassociated.
-- A closed prop set means adding a prop is a deliberate act with a docs entry, and app code cannot
-  smuggle arbitrary attributes through a component. Escape hatches, when needed, are explicit props.
-- The `--imp-*` token surface grows one component group at a time and each name arrives with a real
-  consumer, as `themable-by-default-tokens.md` intends; the built-in themes stay complete because
-  adding a token to one means adding it to both.
-- Because definitions are lazy, custom-element registration and stylesheet compilation are
-  pay-per-use: a group's whole barrel can be imported without paying for the components a file does
-  not call.
+- An app gets a button, a heading and text, with one import and no setup of CSS. Every component
+  re-skins on a change of theme, because all of them read the same tokens.
+- To add a group means to add a subpath to the shared table. To forget that breaks the resolution
+  everywhere at once, in place of one of the three resolvers. The failure is a clear message, and
+  not an error about a missing module.
+- The namespace of the kernel stays small, and the imports of a file say whether it uses imp, or the
+  components of imp. The cost is one more specifier to know, and an alias in the rare file that
+  wants both `button` the element and `button` the component.
+- The internals of a component are sealed. The content of a standard component is not visible as
+  `host.textContent`. Page CSS cannot restyle its inner element. A test must go through the shadow
+  root. That is the same contract that a component of an app already has.
+- Each standard component costs one extra element in the tree. imp gives up a native coupling that
+  cannot cross a shadow boundary, and does not imitate it. **`button` has no `type` prop, and it is
+  never a native submit button.** Its `<button>` sits one shadow root deeper than any `<form>` that
+  an app, or a `formBox`, could write. So the association with the form can never resolve, and a
+  `type: 'submit'` would be inert, with no message. A button acts on its `click` handler, and the
+  form layer submits from there. The state-driven design of that layer does this anyway. The cost is
+  that the form layer must implement **the implicit submit**, which is Enter in a text field. The
+  platform does not give it here. It was never available here, because a std input is equally
+  unassociated.
+- A closed set of props means that to add a prop is a deliberate act, with an entry in the
+  documentation. App code cannot pass an arbitrary attribute through a component. When an escape
+  hatch is necessary, it is an explicit prop.
+- The `--imp-*` token surface grows one component group at a time, and each name arrives with a real
+  consumer, as `themable-by-default-tokens.md` intends. The built-in themes stay complete, because
+  to add a token to one means to add it to both.
+- imp defines a component lazily. So the registration of a custom element, and the compilation of a
+  stylesheet, are paid per use. Somebody can import the whole barrel of a group, and pay nothing for
+  a component that a file does not call.

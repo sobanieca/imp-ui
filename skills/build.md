@@ -4,32 +4,36 @@
 imp build [file.html|file.js] [--output dist] [--pwa] [--env <name>]
 ```
 
-Writes plain static files (default `dist/`, **replaced on every run**) you upload to any host or
-CDN - no imp runtime on the server, no import map, nothing to install. The same resolution as
-`imp start`, fully offline: what you tested is what ships.
+`imp build` writes plain static files that you upload to any host or CDN. The default output
+directory is `dist/`, and imp **replaces it on every run**. The server needs no imp runtime, no
+import map and no installation. The build resolves imports exactly as `imp start` does, and it works
+offline. So what you tested is what you ship.
 
-**The entry decides everything.** An HTML entry is a finished app; a JS entry is a module other
+**The entry decides everything.** An HTML entry is a finished app. A JS entry is a module that other
 developers program against. There is no configuration switch for this.
 
-**Unused code is dropped, imp's included.** An app carries only the subjects it imports and only the
-standard components it renders - importing `button` does not pull in `link` or the router behind it.
-Nothing to configure; do not hand-split imports to "help" it.
+**imp drops unused code, and its own code as well.** An app carries only the subjects that it
+imports, and only the standard components that it renders. An import of `button` does not pull in
+`link`, or the router behind it. There is nothing to configure. Do not split an import by hand to
+help the build.
 
 ## HTML entry - an app
 
-- Every `<script type="module" src="...">` is bundled and minified **to the same relative path**, so
-  the HTML works unchanged. Inline module scripts are bundled and re-inlined.
-- `import()` becomes separate hashed chunks under `chunks/` that load on demand; code shared by
-  several entries is emitted once.
-- **`public/` is the only folder copied**, and its contents land at the site root - see below.
-- **All skill text is stripped**: none is injected, no `*.skill.md` is copied, and any `impSkill`
-  arriving from a pre-built component is removed, in lazy chunks as much as in the main bundle.
+- imp bundles and minifies every `<script type="module" src="...">` **to the same relative path**.
+  So the HTML works without a change. imp bundles an inline module script and inlines it again.
+- imp turns an `import()` into a separate hashed chunk under `chunks/` that loads on demand. It
+  emits code that several entries share once.
+- **`public/` is the only folder that imp copies**, and its contents arrive at the site root. See
+  below.
+- **imp removes all skill text.** It injects none, copies no `*.skill.md`, and removes any
+  `impSkill` that arrives from a pre-built component. It does this in a lazy chunk as well as in the
+  main bundle.
 
 ## The `public/` folder - static assets
 
-`public/` holds the files that ship verbatim, and **its contents are the root of the built site**;
-the folder name never appears in a URL. `imp start` serves it at the root too, so one path works in
-development and production.
+`public/` holds the files that ship without a change. **Its contents are the root of the built
+site.** The folder name never appears in a URL. `imp start` also serves the folder at the root. So
+one path works in development and in production.
 
 ```
 my-app/
@@ -46,107 +50,117 @@ my-app/
 <img src="/assets/logo.png" alt="">
 ```
 
-- **The entry HTML stays at the project root**, never in `public/`: imp bundles its scripts, injects
-  environment values and adds PWA tags, while `public/` is passthrough. A page found in `public/`
-  fails the build with a message pointing at it, and `imp start` warns that it is ignored.
-- **Nothing else reaches the output.** Not `imp.json`, not environment files, not the mocks folder,
-  not your sources - they are already compiled in.
-- **A collision is a build error**, not a silent overwrite: a `public/app.js` against a bundled
-  `app.js` fails and names the path.
-- **The name is fixed** - there is no key to configure it - and the folder is optional.
-- Inside a stylesheet, write asset URLs relative to the stylesheet (`url(assets/logo.png)`) so they
-  survive a base path.
+- **Keep the entry HTML at the project root**, never in `public/`. imp bundles the scripts of the
+  entry, injects the environment values and adds the PWA tags. `public/` passes through. A page in
+  `public/` fails the build, and the message points at it. `imp start` warns that it ignores the
+  page.
+- **Nothing else reaches the output.** imp does not copy `imp.json`, an environment file, the mocks
+  folder or your sources. Your sources are already compiled in.
+- **A collision is a build error**, not a silent overwrite. A `public/app.js` against a bundled
+  `app.js` fails the build, and the message names the path.
+- **The folder name is fixed.** There is no key to configure it. The folder is optional.
+- Inside a stylesheet, write an asset URL relative to the stylesheet, as in `url(assets/logo.png)`.
+  The URL then survives a base path.
 
 ## License notices - `LICENSES.txt`
 
-`LICENSES.txt` is written verbatim at the root of the output directory from two merged sources:
+imp writes `LICENSES.txt` at the root of the output directory, without a change. It merges two
+sources:
 
 | Source                                                                        | Covers                                          |
 | ----------------------------------------------------------------------------- | ----------------------------------------------- |
 | `dependencies/<alias>/manifest.json` recorded by `imp install`                | SPDX id + license text of every bundled package |
 | Legal comments in the bundled code (`/*! */`, `//!`, `@license`, `@preserve`) | Notices the source itself must carry            |
 
-Duplicates within each source are merged; the two sources are **not** deduplicated against each
-other, so a package may appear twice. Every emitted `.js` file - bundles, chunks, and inline module
-scripts re-inlined into the page - opens with:
+imp merges a duplicate inside each source. It does **not** compare the two sources against each
+other, so a package can appear twice. Every emitted `.js` file starts with the line below. This
+covers a bundle, a chunk, and an inline module script that imp inlines again into the page:
 
 ```js
 /*! Third-party license notices: /LICENSES.txt */
 ```
 
-Under `IMP_BASEPATH` that reference is prefixed like any other root-absolute URL. If neither source
-yields a notice, no file and no comment are emitted. Nothing configures this.
+Under `IMP_BASEPATH`, imp prefixes that reference like any other root-absolute URL. When neither
+source gives a notice, imp emits no file and no comment. There is no configuration for this.
 
-- Only dependencies the build actually linked contribute - a declared but unimported one is dropped
-  and contributes nothing.
-- The build **fails** if a bundled package falls outside the `licenses` policy in `imp.json`
-  (default `"permissive"`) - see [dependencies](dependencies.md). Nothing is emitted.
-- A bundled dependency with no `manifest.json` **warns** and its licenses are missing from the file.
-  Fix it with `imp install`, never by hand-writing the manifest.
-- `imp install` also leaves a package's notice in the vendored bundle. Do not strip it by hand.
+- Only a dependency that the build links contributes. imp drops a dependency that you declare but do
+  not import, and that dependency contributes nothing.
+- The build **fails** when a bundled package falls outside the `licenses` policy in `imp.json`. The
+  default policy is `"permissive"`, see [dependencies](dependencies.md). imp emits nothing.
+- A bundled dependency with no `manifest.json` gives a **warning**, and its licenses are absent from
+  the file. Fix it with `imp install`. Never write the manifest by hand.
+- `imp install` also leaves the notice of a package in the vendored bundle. Do not remove it by
+  hand.
 
-Not to be confused with `imp licenses`, which prints the notices for the tools inside the imp
-binary, none of which ship in an app. See [update](update.md).
+Do not confuse this file with `imp licenses`. That command prints the notices for the tools inside
+the imp binary. None of those tools ship in an app. See [update](update.md).
 
-## Deploying under a sub-path
+## How to deploy under a sub-path
 
-Set the `IMP_BASEPATH` environment value - see [config](config.md) - and `imp build` prefixes every
-root-absolute URL it emits: your page's `href="/styles.css"`, the PWA manifest, icons, worker and
-its precache list. External (`https://...`), protocol-relative (`//...`) and already-relative URLs
-are left alone. The router reads the same value, so assets and navigation move together; see
-[routing](routing.md).
+Set the `IMP_BASEPATH` environment value, see [config](config.md). `imp build` then prefixes every
+root-absolute URL that it emits. This covers the `href="/styles.css"` of your page, the PWA
+manifest, the icons, the worker and its precache list. imp leaves an external `https://...` URL, a
+protocol-relative `//...` URL and a relative URL as they are. The router reads the same value, so
+the assets and the navigation move together. See [routing](routing.md).
 
 ## JS entry - a component
 
-- One self-contained file with imp and every dependency compiled in, droppable into any app on any
-  framework.
-- A sibling `*.skill.md` is folded in as an `export const impSkill`, so the manual travels with the
-  component. Only the **entry module's** skill survives - a barrel re-exporting several components
-  loses theirs (ambiguous star exports are dropped), so publish one entry per component or describe
-  them all in the barrel's own skill. See [components](components.md).
-- **`targetImpHost: true`** in `imp.json` - see [config](config.md) - leaves every `imp` / `imp/...`
-  import **bare** for a host imp app to provide, so the page holds one shared copy of imp instead of
-  two. The host must actually provide it (an import map or bundler alias), and your component then
-  runs on the host's imp version, which may be newer than the one you built against. When in doubt,
-  leave it off and ship self-contained. It is ignored for an HTML entry - a page is its own host.
+- imp writes one self-contained file. It compiles in imp and every dependency. You can drop the file
+  into any app, on any framework.
+- imp folds a sibling `*.skill.md` in as an `export const impSkill`. So the manual travels with the
+  component. Only the skill of the **entry module** survives. A barrel that re-exports several
+  components loses their skills, because imp drops an ambiguous star export. So publish one entry
+  per component, or describe every component in the skill of the barrel. See
+  [components](components.md).
+- **`targetImpHost: true`** in `imp.json`, see [config](config.md), leaves every `imp` and `imp/...`
+  import **bare**. A host imp app then provides the library, and the page holds one shared copy of
+  imp instead of two. The host must really provide it, through an import map or a bundler alias.
+  Your component then runs on the imp version of the host, which can be newer than the version that
+  you built against. When you are not sure, leave the key off and ship a self-contained file. imp
+  ignores the key for an HTML entry, because a page is its own host.
 
 ## `--pwa` (page builds only)
 
-Requires a `pwa` block with at least `name` and `icon`. In one step imp:
+`--pwa` needs a `pwa` block with at least `name` and `icon`. In one step imp does the following:
 
-- **generates the icon set** from that single source - 192px and 512px, a padded 512px maskable, and
-  a 180px apple-touch-icon. SVG is preferred; a raster source should be >=512px on its longest edge
-  or the build warns about upscaling;
-- **writes `manifest.webmanifest`** with the fields browsers require to offer installation;
-- **writes an offline `sw.js`** whose precache list is exactly this build's files - derived from the
-  build, not by scanning a folder - and injects the manifest link, theme-color meta,
-  apple-touch-icon link and the registration into `<head>`.
+- **imp generates the icon set** from that one source. It writes a 192px icon, a 512px icon, a
+  padded 512px maskable icon and a 180px apple-touch-icon. Prefer an SVG source. A raster source
+  must be 512px or more on its longest edge. If it is smaller, the build warns about upscaling.
+- **imp writes `manifest.webmanifest`** with the fields that a browser needs to offer installation.
+- **imp writes an offline `sw.js`.** Its precache list is exactly the files of this build, derived
+  from the build and not from a folder scan. imp also injects the manifest link, the theme-color
+  meta tag, the apple-touch-icon link and the registration into `<head>`.
 
-Caching defaults, not configurable: the page and its deep links network-first falling back to the
-cached shell, hashed assets cache-first, and cross-origin responses, non-`GET` requests and error
-responses never cached. A new deploy is a new cache, so users are never pinned to a stale version.
+The caching defaults are fixed and you cannot configure them. The page and its deep links are
+network-first, and fall back to the cached shell. A hashed asset is cache-first. imp never caches a
+cross-origin response, a request that is not a `GET`, or an error response. A new deploy is a new
+cache, so a user is never held on a stale version.
 
-Without the flag a PWA project still builds plainly, and in development installability needs no flag
-at all - but the **offline** worker only ever comes from `imp build --pwa`. See [start](start.md).
+Without the flag, a PWA project still builds normally. In development, installability needs no flag.
+But the **offline** worker comes only from `imp build --pwa`. See [start](start.md).
 
 ## Rules an agent gets wrong
 
-- **Never hand-edit anything in the output directory** - it is deleted and rewritten on every run.
-- **Deploy `LICENSES.txt` with the rest of the output.** Dropping it is what the licenses that
-  produced it forbid; it is not a build artifact you can prune.
-- **A static asset belongs in `public/`.** A stylesheet or image sitting next to your sources is not
-  copied and 404s in production, even though `imp start` serves it - the dev server serves the whole
-  project, the build ships `public/` and the bundles.
-- **Do not run a build to test a change.** `imp start` serves the source with live reload; build
-  when you are shipping.
-- **Preview a `--pwa` build on a different port than `imp start`**, or its root-scope offline worker
-  lingers and serves its cache to the dev server - which looks like stale content or broken live
-  reload. If it happens: unregister the worker and clear site data in the browser's dev tools.
-- **A deep link 404s in production** unless the host serves the entry HTML for unknown paths. imp
-  emits portable files and stays out of it; see [routing](routing.md) for the per-host setting.
-- `--env` selects an environment, exactly as on `imp start` - see [config](config.md). A missing
-  shell variable behind a `$env.` value stops the build rather than shipping a half-configured app.
-- **Feature flags are resolved here, not at runtime.** Every `flag('NAME')` becomes a literal and
-  the dead branch - with the chunks only it reached - is dropped; the output holds no flag names or
-  values. The build prints `flags folded in - NAME off, ...`. An undeclared or computed flag name
-  fails the build. See [feature-flags](feature-flags.md).
+- **Never edit a file in the output directory.** imp deletes and writes the directory again on every
+  run.
+- **Deploy `LICENSES.txt` with the rest of the output.** The licenses that produce the file forbid
+  you to leave it out. It is not a build artifact that you can remove.
+- **A static asset belongs in `public/`.** imp does not copy a stylesheet or an image that sits next
+  to your sources, and it returns 404 in production, although `imp start` serves it. The dev server
+  serves the whole project. The build ships `public/` and the bundles.
+- **Do not run a build to test a change.** `imp start` serves the source with live reload. Build
+  when you ship.
+- **Preview a `--pwa` build on a different port from `imp start`.** Its offline worker has root
+  scope. It stays registered and serves its cache to the dev server, which looks like stale content
+  or a broken live reload. If this happens, unregister the worker and clear the site data in the
+  developer tools of the browser.
+- **A deep link returns 404 in production** unless the host serves the entry HTML for an unknown
+  path. imp emits portable files and does not control the host. See [routing](routing.md) for the
+  setting of each host.
+- `--env` selects an environment, exactly as on `imp start`, see [config](config.md). A shell
+  variable that is missing behind a `$env.` value stops the build. imp does not ship an app that is
+  half configured.
+- **imp resolves a feature flag here, not at runtime.** Every `flag('NAME')` becomes a literal. imp
+  drops the dead branch, and the chunks that only that branch reached. The output holds no flag name
+  and no value. The build prints `flags folded in - NAME off, ...`. An undeclared flag name, or a
+  computed one, fails the build. See [feature-flags](feature-flags.md).

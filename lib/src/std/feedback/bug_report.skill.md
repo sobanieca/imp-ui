@@ -13,12 +13,12 @@ bugReport({
 })
 ```
 
-Call shape: `bugReport(props?, ...children)`. Children are the trigger's visible content; with none
-it says "Report a problem" through `t()`.
+The call shape is `bugReport(props?, ...children)`. The children are the visible content of the
+trigger. With no children, the trigger says "Report a problem" through `t()`.
 
-Pressing the trigger starts element picking: the element under the pointer is outlined, a click (or
-`Enter`) takes it, `Escape` cancels. A comment panel then opens next to the outlined element, and
-`onSubmit` gets one plain-data report object.
+A press on the trigger starts the element picking. imp outlines the element under the pointer. A
+click, or `Enter`, selects it. `Escape` cancels. A comment panel then opens next to the outlined
+element. `onSubmit` receives one report object of plain data.
 
 | Prop       | Values                                    | Default     | Notes                                                           |
 | ---------- | ----------------------------------------- | ----------- | --------------------------------------------------------------- |
@@ -31,8 +31,9 @@ Pressing the trigger starts element picking: the element under the pointer is ou
 
 ## The report `onSubmit` receives
 
-Plain JSON-safe data, captured **at the moment the element was picked** - not when the comment was
-finished - so it describes the screen being complained about even if the app moved on:
+The report is plain data that is safe as JSON. imp captures it **at the moment when the person
+picked the element**, not when they finished the comment. So it describes the screen that the
+comment is about, even when the app moved on:
 
 ```js
 {
@@ -57,33 +58,36 @@ finished - so it describes the screen being complained about even if the app mov
 }
 ```
 
-- **`element.path`** is a description, not a selector: `>` is a parent-child step and `>>` crosses
-  into a component's shadow root, so the component before the last `>>` owns the node. Never feed it
-  to `querySelector`. It is deliberately **not shown to the person** - they see the outline instead.
-- **`state`** is every imp state in scope at the picked element, nearest provider first, as plain
-  data - enough to rebuild the screen.
-- **`controls`** is every form control in the picked element (the whole `<form>` when it is inside
-  one), with the values actually typed in, which `element.html` does not carry. A password field
-  records `value: null` and a `length`, never the password.
+- **`element.path` is a description, not a selector.** `>` is a parent-to-child step. `>>` crosses
+  into the shadow root of a component, so the component before the last `>>` owns the node. Never
+  pass the path to `querySelector`. imp **does not show the path to the person**, on purpose. They
+  see the outline instead.
+- **`state` is every imp state in scope at the picked element**, with the nearest provider first, as
+  plain data. It is enough to rebuild the screen.
+- **`controls` is every form control in the picked element.** When the element is inside a `<form>`,
+  it is the whole form. The list carries the values that the person typed, which `element.html` does
+  not hold. A password field records `value: null` and a `length`, never the password.
 
 ## Rules an agent gets wrong
 
-- **It imports from `imp/std/feedback`**, not from `imp/std`.
+- **Import the component from `imp/std/feedback`**, not from `imp/std`.
 - **`onSubmit` is a prop, not an `events` entry.** Storing a report is asynchronous and can fail,
-  and a `CustomEvent` cannot be awaited. Return a promise: `bugReport` disables its buttons while it
-  is pending, closes on resolve, and shows a retryable error on reject. imp stores nothing itself -
-  there is no default endpoint, no `localStorage` fallback and no queue.
+  and you cannot await a `CustomEvent`. Return a promise. `bugReport` disables its buttons while the
+  promise is pending, closes the panel when it resolves, and shows an error that the person can
+  retry when it rejects. imp stores nothing itself. There is no default endpoint, no `localStorage`
+  fallback and no queue.
 - **Do not build the picking or the panel yourself.** The trigger, the outline, the comment panel
-  and the capture are the whole component; app code supplies only `onSubmit`.
-- **It is not `imp review`.** `imp review` is the dev server's own widget writing `.imp/reviews/`
-  for an agent to read (`imp skill review`); `bugReport` is a component you ship in the app for the
-  people using it. They share one capture engine, so the report shape above is the same.
-- **Wording routes through `t()`** under `imp.bugReport.*` keys - override them with `messages()`
-  rather than passing every string as a prop.
-- **Privacy is the app's call.** `state` and `controls` can carry whatever the app put there; strip
-  what should not leave the browser inside `onSubmit` before sending it.
-- Unknown props warn at mount, an out-of-range `as` or `size` warns and falls back, and a missing
-  `onSubmit` warns at mount and fails the send.
+  and the capture are the whole component. App code supplies `onSubmit` only.
+- **This component is not `imp review`.** `imp review` is the widget of the dev server, see
+  `imp skill review`. It writes to `.imp/reviews/` for an agent to read. `bugReport` is a component
+  that you ship in the app, for the people who use it. The two share one capture engine, so the
+  report shape above is the same.
+- **The wording goes through `t()`**, under the `imp.bugReport.*` keys. Override those keys with
+  `messages()`. Do not pass every string as a prop.
+- **The app decides about privacy.** `state` and `controls` can carry whatever the app put there.
+  Remove what must not leave the browser inside `onSubmit`, before you send the report.
+- imp warns about an unknown prop at mount. It warns about an `as` or a `size` outside the list, and
+  falls back to the default. It warns at mount about a missing `onSubmit`, and the send then fails.
 
 ```js
 import { bugReport } from 'imp/std/feedback'

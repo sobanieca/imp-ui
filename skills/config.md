@@ -1,13 +1,13 @@
 # config - the `imp.json` file, key by key
 
-The only config file a project author writes, at the project root, and **entirely optional** - every
-command works without it. Never write a `deno.json`, a `package.json`, a lock file, or a bundler
-config: imp reads `imp.json` in process and nothing else.
+`imp.json` is the only config file that a project author writes. It sits at the project root and it
+is **completely optional**. Every command works without it. Never write a `deno.json`, a
+`package.json`, a lock file or a bundler config. imp reads `imp.json` in process, and nothing else.
 
-Commands search upward from the current directory, stopping at the repository root, so a command
-works from any subfolder; in a monorepo each app folder carries its own `imp.json` and its own
-`dependencies/`. `//` and `/* ... */` comments and trailing commas are accepted, and `imp.jsonc` is
-tried when `imp.json` is absent.
+A command searches upward from the current directory and stops at the repository root. So a command
+works from any subfolder. In a monorepo, each app folder carries its own `imp.json` and its own
+`dependencies/`. imp accepts a `//` comment, a `/* ... */` comment and a trailing comma. When
+`imp.json` is absent, imp tries `imp.jsonc`.
 
 ## Every key
 
@@ -30,7 +30,7 @@ tried when `imp.json` is absent.
 | `maxLogEntries`     | number                                 | `4000`       | `imp start` (`.imp/dev.log`)                                   |
 | `devServerPort`     | number                                 | `4507`       | `imp start` (`--port` wins)                                    |
 
-## A file using everything
+## A file that uses every key
 
 ```json
 {
@@ -72,7 +72,8 @@ tried when `imp.json` is absent.
   "preview": {
     "exclude": ["vendor-demos"],
     "themes": ["src/theme/light.js", "src/theme/brand-dark.js"],
-    "translations": { "en": "./locales/en.js", "pl": "./locales/pl.js" }
+    "translations": { "en": "./locales/en.js", "pl": "./locales/pl.js" },
+    "groups": "src/preview-groups.js"
   },
   "pwa": {
     "name": "My App",
@@ -87,42 +88,46 @@ tried when `imp.json` is absent.
 }
 ```
 
-Only `name` and `icon` are required inside `pwa`; every other block is optional in whole and in
-part. Both keys of `mocks` are required when the block is present. Full detail per block:
-[fmt](fmt.md), [lint](lint.md), [testing](testing.md), [dependencies](dependencies.md),
-[preview](preview.md), [mocks](mocks.md), [start](start.md) and [build](build.md).
+Inside `pwa`, only `name` and `icon` are necessary. Every other block is optional, as a whole and in
+each part. When the `mocks` block is present, both of its keys are necessary. For the full detail of
+each block, read [fmt](fmt.md), [lint](lint.md), [testing](testing.md),
+[dependencies](dependencies.md), [preview](preview.md), [mocks](mocks.md), [start](start.md) and
+[build](build.md).
 
-Two folders have fixed names and no key at all: **`public/`**, copied verbatim to the root of the
-built site - see [build](build.md) - and **`dependencies/`**, holding the vendored bundles.
+Two folders have a fixed name and no key. **`public/`** goes to the root of the built site without a
+change, see [build](build.md). **`dependencies/`** holds the vendored bundles.
 
 ## Rules an agent gets wrong
 
-- **Never hand-edit `dependencies`.** Run `imp install <pkg>` - it resolves, bundles into
-  `dependencies/`, and writes the pin. A pin must be an exact `npm:`/`jsr:` version
-  (`npm:mitt@3.0.1`, never `^3.0.1`, `3`, or a bare `npm:mitt`); `imp lint` errors otherwise.
-- **Never write a `version` range.** It is one exact version, and it is set by `imp update`. Any imp
-  binary then hands off to that version.
-- **There is no lock file, no cache folder and no generated config.** If you are about to create
-  one, the answer is `imp.json` plus the committed `dependencies/` folder.
-- **imp writes nothing else into the project** - `.imp/` is the working directory (`dev.log`,
-  reviews, screenshots, videos) and belongs in `.gitignore`, as do `dist/` and `.env` files.
-- **A malformed value fails the command** with a message naming the key
-  (`invalid imp.json - 'devServerPort' must be an integer between 1 and 65535`). An **unknown** key,
-  though, is ignored - a misspelled key silently does nothing, so check the table above rather than
-  trusting a clean run.
-- **Config edits by imp preserve your comments and formatting**, so annotating the file is safe.
-- `imp.json` is optional: do not create one just to hold defaults.
+- **Never edit `dependencies` by hand.** Run `imp install <pkg>`. The command resolves the package,
+  bundles it into `dependencies/`, and writes the pin. A pin must be an exact `npm:` or `jsr:`
+  version, such as `npm:mitt@3.0.1`. Never write `^3.0.1`, `3` or a bare `npm:mitt`. `imp lint`
+  reports an error for those forms.
+- **Never write a range in `version`.** It is one exact version, and `imp update` sets it. Any imp
+  binary then hands the run to that version.
+- **There is no lock file, no cache folder and no generated config.** When you are about to create
+  one, use `imp.json` and the committed `dependencies/` folder instead.
+- **imp writes nothing else into the project.** `.imp/` is the working directory. It holds
+  `dev.log`, the reviews, the screenshots and the videos. Put it in `.gitignore`, with `dist/` and
+  every `.env` file.
+- **A malformed value fails the command**, and the message names the key, for example
+  `invalid imp.json - 'devServerPort' must be an integer between 1 and 65535`. imp ignores an
+  **unknown** key. So a misspelled key does nothing and gives no message. Check the table above. Do
+  not trust a run that reports no error.
+- **When imp edits the config, it keeps your comments and your formatting.** So it is safe to
+  annotate the file.
+- `imp.json` is optional. Do not create one only to hold the defaults.
 
 ## Environments - `--env`
 
-`environments` maps an alias to a file of values. Select it with `imp start --env dev` /
-`imp build --env prod`. With no flag imp uses an alias literally named **`default`**, else the
-`IMP_ENV` shell variable, else no environment at all. An undeclared alias stops the command and
-lists the real ones.
+`environments` maps an alias to a file of values. Select an alias with `imp start --env dev` or
+`imp build --env prod`. With no flag, imp uses an alias named **`default`**, then the `IMP_ENV`
+shell variable, then no environment. An undeclared alias stops the command, and imp lists the real
+aliases.
 
-The referenced file is JSON (string, number and boolean values) or a `.env` file (named `.env`,
-ending in `.env`, or starting with `.env.` - `KEY=VALUE`, `#` comments, optional `export`, quoted
-values, **every value a string**).
+The file is JSON, with a string, number or boolean value. It can also be a `.env` file. A `.env`
+file is named `.env`, or ends in `.env`, or starts with `.env.`. It holds `KEY=VALUE` lines, `#`
+comments, an optional `export` and a quoted value. **Every value in a `.env` file is a string.**
 
 ```json
 {
@@ -133,19 +138,22 @@ values, **every value a string**).
 }
 ```
 
-- A value written **`$env.NAME`** is read from the shell at serve/build time; every other string is
-  a literal. A missing shell variable stops the command naming the environment, key and variable.
-- Read the values with `import { env } from 'imp'` - a frozen object, empty when no environment was
-  selected. The same code works in development and production.
-- **Environment values are not secret.** They ship to the browser; `$env.` only keeps a value out of
-  the repository. Publishable keys and public config only - never a server-side secret.
-- A key named in `flags` is a **feature flag**, not an env value: it is removed from `env` and read
-  with `flag('CHECKOUT_V2')`, which `imp build` folds to a literal. See
+- imp reads a value written as **`$env.NAME`** from the shell, at serve time or build time. Every
+  other string is a literal. A shell variable that is missing stops the command. The message names
+  the environment, the key and the variable.
+- Read the values with `import { env } from 'imp'`. `env` is a frozen object. It is empty when you
+  select no environment. The same code works in development and in production.
+- **An environment value is not secret.** It ships to the browser. `$env.` only keeps the value out
+  of the repository. Put a publishable key and public config there. Never put a server-side secret
+  there.
+- A key that you name in `flags` is a **feature flag**, not an env value. imp removes it from `env`.
+  Read it with `flag('CHECKOUT_V2')`, which `imp build` folds to a literal. See
   [feature-flags](feature-flags.md).
-- Two names configure imp itself rather than your code: `IMP_LOG_LEVEL` (`debug`/`info`/`warn`/
-  `error`, see [logging](logging.md)) and `IMP_BASEPATH` (the sub-path the app is served under, see
-  [routing](routing.md)). Flag names may not start with `IMP_`.
+- Two names configure imp itself, not your code. `IMP_LOG_LEVEL` takes `debug`, `info`, `warn` or
+  `error`, see [logging](logging.md). `IMP_BASEPATH` is the sub-path that the app is served under,
+  see [routing](routing.md). A flag name must not start with `IMP_`.
 
-Shell variables imp reads directly, outside any environment file: `IMP_ENV` (selects an
-environment), `IMP_VERSION=system` (bypass the version pin), `IMP_HOME` (where downloaded versions
-cache), `IMP_BROWSER` (e2e browser path), `IMP_NO_UPDATE_CHECK` (silence the update hint).
+imp reads these shell variables directly, outside any environment file: `IMP_ENV` selects an
+environment, `IMP_VERSION=system` bypasses the version pin, `IMP_HOME` sets where imp caches a
+downloaded version, `IMP_BROWSER` gives the path of the e2e browser, and `IMP_NO_UPDATE_CHECK` stops
+the update hint.

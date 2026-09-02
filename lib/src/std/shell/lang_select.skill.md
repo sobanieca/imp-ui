@@ -7,7 +7,7 @@ langSelect({ languages: ['en', 'pl', 'pt-BR'] })
 langSelect({ languages: [{ value: 'en', label: 'English' }, { value: 'pl', label: 'Polski' }] })
 ```
 
-Call shape: `langSelect(props)` - it takes no content and renders one `<select>`.
+The call shape is `langSelect(props)`. It takes no content, and it renders one `<select>`.
 
 | Prop        | Values                                              | Default       | Notes                               |
 | ----------- | --------------------------------------------------- | ------------- | ----------------------------------- |
@@ -18,15 +18,16 @@ Call shape: `langSelect(props)` - it takes no content and renders one `<select>`
 
 Rules an agent gets wrong:
 
-- **A code with no label is named in its own language** through `Intl.DisplayNames` - `'pl'` reads
-  "polski", not "Polish". Pass `label` to override it.
-- **Choosing calls `setLang`**, which loads that language's translations before the switch, so the
-  page never flashes half-translated. A failed load is logged and the language stays put.
-- **The offered codes must be the ones your `init({ translations })` can load.** imp does not
-  discover them, and a code that loads nothing falls back to the first registered language.
-- **It follows the `lang` state**: setting the document's `lang` elsewhere moves the control too. A
-  code like `pt-BR` matches an offered `pt`.
-- **`remember: false` makes it session-only** - the language then comes from the document or the
-  browser on the next load.
+- **A code with no label takes its name in its own language**, through `Intl.DisplayNames`. So
+  `'pl'` reads "polski", not "Polish". To override the name, pass `label`.
+- **A choice calls `setLang`.** That call loads the translations of the language before the switch.
+  So the page never shows a half-translated state. imp logs a failed load, and the language does not
+  change.
+- **Offer only the codes that your `init({ translations })` can load.** imp does not discover them.
+  A code that loads nothing falls back to the first registered language.
+- **The control follows the `lang` state.** When something else sets the `lang` of the document, the
+  control moves as well. A code such as `pt-BR` matches an offered `pt`.
+- **`remember: false` keeps the choice for the session only.** On the next load, the language comes
+  from the document or from the browser.
 
 Related: imp skill i18n - t(), setLang and the translations loaders.

@@ -5,9 +5,10 @@ imp install [package[@version]] [version] [--alias name]
 imp uninstall <package>
 ```
 
-`imp install` downloads a package, bundles it into one minified browser-ready module under
-`dependencies/<alias>/`, and pins the exact version in `imp.json`. That folder is **committed**, so
-a fresh clone is the whole runnable app - no registry access in dev, CI, or the build.
+`imp install` downloads a package and bundles it into one minified module that the browser can run.
+It writes the bundle under `dependencies/<alias>/` and pins the exact version in `imp.json`. You
+**commit** that folder. So a fresh clone is the whole app, and it runs. imp needs no registry access
+in development, in CI or in the build.
 
 ```
 imp install mitt              latest, pinned exactly
@@ -28,26 +29,28 @@ import mitt from 'mitt'
 
 ## Rules an agent gets wrong
 
-- **Import by bare alias only.** Never `import mitt from 'npm:mitt@3.0.1'`, never a URL, never a
-  path into `dependencies/`. Inline registry specifiers are an `imp/exact-dependency-versions` lint
-  error.
-- **A bare import that is not a declared alias is a lint error** naming the `imp install` command to
-  run. See [lint](lint.md). Add packages with the command, never by hand-editing `imp.json` - see
-  [config](config.md).
-- **Pins are always exact** - `npm:mitt@3.0.1`, never `^3.0.1`, `3`, or a bare `npm:mitt`. There is
-  no lock file; the pin plus the committed bundle are the reproducibility.
-- **`imp` is reserved** - it always means the imp library of [imports](imports.md), can never be
-  installed or used as an alias, and stays bare inside a vendored bundle that imports it.
-- **Prefer writing the code.** imp assumes few dependencies: an agent can write and maintain a small
-  purpose-built module faster than a package can be vetted, and it ships less to the browser.
-- Re-running `imp install <pkg>` with no version **is** the update path.
+- **Import by the bare alias only.** Never write `import mitt from 'npm:mitt@3.0.1'`. Never use a
+  URL or a path into `dependencies/`. An inline registry specifier is an
+  `imp/exact-dependency-versions` lint error.
+- **A bare import that is not a declared alias is a lint error.** The error names the `imp install`
+  command to run. See [lint](lint.md). Add a package with the command. Never edit `imp.json` by
+  hand, see [config](config.md).
+- **A pin is always exact.** Write `npm:mitt@3.0.1`. Never write `^3.0.1`, `3` or a bare `npm:mitt`.
+  There is no lock file. The pin and the committed bundle give the reproducibility.
+- **`imp` is reserved.** It always means the imp library of [imports](imports.md). You can never
+  install it or use it as an alias. It stays bare inside a vendored bundle that imports it.
+- **Prefer to write the code.** imp expects few dependencies. An agent can write and maintain a
+  small module for one purpose faster than a team can vet a package. The module also ships less code
+  to the browser.
+- To update a package, run `imp install <pkg>` again with no version.
 
-## What you get in the repo
+## What you get in the repository
 
-`dependencies/<alias>/` holds the self-contained bundle, a `manifest.json`, and any assets the
-package needs (`.wasm`, CSS, fonts) as sibling files, so deleting the folder removes the dependency
-completely. The default alias is the package name (or the last path segment for a subpath install),
-and it is both the import specifier and the folder name.
+`dependencies/<alias>/` holds the self-contained bundle, a `manifest.json`, and every asset that the
+package needs as a sibling file. An asset can be a `.wasm` file, a stylesheet or a font. So when you
+delete the folder, you remove the dependency completely. The default alias is the package name. For
+a subpath install it is the last path segment. The alias is both the import specifier and the folder
+name.
 
 ```
 installed micromark (npm:micromark@4.0.2)
@@ -58,26 +61,28 @@ installed micromark (npm:micromark@4.0.2)
     micromark-core-commonmark@2.0.3 - MIT
 ```
 
-`manifest.json` records the same resolution on disk: alias, resolved specifier, install timestamp,
-kept bare `imp` imports, and every bundled package with its registry, exact version, SPDX identifier
-and full license text.
+`manifest.json` records the same resolution on disk. It holds the alias, the resolved specifier, the
+install timestamp, the bare `imp` imports that imp kept, and every bundled package. For each package
+it gives the registry, the exact version, the SPDX identifier and the full license text.
 
-- **Commit it with the bundle.** It is the only record of what the minified bundle contains -
-  re-running `imp install` re-resolves transitive versions to latest and cannot reproduce it.
-- **It is not a lock file.** Nothing reads it back to pin anything; it describes the committed
-  bytes.
-- **Read it to answer "which versions of what, under what license".** `imp build` folds its licenses
-  into the app's `LICENSES.txt` - see [build](build.md).
-- **Never hand-edit or delete it.** A bundled dependency with no manifest makes `imp build` warn and
-  drops its licenses from `LICENSES.txt`. `imp install` rewrites it.
+- **Commit the manifest with the bundle.** It is the only record of what the minified bundle
+  contains. A new `imp install` resolves a transitive version to the latest one, so it cannot
+  reproduce the manifest.
+- **The manifest is not a lock file.** Nothing reads it back to pin a version. It describes the
+  committed bytes.
+- **Read it to learn which versions of what, under which license.** `imp build` folds its licenses
+  into the `LICENSES.txt` of the app, see [build](build.md).
+- **Never edit or delete the manifest by hand.** For a bundled dependency with no manifest,
+  `imp build` warns and leaves its licenses out of `LICENSES.txt`. `imp install` writes the manifest
+  again.
 
-The bundle also keeps the package's own license notice (`/*! ... */`, `@license`) where the package
-put it. Never strip it out.
+The bundle also keeps the license notice of the package, `/*! ... */` or `@license`, where the
+package put it. Never remove it.
 
 ## License policy - `licenses` in `imp.json`
 
-`imp install` and `imp build` both refuse a package outside the policy. Default is `"permissive"`,
-so the gate is on with no config.
+`imp install` and `imp build` both refuse a package outside the policy. The default is
+`"permissive"`, so the gate works with no configuration.
 
 | Value                    | Accepts                                                 |
 | ------------------------ | ------------------------------------------------------- |
@@ -86,26 +91,28 @@ so the gate is on with no config.
 | `"any"`                  | everything, including GPL, AGPL, SSPL - no check        |
 | `["MIT", "ISC", ...]`    | exactly these SPDX identifiers, nothing else            |
 
-- **Install fails before writing.** No bundle, no `imp.json` entry - the rejected package leaves no
-  trace. Fix by widening `licenses` or choosing another package; never by hand-editing a manifest.
-- **`OR` takes the most permissive branch, `AND` must satisfy all.** `(BSD-3-Clause OR GPL-2.0)`
-  passes `"permissive"`.
-- **An unidentifiable license warns, never blocks** - including every JSR package, since JSR
-  publishes no identifier. Check those terms yourself.
+- **An install fails before imp writes anything.** There is no bundle and no `imp.json` entry. The
+  rejected package leaves nothing behind. To fix the failure, widen `licenses` or select another
+  package. Never edit a manifest by hand.
+- **`OR` takes the most permissive branch. `AND` must satisfy every branch.** So
+  `(BSD-3-Clause OR GPL-2.0)` passes `"permissive"`.
+- **A license that imp cannot identify gives a warning, never a block.** This covers every JSR
+  package, because JSR publishes no identifier. Check those terms yourself.
 
-A bundle over `maxFileSize` (200 kB default) warns, because it lands in git. Raise `maxFileSize` or
-list the folder in `maxFileSizeIgnore` in `imp.json` to accept it - the same limit `imp lint`
-enforces. Apart from that limit, `dependencies/` is skipped by everything that walks the tree, so
-`imp lint` and `imp fmt` never report or rewrite a package's bundle.
+A bundle that is larger than `maxFileSize` gives a warning, because the bundle goes into git. The
+default limit is 200 kB. To accept the bundle, raise `maxFileSize` or list the folder in
+`maxFileSizeIgnore` in `imp.json`. `imp lint` enforces the same limit. Apart from that limit, every
+command that walks the tree skips `dependencies/`. So `imp lint` and `imp fmt` never report or
+rewrite the bundle of a package.
 
 ## Trade-offs to design around
 
-- **Each dependency is bundled independently**, so two packages sharing an internal dependency each
-  carry their own copy - in development and in `imp build` alike. Harmless for stateless utilities;
-  **singleton-based libraries break subtly** (state written through one copy is invisible to the
-  other, `instanceof` fails across copies). Install such a library once yourself and pass instances
-  around.
-- **A package that fetches assets from a CDN at runtime is not fully vendored** and still hits the
+- **imp bundles each dependency on its own.** So two packages that share an internal dependency each
+  carry their own copy, in development and in `imp build`. This is harmless for a stateless utility.
+  **A library that uses a singleton breaks in ways that are hard to see.** State written through one
+  copy is invisible to the other, and `instanceof` fails across the two copies. Install such a
+  library once yourself, and pass the instances around.
+- **A package that fetches an asset from a CDN at runtime is not fully vendored.** It still uses the
   network.
-- A package built for an imp host keeps its `imp` imports bare; the install listing says so, and the
-  component then runs against **your** imp version - exercise it after an imp upgrade.
+- A package that is built for an imp host keeps its `imp` imports bare. The install listing says so.
+  The component then runs against **your** imp version. Exercise it after an imp update.

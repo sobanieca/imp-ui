@@ -1,8 +1,8 @@
 # imports - every bare specifier imp resolves
 
-imp resolves these specifiers itself: in development through the import map `imp start` injects, in
-production through `imp build`. Nothing to install, nothing to configure. Never import imp by a
-relative path, a URL, or a version.
+imp resolves these specifiers itself. In development it uses the import map that `imp start`
+injects. In production `imp build` resolves them. There is nothing to install and nothing to
+configure. Never import imp by a relative path, by a URL, or with a version.
 
 | Specifier            | Exports                                                                   |
 | -------------------- | ------------------------------------------------------------------------- |
@@ -16,10 +16,10 @@ relative path, a URL, or a version.
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                  |
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                               |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                        |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                              |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...    |
 | `imp/std/display`    | `emptyState`, `tag`                                                       |
-| `imp/std/navigation` | `tabs`, `navMenu`                                                         |
+| `imp/std/navigation` | `tabs`                                                                    |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`         |
 | `imp/std/feedback`   | `bugReport`                                                               |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...       |
@@ -31,8 +31,8 @@ import { button, div, h1 } from 'imp/html'
 import { initState } from 'imp/state'
 ```
 
-One subject per specifier, each with its own manual: [rendering](rendering.md) for `imp/html`,
-[components](components.md) for `component`, [state](state.md) for `imp/state`,
+Each specifier is one subject, and each subject has a manual. Read [rendering](rendering.md) for
+`imp/html`, [components](components.md) for `component`, [state](state.md) for `imp/state`,
 [routing](routing.md) for `imp/router`, [http](http.md) for `imp/http`, [theming](theming.md) for
 `imp/theme`, [i18n](i18n.md) for `imp/i18n`, [logging](logging.md) for `imp/log`, [std](std.md) for
 `imp/std`, [icons](icons.md) for `imp/icons`, [testing](testing.md) for `imp/test`, and
@@ -40,14 +40,14 @@ One subject per specifier, each with its own manual: [rendering](rendering.md) f
 
 Rules an agent gets wrong:
 
-- **A name has exactly one home.** `div` is not exported by `imp`; `component` is not exported by
-  `imp/html`. Importing from the wrong specifier is an `imp/import-source` lint error naming the
-  right one, and `imp lint --fix` moves it.
-- **`button` exists twice on purpose** - the plain `<button>` from `imp/html` and the styled
-  component from `imp/std`. They never collide because the specifiers differ; alias one when a file
-  needs both: `import { button as styledButton } from 'imp/std'`.
-- **No other `imp/...` subpath exists.** `imp/std/data`, `imp/utils`, ... fail lint with the list of
-  real specifiers.
-- **Never `import mitt from 'npm:mitt@3.0.1'`.** Third-party packages are vendored first with
-  `imp install` and imported by their bare alias - see [dependencies](dependencies.md).
-- Namespace imports work on every subpath: `import * as h from 'imp/html'`, then `h.div(...)`.
+- **A name has exactly one home.** `imp` does not export `div`. `imp/html` does not export
+  `component`. An import from the wrong specifier is an `imp/import-source` lint error, and the
+  error names the correct specifier. `imp lint --fix` moves the import.
+- **`button` exists twice on purpose.** `imp/html` gives the plain `<button>`, and `imp/std` gives
+  the styled component. The two never collide, because the specifiers differ. When a file needs
+  both, give one an alias: `import { button as styledButton } from 'imp/std'`.
+- **No other `imp/...` subpath exists.** A specifier such as `imp/std/data` or `imp/utils` fails
+  lint, and the error lists the real specifiers.
+- **Never write `import mitt from 'npm:mitt@3.0.1'`.** Vendor a third-party package first with
+  `imp install`, then import it by its bare alias. See [dependencies](dependencies.md).
+- A namespace import works on every subpath: `import * as h from 'imp/html'`, then `h.div(...)`.

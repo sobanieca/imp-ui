@@ -6,8 +6,8 @@ import { heading } from 'imp/std'
 heading({ level: 2 }, 'Recent activity')
 ```
 
-Call shape: `heading(props?, ...children)` - the props object, when present, must be the **first**
-argument; everything after it is the heading text.
+The call shape is `heading(props?, ...children)`. When a props object is present, it must be the
+**first** argument. Everything after it is the heading text.
 
 | Prop    | Values                         | Default     | Notes                               |
 | ------- | ------------------------------ | ----------- | ----------------------------------- |
@@ -17,11 +17,12 @@ argument; everything after it is the heading text.
 
 Rules an agent gets wrong:
 
-- **`level` is a number, not a string** - `heading({ level: 2 }, ...)`, not `level: 'h2'`.
-- **Type size follows the level**, so there is no size prop: pick the level the document outline
-  needs and the scale takes care of itself.
-- **No outer margins.** The layout around it owns the spacing.
-- Unknown props warn at mount, and an out-of-range `level`/`tone`/`align` warns and falls back.
+- **`level` is a number, not a string.** Write `heading({ level: 2 }, ...)`, not `level: 'h2'`.
+- **The type size follows the level**, so there is no size prop. Select the level that the document
+  outline needs. The scale then follows.
+- **The heading has no outer margin.** The layout around it owns the spacing.
+- imp warns about an unknown prop at mount. It warns about a `level`, `tone` or `align` outside the
+  list, and falls back to the default.
 
 ```js
 heading('Dashboard')

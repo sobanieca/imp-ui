@@ -3,4 +3,5 @@
   logs -> <root>/test/fixtures/preview/.imp/dev.log
   themes -> theme/brand.js + built-ins
   languages -> en, pl, ar
+  groups -> preview-groups.js
   imp auto-injected | live reload | console + network telemetry

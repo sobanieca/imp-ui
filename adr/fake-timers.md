@@ -2,57 +2,66 @@
 
 ## Context
 
-Unit tests (`*.test.js`) run in-process on Deno's real globals: the unit environment
-(`two-level-testing.md`) borrows only the DOM APIs Deno lacks from happy-dom and deliberately keeps
-Deno's own `setTimeout`/`setInterval`/`Date`/`performance` - happy-dom's timer reimplementation is
-tied to its window lifecycle and adds nothing over the host's event-loop-integrated timers.
+A unit test in a `*.test.js` file runs in process, on the real globals of Deno. The unit
+environment, see `two-level-testing.md`, borrows from happy-dom only the DOM APIs that Deno lacks.
+It deliberately keeps the `setTimeout`, `setInterval`, `Date` and `performance` of Deno. The timer
+implementation of happy-dom is tied to the lifecycle of its window, and it adds nothing over the
+timers of the host, which the event loop already drives.
 
-That leaves time-dependent code (debounce, throttle, polling, retry backoff, animations) awkward to
-test: a test either waits real wall-clock time or hand-patches `globalThis.setTimeout`. The manual
-patch has two sharp edges. It is easy to forget to restore, leaking into the next test; and because
-the runner's own per-test timeout watchdog also calls the global `setTimeout`, patching the global
-silently disables the safety timeout - a genuinely hung test would no longer fail on schedule.
+That left code which depends on time awkward to test. Examples are a debounce, a throttle, a poll, a
+retry backoff and an animation. A test either waited real time on the wall clock, or patched
+`globalThis.setTimeout` by hand. The manual patch has two sharp edges. It is easy to forget to
+restore it, and it then leaks into the next test. The watchdog of the runner, which enforces the
+timeout of each test, also calls the global `setTimeout`. So a patch of the global disabled the
+safety timeout with no message, and a test that truly hung no longer failed on time.
 
 ## Decision
 
-A unit test opts into virtual time with a `fakeTimers` option -
-`test(name, fn, { fakeTimers: true })` - and receives a `clock` in its test context (`{ clock }`) to
-advance it. The runner, not the test body, owns the clock: it installs the clock before the test
-(and that test's `beforeEach`/`afterEach` hooks) run and restores real timers afterward. There is no
-imperative install call and nothing to clean up. `{ fakeTimers: { now } }` seeds the starting
-instant from a number or `Date`.
+A unit test asks for virtual time with a `fakeTimers` option, as in
+`test(name, fn, { fakeTimers: true })`. It receives a `clock` in its test context, as `{ clock }`,
+and it advances the clock with that handle. The runner owns the clock, and the body of the test does
+not. The runner installs the clock before the test runs, and before the `beforeEach` and `afterEach`
+hooks of that test run. It restores the real timers afterward. There is no install call to write,
+and there is nothing to clean up. `{ fakeTimers: { now } }` sets the starting instant, from a number
+or from a `Date`.
 
-- **What is faked.** While a clock is installed it replaces `setTimeout`, `clearTimeout`,
-  `setInterval`, `clearInterval`, `Date` (`Date.now()` and `new Date()`), `performance.now()`, and
-  `requestAnimationFrame`/`cancelAnimationFrame`; time only moves when the test advances it.
-- **Clock handle.** The handle is kept small: `await clock.tick(ms)` advances virtual time, firing
-  every timer that comes due in order; `await clock.runAll()` drains all pending timers; `clock.now`
-  reads the current virtual time; `clock.restore()` returns to real timers early. `tick`/`runAll`
-  are async and flush awaited promises between timers, so a single method covers both synchronous
-  and `await`-between-timers code - there is no separate `tickAsync` to choose, and no one-timer
-  `next`. A runaway self-rescheduling interval is capped and throws rather than hanging.
-- **Auto-restore.** The runner restores the clock after each test, before it measures the test's
-  duration with the real `performance.now`, so a fake clock can neither leak across tests nor
-  distort the runner's own timing.
-- **Watchdog decoupling.** The runner captures the real `setTimeout`/`clearTimeout` at module load
-  and its per-test timeout watchdog uses those captured references, so faking the global timers can
-  never disable the safety timeout - a hung test still fails on time.
-- **Where the clock lives.** The clock is an internal runner concern, created and injected by the
-  runner from a small module outside the public `imp/test` surface. `imp/test` gains only the
-  `fakeTimers` test option, no new export.
-- **Unit-only.** The clock works because unit tests share Deno's globals. In e2e specs the code runs
-  in a real browser out of reach of a Deno global swap, so `fakeTimers` on a `*.spec.js` fails with
-  a message pointing at controlling time through the Puppeteer page instead.
+- **What imp fakes.** While a clock is installed, it replaces `setTimeout`, `clearTimeout`,
+  `setInterval`, `clearInterval`, `Date`, which covers `Date.now()` and `new Date()`,
+  `performance.now()`, `requestAnimationFrame` and `cancelAnimationFrame`. Time moves only when the
+  test advances it.
+- **The clock handle stays small.** `await clock.tick(ms)` advances the virtual time, and fires
+  every timer that comes due, in order. `await clock.runAll()` drains every pending timer.
+  `clock.now` reads the current virtual time. `clock.restore()` returns to the real timers early.
+  `tick` and `runAll` are async, and they flush an awaited promise between two timers. So one method
+  covers synchronous code, and code that awaits between two timers. There is no separate `tickAsync`
+  to choose, and there is no `next` for one timer. An interval that reschedules itself without an
+  end is capped, and it throws instead of hanging.
+- **The runner restores the clock automatically.** It restores after each test, and before it
+  measures the duration of the test with the real `performance.now`. So a fake clock cannot leak
+  across two tests, and it cannot distort the timing of the runner.
+- **The watchdog is separate.** The runner captures the real `setTimeout` and `clearTimeout` at
+  module load. Its watchdog for the timeout of each test uses those captured references. So a fake
+  of the global timers can never disable the safety timeout, and a hung test still fails on time.
+- **Where the clock lives.** The clock is an internal concern of the runner. The runner creates and
+  injects it, from a small module outside the public `imp/test` surface. `imp/test` gains only the
+  `fakeTimers` test option, and no new export.
+- **The clock is for a unit test only.** It works because a unit test shares the globals of Deno. In
+  an e2e spec, the code runs in a real browser, out of reach of a swap of a Deno global. So
+  `fakeTimers` on a `*.spec.js` file fails, with a message that points at control of the time
+  through the Puppeteer page.
 
 ## Consequences
 
-- Time-dependent logic is testable deterministically and instantly, with no real waiting, no manual
-  global patching, and no teardown; which tests control time is visible in each test's options.
-- Fake timers are declared per test through options rather than an imperative helper, so the whole
-  test body (and its hooks) runs under fake time with an unambiguous boundary. A standalone install
-  helper for finer, mid-test control can be added later without changing this option.
-- Fake timers are a unit-test tool only; e2e time control stays a Puppeteer/CDP concern, keeping the
-  two levels' capabilities distinct as `two-level-testing.md` intends.
-- The clock is a virtual-time model, not a full timer emulation: it covers the timing APIs apps
-  actually schedule against and drains microtasks by yielding to the real event loop between timers,
-  which is why advancing time is asynchronous.
+- Logic that depends on time is testable, deterministic and instant. There is no real wait, no
+  manual patch of a global, and no teardown. The options of each test show which tests control the
+  time.
+- A test declares fake timers through an option, and not through an imperative helper. So the whole
+  body of the test, and its hooks, run under fake time, with a clear boundary. Somebody can add a
+  standalone install helper later, for finer control in the middle of a test, and this option does
+  not change.
+- Fake timers are a tool for a unit test only. Control of time in an e2e test stays a concern of
+  Puppeteer and CDP. That keeps the capabilities of the two levels separate, as
+  `two-level-testing.md` intends.
+- The clock is a model of virtual time, and not a full emulation of a timer. It covers the timing
+  APIs that an app really schedules against. It drains a microtask by yielding to the real event
+  loop between two timers, and that is why an advance of the time is asynchronous.

@@ -13,7 +13,7 @@ userCard({
 })
 ```
 
-Call shape: `userCard(props)` - it takes no content.
+The call shape is `userCard(props)`. It takes no content.
 
 | Prop          | Values                         | Default     | Notes                                            |
 | ------------- | ------------------------------ | ----------- | ------------------------------------------------ |
@@ -32,34 +32,35 @@ Call shape: `userCard(props)` - it takes no content.
 
 Rules an agent gets wrong:
 
-- **It is one component with two states, not two components.** Signed out it is a single sign-in
-  button and no card; signed in it is the card with a sign-out button beside it. Do not render a
+- **This is one component with two states, not two components.** Signed out, it is a single sign-in
+  button and no card. Signed in, it is the card with a sign-out button beside it. Do not render a
   separate button for the other state.
-- **The sign-out button exists only when `onSignOut` does.** Leave the prop off for a display-only
-  card - a person in a comment list or an owner in a table - and only the card renders.
-- **`signedIn` defaults to `false`**, so a `userCard` with only a `name` shows a sign-in button.
-  Pass `signedIn: true` (or a state) to see the person.
-- **`onSignIn` / `onSignOut` are function props, not `events` entries**, because signing in is
-  asynchronous and can fail. **Return the promise**: the button shows its spinner until it settles,
-  and a rejection is logged rather than swallowed.
-- **Inside `shell` you do not call this** - pass
-  `account: { name, description, picture, href,
-  onSignIn, onSignOut }` and `signedIn`, and the
-  frame builds the card and places it for you - beside the navbar on a wide screen, inside the
-  hamburger drawer on a phone. Reach for `userCard` directly in a frame of your own, or anywhere a
-  person is displayed.
-- **imp holds no session.** The component reads `signedIn` and calls your handler - it never talks
-  to an identity provider, stores a token or redirects. Flip `signedIn` yourself when the handler
+- **The sign-out button appears only when you pass `onSignOut`.** Leave the prop out for a card that
+  only displays a person, such as a person in a comment list or an owner in a table. imp then
+  renders the card alone.
+- **`signedIn` defaults to `false`.** So a `userCard` with a `name` only shows a sign-in button.
+  Pass `signedIn: true`, or a state, to show the person.
+- **`onSignIn` and `onSignOut` are function props, not `events` entries**, because a sign-in is
+  asynchronous and can fail. **Return the promise.** The button shows its spinner until the promise
+  settles, and imp logs a rejection instead of hiding it.
+- **Do not call this component inside `shell`.** Pass
+  `account: { name, description, picture, href, onSignIn, onSignOut }` and `signedIn`. The frame
+  then builds the card and places it, beside the navbar on a wide screen and inside the hamburger
+  drawer on a phone. Call `userCard` directly in a frame of your own, or anywhere that shows a
+  person.
+- **imp holds no session.** The component reads `signedIn` and calls your handler. It never talks to
+  an identity provider, stores a token, or redirects. Change `signedIn` yourself when the handler
   finishes.
-- **The button wording is imp's**, under `imp.auth.signIn` and `imp.auth.signOut`; translate those
-  keys to say "Log out". There is no label prop.
-- **The card displays, it does not act.** There is no menu and no dropdown inside it - `href` sends
-  it to an account page, and signing out is the button beside it.
-- **The avatar falls back to initials** taken from `name` (first and last word), on the primary
-  color. A `picture` that fails to load shows the browser's broken-image mark, not the initials.
-- **The avatar is `aria-hidden`** and the name is the accessible text, so a screen reader reads the
+- **imp owns the wording of the button**, under `imp.auth.signIn` and `imp.auth.signOut`. To say
+  "Log out", translate those keys. There is no label prop.
+- **The card displays. It does not act.** There is no menu and no drop-down inside it. `href` sends
+  the person to an account page, and the sign-out is the button beside the card.
+- **The avatar falls back to initials.** imp takes them from the first and the last word of `name`,
+  and draws them on the primary colour. A `picture` that fails to load shows the broken-image mark
+  of the browser, not the initials.
+- **The avatar is `aria-hidden`**, and the name is the accessible text. So a screen reader reads the
   person once.
-- **`name` is app data and is not translated** - do not route it through `t()`.
+- **`name` is app data, and imp does not translate it.** Do not pass it through `t()`.
 
 Related: imp skill std/button - the control it composes; imp skill std/shell - the frame that builds
 one from its `account` prop.

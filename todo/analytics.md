@@ -1,35 +1,41 @@
 # Analytics - emit events, forward to any store
 
-Give imp a built-in, provider-agnostic analytics seam: imp (and the app) **emit** analytics events
-through one central dispatcher, and the user **reacts** to them and forwards each event to the
-analytics store of their choice - Google Analytics, PostHog, Plausible, an internal endpoint,
-`console`, whatever. imp never bundles or knows about any specific analytics provider; it only owns
-the emit-and-subscribe plumbing.
+Give imp a built-in seam for analytics, and let that seam work with any provider. imp, and the app,
+**emit** an analytics event, through one central dispatcher. The user **reacts** to that event, and
+forwards it to the analytics store of their choice. That store can be Google Analytics, PostHog,
+Plausible, an internal endpoint, the `console`, or anything else. imp never bundles a specific
+provider, and it knows about none. It owns the plumbing that emits, and that lets somebody
+subscribe.
 
-**Import home: `imp/analytics`.** The emit-and-subscribe surface lands as its own specifier
-(`adr/library-import-namespaces.md`), so an app's analytics wiring is visible in its import lines.
+**The home for the import is `imp/analytics`.** The surface that emits and subscribes lands as its
+own specifier, see `adr/library-import-namespaces.md`. So the analytics wiring of an app is visible
+in its import lines.
 
 ## Why imp owns this
 
-Attaching analytics is possible today with raw DOM (real-DOM bubbling + `data-*` + a root delegated
-listener) and with signal subscriptions, but every app re-invents the wiring. Centralizing it gives:
+An app can attach analytics today, with raw DOM, through bubbling in real DOM, a `data-*` attribute,
+and one delegated listener at the root. It can also attach analytics through a subscription to a
+signal. But every app writes that wiring again. To centralize it gives three things:
 
-- **One event shape** every sink receives, so switching or fanning out to multiple providers is a
-  handler swap, not an app-wide edit.
-- **A single decoupling point.** Components and app code emit intent (`track('checkout')`); the
-  binding to a concrete backend lives in exactly one place the user controls.
-- **Automatic instrumentation** of stdlib interactions and route changes without threading callbacks
-  through every component (the cross-cutting win of `adr/real-dom-no-virtual-dom.md`).
+- **One shape of an event**, which every sink receives. So to change a provider, or to send an event
+  to several providers, is a change of one handler, and not an edit across the app.
+- **One point of decoupling.** A component, and app code, emit an intent, as in `track('checkout')`.
+  The binding to a concrete backend lives in exactly one place, and the user controls that place.
+- **Automatic instrumentation** of an interaction with a standard component, and of a change of
+  route. Nobody passes a callback through every component. That is the cross-cutting gain of
+  `adr/real-dom-no-virtual-dom.md`.
 
 ## Pieces
 
-- `track(name, props?)` - emit an analytics event. Builds a plain, serializable record
-  (`{ name, props, timestamp }`) and dispatches it to every registered sink. Pure and synchronous;
-  callable from anywhere (component body, event handler, effect).
-- `onAnalytics(handler)` - register a sink `({ name, props, timestamp }) => void`; returns an
-  unsubscribe function and auto-unsubscribes when the calling scope disposes (via `onDispose` /
-  `scopeSignal()`). **Multiple sinks are allowed** so an app can forward to several providers at
-  once. This is the "react on analytics event" surface - the user's forwarder lives here:
+- `track(name, props?)` emits an analytics event. It builds a plain record that somebody can
+  serialize, which is `{ name, props, timestamp }`. It dispatches that record to every registered
+  sink. It is pure and synchronous. You can call it anywhere, from the body of a component, from an
+  event handler, and from an effect.
+- `onAnalytics(handler)` registers a sink. That sink is `({ name, props, timestamp }) => void`. The
+  call returns a function that unsubscribes. It also unsubscribes automatically when the calling
+  scope disposes, through `onDispose` or `scopeSignal()`. **imp allows several sinks.** So an app
+  can forward to several providers at once. This is the surface that reacts to an analytics event,
+  and the forwarder of the user lives here:
 
   ```js
   onAnalytics(({ name, props }) => posthog.capture(name, props))
@@ -38,76 +44,86 @@ listener) and with signal subscriptions, but every app re-invents the wiring. Ce
   )
   ```
 
-- A sink that throws is reported through the built-in logger (`adr/built-in-logger.md`) and
-  skipped - one bad forwarder must never break dispatch to the others, and analytics must never
-  crash the app.
+- imp reports a sink that throws, through the built-in logger, see `adr/built-in-logger.md`, and
+  skips it. One bad forwarder must never break the dispatch to the others. Analytics must also never
+  break the app.
 
-## Automatic instrumentation (convention, opt-in)
+## Automatic instrumentation, as a convention that you turn on
 
-imp turns two things into `track()` calls with no per-component callbacks:
+imp turns two things into a `track()` call, and no component takes a callback:
 
-- **Tagged interactions via `data-track`.** A single delegated listener installed at `mount` turns a
-  click on any element carrying `data-track="checkout"` into `track('checkout', { ...dataset })`.
-  Because `...rest` passes attributes straight through, this works on every stdlib component and raw
-  element alike:
+- **A tagged interaction, through `data-track`.** imp installs one delegated listener at `mount`. It
+  turns a click on any element that carries `data-track="checkout"` into
+  `track('checkout', { ...dataset })`. `...rest` passes an attribute straight through. So this works
+  on every standard component, and on a raw element:
 
   ```js
   button({ 'data-track': 'signup' }, 'Sign up')
   card({ 'data-track': 'promo' }, ...)
   ```
 
-  Delegation sidesteps the `events` same-name-clobber gotcha (a user `events: { input }` would
-  otherwise override a component's own binding) and covers nodes added later by `each`/`router`.
-- **Pageviews.** Subscribe to the route state via `useRoute()` (`adr/client-side-router.md`) and
-  emit `track('pageview', { path })` on navigation. Opt-in so apps that don't want route analytics
-  pay nothing.
+  The delegation avoids the trap where two handlers share a name. A user `events: { input }` would
+  otherwise override the binding of a component. The delegation also covers a node that `each` or
+  `router` adds later.
+- **A pageview.** Subscribe to the state of the route, through `useRoute()`, see
+  `adr/client-side-router.md`. Emit `track('pageview', { path })` on a navigation. This is a choice
+  that an app makes. So an app that does not want analytics for a route pays nothing.
 
-Both are conveniences layered on the same `track`/`onAnalytics` core - an app can ignore them and
-call `track()` by hand.
+Both are conveniences on top of the same core of `track` and `onAnalytics`. An app can ignore both,
+and call `track()` by hand.
 
-## Explicit emit from components and app code
+## An explicit emit, from a component and from app code
 
-Beyond the `data-track` convention, anything can emit directly:
+Beyond the convention of `data-track`, anything can emit directly:
 
 ```js
 formBox({ events: { submit: () => track('lead_submitted', { plan: plan() }) } }, ...)
 subscribe(query, (v) => track('search', { term: v }))   // state-change analytics
 ```
 
-Stdlib components stay provider-agnostic: they emit **nothing by default**, and only when the app
-opts a component in (a `data-track` tag or an explicit `track()` in a passed handler) does an event
-fire. imp ships no hard-coded event names beyond the `pageview` convention.
+A standard component stays agnostic about a provider. It emits **nothing by default**. An event
+fires only when the app opts a component in, with a `data-track` tag, or with an explicit `track()`
+in a handler that the app passes. imp ships no fixed name of an event, beyond the `pageview`
+convention.
 
-## Provider-agnostic by construction
+## Agnostic about a provider, by construction
 
-- imp bundles **no** analytics client and makes **no** network calls itself - transport is entirely
-  the sink's job. This keeps the offline/self-contained guarantees intact and leaves consent,
-  batching, sampling, and PII policy to the user's handler.
-- The event record is plain data so any sink can reshape it for its provider's SDK.
+- imp bundles **no** analytics client, and imp itself makes **no** network call. The transport is
+  entirely the job of the sink. That keeps the guarantees about offline work, and about a
+  self-contained build. It also leaves the consent, the batching, the sampling and the policy about
+  personal data to the handler of the user.
+- The record of an event is plain data. So any sink can reshape it, for the SDK of its provider.
 
 ## Open questions
 
-- **Global vs. mount-scoped registry.** Whether `onAnalytics` sinks live in one module-global
-  registry or per-`mount` root (matters for multi-root pages and `imp test` isolation).
-- **Event beyond click.** Whether `data-track` auto-instrumentation covers only `click` or also
-  `submit`/`change`/`focus`, and how the event type is encoded (`data-track-on`?).
-- **Enrichment / context.** Whether to support a shared context layer (session id, current route)
-  merged into every event's `props`, or leave enrichment to the sink.
-- **Consent gating.** Whether imp offers a built-in "hold events until consent granted" buffer or
-  leaves it entirely to the handler.
-- **Naming.** `track` / `onAnalytics` vs. an `analytics.emit` / `analytics.on` object surface.
+- **A global registry, or a registry per mount scope.** Do the sinks of `onAnalytics` live in one
+  global registry at module level, or in one registry per `mount` root? That matters for a page with
+  several roots, and for the isolation of `imp test`.
+- **An event beyond a click.** Does the automatic instrumentation of `data-track` cover `click`
+  only? Or does it also cover `submit`, `change` and `focus`? How does imp encode the type of the
+  event? Possibly through `data-track-on`.
+- **Enrichment, and context.** Does imp support a shared layer of context, such as a session id and
+  the current route, which imp merges into the `props` of every event? Or does the sink enrich the
+  event?
+- **A gate for consent.** Does imp offer a built-in buffer, which holds an event until somebody
+  grants consent? Or does the handler own that completely?
+- **The naming.** Is it `track` and `onAnalytics`? Or is it an object surface, with `analytics.emit`
+  and `analytics.on`?
 
 ## Dependencies
 
-Builds on the landed state layer and its scoped cleanup (`adr/event-propagated-state.md`) for scoped
-sink cleanup and for state-change emits; pageview auto-instrumentation builds on the router
-(`adr/client-side-router.md`); diagnostics route through the built-in logger
-(`adr/built-in-logger.md`). The `data-track` delegation is pure real DOM and needs none of them.
+This builds on the state layer that landed, and on its scoped cleanup, see
+`adr/event-propagated-state.md`. That covers the cleanup of a sink in a scope, and an emit on a
+change of a state. The automatic instrumentation of a pageview builds on the router, see
+`adr/client-side-router.md`. A diagnostic goes through the built-in logger, see
+`adr/built-in-logger.md`. The delegation of `data-track` is pure real DOM, and it needs none of
+them.
 
 ## ADR impact
 
-New ADR `provider-agnostic-analytics.md`: imp owns emit (`track`) and subscribe (`onAnalytics`) with
-a plain event record and multiple sinks, ships no provider client and makes no network calls, and
-offers `data-track` delegation + `pageview` as opt-in conventions on top. Update the ADR table and
-document the emit/forward model, the `data-track` convention, and a couple of sink examples in
-`docs/`.
+Write a new ADR, `provider-agnostic-analytics.md`. It says that imp owns the emit, through `track`,
+and the subscribe, through `onAnalytics`. It says that an event is a plain record, and that imp
+allows several sinks. It says that imp ships no client of a provider, and that imp makes no network
+call. It says that imp offers the delegation of `data-track`, and a `pageview` event, as conventions
+on top, which an app turns on. Update the table of ADRs. Document the model of emitting and
+forwarding, the convention of `data-track`, and two examples of a sink, in `docs/`.

@@ -1,18 +1,18 @@
 # imp-ui - Routing
 
-Client-side routing for single-page apps: map the URL to a screen, swap screens on navigation, and
-load rarely-visited sections on demand - with no build step, no route-scanning compiler, and no
-config file. You describe your routes as one plain-data table and hand it to a router you drop into
-your layout.
+imp gives a single-page app client-side routing. It maps a URL to a screen, changes the screen on a
+navigation, and loads a section that people rarely visit on demand. There is no build step, no
+compiler that scans routes, and no config file. You describe your routes as one plain-data table,
+and you hand the table to a router that you drop into your layout.
 
-Everything routing-related is imported from **`imp/router`** (see **[Imports](imports.md)** for the
-full map):
+Everything about routing comes from **`imp/router`**. See **[Imports](imports.md)** for the full
+map:
 
 ```js
 import { area, guard, navigate, route, router, useRoute, wait } from 'imp/router'
 ```
 
-## The whole thing in one screen
+## The whole idea in one screen
 
 ```js
 import { component, mount } from 'imp'
@@ -42,28 +42,30 @@ const shell = component('app-shell', {
 mount('#app', shell())
 ```
 
-That is a complete routed app. The `router()` is the slot the matched screen renders into, its
-`routes` table declares which screen answers which URL, and `navigate(...)` changes the URL without
-a full page reload - here from a button's click handler.
+That is a complete routed app. The `router()` is the slot where the matched screen renders. Its
+`routes` table declares which screen answers which URL. `navigate(...)` changes the URL with no full
+page reload. Here it runs from the click handler of a button.
 
 ## The mental model
 
-- **The route table maps a URL pattern to a factory** - a function that returns the screen to show.
-  It's a plain object you write; there is no file-name convention and nothing scans your project.
-  The whole map lives in one place, next to the router that renders it - not scattered across files.
-- **The router swaps screens on navigation.** `router()` watches the current URL. When you navigate
-  to a different screen, it swaps the matched screen's DOM in and tears the old screen out - the
-  screen you leave is unmounted, so its state, subscriptions, and timers are released automatically.
-- **A screen is just what its factory returns** - usually a component, so it gets the full
-  lifecycle: a loading placeholder, its own scoped state, an error boundary, and deterministic
-  cleanup. A screen renders **immediately**; the one thing that loads on demand is an **area** (a
-  whole section of the app), so there are only two things in a route table to tell apart.
-- **You navigate with `navigate()`.** imp ships no link component - call `navigate('/path')` from
-  any event handler and it swaps the screen and updates the URL without a full page reload.
+- **The route table maps a URL pattern to a factory.** A factory is a function that returns the
+  screen to show. The table is a plain object that you write. There is no file-name convention, and
+  nothing scans your project. The whole map lives in one place, beside the router that renders it.
+  It is not spread across files.
+- **The router changes the screen on a navigation.** `router()` watches the current URL. When you
+  navigate to a different screen, it puts the DOM of the matched screen in, and takes the old screen
+  out. imp unmounts the screen that you leave. So its state, its subscriptions and its timers are
+  released automatically.
+- **A screen is what its factory returns.** It is usually a component, so it gets the full
+  lifecycle: a loading placeholder, its own scoped state, an error boundary and clear cleanup. A
+  screen renders **immediately**. The one thing that loads on demand is an **area**, which is a
+  whole section of the app. So a route table holds only two kinds of thing to tell apart.
+- **You navigate with `navigate()`.** imp ships no link component. Call `navigate('/path')` from any
+  event handler. It changes the screen and updates the URL, with no full page reload.
 
 ## The route table
 
-The `routes` option is an object mapping a **pattern** to a **target**:
+The `routes` option is an object that maps a **pattern** to a **target**:
 
 ```js
 router({
@@ -76,18 +78,18 @@ router({
 })
 ```
 
-A pattern is a URL path; segments that start with `:` capture a value. A screen factory receives one
-argument, `{ params, query }`:
+A pattern is a URL path. A segment that starts with `:` captures a value. A screen factory receives
+one argument, `{ params, query }`:
 
-- **`params`** - the values captured by `:name` segments, URL-decoded. For `/todos/42`,
+- **`params`** holds the values that a `:name` segment captured, URL-decoded. For `/todos/42`,
   `params.id === '42'`.
-- **`query`** - the URL's query string parsed into an object **at the moment the screen is
-  entered**. For `/search?q=imp&page=2`, `query.q === 'imp'`. Query values are always strings. If
-  the query can change while the screen stays mounted (see below), read it live from `useRoute()`
-  instead.
+- **`query`** is the query string of the URL, parsed into an object **at the moment when the person
+  enters the screen**. For `/search?q=imp&page=2`, `query.q === 'imp'`. A query value is always a
+  string. When the query can change while the screen stays mounted, described below, read it live
+  from `useRoute()` instead.
 
-**Matching is first-match-wins**, in the order you wrote the keys. Trailing slashes are ignored
-(`/todos` and `/todos/` are the same). When a static path and a parameter path could both match, put
+**The first match wins**, in the order in which you wrote the keys. imp ignores a trailing slash, so
+`/todos` and `/todos/` are the same. When a static path and a parameter path could both match, put
 the more specific one first:
 
 ```js
@@ -99,22 +101,23 @@ router({
 })
 ```
 
-The `routes:` option is a plain object like this. (There's one named helper, `area({ routes })`, but
-it's only for exporting an **area's** own file - see _Areas_ - not something you reach for here.)
+The `routes` option is a plain object like this one. There is one named helper, `area({ routes })`,
+but it is only for the export of the file of an **area**. See _Areas_. It is not something that you
+use here.
 
-**A screen factory builds its screen right away** - it returns DOM, and imp renders it. It isn't the
-place to `await` anything: don't fetch a screen's data there (load it in the screen component's
-async `build`, so the wait shows the screen's own `placeholder`), and don't `import()` there either.
-Code that should load on demand goes behind an **area**, described below - that's the one lazy thing
-in a route table.
+**A screen factory builds its screen immediately.** It returns DOM, and imp renders it. It is not
+the place to `await` anything. Do not fetch the data of a screen there. Load it in the async `build`
+of the screen component, so the wait shows the `placeholder` of the screen. Do not call `import()`
+there either. Code that must load on demand goes behind an **area**, described below. That is the
+one lazy thing in a route table.
 
-### Navigation is a clean slate - except query changes
+### A navigation is a clean start, except a change of the query
 
-Navigating to a **different screen** (a different pattern, or different `:params`) mounts it fresh
-and unmounts the one you left. Navigating that changes **only the query string** keeps the current
-screen mounted - so a search or filter page that lives at `/search?q=...` doesn't lose its input
-focus, scroll, or in-progress state every time a query param changes. Such a screen reads the live
-query from `useRoute()`:
+A navigation to a **different screen**, which is a different pattern or a different `:param`, mounts
+that screen from the start, and unmounts the screen that you left. A navigation that changes **only
+the query string** keeps the current screen mounted. So a search page or a filter page that lives at
+`/search?q=...` does not lose the focus of its input, its scroll position, or its state in progress,
+every time when a query param changes. Such a screen reads the live query from `useRoute()`:
 
 ```js
 const results = component('app-results', {
@@ -131,23 +134,24 @@ const results = component('app-results', {
 router({ routes, placeholder, fallback, notFound })
 ```
 
-Drop it wherever the current screen should appear. Everything around it - a header, a sidebar, a
-footer - stays put across navigations; only the router's contents change. What it renders is
-determined by its `routes` table and the current URL.
+Drop the router where the current screen must appear. Everything around it stays in place across a
+navigation. That covers a header, a sidebar and a footer. Only the contents of the router change.
+Its `routes` table and the current URL decide what it renders.
 
-The router behaves like a regular imp component, and takes these options - only `routes` is
-required:
+The router behaves like a regular imp component. It takes these options, and only `routes` is
+necessary:
 
-- **`routes`** - the route table (see above).
-- **`placeholder`** - what the router shows while an **area's** code is still downloading (see
-  _Areas_) or a guard is waiting for the state it reads (see _Route guards_). It's called with the
-  route's `{ params, query }`.
-- **`fallback`** - a route-level **error boundary**. It renders in place of the matched screen when
-  that screen, or any component it renders, throws during mount and doesn't handle the error itself,
-  including an area whose `import()` won't download. A screen (or any nested component) that defines
-  its own `fallback` catches first; anything it doesn't handle bubbles up to the router. It's called
-  with `(error, { params, query })`, and the failure is logged either way.
-- **`notFound`** - the single screen shown for any URL that matches no route in the table.
+- **`routes`** is the route table, described above.
+- **`placeholder`** is what the router shows while the code of an **area** downloads, see _Areas_,
+  or while a guard waits for the state that it reads, see _Route guards_. imp calls it with the
+  `{ params, query }` of the route.
+- **`fallback`** is an **error boundary** at route level. It renders in place of the matched screen
+  when that screen, or any component that it renders, throws during the mount and does not handle
+  the error itself. That includes an area whose `import()` does not download. A screen, or any
+  nested component, that defines its own `fallback` catches first. Anything that it does not handle
+  goes up to the router. imp calls the router `fallback` with `(error, { params, query })`, and it
+  logs the failure in both cases.
+- **`notFound`** is the one screen that imp shows for a URL that matches no route in the table.
 
 ```js
 div(
@@ -163,9 +167,9 @@ div(
 )
 ```
 
-Shared layout that wraps several screens is just a plain function you call from each factory - no
-special "layout route" concept (a layout that must stay mounted _across_ those screens is an area's
-`root`, below):
+A shared layout that wraps several screens is a plain function that you call from each factory.
+There is no special layout route concept. A layout that must stay mounted _across_ those screens is
+the `root` of an area, described below:
 
 ```js
 const withChrome = (content) => div({ class: 'page' }, breadcrumb(), content)
@@ -178,22 +182,23 @@ const appRoutes = {
 
 ### Not found (404)
 
-Declare your not-found screen in one place with the router's `notFound` option:
+Declare your not-found screen in one place, with the `notFound` option of the router:
 
 ```js
 router({ routes: appRoutes, notFound: () => notFoundPage() })
 ```
 
-It renders whenever no route in the table matches the current URL. It's just a factory - no path,
-because it isn't a path; it's the single fallback for everything unmatched.
+It renders whenever no route in the table matches the current URL. It is a factory. It has no path,
+because it is not a path. It is the one fallback for everything that matches nothing.
 
-## Areas: grouping routes for a section (code splitting, no bundler)
+## Areas: how to group the routes of a section, and split the code
 
-When a whole section of your app lives under a URL prefix - `/admin`, `/shop` - you can give it its
-own route table instead of listing every URL in one central map. An **area** is a table entry that
-points a URL prefix at _another table_, loaded on demand - an area is always lazy, pointed at with
-`area(() => import(...))`. This is also how you code-split: an area is the unit of on-demand
-loading, and it needs no bundler, because the browser loads the module itself.
+When a whole section of your app lives under a URL prefix, such as `/admin` or `/shop`, you can give
+that section its own route table. You do not list every URL in one central map. An **area** is a
+table entry that points a URL prefix at _another table_, and imp loads that table on demand. An area
+is always lazy. You point at it with `area(() => import(...))`. This is also how you split the code.
+An area is the unit of on-demand loading, and it needs no bundler, because the browser loads the
+module itself.
 
 ```js
 router({
@@ -207,8 +212,8 @@ router({
 })
 ```
 
-That module declares the section with `area()`: its routes, written **relative** to the prefix, and
-optionally the translations the section needs (see **[Translations](i18n.md)**):
+That module declares the section with `area()`. It gives its routes, written **relative** to the
+prefix, and optionally the translations that the section needs. See **[Translations](i18n.md)**:
 
 ```js
 import { area } from 'imp/router'
@@ -227,29 +232,30 @@ export default area({
 })
 ```
 
-Visiting `/admin/users` matches the `/admin` prefix, loads the section's module the first time, and
-renders its `/users` screen - its code ships as one on-demand module.
+A visit to `/admin/users` matches the `/admin` prefix. imp loads the module of the section the first
+time, and renders its `/users` screen. The code of the section ships as one on-demand module.
 
-**Areas are always lazy - and they're the only lazy thing.** `area(() => import('./...'))` is the
-only way to point at one: its code loads the first time someone enters the section, and never ships
-to users who never do. There is no eager form and no lazy-screen form - a table entry is either a
-screen factory, which renders immediately, or an `area()`, which loads on demand. So "does this URL
-cost a download?" has a one-word answer you can read off the table.
+**An area is always lazy, and it is the only lazy thing.** `area(() => import('./...'))` is the only
+way to point at one. Its code loads the first time when somebody enters the section. It never ships
+to a user who never enters. There is no eager form and no lazy-screen form. A table entry is either
+a screen factory, which renders immediately, or an `area()`, which loads on demand. So the question
+"does this URL cost a download?" has a one-word answer that you read off the table.
 
-`area()` is one name doing both halves of the job, and which half you get depends on what you hand
-it: **a function** is the pointer you put in the parent table, **an object** is the area's own
-definition in its own file. They never appear in the same place, so there is one name to remember
-and the argument says which is which.
+`area()` is one name that does both halves of the job. Which half you get depends on what you hand
+it. **A function** is the pointer that you put in the parent table. **An object** is the definition
+of the area, in its own file. The two never appear in the same place. So there is one name to
+remember, and the argument says which half it is.
 
-While the module downloads there is no screen yet, so the router's `placeholder` shows; set it and
-every area gets a loader during download, leave it off and the router is simply blank until the code
-arrives. If the user navigates away before a slow chunk lands, imp discards it - a late-arriving
-section never replaces a newer screen. Once the section's screen mounts, its own async `build` (if
-it has one) shows the **screen's** `placeholder` while data loads.
+While the module downloads there is no screen. So the `placeholder` of the router shows. Set the
+placeholder, and every area gets a loader during the download. Leave it out, and the router is blank
+until the code arrives. When the user navigates away before a slow chunk arrives, imp discards the
+chunk. A section that arrives late never replaces a newer screen. After the screen of the section
+mounts, its own async `build`, when it has one, shows the `placeholder` of the **screen** while the
+data loads.
 
 ### A root component for the whole section
 
-An area can name a `root` - a component every screen in the section renders inside:
+An area can name a `root`. That is a component that every screen in the section renders inside:
 
 ```js
 // admin/area.js
@@ -266,25 +272,25 @@ export default area({
 })
 ```
 
-`router()` with no table is the slot the section's screens render into: it matches the tail of the
-URL against the area's own routes, the same table it would match without a root. It inherits the
-parent router's `placeholder`, `fallback` and `notFound`, and any of them can be overridden for the
-section alone - `router({ notFound: () => adminNotFound() })`.
+A `router()` with no table is the slot where the screens of the section render. It matches the end
+of the URL against the routes of the area. That is the same table that it would match without a
+root. It inherits the `placeholder`, the `fallback` and the `notFound` of the parent router. You can
+override each one for the section alone, as in `router({ notFound: () => adminNotFound() })`.
 
-What a root buys you over wrapping each screen by hand (`'/users': () => shell(usersList())`) is
-**lifetime**: the root stays mounted while the user moves between the section's screens, and
-unmounts when they leave the section. So it is the place for whatever the whole section shares and
-nothing outside it should see - a state scoped to the section, an [HTTP client](http.md) for its
-backend, a layout that keeps its scroll position - none of it rebuilt on every navigation inside the
-section.
+What a root gives you, against wrapping each screen by hand as `'/users': () => shell(usersList())`,
+is the **lifetime**. The root stays mounted while the user moves between the screens of the section,
+and it unmounts when they leave the section. So it is the place for whatever the whole section
+shares, and nothing outside it must see. Examples are a state scoped to the section, an
+[HTTP client](http.md) for its backend, and a layout that keeps its scroll position. imp does not
+rebuild any of that on a navigation inside the section.
 
-The root receives the same `{ params, query }` a screen factory gets, so a prefix param is there for
-the shell too (`root: ({ params }) => orgShell(params.orgId)`). A prefix param that changes remounts
-the area, root included.
+The root receives the same `{ params, query }` as a screen factory. So a prefix param is there for
+the shell too, as in `root: ({ params }) => orgShell(params.orgId)`. A prefix param that changes
+remounts the area, and the root with it.
 
-A root that loads something before it renders needs one thing in the right order. `router()` with no
-table finds its area through the component that is mounting, exactly as `useState` and
-`useHttpClient` find theirs - so in an **async** root it has to be called before the first `await`:
+A root that loads something before it renders needs one thing in the correct order. A `router()`
+with no table finds its area through the component that mounts. `useState` and `useHttpClient` find
+theirs in the same way. So in an **async** root, you must call it before the first `await`:
 
 ```js
 const shell = component('admin-shell', {
@@ -297,64 +303,66 @@ const shell = component('admin-shell', {
 })
 ```
 
-Called after the `await`, it cannot see the area any more and fails with `'routes' is required` -
-which reads as if the table were missing rather than as a matter of ordering. The
-`imp/router-setup-before-await` rule of **[Linting](lint.md)** catches it before you run the app. A
-`router({ routes })` with its own table looks nothing up and can be built anywhere.
+After the `await`, the call cannot see the area, and it fails with `'routes' is required`. That
+message reads as if the table were missing, and not as a matter of order. The
+`imp/router-setup-before-await` rule of **[Linting](lint.md)** catches this before you run the app.
+A `router({ routes })` with its own table looks nothing up, and you can build it anywhere.
 
-When you don't want to code-split, keep the section's routes in your top-level table like any other
-screen; reach for an area precisely when you want that section's code loaded on demand. A single
-rarely-visited screen is worth an area of its own - a one-entry table is a perfectly ordinary area:
+When you do not want to split the code, keep the routes of the section in your top-level table, like
+any other screen. Use an area exactly when you want the code of that section to load on demand. A
+single screen that people rarely visit is worth an area of its own. A table with one entry is an
+ordinary area:
 
 ```js
 '/admin-report': area(() => import('./report/area.js')),
 // report/area.js: export default area({ routes: { '/': () => reportScreen() } })
 ```
 
-A prefix can capture params too, and they flow into the section's screens:
+A prefix can also capture a param, and the param flows into the screens of the section:
 
 ```js
 '/org/:orgId': area(() => import('./org/area.js')),
 // a screen in that table sees { params: { orgId, ...tail params } }
 ```
 
-### Organize your files however you like
+### Organize your files as you want
 
-imp has **no opinion on where any of this lives.** It only ever sees the module an `import()`
-resolves to - there is no folder convention, no `areas/` directory a tool scans for, and no file
-whose name means something to the framework. The paths above are just examples; point each
-`import()` at wherever the module actually is.
+imp has **no opinion about where any of this lives.** It only ever sees the module that an
+`import()` resolves to. There is no folder convention, no `areas/` directory that a tool scans for,
+and no file whose name means something to the framework. The paths above are examples. Point each
+`import()` at the real location of the module.
 
-That means an area is a routing concept, not a directory. Group your code by feature, by domain, or
-by architectural layer as your project prefers. A **Feature-Sliced Design** codebase, for instance,
-works as-is: an imp area maps naturally onto an FSD _page_ (or _view_) - the composition root wires
-each page's route table in with `area(() => import(...))`, and the widgets, features, and entities
-that page uses stay in their own layers, imported by its screens as usual. A flat `screens/` folder
-works just as well. The route table is the contract; the file layout is entirely yours.
+So an area is a routing concept, not a directory. Group your code by feature, by domain, or by
+architectural layer, as your project prefers. A **Feature-Sliced Design** codebase works as it is.
+An imp area maps naturally onto an FSD page, or view. The composition root connects the route table
+of each page with `area(() => import(...))`. The widgets, features and entities that the page uses
+stay in their own layers, and its screens import them as usual. A flat `screens/` folder works as
+well. The route table is the contract, and the file layout is yours.
 
-Navigating **within** an area keeps the section mounted and only swaps its inner screen - the same
-content-keyed behavior that keeps a screen mounted across a query-only change. A prefix param
-changing (`/org/1` -> `/org/2`) remounts the section. Areas nest to any depth: an area's table can
-itself have an `area()` entry.
+A navigation **inside** an area keeps the section mounted, and only changes its inner screen. That
+is the same content-keyed behaviour that keeps a screen mounted across a change of the query only. A
+prefix param that changes, such as `/org/1` to `/org/2`, remounts the section. An area nests to any
+depth. The table of an area can itself hold an `area()` entry.
 
-> **Note on memory:** leaving an area releases its screens' DOM, state, subscriptions, and timers as
-> usual. It does **not** unload the area's already-downloaded JavaScript - once the browser has
-> loaded a module it keeps it for the page's lifetime, and there is no API on the platform to evict
-> one (this is true of every framework's code splitting, not just imp's). Lazy areas save you from
-> loading code for sections nobody visits; they don't reclaim code for sections already visited. An
-> area is about **code organization and code-splitting**, not freeing loaded code. The same is true
-> of an area's `translations`: leaving unregisters them, so its keys stop resolving, but the module
-> holding them stays loaded like any other; see **[Translations](i18n.md)**.
+> **A note on memory.** When you leave an area, imp releases the DOM, the state, the subscriptions
+> and the timers of its screens, as usual. It does **not** unload the JavaScript of the area that
+> the browser already downloaded. After the browser loads a module, it keeps it for the life of the
+> page, and the platform has no API to remove one. This is true of the code splitting of every
+> framework, not only of imp. A lazy area saves you from loading the code of a section that nobody
+> visits. It does not reclaim the code of a section that somebody already visited. An area is about
+> **code organization and code splitting**, not about freeing loaded code. The same is true of the
+> `translations` of an area. When you leave, imp unregisters them, so its keys stop resolving. The
+> module that holds them stays loaded, like any other module. See **[Translations](i18n.md)**.
 
-Why wrap the `import()` at all? Because a pattern that names an area matches as a **prefix** -
-everything under it - while every other pattern matches exactly. `area()` is how you say "this
-prefix loads a table, match the rest of the URL against it," which is the one thing the router can't
+Why wrap the `import()` at all? Because a pattern that names an area matches as a **prefix**, which
+is everything under it. Every other pattern matches exactly. `area()` is how you say "this prefix
+loads a table, match the rest of the URL against it". That is the one thing that the router cannot
 guess from a bare import.
 
-## Route guards: keeping a screen behind a condition
+## Route guards: how to keep a screen behind a condition
 
-A guard decides whether the visitor may open a route. It is a plain function of the state it reads,
-and it runs before the screen is built:
+A guard decides whether the visitor can open a route. It is a plain function of the state that it
+reads, and it runs before imp builds the screen:
 
 ```js
 import { guard, wait } from 'imp/router'
@@ -365,9 +373,9 @@ const signedIn = guard(
 )
 ```
 
-Read that from the inside out. `['myapp.session']` declares **which states this guard reads** - the
-router looks them up for you and passes their values in, in the same order. The function returns one
-of four answers:
+Read that from the inside out. `['myapp.session']` declares **which states this guard reads**. The
+router looks them up for you, and passes their values in, in the same order. The function returns
+one of four answers:
 
 | Return              | Means                                                      |
 | ------------------- | ---------------------------------------------------------- |
@@ -378,25 +386,27 @@ of four answers:
 
 ### `wait` is what makes a synchronous guard possible
 
-Nearly every real condition depends on something the app loads after it starts - the session comes
-from your backend, so when the first URL is matched the answer genuinely isn't known yet. Rather
-than making guards async (which would mean a request per navigation, and error handling in every
-guard), imp lets a guard say **`wait`**.
+Nearly every real condition depends on something that the app loads after it starts. The session
+comes from your backend. So when imp matches the first URL, the answer is truly not known yet. An
+async guard would mean a request per navigation, and error handling in every guard. Instead, imp
+lets a guard say **`wait`**.
 
-When a guard returns `wait`, the router subscribes to the states it declared and pauses. Every time
-one of them changes, the guard runs again - same function, same inputs, just later and with more
-data. The first answer that isn't `wait` is acted on. So the guard stays a simple synchronous
-function that you can call in a unit test with plain values, and the waiting is the router's job.
+When a guard returns `wait`, the router subscribes to the states that the guard declared, and
+pauses. Every time when one of them changes, the guard runs again. It is the same function with the
+same inputs, only later and with more data. imp acts on the first answer that is not `wait`. So the
+guard stays a simple synchronous function that you can call in a unit test with plain values, and
+the waiting is the job of the router.
 
-**A state that hasn't loaded yet is just `undefined`** - `initState('myapp.session')` with no
-initial value starts there. imp has no separate "loading" concept, so `undefined` means whatever
-your app decides it means; the guard is the one place that decides. That's why a signed-out session
-is best written as `null`: `undefined` is "I don't know yet", `null` is "I know, and there is
-nobody".
+**A state that has not loaded yet is `undefined`.** `initState('myapp.session')` with no initial
+value starts there. imp has no separate loading concept. So `undefined` means whatever your app
+decides that it means, and the guard is the one place that decides. That is why you write a
+signed-out session as `null`. `undefined` means "I do not know yet". `null` means "I know, and there
+is nobody".
 
-### The loader you already have
+### The loader that you already have
 
-While a guard waits, the router shows its `placeholder` - the same loader an area's download shows:
+While a guard waits, the router shows its `placeholder`. That is the same loader as the one that the
+download of an area shows:
 
 ```js
 router({
@@ -408,15 +418,15 @@ router({
 })
 ```
 
-You write no loading branch and no spinner state. And once the session has loaded, a guard that can
-answer immediately renders its screen in the same tick - no loader appears at all when navigating
-between screens later.
+You write no loading branch and no spinner state. After the session has loaded, a guard that can
+answer immediately renders its screen in the same tick. So no loader appears at all when you
+navigate between screens later.
 
 ### One guard per route, written on the route
 
-A guard attaches in exactly one place: the entry it protects. `route({ guard, screen })` is the
-third thing a routes table accepts, next to a plain factory and an `area()` - its `screen` is
-whatever you would have written there instead.
+A guard attaches in exactly one place: the entry that it protects. `route({ guard, screen })` is the
+third thing that a routes table accepts, beside a plain factory and an `area()`. Its `screen` is
+whatever you would write there instead.
 
 ```js
 router({
@@ -430,16 +440,16 @@ router({
 })
 ```
 
-There is no router-wide default and no inheritance: a route has one guard or none, and you can see
-which by reading its line. Nothing above a route can add a condition it doesn't name, so "why was I
-redirected here?" is always answered by one function.
+There is no default across the router, and there is no inheritance. A route has one guard or none,
+and you see which by reading its line. Nothing above a route can add a condition that the route does
+not name. So one function always answers the question "why was I redirected here?".
 
-The cost is repetition when most of an app is protected - `route({ guard: signedIn, ... })` on every
-entry. That is the trade: a repeated word you can grep for, instead of a rule applied to a route
-from somewhere else.
+The cost is repetition when most of an app is protected. You write `route({ guard: signedIn, ... })`
+on every entry. That is the trade. You get a repeated word that you can search for, in place of a
+rule that another place applies to a route.
 
-**Combining conditions is your job, and it's just a function.** Write the shared part once as a
-plain check and build each guard from it:
+**You combine conditions yourself, and it is a function.** Write the shared part once as a plain
+check, and build each guard from it:
 
 ```js
 const requireSession = (session) => session === undefined ? wait : Boolean(session) || '/login'
@@ -460,11 +470,11 @@ const billingAdmin = guard(['myapp.session', 'myapp.plan'], (session, plan) => {
 })
 ```
 
-Sharing the _check_ rather than stacking guards keeps the composition in your code, where you read
-it top to bottom and test it with plain values.
+Share the _check_, instead of stacking guards. The composition then stays in your code, where you
+read it from the top down and test it with plain values.
 
-A guard receives `{ params, query, path }` as its last argument, after the state values - so it can
-check the route it is guarding, not just the session:
+A guard receives `{ params, query, path }` as its last argument, after the state values. So it can
+check the route that it guards, and not only the session:
 
 ```js
 const canEditOrg = guard(['myapp.session', 'myapp.orgs'], (session, orgs, { params }) => {
@@ -475,10 +485,10 @@ const canEditOrg = guard(['myapp.session', 'myapp.orgs'], (session, orgs, { para
 })
 ```
 
-### Guards keep watching
+### A guard keeps watching
 
-A guard doesn't run once. The states it declared stay watched for as long as the screen is showing,
-so signing out while on a protected screen redirects immediately:
+A guard does not run once. imp watches the states that it declared for as long as the screen shows.
+So a sign-out on a protected screen redirects immediately:
 
 ```js
 button('Sign out', {
@@ -491,50 +501,53 @@ button('Sign out', {
 })
 ```
 
-Set `null` rather than clearing back to `undefined`: `null` is an answer a guard can act on, while
-`undefined` only makes it wait - and a guard that returns `wait` for a screen already on the page is
-ignored. Once you are in, only a redirect takes you out; otherwise a background refresh of the
-session would tear down the screen you are working in, losing scroll, focus, and anything you typed.
+Set `null`. Do not clear the value back to `undefined`. `null` is an answer that a guard can act on.
+`undefined` only makes the guard wait, and imp ignores a `wait` for a screen that is already on the
+page. After you are in, only a redirect takes you out. Otherwise a background refresh of the session
+would tear down the screen that you work in, and you would lose the scroll position, the focus and
+anything that you typed.
 
-### Guards and lazily loaded sections
+### A guard and a lazily loaded section
 
-A guard on the entry that points at an area covers the whole section - its `root` and every screen
-under it - and it decides **before the import runs**, so a non-admin never downloads the admin code:
+A guard on the entry that points at an area covers the whole section. That is its `root` and every
+screen under it. It decides **before the import runs**. So a person who is not an administrator
+never downloads the admin code:
 
 ```js
 '/admin': route({ guard: adminOnly, screen: area(() => import('./admin/area.js')) }),
 ```
 
-The area's own file declares no guard of its own; a route inside it can carry one for a narrower
-rule (`/admin/billing` needing more than `/admin` does). The entry's guard keeps watching while the
-visitor is inside the section, so losing the session redirects out of it immediately.
+The file of the area declares no guard of its own. A route inside it can carry one for a narrower
+rule, when `/admin/billing` needs more than `/admin` does. The guard of the entry keeps watching
+while the visitor is inside the section. So a lost session redirects out of the section immediately.
 
-Guards are a UI concern: they decide what to render, not what a visitor is allowed to have. Your
-backend still authorizes every request - a determined visitor can always fetch the JavaScript.
+A guard is a UI concern. It decides what to render, not what a visitor can have. Your backend still
+authorizes every request. A determined visitor can always fetch the JavaScript.
 
 ### When something goes wrong
 
-Guards fail closed - no failure path lets a screen through:
+A guard fails closed. No failure path lets a screen through:
 
-- A guard that throws, or returns something that isn't one of the four answers, renders the router's
-  `fallback`.
-- A guard declaring a state that no component above the router provides fails the route with the
-  same error `useState` gives you.
-- A guard stuck on `wait` for more than five seconds logs a warning naming the route and the states
-  it is waiting for - usually a state nothing ever sets.
+- A guard that throws, or that returns something other than the four answers, renders the `fallback`
+  of the router.
+- A guard that declares a state that no component above the router provides fails the route, with
+  the same error as `useState`.
+- A guard that stays on `wait` for more than five seconds logs a warning. The warning names the
+  route and the states that the guard waits for. Usually one of those states is a state that nothing
+  sets.
 
-## Navigating
+## How to navigate
 
-### Programmatically
+### From code
 
-`navigate` is the one primitive; everything else is built on it.
+`navigate` is the one primitive. Everything else builds on it.
 
 ```js
 navigate('/todos/42')
 navigate('/login', { replace: true }) // replace the current history entry instead of adding one
 ```
 
-`navigate` works anywhere - an event handler, a timer, after an `await`:
+`navigate` works anywhere: in an event handler, in a timer, and after an `await`:
 
 ```js
 button('Save', {
@@ -547,13 +560,13 @@ button('Save', {
 })
 ```
 
-Use `{ replace: true }` when you don't want the current page in the back-button history - for
-example after a login redirect. Navigating to the URL you're already on is a no-op rather than a
-duplicate history entry.
+Use `{ replace: true }` when you do not want the current page in the history of the back button. An
+example is a redirect after a login. A navigation to the URL that you are already on does nothing.
+It does not add a duplicate history entry.
 
 ### Navigation controls
 
-There's no link component to learn - put `navigate` in a control's click handler. A nav bar is just
+There is no link component to learn. Put `navigate` in the click handler of a control. A nav bar is
 a row of buttons:
 
 ```js
@@ -563,12 +576,12 @@ nav(
 )
 ```
 
-## Reading the current route
+## How to read the current route
 
-`useRoute()` returns a read-only handle to the live route - `{ path, query }` - that any component
-can watch, including one outside the router like a nav bar. It has the same shape as any imp state
-(`get`, `watch`, `text`, `view`, `each`), minus `set` (you change the route by navigating, not by
-writing to it).
+`useRoute()` returns a read-only handle on the live route, which is `{ path, query }`. Any component
+can watch it, including a component outside the router, such as a nav bar. It has the same shape as
+any imp state, with `get`, `watch`, `text`, `view` and `each`. It has no `set`, because you change
+the route by navigating, not by writing to it.
 
 ```js
 useRoute().watch((current) => track('pageview', { path: current.path })) // react from non-UI code
@@ -577,7 +590,7 @@ const { path, query } = useRoute().get() // read once, imperatively
 
 ## Loading and errors
 
-Because a screen is a component, its loading and error handling are just the component lifecycle you
+A screen is a component. So its loading and its error handling are the component lifecycle that you
 already know:
 
 ```js
@@ -593,30 +606,32 @@ const todoDetail = component('app-todo-detail', {
 // routes: { '/todos/:id': ({ params }) => todoDetail(params.id) }
 ```
 
-- **Data loading** lives in the screen's `build` - fetch, `await`, build. The `placeholder` shows
-  until it resolves. There is no separate loader or data-fetching API to learn.
-- **Waiting on a guard** uses the same `placeholder` (see _Route guards_) - the visitor sees one
-  loader whether the wait is a download, a guard, or the screen's own data.
-- **Errors** - a screen that defines `fallback` handles its own failures first. A failure it doesn't
-  handle - an area's `import()` that won't download, or the screen (or any component it renders)
-  throwing during mount - bubbles up to the **router's** `fallback`, which acts as an error boundary
-  for the whole matched subtree.
+- **The data loading lives in the `build` of the screen.** Fetch, `await`, and build. The
+  `placeholder` shows until the promise resolves. There is no separate loader, and no data-fetching
+  API to learn.
+- **A wait on a guard uses the same `placeholder`**, see _Route guards_. The visitor sees one
+  loader, whether the wait is a download, a guard, or the data of the screen.
+- **Errors.** A screen that defines a `fallback` handles its own failures first. A failure that it
+  does not handle goes up to the **`fallback` of the router**, which is an error boundary for the
+  whole matched subtree. Examples are an `import()` of an area that does not download, and a throw
+  during the mount of the screen, or of any component that it renders.
 
-With no `fallback` at either level, a failed screen renders nothing (the failure is still logged)
-rather than hanging on a placeholder forever.
+With no `fallback` at either level, a failed screen renders nothing, and imp still logs the failure.
+It does not stay on a placeholder forever.
 
-## Screens clean up after themselves
+## A screen cleans up after itself
 
-Navigating away from a screen unmounts it, and unmounting releases everything imp tracks - a
-screen's lifetime is bounded by the URL:
+A navigation away from a screen unmounts it, and an unmount releases everything that imp tracks. The
+URL bounds the lifetime of a screen:
 
-- **State** created with `initState` inside the screen (or any component under it) is released. Put
-  a screen's own state in the screen's root component; only truly app-wide state (session, theme,
-  cart) belongs in your app's root component above the router, which never unmounts.
-- **Subscriptions** - every `watch`, `text`, `view`, `each`, and bound prop set up while the screen
-  was mounted - are torn down.
-- **Timers, intervals, sockets, and globals** you reached for are undone in the screen component's
-  own `teardown` - each component is responsible for its own teardown.
+- **State** that you create with `initState` inside the screen, or inside any component under it, is
+  released. Put the state of a screen in the root component of that screen. Only state that is truly
+  app-wide, such as the session, the theme and the cart, belongs in the root component of your app,
+  above the router, which never unmounts.
+- **Subscriptions** end. That covers every `watch`, `text`, `view`, `each` and bound prop that you
+  set up while the screen was mounted.
+- **A timer, an interval, a socket and a global** that you used are undone in the `teardown` of the
+  screen component. Each component is responsible for its own teardown.
 
 ```js
 const dashboard = component('app-dashboard', {
@@ -633,14 +648,14 @@ const dashboard = component('app-dashboard', {
 })
 ```
 
-You don't write any special navigation cleanup: each screen is a component, so its `teardown` is the
-cleanup and leaving the route runs it.
+You write no special cleanup for a navigation. Each screen is a component. So its `teardown` is the
+cleanup, and leaving the route runs it.
 
-## Base path (serving under a sub-directory)
+## Base path: how to serve under a sub-directory
 
-If your app is served under a sub-path (say `https://example.com/app/`), set the **`IMP_BASEPATH`**
-environment value - the same way you set any other imp environment value (see
-**[Configuration](config.md)**):
+When your app is served under a sub-path, such as `https://example.com/app/`, set the
+**`IMP_BASEPATH`** environment value. Set it as you set any other imp environment value. See
+**[Configuration](config.md)**:
 
 ```json
 {
@@ -648,18 +663,19 @@ environment value - the same way you set any other imp environment value (see
 }
 ```
 
-imp reads `IMP_BASEPATH` at startup, so there's no configuration call in your code. You keep writing
-route patterns and `navigate` targets from the app root (`/todos`, not `/app/todos`); imp strips the
-base from the URL before matching and adds it back when `navigate` builds the real URL.
+imp reads `IMP_BASEPATH` at startup, so there is no configuration call in your code. Continue to
+write a route pattern and a `navigate` target from the app root, such as `/todos` and not
+`/app/todos`. imp removes the base from the URL before it matches, and adds it back when `navigate`
+builds the real URL.
 
-The same value covers your static assets: `imp build` prefixes the root-absolute URLs in your page -
-stylesheets, images, the PWA manifest and service worker - with the base, so one setting moves the
-whole app under the sub-path.
+The same value covers your static assets. `imp build` puts the base in front of the root-absolute
+URLs in your page. That covers a stylesheet, an image, the PWA manifest and the service worker. So
+one setting moves the whole app under the sub-path.
 
-The one value that isn't adjusted automatically is an `href` you set yourself. If you render a real
-`<a>`, build its `href` with `url(path)` - it prefixes the base so middle-click and "copy link
-address" stay correct, and it's a no-op when `IMP_BASEPATH` is unset (leaving absolute or external
-URLs untouched):
+The one value that imp does not adjust automatically is an `href` that you set yourself. When you
+render a real `<a>`, build its `href` with `url(path)`. That call adds the base, so a middle-click
+and a "copy link address" stay correct. It does nothing when `IMP_BASEPATH` is not set, and it
+leaves an absolute URL and an external URL as they are:
 
 ```js
 a({ href: url('/todos') }, 'All todos')
@@ -667,29 +683,29 @@ a({ href: url('/todos') }, 'All todos')
 
 ## Accessibility: scroll and focus
 
-- **Scroll** is managed for you: a forward navigation scrolls to the top of the new screen, and the
-  back/forward buttons restore the scroll position you left each page at.
-- **Focus** is left to you, because moving focus on navigation is disruptive when it isn't wanted
-  and right when it is - only your screens know which. A screen that should take focus can focus its
-  own heading in `instance.afterMount`, or you can maintain a shared visually-hidden live region and
-  update it from `useRoute().watch(...)`.
-- **Doing it once for every screen** is usually the better shape: give the element your router slot
-  renders into a `tabindex` of `-1`, and focus it from `useRoute().watch(...)` whenever the path
-  changes. Compare the path rather than the whole route, so a query-string change never pulls focus
-  out of the input the reader is typing in, and skip the first call - it fires with the route the
-  page loaded on, where there is nothing to move focus away from. Style that element's `:focus` with
-  `outline: none`: the focus is programmatic, so the browser would otherwise ring the whole screen
-  on arrival.
+- **imp manages the scroll for you.** A forward navigation scrolls to the top of the new screen. The
+  back and forward buttons restore the scroll position where you left each page.
+- **The focus is yours to manage.** A move of the focus on a navigation is disruptive when it is not
+  wanted, and correct when it is. Only your screens know which case applies. A screen that must take
+  the focus can focus its own heading in `instance.afterMount`. You can also keep one live region
+  that is hidden visually, and update it from `useRoute().watch(...)`.
+- **Usually it is better to do this once for every screen.** Give the element that your router slot
+  renders into a `tabindex` of `-1`. Focus that element from `useRoute().watch(...)` whenever the
+  path changes. Compare the path, not the whole route, so a change of the query string never takes
+  the focus out of the input where the reader types. Skip the first call, because it fires with the
+  route that the page loaded on, where there is nothing to move the focus away from. Style the
+  `:focus` of that element with `outline: none`. The focus is programmatic, so the browser would
+  otherwise draw a ring around the whole screen on arrival.
 
-## Deploying: deep links and refresh
+## Deployment: a deep link and a refresh
 
-A client router owns URLs like `/todos/42` in the browser, but visiting or refreshing that URL sends
-a request straight to your server - which must answer with your app's entry HTML so the client
-router can take over. Otherwise a refresh 404s.
+A client router owns a URL such as `/todos/42` in the browser. But a visit to that URL, or a refresh
+of it, sends a request straight to your server. The server must answer with the entry HTML of your
+app, so the client router can take over. Otherwise a refresh returns 404.
 
-`imp build` stays out of this. It produces a plain, portable bundle of your app's real files -
-nothing host-specific - that you upload anywhere. Serving the entry for unknown paths is a one-time
-setting on whatever hosts it, and every platform has it:
+`imp build` stays out of this. It produces a plain, portable bundle of the real files of your app,
+with nothing specific to a host, and you upload it anywhere. To serve the entry for an unknown path
+is a single setting on whatever hosts the app, and every platform has it:
 
 | Host                 | Setting                                                 |
 | -------------------- | ------------------------------------------------------- |
@@ -699,9 +715,9 @@ setting on whatever hosts it, and every platform has it:
 | S3 + CloudFront      | set the "error document" / 404 response to `index.html` |
 | GitHub Pages         | add a `404.html` that is a copy of your `index.html`    |
 
-In development you don't need any of this: `imp start` already serves your entry HTML for a
-navigation request to an extensionless path, while a genuinely missing asset (a bad `.js` path)
-still 404s - so deep links and refresh just work while you build.
+In development you need none of this. `imp start` already serves your entry HTML for a navigation
+request to a path with no extension. A missing asset, such as a wrong `.js` path, still returns 404.
+So a deep link and a refresh work while you build.
 
 ## API summary
 
@@ -726,6 +742,6 @@ still 404s - so deep links and refresh just work while you build.
 | `/todos`     | exactly `/todos` (or `/todos/`) | `{ params: {}, query }`           |
 | `/todos/:id` | `/todos/42`                     | `{ params: { id: '42' }, query }` |
 
-A pattern whose target is an `area()` matches as a **prefix** - everything under it - and the tail
-is matched against that area's table. Anything that matches nothing renders the router's `notFound`
-screen (if you provided one).
+A pattern whose target is an `area()` matches as a **prefix**, which is everything under it, and imp
+matches the end of the URL against the table of that area. A URL that matches nothing renders the
+`notFound` screen of the router, when you provided one.

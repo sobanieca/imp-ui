@@ -374,6 +374,13 @@ export async function resolvePreviewThemes(root, themes) {
   return resolved
 }
 
+export async function resolvePreviewGroups(root, groups) {
+  if (groups === null) return null
+  const file = await resolveModuleFile(resolve(root, groups))
+  if (!file) throw new Error(`groups module not found: ${groups} - listed in 'preview.groups'`)
+  return { source: groups, file }
+}
+
 export async function resolvePreviewTranslations(root, translations) {
   if (!translations || typeof translations !== 'object' || Array.isArray(translations)) {
     throw new Error(
@@ -392,7 +399,9 @@ export async function resolvePreviewTranslations(root, translations) {
   return resolved
 }
 
-function previewEntryPlugin({ file, meta, root, themes, translations }) {
+const GROUPS_BINDING = 'previewGroups'
+
+function previewEntryPlugin({ file, meta, root, themes, translations, groups }) {
   const themeBinding = (index) => `customTheme${index}`
   const translationBinding = (index) => `previewTranslations${index}`
   const contents = [
@@ -405,6 +414,9 @@ function previewEntryPlugin({ file, meta, root, themes, translations }) {
     ...translations.map((entry, index) =>
       `import * as ${translationBinding(index)} from ${JSON.stringify(toFileUrl(entry.file).href)}`
     ),
+    ...(groups === null
+      ? []
+      : [`import * as ${GROUPS_BINDING} from ${JSON.stringify(toFileUrl(groups.file).href)}`]),
     `import { startPreview } from '${RUNTIME_SPECIFIER}'`,
     `startPreview(scenarios, ${JSON.stringify(meta)}, [${
       themes.map((theme, index) =>
@@ -414,7 +426,11 @@ function previewEntryPlugin({ file, meta, root, themes, translations }) {
       translations.map((entry, index) =>
         `{ code: ${JSON.stringify(entry.code)}, module: ${translationBinding(index)} }`
       ).join(', ')
-    }])`,
+    }], ${
+      groups === null
+        ? 'null'
+        : `{ source: ${JSON.stringify(groups.source)}, module: ${GROUPS_BINDING} }`
+    })`,
   ].join('\n') + '\n'
   return {
     name: 'imp-preview-entry',
@@ -446,7 +462,7 @@ export function previewIdentity(file, declared = {}) {
     file,
     path: `${folder}/${component}`,
     name: declared.name ?? component,
-    category: declared.category ?? folder,
+    group: declared.group ?? folder,
     description: declared.description ?? null,
   }
 }
@@ -462,12 +478,15 @@ const previewMeta = async (file, root) => {
   }
 }
 
-export async function bundlePreview(file, { root, dependencies, themes = [], translations = [] }) {
+export async function bundlePreview(
+  file,
+  { root, dependencies, themes = [], translations = [], groups = null },
+) {
   const meta = await previewMeta(file, root)
   const mocks = file === null ? new Map() : await collectMocks(file, { root, dependencies })
   const result = await runEsbuild({
     plugins: [
-      previewEntryPlugin({ file, meta, root, themes, translations }),
+      previewEntryPlugin({ file, meta, root, themes, translations, groups }),
       impResolverPlugin({ root, dependencies, mocks }),
       denoPlugin(),
     ],
@@ -509,7 +528,7 @@ export async function buildPreviewCatalog(root, files) {
     entries.push({ ...previewIdentity(file, declared), href: pagePath(file) })
   }
   return entries.sort((left, right) =>
-    compareText(left.category, right.category) || compareText(left.name, right.name)
+    compareText(left.group, right.group) || compareText(left.name, right.name)
   )
 }
 
@@ -542,7 +561,7 @@ const shellPage = (title, previews, current, bundle) =>
 
 const previewPage = (file, previews) => {
   const entry = previews.find((candidate) => candidate.file === file)
-  const title = entry ? `${entry.category} / ${entry.name}` : file
+  const title = entry ? `${entry.group} / ${entry.name}` : file
   return shellPage(`imp preview - ${title}`, previews, file, bundlePath(file))
 }
 
@@ -589,6 +608,7 @@ export function createPreviewHandler(
     bundles,
     themes = [],
     translations = [],
+    groups = null,
     recentLog = null,
   },
 ) {
@@ -603,6 +623,7 @@ export function createPreviewHandler(
             dependencies,
             themes,
             translations,
+            groups,
           }),
         })
       } catch (error) {
@@ -673,6 +694,7 @@ export async function preview(
 
   const themes = await resolvePreviewThemes(root, imp.preview?.themes ?? [])
   const translations = await resolvePreviewTranslations(root, imp.preview?.translations ?? {})
+  const groups = await resolvePreviewGroups(root, imp.preview?.groups ?? null)
   const app = await loadApp(resolve(root, 'index.html'), { envAlias: env, mocks })
   const listenPort = port ?? DEFAULT_PREVIEW_PORT
   const clients = new Set()
@@ -719,6 +741,7 @@ export async function preview(
             dim(`  languages -> ${translations.map(({ code }) => code).join(', ')}`),
           )
         }
+        if (groups !== null) console.log(dim(`  groups -> ${groups.source}`))
         console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
       },
     },
@@ -730,6 +753,7 @@ export async function preview(
       bundles,
       themes,
       translations,
+      groups,
       recentLog: devLog.recent,
     }),
   )

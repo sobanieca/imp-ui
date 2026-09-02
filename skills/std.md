@@ -1,20 +1,21 @@
 # std - the built-in component library
 
-Imported from `imp/std` and its groups. Nothing to install, no CSS to include. Each component is a
-real imp component rendering as its own element (`<imp-button>`, ...) with its styles sealed inside.
+The components come from `imp/std` and its groups. There is nothing to install, and no CSS to
+include. Each component is a real imp component. It renders as its own element, such as
+`<imp-button>`, with its styles sealed inside.
 
 | Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                             |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`                                                                                                                          | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`                                                                                                                                                          |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                            |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `emptyState`, `tag`                                                                                                                                         | `imp skill std/emptyState`, `std/tag`                                                                                                                                                                                 |
-| `imp/std/navigation` | `tabs`, `navMenu`                                                                                                                                           | `imp skill std/tabs`, `std/navMenu`                                                                                                                                                                                   |
+| `imp/std/navigation` | `tabs`                                                                                                                                                      | `imp skill std/tabs`                                                                                                                                                                                                  |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                       |
 | `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
 
-Read the component's own skill before using it - this page is only the shared contract and a summary
-of the props.
+Read the skill of a component before you use it. This page gives the shared contract and a summary
+of the props only.
 
 ```js
 import { section } from 'imp/html'
@@ -29,22 +30,25 @@ section(
 
 ## The shared rules
 
-- **Props and children are told apart by type**, exactly as on an element: a plain object is props,
-  everything else is content. One props object per call (`imp/single-props-object` lint rule).
-- **Only documented props are accepted.** Nothing is forwarded to an inner element. An unknown prop,
-  or a value outside the allowed list, is logged with the accepted values and the default is used.
-- **Props marked live take a state itself**, not `state.get()`: the component updates that one
-  attribute in place, re-rendering nothing.
-- **They are themed, not styled by you** - every value comes from `--imp-*` tokens from
-  [theming](theming.md), so applying a theme re-skins the library. Written with CSS logical
+- **imp separates props from children by type**, exactly as on an element. A plain object is props.
+  Everything else is content. Pass one props object per call, see the `imp/single-props-object` lint
+  rule.
+- **A component accepts a documented prop only.** It forwards nothing to an inner element. imp logs
+  an unknown prop, or a value outside the allowed list, together with the accepted values. It then
+  uses the default.
+- **A prop marked live takes the state itself**, not `state.get()`. The component then updates that
+  one attribute in place, and renders nothing again.
+- **A component is themed. You do not style it.** Every value comes from an `--imp-*` token of
+  [theming](theming.md). So a new theme re-skins the library. The components use CSS logical
   properties, so they mirror under `dir="rtl"`.
-- **Their own words are translatable and already written** - looked up under an `imp.` key with
-  English as the fallback; your translation of that key wins. See [i18n](i18n.md).
-- **No outer margins.** Spacing is the job of whatever lays them out.
+- **The words of a component are translatable, and imp already wrote them.** imp finds them under an
+  `imp.` key and falls back to English. Your translation of that key wins. See [i18n](i18n.md).
+- **A component has no outer margin.** Spacing is the job of whatever lays the components out.
 - **The `imp-` element prefix is reserved.** Name your own components `my-app-*`.
-- **Content lives in a shadow root**: `host.textContent` is empty by design. Unit tests walk
-  `shadowRoot`; e2e selectors pierce shadow roots on their own. See [testing](testing.md).
-- A component that is never called never defines its element or compiles its styles.
+- **The content lives in a shadow root.** `host.textContent` is empty by design. A unit test walks
+  the `shadowRoot`. An e2e selector goes through a shadow root on its own. See
+  [testing](testing.md).
+- A component that you never call defines no element and compiles no styles.
 
 ## button
 
@@ -52,24 +56,31 @@ section(
 button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
 ```
 
-| Prop       | Values                                                    | Default     | Notes                                        |
-| ---------- | --------------------------------------------------------- | ----------- | -------------------------------------------- |
-| `variant`  | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                     |
-| `size`     | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                        |
-| `disabled` | boolean - **live**                                        | `false`     | Blocks interaction                           |
-| `loading`  | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy`  |
-| `block`    | boolean                                                   | `false`     | Fills its container's width                  |
-| `label`    | string - **live**                                         | -           | `aria-label`, for an icon-only button        |
-| `items`    | `{ id?, label, icon?, onClick?, disabled? }[]`            | -           | Triple-dot trigger beside it, opening a menu |
-| `events`   | event map                                                 | -           | Handlers, as on any element                  |
+| Prop          | Values                                                    | Default     | Notes                                       |
+| ------------- | --------------------------------------------------------- | ----------- | ------------------------------------------- |
+| `variant`     | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                    |
+| `size`        | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                       |
+| `disabled`    | boolean - **live**                                        | `false`     | Blocks interaction                          |
+| `loading`     | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy` |
+| `block`       | boolean                                                   | `false`     | Fills its container's width                 |
+| `label`       | string - **live**                                         | -           | `aria-label`, for an icon-only button       |
+| `items`       | `{ id?, label, icon?, onClick?, disabled? }[]`            | -           | Adds a menu to the button                   |
+| `menuTrigger` | `'more'`, `'hover'`                                       | `'more'`    | What opens the `items` menu                 |
+| `events`      | event map                                                 | -           | Handlers, as on any element                 |
 
-**No `type` prop and no submit button** - a button acts on its `click` handler; submit there.
-`variant: 'link'` is a button that reads as a link; use `link` when it is a place to go.
+**There is no `type` prop and no submit button.** A button acts on its `click` handler. Submit from
+there. `variant: 'link'` is a button that looks like a link. Use `link` when the target is a place
+to go to.
 
-`items` adds a second, triple-dot control next to the button. Choosing an item fires a cancellable
-`select` event on the host with `detail: { id, item }`, then calls that item's `onClick`. The panel
-is a `popover` placed by the browser - it flips above the trigger near the bottom of the screen,
-closes on Escape or a click away, and has no `placement` prop.
+`items` gives the button a menu. When the person chooses an item, the host fires a `select` event
+that you can cancel, with `detail: { id, item }`. imp then calls the `onClick` of that item. The
+panel is a `popover`, and the browser places it. It flips above the trigger near the bottom of the
+screen. It closes on Escape, and on a click away from it. It has no `placement` prop.
+
+`menuTrigger` selects what opens that menu. `'more'` adds a second control next to the button, with
+a triple-dot label. `'hover'` adds no second control. The button itself opens the menu, when the
+pointer goes over it, and when it takes the focus. The focus stays on the button, and `ArrowDown` or
+`ArrowUp` walks into the menu. The button keeps its own `click` handler in both modes.
 
 ## heading
 
@@ -83,7 +94,7 @@ heading({ level: 2 }, 'Recent activity')
 | `tone`  | `'default'`, `'secondary'`     | `'default'` | Full-strength or muted         |
 | `align` | `'start'`, `'center'`, `'end'` | `'start'`   | Text alignment                 |
 
-Type size follows the level - never pick font sizes by hand.
+The type size follows the level. Never select a font size by hand.
 
 ## text
 
@@ -116,8 +127,8 @@ link({ href: 'https://example.com', external: true }, 'Read the docs')
 | `weight`   | `'normal'`, `'medium'`, `'bold'` | `'normal'`  | Type weight                               |
 | `events`   | event map                        | -           | Handlers, as on any element               |
 
-Renders a real anchor; a plain left-click on an in-app path is handled by the router, while
-middle-click, modifier-click, `external`, and off-site URLs are left to the browser.
+`link` renders a real anchor. The router handles a plain left-click on an in-app path. The browser
+handles a middle-click, a click with a modifier key, an `external` link and an off-site URL.
 
 ## icon
 
@@ -136,20 +147,20 @@ icon(luTrash, { size: 'sm', color: 'danger', label: 'Delete invoice' })
 | `color` | a theme colour name, or `'current'`       | `'current'` | `'primary'`, `'danger'`, any palette hue    |
 | `label` | string - **live**                         | -           | Names the icon; without it it is decorative |
 
-**The whole of Lucide is built in**: 1791 icons from `imp/icons`, named `lu` plus the Lucide name in
-PascalCase. The icon is an imported name, not a string, so the bundle carries only what you draw -
-never `import * as icons from 'imp/icons'`. The naming scheme and the licence obligation are in
-[icons](icons.md).
+**imp contains the whole of Lucide.** `imp/icons` holds 1791 icons. Each name is `lu` plus the
+Lucide name in PascalCase. The icon is an imported name, not a string. So the bundle carries only
+the icons that you draw. Never write `import * as icons from 'imp/icons'`. [icons](icons.md) gives
+the naming scheme and the licence obligation.
 
-**A decorative icon takes no `label`** - name the control around it instead. There is no `src` and
-no icon font: an icon Lucide does not draw is your own inline `<svg>`, and every icon-taking prop in
+**A decorative icon takes no `label`.** Name the control around it instead. There is no `src` and no
+icon font. For an icon that Lucide does not draw, write your own inline `<svg>`. Every icon prop in
 the library accepts any DOM.
 
 ## shell - from `imp/std/layout`
 
-**Build an app's frame with `shell`; do not hand-assemble a header-and-sidebar grid.** One nav tree
-as data drives the bar, the column and the phone's bottom bar; `logo`, `aside` and `extras` are DOM;
-main content is the children.
+**Build the frame of an app with `shell`. Do not assemble a header and sidebar grid by hand.** One
+nav tree, as data, drives the bar, the column and the bottom bar of a phone. `logo` and `extras` are
+DOM. The main content is the children.
 
 ```js
 import { shell } from 'imp/std/layout'
@@ -181,28 +192,30 @@ shell(
 )
 ```
 
-| Prop       | Values                         | Default | Notes                                                 |
-| ---------- | ------------------------------ | ------- | ----------------------------------------------------- |
-| `logo`     | DOM                            | -       | Heads the bar, the column, or the drawer              |
-| `navbar`   | **data** `{ items, ... }`      | -       | The sections; each may declare its own `groups`       |
-| `sidebar`  | **data** `{ selected, ... }`   | -       | Names, marks and foots the second level               |
-| `aside`    | DOM                            | -       | Right contextual column, into `<aside>`               |
-| `account`  | **data** `{ name, ... }`       | -       | The person; becomes a `userCard`                      |
-| `extras`   | DOM, or an array of it         | -       | Theme/language pickers, anything; sits by the account |
-| `signedIn` | boolean, or a state - **live** | `true`  | `false` withholds the nav; logo and sign-in remain    |
-| `navOpen`  | boolean, or a state - **live** | `false` | Drawer state; shell-owned when omitted                |
-| `events`   | `{ navToggle, select }`        | -       | `{ open }` on every drawer change; `{ id, item }`     |
+| Prop         | Values                         | Default | Notes                                                 |
+| ------------ | ------------------------------ | ------- | ----------------------------------------------------- |
+| `logo`       | DOM                            | -       | Heads the bar, the column, or the drawer              |
+| `navbar`     | **data** `{ items, ... }`      | -       | The sections; each may declare its own `groups`       |
+| `sidebar`    | **data** `{ selected, ... }`   | -       | Names, marks and foots the second level               |
+| `account`    | **data** `{ name, ... }`       | -       | The person; becomes a `userCard`                      |
+| `extras`     | DOM, or an array of it         | -       | Theme/language pickers, anything; sits by the account |
+| `signedIn`   | boolean, or a state - **live** | `true`  | `false` withholds the nav; logo and sign-in remain    |
+| `navOpen`    | boolean, or a state - **live** | `false` | Drawer state; shell-owned when omitted                |
+| `gap`        | spacing step `0`-`6`           | `0`     | Floats the chrome apart as rounded, bordered panels   |
+| `background` | DOM                            | -       | Decorative layer under everything, e.g. an animation  |
+| `events`     | `{ navToggle, select }`        | -       | `{ open }` on every drawer change; `{ id, item }`     |
 
-`navbar`: `items` (sections, live), `selected` (live), `label`. `sidebar`: `selected` (live),
-`label`, `footer` rows - plus `groups` / `items` **only when there is no `navbar`**, which is the
-sidebar-only layout; beside one they warn and are dropped.
+`navbar` takes `items`, which are the sections and are live, `selected`, which is live, and `label`.
+`sidebar` takes `selected`, which is live, `label`, an app-wide `extras` of DOM, and `footer` rows.
+`sidebar` also takes `groups` and `items`, but **only when there is no `navbar`**. That is the
+sidebar-only layout. Beside a `navbar`, imp warns and drops them.
 
-Section: `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. Row:
-`{ id, label, icon, href, onClick, tag, disabled, children? }`. Group:
+A section is `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. A row is
+`{ id, label, icon, href, onClick, tag, disabled, children? }`. A group is
 `{ id?, label, tag?, items }`.
 
-`account` keys are `userCard` props: `name`, `description`, `picture`, `href`, `onSignIn`,
-`onSignOut`. Any other key warns.
+The keys of `account` are the props of `userCard`: `name`, `description`, `picture`, `href`,
+`onSignIn` and `onSignOut`. imp warns about any other key.
 
 | Layout                 | Props                                | What you get                                    |
 | ---------------------- | ------------------------------------ | ----------------------------------------------- |
@@ -210,45 +223,66 @@ Section: `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. R
 | Sections only          | `navbar`, no section carrying groups | Top bar, no column, content full width          |
 | Sidebar only           | `sidebar` with `groups` / `items`    | No bar: logo heads the column, account foots it |
 
-Sizes are custom properties, not props: `--imp-shell-sidebar-inline-size` (`16rem`),
-`--imp-shell-aside-inline-size` (`20rem`), `--imp-shell-bottom-bar-items` (`4`, clamped 3-5).
+The sizes are custom properties, not props. They are `--imp-shell-sidebar-inline-size`, which
+defaults to `16rem`, and `--imp-shell-bottom-bar-items`, which defaults to `4` and is clamped
+between 3 and 5.
 
 Rules an agent gets wrong:
 
-- **Put the second level inside the section**, as `groups`, and drive `navbar.selected` and
-  `sidebar.selected` from the route. Do not keep two arrays in sync by hand.
-- **The nav is data, not DOM.** Do not pass a `navMenu` - a node in `navbar` or `sidebar` warns and
-  is dropped. The shell draws the rows because it draws each level more than once. `account` is data
-  for the same reason. Main content is the children: `shell({ navbar }, page())`. There is no
-  `header`, `footer` or `layout` prop - breadcrumbs and page toolbars go atop the main content.
-- **A section with no groups renders no sidebar at all** and content goes full width; do not fake a
-  column with one row. **A section is always activatable** even with no `href`, because choosing it
-  is what changes the sidebar.
-- **`children` nest one level, collapsed by default**, behind a caret with `aria-expanded`; they
-  never appear in the bottom bar.
-- **Below `48rem`** the top bar becomes a hamburger plus a two-line title (section over row); the
-  sidebar becomes the bottom bar, capped at `--imp-shell-bottom-bar-items` with a **More** bottom
-  sheet and groups flattened; the sections, `extras` and the account move into the drawer; the aside
-  goes. With no sidebar for the current section, the bottom bar carries the **sections** and the
-  drawer holds only the chrome.
-- **The desktop column collapses to an icon rail** from a toggle in its head - shell state, no prop.
-- **`signedIn: false` withholds the nav, bottom bar and aside** and leaves one top bar with the logo
-  and the sign-in button (`account.onSignIn`). Omit `signedIn` for an app with no auth.
-- **`navOpen` must be writable** (never a `computed`) if you pass it: the shell writes back when the
-  drawer closes itself.
-- **The shell is imp's only breakpoint exception** (`48rem`), and it is a **media query** - a shell
-  embedded in a panel narrower than that on a wide screen keeps its desktop layout. Do not copy the
-  exception into your own components. It renders `<header>`, `<main>`, `<aside>` and the `<nav>` of
-  each level, named from that level's `label`.
-- **It is `100dvb` on its own host**; set `block-size` on the element to embed one in a shorter box.
+- **Put the second level inside the section**, as `groups`. Drive `navbar.selected` and
+  `sidebar.selected` from the route. Do not keep two arrays in step by hand.
+- **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
+  shell draws the rows, because it draws each level more than once. `account` is data for the same
+  reason. The main content is the children, as in `shell({ navbar }, page())`. There is no `header`,
+  `footer` or `layout` prop. Put a breadcrumb trail and a page toolbar at the top of the main
+  content.
+- **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
+  of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
+  there inline, or do not style it.
+- **A section with no groups renders no sidebar**, and the content goes full width. Do not build a
+  false column with one row. Only app-wide content keeps the column. **`sidebar.extras` and
+  `sidebar.footer` stay whichever section is current.** So a support card or a help link goes there,
+  never in the `groups` of a section. **A section is always activatable**, also with no `href`,
+  because a choice of section is what changes the sidebar.
+- **`gap: 0` is the edge-to-edge frame. Any other step floats the chrome** as bordered panels,
+  rounded with `radius-lg`, and inset from the screen and from each other. This covers the phone
+  drawer and any `drawer` inside the frame. The frame paints the `background-app` token, which is a
+  colour or a gradient, and defaults to `color-surface`. `background` is a DOM node under
+  everything. Use it for a backdrop that CSS cannot draw. imp hides it from assistive technology.
+- **`children` nest one level, and are collapsed by default**, behind a caret with `aria-expanded`.
+  The parent of the selected row starts expanded. On a phone, a parent that the person taps in the
+  bottom bar opens its children in the More sheet.
+- **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, with
+  the section over the row. The sidebar becomes the bottom bar, capped at
+  `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections,
+  the footer rows, both `extras` and the account move into the drawer. When the current section has
+  no sidebar, the bottom bar carries the **sections**, and the drawer holds the chrome only.
+- **There is no aside region.** Every region of the frame has a phone form, and a side column has
+  none. Content that comes and goes is a `drawer` in the main content. Content that stands beside
+  the page is your own `flex` inside the main content. Make it wrap below the page under your own
+  media query.
+- **The desktop column collapses to an icon rail** from a toggle in its head. That is shell state,
+  not a prop. imp offers the toggle only when every row and every footer row has an `icon`. The rail
+  hides the logo, `sidebar.extras`, the `extras` of the shell and the account card.
+- **`signedIn: false` withholds the nav and the bottom bar.** It leaves one top bar with the logo
+  and the sign-in button from `account.onSignIn`. For an app with no authentication, leave
+  `signedIn` out.
+- **`navOpen` must be writable if you pass it.** Never pass a `computed`. The shell writes back when
+  the drawer closes itself.
+- **The shell is the only breakpoint exception in imp.** The width is `48rem`, and it is a **media
+  query**. So a shell that sits in a panel narrower than that, on a wide screen, keeps its desktop
+  layout. Do not copy the exception into your own components. The shell renders `<header>`, `<main>`
+  and one `<nav>` per level, named from the `label` of that level.
+- **The shell is `100dvb` on its own host.** To embed one in a shorter box, set `block-size` on the
+  element.
 
 Full manual: `imp skill std/shell`.
 
 ## Layout - from `imp/std/layout`
 
-Two flex primitives, and nothing else: `flex` is a row, `stack` is a column. There is no `grid`, no
-`box`, no padding/width/background props - a box that needs those is a `div` your own component
-styles.
+There are two flex primitives and nothing else. `flex` is a row, and `stack` is a column. There is
+no `grid` and no `box`. There is no padding, width or background prop. A box that needs those is a
+`div` that your own component styles.
 
 ```js
 import { flex, stack } from 'imp/std/layout'
@@ -276,15 +310,17 @@ stack(
 | `horizontalAlign` | `'start'`, `'end'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack       |
 | `gap`             | spacing step `0`-`6`                        | `3`         | Space between children |
 
-- **`gap` is a step number off the theme scale, never a length** - `gap: 4`, not `gap: '1rem'`. The
-  scale is fluid, so one step is right at every width. A bad value warns and falls back to `3`.
-- **`stack` has no `verticalAlign`** - a stack is as tall as its children.
-- **`horizontalAlign` is `'start'`/`'end'`, never `'left'`/`'right'`** - it follows the reading
-  direction, so `'start'` is the right edge under `dir="rtl"` and one call is correct in both
-  directions. `verticalAlign` keeps `'top'`/`'bottom'`; direction never flips the vertical axis.
-- **Spacing between components is a `gap`**, since no standard component carries an outer margin.
-- A layout that must change shape below some width is a media query in your own component's
-  `styles`; no prop varies by screen size.
+- **`gap` is a step number from the theme scale, never a length.** Write `gap: 4`, not
+  `gap: '1rem'`. The scale is fluid, so one step is correct at every width. imp warns about a bad
+  value and falls back to `3`.
+- **`stack` has no `verticalAlign`.** A stack is as tall as its children.
+- **`horizontalAlign` takes `'start'` and `'end'`, never `'left'` and `'right'`.** It follows the
+  reading direction. So `'start'` is the right edge under `dir="rtl"`, and one call is correct in
+  both directions. `verticalAlign` keeps `'top'` and `'bottom'`, because direction never mirrors the
+  vertical axis.
+- **Space two components apart with a `gap`**, because no standard component has an outer margin.
+- A layout that must change shape below some width needs a media query in the `styles` of your own
+  component. No prop varies with the size of the screen.
 
 ## dialog - from `imp/std/layout`
 
@@ -302,16 +338,47 @@ dialog({ title: 'Inspector', modal: false, open: inspecting }, details())
 | `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                       |
 | `events` | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
 
-- **`dialog` is both overlay windows.** `modal: true` (the default) freezes the page behind a
-  backdrop, closes on Escape and holds the page scroll; `modal: false` is a movable window that
-  blocks nothing, ignores Escape, and may be opened several at a time. `modal` is read once, at
+- **`dialog` is both overlay windows.** `modal: true` is the default. It freezes the page behind a
+  backdrop, closes on Escape, and holds the page scroll. `modal: false` is a movable window. It
+  blocks nothing, ignores Escape, and you can open several at a time. imp reads `modal` once, at
   mount.
-- **`open` is the only way to open a dialog** - a writable state, which the dialog writes `false`
-  back into when the person closes it. There is no `show()` and no handle.
-- **`dialog` shadows the `dialog` element factory** from `imp/html`; a file needing both aliases
-  one.
+- **`open` is the only way to open a dialog.** Pass a writable state. The dialog writes `false` back
+  into it when the person closes the dialog. There is no `show()` and no handle.
+- **`dialog` shadows the `dialog` element factory** from `imp/html`. A file that needs both gives
+  one an alias.
 
 Full manual: `imp skill std/dialog`.
+
+## drawer - from `imp/std/layout`
+
+```js
+import { drawer } from 'imp/std/layout'
+
+drawer({ title: 'Filters', open: filtering }, form({ initialValues }, ...fields))
+drawer({ title: 'Filters', open: filtering, pin: true }, form({ initialValues }, ...fields))
+drawer({ title: 'Details', modal: false, open: inspecting }, details())
+```
+
+| Prop     | Values                            | Default | Notes                                              |
+| -------- | --------------------------------- | ------- | -------------------------------------------------- |
+| `title`  | string - **live**                 | -       | Names the drawer for a screen reader; give one     |
+| `modal`  | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
+| `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                           |
+| `pin`    | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
+| `events` | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
+
+- **A drawer is a dialog docked to the end of the line.** That is the right edge under `dir="ltr"`,
+  and the left edge under `dir="rtl"`. There is no side prop. The modes and the `open` contract are
+  the same as for `dialog`.
+- **`pin` keeps a modal drawer open across a click outside it.** The toggle is in the bar of the
+  drawer. The drawer writes back into a writable `pin` state. Escape and the close button still
+  close the drawer.
+- **One panel serves every width**, at `min(--imp-drawer-inline-size, 85dvi)`. There is no
+  bottom-sheet mode.
+- **The drawer is the contextual panel of a `shell` app.** Mount it in the main content, and open it
+  from a control there. It covers the page. It never pushes the page.
+
+Full manual: `imp skill std/drawer`.
 
 ## emptyState - from `imp/std/display`
 
@@ -328,10 +395,10 @@ emptyState({ title: 'No invoices', description: 'They appear here once you send 
 | `title`       | string - **live**        | see below | The line saying there is nothing |
 | `description` | string - **live**        | -         | One sentence; omitted if unset   |
 
-Children are the actions, in a centered row under the text. With no `title` it reads its own key:
-`imp.state.empty` -> "Nothing here yet", `imp.state.noResults` -> "No results". A `title` you pass
-is not translated for you - use `computed([lang], () => t('invoices.empty'))` if it must follow the
-language.
+The children are the actions. imp puts them in a centered row under the text. With no `title`, the
+component reads its own key. `imp.state.empty` gives "Nothing here yet", and `imp.state.noResults`
+gives "No results". imp does not translate a `title` that you pass. To make it follow the language,
+use `computed([lang], () => t('invoices.empty'))`.
 
 ## tag - from `imp/std/display`
 
@@ -347,22 +414,24 @@ tag({ color: 'green', size: 'sm' }, 'Shipped')
 | `color` | `'neutral'`, or a theme palette name | `'neutral'` | Tints the pill |
 | `size`  | `'sm'`, `'md'`, `'lg'`               | `'md'`      | The type scale |
 
-The label is the children, not a prop; render a live one with `count.text()`. `color` names one of
-the theme's 31 palette colors (`'red'`, `'green'`, `'blue'`, ...), never a CSS color; the pill is a
-30% tint of it so every one stays readable in a light or a dark theme. A `navMenu` item and group
-take the same thing as plain data: `tag: { text, color }`, drawn at the small size to match the row.
+The label is the children, not a prop. To render a live label, use `count.text()`. `color` names one
+of the 31 palette colours of the theme, such as `'red'`, `'green'` or `'blue'`. It is never a CSS
+colour. The pill is a 30% tint of that colour, so every pill stays readable in a light theme and in
+a dark theme. A nav row and a group of `shell` take the same value as plain data, in
+`tag: { text, color }`. imp draws it at the small size, to match the row.
 
 ## Responsive: fluid values, and your own media query
 
-**No prop takes a per-screen value, and no component hides itself at a width.** Every prop takes one
-value and it applies at every width. `shell` is the single exception - the app frame swaps structure
-at `48rem` - and it is not a licence to do the same in your own components.
+**No prop takes a value per screen, and no component hides itself at a width.** Every prop takes one
+value, and that value applies at every width. `shell` is the one exception, because the app frame
+changes its structure at `48rem`. That exception does not permit the same in your own components.
 
-Most pages need nothing more. Spacing and type are **fluid**: `--imp-space-3` and up are `clamp()`
-values that grow with the viewport, so a gap or a page gutter is already right at every width.
+Most pages need nothing more. Spacing and type are **fluid**. `--imp-space-3` and the larger steps
+are `clamp()` values that grow with the viewport. So a gap and a page gutter are already correct at
+every width.
 
-When a layout must genuinely change axis or disappear, write a media query in your own component's
-`styles`, where it is scoped to that component:
+When a layout must change its axis or disappear, write a media query in the `styles` of your own
+component. The query is then scoped to that component:
 
 ```js
 component('invoice-filters', {
@@ -377,25 +446,25 @@ component('invoice-filters', {
 })
 ```
 
-`48rem` is the width imp itself splits at, and it is the theme token `--imp-breakpoint-desktop`. Use
-the token anywhere a length goes (`calc()`, `min()`, `max-inline-size`) and when reading the number
-from JavaScript; **a media query needs the literal**, because CSS cannot read a custom property
-inside one.
+`48rem` is the width where imp itself splits, and it is the theme token `--imp-breakpoint-desktop`.
+Use the token anywhere a length goes, such as in `calc()`, `min()` and `max-inline-size`, and when
+you read the number from JavaScript. **A media query needs the literal value**, because CSS cannot
+read a custom property inside a query.
 
 Rules an agent gets wrong:
 
-- **The arrangement components are `flex` and `stack` only** (`shell` is the page frame, not a box).
-  Anything else a box needs - padding, a background, a width, a grid - is plain CSS in your own
-  component's `styles`.
-- **Spacing is `gap` on the parent, never margins on the children**: no std component has an outer
+- **The arrangement components are `flex` and `stack` only.** `shell` is the page frame, not a box.
+  Everything else that a box needs, such as padding, a background, a width or a grid, is plain CSS
+  in the `styles` of your own component.
+- **Spacing is a `gap` on the parent, never a margin on a child.** No std component has an outer
   margin.
 
 ## Forms - from `imp/std/inputs`
 
-**A form's values are ordinary state.** `form({ initialValues })` calls
-`initState('imp.form', initialValues ?? null)` on itself; a control names the field it owns with a
-**dot path**, resolves the form from its own position, and reads and writes that one path. It works
-at any depth, so layout components in between change nothing.
+**The values of a form are ordinary state.** `form({ initialValues })` calls
+`initState('imp.form', initialValues ?? null)` on itself. A control names the field that it owns
+with a **dot path**. It resolves the form from its own position, and it reads and writes that one
+path. This works at any depth, so a layout component in between changes nothing.
 
 ```js
 import { form, select, submitButton, textField } from 'imp/std/inputs'
@@ -408,7 +477,7 @@ form(
 )
 ```
 
-Every control takes the same binding and labelling props:
+Every control takes the same binding props and labelling props:
 
 | Prop        | Values                         | Notes                                     |
 | ----------- | ------------------------------ | ----------------------------------------- |
@@ -420,10 +489,11 @@ Every control takes the same binding and labelling props:
 | `required`  | boolean                        | Marks it and validates it is filled in    |
 | `disabled`  | boolean, or a state - **live** | Blocks interaction                        |
 
-Validation props: `required`, `minLength`, `maxLength`, `min`, `max`, `pattern`, and `validate`
-(returns a message, or `null` when fine). Built-in messages live under `imp.form.*`. `validateAsync`
-returns a **promise** of a message or `null` and runs only on blur and submit - submit waits for it,
-a sync failure skips it, and a rejected promise blocks with `imp.form.checkFailed`.
+The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern` and
+`validate`. `validate` returns a message, or `null` when the value is correct. The built-in messages
+live under `imp.form.*`. `validateAsync` returns a **promise** of a message or of `null`. It runs on
+blur and on submit only. A submit waits for it. A synchronous failure skips it. A rejected promise
+blocks the submit with `imp.form.checkFailed`.
 
 | Component       | What it binds                | Its own props                                     |
 | --------------- | ---------------------------- | ------------------------------------------------- |
@@ -442,23 +512,25 @@ a sync failure skips it, and a rejected promise blocks with `imp.form.checkFaile
 
 Rules an agent gets wrong:
 
-- **There is no native form submit.** No `type: 'submit'` button, no `events: { submit }` - put the
-  handler in the form's `onSubmit` and render `submitButton()`. Enter in a single-line field submits
-  too; Enter in a `textArea` does not.
-- **A `field` with no `form` around it is an error**, and so is a path that is not dot-separated.
-- **`field` and `value` are alternatives.** Both together warns and `field` wins.
-- **Labels belong to the control, not around it.** `label[for]` cannot cross a shadow root, so pass
-  `label` as a prop; wrapping a control in your own `<label>` names nothing.
+- **There is no native form submit.** There is no `type: 'submit'` button and no
+  `events: { submit }`. Put the handler in the `onSubmit` of the form, and render `submitButton()`.
+  Enter in a single-line field also submits. Enter in a `textArea` does not.
+- **A `field` with no `form` around it is an error.** A path that is not dot-separated is also an
+  error.
+- **`field` and `value` are alternatives.** With both, imp warns and `field` wins.
+- **A label belongs to the control, not around it.** `label[for]` cannot cross a shadow root. So
+  pass `label` as a prop. Your own `<label>` around a control names nothing.
 - **`select` and `radioGroup` take their choices in `options`, never as children.**
-- **`numberField` commits a number**; an empty one commits `undefined`.
-- **Errors stay hidden until a field is left or submit is attempted** - do not add your own "show
-  errors" flag.
-- **Return the promise from an async `onSubmit`** so the submit button's spinner and the
-  double-submit guard work.
-- **`validate` is synchronous and `validateAsync` is the promise one.** Returning a promise from
-  `validate` does not work - it is truthy, so every value looks invalid. Async checks run on blur
-  and submit only, never per keystroke; debounce yourself if you need more.
-- Read the values anywhere in the subtree with `useState('imp.form')`.
+- **`numberField` commits a number.** An empty field commits `undefined`.
+- **imp hides an error until the person leaves the field, or tries to submit.** Do not add your own
+  "show errors" flag.
+- **Return the promise from an async `onSubmit`.** The spinner of the submit button and the guard
+  against a double submit both need it.
+- **`validate` is synchronous, and `validateAsync` is the promise form.** A promise returned from
+  `validate` does not work, because a promise is truthy and every value then looks invalid. An async
+  check runs on blur and on submit only, never on a keystroke. Debounce it yourself if you need
+  more.
+- To read the values anywhere in the subtree, call `useState('imp.form')`.
 
 ## Navigation - from `imp/std/navigation`
 
@@ -474,40 +546,27 @@ tabs({
 })
 ```
 
-```js
-import { navMenu } from 'imp/std/navigation'
-
-navMenu({
-  label: 'Sections',
-  selected: currentSection,
-  groups: [{ id: 'work', label: 'Work' }],
-  items: [{ id: 'tasks', group: 'work', label: 'Tasks', href: '/tasks', tag: { text: 12 } }],
-})
-```
-
-| Component | Props                                                                              |
-| --------- | ---------------------------------------------------------------------------------- |
-| `tabs`    | `items`, `selected` (live), `orientation`, `label`, `events`                       |
-| `navMenu` | `items` (live), `groups`, `selected` (live), `label`, `direction`, `gap`, `events` |
+| Component | Props                                                        |
+| --------- | ------------------------------------------------------------ |
+| `tabs`    | `items`, `selected` (live), `orientation`, `label`, `events` |
 
 Rules an agent gets wrong:
 
-- **Panels go in `items`, never as children** - a tab and its panel reference each other by id, and
-  ids cannot cross a shadow root, so one component must render both.
-- **`selected` is optional.** Without it `tabs` picks the first enabled item and manages selection
-  itself; pass a state when the app owns the selection, and listen with `events: { select }`.
-- **`select` fires only for a user's choice**, so a state bound both ways cannot loop.
-- Arrow keys, `Home`/`End` and RTL mirroring come with it - write no key handling.
-- **`navMenu` marks the current page with `selected`**, which writes `aria-current="page"` - never a
-  class of your own. Its items are real links; a plain click reports `select` first, so
-  `preventDefault()` hands routing back to you. `direction: 'row'` turns the same menu into a bar.
-  **Do not pass one to `shell`** - the frame takes the same data and draws the rows itself. Full
-  manuals: `imp skill std/tabs` | `imp skill std/navMenu`.
+- **A panel goes in `items`, never in the children.** A tab and its panel reference each other by
+  id, and an id cannot cross a shadow root. So one component must render both.
+- **`selected` is optional.** Without it, `tabs` selects the first enabled item and manages the
+  selection itself. Pass a state when the app owns the selection, and listen with
+  `events: { select }`.
+- **`select` fires only for a choice by the person.** So a state that is bound in both directions
+  cannot loop.
+- The arrow keys, `Home`, `End` and the RTL mirroring are included. Write no key handling.
+- **A menu of destinations is the `shell` nav.** There is no separate menu component. Give the rows
+  to the frame as `navbar` or `sidebar` data. Full manual: `imp skill std/tabs`.
 
 ## Shell parts - from `imp/std/shell`
 
-Ready-made contents for `shell`'s regions. Each is optional: `logo`, `aside` and `extras` take DOM,
-so a piece that does not fit is replaced by your own.
+These are ready-made contents for the regions of `shell`. Each one is optional. `logo` and `extras`
+take DOM, so you can replace a piece that does not fit with your own.
 
 ```js
 import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
@@ -531,25 +590,25 @@ langSelect({ languages: ['en', 'pl'] })
 
 Rules an agent gets wrong:
 
-- **There is no sidebar-item or navbar-item component**: a row is a nav item, whose shape takes an
-  `icon` and an `onClick`. Inside `shell` you hand those items to the frame; `navMenu` is for a menu
-  outside it.
-- **The last crumb is the current page** - `breadcrumbs` renders it as text with
-  `aria-current="page"`, never a link, and imp does not derive the trail from the route.
-- **`onSignIn` / `onSignOut` are function props, not `events`** - return the promise and the button
-  spins until it settles. imp holds no session and talks to no identity provider.
-- **`themeSelect` and `langSelect` own their setting**: they apply it, remember it in
-  `localStorage`, and re-apply the remembered choice on the next mount. `remember: false` when the
-  app owns it. A remembered theme wins over the app's own `applyTheme` at startup - that is the
-  point of remembering it.
-- **`userCard` is one component with two states**: signed out it is a single sign-in button; signed
-  in it is the person, with a sign-out button beside it only when `onSignOut` is passed - leave that
-  prop off for a display-only card. `signedIn` defaults to `false`, so a card with only a `name`
-  shows the sign-in button. There is no menu inside it.
-- **`compact` on `appLogo` and `userCard` hides the words visually, not from assistive tech** - it
-  is how a mark-only brand block keeps its name.
-- **Inside `shell` you do not call `userCard`**: pass the frame's `account` data and it builds the
-  card and places it, in the bar on a wide screen and in the drawer on a phone.
+- **There is no sidebar-item component and no navbar-item component.** A row is a nav item, and its
+  shape takes an `icon` and an `onClick`. Give those items to the frame as data.
+- **The last crumb is the current page.** `breadcrumbs` renders it as text with
+  `aria-current="page"`, never as a link. imp does not derive the trail from the route.
+- **`onSignIn` and `onSignOut` are function props, not `events`.** Return the promise, and the
+  button spins until the promise settles. imp holds no session, and it talks to no identity
+  provider.
+- **`themeSelect` and `langSelect` own their setting.** They apply it, remember it in
+  `localStorage`, and apply the remembered choice again on the next mount. Set `remember: false`
+  when the app owns the setting. A remembered theme wins against the `applyTheme` of the app at
+  startup. That is the purpose of remembering it.
+- **`userCard` is one component with two states.** Signed out, it is a single sign-in button. Signed
+  in, it is the person, and a sign-out button stands beside them only when you pass `onSignOut`.
+  Leave that prop out for a card that only displays. `signedIn` defaults to `false`, so a card with
+  a `name` only shows the sign-in button. There is no menu inside the card.
+- **`compact` on `appLogo` and on `userCard` hides the words visually, not from assistive
+  technology.** That is how a brand block with a mark only keeps its name.
+- **Do not call `userCard` inside `shell`.** Pass the `account` data of the frame. The frame builds
+  the card and places it, in the bar on a wide screen and in the drawer on a phone.
 
 Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/themeSelect` |
 `std/langSelect`.
@@ -576,14 +635,16 @@ bugReport({
 Rules an agent gets wrong:
 
 - **`onSubmit` is a prop, not an `events` entry**, because storing a report is asynchronous and can
-  fail. Return a promise: the panel stays open and shows a retryable error when it rejects.
-- **imp stores nothing.** There is no endpoint, no `localStorage` fallback and no queue - what
-  `onSubmit` does with the report is the app's decision, and so is stripping anything private out of
-  it first.
-- **The person never sees the element path.** They pick an element by clicking it and it stays
-  outlined while they type; the path is in the report for whoever reads it.
-- **`as: 'link'` still renders a `<button>`** - it performs an action, so it is never an `<a>`.
-- **It is not `imp review`** (`imp skill review`), which is the dev server's own widget writing
-  `.imp/reviews/`. They share one capture engine, so a report has the same shape either way.
+  fail. Return a promise. When it rejects, the panel stays open and shows an error that the person
+  can retry.
+- **imp stores nothing.** There is no endpoint, no `localStorage` fallback and no queue. The app
+  decides what `onSubmit` does with the report. The app also decides what private content to remove
+  from the report first.
+- **The person never sees the element path.** They pick an element by clicking it, and it stays
+  outlined while they type. The path is in the report, for the person who reads it.
+- **`as: 'link'` still renders a `<button>`.** It performs an action, so it is never an `<a>`.
+- **`bugReport` is not `imp review`**, see `imp skill review`. `imp review` is the widget of the dev
+  server, and it writes to `.imp/reviews/`. The two share one capture engine, so a report has the
+  same shape in both.
 
 Full manual: `imp skill std/bugReport`.

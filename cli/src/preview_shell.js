@@ -1,8 +1,8 @@
 import { component } from 'imp'
 import { a, div, el, pre, span } from 'imp/html'
-import { heading, text } from 'imp/std'
+import { heading, icon, text } from 'imp/std'
 import { shell, stack } from 'imp/std/layout'
-import { navMenu } from 'imp/std/navigation'
+import { luFolder } from 'imp/icons'
 import { copyButton } from './preview_copy.js'
 
 const CATALOG_ELEMENT_ID = 'imp-preview-catalog'
@@ -108,6 +108,35 @@ const INDEX_STYLES = `
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--imp-space-1, 4px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .card-link {
+    display: block;
+    border-radius: var(--imp-radius-md, 6px);
+    padding-block: var(--imp-space-2, 8px);
+    padding-inline: var(--imp-space-3, 12px);
+    color: var(--imp-color-text, #0f172a);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-tight, 1.25);
+    text-decoration: none;
+  }
+
+  .card-link:hover {
+    background-color: var(--imp-color-surface-hover, #f1f5f9);
+  }
+
+  .card-link:focus-visible {
+    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
+    outline-offset: 2px;
+  }
 `
 
 const HEAD_STYLES = `
@@ -171,7 +200,7 @@ const HEAD_STYLES = `
     font-weight: var(--imp-font-weight-bold, 700);
   }
 
-  .category {
+  .group {
     color: var(--imp-color-secondary, #64748b);
     font-weight: var(--imp-font-weight-normal, 400);
   }
@@ -211,13 +240,21 @@ export const readCatalog = () => {
   }
 }
 
-const categoriesOf = (previews) => {
-  const categories = new Map()
+const groupsOf = (previews, groups = []) => {
+  const byName = new Map()
   for (const entry of previews) {
-    if (!categories.has(entry.category)) categories.set(entry.category, [])
-    categories.get(entry.category).push(entry)
+    if (!byName.has(entry.group)) byName.set(entry.group, [])
+    byName.get(entry.group).push(entry)
   }
-  return [...categories].map(([name, entries]) => ({ name, entries }))
+  const declared = groups.filter(({ name }) => byName.has(name))
+  const undeclared = [...byName.keys()]
+    .filter((name) => !groups.some((group) => group.name === name))
+    .map((name) => ({ name, icon: null }))
+  return [...declared, ...undeclared].map(({ name, icon }) => ({
+    name,
+    icon: icon ?? luFolder,
+    entries: byName.get(name),
+  }))
 }
 
 const openInPlace = (event) => {
@@ -227,37 +264,26 @@ const openInPlace = (event) => {
   globalThis.location.assign(href)
 }
 
-const menuItems = (previews, grouped) =>
-  previews.map((entry) => ({
-    id: entry.file,
-    ...(grouped ? { group: entry.category } : {}),
-    label: entry.name,
-    href: entry.href,
-  }))
+const componentList = (entries, label) =>
+  el(
+    'nav',
+    { 'aria-label': label },
+    el(
+      'ul',
+      { class: 'card-list' },
+      ...entries.map((entry) => el('li', a({ class: 'card-link', href: entry.href }, entry.name))),
+    ),
+  )
 
-const componentMenu = (previews, current, { label, grouped = true }) =>
-  navMenu({
-    label,
-    selected: current,
-    groups: grouped
-      ? categoriesOf(previews).map(({ name, entries }) => ({
-        id: name,
-        label: name,
-        tag: { text: entries.length },
-      }))
-      : [],
-    items: menuItems(previews, grouped),
-    events: { select: openInPlace },
-  })
-
-const catalogSidebar = (previews, current) => ({
+const catalogSidebar = (previews, current, groups) => ({
   label: 'Components',
   selected: current,
-  groups: categoriesOf(previews).map(({ name, entries }) => ({
+  items: groupsOf(previews, groups).map(({ name, entries, icon: drawing }) => ({
     id: name,
     label: name,
+    icon: icon(drawing),
     tag: { text: entries.length },
-    items: entries.map((entry) => ({ id: entry.file, label: entry.name, href: entry.href })),
+    children: entries.map((entry) => ({ id: entry.file, label: entry.name, href: entry.href })),
   })),
 })
 
@@ -272,20 +298,19 @@ const barDefinition = {
 
 const settingsDefinition = {
   styles: SETTINGS_STYLES,
-  build: (_instance, controls, editor) =>
+  build: (_instance, controls) =>
     div(
       { class: 'settings' },
       el('h2', 'Preview'),
       ...controls,
-      editor,
     ),
 }
 
 const indexDefinition = {
   styles: INDEX_STYLES,
-  build: (_instance, previews) => {
-    const categories = categoriesOf(previews)
-    const cards = categories.map(({ name, entries }) =>
+  build: (_instance, previews, groups) => {
+    const listed = groupsOf(previews, groups)
+    const cards = listed.map(({ name, entries }) =>
       div(
         { class: 'card' },
         div(
@@ -293,7 +318,7 @@ const indexDefinition = {
           span({ class: 'card-title' }, name),
           span({ class: 'card-count' }, String(entries.length)),
         ),
-        componentMenu(entries, null, { label: `${name} components`, grouped: false }),
+        componentList(entries, `${name} components`),
       )
     )
     return div(
@@ -303,9 +328,9 @@ const indexDefinition = {
         heading({ level: 1 }, 'Components'),
         text(
           { tone: 'secondary' },
-          `${previews.length} preview${
-            previews.length === 1 ? '' : 's'
-          } in ${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}.`,
+          `${previews.length} preview${previews.length === 1 ? '' : 's'} in ${listed.length} group${
+            listed.length === 1 ? '' : 's'
+          }.`,
         ),
       ),
       div({ class: 'cards' }, ...cards),
@@ -336,7 +361,7 @@ const headDefinition = {
         { class: 'title' },
         span(
           { class: 'path' },
-          span({ class: 'category' }, `${entry.category} / `),
+          span({ class: 'group' }, `${entry.group} / `),
           entry.name,
         ),
         span({ class: 'file' }, entry.file),
@@ -356,14 +381,14 @@ export const previewBar = (previews) => {
   return createBar(previews)
 }
 
-export const previewSettings = (controls, editor) => {
+export const previewSettings = (controls) => {
   createSettings ??= component('imp-preview-settings', settingsDefinition)
-  return createSettings(controls, editor)
+  return createSettings(controls)
 }
 
-export const previewIndex = (previews) => {
+export const previewIndex = (previews, groups) => {
   createIndex ??= component('imp-preview-index', indexDefinition)
-  return createIndex(previews)
+  return createIndex(previews, groups)
 }
 
 export const previewHead = (entry, isolated, instruction) => {
@@ -371,19 +396,20 @@ export const previewHead = (entry, isolated, instruction) => {
   return createHead(entry, isolated, instruction)
 }
 
-export const previewShell = ({ catalog, controls, editor, content }) => {
+export const previewShell = ({ catalog, groups, controls, editor, content }) => {
   const hasPreviews = catalog.previews.length > 0
   const host = shell(
     {
       logo: previewBar(catalog.previews),
-      sidebar: hasPreviews ? catalogSidebar(catalog.previews, catalog.current) : null,
-      aside: previewSettings(controls, editor),
+      sidebar: hasPreviews ? catalogSidebar(catalog.previews, catalog.current, groups) : null,
+      extras: previewSettings(controls),
+      gap: 3,
       events: { select: openInPlace },
     },
     stack({ gap: 4 }, content),
+    editor,
   )
   host.setAttribute('dir', 'ltr')
   host.style.setProperty('--imp-shell-sidebar-inline-size', '15rem')
-  host.style.setProperty('--imp-shell-aside-inline-size', '18rem')
   return host
 }

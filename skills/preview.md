@@ -5,16 +5,16 @@ imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
 ```
 
-Serves each **preview file** as its own page: the file's `description` as one agent instruction
-below the page head, then one labelled panel per named export, under a **Preview** tab holding the
-component in a resizable stage with a state editor beside it and a **Code** tab showing the call
-that built it. No app boot, no backend, no navigating to the right screen. It is the same dev server
-as [start](start.md) underneath - terminal telemetry and reload on save included.
+`imp preview` serves each **preview file** as its own page. The page shows the file's `description`
+as one agent instruction below the page head. Then it shows one labelled panel per named export. A
+panel holds the component in a resizable stage with a state editor beside it. There is no app boot,
+no backend, and no navigation to the right screen. It is the same dev server as [start](start.md)
+underneath, with terminal telemetry and reload on save.
 
 ## The preview file
 
 A component in `todos.js` gets a sibling `todos.preview.js`. **Every named export except the three
-metadata ones below is a scenario** and the export name is the panel label; panels appear in the
+metadata exports below is a scenario.** The export name is the panel label. Panels appear in the
 order written.
 
 ```js
@@ -22,7 +22,7 @@ import { mockModule } from 'imp/preview'
 import { todoList } from './todos.js'
 
 export const name = 'Todo list'
-export const category = 'Widgets'
+export const group = 'Widgets'
 export const description = "Run 'imp skill ./components/todos.js' before writing code with it."
 
 mockModule('./http.js', ({ spy }) => ({
@@ -35,92 +35,120 @@ export const busy = todoList({ loading: true })
 export const lazy = () => todoList(buildFixture()) // a function is called at render time
 ```
 
-A component that calls a backend has two ways to be fed here: `mockModule` replaces the module it
-imports, and `--mock` serves the project's `*.mock.js` files to the previewed component so its real
-requests are answered - see [mocks](mocks.md). A component reaching for an [http](http.md) client
-needs one initialized above it, so preview it inside a small host component that calls
+A component that calls a backend has two ways to get data here. `mockModule` replaces a module the
+component imports. `--mock` serves the project's `*.mock.js` files to the previewed component, so
+its real requests get answers (see [mocks](mocks.md)). A component that uses an [http](http.md)
+client needs one initialized above it. Preview it inside a small host component that calls
 `initHttpClient`.
 
-`mockModule(specifier, factory)` behaves exactly as in [testing](testing.md) - the specifier is
-relative to the preview file or a dependency alias, the factory receives `{ spy, orig }`, and every
-import of that module at any depth resolves to what you return. **A mock applies to the whole
-preview file**, so scenarios that need different data differ by the arguments you pass.
+`mockModule(specifier, factory)` behaves exactly as in [testing](testing.md). The specifier is
+relative to the preview file, or it is a dependency alias. The factory receives `{ spy, orig }`.
+Every import of that module, at any depth, resolves to what you return. **A mock applies to the
+whole preview file.** Scenarios that need different data differ by the arguments you pass.
 
 ## Metadata exports
 
-`name`, `category` and `description` are **not scenarios** - they name the component in the page
-instead. Each is optional and each must be a plain string literal; anything else is ignored.
+`name`, `group` and `description` are **not scenarios**. They name the component on the page. Each
+is optional. Each must be a plain string literal, or imp ignores it.
 
 | export        | what it does                                                                     |
 | ------------- | -------------------------------------------------------------------------------- |
 | `name`        | the label in the catalog, the search, the page head and the browser tab          |
-| `category`    | the group the component is listed under, replacing the folder name               |
+| `group`       | the group the component is listed under, replacing the folder name               |
 | `description` | the agent instruction below the page head: the command an agent should run first |
 
-Without them the label falls back to the file name and the folder - `inputs/text_field.preview.js`
+Without them, the label falls back to the file name and the folder. `inputs/text_field.preview.js`
 is `text_field` under `inputs`.
 
 ## Rules an agent gets wrong
 
-- **A scenario is the component pre-filled - there is no story format**, no `args`, no `meta`
-  export, no decorators. Write the call you would write at a real call site.
-- **`name`, `category` and `description` are reserved**, so a scenario cannot be called any of
-  them - a scenario named `name` becomes the component's label and never renders. `description` is
-  an instruction, not prose about the component: write the exact command, like
+- **A scenario is the component pre-filled. There is no story format**, no `args`, no `meta` export,
+  no decorators. Write the call you would write at a real call site.
+- **`name`, `group` and `description` are reserved.** A scenario cannot have one of these names. A
+  scenario named `name` becomes the component's label and never renders. `description` is an
+  instruction, not prose about the component. Write the exact command, like
   `"Run 'imp skill std/button' to learn what button can do before using it."`
-- **Export an instance, or a function returning one.** A function is invoked when the panel renders,
-  which is what you want when the fixture must be built fresh.
-- **Preview files are never part of the app** - nothing imports them, so `imp build` never sees
-  them. They are the place to put fixtures, not app code.
-- **The state editor is discovery, not a contract.** It lists names found by reading your source for
-  literal `initState`/`useState` calls; a computed name or one behind a helper simply is not listed,
-  and a non-JSON value shows read-only. Do not restructure a component to make it appear.
-- Write a `*.preview.js` **and** a `*.skill.md` for a component you ship: the preview is for a
-  person, the skill is for an agent. See [components](components.md).
+- **Export an instance, or a function that returns one.** imp calls a function when the panel
+  renders. Use a function when the fixture must be built fresh.
+- **Preview files are never part of the app.** Nothing imports them, so `imp build` never sees them.
+  Put fixtures there, not app code.
+- **The state editor is discovery, not a contract.** It lists the names it finds when it reads your
+  source for literal `initState` and `useState` calls. A computed name, or one behind a helper, is
+  not listed. A non-JSON value is read-only. Do not restructure a component to make it appear.
+- Write a `*.preview.js` **and** a `*.skill.md` for a component you ship. The preview is for a
+  person. The skill is for an agent. See [components](components.md).
 
 ## The page
 
-- **The shell** - every page is the same frame: the catalog of components down the side, grouped by
-  category, with the one you are looking at marked; and the theme, language and direction pickers in
-  a settings panel beside the page. `/` opens the catalog as a card per category.
-- **Stage** - drag the right, bottom or corner handle to resize; `phone`, `tablet`, `desktop` jump
-  to common viewports and `fit` returns to full width. The component re-lays-out live, which is how
-  you find the width where it breaks.
-- **State editor** - the state the component manages, as JSON. Edit and apply (or `Ctrl`/`Cmd`+
-  `Enter`) and the component updates through imp's normal fine-grained path - no remount, no reload.
-  Each panel is bound to its own instance.
-- **Agent instruction** - the file's `description`, ready to copy, once per page below the head
-  rather than per scenario: the command to hand an agent before it writes code with this component.
-  A file that declares none says so there.
-- **Theme editor** - _edit theme_ beside the switcher. Knobs: mode (light/dark), primary, secondary,
-  border radius (`none` | `small` | `medium` | `large` | `full`), shadow (`none` | `soft` |
-  `strong`). Every other colour token is derived from the two base colours. Copy or download the
-  result as a `theme.js` exporting `light` and `dark`, then pass it to `init({ theme })`. Drafts are
-  kept per theme in `localStorage`; _reset_ clears one. See [theming](theming.md).
-- **Review widget** - the same one `imp start` injects, in the bottom corner: the person picks a
-  part of the previewed component, comments on it, and imp writes the note to `.imp/reviews/` with
-  the preview page it came from. Read the folder before reworking a component on a vague report. See
-  [start](start.md).
-- **Theme, language and direction switchers** - fed by `preview.themes` and `preview.translations`
-  in `imp.json`, see [config](config.md); choices survive reloads. Direction has **auto** (follows
-  the language), **ltr** and **rtl** - pinning it while reading English is the quickest way to catch
-  a hardcoded `margin-left`. Direction applies to the component only, never the toolbar, so the
-  controls stay put; the theme applies to the whole page, because the page is itself built from
-  `imp/std`. See [theming](theming.md) and [i18n](i18n.md).
+- **The shell.** Every page is the same frame. The catalog of components is down the side, with one
+  section per group, and the component you look at is marked. The theme button and the language and
+  direction pickers are in a settings panel beside the page. `/` opens the catalog as a card per
+  group.
+- **Stage.** Drag the right, bottom or corner handle to resize. `phone`, `tablet` and `desktop` jump
+  to common viewports. `fit` returns to full width. The component re-lays-out live, which is how you
+  find the width where it breaks.
+- **State editor.** It shows the state the component manages, as JSON. Edit a value and apply it (or
+  press `Ctrl`/`Cmd`+`Enter`). The component updates through imp's normal fine-grained path, with no
+  remount and no reload. Each panel is bound to its own instance.
+- **Agent instruction.** The file's `description`, ready to copy, once per page below the head. It
+  is the command to give an agent before it writes code with this component. A file that declares
+  none says so there.
+- **Theme editor.** _edit theme_ is beside the theme button. Knobs: mode (light/dark), primary,
+  secondary, border radius (`none` | `small` | `medium` | `large` | `full`), shadow (`none` | `soft`
+  | `strong`). Every other colour token is derived from the two base colours. Copy or download the
+  result as a `theme.js` that exports `light` and `dark`, then pass it to `init({ theme })`. Drafts
+  are kept per theme in `localStorage`. _reset_ clears one. See [theming](theming.md).
+- **Review widget.** The same widget that `imp start` injects, in the bottom corner. The person
+  picks a part of the previewed component and comments on it. imp writes the note to `.imp/reviews/`
+  with the preview page it came from. Read the folder before you rework a component on a vague
+  report. See [start](start.md).
+- **Theme button, language and direction pickers.** `preview.themes` and `preview.translations` in
+  `imp.json` feed them (see [config](config.md)). Choices survive reloads. The theme button shows
+  the current theme with an icon. A click steps to the next theme. A pointer over the button, or the
+  focus on it, opens a menu that lists every theme with an icon. So one click picks any of them.
+  Direction has **auto** (follows the language), **ltr** and **rtl**. Pin it while you read English
+  to catch a hardcoded `margin-left`. Direction applies to the component only, never to the toolbar,
+  so the controls stay in place. The theme applies to the whole page, because the page is itself
+  built from `imp/std`. See [theming](theming.md) and [i18n](i18n.md).
 
 ## Finding previews
 
-With no path, every `*.preview.js` in the project is discovered and `/` lists them. A path narrows
-it: a preview file opens straight to it, a **component** path opens its sibling preview
-(`imp preview components/todos.js` -> `components/todos.preview.js`), and a folder limits discovery.
-`?scenario=<name>` - or the panel's **isolate** button - renders one scenario alone.
+With no path, imp discovers every `*.preview.js` in the project and `/` lists them. A path narrows
+it. A preview file opens straight to it. A **component** path opens its sibling preview
+(`imp preview components/todos.js` -> `components/todos.preview.js`). A folder limits discovery.
+`?scenario=<name>`, or the panel's **isolate** button, renders one scenario alone.
 
-A component is listed as **`category/name`**, taken from the file's `category` and `name` exports
-and falling back to the folder holding the preview file and the file's own name without
-`.preview.js` - so `src/inputs/text_field.preview.js` with no metadata is `inputs/text_field` in the
-catalog and in the search. Group your components into folders and the catalog groups itself; declare
-`category` to group them your own way, and two files declaring the same `category` land in one group
-whatever folders they sit in.
+A component is listed as **`group/name`**, taken from the file's `group` and `name` exports. Without
+them, imp uses the folder that holds the preview file and the file's own name without `.preview.js`.
+So `src/inputs/text_field.preview.js` with no metadata is `inputs/text_field` in the catalog and in
+the search. Put your components in folders and the catalog groups itself. Declare `group` to group
+them your own way. Two files that declare the same `group` land in one group, whatever folders they
+are in.
 
-`imp preview --list` prints the discovered files one per line, `--list --json` as a JSON array. Keep
-folders out with `preview.exclude`.
+## Group icons and order
+
+Groups are listed alphabetically with a folder icon, until `preview.groups` in `imp.json` names a
+module:
+
+```json
+{ "preview": { "groups": "src/preview-groups.js" } }
+```
+
+```js
+import { luLayoutGrid, luTextCursorInput } from 'imp/icons'
+
+export const groups = [
+  { name: 'Widgets', icon: luLayoutGrid },
+  { name: 'Inputs', icon: luTextCursorInput },
+]
+```
+
+- The export must be an array named `groups`. `name` matches a preview's `group` export (or its
+  folder name) **exactly**, case included. `icon` is a value from `imp/icons`.
+- Listed groups come first, in the order written. Groups the module does not list follow, with the
+  folder icon. A listed group with no previews is not shown.
+- A missing module path fails `imp preview` at startup. A malformed export is reported in the
+  browser console, and the catalog falls back to folder icons.
+
+`imp preview --list` prints the discovered files, one per line. `--list --json` prints them as a
+JSON array. Keep folders out with `preview.exclude`.

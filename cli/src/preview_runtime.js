@@ -3,9 +3,11 @@ import { a, div, el, h2, pre, span } from 'imp/html'
 import { initState } from 'imp/state'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
-import { button, text } from 'imp/std'
+import { button, icon, text } from 'imp/std'
+import { luContrast, luEclipse, luMoon, luPalette, luSun } from 'imp/icons'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
+import { drawer } from 'imp/std/layout'
 import { previewHead, previewIndex, previewShell, readCatalog } from './preview_shell.js'
 import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview_theme_editor.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
@@ -30,6 +32,12 @@ const BUILT_IN_THEMES = [
   'imp-high-contrast-dark',
 ]
 const BASE_THEME_FOR = { light: 'imp-light', dark: 'imp-dark' }
+const BUILT_IN_THEME_ICONS = {
+  'imp-light': luSun,
+  'imp-dark': luMoon,
+  'imp-high-contrast-light': luContrast,
+  'imp-high-contrast-dark': luEclipse,
+}
 const DIRECTIONS = ['auto', 'ltr', 'rtl']
 
 const themes = new Map()
@@ -358,6 +366,38 @@ const picker = (kind, ariaLabel, values, choice) =>
     select({ ariaLabel, value: choice, options: values }),
   )
 
+const themeIcon = (name) => icon(BUILT_IN_THEME_ICONS[name] ?? luPalette, { size: 'sm' })
+
+const nextThemeName = (current) => {
+  const names = [...themes.keys()]
+  return names[(names.indexOf(current) + 1) % names.length]
+}
+
+const themeSwitcher = (choice) =>
+  div(
+    { class: 'picker' },
+    text({ tone: 'secondary', size: 'sm' }, 'theme'),
+    button(
+      {
+        size: 'sm',
+        menuTrigger: 'hover',
+        label: choice.text((name) => `Theme: ${name} - next theme`),
+        events: { click: () => choice.set(nextThemeName(choice.get())) },
+        items: [...themes.keys()].map((name) => ({
+          id: name,
+          label: name,
+          icon: themeIcon(name),
+          onClick: () => choice.set(name),
+        })),
+      },
+      span(
+        { style: 'display: inline-flex; align-items: center; gap: var(--imp-space-2, 8px)' },
+        choice.view((name) => themeIcon(name)),
+        choice.text((name) => name),
+      ),
+    ),
+  )
+
 const elementsInTree = (nodes) => {
   const elements = []
   const visit = (node) => {
@@ -615,7 +655,7 @@ const scenarioOrder = (scenarios, order) => {
 
 const catalogEntryFor = (catalog, meta) =>
   catalog.previews.find((entry) => entry.file === meta.file) ??
-    { file: meta.file, category: meta.category, name: meta.name, href: null }
+    { file: meta.file, group: meta.group, name: meta.name, href: null }
 
 const scenarioList = (scenarios, meta, catalog) => {
   const names = scenarioOrder(scenarios, meta.order)
@@ -634,9 +674,9 @@ const scenarioList = (scenarios, meta, catalog) => {
   ]
 }
 
-const mainContent = (scenarios, meta, catalog) => {
+const mainContent = (scenarios, meta, catalog, groups) => {
   if (scenarios !== null) return scenarioList(scenarios, meta, catalog)
-  if (catalog.previews.length) return previewIndex(catalog.previews)
+  if (catalog.previews.length) return previewIndex(catalog.previews, groups)
   return emptyState({
     title: 'No previews found',
     description: "Write a '*.preview.js' file next to a component and export one instance per " +
@@ -645,7 +685,7 @@ const mainContent = (scenarios, meta, catalog) => {
 }
 
 const pageDefinition = {
-  build: (_instance, scenarios, meta, catalog) => {
+  build: (_instance, scenarios, meta, catalog, groups) => {
     const themeChoice = initState(THEME_STATE, readStoredTheme())
     const directionChoice = initState(DIRECTION_STATE, readStoredDirection())
     const languageChoice = languages.length ? initState(LANGUAGE_STATE, readStoredLanguage()) : null
@@ -668,35 +708,76 @@ const pageDefinition = {
     const controls = [
       languageChoice ? picker('language', 'Language', languages, languageChoice) : null,
       picker('direction', 'Text direction', DIRECTIONS, directionChoice),
-      picker('theme', 'Theme', [...themes.keys()], themeChoice),
+      themeSwitcher(themeChoice),
       button(
         { size: 'sm', events: { click: () => editorOpen.set(!editorOpen.get()) } },
         editorOpen.text((open) => (open ? 'close theme editor' : 'edit theme')),
       ),
     ].filter(Boolean)
 
-    const editor = editorOpen.view((open) =>
-      open ? themeChoice.view((name) => themeEditor(name, colorSchemeOf(themes.get(name)))) : null
+    const editor = drawer(
+      { title: 'Theme editor', modal: false, open: editorOpen },
+      editorOpen.view((open) =>
+        open ? themeChoice.view((name) => themeEditor(name, colorSchemeOf(themes.get(name)))) : null
+      ),
     )
 
     return previewShell({
       catalog,
+      groups,
       controls,
       editor,
-      content: mainContent(scenarios, meta, catalog),
+      content: mainContent(scenarios, meta, catalog, groups),
     })
   },
 }
 
 let createPage = null
 
-const previewPage = (scenarios, meta, catalog) => {
+const previewPage = (scenarios, meta, catalog, groups) => {
   createPage ??= component('imp-preview-page', pageDefinition)
-  return createPage(scenarios, meta, catalog)
+  return createPage(scenarios, meta, catalog, groups)
 }
 
-export async function startPreview(scenarios, meta, customThemes = [], previewTranslations = []) {
+const GROUPS_SHAPE =
+  "export const groups = [{ name: 'Widgets', icon: luBox }] - a name per group and an icon from 'imp/icons'"
+
+const readGroups = (declared) => {
+  if (declared === null) return []
+  const { source, module } = declared
+  if (!Array.isArray(module.groups)) {
+    console.error(
+      `imp preview: ${source} (preview.groups) must export an array named groups, like ${GROUPS_SHAPE}`,
+    )
+    return []
+  }
+  const groups = []
+  for (const entry of module.groups) {
+    if (typeof entry?.name !== 'string' || !entry.name.trim()) {
+      console.error(
+        `imp preview: ${source} (preview.groups) lists a group without a name - each entry is ${GROUPS_SHAPE}`,
+      )
+      continue
+    }
+    if (entry.icon !== undefined && !Array.isArray(entry.icon)) {
+      console.error(
+        `imp preview: ${source} (preview.groups) group '${entry.name}' has an icon that is not one from 'imp/icons' - it is drawn with the folder icon`,
+      )
+    }
+    groups.push({ name: entry.name, icon: Array.isArray(entry.icon) ? entry.icon : null })
+  }
+  return groups
+}
+
+export async function startPreview(
+  scenarios,
+  meta,
+  customThemes = [],
+  previewTranslations = [],
+  declaredGroups = null,
+) {
   const catalog = readCatalog()
+  const groups = readGroups(declaredGroups)
   const styles = document.createElement('style')
   styles.textContent = DOCUMENT_STYLES
   document.head.append(styles)
@@ -715,6 +796,6 @@ export async function startPreview(scenarios, meta, customThemes = [], previewTr
   )
   await applyLanguage(readStoredLanguage())
 
-  mount(document.body, previewPage(scenarios, meta, catalog))
+  mount(document.body, previewPage(scenarios, meta, catalog, groups))
   applyStageDirection()
 }

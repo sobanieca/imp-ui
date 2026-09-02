@@ -6,7 +6,7 @@ import { checkbox } from 'imp/std/inputs'
 checkbox({ field: 'terms', label: 'I accept the terms', required: true })
 ```
 
-Call shape: `checkbox(props?)` - the text beside the box is the `label` prop, not children.
+The call shape is `checkbox(props?)`. The text beside the box is the `label` prop, not a child.
 
 | Prop        | Values                                     | Notes                                       |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
@@ -18,20 +18,21 @@ Call shape: `checkbox(props?)` - the text beside the box is the `label` prop, no
 | `required`  | boolean                                    | Marks it and validates that it is filled in |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                          |
 
-Also: `validate`, and `validateAsync` for a check that runs on blur and submit.
+The other props are `validate`, and `validateAsync` for a check that runs on blur and on submit.
 
 Rules an agent gets wrong:
 
-- **`field` and `value` are alternatives.** Inside a form use `field`; passing both warns and
+- **`field` and `value` are alternatives.** Inside a form, use `field`. With both, imp warns and
   `field` wins. A `field` with no form around it is an error.
-- **An error only shows once the field has been left or submit was attempted**, so a form does not
-  shout at someone still filling in the first box.
-- **The label sits beside the box, not above it**, and clicking it toggles the box.
+- **An error shows only after the person leaves the field, or tries to submit.** So the form does
+  not report a problem while the person still fills in the first box.
+- **The label sits beside the box, not above it.** A click on the label toggles the box.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
-- Unknown props warn at mount, and an out-of-range value warns and falls back.
-- **`required` means "must be ticked"**, which is what a terms checkbox wants.
-- **The value is a boolean.** For one choice out of several use `radioGroup`, not a row of
-  checkboxes bound to one field.
+- imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
+  to the default.
+- **`required` means that the person must tick the box.** That is what a terms checkbox needs.
+- **The value is a boolean.** For one choice out of several, use `radioGroup`. Do not bind a row of
+  checkboxes to one field.
 
 ```js
 checkbox({ field: 'terms', label: 'I accept the terms', required: true })

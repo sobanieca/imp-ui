@@ -2,60 +2,60 @@
 
 ## Context
 
-`shell` frames an app in named regions (`app-shell-component.md`). The nav levels it draws itself,
-from data; the rest of a region is DOM the frame places without looking inside. That leaves every
-app writing the same pieces by hand: a brand block, a breadcrumb trail, the signed-in person, a
-sign-out button, and the theme and language pickers. `todo/stdlib-components.md` recorded the gap as
-"ready-made contents for `shell`'s regions" and named its blocker: nav rows want an icon per
-destination, and imp had four private marks rather than a public `icon`.
+`shell` frames an app in named regions, see `app-shell-component.md`. It draws the nav levels
+itself, from data. The rest of a region is DOM, and the frame places that DOM without a look inside.
+So every app wrote the same pieces by hand: a brand block, a breadcrumb trail, the signed-in person,
+a sign-out button, and the theme and language pickers. `todo/stdlib-components.md` recorded that gap
+as "ready-made contents for the regions of `shell`". It also named the blocker. A nav row wants an
+icon per destination, and imp had four private marks in place of a public `icon`.
 
-Two shapes were available. The pieces could be **props on `shell`** (`shell({ logo, user })`), which
-would sort content by name again and re-open the question the frame ADR closed. Or they could be
-**components an app passes into a region**, which is what a region prop already accepts. Nothing
-about them is frame-specific: a breadcrumb in a page body or a theme picker on a settings screen is
-the same component.
+There were two shapes. The pieces could be **props on `shell`**, as in `shell({ logo, user })`. That
+would sort content by name again, and it would open the question that the ADR of the frame closed.
+Or they could be **components that an app passes into a region**, which is what a region prop
+already accepts. Nothing about them belongs to the frame. A breadcrumb trail in the body of a page,
+and a theme picker on a settings screen, are the same components.
 
 ## Decision
 
-**`imp/std/shell` is a component group like any other**, holding the pieces an app frame is usually
-filled with: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`.
+**`imp/std/shell` is a component group like any other.** It holds the pieces that usually fill the
+frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`.
 
-- **`shell` gains no props.** Every piece is DOM the app passes into a region, so the frame is
-  unchanged and any piece can be swapped for the app's own without asking it for permission. The
-  group's name says where they are usually used, not where they may be used.
-- **Nav rows are not a new component.** A sidebar row and a navbar row are nav items, which take an
-  `icon` (any DOM) and an `onClick`; a row with an `onClick` and no `href` renders a real
-  `<button>`, which is how a menu carries an action beside its destinations. One data shape drives
-  the column, the bar, the drawer and the phone's bottom bar, and `shell` and `navMenu` render it
+- **`shell` gains no prop.** Each piece is DOM that the app passes into a region. So the frame does
+  not change, and you can replace any piece with your own, and you ask the frame for no permission.
+  The name of the group says where these pieces are usually used, not where you can use them.
+- **A nav row is not a new component.** A sidebar row and a navbar row are nav items. Each one takes
+  an `icon`, which is any DOM, and an `onClick`. A row with an `onClick` and no `href` renders a
+  real `<button>`. That is how a menu carries an action beside its destinations. One data shape
+  drives the column, the bar, the drawer and the bottom bar of a phone. `shell` renders that shape
   through one shared row builder.
-- **`icon` lands in the General group**, drawing one icon in `currentColor` from a value the app
-  imports (`bundled-icon-set.md`). Every icon-taking prop in the library accepts **any DOM**, so
-  `icon` is a convenience and never a requirement, and a component that needs a mark internally
-  still draws its own rather than importing one.
-- **`breadcrumbs` ships as the trail only**, in this group rather than in `imp/std/navigation`: it
-  is a region's content, and its sibling-picker half is still blocked on the anchored-overlay seam
-  (`todo/breadcrumbs.md`). Deriving a trail from the route stays out of the component, so an app
-  with a literal trail carries no router.
-- **`themeSelect` and `langSelect` own their setting end to end** - they apply it, remember it in
-  `localStorage` and re-apply the remembered choice on the next mount, with `remember: false` to opt
-  out. A remembered choice deliberately wins over the app's own `applyTheme` at startup; with no
-  remembered choice, the component applies its first option only when the app has applied no theme,
-  so an app's own theme is never clobbered on a first visit.
-- **An asynchronous, failable action is a function prop** - `userCard`'s `onSignIn` / `onSignOut`,
-  following `bugReport`'s `onSubmit` - because a `CustomEvent` cannot be awaited. imp holds no
-  session and talks to no identity provider.
+- **`icon` lands in the General group.** It draws one icon in `currentColor`, from a value that the
+  app imports, see `bundled-icon-set.md`. Every icon prop in the library accepts **any DOM**. So
+  `icon` is a convenience, and never a requirement. A component that needs a mark internally still
+  draws its own mark, and it imports none.
+- **`breadcrumbs` ships as the trail only.** It sits in this group, and not in `imp/std/navigation`.
+  It is the content of a region. Its other half, the sibling picker, still waits on the seam of an
+  anchored overlay, see `todo/breadcrumbs.md`. The component does not derive a trail from the route.
+  So an app with a literal trail carries no router.
+- **`themeSelect` and `langSelect` own their setting completely.** They apply it, remember it in
+  `localStorage`, and apply the remembered choice again on the next mount. `remember: false` turns
+  that off. A remembered choice deliberately wins against the `applyTheme` of the app at startup.
+  With no remembered choice, the component applies its first option only when the app has applied no
+  theme. So imp never overwrites the theme of an app on a first visit.
+- **An action that is asynchronous, and that can fail, is a function prop.** `onSignIn` and
+  `onSignOut` of `userCard` are examples, and they follow the `onSubmit` of `bugReport`. You cannot
+  await a `CustomEvent`. imp holds no session, and it talks to no identity provider.
 
 ## Consequences
 
-- The frame is a quick win rather than an empty grid: `shell` plus this group stands an app up
-  without hand-written region markup.
-- The group is the first one named after a **place** rather than a kind of thing. That is accepted:
-  the alternative was scattering six components across General, Display and Navigation, where the
-  pieces that go together would no longer be found together.
-- `icon` costs only the icons an app names, because each one is its own export
-  (`bundled-icon-set.md`), and the DOM-accepting props keep even that optional.
-- Two components now write to `localStorage`, which imp had not used before. Both keys are
-  namespaced (`imp.theme`, `imp.lang`), reads and writes are wrapped, and a storage-less browser
-  degrades to session-only behaviour rather than failing.
-- `breadcrumbs` living here means the navigation group holds no trail; when the picker lands it
-  extends this component rather than opening a second one.
+- The frame is a quick win, and not an empty grid. `shell` with this group stands an app up, and
+  nobody writes markup for a region by hand.
+- This is the first group named after a **place**, and not after a kind of thing. imp accepts that.
+  The alternative was to spread six components across General, Display and Navigation. Then the
+  pieces that belong together would no longer sit together.
+- `icon` costs only the icons that an app names, because each one is its own export, see
+  `bundled-icon-set.md`. The props that accept DOM keep even that cost optional.
+- Two components now write to `localStorage`, and imp had not used it before. Both keys carry a
+  namespace, which is `imp.theme` and `imp.lang`. imp wraps each read and each write. A browser with
+  no storage falls back to behaviour for the session, and it does not fail.
+- `breadcrumbs` lives here, so the navigation group holds no trail. When the picker arrives, it
+  extends this component. It does not open a second one.

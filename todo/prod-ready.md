@@ -2,153 +2,173 @@
 
 ## Context
 
-Missing third-party attribution in `imp build` output was found by asking a simple production
-question - "may I legally ship this bundle?" - that imp had no answer for. It is being fixed, but it
-is one instance of a class: imp is designed and tested from the author's side of the workflow
-(`imp start`, `imp test`, `imp preview`) and thins out on the deploy side, where a build becomes an
-artifact someone else operates, audits and debugs.
+Somebody asked a simple question about production. That question was "can I legally ship this
+bundle?", and imp had no answer for it. That found the missing attribution of a third party in the
+output of `imp build`. Somebody is fixing that. But it is one instance of a class. imp is designed
+and tested from the side of the author of a workflow, through `imp start`, `imp test` and
+`imp preview`. It becomes thin on the side of the deploy, where a build becomes an artifact that
+somebody else operates, audits and debugs.
 
-This file records the rest of that class, found by reading the CLI, the library and the ADRs against
-the question "what does a team need before putting this in front of users?". Each item names the
-gap, why it blocks production, and where it lands. Items are grouped by tier, roughly in the order
-they should be closed; when one is implemented, delete it from this file (and record any
-architectural decision it introduces as an ADR). When the last one goes, delete the file.
+This file records the rest of that class. Somebody found each item by reading the CLI, the library
+and the ADRs, against the question "what does a team need, before it puts this in front of a user?".
+Each item names the gap, says why it blocks production, and says where the fix lands. The items are
+grouped by tier, roughly in the order in which somebody must close them. When somebody implements an
+item, delete it from this file, and record any architectural decision that it introduces, as an ADR.
+When the last item goes, delete the file.
 
-Last re-verified against the code on 2026-09-01; every item below was confirmed still open at that
+Somebody verified this against the code again on 2026-09-01. Every item below was still open at that
 date.
 
-## Tier 1 - supply chain and compliance
+## Tier 1 - the supply chain, and compliance
 
-The same family as the attribution gap, and the tier most likely to be a hard procurement blocker
-rather than a preference.
+This is the same family as the gap in the attribution. It is also the tier that is most likely to
+block a procurement, in place of being a preference.
 
-- **No integrity or provenance check on install.** `latestVersion` in `cli/src/install.js` and the
-  bundler's package fetches trust TLS alone - no npm `dist.integrity` verification, no provenance or
-  attestation check. `imp update` already verifies the binary it downloads against its published
-  SHA-256 (`cli/src/version_manager.js`), so the standard exists inside imp; dependency installs do
+- **There is no check of integrity, and no check of provenance, at install.** `latestVersion`, in
+  `cli/src/install.js`, and the package fetches of the bundler, trust TLS alone. There is no check
+  of the npm `dist.integrity` field. There is no check of a provenance or of an attestation.
+  `imp update` already verifies the binary that it downloads, against its published SHA-256, see
+  `cli/src/version_manager.js`. So the standard exists inside imp. The install of a dependency does
   not meet it.
-- **`install.sh` verifies nothing.** It downloads the release asset and moves it into `INSTALL_DIR`
-  with no checksum check, even though the release publishes `imp-{os}-{arch}.sha256` and every other
-  download path in imp verifies against it (`adr/binary-distribution.md`). The first command a new
-  user runs is the only unverified one. One-line fix, outsized value. (The script also prints a
-  non-ASCII check mark, against the repo's ASCII rule.)
-- **Nothing consumes the recorded graph.** The per-dependency manifests answer "which versions of
-  what am I shipping" only to a reader who opens them. There is no `imp audit`, no SBOM export in a
-  standard interchange format (CycloneDX or SPDX), and no vulnerability-scanning path - each is now
-  a transform over data already committed in the repository rather than new plumbing.
+- **`install.sh` verifies nothing.** It downloads the asset of a release, and moves it into
+  `INSTALL_DIR`, with no check of a checksum. The release publishes `imp-{os}-{arch}.sha256`, and
+  every other download path in imp verifies against that file, see `adr/binary-distribution.md`. The
+  first command that a new user runs is the only one that nobody verifies. The fix is one line, and
+  the value is large. The script also prints a check mark that is not ASCII, against the ASCII rule
+  of the repository.
+- **Nothing consumes the recorded graph.** The manifest per dependency answers the question "which
+  versions of what do I ship?", and only for a reader who opens it. There is no `imp audit`. There
+  is no export of a software bill of materials, in a standard format for interchange, such as
+  CycloneDX or SPDX. There is no path to scan for a vulnerability. Each one of those is now a
+  transform over data that is already committed in the repository. None of them is new plumbing.
 
 ## Tier 2 - what `imp build` emits
 
-- **No source maps anywhere.** `sourcemap` appears nowhere in `cli/src` (the esbuild options in
-  `cli/src/build.js` never set it). Output is minified with no maps, so every production stack trace
-  is unreadable and no error reporting backend can symbolicate. Needs at least an opt-in external
-  map that is emitted but not referenced from the bundle, so it can be uploaded to a reporting
-  service without being served. Together with the missing global error seam below, this is the whole
-  reason a production imp app is diagnostically blind.
-- **Entry files are not content-hashed.** Only `chunkNames` and `assetNames` carry `[hash]` in
-  `cli/src/build.js`; entry outputs keep their plain names. Long-term caching of the entry point is
-  therefore impossible and every deploy depends on the host's cache headers being right. Related
-  documentation drift: `docs/cli.md` describes the PWA precache as covering "every hashed script and
-  chunk", which overstates what is emitted.
-- **No CSP story.** `imp build` inlines module script bodies into the HTML (`replaceInlineScripts`)
-  and injects `<script>globalThis.__IMP_ENV__ = ...</script>`, so a built page needs
-  `script-src 'unsafe-inline'` unless imp emits hashes for what it inlined. Nothing in `docs/`
-  mentions Content-Security-Policy at all. Serious deployments require a policy; imp should emit
-  per-script SHA-256 hashes (or offer a nonce / external-file mode) and document a baseline policy
-  that a built app satisfies as-is.
+- **There is no source map anywhere.** The word `sourcemap` appears nowhere in `cli/src`. The
+  esbuild options in `cli/src/build.js` never set it. So the output is minified, with no map. Every
+  stack trace in production is unreadable, and no backend for error reporting can symbolicate it.
+  imp needs at least an external map that a person turns on. imp must emit that map, and not
+  reference it from the bundle. So somebody can upload it to a service for reporting, and nobody
+  serves it. With the missing global seam for an error, below, this is the whole reason why an imp
+  app in production is blind about diagnostics.
+- **imp does not put a content hash on an entry file.** Only `chunkNames` and `assetNames` carry
+  `[hash]`, in `cli/src/build.js`. The output of an entry keeps its plain name. So a long-term cache
+  of the entry point is impossible, and every deploy depends on the cache headers of the host being
+  correct. There is related drift in the documentation. `docs/cli.md` describes the precache of the
+  PWA as covering "every hashed script and chunk", and that says more than imp emits.
+- **There is no story about a CSP.** `imp build` inlines the body of a module script into the HTML,
+  through `replaceInlineScripts`. It also injects `<script>globalThis.__IMP_ENV__ = ...</script>`.
+  So a built page needs `script-src 'unsafe-inline'`, unless imp emits a hash for what it inlined.
+  Nothing in `docs/` mentions a Content Security Policy at all. A serious deployment requires a
+  policy. imp must emit a SHA-256 hash per script, or offer a mode with a nonce, or a mode with an
+  external file. imp must also document a baseline policy that a built app satisfies as it is.
 - **`envInjectionScript` does not escape `</script`.** `cli/src/environments.js` writes
-  `JSON.stringify(env)` straight into an inline script, while `cli/src/build.js` explicitly guards
-  the identical hazard for inline bundles. Environment values are author-controlled, so this is a
-  build-breaking footgun rather than an injection hole, but the guard already exists ten lines away
-  and should be consistent.
-- **The build's HTML processing is regex-based.** `SCRIPT_TAG` and `rewriteRootAbsoluteUrls` in
-  `cli/src/build.js` parse and rewrite HTML with regular expressions. This works for scaffolded
-  pages but silently mishandles edge cases (script tags inside comments, attributes containing `>`).
-  At minimum it needs adversarial test fixtures; longer-term, a real parser.
-- **Missing build-side production hygiene:** no subresource integrity, no `modulepreload` hints for
-  chunks the entry will pull, no precompressed (brotli/gzip) output, and no size budget for app
-  builds - imp enforces a size limit on its own binary (`binary-size-limit.json`) but offers app
-  authors no equivalent for `dist/`.
+  `JSON.stringify(env)` straight into an inline script. `cli/src/build.js` explicitly guards the
+  same hazard, for an inline bundle. An environment value comes from the author. So this is a trap
+  that breaks a build, and not a hole for an injection. But the guard already exists ten lines away,
+  and the two must be consistent.
+- **The build processes HTML with a regular expression.** `SCRIPT_TAG`, and
+  `rewriteRootAbsoluteUrls`, in `cli/src/build.js`, parse and rewrite HTML with a regular
+  expression. That works for a scaffolded page. It handles an edge case wrongly, with no message.
+  Two examples are a script tag inside a comment, and an attribute that contains `>`. At a minimum,
+  this needs adversarial fixtures in a test. In the longer term, it needs a real parser.
+- **Some hygiene for production is missing on the side of the build.** There is no subresource
+  integrity. There is no `modulepreload` hint for a chunk that the entry will pull. There is no
+  output that imp compressed in advance, with brotli or gzip. There is no budget for the size of an
+  app build. imp enforces a limit on the size of its own binary, through `binary-size-limit.json`.
+  It offers the author of an app no equivalent for `dist/`.
 
-## Tier 3 - operating the app once it is live
+## Tier 3 - how to operate the app after it is live
 
-- **No global error seam.** `lib/src/component.js` gives per-component `fallback` boundaries
-  (`adr/error-boundaries.md`), but nothing catches `error` or `unhandledrejection` at the app level,
-  and there is no sink API for forwarding a crash to a backend. Worse than silence: a state
-  subscriber that throws is caught and logged to the console only (`lib/src/state.js`,
-  `createNotifier`), so production failure mode is a partially-updated UI with zero telemetry. The
-  emit-and-subscribe shape planned for analytics (`todo/analytics.md`) is the right one to reuse:
-  imp owns the plumbing, the app chooses the destination.
-- **Browser logging is console-only.** `lib/src/logger.js` has no sink registration - the CLI has
-  `addLogSink` (`cli/src/logger.js`), the library has no counterpart - so production logs cannot be
-  shipped anywhere, and the default level is `info`.
-- **No SEO or metadata story.** The router never touches `document.title` or meta tags
-  (`document.title` appears only in `lib/src/report.js`), and there is no prerender or static export
-  for applications; `todo/preview-static-export.md` covers previews only. Any public-facing app
-  needs at least a per-route title and description, set as part of navigation rather than by hand in
-  a screen.
-- **No-SSR is an unstated scope boundary.** Real DOM plus shadow-root components means a built app
-  is an empty HTML shell until JS runs. That is a defensible choice for the internal-tools and
-  dashboard 80%, but no ADR or doc says "public content sites are out of scope" the way the
-  `virtualList` exclusion is recorded. Teams will discover it the hard way; it deserves an ADR.
-- **No deployment or observability docs.** The docs corpus stops at `imp build` - nothing on cache
-  headers, CSP, error reporting, or what to wire the (future) error and log seams to. One deployment
-  page closes the loop once the seams above exist.
-- **The PWA deploy lifecycle is unfinished** - `todo/pwa-update-lifecycle.md` and
-  `todo/pwa-offline-fallback.md` are both open, and update behaviour is exactly what breaks on the
-  first real deploy of an installed app.
+- **There is no global seam for an error.** `lib/src/component.js` gives a `fallback` boundary per
+  component, see `adr/error-boundaries.md`. But nothing catches an `error` event, or an
+  `unhandledrejection` event, at the level of the app. There is also no API for a sink, to forward a
+  crash to a backend. The situation is worse than silence. A state subscriber that throws is caught,
+  and logged to the console only, see `createNotifier` in `lib/src/state.js`. So the failure mode in
+  production is a UI that updated in part, with no telemetry. The shape that emits and subscribes,
+  which somebody planned for analytics, see `todo/analytics.md`, is the correct shape to reuse. imp
+  owns the plumbing, and the app chooses the destination.
+- **Logging in the browser goes to the console only.** `lib/src/logger.js` has no registration of a
+  sink. The CLI has `addLogSink`, in `cli/src/logger.js`, and the library has no counterpart. So
+  nobody can ship a log from production anywhere. The default level is also `info`.
+- **There is no story about SEO, and none about metadata.** The router never touches
+  `document.title`, and it never touches a meta tag. `document.title` appears only in
+  `lib/src/report.js`. There is also no prerender, and no static export, for an application.
+  `todo/preview-static-export.md` covers a preview only. Any app that faces the public needs at
+  least a title and a description per route, which imp sets as part of a navigation, in place of a
+  person setting it by hand in a screen.
+- **The absence of SSR is a boundary of the scope that nobody states.** Real DOM, with a component
+  in a shadow root, means that a built app is an empty HTML shell until the JavaScript runs. That is
+  a defensible choice for the 80% that is an internal tool, or a dashboard. But no ADR, and no
+  document, says "a public content site is out of scope", in the way that somebody recorded the
+  exclusion of `virtualList`. A team will find that out the hard way. It deserves an ADR.
+- **There is no documentation about a deployment, and none about observability.** The corpus of the
+  documentation stops at `imp build`. There is nothing about a cache header, about a CSP, about
+  reporting an error, or about what to connect the future seams for an error and for a log to. One
+  page about a deployment closes the loop, after the seams above exist.
+- **The lifecycle of a PWA deploy is unfinished.** `todo/pwa-update-lifecycle.md` and
+  `todo/pwa-offline-fallback.md` are both open. The behaviour of an update is exactly what breaks on
+  the first real deploy of an installed app.
 
-## Tier 4 - can the app be built at all, and does it hold up at scale
+## Tier 4 - can somebody build the app at all, and does it hold up at scale
 
-- **State performance has no ceiling test.** Every `set` deep-walks the entire value twice - the
-  structural compare in `inspectValue`, then `deepFreeze` - and a keyed `each` re-runs `valuesEqual`
-  per retained item on every notification (`lib/src/state.js`). There is no update batching: N
-  synchronous `set` calls produce N full notify-and-render passes. For the stated target -
-  dashboards, CRUD, data grids - a large list state makes every keystroke O(total-data-size).
-  Nothing proves this is fine: there is no benchmark or large-fixture test anywhere. Land one before
-  the `table` / data-grid component does, because this is the architectural risk most likely to
-  force a redesign.
-- **Malformed URLs crash route matching instead of rendering notFound.**
-  `decodeURIComponent(pathSegments[i])` in `lib/src/router.js` (`matchSegments`) throws `URIError`
-  on garbage percent-encoding (`/user/%zz` arriving from any external link), which surfaces as a
-  component mount error rather than the not-found page. Related:
-  `Object.fromEntries(location.searchParams)` silently drops repeated query keys.
-- **The standard library is still short of the target catalog.** Layout (`flex`, `stack`, `shell`,
-  `dialog`), the `imp/std/shell` region group, the form layer, `tag` and `breadcrumbs` have landed,
-  but there is still no table or data grid, no toast, tooltip, popover, card, comboBox or
-  datePicker. The stated target is dashboards, CRUD and internal tools; those cannot yet be
-  assembled from the catalog. Tracked in detail in `todo/stdlib-components.md` - listed here because
-  it is the practical blocker a team hits first.
-- **The accessibility baseline is enforced per component, not automatically.** Component tests
-  assert role, name and keyboard operability, but neither `imp lint` nor `imp test` runs any
-  automated accessibility audit over a rendered app, so app-level regressions (missing labels in app
-  code, contrast in custom themes) have no net. The contract itself lives in
-  `todo/accessibility.md`.
+- **The performance of a state has no test for a ceiling.** Every `set` walks the whole value
+  deeply, twice. That is the structural comparison in `inspectValue`, and then `deepFreeze`. A keyed
+  `each` also runs `valuesEqual` again, per item that it keeps, on every notification, see
+  `lib/src/state.js`. There is no batching of an update. So N synchronous `set` calls produce N full
+  passes of a notification and a render. For the stated target, which is a dashboard, CRUD and a
+  data grid, a large list in a state makes every keystroke O(the size of all the data). Nothing
+  proves that this is acceptable. There is no benchmark anywhere, and there is no test with a large
+  fixture. Land one before the `table` component, or the data grid, lands. This is the architectural
+  risk that is most likely to force a redesign.
+- **A malformed URL breaks the match of a route. It does not render `notFound`.**
+  `decodeURIComponent(pathSegments[i])`, in `matchSegments` in `lib/src/router.js`, throws a
+  `URIError` on bad percent encoding. An example is `/user/%zz`, which arrives from any external
+  link. That surfaces as an error during the mount of a component, in place of the not-found page.
+  There is a related problem. `Object.fromEntries(location.searchParams)` drops a repeated key of a
+  query, and says nothing.
+- **The standard library is still short of the target catalog.** The layout has landed, with `flex`,
+  `stack`, `shell` and `dialog`. The `imp/std/shell` group of regions has landed. The form layer has
+  landed. `tag` and `breadcrumbs` have landed. But there is still no table, and no data grid. There
+  is no toast, no tooltip, no popover, no card, no comboBox and no datePicker. The stated target is
+  a dashboard, CRUD and an internal tool. Nobody can assemble those from the catalog yet.
+  `todo/stdlib-components.md` tracks that in detail. It is listed here because it is the practical
+  blocker that a team meets first.
+- **imp enforces the accessibility baseline per component, and not automatically.** A test of a
+  component asserts the role, the name and the operability from a keyboard. But neither `imp lint`
+  nor `imp test` runs an automated audit of accessibility, over a rendered app. So a regression at
+  the level of the app has no net. Two examples are a missing label in app code, and the contrast of
+  a custom theme. The contract itself lives in `todo/accessibility.md`.
 
-## Tier 5 - release and support policy
+## Tier 5 - the policy about a release, and about support
 
-- **`0.1.0`, no Windows target, no stability policy.** The "no backward compatibility" rule in
-  `CLAUDE.md` is correct for now, but it has to terminate at a documented 1.0 with a deprecation and
-  support window before a team can responsibly pin imp in production; a pinned version
-  (`adr/version-pinning-self-delegation.md`) is only worth pinning if its guarantees are written
-  down. Windows remains unsupported (`adr/binary-distribution.md`) and CI builds no Windows binary,
-  which excludes many teams outright.
-- **Sealed CI has no documented path.** The e2e browser is downloaded on first use and checksum
-  verified (`cli/src/test_browser.js`), which is right, but there is no documented mirror or cache
-  override for an air-gapped or egress-restricted CI environment.
+- **The version is `0.1.0`. There is no Windows target. There is no policy about stability.** The
+  rule about no backward compatibility, in `CLAUDE.md`, is correct for now. But it must end at a
+  documented 1.0, with a window for a deprecation and for support, before a team can responsibly pin
+  imp in production. A pinned version, see `adr/version-pinning-self-delegation.md`, is worth
+  pinning only when somebody writes its guarantees down. Windows is still unsupported, see
+  `adr/binary-distribution.md`, and CI builds no binary for Windows. That excludes many teams
+  completely.
+- **A sealed CI system has no documented path.** imp downloads the e2e browser on first use, and
+  verifies its checksum, see `cli/src/test_browser.js`. That is correct. But there is no documented
+  mirror, and no override of the cache, for a CI environment that has no network, or that restricts
+  its outbound traffic.
 
-## Suggested order
+## The suggested order
 
-Source maps and the global error/log sink seam first, which together make a live app debuggable.
-Then CSP, hashed entry files, and the two one-liners (`install.sh` checksum, `envInjectionScript`
-escaping). Then the state benchmark, before `table` lands. Then router URL hardening. Then the
-no-SSR scope ADR and per-route metadata. The 1.0 stability policy and a Windows target are the items
-that decide whether a team can adopt at all; the rest decide whether the app holds up once they do.
+Do the source maps, and the global seam for an error and for a log, first. Together they make a live
+app possible to debug. Then do the CSP, the hash on an entry file, and the two changes of one line,
+which are the checksum in `install.sh`, and the escaping in `envInjectionScript`. Then do the
+benchmark for the state, before `table` lands. Then harden the URLs in the router. Then write the
+ADR about the scope with no SSR, and the metadata per route. The policy about stability at 1.0, and
+a Windows target, are the items that decide whether a team can adopt imp at all. The rest decide
+whether the app holds up after they adopt it.
 
 ## ADR impact
 
-Several of these land decisions worth recording: a source map policy, a CSP and inline-script
-hashing decision for `adr/production-bundling.md`, an error-reporting seam alongside the analytics
-ADR, and a client-side-rendering-only scope ADR. Each belongs in `adr/` when the corresponding item
-lands, not before - except the no-SSR scope ADR, which records a decision already made and can be
-written now.
+Several of these items land a decision that is worth a record. Those are a policy about a source
+map, a decision about a CSP and about the hash of an inline script, for
+`adr/production-bundling.md`, a seam for reporting an error, beside the ADR about analytics, and an
+ADR about a scope that renders on the client only. Each one belongs in `adr/` when the matching item
+lands, and not before. The one exception is the ADR about the scope with no SSR. It records a
+decision that somebody already made, and somebody can write it now.

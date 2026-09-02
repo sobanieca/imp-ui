@@ -2,38 +2,41 @@
 
 ## Context
 
-Three prop keys carry structure that the plain property-first model
-(adr/property-first-prop-model.md) cannot express well:
+Three prop keys carry structure that the plain property-first model, see
+adr/property-first-prop-model.md, cannot express well:
 
-- **`class`** is frequently conditional ("active when selected") and composed from several sources.
-  A bare string forces the author to build that string by hand at every call site.
-- **`style`** is a mini key/value language; inline strings are unsplittable and CSS custom
-  properties (`--x`) and `camelCase`-vs-`kebab` naming need handling.
-- **Event handlers** are not attributes at all. The `onclick="..."` attribute form is string-based
-  and limited; `addEventListener` is the real mechanism and supports options (`once`, `passive`,
-  `capture`).
+- **`class`** is often conditional, such as "active when selected", and it is composed from several
+  sources. A bare string forces the author to build that string by hand at every call site.
+- **`style`** is a small language of keys and values. An inline string cannot be split. A CSS custom
+  property, written as `--x`, and the difference between `camelCase` and kebab case both need
+  handling.
+- **An event handler is not an attribute.** The `onclick="..."` attribute form uses a string, and it
+  is limited. `addEventListener` is the real mechanism, and it supports options such as `once`,
+  `passive` and `capture`.
 
-These could each be separate top-level conventions, but that multiplies the rules an author learns.
+Each of these could be a separate top-level convention. But that multiplies the rules that an author
+must learn.
 
 ## Decision
 
-Three reserved keys in the same props object, each with richer handling:
+imp reserves three keys in the same props object, and gives each one richer handling:
 
-- **`class`** accepts: `'card'` | `['card', maybe]` (falsy dropped, joined) | `{ active: cond }`
-  object where each truthy entry toggles its class on.
-- **`style`** accepts: a string (set verbatim) | an object mapping `camelCase`/`--custom` keys to
-  values (`camelCase` -> kebab; `--*` kept verbatim).
-- **`events`** is an object of native DOM event names (no `on` prefix) to either a handler `fn` or a
-  `[fn, options]` pair passed straight to `addEventListener`. Custom events use the same shape
-  (`'chart-rendered': fn`).
+- **`class`** accepts `'card'`, or `['card', maybe]`, where imp drops a falsy entry and joins the
+  rest, or `{ active: cond }`, where each truthy entry turns its class on.
+- **`style`** accepts a string, which imp sets without a change, or an object. In an object, imp
+  maps a `camelCase` key to kebab case, and keeps a `--custom` key as it is.
+- **`events`** is an object. Each key is a native DOM event name, with no `on` prefix. Each value is
+  a handler `fn`, or a `[fn, options]` pair that imp passes straight to `addEventListener`. A custom
+  event uses the same shape, as in `'chart-rendered': fn`.
 
 ## Consequences
 
-- The common conditional-class and CSS-variable patterns are expressible at the call site without
-  helper code, which is what agent-authored components need.
-- Native DOM event names (`click`, not `onClick`) mean one naming system for spec and custom events,
-  and `addEventListener` options are available.
-- These three keys are the only deviations from "key = attribute name"; everyone else follows
-  adr/property-first-prop-model.md. The special-casing is enumerable and small.
-- `events` listeners are attached with `addEventListener` and are not auto-removed; callers that
-  detach listeners do so themselves.
+- The common patterns of a conditional class and a CSS variable are expressible at the call site,
+  with no helper code. That is what a component that an agent writes needs.
+- A native DOM event name, such as `click` and not `onClick`, gives one naming system for a spec
+  event and a custom event. The options of `addEventListener` are also available.
+- These three keys are the only deviations from the rule "a key is an attribute name". Every other
+  key follows adr/property-first-prop-model.md. The set of special cases is small, and you can list
+  it.
+- imp attaches an `events` listener with `addEventListener`, and it does not remove the listener
+  automatically. A caller that must detach a listener does that itself.

@@ -11,55 +11,57 @@ imp test --e2e --video vid record each e2e spec as an animated GIF into ./vid
 imp test --e2e --mock      answer the specs' requests from your *.mock.js files
 ```
 
-`imp test` is imp's built-in test runner. It covers two levels of testing through one command and
-one import:
+`imp test` is the built-in test runner of imp. It covers two levels of testing, through one command
+and one import:
 
-- **Unit and integration tests** - files ending in **`.test.js`** run in-process against a simulated
-  browser environment: fast, no browser, no network.
-- **End-to-end tests** - files ending in **`.spec.js`** run against your real app in a real,
-  headless Chrome: `imp test` serves your app exactly like `imp start` does, opens a browser page on
-  it, and hands that page to your spec.
+- **A unit test or an integration test** lives in a file that ends in **`.test.js`**. It runs in
+  process, against a simulated browser environment. It is fast, and it needs no browser and no
+  network.
+- **An end-to-end test** lives in a file that ends in **`.spec.js`**. It runs against your real app,
+  in a real headless Chrome. `imp test` serves your app exactly as `imp start` does, opens a browser
+  page on it, and hands that page to your spec.
 
-There is nothing to install or configure: the runner, the assertion library, and the simulated DOM
-are built into the `imp` binary. The only external piece is the e2e browser, which imp finds or
-fetches for you (see _The browser_ below).
+There is nothing to install and nothing to configure. The runner, the assertion library and the
+simulated DOM are part of the `imp` binary. The only external piece is the e2e browser, and imp
+finds it or fetches it for you. See _The browser_ below.
 
-imp runs **one test file per process** - that is the unit of isolation, so no two files ever share a
-process's globals, timers, module state, or (for e2e) server and browser. `imp test <file>` runs
-exactly that one file in the current process and exits with its result - `0` when everything passed,
-`1` otherwise.
+imp runs **one test file per process**. That is the unit of isolation. So no two files share the
+globals, the timers or the module state of a process. For an e2e file, no two files share a server
+and a browser. `imp test <file>` runs exactly that one file in the current process, and exits with
+its result. The exit code is `0` when everything passed, and `1` otherwise.
 
-To run a whole level, name it and imp does the fan-out for you: `imp test --unit` discovers every
-`*.test.js` file and `imp test --e2e` every `*.spec.js` file, then runs each one in **its own
-process, in parallel**. Passing files collapse to a single `✓ <file>` line; a failing file prints
-its full output so you see exactly what broke (see _Reading results_). The command exits `1` if any
-file failed. (`.git`, `node_modules`, `dist`, and `.imp` are always skipped during discovery.)
+To run a whole level, name it, and imp does the fan-out. `imp test --unit` discovers every
+`*.test.js` file, and `imp test --e2e` discovers every `*.spec.js` file. imp then runs each file in
+**its own process, in parallel**. A file that passes collapses to a single `✓ <file>` line. A file
+that fails prints its full output, so you see exactly what broke. See _How to read the results_. The
+command exits `1` when a file failed. imp always skips `.git`, `node_modules`, `dist` and `.imp`
+during the discovery.
 
-A bare `imp test` with no level and more than one candidate file won't guess - it asks you to pick
-`--unit`, `--e2e`, or a single file, runs nothing, and **exits non-zero**. This keeps imp from ever
-silently running a partial or unintended subset, and makes a stray `imp test` in CI fail the step
-instead of passing green having run no tests.
+A bare `imp test` with no level, and with more than one candidate file, does not guess. It asks you
+to select `--unit`, `--e2e` or a single file. It runs nothing, and it **exits with a non-zero
+code**. This stops imp from running a partial or unintended subset in silence. It also makes a stray
+`imp test` in CI fail the step, instead of passing green with no test run.
 
-Flags:
+The flags are these:
 
-- `--unit` / `--e2e` - run every `.test.js` file, or every `.spec.js` file, each in its own process.
-  Add a path to narrow discovery: `imp test --e2e checkout/`.
-- `--jobs <n>` - cap how many files run at once during a level run. The default is your machine's
-  CPU count; lower it when each file is heavy (e2e specs each launch a browser) or raise it for
-  light unit files.
-- `--filter <text>` - run only tests whose name contains the text; everything else is reported as
+- `--unit` and `--e2e` run every `.test.js` file, or every `.spec.js` file, each one in its own
+  process. Add a path to narrow the discovery, as in `imp test --e2e checkout/`.
+- `--jobs <n>` caps how many files run at the same time during a level run. The default is the CPU
+  count of your machine. Lower it when each file is heavy, because an e2e spec launches a browser.
+  Raise it for a light unit file.
+- `--filter <text>` runs only a test whose name contains the text. imp reports everything else as
   skipped.
-- `--list` - print the selected test files as a JSON array instead of running them (combine with
-  `--unit`/`--e2e` to feed a CI matrix - see _One job per spec in CI_).
-- `--video <dir>` - record each e2e spec's browser session as an animated GIF into `<dir>` (see
-  _Recording a spec as a GIF_).
-- `--mock` / `--no-mock` - serve your project's [mock responses](cli.md#mock-responses--mockjs) to
-  e2e specs, or force them at the real API. Without either flag, specs follow the default in your
-  `imp.json`.
+- `--list` prints the selected test files as a JSON array, and runs nothing. Combine it with
+  `--unit` or `--e2e` to feed a CI matrix. See _One job per spec in CI_.
+- `--video <dir>` records the browser session of each e2e spec as an animated GIF, into `<dir>`. See
+  _How to record a spec as a GIF_.
+- `--mock` and `--no-mock` decide where an e2e spec gets its answers. `--mock` serves the
+  [mock responses](cli.md#mock-responses--mockjs) of your project. `--no-mock` forces the real API.
+  With neither flag, a spec follows the default in your `imp.json`.
 
-## Writing tests
+## How to write a test
 
-Both kinds of test files use the same imports:
+Both kinds of test file use the same imports:
 
 ```js
 import { expect, test } from 'imp/test'
@@ -69,12 +71,12 @@ test('adds numbers', () => {
 })
 ```
 
-`test(name, fn, options?)` registers a test. Tests in a file run in order, one at a time.
+`test(name, fn, options?)` registers a test. The tests in a file run in order, one at a time.
 
-- `test.skip(name, fn)` - register but do not run.
-- `test.only(name, fn)` - when present, only `only` tests in that file run.
-- `options.timeout` - per-test time limit in milliseconds. A test that exceeds it fails. The default
-  is 5 seconds for unit tests and 30 seconds for e2e tests - raise it for long flows:
+- `test.skip(name, fn)` registers a test and does not run it.
+- `test.only(name, fn)` makes imp run only the `only` tests in that file.
+- `options.timeout` is the time limit of one test, in milliseconds. A test that goes past it fails.
+  The default is 5 seconds for a unit test and 30 seconds for an e2e test. Raise it for a long flow:
 
   ```js
   test('full checkout', async ({ page }) => {
@@ -82,14 +84,14 @@ test('adds numbers', () => {
   }, { timeout: 120_000 })
   ```
 
-- `options.fakeTimers` - run this test under a virtual clock and pass it as `clock` in the test
-  context (unit tests only). See [Fake timers](#fake-timers).
+- `options.fakeTimers` runs this test under a virtual clock, and passes the clock as `clock` in the
+  test context. It works in a unit test only. See [Fake timers](#fake-timers).
 
-Hooks run around the tests of their own file: `beforeAll`, `beforeEach`, `afterEach`, `afterAll`
-(imported from `imp/test`). An async test or hook is awaited.
+The hooks run around the tests of their own file. They are `beforeAll`, `beforeEach`, `afterEach`
+and `afterAll`, and they come from `imp/test`. imp awaits an async test and an async hook.
 
-**Parameterized tests are just a loop.** `test()` registers in call order, so there's no special
-`each` helper to learn - generate cases with a plain `for...of`:
+**A parameterized test is a loop.** `test()` registers in the order of the calls. So there is no
+special `each` helper to learn. Generate the cases with a plain `for...of`:
 
 ```js
 for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
@@ -101,7 +103,7 @@ for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
 
 ### Assertions
 
-`expect(value)` returns matchers; every matcher can be inverted with `.not`:
+`expect(value)` returns the matchers. You can invert every matcher with `.not`:
 
 | Matcher                                  | Passes when                                            |
 | ---------------------------------------- | ------------------------------------------------------ |
@@ -112,9 +114,9 @@ for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
 | `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives you `>=` and `<=`)    |
 | `toThrow(message?)`                      | function throws; optionally message contains / matches |
 
-That's the whole set. There's no `toBeInstanceOf`, `toBeCloseTo`, or `toHaveLength`: an instance or
-float-tolerance check is an `expect.*` placeholder inside `toEqual`, and a length is a plain
-comparison - see [Fuzzy matching](#assertions) below.
+That is the whole set. There is no `toBeInstanceOf`, `toBeCloseTo` and `toHaveLength`. A check of an
+instance, or of a float tolerance, is an `expect.*` placeholder inside `toEqual`. A length is a
+plain comparison. See [Fuzzy matching](#assertions) below.
 
 ```js
 expect(node).toEqual(expect.any(HTMLElement)) // was toBeInstanceOf
@@ -124,29 +126,29 @@ expect(items.length).toEqual(3) // was toHaveLength
 
 `toEqual` is the one equality matcher, and it does the obvious thing for each kind of value:
 
-- **data** - numbers, strings, booleans, and plain objects, arrays, `Map`, `Set`, `Date`, `RegExp`
-  (nested to any depth) - compares **by structure**, so `expect(user).toEqual({ name: 'imp' })`
-  passes when the shapes match.
-- **everything else** - DOM nodes, class instances, functions - compares **by identity**, so two
-  different `<button>` elements are never equal even though they look alike;
+- **Data** compares **by structure**. That covers a number, a string, a boolean, a plain object, an
+  array, a `Map`, a `Set`, a `Date` and a `RegExp`, nested to any depth. So
+  `expect(user).toEqual({ name: 'imp' })` passes when the shapes match.
+- **Everything else** compares **by identity**. That covers a DOM node, a class instance and a
+  function. So two different `<button>` elements are never equal, although they look alike.
   `expect(node).toEqual(node)` passes only for the same node.
 
-So there is no `toBe`/`toEqual` decision to make: use `toEqual`. For a truthiness check use
-`toBeTruthy` (and `.not.toBeTruthy()` for falsy); otherwise compare directly -
-`expect(value).toEqual(null)`, `expect(user?.name).toEqual('imp')`. `toThrow` also understands async
-functions - `await expect(fn).toThrow('boom')` awaits the rejection.
+So there is no decision to make between `toBe` and `toEqual`. Use `toEqual`. For a truthiness check
+use `toBeTruthy`, and `.not.toBeTruthy()` for a falsy value. Otherwise compare directly, as in
+`expect(value).toEqual(null)` and `expect(user?.name).toEqual('imp')`. `toThrow` also understands an
+async function. `await expect(fn).toThrow('boom')` awaits the rejection.
 
-To check only **some** of an object's fields (and ignore the rest), compare a projection - pick the
-fields you care about and `toEqual` those:
+To check only **some** fields of an object, and to ignore the rest, compare a projection. Select the
+fields that you care about, and pass them to `toEqual`:
 
 ```js
 const { firstName, lastName } = user
 expect({ firstName, lastName }).toEqual({ firstName: 'Adam', lastName: 'Smith' })
 ```
 
-**Fuzzy matching.** When you don't know (or don't care about) an exact value, drop an `expect.*`
-placeholder anywhere inside the value you pass to `toEqual` (or `toContain`) - it matches a _shape_
-rather than a literal. They nest, and they're especially handy for `spy.calls`:
+**Fuzzy matching.** When you do not know an exact value, or do not care about it, put an `expect.*`
+placeholder anywhere inside the value that you pass to `toEqual` or `toContain`. A placeholder
+matches a _shape_, not a literal. Placeholders nest, and they help most with `spy.calls`:
 
 ```js
 expect(user).toEqual({ id: expect.any(Number), name: expect.stringContaining('mp') })
@@ -163,7 +165,7 @@ expect(save.calls).toEqual([[expect.objectContaining({ id: 1 })]])
 | `expect.objectContaining(obj)` | an object with at least those properties                      |
 | `expect.closeTo(n, digits?)`   | a number within a floating-point tolerance of `n`             |
 
-A failed assertion reports what was expected and what was received:
+A failed assertion reports what imp expected and what it received:
 
 ```
 ✗ wrong sum (1ms)
@@ -174,15 +176,15 @@ A failed assertion reports what was expected and what was received:
 
 ## Mocking
 
-Mocking in imp is two ideas: **`spy`** replaces a function (or a method), and **`mockModule`**
-replaces a whole module. There is nothing else to learn - a spy's behavior is just a function you
-write, and what it recorded is a plain array you assert with the matchers you already have.
+Mocking in imp is two ideas. **`spy`** replaces a function, or a method. **`mockModule`** replaces a
+whole module. There is nothing else to learn. The behaviour of a spy is a function that you write,
+and what the spy recorded is a plain array that you assert with the matchers that you already have.
 
 ### Spies - `spy`
 
-`spy(fn?)` returns a **spy**: a function that records every call in `spy.calls` and otherwise does
-whatever you tell it to. You tell it by passing a function - there are no `.mockReturnValue`-style
-methods to remember, because a plain function already covers every case:
+`spy(fn?)` returns a **spy**. That is a function that records every call in `spy.calls`, and
+otherwise does what you tell it to do. You tell it by passing a function. There is no
+`.mockReturnValue` method to remember, because a plain function already covers every case:
 
 ```js
 import { expect, spy, test } from 'imp/test'
@@ -194,8 +196,8 @@ test('calls the handler with the payload', () => {
 })
 ```
 
-`spy.calls` is an array of argument lists - one entry per call - so you assert on it with the
-matchers you already have:
+`spy.calls` is an array of argument lists, with one entry per call. So you assert on it with the
+matchers that you already have:
 
 ```js
 expect(fetchThing.calls).toEqual([['/me']]) // called exactly once, with '/me'
@@ -203,7 +205,7 @@ expect(fetchThing.calls).toContain(['/me']) // called with '/me' at least once
 expect(fetchThing.calls.length).toEqual(2) // called twice
 ```
 
-Whatever the spy should **do**, write it as the function you pass:
+Whatever the spy must **do**, write it as the function that you pass:
 
 | You want the spy to...     | Write                                      |
 | -------------------------- | ------------------------------------------ |
@@ -213,8 +215,8 @@ Whatever the spy should **do**, write it as the function you pass:
 | reject / throw             | `spy(() => { throw new Error('boom') })`   |
 | behave differently by call | `spy(() => (count++ ? 'again' : 'first'))` |
 
-**Spying on a method.** Give `spy` an object and a method name and it wraps that method in place,
-still calling the original by default, and hands you the spy:
+**How to spy on a method.** Give `spy` an object and a method name. It wraps that method in place.
+By default it still calls the original, and it gives you the spy:
 
 ```js
 test('logs the greeting', () => {
@@ -224,17 +226,18 @@ test('logs the greeting', () => {
 })
 ```
 
-Pass a third argument to change the behavior too: `spy(console, 'info', () => {})` silences it.
+Pass a third argument to change the behaviour as well. `spy(console, 'info', () => {})` silences the
+method.
 
-**No cleanup to write.** imp runs each test on its own, and between tests it clears every spy's
-`calls` and restores every method you wrapped - so a `spy(console, 'info')` in one test is gone by
-the next, and there is nothing to reset by hand.
+**There is no cleanup to write.** imp runs each test on its own. Between tests it clears the `calls`
+of every spy, and restores every method that you wrapped. So a `spy(console, 'info')` in one test is
+gone in the next test, and you reset nothing by hand.
 
-### Mocking modules - `mockModule`
+### How to mock a module - `mockModule`
 
 `mockModule(specifier, factory)` replaces a whole module for the file under test. Every import of
-that module - from your test, from the component you're testing, and from anything **it** imports,
-at any depth - resolves to what your factory returns:
+that module resolves to what your factory returns. That covers an import from your test, from the
+component that you test, and from anything that **it** imports, at any depth:
 
 ```js
 import { expect, mockModule, spy, test } from 'imp/test'
@@ -251,18 +254,20 @@ test('renders the profile without touching the network', async () => {
 })
 ```
 
-`profile.js` reaches `http.js` through `'../http.js'` and your test through `'./http.js'` -
-different paths, **same file**, so one `mockModule('./http.js', ...)` covers both. imp matches the
-module by the file it resolves to, not by how the import is spelled.
+`profile.js` reaches `http.js` through `'../http.js'`, and your test reaches it through
+`'./http.js'`. The paths differ, but the **file is the same**. So one `mockModule('./http.js', ...)`
+covers both. imp matches the module by the file that it resolves to, not by the spelling of the
+import.
 
-**How it works.** The factory returns the module's exports and receives `{ spy, orig }`:
+**How it works.** The factory returns the exports of the module, and it receives `{ spy, orig }`:
 
-- `specifier` is written relative to your test file (`'./http.js'`), or is the **dependency alias**
-  from `imp.json` for an npm/jsr package (`'mitt'`). Both are matched everywhere they're imported.
-- `spy` is the same helper as above (use it so the mocked functions record their calls); `orig()`
-  returns the **real** module, for partial mocks (see below).
-- The returned object's keys become the module's exports. Use the `default` key to mock a default
-  export:
+- Write `specifier` relative to your test file, as in `'./http.js'`. For an npm or jsr package, use
+  the **dependency alias** from `imp.json`, as in `'mitt'`. imp matches both everywhere they are
+  imported.
+- `spy` is the same helper as above. Use it so that the mocked functions record their calls.
+  `orig()` returns the **real** module, for a partial mock. See below.
+- The keys of the returned object become the exports of the module. Use the `default` key to mock a
+  default export:
 
   ```js
   import newEmitter from 'mitt'
@@ -272,11 +277,11 @@ module by the file it resolves to, not by how the import is spelled.
   }))
   ```
 
-- Any export you **don't** return is auto-filled with a fresh `spy()`, so `mockModule('./http.js')`
-  with no factory turns every export of `http.js` into a no-op spy.
+- imp fills an export that you do **not** return with a fresh `spy()`. So `mockModule('./http.js')`
+  with no factory turns every export of `http.js` into a spy that does nothing.
 
-**Partial mocks - `orig`.** For integration tests, keep most of a module real and replace only the
-part you care about. `orig()` gives you the real module; spread it and override:
+**A partial mock, with `orig`.** For an integration test, keep most of a module real, and replace
+only the part that you care about. `orig()` gives you the real module. Spread it, and override:
 
 ```js
 mockModule('./math.js', ({ spy, orig }) => ({
@@ -285,23 +290,23 @@ mockModule('./math.js', ({ spy, orig }) => ({
 }))
 ```
 
-Mocking is scoped to **one test file**: since imp runs each test file in its own process, a module's
-mock applies to every test in that file and never leaks to another file.
+A mock is scoped to **one test file**. imp runs each test file in its own process. So the mock of a
+module applies to every test in that file, and it never leaks to another file.
 
-**A few rules to keep it simple and fast:**
+**A few rules keep this simple and fast:**
 
-- Call it `mockModule` (don't rename the import), and pass a **string literal** as the first
-  argument - imp reads these before running your test, so the specifier can't be a variable.
-- The factory can't reach your test file's variables - it runs in the mocked module, not in your
-  test. Use the injected `spy` / `orig`, not ones you closed over.
-- A mock replaces the surface of the real module: the exports you can use are the real module's
-  exports (overridden by your factory, or auto-spied).
+- Call it `mockModule`, and do not rename the import. Pass a **string literal** as the first
+  argument. imp reads these before it runs your test, so the specifier cannot be a variable.
+- The factory cannot reach the variables of your test file. It runs in the mocked module, not in
+  your test. Use the injected `spy` and `orig`, not ones that you closed over.
+- A mock replaces the surface of the real module. The exports that you can use are the exports of
+  the real module, overridden by your factory or filled with a spy.
 
 ## Unit tests - `*.test.js`
 
-Unit test files run in-process with a fresh simulated browser environment per file: `document`,
-`window`, elements, events, `localStorage`, and the rest of the DOM API are there, so components
-render and behave like they do in a page - without starting one:
+A unit test file runs in process, with a fresh simulated browser environment per file. `document`,
+`window`, the elements, the events, `localStorage` and the rest of the DOM API are there. So a
+component renders and behaves as it does in a page, and you start no page:
 
 ```js
 import { mount } from 'imp'
@@ -323,27 +328,29 @@ test('reacts to clicks', () => {
 })
 ```
 
-Your whole module graph is available: relative imports, `imp`, and every vendored dependency alias
-resolve exactly like they do under `imp start`. Each file gets its own DOM - tests in one file share
-it (reset what you need in `beforeEach`), separate files never see each other's state.
+Your whole module graph is available. A relative import, `imp`, and every vendored dependency alias
+resolve exactly as they do under `imp start`. Each file gets its own DOM. The tests in one file
+share that DOM, so reset what you need in `beforeEach`. Two separate files never see the state of
+each other.
 
-Components render into shadow roots, so `document.querySelector` does not see their internals -
-reach in through the host's `shadowRoot`:
+A component renders into a shadow root. So `document.querySelector` does not see its internals. Go
+in through the `shadowRoot` of the host:
 
 ```js
 const card = document.querySelector('my-app-card')
 card.shadowRoot.querySelector('button').click()
 ```
 
-`document`, `window`, and the rest of the DOM are globals, so use them directly - just like in the
-browser. Unit test callbacks receive a context only when there's something that _isn't_ global to
-hand over, namely `clock` under [fake timers](#fake-timers).
+`document`, `window` and the rest of the DOM are globals. Use them directly, as in the browser. A
+unit test callback receives a context only when there is something that is _not_ global to hand
+over. That is `clock`, under [fake timers](#fake-timers).
 
 ### Fake timers
 
-Time-dependent code - debouncing, throttling, polling, retry backoff, animations - shouldn't force
-your tests to wait in real time. Add `{ fakeTimers: true }` to a unit test's options and imp runs it
-under a virtual clock, handed to you as `clock` in the test context - you advance time by hand:
+Code that depends on time must not make your test wait in real time. That covers debouncing,
+throttling, polling, a retry backoff and an animation. Add `{ fakeTimers: true }` to the options of
+a unit test. imp then runs the test under a virtual clock, and gives you the clock as `clock` in the
+test context. You advance the time by hand:
 
 ```js
 import { expect, test } from 'imp/test'
@@ -362,13 +369,15 @@ test('debounce fires once, 300ms after the last call', async ({ clock }) => {
 }, { fakeTimers: true })
 ```
 
-While fake timers are on, `setTimeout`, `setInterval`, `requestAnimationFrame`, `Date` (`Date.now()`
-and `new Date()`), and `performance.now()` all read from virtual time - nothing fires until you
-advance it. imp installs the clock before the test (and its `beforeEach`/`afterEach` hooks, which
-receive the same `clock`) and restores the real timers afterward, so there is nothing to clean up.
+While the fake timers are on, `setTimeout`, `setInterval`, `requestAnimationFrame`, `Date`, which is
+`Date.now()` and `new Date()`, and `performance.now()` all read the virtual time. Nothing fires
+until you advance it. imp installs the clock before the test, and before its `beforeEach` and
+`afterEach` hooks, which receive the same `clock`. imp restores the real timers afterward. So there
+is nothing to clean up.
 
-Control the clock through the `clock` handle - `tick` and `runAll` are async (`await` them) and
-flush awaited work between timers, so async code sees the state each timer produced:
+Control the clock through the `clock` handle. `tick` and `runAll` are async, so `await` them. They
+also flush the awaited work between two timers. So async code sees the state that each timer
+produced:
 
 | Call                   | Does                                                            |
 | ---------------------- | --------------------------------------------------------------- |
@@ -377,8 +386,8 @@ flush awaited work between timers, so async code sees the state each timer produ
 | `clock.now`            | current virtual time, in milliseconds                           |
 | `clock.restore()`      | switch back to real timers before the test ends (rarely needed) |
 
-Start the clock at a fixed instant when your code reads the wall clock - pass `now` (a number or a
-`Date`) instead of `true`:
+Start the clock at a fixed instant when your code reads the wall clock. Pass `now`, which is a
+number or a `Date`, in place of `true`:
 
 ```js
 test('renews the token on the first of the year', ({ clock }) => {
@@ -387,8 +396,8 @@ test('renews the token on the first of the year', ({ clock }) => {
 }, { fakeTimers: { now: new Date('2030-01-01') } })
 ```
 
-Because `tick` flushes pending promise callbacks as it advances, async flows that `await` between
-timers just work - the next timer sees the state the awaits produced:
+`tick` flushes the pending promise callbacks while it advances. So an async flow that awaits between
+two timers works. The next timer sees the state that the awaits produced:
 
 ```js
 test('retries after a 1s backoff', async ({ clock }) => {
@@ -398,18 +407,19 @@ test('retries after a 1s backoff', async ({ clock }) => {
 }, { fakeTimers: true })
 ```
 
-Fake timers are a unit-test tool. E2E specs run against a real browser, where time belongs to the
-page - drive it through Puppeteer (`page.evaluateOnNewDocument`, the CDP clock) instead; setting
-`fakeTimers` on a spec fails, reporting that it is unit-only.
+Fake timers are a tool for a unit test. An e2e spec runs against a real browser, where the time
+belongs to the page. Drive it through Puppeteer instead, with `page.evaluateOnNewDocument` or the
+CDP clock. `fakeTimers` on a spec fails, and the message says that the option is for a unit test
+only.
 
 ## E2E tests - `*.spec.js`
 
-Every spec file gets a fresh, fully isolated app instance:
+Every spec file gets a fresh, fully isolated instance of the app. imp does four things:
 
-1. imp serves your app (the same `index.html` that `imp start` serves, on an ephemeral port),
-2. launches a headless browser,
-3. opens a page on your app,
-4. and runs your tests in order, passing `{ page, browser, baseUrl }` to each.
+1. It serves your app, on an ephemeral port. That is the same `index.html` that `imp start` serves.
+2. It launches a headless browser.
+3. It opens a page on your app.
+4. It runs your tests in order, and passes `{ page, browser, baseUrl }` to each one.
 
 ```js
 import { expect, test } from 'imp/test'
@@ -424,15 +434,15 @@ test('increments on click', async ({ page }) => {
 })
 ```
 
-`page` is a [Puppeteer](https://pptr.dev) page - `goto`, `click`, `type`, `$eval`,
-`waitForSelector`, screenshots, everything Puppeteer offers - with one difference: **its selectors
-see through shadow roots.** The page is already on your app when the first test runs; tests within a
-file share it, so a file reads as one user session: log in once in `beforeAll` (or your first test),
-then drive the flow step by step.
+`page` is a [Puppeteer](https://pptr.dev) page. It has `goto`, `click`, `type`, `$eval`,
+`waitForSelector`, a screenshot, and everything else that Puppeteer offers. There is one difference:
+**its selectors see through a shadow root.** The page is already on your app when the first test
+runs. The tests in a file share the page, so a file reads as one user session. Sign in once, in
+`beforeAll` or in your first test, and then drive the flow step by step.
 
-Components render into shadow roots, so a plain CSS selector would normally stop at the component
-boundary. imp searches through them for you, and an ordinary selector finds an element wherever it
-lives:
+A component renders into a shadow root. So a plain CSS selector would normally stop at the boundary
+of the component. imp searches through the boundary for you, and an ordinary selector finds an
+element wherever it lives:
 
 ```js
 await page.type('#draft', 'ship it')
@@ -440,20 +450,20 @@ await page.click('#add')
 expect(await page.$eval('#count', (el) => el.textContent)).toEqual('1 left')
 ```
 
-The search is deep, so a selector that matches in more than one component is ambiguous. Name the
-path with `>>>` between the parts to say exactly which one you mean - each `>>>` crosses one
+The search is deep. So a selector that matches in more than one component is ambiguous. Name the
+path with `>>>` between the parts, to say exactly which one you mean. Each `>>>` crosses one
 component boundary:
 
 ```js
 await page.click('imp-submit-button >>> imp-button >>> button')
 ```
 
-While specs run, the browser stays connected to your terminal the same way `imp start` is:
-`console.*`, uncaught errors, and every network request stream in as `[browser:*]` and `[net]`
-lines, so a failing spec comes with the context that explains it. When a test fails, imp also saves
-a screenshot of the page under `.imp/screenshots/` (add `.imp/` to your `.gitignore`).
+While a spec runs, the browser stays connected to your terminal, as it does with `imp start`.
+`console.*`, an uncaught error, and every network request arrive as a `[browser:*]` line and a
+`[net]` line. So a failing spec comes with the context that explains it. When a test fails, imp also
+saves a screenshot of the page under `.imp/screenshots/`. Add `.imp/` to your `.gitignore`.
 
-If your app's entry page is not `index.html`, set it in `imp.json`:
+When the entry page of your app is not `index.html`, set it in `imp.json`:
 
 ```json
 {
@@ -461,36 +471,36 @@ If your app's entry page is not `index.html`, set it in `imp.json`:
 }
 ```
 
-Specs run against the same server `imp start` runs, so a project with
-**[mock responses](cli.md#mock-responses--mockjs)** can point them at fixtures instead of a backend:
-`imp test --e2e --mock` makes the `*.mock.js` files answer your app's requests during the spec, with
-no stub and no configuration in the test. `--no-mock` forces a run against the real API, and with
-neither flag the suite follows the default in your `imp.json`.
+A spec runs against the same server as `imp start`. So a project with
+**[mock responses](cli.md#mock-responses--mockjs)** can point a spec at a fixture in place of a
+backend. `imp test --e2e --mock` makes the `*.mock.js` files answer the requests of your app during
+the spec. There is no stub, and there is no configuration in the test. `--no-mock` forces a run
+against the real API. With neither flag, the suite follows the default in your `imp.json`.
 
-### Recording a spec as a GIF
+### How to record a spec as a GIF
 
-imp can record an e2e spec's whole browser session as an animated **GIF** - a short clip of your app
-actually being driven. Turn it on with `--video <dir>`:
+imp can record the whole browser session of an e2e spec as an animated **GIF**. That is a short clip
+of your app while imp drives it. Turn it on with `--video <dir>`:
 
 ```bash
 imp test --e2e --video videos     # one GIF per spec, written into ./videos
 imp test checkout.spec.js --video videos
 ```
 
-Each spec file produces one GIF named after it (for example `videos/checkout.spec.js.gif`),
-capturing the session from the moment the page loads through the last test in the file. There's
-nothing to add to the spec - recording the session is automatic when the flag (or config) is on, and
-imp always writes whatever it captured even if a test throws partway through.
+Each spec file produces one GIF, named after the file, for example `videos/checkout.spec.js.gif`. It
+captures the session from the moment when the page loads, to the last test in the file. You add
+nothing to the spec. imp records the session automatically when the flag, or the configuration, is
+on. imp always writes what it captured, also when a test throws part way through.
 
-**Why a GIF?** It embeds inline in a GitHub pull request's markdown, so a reviewer sees the clip
-play without downloading anything. That's the point of the feature: an AI agent (or anyone) building
-a frontend change can record the new behaviour and drop the GIF straight into the PR, letting a
-human reviewer double-check that the feature actually works and that its look and feel are right - a
-moving picture the written description can't convey. Just drag the file into the PR comment box, or
-commit it and reference it, and it plays in the thread.
+**Why a GIF?** A GIF embeds inline in the markdown of a GitHub pull request. So a reviewer sees the
+clip play, and downloads nothing. That is the purpose of the feature. An AI agent, or anybody, who
+builds a frontend change can record the new behaviour and put the GIF straight into the pull
+request. A human reviewer can then check that the feature works, and that its look and feel are
+correct. A moving picture shows what the written description cannot. Drag the file into the comment
+box of the pull request, or commit it and reference it, and it plays in the thread.
 
-Clips are meant to be lightweight review aids, so imp keeps them short, downscaled, and modest-fps
-by default. Tune any of that under `test.video` in `imp.json`:
+A clip is a lightweight aid for a review. So imp keeps it short, downscaled, and at a modest frame
+rate by default. Tune any of that under `test.video` in `imp.json`:
 
 ```json
 {
@@ -506,57 +516,61 @@ by default. Tune any of that under `test.video` in `imp.json`:
 }
 ```
 
-- **`enable`** - record without passing `--video` on every run (writes to `.imp/videos/` by default;
-  add `.imp/` to your `.gitignore`). A `--video <dir>` flag still overrides the output directory.
-- **`fps`** - target frames per second (frames are thinned to this rate).
-- **`maxDuration`** - cap the clip length in seconds; capture past this point is dropped.
-- **`width`** - downscale the recording to this width in pixels (height follows the aspect ratio).
-- **`quality`** - capture quality from 1-100; lower means smaller files.
+- **`enable`** records without a `--video` flag on every run. imp writes to `.imp/videos/` by
+  default, so add `.imp/` to your `.gitignore`. A `--video <dir>` flag still overrides the output
+  directory.
+- **`fps`** is the target number of frames per second. imp thins the frames to this rate.
+- **`maxDuration`** caps the length of the clip, in seconds. imp drops the capture after that point.
+- **`width`** downscales the recording to this width, in pixels. The height follows the aspect
+  ratio.
+- **`quality`** is the capture quality, from 1 to 100. A lower value gives a smaller file.
 
-Recording adds a little capture and encoding time per spec, so it stays off unless you ask for it -
-a plain `imp test --e2e` records nothing.
+A recording adds a little capture time and encoding time per spec. So it stays off until you ask for
+it. A plain `imp test --e2e` records nothing.
 
 ### The browser
 
-E2E tests need a Chrome or Chromium binary. imp resolves one in this order:
+An e2e test needs a Chrome or Chromium binary. imp resolves one in this order:
 
-1. **`test.browser` in `imp.json`** - an explicit path to a browser executable.
-2. **`IMP_BROWSER`** environment variable - same, for CI or one-off overrides.
-3. **An installed browser** - Chrome or Chromium found on your system (on GitHub Actions runners,
-   the preinstalled Chrome is picked up automatically - no setup step needed).
-4. **A managed download** - otherwise imp downloads a pinned, checksum-verified Chrome build once
-   into `~/.imp/browser/` (per user, never inside your project) and reuses it from then on.
+1. **`test.browser` in `imp.json`**, which is an explicit path to a browser executable.
+2. **The `IMP_BROWSER` environment variable**, which is the same, for CI or for a single override.
+3. **An installed browser.** imp finds Chrome or Chromium on your system. On a GitHub Actions
+   runner, imp uses the preinstalled Chrome, and you need no setup step.
+4. **A managed download.** Otherwise imp downloads a pinned Chrome build once, and verifies its
+   checksum. It stores the build in `~/.imp/browser/`, per user and never inside your project, and
+   it uses that build from then on.
 
-## Running in parallel
+## How to run tests in parallel
 
-Because every `imp test <file>` is self-contained - a unit file gets its own fresh simulated DOM, a
-spec file gets its own server, port, and browser, and nothing is shared between files - files can
-run at the same time without interfering. `imp test --unit` and `imp test --e2e` do exactly that:
-each names a level, and imp runs every file of that level in its own process, several at a time.
+Every `imp test <file>` is self-contained. A unit file gets its own fresh simulated DOM. A spec file
+gets its own server, port and browser. Nothing is shared between files. So the files can run at the
+same time, and they do not interfere. `imp test --unit` and `imp test --e2e` do exactly that. Each
+one names a level, and imp runs every file of that level in its own process, several at a time.
 
 ```bash
 imp test --unit            # every *.test.js, in parallel across your CPU cores
 imp test --e2e --jobs 2    # every *.spec.js, at most two browsers alive at once
 ```
 
-`--jobs <n>` sets how many files run concurrently. It defaults to your machine's CPU count; drop it
-for heavy e2e specs, raise it for light unit files. Files that pass are summarized in one line;
-files that fail print their full output.
+`--jobs <n>` sets how many files run at the same time. It defaults to the CPU count of your machine.
+Lower it for a heavy e2e spec, and raise it for a light unit file. imp summarizes a file that passes
+in one line. A file that fails prints its full output.
 
-When you want to spread files across **more than one machine** - a CI matrix, where imp on one
-runner can't schedule work on another - use `--list` instead. It prints the selected files as a JSON
-array (narrowed by `--unit`/`--e2e`) for the matrix to hand out, one file per job:
+To spread the files across **more than one machine**, use `--list`. imp on one runner cannot
+schedule work on another, which is the case in a CI matrix. `--list` prints the selected files as a
+JSON array, narrowed by `--unit` or `--e2e`. The matrix then hands them out, one file per job.
 
 ### One job per spec in CI
 
-E2E suites get slow because everything runs in sequence in one browser. imp's answer: since
-`imp test <file>.spec.js` is completely self-contained, you can run every spec file on its own
-machine at the same time. Splitting your suite into one spec per user flow (login, checkout, search,
-...) turns total e2e time into the time of the slowest flow. The trade-off is that each spec repeats
-its own setup (for example logging in), which is exactly what makes it independent.
+An e2e suite becomes slow because everything runs in sequence, in one browser. The answer of imp is
+this. `imp test <file>.spec.js` is completely self-contained. So you can run every spec file on its
+own machine, at the same time. Split your suite into one spec per user flow, such as a sign-in, a
+checkout and a search. The total e2e time then becomes the time of the slowest flow. The trade is
+that each spec repeats its own setup, such as a sign-in. That repetition is what makes it
+independent.
 
-`imp test --e2e --list` prints the spec files as JSON, which plugs straight into a GitHub Actions
-matrix - one job per spec file, no hardcoded file list to maintain:
+`imp test --e2e --list` prints the spec files as JSON. That goes straight into a GitHub Actions
+matrix, with one job per spec file, and no fixed list of files to maintain:
 
 ```yaml
 jobs:
@@ -587,23 +601,24 @@ jobs:
       - run: imp test ${{ matrix.spec }}
 ```
 
-(The steps assume the `imp` binary is on the runner's `PATH`.) A fresh clone is the whole app -
-dependencies are vendored in your repository - so there is no install step, and the runner's
-preinstalled Chrome means no browser setup either. Failure screenshots land in `.imp/screenshots/`;
-add an `actions/upload-artifact` step if you want them attached to the run.
+The steps assume that the `imp` binary is on the `PATH` of the runner. A fresh clone is the whole
+app, because your repository holds the vendored dependencies. So there is no install step. The
+preinstalled Chrome of the runner means that there is no browser setup either. A failure screenshot
+arrives in `.imp/screenshots/`. Add an `actions/upload-artifact` step when you want the screenshots
+attached to the run.
 
-## Reading results
+## How to read the results
 
-There is no report format to configure - `imp test` writes plain text to **stdout**. For a single
-file (`imp test <file>`) it prints a line per test (`✓` passed, `✗` failed, `-` skipped) and a
-one-line summary; a failing test prints its name and the assertion message right where it failed, so
-the log alone tells you what broke.
+There is no report format to configure. `imp test` writes plain text to **stdout**. For a single
+file, with `imp test <file>`, it prints one line per test. `✓` is passed, `✗` is failed and `-` is
+skipped. It then prints a summary of one line. A failing test prints its name and the assertion
+message where it failed. So the log alone tells you what broke.
 
-A level run (`--unit` / `--e2e`) keeps that output focused on what matters. Since files run in
-parallel, imp collects each file's result and reports **failure-only detail**: every passing file is
-one `✓ <file>` line, and every failing file is reproduced with the full output that single file
-would have printed on its own - the failed assertions, messages, and any forwarded browser logs. A
-final line tallies how many files passed and failed:
+A level run, with `--unit` or `--e2e`, keeps the output focused on what matters. The files run in
+parallel. imp collects the result of each file, and reports **detail for a failure only**. Every
+passing file is one `✓ <file>` line. Every failing file appears with the full output that the file
+would print on its own. That is the failed assertions, the messages, and any forwarded browser log.
+A final line counts how many files passed and how many failed:
 
 ```
 imp test: running 12 files in parallel
@@ -621,12 +636,12 @@ imp test: running 12 files in parallel
 imp test: 11 passed, 1 failed (12 files)
 ```
 
-The exit code is `0` when everything passed and `1` otherwise, which is all a CI step needs to go
-red or green. This keeps the output easy to read directly - whether by a person scanning the log or
-an AI agent driving `imp test` and reading its stdout.
+The exit code is `0` when everything passed, and `1` otherwise. That is all that a CI step needs to
+go red or green. So the output stays easy to read directly, for a person who scans the log and for
+an AI agent that drives `imp test` and reads its stdout.
 
-The one machine-readable surface is `--list`, which prints the files that _would_ run as a JSON
-array - it describes the selection to fan out across a CI matrix, not how a run went.
+The one machine-readable surface is `--list`. It prints, as a JSON array, the files that _would_
+run. It describes the selection to spread across a CI matrix. It does not describe how a run went.
 
 ## Configuration
 
@@ -642,10 +657,10 @@ Everything is optional, under `test` in `imp.json`:
 }
 ```
 
-- **`entry`** - the HTML page served to e2e specs (default: `index.html`).
-- **`browser`** - path to the browser executable for e2e tests (default: resolve as described
-  above).
-- **`exclude`** - paths skipped during test discovery.
-- **`video`** - record e2e specs as GIFs; set `enable` to record without the `--video` flag, and
-  tune `fps`, `maxDuration`, `width`, and `quality` (see
-  [Recording a spec as a GIF](#recording-a-spec-as-a-gif)).
+- **`entry`** is the HTML page that imp serves to an e2e spec. The default is `index.html`.
+- **`browser`** is the path to the browser executable for an e2e test. The default is the resolution
+  described above.
+- **`exclude`** lists the paths that imp skips during the test discovery.
+- **`video`** records an e2e spec as a GIF. Set `enable` to record without the `--video` flag. Tune
+  `fps`, `maxDuration`, `width` and `quality`. See
+  [How to record a spec as a GIF](#how-to-record-a-spec-as-a-gif).

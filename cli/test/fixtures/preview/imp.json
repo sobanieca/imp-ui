@@ -2,6 +2,7 @@
   "preview": {
     "exclude": ["ignored"],
     "themes": ["theme/brand.js"],
+    "groups": "preview-groups.js",
     "translations": { "en": "locales/en.js", "pl": "locales/pl.js", "ar": "locales/ar.js" }
   }
 }

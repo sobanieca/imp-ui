@@ -6,10 +6,11 @@ import { toggle } from 'imp/std/inputs'
 toggle({ field: 'notifications', label: 'Notifications' })
 ```
 
-Call shape: `toggle(props?)` - the text beside the switch is the `label` prop, not children.
+The call shape is `toggle(props?)`. The text beside the switch is the `label` prop, not a child.
 
-It is `checkbox` drawn as a switch and announced as one (`role="switch"`). Reach for it in settings,
-where flipping it _is_ the action; reach for `checkbox` in a form the user submits.
+The component is `checkbox`, drawn as a switch and announced as a switch, with `role="switch"`. Use
+it in settings, where a change of the switch is the action. Use `checkbox` in a form that the person
+submits.
 
 | Prop        | Values                                     | Notes                                       |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
@@ -21,19 +22,21 @@ where flipping it _is_ the action; reach for `checkbox` in a form the user submi
 | `required`  | boolean                                    | Marks it and validates that it is filled in |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                          |
 
-Also: `validate`, and `validateAsync` for a check that runs on blur and submit.
+The other props are `validate`, and `validateAsync` for a check that runs on blur and on submit.
 
 Rules an agent gets wrong:
 
-- **`field` and `value` are alternatives.** Inside a form use `field`; passing both warns and
+- **`field` and `value` are alternatives.** Inside a form, use `field`. With both, imp warns and
   `field` wins. A `field` with no form around it is an error.
-- **An error only shows once the field has been left or submit was attempted**, so a form does not
-  shout at someone still filling in the first box.
-- **The label sits beside the switch**, and clicking it flips the switch.
+- **An error shows only after the person leaves the field, or tries to submit.** So the form does
+  not report a problem while the person still fills in the first box.
+- **The label sits beside the switch.** A click on the label changes the switch.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
-- Unknown props warn at mount, and an out-of-range value warns and falls back.
-- **A switch implies it applies at once.** If the change only lands on submit, use `checkbox`.
-- **It is still a checkbox underneath**, so it is reached with Tab and flipped with Space.
+- imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
+  to the default.
+- **A switch tells the person that the change applies immediately.** When the change applies on
+  submit only, use `checkbox`.
+- **The control is still a checkbox underneath.** So Tab reaches it, and Space changes it.
 
 ```js
 toggle({ field: 'notifications', label: 'Notifications' })

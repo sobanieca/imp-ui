@@ -8,13 +8,14 @@ icon(luUser)
 icon(luUser, { size: 'lg', color: 'primary', label: 'Account' })
 ```
 
-`imp/icons` exports Lucide 1.38.0 as one plain-data name per icon - 1791 of them. An icon is the
-list of shapes that draws it, `[['path', { d: '...' }], ['circle', { cx: '12', ... }]]`, on a 24x24
-grid stroked in the current colour; nothing renders it but `icon`.
+`imp/icons` exports Lucide 1.38.0 as one plain-data name per icon. There are 1791 names. An icon is
+the list of shapes that draws it, for example
+`[['path', { d: '...' }], ['circle', { cx: '12', ... }]]`. The shapes sit on a 24x24 grid and take
+the current colour. Only `icon` renders them.
 
 ## Naming
 
-The export is `lu` plus the Lucide icon name in PascalCase.
+The export name is `lu` plus the Lucide icon name in PascalCase.
 
 | Lucide name    | Export          |
 | -------------- | --------------- |
@@ -23,13 +24,13 @@ The export is `lu` plus the Lucide icon name in PascalCase.
 | `chart-column` | `luChartColumn` |
 | `trash-2`      | `luTrash2`      |
 
-Search the set at <https://lucide.dev/icons>, read the icon's name off the page and prefix it. There
-is one style - Lucide has no filled or outline variants, and no brand logos.
+Search the set at <https://lucide.dev/icons>. Read the name of the icon off the page and add the
+prefix. There is one style. Lucide has no filled variant, no outline variant and no brand logo.
 
-## Drawing one
+## How to draw one
 
-`icon` comes from `imp/std`, takes the icon positionally or as the `icon` prop, and takes no
-content. Full prop table: `imp skill std/icon`.
+`icon` comes from `imp/std`. It takes the icon positionally, or as the `icon` prop. It takes no
+content. For the full prop table, run `imp skill std/icon`.
 
 | Prop    | Values                                    | Default     |
 | ------- | ----------------------------------------- | ----------- |
@@ -40,33 +41,34 @@ content. Full prop table: `imp skill std/icon`.
 
 Rules an agent gets wrong:
 
-- **Never `import * as icons from 'imp/icons'`, and never index the module.** Each name is carried
-  on its own and everything unimported is dropped, but a namespace import or a computed lookup pins
-  all 1791 icons into the app. There is no `icon('house')` string form for that reason. A namespace
-  import, an `export *` re-export or a dynamic `import()` of `imp/icons` is an `imp/icons-by-name`
-  lint error.
-- **The old name is not the new one.** Lucide renames icons between releases and imp ships one
-  release, so `luHome` does not exist - it is `luHouse`, and the drop-down arrow is `luChevronDown`.
-  An unknown export is a build error naming the import, not a runtime warning.
+- **Never write `import * as icons from 'imp/icons'`, and never index the module.** imp carries each
+  name on its own and drops every name that you do not import. A namespace import or a computed
+  lookup pins all 1791 icons into the app. For that reason there is no `icon('house')` string form.
+  A namespace import, an `export *` re-export or a dynamic `import()` of `imp/icons` is an
+  `imp/icons-by-name` lint error.
+- **An old name is not the new name.** Lucide renames an icon between releases, and imp ships one
+  release. So `luHome` does not exist. The name is `luHouse`, and the drop-down arrow is
+  `luChevronDown`. An unknown export is a build error that names the import. It is not a runtime
+  warning.
 - **An icon imported from `imp` or another framework specifier** is an `imp/import-source` lint
-  error, and `imp lint --fix` moves it to `imp/icons`.
-- **A decorative icon takes no `label`.** Passing one makes it `role="img"` and announced; leave it
-  off beside a text label. An icon-only control is named on the **control** (`button({ label })`),
-  not on the icon inside it.
-- **An icon Lucide does not draw is your own inline `<svg>`.** Every icon-taking prop in the library
-  takes any DOM node, so nothing forces an icon through this module.
+  error. `imp lint --fix` moves the import to `imp/icons`.
+- **A decorative icon takes no `label`.** A `label` makes the icon `role="img"`, and a screen reader
+  announces it. Leave the label off beside a text label. Name an icon-only control on the
+  **control** itself, with `button({ label })`. Do not name the icon inside it.
+- **For an icon that Lucide does not draw, write your own inline `<svg>`.** Every icon prop in the
+  library takes any DOM node. So nothing forces an icon through this module.
 
 ## Colour and size
 
-`color` names a theme token, so the icon re-skins with the theme instead of being hardcoded:
-`'primary'`, `'secondary'`, `'text'`, `'link'`, `'border'`, `'danger'`, `'success'`, `'warning'`,
-`'info'`, and every palette hue (`'jade'`, `'violet'`, `'amber'`, ...) from [theming](theming.md).
-The default `'current'` inherits the surrounding text colour, which is what a button or a menu row
-wants. A colour outside that list is logged and ignored - to paint an icon an arbitrary colour, set
-`color` on the box around it and leave the icon on `'current'`.
+`color` names a theme token, so the icon changes with the theme instead of holding a fixed colour.
+The names are `'primary'`, `'secondary'`, `'text'`, `'link'`, `'border'`, `'danger'`, `'success'`,
+`'warning'` and `'info'`, and every palette hue from [theming](theming.md), such as `'jade'`,
+`'violet'` and `'amber'`. The default `'current'` takes the colour of the text around it, which is
+what a button or a menu row needs. imp logs a colour outside that list and ignores it. To paint an
+icon in any other colour, set `color` on the box around it and leave the icon on `'current'`.
 
 Every Lucide icon is square, so `size` sets both axes. The three steps are `1rem`, `1.25rem` and
-`1.5rem`; any CSS length is accepted for anything else.
+`1.5rem`. For any other size, pass a CSS length.
 
 ```js
 import { flex } from 'imp/std/layout'
@@ -83,9 +85,10 @@ flex(
 
 ## Licensing
 
-Lucide is ISC, and the icons it inherited from Feather are MIT; both require the copyright notice to
-ship with what you redistribute. `imp build` does it for you: it writes the notice into
-`LICENSES.txt` in the output directory and points every emitted script at it. Deploy that file with
-the rest of `dist/`. Nothing is written when a build uses no icon - see [build](build.md).
+Lucide uses the ISC licence. The icons that Lucide inherited from Feather use the MIT licence. Both
+licences require you to ship the copyright notice with what you redistribute. `imp build` does this
+for you. It writes the notice into `LICENSES.txt` in the output directory, and points every emitted
+script at that file. Deploy the file with the rest of `dist/`. imp writes nothing when a build uses
+no icon. See [build](build.md).
 
 Related: [std](std.md), [theming](theming.md), [build](build.md).

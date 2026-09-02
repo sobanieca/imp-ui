@@ -1,17 +1,17 @@
 # Architecture Decision Records
 
-Each ADR captures one architectural decision: the context that forced it, the choice made, and the
-consequences. Every ADR in this folder is the current, accepted state of that decision - there is no
-status field. When a decision changes, replace the ADR with a new one describing the new decision;
-when a decision is dropped, delete its ADR.
+Each ADR captures one architectural decision. It gives the context that forced the decision, the
+choice that somebody made, and the consequences. Every ADR in this folder is the current, accepted
+state of that decision. There is no status field. When a decision changes, replace the ADR with a
+new one that describes the new decision. When somebody drops a decision, delete its ADR.
 
-Conventions:
+These are the conventions:
 
-- **File name** is a short descriptive slug of the decision (`real-dom-no-virtual-dom.md`) - no
-  numbering.
-- **Format per record:** Context / Decision / Consequences.
-- **Presence means accepted.** Nothing in the folder is a proposal or history; the folder always
-  reflects what the code does (or must do).
+- **A file name is a short, descriptive slug of the decision**, such as
+  `real-dom-no-virtual-dom.md`. There is no number.
+- **The format of a record is Context, Decision, Consequences.**
+- **Presence means accepted.** Nothing in the folder is a proposal, and nothing is history. The
+  folder always reflects what the code does, or what it must do.
 
 ## Rendering phase
 

@@ -16,7 +16,7 @@ cache-control: no-store
 <title>imp preview</title>
 </head>
 <body>
-<script type="application/json" id="imp-preview-catalog">{"previews":[{"file":"components/counter.preview.js","path":"components/counter","name":"Counter","category":"Widgets","description":"Run 'imp skill ./components/counter.js' before writing code with it.","href":"/preview/components/counter.preview.js"},{"file":"components/todos.preview.js","path":"components/todos","name":"todos","category":"components","description":null,"href":"/preview/components/todos.preview.js"}],"current":null}</script>
+<script type="application/json" id="imp-preview-catalog">{"previews":[{"file":"components/counter.preview.js","path":"components/counter","name":"Counter","group":"Widgets","description":"Run 'imp skill ./components/counter.js' before writing code with it.","href":"/preview/components/counter.preview.js"},{"file":"components/todos.preview.js","path":"components/todos","name":"todos","group":"components","description":null,"href":"/preview/components/todos.preview.js"}],"current":null}</script>
 <script type="module" src="/@imp/preview-index.js"></script>
 </body>
 </html>

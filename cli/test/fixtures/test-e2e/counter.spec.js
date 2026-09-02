@@ -18,3 +18,10 @@ test('increments on click', async ({ page }) => {
   const text = await page.$eval('#count', (element) => element.textContent)
   expect(text).toEqual('2')
 })
+
+test('a wait sees an element added inside a shadow root', async ({ page }) => {
+  await page.click('#later')
+  await page.waitForSelector('#late-note')
+  const text = await page.$eval('#late-note', (element) => element.textContent)
+  expect(text).toEqual('added later')
+})

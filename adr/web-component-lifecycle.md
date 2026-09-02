@@ -2,142 +2,167 @@
 
 ## Context
 
-Element factories are eager and run leaf-first: children are built before their parent element
-exists, and nothing touches the live tree until mount. Component logic therefore ran detached - it
-could not reach ancestors, measure layout, or own subscriptions with a defined lifetime, and state
-disposal had to rely on lazily checking node connectedness (`event-propagated-state.md`). Apps also
-had no story for loading states around async data. Running component code **after it is mounted**
-requires a placeholder returned at call time plus a connection signal. Alternatives considered: a
-self-replacing anchor element (no disposal hook, no persistent component root), a page-wide
-MutationObserver (asynchronous, always-on cost), and processing deferred bodies only inside imp's
-own insertion points (silently breaks when DOM is inserted with raw APIs).
+An element factory is eager, and it runs from the leaves up. So a child is built before its parent
+element exists, and nothing touches the live tree until the mount. The logic of a component
+therefore ran detached. It could not reach an ancestor. It could not measure the layout. It could
+not own a subscription with a defined lifetime. The disposal of a state had to rely on a lazy check
+of whether a node was connected, see `event-propagated-state.md`. An app also had no story for a
+loading state around async data. To run the code of a component **after imp mounts it** needs a
+placeholder that the factory returns at the moment of the call, and a signal about the connection.
+imp considered three alternatives. An anchor element that replaces itself has no hook for disposal,
+and no persistent root for the component. A MutationObserver over the page is asynchronous, and it
+costs something all the time. To process a deferred body inside the insertion points of imp only
+breaks in silence when somebody inserts DOM with a raw API.
 
 ## Decision
 
-**imp components are real web components.** `component(name, definition)` defines a custom element
-named `name` and returns a factory; calling the factory creates the host element - no logic runs
-until it is connected to the document. Each host attaches an open shadow root at construction, and
-all component output renders into it (`shadow-dom-isolation.md`). The platform's own lifecycle
-callbacks drive everything:
+**An imp component is a real web component.** `component(name, definition)` defines a custom element
+with the name `name`, and returns a factory. A call to the factory creates the host element. No
+logic runs until the browser connects that element to the document. Each host attaches an open
+shadow root at construction, and all output of the component renders into that root, see
+`shadow-dom-isolation.md`. The lifecycle callbacks of the platform drive everything:
 
-- **`build(instance, ...args)`** (required) is the component's whole logic. It runs in
-  `connectedCallback` - parents before children, synchronously on insertion - receives the mount
-  instance followed by the factory-call arguments verbatim, and returns the component's DOM, which
-  fills the host's shadow root; imp then activates the state bindings the output contains, making
-  the component their owner (`event-propagated-state.md`). An async `build` keeps the placeholder
-  visible until it resolves; a mount-generation counter discards output that resolves after unmount
-  or remount, and mount errors - sync throws, still-current rejections, and binding-activation
-  failures - route to the nearest error boundary (`error-boundaries.md`), falling back to a logged
-  error with the placeholder left in place.
-- **The instance is a per-mount handle**, an ordinary object created fresh each mount and passed as
-  the leading argument to `build` and `teardown`. It carries `host` (the custom element) and `root`
-  (its shadow root) for imperative DOM access consistent with `real-dom-no-virtual-dom.md`, and
-  being writable it is the sanctioned channel for handing a resource from `build` to `teardown` -
-  per instance, so a list of components never shares or clobbers handles the way a definition
-  property or module variable would. It is a leading rather than trailing parameter so its position
-  is fixed regardless of a component's own arity, and so it works with arrow-function hooks (a bound
-  `this` would not). It survives moves: the move path leaves it untouched, so anything stashed on it
-  travels with the element (`component-moves-rebind.md`). It also carries
-  **`instance.abortSignal`**, an `AbortSignal` scoped to the one mounted lifetime: imp creates its
-  controller at mount and aborts it either when a remount supersedes the instance or at the tail of
-  a permanent teardown, after `teardown` has run. The single signal serves both hooks - `build`
-  hands it to `fetch`/`addEventListener` to cancel work when the component goes away, and `teardown`
-  reads its `aborted` flag to detect a superseding remount (below) - because the two abort points
-  never overlap: a permanent teardown's `teardown` sees it unaborted (abort follows), a superseded
-  teardown's sees it aborted (the remount aborted it first).
-- **`instance.afterMount(callback)`** registers a single callback to run once the returned DOM is
-  attached and the browser has laid it out - imp flushes it on the next animation frame after
-  placement, so measurements, `scrollIntoView`, focus, and animation setup are all safe. It is a
-  method on the instance rather than an ambient imported helper deliberately: the sync mount-scope
-  stack that scopes `initState`/`useState`/`watch` cannot survive an `await`, but the instance is a
-  closure-carried object, so `afterMount` is callable anywhere in `build` - crucially _after_ the
-  fetch that builds the very nodes the callback touches, with no early-declared `let`. No ref system
-  is needed: the node built imperatively in `build` is a live element, and the closure carries it
-  into the callback. It accepts **one** callback per mount and throws on a second call - post-mount
-  work is one step conceptually, so a caller composes multiple actions inside that one function
-  rather than registering a list imp would have to order and reason about. Cancellation is guarded
-  twice - the async placement path already discards a resolved mount whose generation moved, and the
-  frame callback re-checks the mount generation and connectedness, since a component can unmount in
-  the gap between placement and the next frame. `afterMount` is the tail of mounting, so a throw
-  from the callback is a **mount failure**: it routes to the nearest error boundary through the same
-  `ComponentError` channel as a sync throw or an async rejection (`error-boundaries.md`), rather
-  than being logged in isolation the way a later event-handler or subscriber error is.
-- **`placeholder(...args)`** (optional) renders the shadow root's initial content at factory-call
-  time, and again at the **front of a remount's `connectedCallback`** - a connect whose element has
-  already been through a mount cycle. Synchronous mounts replace it before paint; it is user-visible
-  only during async mounts - the built-in skeleton/loading story. It runs outside a live mount, so
-  it takes no instance - and, for the same reason, it holds no live content: bindings in placeholder
-  output are never activated, so imp warns once naming the component rather than leaving them
-  silently empty. **Rendering it on remount is what returns the host to a clean at-rest state**
-  before the new `build` runs: without it a re-inserted host would keep displaying the dead mount's
-  DOM until the new async `build` resolved. A first mount skips it because the factory already
-  populated the shadow at call time, so the placeholder is built exactly once per mount that can
-  show it, and never for a mount that is discarded. **Teardown does not render the placeholder** -
-  it empties the shadow root, dropping the outgoing subtree for collection without building a
-  throwaway skeleton a permanently-removed host would never paint. For a component with no
-  `placeholder` a remount simply starts from that emptied shadow root, so this is one rule, not a
+- **`build(instance, ...args)` is required, and it is the whole logic of the component.** It runs in
+  `connectedCallback`, with a parent before its children, and synchronously on the insertion. It
+  receives the instance of the mount, and then the arguments of the factory call, without a change.
+  It returns the DOM of the component, which fills the shadow root of the host. imp then activates
+  the state bindings that the output contains, and the component owns them, see
+  `event-propagated-state.md`. An async `build` keeps the placeholder visible until it resolves. A
+  counter of the mount generation discards output that resolves after an unmount, or after a
+  remount. A mount error goes to the nearest error boundary, see `error-boundaries.md`. That covers
+  a synchronous throw, a rejection that is still current, and a failure while imp activates a
+  binding. With no boundary, imp logs the error, and leaves the placeholder in place.
+- **The instance is a handle per mount.** It is an ordinary object, and imp creates a new one each
+  time when the component mounts. imp passes it as the first argument to `build` and to `teardown`.
+  It carries `host`, which is the custom element, and `root`, which is its shadow root. Those give
+  direct access to the DOM, which is consistent with `real-dom-no-virtual-dom.md`. The instance is
+  writable, so it is the approved channel to hand a resource from `build` to `teardown`. It exists
+  per instance. So a list of components never shares a handle, and never overwrites one, in the way
+  that a property on the definition, or a variable at module scope, would. imp passes the instance
+  first, and not last. So its position is fixed, whatever arity a component has, and it works with
+  an arrow function as a hook, where a bound `this` would not. The instance survives a move. The
+  path of a move does not touch it. So anything that you stored on it travels with the element, see
+  `component-moves-rebind.md`. It also carries **`instance.abortSignal`**, which is an `AbortSignal`
+  scoped to the one mounted lifetime. imp creates its controller at the mount. It aborts the
+  controller when a remount replaces the instance, and at the end of a permanent teardown, after
+  `teardown` has run. The one signal serves both hooks. `build` hands it to `fetch` and to
+  `addEventListener`, to cancel work when the component goes away. `teardown` reads its `aborted`
+  flag, to detect a remount that replaces it, described below. The two points of abort never
+  overlap. In a permanent teardown, `teardown` sees the signal not aborted, because the abort
+  follows. In a teardown that a remount replaces, `teardown` sees the signal aborted, because the
+  remount aborted it first.
+- **`instance.afterMount(callback)` registers one callback.** imp runs it after it attaches the
+  returned DOM, and after the browser lays that DOM out. imp flushes the callback on the next
+  animation frame after the placement. So a measurement, `scrollIntoView`, a focus, and the setup of
+  an animation, are all safe. It is a method on the instance, and not an imported helper, and that
+  is deliberate. The synchronous stack of the mount scope, which scopes `initState`, `useState` and
+  `watch`, cannot survive an `await`. The instance is an object that a closure carries. So you can
+  call `afterMount` anywhere in `build`. That includes _after_ the fetch that builds the very nodes
+  that the callback touches, and you declare no `let` early. There is no ref system. The node that
+  you build directly in `build` is a live element, and the closure carries it into the callback.
+  `afterMount` accepts **one** callback per mount, and it throws on a second call. Work after the
+  mount is one step, in concept. So a caller composes several actions inside that one function. imp
+  then does not have to order a list, or reason about it. imp guards the cancellation twice. The
+  async path of the placement already discards a mount that resolved after its generation moved. The
+  frame callback checks the generation of the mount again, and checks that the element is connected,
+  because a component can unmount between the placement and the next frame. `afterMount` is the end
+  of the mount. So a throw from the callback is a **mount failure**. It goes to the nearest error
+  boundary, through the same `ComponentError` channel as a synchronous throw, or an async rejection,
+  see `error-boundaries.md`. imp does not log it in isolation, in the way that it logs a later error
+  from an event handler, or from a subscriber.
+- **`placeholder(...args)` is optional.** It renders the initial content of the shadow root, at the
+  moment of the factory call. It renders again at the **front of the `connectedCallback` of a
+  remount**, which is a connection whose element has already been through a mount cycle. A
+  synchronous mount replaces it before the paint. So a person sees it during an async mount only,
+  and that is the built-in story of a skeleton and of loading. It runs outside a live mount. So it
+  takes no instance. For the same reason it holds no live content. imp never activates a binding in
+  the output of a placeholder. So imp warns once, and names the component, in place of leaving the
+  binding empty with no message. **To render the placeholder on a remount is what returns the host
+  to a clean state at rest**, before the new `build` runs. Without that, a host that somebody
+  inserts again would keep the DOM of the dead mount on the screen, until the new async `build`
+  resolved. A first mount skips the placeholder, because the factory already filled the shadow root
+  at the moment of the call. So imp builds the placeholder exactly once per mount that can show it,
+  and never for a mount that imp discards. **A teardown does not render the placeholder.** It
+  empties the shadow root, and drops the outgoing subtree for collection. It does not build a
+  skeleton that a host that is removed for good would never paint. For a component with no
+  `placeholder`, a remount starts from that emptied shadow root. So this is one rule, and not a
   special case.
-- **`teardown(instance, ...args)`** (optional) runs on removal for resources imp cannot track,
-  receiving the same instance its mount was given. It may be async; imp awaits it, and a
-  mount-generation guard after the await keeps a component re-inserted mid-teardown from being
-  overwritten by the outgoing teardown. That guard protects only imp's own post-await step, not the
-  user's `teardown` body - which has already run - so the teardown also exposes the mount's
-  **`instance.abortSignal`**: a fresh `connectedCallback` aborts the outgoing mount's controller
-  before it starts the new mount, so an async `teardown` that touches **module-scoped or otherwise
-  shared** resources - a shared socket, a document-level listener, a global timer - checks
-  `instance.abortSignal.aborted` after its `await` and bails, so a slow teardown cannot close a
-  handle the next mount just reopened. Per-instance resources need no guard: a fresh instance is
-  created each mount, so a teardown that only touches `instance.*` can never reach the new mount's
-  state.
-- **`fallback(error, ...args)`** (optional) makes the component an error boundary for its own and
-  its subtree's mount failures (`error-boundaries.md`).
-- **Removal is detected with a microtask guard**: `disconnectedCallback` defers and re-checks
-  `isConnected`, so a same-task move keeps the component mounted - DOM intact, subscriptions rebound
-  to the new position (`component-moves-rebind.md`) - while a real removal runs cleanup: tracked
-  state unsubscriptions, then the awaited `teardown`, then an emptied shadow root.
-- **A mount-scope stack** tracks the currently mounting host. State helpers register their
-  unsubscribers with it (`event-propagated-state.md`), and it is what gives `initState` a host to
-  scope state to.
-- **`styles`** (optional) is the component's own CSS, adopted by every instance's shadow root
-  (`shadow-dom-isolation.md`).
-- **Definition keys that return DOM are never named `on*`.** `build`, `placeholder` and `fallback`
-  are called for their return value, which imp renders; an `on*` name promises the opposite - a
-  handler invoked for its side effects, whose result is discarded. `teardown` is the only hook in
-  the set that is genuinely called for effect, and it is named for the job rather than the event so
-  the whole definition reads as one vocabulary. The router follows the same rule for the options it
-  shares with a component (`client-side-router.md`), and `on*` stays reserved across imp for
-  callbacks whose return value is ignored - `onClick`, `onSubmit`, `onRequest`, `onResponse`.
-- **Hosts are invisible to layout.** Every shadow root adopts a shared default sheet with
-  `:host { display: contents }`, so output participates in the parent's layout; a component's own
-  `styles` may override the host display.
-- **Names are lowercase with at least one dash** (`my-app-profile`) - the custom-element rules,
-  doubling as an enforced namespace like state names. HTML-reserved names are rejected, the
-  `imp/component-name` lint rule flags bad literals statically, and redefining a name warns and
-  keeps the first definition.
+- **`teardown(instance, ...args)` is optional.** It runs on a removal, for a resource that imp
+  cannot track. It receives the same instance as its mount. It can be async, and imp awaits it. A
+  guard on the mount generation, after the await, stops an outgoing teardown from overwriting a
+  component that somebody inserted again in the middle of that teardown. That guard protects the
+  step of imp after the await only. It does not protect the body of your `teardown`, which has
+  already run. So the teardown also exposes the **`instance.abortSignal`** of the mount. A fresh
+  `connectedCallback` aborts the controller of the outgoing mount, before it starts the new mount.
+  So an async `teardown` that touches a **shared** resource, or a resource at module scope, must
+  check `instance.abortSignal.aborted` after its `await`, and stop. That covers a shared socket, a
+  listener at document level, and a global timer. So a slow teardown cannot close a handle that the
+  next mount just opened. A resource per instance needs no guard. imp creates a fresh instance on
+  each mount. So a teardown that touches `instance.*` only can never reach the state of the new
+  mount.
+- **`fallback(error, ...args)` is optional.** It makes the component an error boundary, for a mount
+  failure of the component itself, and of its subtree, see `error-boundaries.md`.
+- **imp detects a removal with a guard on a microtask.** `disconnectedCallback` delays, and checks
+  `isConnected` again. So a move inside the same task keeps the component mounted. Its DOM stays as
+  it is, and imp binds its subscriptions to the new position, see `component-moves-rebind.md`. A
+  real removal runs the cleanup. imp unsubscribes the tracked states, then awaits `teardown`, and
+  then empties the shadow root.
+- **A stack of mount scopes tracks the host that mounts now.** The state helpers register their
+  unsubscribe functions with that stack, see `event-propagated-state.md`. The stack is also what
+  gives `initState` a host to scope a state to.
+- **`styles` is optional.** It is the CSS of the component, and the shadow root of every instance
+  adopts it, see `shadow-dom-isolation.md`.
+- **A definition key that returns DOM is never named `on*`.** imp calls `build`, `placeholder` and
+  `fallback` for their return value, and it renders that value. An `on*` name promises the opposite,
+  which is a handler that imp calls for its side effect, and whose result imp discards. `teardown`
+  is the only hook in the set that imp really calls for an effect. It is named for the job, and not
+  for the event. So the whole definition reads as one vocabulary. The router follows the same rule,
+  for the options that it shares with a component, see `client-side-router.md`. Across imp, `on*`
+  stays reserved for a callback whose return value imp ignores, such as `onClick`, `onSubmit`,
+  `onRequest` and `onResponse`.
+- **A host is invisible to the layout.** Every shadow root adopts a shared default sheet, with
+  `:host { display: contents }`. So the output takes part in the layout of the parent. The `styles`
+  of a component can override the display of the host.
+- **A name is lowercase, and it holds at least one dash**, such as `my-app-profile`. Those are the
+  rules for a custom element, and they also enforce a namespace, like a state name. imp rejects a
+  name that HTML reserves. The `imp/component-name` lint rule reports a bad literal statically. A
+  second definition of a name gives a warning, and imp keeps the first definition.
 
-Element factories stay eager; plain lowercase helper functions remain the way to compose lifeless
-DOM. A component is the promotion path when a piece of UI needs time: mounting, loading, state,
-cleanup.
+An element factory stays eager. A plain lowercase helper function stays the way to compose DOM with
+no life of its own. A component is the path of promotion, when a piece of UI needs time. That is the
+mount, the loading, the state and the cleanup.
 
 ## Consequences
 
-- Component code runs connected: it can subscribe to scoped state, dispatch bubbling events, and -
-  through `instance.afterMount` - measure and focus its laid-out DOM without hand-scheduling a
-  `requestAnimationFrame` or re-checking for a mid-frame unmount. Mount order is top-down, so
-  ancestors' `initState` always precedes descendants' `useState`.
-- Loading states cost nothing extra - `placeholder` plus an async `build`.
-- **A remounted component resets to its at-rest content**, where the comparable web-component
-  libraries leave it alone: Lit keeps a disconnected element's shadow root intact, so reconnecting
-  shows the previous render immediately. That is safe there because a reactive re-render corrects
-  stale output; imp has no re-render - `build` builds DOM once, imperatively - so nothing would ever
-  overwrite a stale subtree except the next mount, which is exactly what the user is waiting on. imp
-  resets by rendering the placeholder at the front of the remount rather than on the way out, so the
-  cost lands on the rare path that needs it: a host discarded for good pays only an emptied shadow
-  root, never a rebuilt skeleton it would never paint.
-- Cleanup is deterministic: state subscriptions exist only inside a mount and end at unmount -
-  outside one they throw (`event-propagated-state.md`). `teardown` covers timers and sockets.
-- The host tag stays in the tree and its output sits behind a shadow boundary: component boundaries
-  are visible in the inspector, no selector crosses them (`shadow-dom-isolation.md`), and strict
-  content models (`<table>`, `<select>`) are best rendered whole by one component.
-- The lifecycle is the platform's - no scheduler, no reconciliation, consistent with
-  `real-dom-no-virtual-dom.md`; the whole surface is one function and four definition entries.
+- The code of a component runs while the component is connected. It can subscribe to a scoped state.
+  It can dispatch a bubbling event. Through `instance.afterMount`, it can measure and focus its DOM
+  after the browser lays it out. Nobody schedules a `requestAnimationFrame` by hand, and nobody
+  checks again for an unmount in the middle of a frame. The order of a mount is top down. So the
+  `initState` of an ancestor always runs before the `useState` of a descendant.
+- A loading state costs nothing extra. It is a `placeholder` with an async `build`.
+- **A component that mounts again resets to its content at rest.** A comparable library for web
+  components leaves that content alone. Lit keeps the shadow root of a disconnected element as it
+  is. So a reconnection shows the previous render immediately. That is safe there, because a
+  reactive render again corrects stale output. imp has no render again. `build` builds DOM once,
+  directly. So nothing would ever overwrite a stale subtree, except the next mount, and that is
+  exactly what the user waits for. imp resets by rendering the placeholder at the front of the
+  remount, and not on the way out. So the cost lands on the rare path that needs it. A host that
+  somebody discards for good pays for an emptied shadow root only, and never for a skeleton that it
+  would never paint.
+- The cleanup is deterministic. A state subscription exists inside a mount only, and it ends at the
+  unmount. Outside a mount it throws, see `event-propagated-state.md`. `teardown` covers a timer and
+  a socket.
+- `useState` inside `teardown` throws, and the error names the form that works. Resolve in `build`,
+  keep the handle on the instance, and write through it in `teardown`. The host runs `teardown`
+  while it is disconnected. So a lookup for a provider has nothing to bubble through. imp does not
+  make the host remember the consumers that `build` resolved, in order to answer a `useState` by
+  name. That would give one helper two meanings, which are to resolve and to remember, and it would
+  save the one line that the instance already carries. The component tracks which host is in a
+  teardown, only so that the message can point at the fix.
+- The tag of the host stays in the tree, and its output sits behind a shadow boundary. So a
+  component boundary is visible in the inspector. No selector crosses it, see
+  `shadow-dom-isolation.md`. A strict content model, such as `<table>` and `<select>`, is best
+  rendered as a whole, by one component.
+- The lifecycle belongs to the platform. There is no scheduler, and there is no reconciliation,
+  which is consistent with `real-dom-no-virtual-dom.md`. The whole surface is one function, and four
+  entries in a definition.

@@ -7,7 +7,7 @@ themeSelect()
 themeSelect({ themes: [{ value: 'brand-light', theme: brandLight }, 'imp-dark'] })
 ```
 
-Call shape: `themeSelect(props?)` - it takes no content and renders one `<select>`.
+The call shape is `themeSelect(props?)`. It takes no content, and it renders one `<select>`.
 
 | Prop       | Values                                      | Default                           | Notes                               |
 | ---------- | ------------------------------------------- | --------------------------------- | ----------------------------------- |
@@ -16,22 +16,25 @@ Call shape: `themeSelect(props?)` - it takes no content and renders one `<select
 | `label`    | string, or a state - **live**               | `t()` default                     | Names the control                   |
 | `events`   | event map                                   | -                                 | Handlers, as on any element         |
 
-A choice is a built-in theme name, or an object: `value` is what is stored and shown as the option's
-value, `label` overrides the wording, and `theme` is what reaches `applyTheme` - a name or a whole
-theme object. The `system` choice follows `prefers-color-scheme` and re-applies when it changes.
+A choice is a built-in theme name, or an object. In the object, `value` is what imp stores and shows
+as the value of the option. `label` overrides the wording. `theme` is what reaches `applyTheme`, and
+it is a name or a whole theme object. The `system` choice follows `prefers-color-scheme`, and
+applies the theme again when that changes.
 
 Rules an agent gets wrong:
 
-- **This component owns the applied theme.** On mount it applies the remembered choice; with none it
-  applies the first choice **only if the app has applied no theme yet**, otherwise it just shows the
-  theme already in force. So `applyTheme(brand)` at the entry point is not clobbered on a first
-  visit - but a remembered choice does win, which is the point of remembering it.
-- **A custom theme needs its object under `theme`**, not under `value`: `value` is a string, since
-  it is an option value and a storage key.
-- **It is a `<select>`, not a toggle**, because `system` is a real third choice. Wrap it if you want
-  a two-state switch.
-- **`remember: false` makes it session-only** - nothing is stored, and the app's own theme wins on
-  the next load.
-- Only imp's own wording (`imp.theme.*`) is translated; a `label` you pass on a choice is yours.
+- **This component owns the applied theme.** On mount it applies the remembered choice. With no
+  remembered choice, it applies the first choice, but **only when the app has applied no theme**.
+  Otherwise it shows the theme that is already in force. So an `applyTheme(brand)` at the entry
+  point survives a first visit. A remembered choice does win, and that is the purpose of remembering
+  it.
+- **Put the object of a custom theme under `theme`**, not under `value`. `value` is a string,
+  because it is an option value and a storage key.
+- **The control is a `<select>`, not a toggle**, because `system` is a real third choice. For a
+  two-state switch, write your own control around it.
+- **`remember: false` keeps the choice for the session only.** imp stores nothing, and the theme of
+  the app wins on the next load.
+- imp translates its own wording only, under the `imp.theme.*` keys. A `label` that you pass on a
+  choice stays as you wrote it.
 
 Related: imp skill theming - what a theme is | imp skill std/shell - the frame it usually sits in.

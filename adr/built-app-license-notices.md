@@ -3,68 +3,73 @@
 ## Context
 
 `third-party-attribution.md` settles what the imp _binary_ redistributes. It says nothing about the
-other artifact imp produces: the `dist/` directory `imp build` hands a user to deploy. That output
-is a redistribution too, of whatever the app imports - vendored packages from `dependencies/`, imp's
-own library, and the app's own modules - and the same notice obligations apply to it. MIT and BSD
-require the copyright and permission notice to accompany the code; Apache-2.0 requires the license
-and any NOTICE.
+other artifact that imp produces, which is the `dist/` directory that `imp build` gives a user to
+deploy. That output is a redistribution too. It redistributes whatever the app imports: a vendored
+package from `dependencies/`, the library of imp, and the modules of the app. The same obligations
+of a notice apply to it. MIT and BSD require the copyright notice and the permission notice to
+travel with the code. Apache-2.0 requires the licence, and any NOTICE file.
 
-Every bundling step in the CLI ran esbuild with `legalComments: 'none'`, which deletes exactly the
-comments those licenses require to travel: the `/*! ... */`, `//!`, `@license` and `@preserve`
-blocks a library uses to mark its notice. `imp install` stripped them out of the vendored bundle, so
-by the time `imp build` ran there was nothing left to preserve even in principle. The result was a
-deployable directory that omitted notices it was obligated to carry, with nothing in the output
-hinting that anything had been dropped - a compliance failure the app author had no way to notice.
+Every bundling step in the CLI ran esbuild with `legalComments: 'none'`. That option deletes exactly
+the comments that those licences require to travel. Those are the `/*! ... */`, `//!`, `@license`
+and `@preserve` blocks that a library uses to mark its notice. `imp install` removed them from the
+vendored bundle. So by the time when `imp build` ran, there was nothing left to keep, even in
+principle. The result was a directory ready to deploy, and it left out a notice that it had to
+carry. Nothing in the output showed that imp had dropped anything. That was a compliance failure
+that the author of the app had no way to see.
 
-Attribution also cannot be a step the author performs. imp is the only party that knows which
-modules survived tree-shaking and code splitting into which output file; a hand-maintained notice
-file would be wrong the first time an import changed.
+Attribution also cannot be a step that the author performs. imp is the only party that knows which
+modules survived the tree-shaking and the code splitting, and which output file holds them. A file
+of notices that a person maintains by hand would be wrong the first time when an import changed.
 
 ## Decision
 
-The notice travels with the code, all the way to what a user downloads. Two changes make one chain:
+The notice travels with the code, to what a user downloads. Two changes make one chain:
 
-- **`imp install` preserves notices in the vendored bundle** (`legalComments: 'inline'`), so a
-  package's notice is still present in `dependencies/` for the build to find later. The bundle is
-  committed, so the notice is visible in review as well.
-- **`imp build` collects them into one `LICENSES.txt`.** The build runs esbuild with
-  `legalComments: 'external'`, gathers the per-output legal files it emits, splits them into
-  individual comment blocks, drops duplicates, and writes them - **verbatim, never reformatted,
-  truncated or summarized** - into `LICENSES.txt` at the root of the output directory. Nothing
-  configures this and nothing turns it off. They are one of two sources the file merges: the other
-  is the SPDX identifier and license text recorded for every bundled package at vendor time
-  (`vendored-dependency-manifest.md`), which is what covers a package carrying no header comment at
-  all.
-- **Every emitted script points at it.** Each `.js` output - entry bundles, lazily loaded chunks,
-  and the inline module scripts re-inlined into the page - opens with
-  `/*! Third-party license notices: /LICENSES.txt */`, prefixed by `IMP_BASEPATH` like any other
-  root-absolute URL. A reader who lands on a minified bundle can get from there to the notices.
-- **Nothing bundled, nothing written.** With no notice from either source, no file is produced and
-  no reference comment is added, so a build that redistributes nothing does not pretend to.
-- **The dev-time bundlers keep stripping.** `imp start`, `imp preview`, `imp test` and the mock
-  bundler stay on `legalComments: 'none'` - their output is never distributed, and the noise buys
-  nothing.
+- **`imp install` keeps a notice in the vendored bundle**, through `legalComments: 'inline'`. So the
+  notice of a package is still in `dependencies/`, and the build finds it later. You commit the
+  bundle. So a reviewer sees the notice as well.
+- **`imp build` collects the notices into one `LICENSES.txt`.** The build runs esbuild with
+  `legalComments: 'external'`. It gathers the legal file that esbuild emits per output. It splits
+  that file into blocks, one per comment, and drops a duplicate. It writes the blocks into
+  `LICENSES.txt`, at the root of the output directory, **exactly as they are. imp never reformats,
+  cuts or summarizes them.** Nothing configures this, and nothing turns it off. Those comments are
+  one of the two sources that the file merges. The other source is the SPDX identifier and the
+  licence text that imp recorded for every bundled package at vendor time, see
+  `vendored-dependency-manifest.md`. That source covers a package that carries no header comment.
+- **Every emitted script points at the file.** Each `.js` output starts with
+  `/*! Third-party license notices: /LICENSES.txt */`. That covers an entry bundle, a chunk that
+  loads lazily, and an inline module script that imp inlines again into the page. imp puts
+  `IMP_BASEPATH` in front of that path, like any other root-absolute URL. So a reader who arrives at
+  a minified bundle can go from there to the notices.
+- **When imp bundles no notice, it writes none.** With no notice from either source, imp produces no
+  file and adds no reference comment. So a build that redistributes nothing does not pretend that it
+  does.
+- **The bundlers for development still remove the comments.** `imp start`, `imp preview`, `imp test`
+  and the mock bundler stay on `legalComments: 'none'`. Their output never goes to a user, and the
+  noise buys nothing.
 
-One aggregate file, not esbuild's per-output `*.LEGAL.txt` scatter: the notices are a legal artifact
-a person reads and a deploy ships, and pinning them to hashed chunk names that change every build
-makes them harder to read and easier to lose.
+imp writes one aggregate file. It does not scatter the `*.LEGAL.txt` files that esbuild emits per
+output. The notices are a legal artifact. A person reads them, and a deploy ships them. To tie them
+to a hashed chunk name that changes on every build makes them harder to read, and easier to lose.
 
-`LICENSES.txt` is disjoint from `imp licenses`, which prints `THIRD_PARTY_LICENSES.md` for the tools
-compiled into the binary. Those tools are the toolchain and never reach a user; `LICENSES.txt`
-covers only what the app actually serves. Neither file is derived from the other.
+`LICENSES.txt` is separate from `imp licenses`. That command prints `THIRD_PARTY_LICENSES.md`, for
+the tools that imp compiles into the binary. Those tools are the toolchain, and they never reach a
+user. `LICENSES.txt` covers only what the app serves. Neither file derives from the other.
 
 ## Consequences
 
-- A deployed imp app carries the attribution its dependencies require, without the author doing
-  anything, and the set is exact because it is derived from the build graph rather than from a
-  dependency list.
-- Comment detection is esbuild's: a comment is legal if it is `/*! ... */`, `//!`, or contains
-  `@license` or `@preserve`. A package whose header uses none of those markers contributes no
-  comment block, which used to mean it contributed nothing at all; its license now arrives from the
-  vendor-time manifest instead, read from the package's own `LICENSE` file while `imp install` still
-  has the package rather than the bundle.
-- Vendored bundles and built output grow by the size of the notices they carry. This counts toward
-  the `maxFileSize` warning on `dependencies/`; it is a few hundred bytes against a limit in the
-  hundreds of kilobytes.
-- Deleting `LICENSES.txt` from a deploy re-breaks compliance. imp puts it in the output and says so
-  in the docs and skills; it cannot enforce what happens after upload.
+- A deployed imp app carries the attribution that its dependencies require, and the author does
+  nothing. The set is exact, because imp derives it from the build graph, and not from a list of
+  dependencies.
+- The detection of a comment is the detection of esbuild. A comment is legal when it is
+  `/*! ... */`, or `//!`, or when it contains `@license` or `@preserve`. A package whose header uses
+  none of those markers contributes no comment block. That used to mean that the package contributed
+  nothing at all. Its licence now arrives from the manifest that imp writes at vendor time. imp
+  reads that licence from the `LICENSE` file of the package, while `imp install` still holds the
+  package and not only the bundle.
+- A vendored bundle, and the built output, grow by the size of the notices that they carry. That
+  counts toward the `maxFileSize` warning on `dependencies/`. It is a few hundred bytes against a
+  limit of hundreds of kilobytes.
+- To delete `LICENSES.txt` from a deploy breaks the compliance again. imp puts the file in the
+  output, and says so in the documentation and in the skills. imp cannot enforce what happens after
+  an upload.

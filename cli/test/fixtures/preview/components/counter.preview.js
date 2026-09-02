@@ -1,7 +1,7 @@
 import { counter } from './counter.js'
 
 export const name = 'Counter'
-export const category = 'Widgets'
+export const group = 'Widgets'
 export const description = "Run 'imp skill ./components/counter.js' before writing code with it."
 
 export const zero = counter()

@@ -12,7 +12,7 @@ breadcrumbs({
 })
 ```
 
-Call shape: `breadcrumbs(props)` - it takes no content.
+The call shape is `breadcrumbs(props)`. It takes no content.
 
 | Prop        | Values                             | Default       | Notes                        |
 | ----------- | ---------------------------------- | ------------- | ---------------------------- |
@@ -21,7 +21,7 @@ Call shape: `breadcrumbs(props)` - it takes no content.
 | `separator` | string, or DOM                     | `'/'`         | Drawn between crumbs         |
 | `events`    | `{ select }`                       | -             | Cancelable, fires on the nav |
 
-Each crumb:
+Each crumb has these keys:
 
 | Key       | Values                        | Default   | Notes                                        |
 | --------- | ----------------------------- | --------- | -------------------------------------------- |
@@ -33,16 +33,16 @@ Each crumb:
 
 Rules an agent gets wrong:
 
-- **The last crumb is the current page**: it renders as text with `aria-current="page"`, never a
-  link, whether or not it carries an `href`. Do not add the current level twice.
-- **`items` is data, and a state works** - `items: trail` re-renders the trail in place, which is
-  how a screen amends it: `computed([trail, extra], (a, b) => [...a, ...b])`.
-- **Activation order is `select` -> `onClick` -> the href.** `select` is cancelable, so
-  `preventDefault()` in it hands routing back to you and skips both.
-- **The separator is a real element**, `aria-hidden`, not CSS generated content - so it is never
-  announced. Pass your own string or DOM to change it.
-- **There is no `max` and no overflow picker yet.** A long trail wraps; collapse it yourself by
-  shortening `items`.
+- **The last crumb is the current page.** imp renders it as text with `aria-current="page"`, never
+  as a link, with or without an `href`. Do not add the current level twice.
+- **`items` is data, and a state works there.** `items: trail` renders the trail again in place.
+  That is how a screen adds to the trail, as in `computed([trail, extra], (a, b) => [...a, ...b])`.
+- **The activation order is `select`, then `onClick`, then the href.** You can cancel `select`. A
+  call to `preventDefault()` there gives the routing back to you, and skips the other two steps.
+- **The separator is a real element with `aria-hidden`**, not CSS generated content. So a screen
+  reader never announces it. To change it, pass your own string or DOM.
+- **There is no `max` prop and no overflow picker yet.** A long trail wraps. To collapse it, make
+  `items` shorter yourself.
 - **imp does not derive the trail from the route.** Build `items` from your own route data.
 
 Related: imp skill std/shell - the frame a trail usually sits in.

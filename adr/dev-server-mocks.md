@@ -2,86 +2,92 @@
 
 ## Context
 
-An app is routinely built before - or without - the backend it talks to, so imp has to answer "run
-this UI with no server behind it". The first answer put the handlers in the HTTP client: a `mock`
-map declared where the client was configured, switched on by an environment value. That put fixtures
-in application source and in the production bundle, made "is mocking on?" a runtime branch no
-bundler can fold away, and scoped mocking to imp's own client - a plain `fetch`, an `<img>`, an
-`XMLHttpRequest` in a dependency all went to the real network regardless.
+People routinely build an app before its backend exists, or with no backend at all. So imp must
+answer the question "how do I run this UI with no server behind it?". The first answer put the
+handlers in the HTTP client. A `mock` map sat where somebody configured the client, and an
+environment value turned it on. That put a fixture in the source of the application, and in the
+production bundle. It made the question "is mocking on?" a branch at runtime that no bundler can
+fold away. It also limited mocking to the client of imp. A plain `fetch`, an `<img>`, and an
+`XMLHttpRequest` inside a dependency, all went to the real network.
 
-The dev server already registers a service worker at root scope for network telemetry
-(`built-in-logger.md`), and already bundles code in-process with esbuild
-(`in-process-dependency-bundling.md`). Between them, the machinery to answer a request before it
-leaves the browser is already running in development and absent from a build.
+The dev server already registers a service worker at root scope, for the network telemetry, see
+`built-in-logger.md`. It also already bundles code in process, with esbuild, see
+`in-process-dependency-bundling.md`. Between them, the machinery to answer a request before it
+leaves the browser already runs in development, and it is absent from a build.
 
 ## Decision
 
-**Mock responses are declared in `*.mock.js` files, discovered from a folder named by `imp.json`,
-and served by the dev server's service worker.** `"mocks": { "folder": "mocks", "enabled": true }`
-points at a folder; every `*.mock.js` under it (nested folders included) is part of the mock set, so
-routes are split across files the way the app is.
+**You declare a mock response in a `*.mock.js` file. imp discovers those files from a folder that
+`imp.json` names, and the service worker of the dev server serves them.**
+`"mocks": { "folder": "mocks", "enabled": true }` points at a folder. Every `*.mock.js` file under
+that folder is part of the mock set, and imp also reads a nested folder. So you split the routes
+across files, in the way that the app is split.
 
-- **A mock file exports `mocks`, an array of `{ match, delay, handler }`.** `match(request)` is a
-  predicate over `{ method, url, path, query, headers, body }` - a function rather than a route
-  pattern, because a pattern language is a second thing to learn and always one case short of what a
-  predicate expresses. `handler(request)` receives the same object and returns
-  `{ status, headers, body }` (a plain `body` is serialized as JSON) or a `Response`. `delay` is
-  milliseconds of simulated latency. **The first matching entry answers**, in file-path order.
-- **Handlers are code, not data.** The files are bundled - they import shared fixtures, vendored
-  dependencies, whatever they need - and each is evaluated once per worker install, so a closure
-  over a counter is how a handler is stateful across requests, and `throw` inside a handler is how
-  it simulates a transport failure (the page's `fetch` rejects exactly as it would offline).
-- **An unmatched request goes to the network**, so a half-mocked API is the normal case rather than
-  a configured one, and mocking a single endpoint never takes the rest of the app offline.
-- **Selection is a run mode, never a branch in app code.** Running against fixtures and running
-  against the real API are both everyday choices, so each is one word on the command line: `--mock`
-  and `--no-mock` on `imp start`, `imp preview` and `imp test`, overriding the project's default for
-  that run. The default is the config's, and **stating it is mandatory**: `mocks` takes both a
-  `folder` and an `enabled`, with no shorthand and no inferred value, so a repository can never be
-  ambiguous about whether checking out and running it talks to a backend. That is what lets a
-  project with a live backend keep mocks in the tree without changing what `imp start` does. There
-  is no env value and no flag reachable from app source, and `imp build` copies neither the folder
-  nor anything in it, so what production carries is unaffected by any of it.
-- **Interception is at the network boundary, not in imp's client.** Every request the page makes is
-  matched, whatever issues it, and a mocked answer is a real `Response` arriving over the same path
-  as a real one - retries, timeouts, interceptors and request state in the HTTP client
-  (`http-client.md`) cannot tell the two apart, because from their side there is nothing to tell
-  apart.
+- **A mock file exports `mocks`, which is an array of `{ match, delay, handler }`.**
+  `match(request)` is a predicate over `{ method, url, path, query, headers, body }`. It is a
+  function, and not a route pattern. A pattern language is a second thing to learn, and it is always
+  one case short of what a predicate expresses. `handler(request)` receives the same object. It
+  returns `{ status, headers, body }`, where imp serializes a plain `body` as JSON, or it returns a
+  `Response`. `delay` is the simulated latency in milliseconds. **The first entry that matches
+  answers**, in file-path order.
+- **A handler is code, and not data.** imp bundles the files. So a file imports a shared fixture, a
+  vendored dependency, and whatever else it needs. imp evaluates each file once per install of the
+  worker. So a closure over a counter is how a handler keeps state across requests. A `throw` inside
+  a handler is how it simulates a transport failure, and the `fetch` of the page then rejects
+  exactly as it does when the machine is offline.
+- **An unmatched request goes to the network.** So an API that is half mocked is the normal case,
+  and not a case that somebody configures. To mock one endpoint never takes the rest of the app
+  offline.
+- **The selection is a mode of a run, and never a branch in app code.** To run against a fixture,
+  and to run against the real API, are both everyday choices. So each one is one word on the command
+  line. `--mock` and `--no-mock` work on `imp start`, `imp preview` and `imp test`. They override
+  the default of the project, for that run. The default comes from the config, and **you must state
+  it**. `mocks` takes a `folder` and an `enabled`. There is no short form, and imp infers no value.
+  So a repository can never be unclear about whether a checkout, and a run, talk to a backend. That
+  is what lets a project with a live backend keep its mocks in the tree, and not change what
+  `imp start` does. There is no env value, and no flag that app source can reach. `imp build` copies
+  neither the folder nor anything in it. So none of this affects what production carries.
+- **The interception is at the network boundary, and not in the client of imp.** imp matches every
+  request that the page makes, whatever issued it. A mocked answer is a real `Response`, and it
+  arrives over the same path as a real one. A retry, a timeout, an interceptor and the request state
+  in the HTTP client, see `http-client.md`, cannot tell the two apart. From their side there is
+  nothing to tell apart.
 
-**The bundle rides the service worker script the dev server already serves.** `/@imp/sw.js` is
-generated per request: the telemetry worker first, the bundled mocks appended, so the mock set is
-whatever is on disk at that moment. The bundle is rebuilt only when a mock file's timestamp or size
-changes, and because the script's bytes change with it, the browser's ordinary update check on the
-next navigation installs the new worker - an edit to a mock file reloads like an edit to any other
-file. A file that fails to bundle is reported in the terminal with its line, and the worker is
-served without mocks rather than not at all.
+**The bundle rides on the service worker script that the dev server already serves.** imp generates
+`/@imp/sw.js` per request. The telemetry worker comes first, and imp appends the bundled mocks. So
+the mock set is whatever is on disk at that moment. imp rebuilds the bundle only when the timestamp
+or the size of a mock file changes. The bytes of the script change with the bundle. So the ordinary
+update check of the browser, on the next navigation, installs the new worker. An edit to a mock file
+then reloads like an edit to any other file. imp reports a file that fails to bundle in the
+terminal, with its line, and serves the worker with no mocks, in place of no worker at all.
 
-**A page that loaded before the worker took control reloads itself, but only if it missed
-something.** A newly installed worker claims the page a moment after it loads, and requests made in
-that window would reach the network. The injected client script wraps `fetch` while the page is
-uncontrolled, and reloads once if - and only if - a request actually went out unmocked. The common
-case (a worker already active from the previous page load) does no work at all.
+**A page that loaded before the worker took control reloads itself, but only when it missed
+something.** A newly installed worker claims the page a moment after the page loads. A request in
+that window would reach the network. The injected client script wraps `fetch` while the page has no
+controller. It reloads once when, and only when, a request really went out unmocked. In the common
+case, where a worker from the previous page load is already active, it does no work.
 
 ## Consequences
 
-- Mock fixtures live beside the app instead of inside it, and cannot ship: there is no gated branch
-  to eliminate, because there is no branch - no feature flag (`adr/feature-flags.md`) is needed to
-  keep mocks out of a production build.
-- Everything is mocked, not just imp's HTTP client - third-party SDKs, images, `XMLHttpRequest`. The
-  cost is that the mock set is global to the served origin: two clients hitting different APIs share
-  one list, and telling them apart is the matcher's job.
-- Mock code runs in a service worker, so it has no DOM, no `window`, and no access to app state; and
-  mocking requires a worker-capable, secure context (`localhost` and `https`, which is what
-  `imp start` serves).
-- Statefulness is the author's, in ordinary closures. imp does not reset a handler's counter between
-  page loads - the worker outlives them - which is what makes "fail every other call" and "the
-  second poll returns done" expressible, and what makes a stale counter the author's to notice.
-- The mocked path and the real path are the same code in the browser, so a mocked `503` retries, a
-  `delay` keeps the spinner up, and an app cannot behave differently against mocks in any way except
-  the answers it gets.
-- `imp preview` and the `imp test --e2e` server are built on the same dev server, so a project's
-  mocks apply there too, under the same default and the same two flags - an e2e suite pinned to
-  fixtures is `imp test --e2e --mock`, and nothing in the specs says so.
-- Which mode a run is in is a property of the command that started it, so it is visible in the
-  terminal (the server reports the folder it is serving) rather than inferable only from a request
-  that did or did not reach the backend.
+- A mock fixture lives beside the app, and not inside it, and it cannot ship. There is no gated
+  branch to remove, because there is no branch. No feature flag, see `adr/feature-flags.md`, is
+  needed to keep a mock out of a production build.
+- imp mocks everything, and not only the HTTP client of imp. That covers a third-party SDK, an image
+  and an `XMLHttpRequest`. The cost is that the mock set is global to the served origin. Two clients
+  that call two different APIs share one list, and the matcher separates them.
+- Mock code runs in a service worker. So it has no DOM, no `window`, and no access to the state of
+  the app. Mocking also needs a context that supports a worker and that is secure. That is
+  `localhost` and `https`, and `imp start` serves both.
+- The author owns the state, in an ordinary closure. imp does not reset the counter of a handler
+  between two page loads, because the worker lives longer than a page. That is what makes "fail
+  every second call", and "the second poll returns done", expressible. It is also what makes a stale
+  counter the problem of the author.
+- The mocked path and the real path are the same code in the browser. So a mocked `503` retries, a
+  `delay` keeps the spinner up, and an app cannot behave differently against a mock, except in the
+  answers that it gets.
+- `imp preview`, and the server of `imp test --e2e`, are built on the same dev server. So the mocks
+  of a project apply there too, under the same default, and with the same two flags. An e2e suite
+  that is pinned to a fixture is `imp test --e2e --mock`, and nothing in the specs says so.
+- The command that started a run decides the mode of that run. So the mode is visible in the
+  terminal, because the server reports the folder that it serves. Nobody has to infer the mode from
+  a request that did or did not reach the backend.

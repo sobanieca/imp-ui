@@ -6,16 +6,17 @@ import { flag } from 'imp'
 if (flag('CHECKOUT_V2')) mountNewCheckout()
 ```
 
-`imp start` / `imp preview` / `imp test` read the flag at runtime. `imp build` resolves it before
-bundling and replaces the call with the literal `true` or `false`, so the minifier drops the dead
-branch, everything only it reached, and any chunk it would have produced. The built output contains
-no flag names, no values and no `flag()` call.
+`imp start`, `imp preview` and `imp test` read the flag at runtime. `imp build` resolves the flag
+before it bundles. It replaces the call with the literal `true` or `false`. The minifier then
+removes the dead branch, everything that only the branch reached, and any chunk that the branch
+would produce. The built output contains no flag name, no value and no `flag()` call.
 
-## Setup - both halves are required
+## Setup - both halves are necessary
 
 1. **Declare** every flag in `imp.json`. An undeclared name is a build error, not a false flag.
-2. **Turn it on** in the environment file (see [config](config.md)); `true`/`false` only, and in a
-   `.env` file the strings `NAME=true` / `NAME=false`. **Absent = off.**
+2. **Turn the flag on** in the environment file, see [config](config.md). The values are `true` and
+   `false` only. In a `.env` file, write the strings `NAME=true` or `NAME=false`. **An absent flag
+   is off.**
 
 ```json
 // imp.json
@@ -29,28 +30,29 @@ no flag names, no values and no `flag()` call.
 
 ## Rules
 
-- **The name is a string literal at the call site.** `flag(name)`, `flag(\`X\`)` where the template
-  has a substitution, two arguments, or no argument all stop the build. Nothing folds unless imp can
-  read the name.
-- **Declared flags are not env values.** `flags` names are removed from `env`; `env.CHECKOUT_V2` is
-  `undefined`. `flag()` is the only reader, and the only form the build can fold.
-- **An undeclared flag throws at runtime too** (`imp start`, `imp preview`, `imp test`), naming the
-  declared flags - the error is not build-only.
-- **Flag names must not start with `IMP_`** - reserved for imp's own environment values
-  (`IMP_LOG_LEVEL`, `IMP_BASEPATH`).
-- **`flags` in `imp.json` is an array of names**, not an object of values. The values live per
+- **The name must be a string literal at the call site.** These forms stop the build: `flag(name)`,
+  `flag(\`X\`)` where the template has a substitution, a call with two arguments, and a call with no
+  argument. imp folds the call only when it can read the name.
+- **A declared flag is not an env value.** imp removes every `flags` name from `env`, so
+  `env.CHECKOUT_V2` is `undefined`. `flag()` is the only reader, and the only form that the build
+  can fold.
+- **An undeclared flag also throws at runtime**, in `imp start`, `imp preview` and `imp test`. The
+  error names the declared flags. It is not a build-only error.
+- **A flag name must not start with `IMP_`.** That prefix is reserved for imp's own environment
+  values, such as `IMP_LOG_LEVEL` and `IMP_BASEPATH`.
+- **`flags` in `imp.json` is an array of names**, not an object of values. The values live in each
   environment.
-- **Runtime-varying answers are not flags.** Per-user, per-request or fetched toggles are data -
-  load them into state. A flag is fixed for the whole build.
-- **A flag the build could not fold fails the build**, naming the file, rather than shipping a
-  bundle that reads flags at runtime. Nothing in a built app can check a flag.
-- **In tests, set the global**: `globalThis.__IMP_FLAGS__ = { CHECKOUT_V2: true }`, and delete it in
-  `afterEach`. Tests are not built, so nothing is folded.
+- **An answer that varies at runtime is not a flag.** A per-user, per-request or fetched toggle is
+  data. Load it into state. A flag is fixed for the whole build.
+- **A flag that the build cannot fold fails the build**, and the error names the file. imp does not
+  ship a bundle that reads a flag at runtime. Nothing in a built app can check a flag.
+- **In a test, set the global**: `globalThis.__IMP_FLAGS__ = { CHECKOUT_V2: true }`. Delete it in
+  `afterEach`. imp does not build a test, so it folds nothing.
 
-## Dropping a feature's code entirely
+## How to drop the code of a feature completely
 
-A dynamic `import()` inside the gate keeps the feature's whole dependency tree out of a build where
-the flag is off - the branch goes, and the chunk is never emitted:
+Put a dynamic `import()` inside the gate. The whole dependency tree of the feature then stays out of
+a build where the flag is off. imp removes the branch and emits no chunk:
 
 ```js
 if (flag('CHECKOUT_V2')) {
@@ -59,5 +61,5 @@ if (flag('CHECKOUT_V2')) {
 }
 ```
 
-`imp build` prints what it resolved: `flags folded in - CHECKOUT_V2 off, NEW_NAV on` - see
+`imp build` prints what it resolved: `flags folded in - CHECKOUT_V2 off, NEW_NAV on`. See
 [build](build.md).

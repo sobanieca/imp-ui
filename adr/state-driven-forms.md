@@ -2,90 +2,97 @@
 
 ## Context
 
-A control inside its own shadow root does not participate in an outside `<form>`
-(`shadow-dom-isolation.md`), so native submit, `FormData` collection and constraint validation
-cannot reach standard components. The form layer therefore had to be built rather than borrowed, and
-the open question was how a control gets hold of **one field** of a form's values.
+A control inside its own shadow root does not join a `<form>` outside it, see
+`shadow-dom-isolation.md`. So a native submit, the collection of a `FormData` object, and constraint
+validation, cannot reach a standard component. imp therefore had to build the form layer, and could
+not borrow one. The open question was how a control takes hold of **one field** of the values of a
+form.
 
-Named state (`event-propagated-state.md`) shares a whole object down the tree, and `computed` can
-project one field out of it - but only to read. A write cannot be inverted out of a function, so a
-control handed `computed([user], (u) => u.address.city)` can display a value and never commit one.
-The two candidates were a split contract (`value` reads, a separate `commit` prop writes) and a
-writable path projection added to the kernel.
+Named state, see `event-propagated-state.md`, shares a whole object down the tree. `computed` can
+project one field out of that object, but only for a read. imp cannot invert a write out of a
+function. So a control that receives `computed([user], (u) => u.address.city)` can display a value,
+and it can never commit one. There were two candidates. The first was a split contract, where
+`value` reads and a separate `commit` prop writes. The second was a writable projection of a path,
+added to the kernel.
 
 ## Decision
 
-**A form's values are ordinary named state, and a control names its field with a dot path.**
+**The values of a form are ordinary named state, and a control names its field with a dot path.**
 
 - **`form({ initialValues })` calls `initState('imp.form', initialValues ?? null)` on itself.** The
-  values live at the form's own position in the tree, so a second form on the page owns a second
-  `imp.form`, and unmounting a form disposes its values with the rest of the subtree. Nothing is
-  registered, wired or torn down by hand.
-- **A control declares `field: 'user.firstName'`.** It resolves `imp.form` from its own position
-  with `useState` - the same lookup every other component does, so it works at any nesting depth,
-  through layout components and app components alike - then reads its value by walking the path and
-  writes by rebuilding the object along it.
+  values live at the position of the form in the tree. So a second form on the page owns a second
+  `imp.form`, and an unmount of a form releases its values with the rest of the subtree. Nobody
+  registers anything, connects anything, or tears anything down by hand.
+- **A control declares `field: 'user.firstName'`.** It resolves `imp.form` from its own position,
+  with `useState`. That is the same lookup that every other component does. So it works at any depth
+  of nesting, through a layout component and through an app component. The control then reads its
+  value by a walk along the path, and it writes by rebuilding the object along that path.
 
-  This is what makes nested fields work with **no kernel change**: a path is data the form layer can
-  walk in both directions, where `computed` is a function that only walks one way. The writable path
-  projection stays rejected as unearned, and the split contract is not needed. `value` remains for
-  standalone controls outside a form, taking a state or a plain value.
-- **Everything the form layer needs to agree on is state**, not a registry: `imp.form.errors`,
-  `imp.form.touched`, `imp.form.submitting` and `imp.form.submits`. Submitting increments
-  `imp.form.submits`; every mounted control watches it, re-runs its own validators synchronously and
-  writes its result into `imp.form.errors`; when the counter's notification returns, the form reads
-  the errors and runs `onSubmit` only if there are none. No control registry, no lifecycle
-  bookkeeping, and a control that unmounts stops mattering by virtue of no longer being subscribed.
-- **A control renders its own label, help text and error.** `label[for]`, `aria-describedby` and
-  `aria-invalid` resolve by id and cannot cross a shadow root, so a separate `formField` wrapper
-  component could never label the control it wraps. The wrapper is therefore not a component: every
-  control takes `label`, `ariaLabel`, `help` and `required` and renders the whole field group in one
-  shadow root. `radioGroup` renders a real `<fieldset>`/`<legend>` for the same reason - the group's
-  name and its options must share a root.
-- **Errors are stored as a message key and params, not a resolved string**, so a language change
-  re-renders them in place like every other word the library shows (`translatable-by-default.md`). A
-  custom `validate` returning a plain string is stored as-is.
-- **An error is only shown once its field has been left or a submit has been attempted**, tracked by
-  `imp.form.touched` and `imp.form.submits`, so a form does not shout at someone still typing in the
-  first box.
-- **Async checks are a separate prop with a different rhythm.** `validate` is synchronous and runs
-  at every commit; `validateAsync` returns a promise and runs only on **blur and submit**, because a
-  "is this username taken" round trip must not fire on every keystroke. A sync failure
-  short-circuits it, so a server is never asked about a value that is already invalid. In flight,
-  the field is marked in `imp.form.validating` and carries `aria-busy`; the newest run wins by
-  token, so a stale answer can never overwrite a fresh one, and a control that unmounts mid-check
-  clears its own entry. A rejected check reports `imp.form.checkFailed` rather than failing open -
-  an unreachable server must not let invalid data through.
-- **Submit waits only when something is actually in flight.** `runSubmit` bumps the counter and, if
-  `imp.form.validating` is empty, decides in the same tick - so a form with no async checks still
-  submits synchronously. Otherwise it sets `imp.form.submitting` (spinning the submit button) and
-  resumes when the last check clears, which the form learns by watching the state rather than by
-  holding any promise a control gave it.
-- **Submitting is an action, not a button mode.** `submitButton()` and `resetButton()` find their
-  form by dispatching a composed, bubbling event that the form catches, and read
-  `imp.form.submitting` to drive their own spinner. `button` keeps no `type` prop
-  (`standard-component-library.md`), and **implicit submission** - Enter in a single-line field - is
-  implemented by the form, which the platform would otherwise have provided.
+  That is what makes a nested field work with **no change to the kernel**. A path is data, and the
+  form layer can walk it in both directions. `computed` is a function, and it walks one way only. So
+  imp still rejects the writable projection of a path as unearned, and the split contract is not
+  needed. `value` remains, for a standalone control outside a form. It takes a state, or a plain
+  value.
+- **Everything that the form layer must agree on is state, and not a registry.** That is
+  `imp.form.errors`, `imp.form.touched`, `imp.form.submitting` and `imp.form.submits`. A submit
+  increases `imp.form.submits`. Every mounted control watches that counter, runs its own validators
+  again, synchronously, and writes its result into `imp.form.errors`. When the notification of the
+  counter returns, the form reads the errors, and runs `onSubmit` only when there is none. There is
+  no registry of controls, and there is no bookkeeping of a lifecycle. A control that unmounts stops
+  mattering, because it is no longer subscribed.
+- **A control renders its own label, its help text and its error.** `label[for]`, `aria-describedby`
+  and `aria-invalid` resolve by id, and they cannot cross a shadow root. So a separate `formField`
+  wrapper component could never label the control that it wraps. The wrapper is therefore not a
+  component. Every control takes `label`, `ariaLabel`, `help` and `required`, and renders the whole
+  field group in one shadow root. `radioGroup` renders a real `<fieldset>` with a `<legend>`, for
+  the same reason. The name of the group, and its options, must share a root.
+- **imp stores an error as a message key with its parameters, and not as a resolved string.** So a
+  change of language renders the error again, in place, like every other word that the library
+  shows, see `translatable-by-default.md`. imp stores the plain string that a custom `validate`
+  returns as it is.
+- **imp shows an error only after the person leaves the field, or tries to submit.** imp tracks that
+  with `imp.form.touched` and `imp.form.submits`. So a form does not report a problem while somebody
+  still types in the first box.
+- **An async check is a separate prop, with a different rhythm.** `validate` is synchronous, and it
+  runs at every commit. `validateAsync` returns a promise, and it runs on **blur and on submit**
+  only. A round trip that asks "is this username taken?" must not fire on every keystroke. A
+  synchronous failure stops the async check. So imp never asks a server about a value that is
+  already invalid. While a check is in flight, imp marks the field in `imp.form.validating`, and the
+  field carries `aria-busy`. The newest run wins, through a token. So a stale answer can never
+  overwrite a fresh one, and a control that unmounts during a check clears its own entry. A check
+  that rejects reports `imp.form.checkFailed`. It does not open the gate. A server that nobody can
+  reach must not let invalid data through.
+- **A submit waits only when something is really in flight.** `runSubmit` increases the counter.
+  When `imp.form.validating` is empty, it decides in the same tick. So a form with no async check
+  still submits synchronously. Otherwise it sets `imp.form.submitting`, which spins the submit
+  button, and it continues when the last check clears. The form learns that by a watch on the state,
+  and not by a promise that a control gave it.
+- **A submit is an action, and not a mode of a button.** `submitButton()` and `resetButton()` find
+  their form by dispatching a composed, bubbling event that the form catches. They read
+  `imp.form.submitting` to drive their own spinner. `button` keeps no `type` prop, see
+  `standard-component-library.md`. **The implicit submit**, which is Enter in a single-line field,
+  is implemented by the form. The platform would otherwise have provided it.
 
 ## Consequences
 
-- A form is declarative and flat: `initialValues` in, `onSubmit` out, and a string per control. That
-  is the shape an agent gets right, and it is checkable - a malformed path or a `field` with no form
-  around it fails loudly at mount rather than silently binding to nothing.
-- The values are readable by anything in the subtree with `useState('imp.form')`, so a live summary,
-  a preview pane or a dependent field is ordinary state consumption rather than a form API.
-- The kernel gained nothing. All of this is built on `initState`, `useState`, `watch` and `set`,
-  which keeps the state layer complete as it stands.
-- Async validation cost nothing structurally: because "who is still checking" is just another piece
-  of state, the form waits on a state becoming empty rather than on promises it would have had to
-  collect from a registry it deliberately does not have.
-- The split between `validate` and `validateAsync` is a real thing to learn, and the reward is that
-  neither one has a surprising rhythm: sync feedback is immediate, and the network is touched only
-  when the user leaves the field or submits. An app that wants an async check on every keystroke has
-  to debounce and drive it itself.
-- Writes rebuild the object along the path, so `set`'s structural-equality dedup keeps working and
-  untouched branches keep their identity. The cost is one shallow copy per level of the path on each
-  keystroke, which is nothing next to the DOM work it avoids.
-- Because a control owns its label markup, an app cannot supply its own label element for a std
-  control. Naming from outside is `ariaLabel`, which is a plain string and crosses boundaries
-  freely.
+- A form is declarative and flat. `initialValues` goes in, `onSubmit` comes out, and each control
+  carries one string. That is the shape that an agent writes correctly, and imp can check it. A
+  malformed path, and a `field` with no form around it, both fail loudly at mount. They do not bind
+  to nothing in silence.
+- Anything in the subtree can read the values, with `useState('imp.form')`. So a live summary, a
+  preview panel and a dependent field are ordinary consumption of a state. They are not a form API.
+- The kernel gained nothing. All of this builds on `initState`, `useState`, `watch` and `set`. That
+  keeps the state layer complete as it is.
+- Async validation cost nothing structurally. The question "who is still checking?" is another piece
+  of state. So the form waits for a state to become empty. It does not wait on a set of promises
+  that it would have to collect from a registry that it deliberately does not have.
+- The split between `validate` and `validateAsync` is a real thing to learn. The reward is that
+  neither one has a surprising rhythm. Synchronous feedback is immediate, and imp touches the
+  network only when the person leaves the field, or submits. An app that wants an async check on
+  every keystroke must debounce it, and drive it itself.
+- A write rebuilds the object along the path. So the deduplication of `set`, by structural equality,
+  keeps working, and a branch that nobody touched keeps its identity. The cost is one shallow copy
+  per level of the path, on each keystroke. That is nothing beside the DOM work that it avoids.
+- A control owns the markup of its label. So an app cannot supply its own label element for a
+  standard control. To name a control from outside, use `ariaLabel`. That is a plain string, and it
+  crosses a boundary freely.

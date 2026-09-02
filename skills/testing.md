@@ -1,10 +1,12 @@
 # testing - unit tests in-process, e2e specs in a real browser
 
-Two levels, one command, one import. Runner, assertions and simulated DOM are built into the binary.
+There are two levels, one command and one import. The runner, the assertions and the simulated DOM
+are part of the binary.
 
-- **`*.test.js`** - unit and integration, in-process against a simulated browser environment.
-- **`*.spec.js`** - end-to-end: imp serves the app like `imp start`, launches headless Chrome and
-  hands each spec a Puppeteer `page`.
+- **`*.test.js`** holds a unit test or an integration test. It runs in process, against a simulated
+  browser environment.
+- **`*.spec.js`** holds an end-to-end test. imp serves the app as `imp start` does, launches
+  headless Chrome, and gives each spec a Puppeteer `page`.
 
 ```
 imp test <file>              run one file (exit 0/1)
@@ -17,9 +19,9 @@ imp test --e2e --mock        answer the app's requests from the *.mock.js files 
 ```
 
 One test file per process is the unit of isolation. A bare `imp test` with several candidate files
-runs nothing and exits non-zero - always name a level or a file.
+runs nothing and exits with a non-zero code. Always name a level or a file.
 
-## Writing tests
+## How to write a test
 
 ```js
 import { beforeEach, expect, spy, test } from 'imp/test'
@@ -29,14 +31,15 @@ test('adds numbers', () => {
 })
 ```
 
-`test(name, fn, options?)` registers; tests run in file order, one at a time. `test.skip`,
-`test.only`. Options: `timeout` (ms; default 5s unit, 30s e2e), `fakeTimers` (unit only). Hooks
-`beforeAll`, `beforeEach`, `afterEach`, `afterAll` are file-scoped and awaited. Parameterized tests
-are a plain `for...of` loop around `test()` - there is no `each` helper.
+`test(name, fn, options?)` registers a test. Tests run in file order, one at a time. There are also
+`test.skip` and `test.only`. The options are `timeout` in milliseconds, which defaults to 5s for a
+unit test and 30s for an e2e test, and `fakeTimers`, which works in a unit test only. The hooks
+`beforeAll`, `beforeEach`, `afterEach` and `afterAll` are scoped to the file, and imp awaits them.
+For a parameterized test, write a plain `for...of` loop around `test()`. There is no `each` helper.
 
 ## Assertions
 
-`expect(value)`, every matcher invertible with `.not`:
+Call `expect(value)`. You can invert every matcher with `.not`:
 
 | Matcher                                  | Passes when                                                |
 | ---------------------------------------- | ---------------------------------------------------------- |
@@ -47,7 +50,7 @@ are a plain `for...of` loop around `test()` - there is no `each` helper.
 | `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives `>=` and `<=`)            |
 | `toThrow(message?)`                      | function throws; `await expect(fn).toThrow(...)` for async |
 
-**That is the whole set.** There is no `toBe`, `toBeInstanceOf`, `toBeCloseTo`, `toHaveLength`,
+**That is the whole set.** There is no `toBe`, `toBeInstanceOf`, `toBeCloseTo`, `toHaveLength` or
 `toHaveBeenCalled`:
 
 ```js
@@ -57,11 +60,12 @@ expect(items.length).toEqual(3)
 expect(value).toEqual(null)
 ```
 
-`toEqual` compares numbers, strings, booleans, plain objects, arrays, `Map`, `Set`, `Date`, `RegExp`
-by structure to any depth; DOM nodes, class instances and functions by identity. To check some
-fields only, compare a projection: `expect({ id, name }).toEqual({ id: 1, name: 'imp' })`.
+`toEqual` compares a number, a string, a boolean, a plain object, an array, a `Map`, a `Set`, a
+`Date` and a `RegExp` by structure, to any depth. It compares a DOM node, a class instance and a
+function by identity. To check a few fields only, compare a projection:
+`expect({ id, name }).toEqual({ id: 1, name: 'imp' })`.
 
-Placeholders nest anywhere inside a `toEqual`/`toContain` value:
+A placeholder can nest anywhere inside a `toEqual` or `toContain` value:
 
 | Placeholder                    | Matches                                   |
 | ------------------------------ | ----------------------------------------- |
@@ -75,8 +79,9 @@ Placeholders nest anywhere inside a `toEqual`/`toContain` value:
 
 ## Mocking
 
-**`spy(fn?)`** records every call in `spy.calls` (an array of argument lists) and otherwise does
-whatever function you pass - there are no `.mockReturnValue`-style methods:
+**`spy(fn?)`** records every call in `spy.calls`, which is an array of argument lists. Otherwise it
+does whatever the function that you pass does. There is no `.mockReturnValue` method or anything
+like it:
 
 ```js
 const onSave = spy() //                       records only
@@ -91,10 +96,10 @@ expect(onSave.calls).toEqual([[{ id: 1 }]]) // called once with { id: 1 }
 expect(load.calls.length).toEqual(2)
 ```
 
-Spies are cleared and wrapped methods restored between tests - no cleanup to write.
+imp clears the spies and restores a wrapped method between tests. You write no cleanup.
 
-**`mockModule(specifier, factory)`** replaces a whole module for the file under test, everywhere it
-is imported, at any depth:
+**`mockModule(specifier, factory)`** replaces a whole module for the file under test. It replaces
+the module everywhere it is imported, at any depth:
 
 ```js
 mockModule('./http.js', ({ spy, orig }) => ({
@@ -103,24 +108,25 @@ mockModule('./http.js', ({ spy, orig }) => ({
 }))
 ```
 
-- The specifier is relative to **your test file**, or the dependency alias from `imp.json`. imp
-  matches by resolved file, so a different spelling elsewhere is still covered.
-- Call it `mockModule` (do not rename the import) and pass a **string literal** - imp reads these
+- The specifier is relative to **your test file**, or it is the dependency alias from `imp.json`.
+  imp matches by the resolved file. So a different spelling somewhere else is still covered.
+- Call it `mockModule`. Do not rename the import. Pass a **string literal**, because imp reads these
   before your test runs.
-- The factory runs in the mocked module and **cannot see your test file's variables** - use the
-  injected `spy`/`orig`.
-- Exports you do not return are auto-filled with fresh spies; `default` mocks a default export.
-- Mocks are scoped to one file and never leak.
+- The factory runs in the mocked module. It **cannot see the variables of your test file**. Use the
+  injected `spy` and `orig`.
+- imp fills an export that you do not return with a fresh spy. `default` mocks a default export.
+- A mock is scoped to one file, and it never leaks.
 
-**A component's HTTP calls** need neither: `spy(globalThis, 'fetch', ...)` stands in for the
-network, and a one-line host component owns the client (`build: (_instance, setup) => setup()`)
-since a client is always owned by a component. `{ fakeTimers: true }` makes retries and timeouts
-instant - `await clock.tick(delay)` between attempts. See [http](http.md).
+**The HTTP calls of a component** need neither of those. `spy(globalThis, 'fetch', ...)` replaces
+the network. A host component of one line owns the client, as in
+`build: (_instance, setup) => setup()`, because a component always owns a client.
+`{ fakeTimers: true }` makes a retry and a timeout instant. Call `await clock.tick(delay)` between
+attempts. See [http](http.md).
 
 ## Unit tests
 
-A fresh simulated DOM per file: `document`, `window`, elements, events, `localStorage` are globals.
-Files share their DOM between tests - reset in `beforeEach`.
+Each file gets a fresh simulated DOM. `document`, `window`, the elements, the events and
+`localStorage` are globals. Tests in one file share the DOM, so reset it in `beforeEach`.
 
 ```js
 import { mount } from 'imp'
@@ -135,17 +141,17 @@ test('reacts to clicks', () => {
 })
 ```
 
-**Components render into shadow roots** - see [components](components.md) - so
-`document.querySelector` does not see their internals:
+**A component renders into a shadow root**, see [components](components.md). So
+`document.querySelector` does not see its internals:
 
 ```js
 document.querySelector('my-app-card').shadowRoot.querySelector('button').click()
 ```
 
-**Fake timers** (unit only) - `{ fakeTimers: true }` or
-`{ fakeTimers: { now: new Date('2030-01-01') } }` puts `setTimeout`, `setInterval`,
-`requestAnimationFrame`, `Date` and `performance.now()` on a virtual clock handed to the test as
-`clock`:
+**Fake timers work in a unit test only.** Pass `{ fakeTimers: true }`, or
+`{ fakeTimers: { now: new Date('2030-01-01') } }`. imp then puts `setTimeout`, `setInterval`,
+`requestAnimationFrame`, `Date` and `performance.now()` on a virtual clock. The test receives that
+clock as `clock`:
 
 | Call                   | Does                                                          |
 | ---------------------- | ------------------------------------------------------------- |
@@ -164,13 +170,13 @@ test('debounce fires once', async ({ clock }) => {
 }, { fakeTimers: true })
 ```
 
-`tick`/`runAll` are async - always `await` them. Setting `fakeTimers` on a spec fails.
+`tick` and `runAll` are async. Always `await` them. `fakeTimers` on a spec fails.
 
 ## E2E specs
 
-Each spec file gets its own server, port, browser and page; tests in a file share the page, so a
-file reads as one user session. Each test receives `{ page, browser, baseUrl }`; `page` is a
-Puppeteer page whose selectors pierce shadow roots.
+Each spec file gets its own server, port, browser and page. The tests in one file share the page, so
+a file reads as one user session. Each test receives `{ page, browser, baseUrl }`. `page` is a
+Puppeteer page, and its selectors go through a shadow root.
 
 ```js
 test('increments on click', async ({ page }) => {
@@ -179,27 +185,29 @@ test('increments on click', async ({ page }) => {
 })
 ```
 
-The e2e server is the dev server, so `--mock` (or `mocks.enabled` in `imp.json`) feeds the whole
-suite from your `*.mock.js` files with no stub of any kind - see [mocks](mocks.md).
+The e2e server is the dev server. So `--mock`, or `mocks.enabled` in `imp.json`, feeds the whole
+suite from your `*.mock.js` files. You need no stub of any kind. See [mocks](mocks.md).
 
-**Write plain CSS selectors - they already reach inside components.** Never prefix a selector with
-`>>>`; the search is deep from the page down. Use `>>>` only _between_ parts to disambiguate when a
-selector would match in more than one component, one per boundary crossed:
+**Write a plain CSS selector. It already reaches inside a component.** Never put `>>>` at the front
+of a selector, because the search goes deep from the page down. Use `>>>` only _between_ parts, when
+a selector would match in more than one component. Write one `>>>` per boundary that you cross:
 `imp-submit-button >>> imp-button >>> button`. The page is already on your app before the first
-test; browser console and network stream to the terminal, and a failing test saves a screenshot
-under `.imp/screenshots/`. Set a different entry page with `test.entry` in `imp.json` (see
-[config](config.md)).
+test. The browser console and the network stream to the terminal. A failing test saves a screenshot
+under `.imp/screenshots/`. To use a different entry page, set `test.entry` in `imp.json`, see
+[config](config.md).
 
-The browser is resolved in order: `test.browser` in `imp.json`, `IMP_BROWSER`, an installed
-Chrome/Chromium, else a pinned checksum-verified download into `~/.imp/browser/`.
+imp resolves the browser in this order: `test.browser` in `imp.json`, then `IMP_BROWSER`, then an
+installed Chrome or Chromium, then a pinned download into `~/.imp/browser/` that imp verifies
+against its checksum.
 
-`--video <dir>` records one GIF per spec (tune `test.video`: `enable`, `fps`, `maxDuration`,
-`width`, `quality`) - GIFs play inline in a GitHub PR, which is how an agent shows a reviewer the
-feature working.
+`--video <dir>` records one GIF per spec. Tune it with `test.video`, which has `enable`, `fps`,
+`maxDuration`, `width` and `quality`. A GIF plays inside a GitHub pull request. That is how an agent
+shows a reviewer that the feature works.
 
 ## Output
 
-Plain text on stdout: `✓`/`✗`/`-` per test for a single file; for a level run one `✓ <file>` line
-per passing file and the full output of every failing one, then a tally. Exit code `1` if anything
-failed. The only machine-readable surface is `--list` (JSON array of files, for a CI matrix - one
-job per spec, since each spec is self-contained).
+imp prints plain text on stdout. For a single file it prints `✓`, `✗` or `-` per test. For a level
+run it prints one `✓ <file>` line per passing file, then the full output of every failing file, then
+a tally. The exit code is `1` when anything failed. The only machine-readable surface is `--list`.
+It prints a JSON array of files for a CI matrix, with one job per spec, because each spec is
+self-contained.

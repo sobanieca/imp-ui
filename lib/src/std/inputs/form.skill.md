@@ -10,12 +10,13 @@ form(
 )
 ```
 
-Call shape: `form(props?, ...children)` - children are the fields and buttons, laid out in a column.
+The call shape is `form(props?, ...children)`. The children are the fields and the buttons. imp lays
+them out in a column.
 
-`form` calls `initState('imp.form', initialValues ?? null)` on itself, so **the form's values are
-ordinary named state** living at the form's position in the tree. Controls inside it name the field
-they own with a dot path and read and write that state directly. Nothing to wire up, and unmounting
-the form disposes the state with it.
+`form` calls `initState('imp.form', initialValues ?? null)` on itself. So **the values of the form
+are ordinary named state**, and they live at the position of the form in the tree. A control inside
+the form names the field that it owns with a dot path. It reads and writes that state directly.
+There is nothing to connect. When the form unmounts, the state goes with it.
 
 | Prop            | Values                                   | Default      | Notes                                        |
 | --------------- | ---------------------------------------- | ------------ | -------------------------------------------- |
@@ -35,32 +36,34 @@ the form disposes the state with it.
 | `imp.form.submits`    | How many times submit has been attempted             |
 | `imp.form.validating` | `{ [path]: true }` for fields with a check in flight |
 
-Only `imp.form` is meant for your code; the rest are how the controls and the buttons agree with
-each other.
+`imp.form` is the only state for your code. The others are how the controls and the buttons agree
+with each other.
 
 ## Submitting
 
-- **`submitButton()` is the submit action.** It sits anywhere inside the form, and shows a spinner
-  by itself while an async `onSubmit` runs.
-- **Enter in any single-line field submits**, because imp implements implicit submission itself -
-  Enter in a `textArea` does not.
-- On submit every field re-validates. If anything fails, `onSubmit` never runs and each bad field
-  starts showing its message.
-- **If any field has an async check (`validateAsync`), submit waits for it** - the button spins
-  until every check settles, then decides. With no async checks submit happens in the same tick.
-- `resetButton()` puts `initialValues` back and clears errors and touched state.
+- **`submitButton()` is the submit action.** It can sit anywhere inside the form. It shows a spinner
+  itself while an async `onSubmit` runs.
+- **Enter in any single-line field submits the form**, because imp implements the implicit submit
+  itself. Enter in a `textArea` does not submit.
+- On a submit, imp validates every field again. If one field fails, `onSubmit` does not run, and
+  each bad field starts to show its message.
+- **When a field has an async check through `validateAsync`, the submit waits for it.** The button
+  spins until every check settles, and then imp decides. With no async check, the submit happens in
+  the same tick.
+- `resetButton()` puts `initialValues` back. It also clears the errors and the touched state.
 
 Rules an agent gets wrong:
 
-- **There is no native `<form>` submit to hook.** Do not pass `events: { submit }` or reach for a
-  `type: 'submit'` button - `onSubmit` on the form and `submitButton()` are the whole story.
-- **`onSubmit` receives the values object**, already validated. Read it from the argument rather
-  than calling `useState('imp.form')` again.
-- **Return the promise from an async `onSubmit`** so the form knows when it finished - that is what
-  drives the submit button's spinner and stops double submits.
-- **One form per `initialValues`.** Two forms on a page each own their own `imp.form`, resolved by
-  position, so nesting one inside another makes the inner one win for its children.
-- Unknown props warn at mount, and an out-of-range `layout` warns and falls back.
+- **There is no native `<form>` submit to attach to.** Do not pass `events: { submit }`, and do not
+  use a `type: 'submit'` button. `onSubmit` on the form and `submitButton()` are the whole API.
+- **`onSubmit` receives the values object**, already validated. Read the argument. Do not call
+  `useState('imp.form')` again.
+- **Return the promise from an async `onSubmit`**, so the form knows when the work finished. That
+  promise drives the spinner of the submit button, and it stops a double submit.
+- **Use one form per `initialValues`.** Two forms on a page each own their own `imp.form`, and imp
+  resolves each one by position. So in a nested form, the inner form wins for its own children.
+- imp warns about an unknown prop at mount. It warns about a `layout` outside the list, and falls
+  back to the default.
 
 ```js
 form(

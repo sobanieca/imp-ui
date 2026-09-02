@@ -2,74 +2,80 @@
 
 ## Context
 
-`imp build` emits a complete deployable site, not just a JavaScript bundle: whatever the bundler
-does not compile still has to reach the output directory, because a page needs its stylesheets,
-images and fonts alongside the built code.
+`imp build` emits a complete site that you can deploy, and not only a JavaScript bundle. Whatever
+the bundler does not compile must still reach the output directory. A page needs its stylesheets,
+its images and its fonts beside the built code.
 
-The first implementation had no designated asset folder. The project root _was_ the static root, so
-the build mirrored the whole root into the output and subtracted what should not ship: a hardcoded
-list of directories (`.git`, `node_modules`, `.imp`), a hardcoded list of root files (`imp.json`,
-`imp.lock`), the bundler's own inputs derived from the esbuild metafile, the configured environment
-files, and the mocks folder.
+The first implementation had no folder for assets. The project root _was_ the static root. So the
+build copied the whole root into the output, and then subtracted what must not ship. It subtracted a
+fixed list of directories, which were `.git`, `node_modules` and `.imp`. It subtracted a fixed list
+of root files, which held `imp.json`. It subtracted the inputs of the bundler, taken from the
+esbuild metafile. It subtracted the configured environment files, and the mocks folder.
 
-That is a denylist, and it fails in the unsafe direction. Anything nobody thought to exclude is
-published - a stray `.env.local`, a `notes/` folder, a second checkout - and each new kind of
-project file is one more entry somebody has to remember. The list was also duplicated, with three
-different sets of contents, across build, dev-server watching, and lint/fmt/test discovery.
+That is a list of what to exclude, and it fails in the unsafe direction. imp publishes anything that
+nobody thought to exclude. That could be a stray `.env.local`, a `notes/` folder, or a second
+checkout. Each new kind of project file is one more entry that somebody must remember. The list was
+also duplicated, with three different sets of contents, across the build, the watch of the dev
+server, and the discovery of lint, fmt and test.
 
-A related problem: a deployment under a sub-path (`example.com/my-app/`) needs every URL the build
-emits to carry that prefix. The router already had a concept for this, the `IMP_BASEPATH`
-environment value, but the build ignored it, so assets and the PWA manifest pointed at the domain
-root.
+There was a related problem. A deployment under a sub-path, such as `example.com/my-app/`, needs
+every URL that the build emits to carry that prefix. The router already had a concept for this,
+which is the `IMP_BASEPATH` environment value. But the build ignored it. So the assets and the PWA
+manifest pointed at the domain root.
 
 ## Decision
 
-**`public/` is the root of the built site, and the only thing copied into it.** Its contents are
-copied with the folder name stripped, so `public/assets/logo.png` ships as `assets/logo.png` and is
-served at `/assets/logo.png`. The folder is optional, and its name is fixed - there is no key in
-`imp.json` to rename it, because a second name for the same concept buys nothing and every project
-that reads a config gains a case to handle.
+**`public/` is the root of the built site, and it is the only thing that imp copies into the
+output.** imp copies its contents, and removes the folder name. So `public/assets/logo.png` ships as
+`assets/logo.png`, and it answers at `/assets/logo.png`. The folder is optional, and its name is
+fixed. There is no key in `imp.json` to rename it. A second name for the same concept buys nothing,
+and every project that reads a config gains a case to handle.
 
-Consequences of making this an allowlist:
+These consequences follow from a list of what to include:
 
-- **No exclusion lists in the build at all.** Module sources, `imp.json`, environment files, the
-  mocks folder, `.git`, `node_modules` and `.imp` are excluded by not being in `public/`, so the
-  esbuild metafile is no longer consulted for this purpose and the hardcoded sets are gone.
-- **The entry HTML stays at the project root.** imp processes that file - bundling its scripts,
-  injecting environment values and PWA tags - whereas `public/` is verbatim passthrough. The two
-  roles are distinct, so they live in different places.
-- **A collision is an error.** A file in `public/` whose path matches something the build generates
-  fails the build naming the path, rather than one silently overwriting the other.
-- **`imp start` serves `public/` at the site root**, layered over the project root, which is still
-  served so module sources load during development. A URL that resolves in development therefore
+- **The build holds no exclusion list.** Module sources, `imp.json`, an environment file, the mocks
+  folder, `.git`, `node_modules` and `.imp` are all excluded, because they are not in `public/`. So
+  imp no longer reads the esbuild metafile for this purpose, and the fixed sets are gone.
+- **The entry HTML stays at the project root.** imp processes that file. It bundles the scripts,
+  injects the environment values, and adds the PWA tags. `public/` passes through without a change.
+  The two roles are different, so they live in different places.
+- **A collision is an error.** A file in `public/` whose path matches a file that the build
+  generates fails the build, and imp names the path. One file does not overwrite the other in
+  silence.
+- **`imp start` serves `public/` at the site root**, over the project root, which imp still serves
+  so that a module source loads during development. So a URL that resolves in development also
   resolves in the built site.
 
-**`IMP_BASEPATH` is the one setting for a sub-path deployment.** `imp build` reads it from the
-resolved environment and prefixes the root-absolute URLs it emits: `href`/`src` attributes in the
-page, the PWA manifest, apple-touch icon and service worker registration, and the manifest's
-`start_url`, `scope`, icon `src`s plus the service worker's precache list and shell. URLs inside
-`<script>` bodies, external URLs, protocol-relative URLs and already-relative paths are untouched.
-The CLI normalizes the value exactly as the router does, so one value drives both asset URLs and
-route matching.
+**`IMP_BASEPATH` is the one setting for a deployment on a sub-path.** `imp build` reads it from the
+resolved environment. It puts the base in front of every root-absolute URL that it emits. That
+covers an `href` and a `src` attribute in the page, the PWA manifest, the apple-touch icon, the
+registration of the service worker, and the `start_url`, the `scope` and the icon `src` values of
+the manifest. It also covers the precache list and the shell of the service worker. imp does not
+change a URL inside the body of a `<script>`, an external URL, a protocol-relative URL, or a path
+that is already relative. The CLI normalizes the value exactly as the router does. So one value
+drives the asset URLs and the matching of a route.
 
-PWA URLs became root-absolute rather than relative as part of this. Relative URLs resolve against
-the current document, so a deep link (`/todos/42`) resolved them against the wrong directory; a
-base-prefixed root-absolute URL is correct from any route.
+The PWA URLs became root-absolute, and no longer relative, as part of this change. A relative URL
+resolves against the current document. So a deep link, such as `/todos/42`, resolved such a URL
+against the wrong directory. A root-absolute URL with the base in front is correct from any route.
 
 ## Consequences
 
-- **Breaking for existing projects.** Assets at the project root are no longer published and must
-  move into `public/`. Taken deliberately while imp is pre-1.0; `imp init` scaffolds `public/` with
-  a favicon in it (`project-scaffold.md`), so the layout is visible from a project's first minute.
-- **Site-root files live in `public/`** - `favicon.ico`, `robots.txt`, `404.html`, `_redirects`.
-- **Slightly more ceremony than dropping a file next to the page**, in exchange for an explicit,
-  inspectable answer to what ships and a build that cannot leak a project file by omission.
-- **Development is more permissive than the build**, because the project root stays served for
-  module sources. A root-level asset therefore loads in `imp start` and is absent from the built
-  site; the per-file listing `imp build` prints is what shows exactly what shipped.
-- **Assets referenced from a stylesheet should use stylesheet-relative URLs**, which resolve against
-  the stylesheet's own location and stay correct under any base path; the build rewrites HTML
-  attributes, not CSS.
-- **One shared skip list remains**, for lint/fmt/test discovery and dev-server watching, covering
-  `.git`, `node_modules`, `dist` and `.imp`. That is a "files imp should not read" concern,
-  unrelated to what a build publishes.
+- **This breaks an existing project.** imp no longer publishes an asset at the project root. Move it
+  into `public/`. imp took that break deliberately, before version 1.0. `imp init` scaffolds
+  `public/` with a favicon in it, see `project-scaffold.md`. So the layout is visible from the first
+  minute of a project.
+- **A file that belongs at the site root lives in `public/`.** Examples are `favicon.ico`,
+  `robots.txt`, `404.html` and `_redirects`.
+- **There is slightly more ceremony than a file beside the page.** In exchange, there is an explicit
+  answer to the question of what ships, and a person can inspect it. The build also cannot publish a
+  project file because somebody forgot to exclude it.
+- **Development is more permissive than the build**, because imp still serves the project root for a
+  module source. So an asset at the root loads under `imp start`, and it is absent from the built
+  site. The listing per file that `imp build` prints shows exactly what shipped.
+- **An asset that a stylesheet references must use a URL relative to the stylesheet.** Such a URL
+  resolves against the location of the stylesheet, and it stays correct under any base path. The
+  build rewrites an HTML attribute, and not CSS.
+- **One shared skip list remains**, for the discovery of lint, fmt and test, and for the watch of
+  the dev server. It covers `.git`, `node_modules`, `dist` and `.imp`. That list answers the
+  question of which files imp must not read. It has no relation to what a build publishes.

@@ -1,99 +1,112 @@
 # Accessibility - an a11y baseline for the standard library
 
-Make the standard component library (`todo/stdlib-components.md`) accessible by default, so an app
-built entirely from stdlib components clears the common WCAG bar without the app author wiring ARIA,
-focus, or keyboard handling by hand. Accessibility is a property of the components imp ships, not
-something each app re-implements - the same all-in-one argument that justifies the stdlib justifies
-owning its a11y contract.
+Make the standard component library accessible by default, see `todo/stdlib-components.md`. So an
+app that somebody builds entirely from standard components clears the common WCAG bar. The author of
+the app then connects no ARIA, no focus handling, and no keyboard handling, by hand. Accessibility
+is a property of the components that imp ships. It is not something that each app implements again.
+The argument for a complete toolkit justifies the standard library. The same argument justifies that
+imp owns the accessibility contract of that library.
 
 ## Why imp owns this
 
-Correct ARIA roles, focus management, and keyboard interaction are exactly the cross-cutting,
-easy-to-get-wrong plumbing imp exists to absorb. imp assumes app code is written by AI agents; an
-agent composing `modal`, `tabs`, and `menuList` should inherit a working accessibility story from
-the components, not be expected to remember every ARIA authoring-practices detail per call site.
-Baking the baseline into the stdlib means every app gets it for free and consistently.
+A correct ARIA role, the management of the focus, and the interaction with a keyboard, are exactly
+the cross-cutting plumbing that is easy to get wrong, and that imp exists to absorb. imp assumes
+that an AI agent writes the app code. An agent that composes `modal`, `tabs` and `menuList` must
+inherit a story about accessibility that works, from the components. Nobody must expect that agent
+to remember every detail of the ARIA authoring practices, at each call site. To put the baseline
+into the standard library means that every app gets it, with no work, and in a consistent way.
 
-## The baseline every interactive component must meet
+## The baseline that every interactive component must meet
 
-Define one accessibility contract the stdlib is held to (this resolves the "Accessibility baseline"
-open question left in `todo/stdlib-components.md`):
+Define one accessibility contract, and hold the standard library to it. That resolves the open
+question about an accessibility baseline, which `todo/stdlib-components.md` leaves:
 
-- **Semantic roles.** Prefer native elements (`button`, `a[href]`, `input`, `<dialog>`) so roles and
-  states come from the platform; add ARIA roles only where no native element fits (`tabs`, `tree`,
-  `menuList`).
-- **Keyboard operability.** Every interaction reachable by pointer is reachable by keyboard -
-  Tab/Shift-Tab order, Enter/Space activation, Arrow-key navigation for composite widgets (`tabs`,
-  `radioGroup`, `menuList`, `tree`, `pagination`), Escape to dismiss overlays.
-- **Focus management.** Modal overlays (`dialog({ modal: true })`, `drawer`) trap focus while open,
-  restore focus to the invoking element on close, and are opened with focus moved into them. None of
-  that is written per component or shared as imp code: it comes from the platform's top layer,
-  through the seam settled in `todo/overlay-seam.md`. A non-modal `dialog` traps nothing by design -
-  the page behind it stays operable - but it owes the one thing the platform does not give it: **its
-  drag is reachable from the keyboard**, or it is a pointer-only interaction, which the operability
-  rule above forbids.
-- **State wiring.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
-  `aria-invalid`, `aria-busy`, `aria-live` for feedback (`alert`, `toast`, `spinner`) reflect the
-  component's reactive state automatically - they bind to the same states that drive the visuals
-  (`adr/event-propagated-state.md`), so they can never drift from what is shown.
-- **Labels & descriptions.** Inputs associate a `<label>` (or `aria-label`/`aria-labelledby`);
-  icon-only controls require an accessible name; error/help text links via `aria-describedby`.
-- **Visible focus & motion.** A visible focus indicator built from `--imp-*` tokens
-  (`adr/themable-by-default-tokens.md`) that survives theming, and `prefers-reduced-motion`
-  respected by any component that animates.
+- **Semantic roles.** Prefer a native element, such as `button`, `a[href]`, `input` and `<dialog>`.
+  Then the roles and the states come from the platform. Add an ARIA role only where no native
+  element fits, as in `tabs`, `tree` and `menuList`.
+- **Operability from a keyboard.** Every interaction that a pointer can reach, a keyboard can reach.
+  That covers the order of Tab and Shift-Tab, the activation with Enter and Space, navigation with
+  an arrow key in a composite widget, and Escape to dismiss an overlay. The composite widgets are
+  `tabs`, `radioGroup`, `menuList`, `tree` and `pagination`.
+- **Management of the focus.** A modal overlay traps the focus while it is open. It restores the
+  focus to the element that invoked it, on close. It opens with the focus moved into it. That covers
+  `dialog({ modal: true })` and `drawer`. Nobody writes any of that per component, and imp shares
+  none of it as its own code. It comes from the top layer of the platform, through the seam that
+  `todo/overlay-seam.md` settled. A non-modal `dialog` traps nothing, by design, because the page
+  behind it stays operable. But it owes the one thing that the platform does not give it. **A person
+  must be able to drag it from the keyboard.** Otherwise the drag is an interaction for a pointer
+  only, and the rule about operability, above, forbids that.
+- **The wiring of a state.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
+  `aria-invalid`, `aria-busy`, and `aria-live` for feedback, all reflect the reactive state of the
+  component automatically. `alert`, `toast` and `spinner` use `aria-live`. Those attributes bind to
+  the same states that drive the visuals, see `adr/event-propagated-state.md`. So they can never
+  differ from what a person sees.
+- **Labels and descriptions.** An input associates a `<label>`, or it uses `aria-label` or
+  `aria-labelledby`. An icon-only control needs an accessible name. The text of an error, and the
+  help text, connect through `aria-describedby`.
+- **A visible focus, and motion.** imp builds a visible indicator of the focus from the `--imp-*`
+  tokens, see `adr/themable-by-default-tokens.md`. That indicator survives a change of theme. Any
+  component that animates obeys `prefers-reduced-motion`.
 
-## Router & app-level concerns
+## Concerns of the router, and of the app
 
-Some a11y concerns live below the component layer and pair with other items:
+Some concerns about accessibility live below the layer of the components, and they pair with another
+item:
 
-- **Route focus & scroll.** The router already resets scroll to the top on push navigation
-  (`adr/client-side-router.md`); the remaining a11y gap is moving focus to the new view on
-  navigation. A route change with no focus move strands keyboard and screen-reader users on the old
-  page.
-- **Live-region announcements** for route changes and toast/alert feedback, so assistive tech is
-  told what changed without a full-page reload cue.
+- **The focus and the scroll on a route change.** The router already sets the scroll to the top on a
+  forward navigation, see `adr/client-side-router.md`. The remaining gap in accessibility is to move
+  the focus to the new view, on a navigation. A change of route with no move of the focus leaves a
+  user of a keyboard, and a user of a screen reader, on the old page.
+- **An announcement through a live region**, for a change of route, and for the feedback of a toast
+  or an alert. So assistive technology learns what changed, and it does not need the cue of a full
+  page reload.
 
-## Lint / verification (later)
+## Lint and verification, later
 
-Mirror imp's other static checks: consider a lint rule or check that flags obvious violations in app
-code (an `img` factory call with no `alt`, an icon-only `button` with no accessible name). Full
-automated a11y auditing is out of scope; a few high-signal checks that catch the common mistakes fit
-imp's existing lint model. Whether to run an in-process axe-style pass over rendered stdlib
-components as part of `imp test` is an open question.
+Mirror the other static checks of imp. Consider a lint rule, or a check, that reports an obvious
+violation in app code. Two examples are a call to the `img` factory with no `alt`, and an icon-only
+`button` with no accessible name. A full automated audit of accessibility is out of scope. A few
+checks with a high signal, that catch the common mistakes, fit the existing lint model of imp.
+Whether `imp test` runs a pass in the style of axe, in process, over rendered standard components,
+is an open question.
 
 ## Dependencies
 
-- The core contract depends on the standard component library (`todo/stdlib-components.md`) - it is
-  the surface being made accessible - and is best defined **alongside** it rather than bolted on
-  after, so every component ships accessible from its first version.
-- State wiring binds to the landed state layer (`adr/event-propagated-state.md`); focus indicators
-  use theme tokens (`adr/themable-by-default-tokens.md`); route focus management builds on the
-  router (`adr/client-side-router.md`).
-- Labels and announcements route user-facing strings through `t()`
-  (`adr/translatable-by-default.md`) like the rest of the stdlib.
+- The core contract depends on the standard component library, see `todo/stdlib-components.md`. That
+  library is the surface that somebody makes accessible. Define the contract **beside** that
+  library, and do not add it afterwards. So every component ships accessible, from its first
+  version.
+- The wiring of a state binds to the state layer that landed, see `adr/event-propagated-state.md`.
+  An indicator of the focus uses a theme token, see `adr/themable-by-default-tokens.md`. The
+  management of the focus on a route change builds on the router, see `adr/client-side-router.md`.
+- A label, and an announcement, route a user-facing string through `t()`, see
+  `adr/translatable-by-default.md`, like the rest of the standard library.
 
 ## ADR impact
 
-Record an `accessible-by-default-stdlib.md` ADR: the accessibility contract every stdlib component
-meets (native-first roles, keyboard operability, top-layer focus management, signal-bound ARIA
-state, labeling rules, token-based visible focus, reduced-motion), and the deliberate scope boundary
-(imp guarantees a baseline for its own components and app-level route focus; it does not audit
-arbitrary app markup beyond a few lint checks). Update the ADR table in `adr/README.md`; document
-the a11y guarantees in `docs/`. Once accepted, remove the "Accessibility baseline" open question
-from the stdlib item since it is answered here.
+Record an ADR named `accessible-by-default-stdlib.md`. It states the accessibility contract that
+every standard component meets. That covers native elements first for a role, operability from a
+keyboard, management of the focus through the top layer, an ARIA state bound to a signal, the rules
+about a label, a visible focus from a token, and reduced motion. It also states the deliberate
+boundary of the scope. imp guarantees a baseline for its own components, and it guarantees the focus
+on a route change at app level. imp does not audit arbitrary markup of an app, beyond a few lint
+checks. Update the table of ADRs in `adr/README.md`. Document the guarantees about accessibility in
+`docs/`. When somebody accepts the ADR, remove the open question about an accessibility baseline
+from the item about the standard library, because this ADR answers it.
 
 ## Open questions
 
-- **What the unit level can actually assert.** The baseline is a hard guarantee, so every
-  interactive component ships an a11y test - but imp's test DOM implements almost none of the
-  behaviour being guaranteed: `showModal()` is a stub that sets `open`, there is no `showPopover`,
-  and focus, `inert` and Escape handling are absent. Decide how much of that to fill in
-  `cli/src/test_dom.js` (`todo/overlay-seam.md` scopes the top-layer part) and how much stays
-  e2e-only, per behaviour rather than per component.
-- **Automated auditing in `imp test`.** Whether to run an axe-core-style check over rendered
-  components in the e2e path, and whether a pure-JS/vendored auditor exists that fits the in-process
-  constraints (`adr/in-process-toolchain.md`).
-- **How much is configurable.** Focus-trap and announcement behavior as fixed defaults vs.
-  app-tunable props.
-- **Screen-reader coverage.** Which assistive-tech / browser combinations define "supported" for the
-  guarantee.
+- **What a unit test can really assert.** The baseline is a hard guarantee. So every interactive
+  component ships a test about accessibility. But the test DOM of imp implements almost none of the
+  behaviour that the guarantee covers. `showModal()` is a stub that sets `open`. There is no
+  `showPopover`. The focus, `inert` and the handling of Escape are absent. Decide how much of that
+  to fill in `cli/src/test_dom.js`. `todo/overlay-seam.md` scopes the part about the top layer.
+  Decide how much stays in an e2e test only. Make that decision per behaviour, and not per
+  component.
+- **An automated audit in `imp test`.** Does imp run a check in the style of axe-core, over a
+  rendered component, in the e2e path? Does an auditor in pure JavaScript, or a vendored auditor,
+  exist that fits the constraints about running in process, see `adr/in-process-toolchain.md`?
+- **How much is configurable.** Is the behaviour of the focus trap, and of an announcement, a fixed
+  default? Or can an app tune it with a prop?
+- **The coverage of a screen reader.** Which combinations of assistive technology and browser define
+  the word "supported", for this guarantee?

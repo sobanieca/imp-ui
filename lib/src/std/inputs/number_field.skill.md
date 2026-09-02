@@ -6,7 +6,7 @@ import { numberField } from 'imp/std/inputs'
 numberField({ field: 'quantity', label: 'Quantity', min: 1, max: 99 })
 ```
 
-Call shape: `numberField(props?)` - it takes no children.
+The call shape is `numberField(props?)`. It takes no children.
 
 | Prop        | Values                                     | Notes                                        |
 | ----------- | ------------------------------------------ | -------------------------------------------- |
@@ -18,31 +18,33 @@ Call shape: `numberField(props?)` - it takes no children.
 | `required`  | boolean                                    | Marks it and validates that it is filled in  |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                           |
 
-Also: `step`, `placeholder`, `readonly`.
+The other props are `step`, `placeholder` and `readonly`.
 
-Validation props: `required`, `minLength`, `maxLength`, `min`, `max`, `pattern` (a RegExp) and
-`validate` - a function returning a message string, or `null` when the value is fine. Messages come
-from the `imp.form.*` keys, so translate those rather than hardcoding wording.
+The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern`, which is a
+RegExp, and `validate`. `validate` is a function. It returns a message string, or `null` when the
+value is correct. The messages come from the `imp.form.*` keys. Translate those keys. Do not write
+fixed wording.
 
-`validateAsync` takes the same shape but returns a **promise** of a message or `null`, and runs only
-on **blur and submit** - never on every keystroke. A sync failure skips it, submit waits for it, and
-a rejected promise reports `imp.form.checkFailed` rather than letting the value through.
+`validateAsync` has the same shape, but it returns a **promise** of a message or of `null`. It runs
+on **blur and on submit** only, never on a keystroke. A synchronous failure skips it. A submit waits
+for it. A rejected promise reports `imp.form.checkFailed`, and the value does not pass.
 
 Rules an agent gets wrong:
 
-- **`field` and `value` are alternatives.** Inside a form use `field`; passing both warns and
+- **`field` and `value` are alternatives.** Inside a form, use `field`. With both, imp warns and
   `field` wins. A `field` with no form around it is an error.
-- **An error only shows once the field has been left or submit was attempted**, so a form does not
-  shout at someone still filling in the first box.
-- **`label` renders a real `<label>` inside this component.** Do not wrap the control in your own
-  label - a label outside cannot reach the input across the shadow boundary.
+- **An error shows only after the person leaves the field, or tries to submit.** So the form does
+  not report a problem while the person still fills in the first box.
+- **`label` renders a real `<label>` inside this component.** Do not put your own label around the
+  control. A label outside cannot reach the input across the shadow boundary.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
-- Unknown props warn at mount, and an out-of-range value warns and falls back.
-- **The committed value is a `number`**, and an empty field commits `undefined` - so the form state
-  never holds `'42'` as a string. Something unparseable reports the `imp.form.number` message.
-- **`min` and `max` compare numbers; `minLength` and `maxLength` count characters.** For a numeric
-  range you want `min`/`max`.
-- **`step` is the stepper's increment, not a validation rule.**
+- imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
+  to the default.
+- **The committed value is a `number`.** An empty field commits `undefined`. So the form state never
+  holds `'42'` as a string. A value that imp cannot parse reports the `imp.form.number` message.
+- **`min` and `max` compare numbers. `minLength` and `maxLength` count characters.** For a numeric
+  range, use `min` and `max`.
+- **`step` is the increment of the stepper, not a validation rule.**
 
 ```js
 numberField({ field: 'quantity', label: 'Quantity', min: 1, max: 99, required: true })
