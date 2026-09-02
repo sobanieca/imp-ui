@@ -42,7 +42,9 @@ Rules an agent gets wrong:
 
 - **Never `import * as icons from 'imp/icons'`, and never index the module.** Each name is carried
   on its own and everything unimported is dropped, but a namespace import or a computed lookup pins
-  all 1791 icons into the app. There is no `icon('house')` string form for that reason.
+  all 1791 icons into the app. There is no `icon('house')` string form for that reason. A namespace
+  import, an `export *` re-export or a dynamic `import()` of `imp/icons` is an `imp/icons-by-name`
+  lint error.
 - **The old name is not the new one.** Lucide renames icons between releases and imp ships one
   release, so `luHome` does not exist - it is `luHouse`, and the drop-down arrow is `luChevronDown`.
   An unknown export is a build error naming the import, not a runtime warning.

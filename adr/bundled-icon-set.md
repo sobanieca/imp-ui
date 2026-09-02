@@ -62,8 +62,9 @@ all.
   only for the icons it names.
 - The cost is one rule the docs and skills have to keep repeating: never
   `import * as icons from 'imp/icons'`, because a namespace import pins the whole table. It is the
-  single way to get this wrong, and nothing but prose prevents it - a bundle-size test in imp's own
-  repo cannot see into an app.
+  single way to get this wrong, and a bundle-size test in imp's own repo cannot see into an app, so
+  the `imp/icons-by-name` lint rule enforces it where the app is: a namespace import, an `export *`
+  re-export or a dynamic `import()` of `imp/icons` is an error naming the by-name form.
 - The binary grows by 434 kB, well under a percent of it. The generated file is excluded from
   `deno fmt` and `deno lint`.
 - Lucide renames icons between releases, so upgrading is one pinned version in

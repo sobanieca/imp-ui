@@ -104,6 +104,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-no-root-query-in-build', ['lint', 'app.js'], fixture('lint-root-query'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
+  await test('lint-icons-by-name', ['lint', 'app.js'], fixture('lint-icons'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
   await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))
   await test('lint-imports-removed', ['lint', 'app.js'], fixture('legacy-imports'))

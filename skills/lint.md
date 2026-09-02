@@ -26,12 +26,14 @@ own rules are always applied as errors and cannot be reconfigured.
 | `imp/no-root-query-in-build`         | `querySelector`/`querySelectorAll`/`getElementById` on `instance.root` inside `build`                            | keep the node you built in a variable, or query in `instance.afterMount(cb)`                |
 | `imp/component-name`                 | a literal `component()` name that is not lowercase-with-a-dash (or is HTML-reserved)                             | name it `my-app-profile`                                                                    |
 | `imp/import-source`                  | an imp export imported from the wrong specifier                                                                  | autofixed - the name is moved to the right import                                           |
+| `imp/icons-by-name`                  | `import * as`, `export *` or `import()` of `imp/icons`                                                           | import each icon by name: `import { luHouse } from 'imp/icons'`                             |
 | `imp/exact-dependency-versions`      | inexact pins in `imp.json`, inline `npm:`/`jsr:` specifiers, undeclared bare imports, unknown `imp/...` subpaths | pin exactly, or run the `imp install` command the message prints                            |
 
 Each rule guards a subject: read [components](components.md) for the component rules,
 [state](state.md) for the state rules, [http](http.md) for the http client rules,
 [routing](routing.md) for the router rule, [rendering](rendering.md) for the props rule,
-[imports](imports.md) for `import-source`, and [dependencies](dependencies.md) for the pin rule.
+[imports](imports.md) for `import-source`, [icons](icons.md) for `icons-by-name`, and
+[dependencies](dependencies.md) for the pin rule.
 
 Names built dynamically (a variable, a template with expressions) are not checked statically - the
 same validation happens at runtime, where a bad name throws.

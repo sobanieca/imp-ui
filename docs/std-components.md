@@ -322,7 +322,9 @@ page is the name you import.
 Naming them one by one is what keeps the bundle small: your build carries the drawing data for the
 icons you actually imported and nothing else. An app that draws one icon ships a few hundred bytes
 of artwork, not the 434 kB the full set weighs. The cost of that is one rule - never
-`import * as icons from 'imp/icons'`, because a namespace import asks for all of it.
+`import * as icons from 'imp/icons'`, because a namespace import asks for all of it. `imp lint`
+holds the line for you: a namespace import, an `export *` re-export or a dynamic `import()` of
+`imp/icons` is an `imp/icons-by-name` error (see **[Linting](lint.md)**).
 
 `size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length; every Lucide icon is
 square, so one length sets both axes. `color` names a **theme token** rather than a CSS color -
