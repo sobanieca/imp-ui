@@ -2,6 +2,7 @@ import { component } from 'imp'
 import { div, input, label, li, ul } from 'imp/html'
 import { computed, initState, useState } from 'imp/state'
 import { button, heading, icon, text } from 'imp/std'
+import { luTrash } from 'imp/icons'
 import { emptyState } from 'imp/std/display'
 import { textField } from 'imp/std/inputs'
 import { stack } from 'imp/std/layout'
@@ -69,7 +70,7 @@ const todoRow = component('todo-row', {
         size: 'sm',
         label: `Delete ${todo.title}`,
         events: { click: () => removeTodo(todos, todo.id) },
-      }, icon({ name: 'trash', size: 'sm' })),
+      }, icon(luTrash, { size: 'sm' })),
     )
   },
 })

@@ -260,6 +260,30 @@ on it.
 Only imp's own specifiers are checked, so a name your app or a dependency happens to share with an
 imp export is never flagged.
 
+### `imp/icons-by-name`
+
+`imp/icons` holds the whole Lucide set - 1791 icons, 434 kB of drawing data - and an app pays only
+for the ones it names, because the build keeps each icon it can see imported and drops the rest (see
+**[Standard components](std-components.md)**). Anything that reaches for the module as a whole
+defeats that: a namespace import, an `export *` re-export, or a dynamic `import()`. The rule flags
+all three:
+
+```js
+import * as icons from 'imp/icons'
+
+export * from 'imp/icons'
+
+const set = await import('imp/icons')
+```
+
+```
+error[imp/icons-by-name]: 'import * as icons' reaches for the whole 'imp/icons' set (1791 icons) - the build drops only the icons an app never names, so import each one you draw: import { luHouse } from 'imp/icons'
+ --> src/icons.js:1:8
+```
+
+Import each icon by name - `import { luHouse, luStar } from 'imp/icons'` - and re-export by name the
+same way if a module of your own collects them.
+
 ### `imp/exact-dependency-versions`
 
 Dependencies are vendored: declared under `dependencies` in `imp.json` and bundled into your

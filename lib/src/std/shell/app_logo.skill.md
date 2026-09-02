@@ -3,8 +3,9 @@
 ```js
 import { appLogo } from 'imp/std/shell'
 import { icon } from 'imp/std'
+import { luBox } from 'imp/icons'
 
-appLogo({ label: 'Acme', tagline: 'Operations', icon: icon({ name: 'box' }) })
+appLogo({ label: 'Acme', tagline: 'Operations', icon: icon(luBox) })
 appLogo({ label: 'Acme', src: '/logo.svg' })
 ```
 

@@ -134,6 +134,7 @@ top-level navbar, a nav column, a content area, the signed-in person and whateve
 needs, already laid out, already scrolling each region on its own, and already working on a phone.
 
 ```js
+import { luChartColumn } from 'imp/icons'
 import { shell } from 'imp/std/layout'
 
 shell(
@@ -146,7 +147,7 @@ shell(
         {
           id: 'reports',
           label: 'Reports',
-          icon: icon({ name: 'chart' }),
+          icon: icon(luChartColumn),
           groups: [
             { label: 'Money', items: [{ id: 'revenue', label: 'Revenue', href: '/revenue' }] },
             { label: 'People', items: [{ id: 'churn', label: 'Churn', href: '/churn' }] },
@@ -244,16 +245,17 @@ fit is replaced by your own without asking the frame's permission.
 import { shell } from 'imp/std/layout'
 import { appLogo, langSelect, themeSelect } from 'imp/std/shell'
 import { icon } from 'imp/std'
+import { luBox, luChartColumn } from 'imp/icons'
 
 shell(
   {
-    logo: appLogo({ label: 'Acme', icon: icon({ name: 'box', size: 'lg' }) }),
+    logo: appLogo({ label: 'Acme', icon: icon(luBox, { size: 'lg' }) }),
     navbar: {
       label: 'Sections',
       selected: section,
       items: [
-        { id: 'reports', label: 'Reports', href: '/reports', icon: icon({ name: 'chart' }) },
-        { id: 'orders', label: 'Orders', href: '/orders', icon: icon({ name: 'box' }) },
+        { id: 'reports', label: 'Reports', href: '/reports', icon: icon(luChartColumn) },
+        { id: 'orders', label: 'Orders', href: '/orders', icon: icon(luBox) },
       ],
     },
     sidebar: { label: 'Reports', selected: current },
@@ -287,9 +289,8 @@ Sidebar and navbar rows are not a separate component either: they are the items 
 the frame, the same ones **`navMenu`** takes when you want a menu somewhere that is not the frame. A
 row's `tag` is plain data - `tag: { text: 'new', color: 'green' }` - and the `tag` component is
 built from it, so a count or a status pill needs no markup of your own; a group takes the same key.
-Icons come from `icon` in the base group, a small fixed set of line glyphs drawn in the current text
-color - and every icon-taking prop in the library accepts any DOM, so your own `<svg>` goes wherever
-`icon()` does.
+Icons come from `icon` in the base group - and every icon-taking prop in the library accepts any
+DOM, so your own `<svg>` goes wherever `icon()` does.
 
 A page's own furniture - a breadcrumb trail, a page title, a toolbar of actions - is not frame
 chrome and has no region of its own. It goes at the top of the main content you pass as children,
@@ -297,6 +298,44 @@ which is where it belongs: it changes with the screen, and the frame does not.
 
 Two of these components hold state that outlives the page: `themeSelect` and `langSelect` remember
 what was chosen in `localStorage`. Pass `remember: false` when the app owns that decision instead.
+
+## Icons are built in, and you pay only for the ones you draw
+
+The whole of **Lucide** - 1791 icons, the set behind a good share of the interfaces you have used -
+ships inside imp. There is nothing to install, no icon font to load, no sprite sheet to host and no
+CSS file to include.
+
+```js
+import { icon } from 'imp/std'
+import { luHouse, luStar, luTrash } from 'imp/icons'
+
+icon(luHouse)
+icon(luStar, { size: 'lg', color: 'warning' })
+icon(luTrash, { size: 'sm', label: 'Delete invoice' })
+```
+
+An icon is an **imported name**, not a string, and that is the whole design. The export is `lu` plus
+the Lucide name in PascalCase, so `house` is `luHouse`, `chart-column` is `luChartColumn` and
+`trash-2` is `luTrash2`. Search the set at <https://lucide.dev/icons> and the name you read off the
+page is the name you import.
+
+Naming them one by one is what keeps the bundle small: your build carries the drawing data for the
+icons you actually imported and nothing else. An app that draws one icon ships a few hundred bytes
+of artwork, not the 434 kB the full set weighs. The cost of that is one rule - never
+`import * as icons from 'imp/icons'`, because a namespace import asks for all of it. `imp lint`
+holds the line for you: a namespace import, an `export *` re-export or a dynamic `import()` of
+`imp/icons` is an `imp/icons-by-name` error (see **[Linting](lint.md)**).
+
+`size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length; every Lucide icon is
+square, so one length sets both axes. `color` names a **theme token** rather than a CSS color -
+`'primary'`, `'danger'`, `'success'`, any palette hue - so icons re-skin with the theme like
+everything else in the library. The default, `'current'`, inherits the surrounding text color, which
+is what an icon inside a button or a menu row wants.
+
+Lucide is ISC-licensed and the icons it inherited from Feather are MIT; both ask that the copyright
+notice travel with what you ship. `imp build` handles it: the notice goes into `LICENSES.txt` in the
+output directory and every emitted script points at it. Deploy that file along with the rest of the
+build.
 
 ## Layout is two components, deliberately
 

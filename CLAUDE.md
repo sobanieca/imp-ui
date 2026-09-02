@@ -153,6 +153,12 @@ commit where you already are.
 Committing is still something you do only when asked, and `deno lint` and `deno fmt` pass before the
 commit is made.
 
+**Never force-push.** Not `git push --force`, not `--force-with-lease`, not `+branch`, not to `main`
+and not to a topic branch behind a pull request - not even when asked to rebase and the rebased
+branch no longer fast-forwards. Do the rebase, leave the result local, and say that the remote needs
+a force-push the user runs themselves. Rewriting a remote branch is the one git action that can lose
+someone else's work, and it is the user's call every time.
+
 ## Code style
 
 **Write ASCII only - never a long dash, never Unicode punctuation.** Every character you write, in

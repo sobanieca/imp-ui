@@ -2,6 +2,7 @@ import { component } from 'imp'
 import { router, useRoute } from 'imp/router'
 import { computed, initState } from 'imp/state'
 import { heading, icon, link } from 'imp/std'
+import { luCheck } from 'imp/icons'
 import { shell, stack } from 'imp/std/layout'
 import { appLogo, themeSelect } from 'imp/std/shell'
 import { filterFor, sectionFor, sections } from './nav.js'
@@ -31,7 +32,7 @@ export const app = component('app-root', {
         logo: appLogo({
           label: 'imp tasks',
           tagline: 'shell example',
-          icon: icon({ name: 'check', size: 'lg' }),
+          icon: icon(luCheck, { size: 'lg' }),
         }),
         navbar: {
           label: 'Sections',
