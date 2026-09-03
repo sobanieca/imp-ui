@@ -18,7 +18,7 @@ Read one in full - no flags, the text goes to stdout:
 WRITING AN APP
   imports            every bare specifier imp resolves, and what each one exports
   rendering          element factories, props objects, children, and mount
-  components         custom elements with a build lifecycle: instance, styles, cleanup
+  components         custom elements with a setup lifecycle: instance, styles, cleanup
   state              named reactive state shared down the tree and bound straight to the DOM
   http               the configured HTTP client a component owns, with retries and request state
   routing            client-side routes as one plain-data table, with lazily loaded sections

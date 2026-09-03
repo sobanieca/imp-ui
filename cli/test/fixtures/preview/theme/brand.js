@@ -7,6 +7,6 @@ export default {
     'color-text': '#1f1235',
     'color-surface': '#fdf7ff',
     'color-border': '#e2d4f5',
-    'radius-md': '10px',
+    'radius-item': '10px',
   },
 }

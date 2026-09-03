@@ -8,7 +8,7 @@ const render = () => {
 }
 
 const banner = component('counter-banner', {
-  build: () => {
+  setup: () => {
     const box = div(p({ id: 'banner' }, 'inside a shadow root'))
     const revealLater = () =>
       setTimeout(() => box.append(p({ id: 'late-note' }, 'added later')), 250)

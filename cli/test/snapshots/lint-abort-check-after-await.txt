@@ -1,0 +1,12 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-abort-check)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/abort-check-after-await]: 'initState' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; test self.abortSignal.aborted after the await and return, pass self.abortSignal to the awaited call, or resolve before the first await
+ --> app.js:10:20
+
+Found 1 problem
+Checked 1 file

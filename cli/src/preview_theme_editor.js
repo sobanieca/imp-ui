@@ -63,7 +63,7 @@ const EDITOR_STYLES = `
     box-sizing: border-box;
     padding: var(--imp-space-1, 4px) var(--imp-space-2, 8px);
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-sm, 4px);
+    border-radius: var(--imp-radius-item, 6px);
     background: var(--imp-color-surface, #ffffff);
     color: var(--imp-color-text, #0f172a);
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
@@ -76,7 +76,7 @@ const EDITOR_STYLES = `
     block-size: 2rem;
     padding: 0;
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-sm, 4px);
+    border-radius: var(--imp-radius-item, 6px);
     background: var(--imp-color-surface, #ffffff);
   }
 
@@ -92,7 +92,7 @@ const EDITOR_STYLES = `
     gap: var(--imp-space-1, 4px);
     padding: var(--imp-space-2, 8px);
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-md, 6px);
+    border-radius: var(--imp-radius-item, 6px);
     background: var(--imp-color-surface-sunken, #f1f5f9);
   }
 
@@ -244,7 +244,7 @@ const usage = () =>
 
 const definition = {
   styles: EDITOR_STYLES,
-  build: (_instance, themeName, colorScheme) => {
+  setup: (_instance, themeName, colorScheme) => {
     const draft = readDraft(themeName) ?? seedDraft(colorScheme)
 
     const apply = () => {

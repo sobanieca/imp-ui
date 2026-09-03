@@ -110,11 +110,11 @@ is what is still owed:
 form layer. That is what the `Form` of antd provides. It is still built entirely on a named state:
 
 - **A form is a state object, and a field addresses it by a path.** `form` takes an `initialValues`
-  prop, which is a plain object. Inside, it calls `initState('imp.form', initialValues ?? null)`. So
-  the values of the form are an ordinary named state, and they live at the position of the form in
-  the tree. There is no separate store of form values to keep in step, and there is nothing for the
-  app to connect. To put a `form` into a view creates the state. To unmount it releases the state,
-  with the rest of the subtree.
+  prop, which is a plain object. Inside, it calls
+  `initState(self, 'imp.form', initialValues ?? null)`. So the values of the form are an ordinary
+  named state, and they live at the position of the form in the tree. There is no separate store of
+  form values to keep in step, and there is nothing for the app to connect. To put a `form` into a
+  view creates the state. To unmount it releases the state, with the rest of the subtree.
 
   A control inside that form names the field that it owns, with a **dot-separated path**. Nobody
   hands that control a handle to a state:

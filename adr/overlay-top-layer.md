@@ -87,10 +87,10 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   two compose in the browser, in place of a fight over one value. That is why a window that somebody
   dragged can still animate out from where the user left it. The position belongs to the instance,
   and imp never stores it. A window that opens again is centred again.
-- **A component delays an initial open to `afterMount`.** Both promotions throw an
-  `InvalidStateError` on an element that is not in the document. `build` returns its tree before imp
-  puts that tree in the shadow root. So a dialog whose `open` is already true at mount opens on the
-  next frame, in place of during the mount, which would throw. Only the first open needs that. Every
+- **A component delays an initial open to `onMount`.** Both promotions throw an `InvalidStateError`
+  on an element that is not in the document. `setup` returns its tree before imp puts that tree in
+  the shadow root. So a dialog whose `open` is already true at mount opens in `onMount`, on the next
+  frame, in place of during the mount, which would throw. Only the first open needs that. Every
   later open runs against an element that is connected.
 - **The test DOM gets a fill for the top layer.** `installDomEnvironment` installs it, beside the
   fills for the popover and for the animations. It covers the entry of the focus, the restore of the

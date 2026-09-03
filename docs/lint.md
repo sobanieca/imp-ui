@@ -31,7 +31,10 @@ more paths, use `exclude`. See _Configuration_ below.
 The base is a standard recommended rule set for JavaScript. The rule names follow the ESLint naming,
 which many people know. So a rule from that ecosystem has the same name here.
 
-imp adds its own rules on top of the base set, and it always applies them as errors:
+imp adds its own rules on top of the base set, and it always applies them as errors. A rule that
+speaks of a hook, such as `setup`, `loading`, `error`, `onMount` or `onRemove`, looks only at the
+definition object that you pass to `component()` or to `router()`. A `setup` key in any other
+object, for example a plugin for a bundler, is not a hook, and these rules leave it alone.
 
 ### `imp/no-capital-component`
 
@@ -76,148 +79,296 @@ such as `myapp.user`. See **[State](state.md)**. The rule checks every `initStat
 call whose name is a literal:
 
 ```js
-const user = initState('user', { name: 'Ada' })
+const user = initState(self, 'user', { name: 'Ada' })
 ```
 
 ```
 error[imp/state-name-namespace]: state name 'user' must include a namespace - use dot-separated segments like 'myapp.user'
- --> src/app.js:1:24
+ --> src/app.js:1:30
 ```
 
 imp does not check a name that you build dynamically, such as a variable or a template with an
 expression. The runtime does the same validation, and a bad name throws there.
 
-### `imp/state-setup-before-await`
-
-In an async `build`, the state resolution must happen **before the first `await`**. See
-**[State](state.md)**. After that point, the component that mounts is out of reach, and `initState`,
-`useState` and `watch` all throw at runtime. This rule catches them earlier, while you write them.
-It reports an `initState` or `useState` call after an `await` in an async `build`. It also reports a
-`watch` call there, on a handle that the file created with `initState`, `useState` or `computed`.
-imp tracks the handle, so an unrelated third-party `.watch()` method stays out of the report:
-
-```js
-const orders = component('my-app-orders', {
-  build: async () => {
-    const totals = initState('myapp.totals', [])
-    const data = await fetch('/api/orders').then((response) => response.json())
-    const orders = initState('myapp.orders', data)
-    totals.watch((current) => console.log(current))
-    return ul(orders.each((order) => li(order.title), (order) => order.id))
-  },
-})
-```
-
-```
-error[imp/state-setup-before-await]: 'initState' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)
- --> src/orders.js:5:20
-
-error[imp/state-setup-before-await]: 'totals.watch' runs after an await in an async build - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead
- --> src/orders.js:6:5
-```
-
-Initialize the state with an empty value first. Then `await` the data, and `set` it in. The handle
-lives on in the closure, and a read and a write are allowed anywhere. Only the resolution and
-`watch` depend on the position. The DOM that you build from the handles, with `text`, `view`, `each`
-and a bound prop, can come after the `await`. It goes live when the component mounts it.
-
 ### `imp/http-client-name-namespace`
 
 An HTTP client name follows the same rule as a state name. It needs two or more dot-separated
 segments that are not empty, such as `myapp.api`. See **[HTTP](http.md)**. The rule checks every
-`initHttpClient`, `useHttpClient` and `createHttpClient` call whose name is a literal:
+`createHttpClient`, `initHttpClient` and `useHttpClient` call whose name is a literal:
 
 ```js
-const api = initHttpClient('api', { baseUrl: '/api' })
+const api = createHttpClient('api', { baseUrl: '/api' })
 ```
 
 ```
 error[imp/http-client-name-namespace]: http client name 'api' must include a namespace - use dot-separated segments like 'myapp.api'
- --> src/app.js:1:31
+ --> src/app.js:1:30
 ```
 
-### `imp/http-client-setup-before-await`
+### `imp/watch-with-self`
 
-The component that initializes an HTTP client owns it. So, exactly like a state, you must resolve it
-**before the first `await`** of an async `build`:
+`watch(fn)` subscribes at once and registers no cleanup. So a `watch` in the `setup` of a component
+that neither passes `self` nor keeps the stop function outlives the component. The subscriber keeps
+running after the unmount, and it holds the DOM of the component alive. See **[State](state.md)**.
+The rule reports a `.watch(fn)` call in `setup`, `error` or `onMount` whose result is discarded, on
+a handle that the file created with `initState`, `useState`, `computed` or `useRoute`, and on
+`lang`, `dir` and `theme`. imp tracks the handle, so an unrelated third-party `.watch()` method
+stays out of the report:
+
+```js
+const themeWatcher = component('my-app-theme-watcher', {
+  setup: () => {
+    theme.watch((value) => document.body.setAttribute('data-theme', value))
+  },
+})
+```
+
+```
+error[imp/watch-with-self]: 'theme.watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (theme.watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove
+ --> src/theme-watcher.js:3:5
+```
+
+Pass `self` first, as in `theme.watch(self, fn)`. imp then stops the subscription when the component
+unmounts. A call whose result you keep, as in `self.stop = theme.watch(fn)`, is not reported,
+because `onRemove` can call the stop.
+
+### `imp/self-first-argument`
+
+`initState`, `useState`, `initHttpClient` and `useHttpClient` take `self` as their first argument.
+`self` is the first parameter of `setup`, `error`, `onMount` and `onRemove`. A call whose first
+argument is a name, an options object or nothing else throws at mount. This rule catches it while
+you write it. It reports a call whose first argument is a literal, a template, an object, an array,
+a function, or is missing:
 
 ```js
 const orders = component('my-app-orders', {
-  build: async () => {
-    const api = useHttpClient('myapp.api')
-    const data = await api.get('/orders')
-    const reports = useHttpClient('myapp.reports')
-    return ul(data.map((order) => li(order.title)))
+  setup: () => {
+    const items = initState('myapp.items', [])
+    return ul(items.each((item) => li(item.title)))
   },
 })
 ```
 
 ```
-error[imp/http-client-setup-before-await]: 'useHttpClient' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)
- --> src/orders.js:5:21
+error[imp/self-first-argument]: 'initState' takes self as its first argument, and here that argument is a literal - write initState(self, 'myapp.user', value); self is the first parameter of setup, error, onMount and onRemove
+ --> src/orders.js:3:29
 ```
 
-Resolve every client that you need at the start. The handles then work anywhere, also in an event
-handler and after any number of `await` calls. imp does not report `createHttpClient`. A client that
-you own yourself needs no component that mounts, and you can build it anywhere.
+Take `self` from the hook, and pass it first, as in `initState(self, 'myapp.items', [])`. A helper
+that resolves a state takes `self` as a parameter and passes it on. imp does not report a call whose
+first argument is a variable, because that can be `self` under another name.
 
-### `imp/router-setup-before-await`
+### `imp/no-self-in-loading`
 
-A `router()` with no `routes` renders the routes of the **area around it**. It finds that area
-through the component that mounts. So in the `root` of an area, it depends on the position, exactly
-as a state and a client do. See **[Routing](routing.md)**. After the first `await` it cannot see the
-area, and it reports the misleading message `'routes' is required`:
+`loading` runs before the component mounts, and it gets no `self`. See
+**[Components](components.md)**. So a resolution there throws, and a binding there renders empty and
+never updates. The rule reports, inside a `loading` function, a call to `initState`, `useState`,
+`initHttpClient`, `useHttpClient` or `useRoute`. It also reports `text`, `view`, `each` and `watch`
+on a state handle, and a state handle passed as an argument or as a prop value:
 
 ```js
-const shell = component('admin-shell', {
-  build: async () => {
-    const api = useHttpClient('myapp.admin')
-    const settings = await api.get('/settings')
-    return div(adminNav(settings), router())
+const orders = component('my-app-orders', {
+  loading: (self) => {
+    const items = useState(self, 'myapp.items')
+    return p(items.text())
+  },
+  setup: async (self) => renderOrders(await useHttpClient(self, 'myapp.api').get('/orders')),
+})
+```
+
+```
+error[imp/no-self-in-loading]: 'useState' runs in loading, which imp builds before the component mounts and without self, so the call throws - loading takes the factory arguments only; move the call into build
+ --> src/orders.js:3:19
+
+error[imp/no-self-in-loading]: 'items.text' binds state in loading, which imp builds before the component mounts, so the binding renders empty and never updates - pass a plain value here, and keep text, view, each, watch and a state-bound prop in build
+ --> src/orders.js:4:14
+```
+
+Render a plain value in `loading`, such as a skeleton. Keep every state resolution and every binding
+in `setup`.
+
+### `imp/loading-with-async-setup`
+
+A synchronous `setup` replaces the loading content before the paint, so nobody sees it. See
+**[Components](components.md)**. imp warns about this at runtime. This rule reports it while you
+write it. It reports a `loading` next to a `setup` that is not `async` and returns only DOM, which
+is an element, a standard component, a bound `text`, `view` or `each`, a literal, or `null`:
+
+```js
+const badge = component('my-app-badge', {
+  loading: () => span('...'),
+  setup: () => span('ready'),
+})
+```
+
+```
+error[imp/loading-with-async-setup]: loading is set, but setup returns synchronously, so imp swaps the loading content out before paint and nobody sees it - make setup async, or return a promise from it, or remove loading
+ --> src/badge.js:2:3
+```
+
+Make `setup` async, or return a promise from it, or remove `loading`. imp does not report a `setup`
+that returns the result of a call it cannot classify, such as `load().then(render)`, because that
+can be a promise.
+
+### `imp/on-remove-through-self`
+
+`onRemove` runs after the host has left the page. See **[Components](components.md)**. At that
+point, `useState` and `useHttpClient` return only a handle that `setup` or `error` resolved through
+`self`, and any other name throws. `initState`, `initHttpClient` and `watch(self, fn)` throw there
+always. The rule reports these cases in `onRemove`. To know what `setup` resolved, imp reads the
+literal names in `setup` and `error`. When `setup` passes `self` to a function that imp cannot see
+into, or resolves a name that is not a literal, the rule reports no name mismatch:
+
+```js
+const visitor = component('my-app-visitor', {
+  setup: (self) => {
+    useState(self, 'myapp.presence').set({ here: true })
+    return p('here')
+  },
+  onRemove: (self) => {
+    useState(self, 'myapp.visitors').set(null)
   },
 })
 ```
 
 ```
-error[imp/router-setup-before-await]: 'router' runs after an await in an async build - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable
- --> src/admin/shell.js:5:34
+error[imp/on-remove-through-self]: 'useState' in onRemove reaches state 'myapp.visitors', which setup never resolved - in onRemove, useState returns only a handle that setup resolved through self, and a new name throws because the host has left the page; resolve 'myapp.visitors' in setup, then reach it again here
+ --> src/visitor.js:7:20
 ```
 
-Build the slot first, and use it later. Write `const screens = router()` above the `await`, and then
-`div(adminNav(settings), screens)`. imp does **not** report a `router({ routes })` with its own
-table, because it looks nothing up, so you can build it anywhere. The rule also reports a `watch` on
-a `useRoute()` handle after the first `await`. That subscription needs a component that mounts to
-own it. Bind the route to DOM with `text`, `view` or `each` instead, or watch it before the `await`.
+Resolve the name in `setup`, and reach it again in `onRemove` with the same name.
 
-### `imp/no-root-query-in-build`
+### `imp/no-self-at-module-scope`
 
-While `build` runs, the DOM that it returns is **not yet in the shadow root**. imp inserts the DOM
-after `build` returns, and after the promise resolves for an async `build`. See
-**[Components](components.md)**. A query on `instance.root` there finds the placeholder, not your
-content. This rule reports `querySelector`, `querySelectorAll` and `getElementById`, called directly
-on the `root` of the instance in the body of `build`. It does not report a later access inside an
-event handler, or inside an `instance.afterMount` callback. It also does not report the same query
-in `teardown`, where the mounted DOM is still present:
+A module lives across every mount. A `self`, a `self.host` or a handle resolved through `self` that
+you store at module scope belongs to one mount. The next mount overwrites it, and an unmounted
+component stays reachable, together with its DOM. See **[Components](components.md)**. The rule
+reports, inside `setup`, `error`, `onMount` or `onRemove`, an assignment of `self`, of a property of
+`self`, or of an `initState`, `useState`, `initHttpClient` or `useHttpClient` result, to a variable
+or an object that the module declares:
+
+```js
+let current = null
+
+const panel = component('my-app-panel', {
+  setup: (self) => {
+    current = self
+    return p('panel')
+  },
+})
+```
+
+```
+error[imp/no-self-at-module-scope]: 'current' at module scope stores what belongs to one mount - the module outlives every mount, so the next mount overwrites the value and an unmounted component stays reachable; store a per-mount resource on self instead (self.current = ...)
+ --> src/panel.js:5:5
+```
+
+Store a per-mount resource on `self`. Every mount then gets its own, and imp drops it with the
+mount.
+
+### `imp/abort-check-after-await`
+
+An async `setup` can wait while the component leaves the page. A resolution after that throws. See
+**[Components](components.md)**. The rule reports, in an async `setup`, an `initState`, `useState`,
+`initHttpClient` or `useHttpClient` call after an `await` that nothing guards. Three things count as
+a guard. A read of `self.abortSignal.aborted` after the `await`. A `self.abortSignal` passed to the
+awaited call, because that call then rejects on unmount. A resolution before the first `await`:
+
+```js
+const orders = component('my-app-orders', {
+  setup: async (self) => {
+    const api = useHttpClient(self, 'myapp.api')
+    const data = await api.get('/orders')
+    const orders = initState(self, 'myapp.orders', data)
+    return ul(orders.each((order) => li(order.title)))
+  },
+})
+```
+
+```
+error[imp/abort-check-after-await]: 'initState' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; test self.abortSignal.aborted after the await and return, pass self.abortSignal to the awaited call, or resolve before the first await
+ --> src/orders.js:5:20
+```
+
+Pass `{ signal: self.abortSignal }` to the call, or check `self.abortSignal.aborted` after the
+`await` and return. Or initialize the state with an empty value before the `await`, and `set` the
+data in after it.
+
+### `imp/no-state-as-child`
+
+A state handle is not DOM. An element factory or a standard component that gets one as a child logs
+a warning and skips it. See **[State](state.md)**. The rule reports a handle that the file created
+with `initState`, `useState`, `computed` or `useRoute`, and `lang`, `dir` and `theme`, passed as a
+child:
+
+```js
+const counter = component('my-app-counter', {
+  setup: (self) => {
+    const count = initState(self, 'myapp.count', 0)
+    return p('Count: ', count)
+  },
+})
+```
+
+```
+error[imp/no-state-as-child]: 'count' is a state passed as a child of 'p', and imp skips it - render it with count.text(), count.view(fn) or count.each(fn), or bind a prop with { class: count }
+ --> src/counter.js:4:25
+```
+
+Render the value with `count.text()`, or a `view` or an `each`, or bind a prop with the handle.
+
+### `imp/no-get-in-binding`
+
+A prop bound with the state itself follows the state. A prop set to `state.get()` copies the value
+once, and never updates. See **[State](state.md)**. The rule reports a `.get()` on a state handle,
+`lang`, `dir` or `theme` as a prop value of an element factory or a standard component:
+
+```js
+const form = component('my-app-form', {
+  setup: (self) => {
+    const busy = useState(self, 'myapp.busy')
+    return button('Save', { disabled: busy.get() })
+  },
+})
+```
+
+```
+error[imp/no-get-in-binding]: 'busy.get()' as the 'disabled' prop of 'button' copies the value once, and the prop never follows the state - pass the state itself: { disabled: busy }
+ --> src/form.js:4:39
+```
+
+Pass the handle, as in `{ disabled: busy }`. Use `get()` in an event handler, where a snapshot is
+what you want.
+
+### `imp/no-root-query-in-setup`
+
+While `setup` runs, the DOM that it returns is **not yet in the shadow root**. imp inserts the DOM
+after `setup` returns, and after the promise resolves for an async `setup`. See
+**[Components](components.md)**. A query on `self.host.shadowRoot` there finds the loading content,
+not your own. This rule reports `querySelector`, `querySelectorAll` and `getElementById`, called
+directly on `self.host.shadowRoot` in the body of `setup`. It does not report a later access inside
+an event handler, and it does not report a query in `onMount` or `onRemove`, where the mounted DOM
+is present:
 
 ```js
 const card = component('my-app-card', {
-  build: (instance) => {
+  setup: (self) => {
     const box = div(span({ class: 'label' }, 'hi'))
-    instance.root.querySelector('.label').textContent = 'ready'
+    self.host.shadowRoot.querySelector('.label').textContent = 'ready'
     return box
   },
 })
 ```
 
 ```
-error[imp/no-root-query-in-build]: the shadow root is queried in build before the returned DOM is placed - build's output fills the shadow root only after build returns (after the awaited promise resolves, for an async build), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page
+error[imp/no-root-query-in-setup]: the shadow root is queried in setup before the returned DOM is placed - setup's output fills the shadow root only after setup returns (after the awaited promise resolves, for an async setup), so this finds the loading content, not your own; keep a reference to the node you build and use it directly, or query self.host.shadowRoot in onMount, which imp runs on the next frame once your DOM is laid out on the page
  --> src/card.js:4:5
 ```
 
-Keep a reference to the node that you build, and change it directly. You can also run the query from
-`instance.afterMount(callback)`, which imp flushes on the next frame after it places your DOM.
-**[Components](components.md)** describes both fixes, under _The instance_ and _How to run code
-after imp places the DOM_.
+Keep a reference to the node that you build, and change it directly. You can also run the query in
+`onMount`, which imp runs on the next frame after it places your DOM.
+**[Components](components.md)** describes both fixes, under _self_ and _How to run code after imp
+places the DOM_.
 
 ### `imp/component-name`
 
@@ -227,7 +378,7 @@ valid custom element name, and the first segment is also the namespace of your a
 every `component` call whose name is a literal:
 
 ```js
-export const profile = component('profile', { build: () => div('...') })
+export const profile = component('profile', { setup: () => div('...') })
 ```
 
 ```

@@ -40,7 +40,7 @@ export const SKILLS = [
     name: 'components',
     group: 'app',
     aliases: ['component'],
-    summary: 'custom elements with a build lifecycle: instance, styles, cleanup',
+    summary: 'custom elements with a setup lifecycle: instance, styles, cleanup',
   },
   {
     name: 'state',

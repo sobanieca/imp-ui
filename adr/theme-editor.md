@@ -34,8 +34,8 @@ nothing that somebody must keep in step.
   an app has one answer for both modes.
 - **primary** and **secondary** are colours, and the editor derives every other colour token from
   them.
-- **border radius**, which is `none`, `small`, `medium`, `large` or `full`, and **shadow**, which is
-  `none`, `soft` or `strong`. Each one is a step, and it rewrites the whole matching scale.
+- **border radius**, which is `none`, `small`, `medium` or `large`, and **shadow**, which is `none`,
+  `soft` or `strong`. Each one is a step, and it rewrites the whole matching scale.
 
 The editor **removes the list per token. It does not hide it behind an advanced section.** Anything
 that the knobs cannot express, a person edits in the exported file. There the change is durable, and

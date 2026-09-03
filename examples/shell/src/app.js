@@ -18,8 +18,8 @@ const notFound = () =>
   )
 
 export const app = component('app-root', {
-  build: () => {
-    const todos = initState('tasks.todos', seedTodos())
+  setup: (self) => {
+    const todos = initState(self, 'tasks.todos', seedTodos())
     const route = useRoute()
     const counts = {
       all: computed([todos], (items) => items.length),

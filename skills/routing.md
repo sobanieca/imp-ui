@@ -9,7 +9,7 @@ import { button, div, nav } from 'imp/html'
 import { area, guard, navigate, route, router, useRoute, wait } from 'imp/router'
 
 const shell = component('app-shell', {
-  build: () =>
+  setup: () =>
     div(
       nav(button('Home', { events: { click: () => navigate('/') } })),
       router({
@@ -19,8 +19,8 @@ const shell = component('app-shell', {
           '/todos/:id': ({ params }) => todoDetail(params.id),
           '/admin': area(() => import('./admin/area.js')),
         },
-        placeholder: () => div('Loading...'),
-        fallback: (error) => div(error.message),
+        loading: () => div('Loading...'),
+        error: (self, error) => div(error.message),
         notFound: () => div('Not found'),
       }),
     ),
@@ -31,22 +31,22 @@ mount('#app', shell())
 
 ## API
 
-| Export                                   | What it does                                                                                       |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `placeholder`, `fallback`, `notFound` |
-| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                         |
-| `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                                 |
-| `route({ guard, screen })`               | a guarded routes-table entry - one guard; `screen` is the factory or `area()` it maps to           |
-| `guard(states, check)`                   | a synchronous check over the states it names: `true` \| `wait` \| `false` \| `'/path'`             |
-| `wait`                                   | the verdict for "cannot decide yet" - the router keeps `placeholder` up and re-runs the guard      |
-| `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                           |
-| `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`               |
-| `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                          |
+| Export                                   | What it does                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `loading`, `error`, `notFound` |
+| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                  |
+| `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                          |
+| `route({ guard, screen })`               | a guarded routes-table entry - one guard; `screen` is the factory or `area()` it maps to    |
+| `guard(states, check)`                   | a synchronous check over the states it names: `true` \| `wait` \| `false` \| `'/path'`      |
+| `wait`                                   | the verdict for "cannot decide yet" - the router keeps `loading` up and re-runs the guard   |
+| `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                    |
+| `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`        |
+| `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                   |
 
-These are the router options. `placeholder` shows while the module of an **area** downloads, and imp
-calls it with `{ params, query }`. `fallback` is an error boundary at route level, and imp calls it
-with `(error, { params, query })`. It catches what the `fallback` of the screen did not catch.
-`notFound` is the one fallback for a URL that matches nothing.
+These are the router options. `loading` shows while the module of an **area** downloads, and imp
+calls it with `{ params, query }`. `error` is an error boundary at route level, and imp calls it
+with `(self, error, { params, query })`, where `self` belongs to the route host. It catches what the
+`error` of the screen did not catch. `notFound` is the one page for a URL that matches nothing.
 
 ## The route table
 
@@ -66,17 +66,16 @@ path that would also match. imp ignores a trailing slash.
 ## Rules an agent gets wrong
 
 - **A screen factory builds its screen immediately.** Never `await` in it, and never `import()` in
-  it. Fetch the data in the async `build` of the screen component, where its `placeholder` covers
-  the wait. Put on-demand code behind an `area()`.
+  it. Fetch the data in the async `setup` of the screen component, where its `loading` covers the
+  wait. Put on-demand code behind an `area()`.
 - **`area()` is the only lazy entry.** There is no lazy screen form, and no eager area form. A
   pattern that points at an area matches as a **prefix**. Every other pattern matches exactly.
 - **Write the routes of an area relative to the prefix.** So `'/users'` inside `/admin` serves
   `/admin/users`.
-- **A `router()` with no table depends on its position, like `useState`.** It finds its area through
-  the component that mounts. So in an async `root` you must call it **before the first `await`**.
-  Keep the slot in a variable and use it later. After the await it throws `'routes' is required`,
-  which reads as if the table were missing. The lint rule is `imp/router-setup-before-await`. A
-  `router({ routes })` looks nothing up, so you can build it anywhere.
+- **A `router()` with no table renders the routes of the area around it.** It finds that area when
+  it mounts, from its own position in the DOM. So you can build it anywhere in the `root` of an
+  area, also after an `await`. Outside an area it fails at mount and logs the error. A
+  `router({ routes })` looks nothing up.
 - **A change of the query only keeps the current screen mounted.** On a screen whose query can
   change while the screen stays up, read the live query from `useRoute()`, not from the `query` of
   the factory. A change of the pattern or of a `:param` mounts a new screen and unmounts the old
@@ -113,21 +112,21 @@ router({
     '/todos': route({ guard: signedIn, screen: () => todos() }),
     '/admin': route({ guard: adminOnly, screen: area(() => import('./admin/area.js')) }),
   },
-  placeholder: () => div('Loading...'), //                       shown while a guard waits
+  loading: () => div('Loading...'), //                           shown while a guard waits
 })
 ```
 
 In `guard(states, check)`, `states` is a non-empty array of **state names**, not handles, because a
-table is at module scope. The router resolves the names with `useState` at its own position. It
+table is at module scope. The router resolves the names with `self.state` at its own position. It
 passes the values **by position**, and passes `{ params, query, path }` last.
 
-| Verdict              | Effect                                                   |
-| -------------------- | -------------------------------------------------------- |
-| `true` / `undefined` | render the screen                                        |
-| `wait`               | keep `placeholder`; re-run when a declared state changes |
-| `'/path'`            | `navigate(path, { replace: true })`                      |
-| `false`              | render `notFound`                                        |
-| anything else        | throws, route renders `fallback`                         |
+| Verdict              | Effect                                               |
+| -------------------- | ---------------------------------------------------- |
+| `true` / `undefined` | render the screen                                    |
+| `wait`               | keep `loading`; re-run when a declared state changes |
+| `'/path'`            | `navigate(path, { replace: true })`                  |
+| `false`              | render `notFound`                                    |
+| anything else        | throws, route renders `error`                        |
 
 ## Rules an agent gets wrong about guards
 
@@ -135,17 +134,16 @@ passes the values **by position**, and passes `{ params, query, path }` last.
   `router({ guard })` and no `area({ guard })`. Both throw and point at `route()`. There is no
   inheritance, no stacking and no array. To compose, share a plain check function between two
   guards, as above.
-- **imp has no pending state.** `initState('myapp.session')` with no initial value is `undefined`.
-  The guard is the only place that decides that `undefined` means "not loaded". Return `wait` for it
-  explicitly. A guard that reads `undefined` without a check denies the route or throws, and it
-  never waits.
+- **imp has no pending state.** `initState(self, 'myapp.session')` with no initial value is
+  `undefined`. The guard is the only place that decides that `undefined` means "not loaded". Return
+  `wait` for it explicitly. A guard that reads `undefined` without a check denies the route or
+  throws, and it never waits.
 - **Sign out with `set(null)`. Do not clear the value to `undefined`.** `null` is an answer that a
   guard acts on, and it redirects. `undefined` only makes the guard wait, and **imp ignores `wait`
   after the screen is showing**. Only a redirect removes a mounted screen. `false` after mount is an
   error for the same reason.
 - **Declare every state that the check reads.** imp does not pass in or watch an undeclared state,
-  so the guard becomes stale. Do not call `useState` inside a check. It works on entry and throws on
-  a re-check.
+  so the guard becomes stale. A check has no `self`, so it cannot resolve a state itself.
 - **Guard the entry, not the area file.** `route({ guard, screen: area(() => import(...)) })` covers
   the root of the section and every screen in it, and it decides before the chunk downloads. A route
   inside the area can carry its own, narrower guard. Neither guard is authorization. The server must
@@ -154,8 +152,8 @@ passes the values **by position**, and passes `{ params, query, path }` last.
   `navigate` in it. Return a path instead. It runs again on every change of a declared state, so
   keep it a cheap comparison.
 - **A failure closes the route.** A guard that throws, an unknown verdict, and a state that no
-  ancestor provides all render `fallback`. A guard that stays on `wait` gives a warning after 5s
-  that names the states. Two guards that redirect to each other throw after 10 hops.
+  ancestor provides all render `error`. A guard that stays on `wait` gives a warning after 5s that
+  names the states. Two guards that redirect to each other throw after 10 hops.
 
 ## An area file
 
@@ -179,7 +177,7 @@ A navigation inside an area keeps the area mounted and swaps its inner screen.
 
 ```js
 const shell = component('admin-shell', {
-  build: () => {
+  setup: () => {
     initHttpClient('myapp.admin', { baseUrl: '/admin/api' }) // section-scoped, see imp skill http
     return div(adminNav(), router()) // <- the section's screens render here
   },
@@ -189,8 +187,8 @@ export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 ```
 
 - **A `router()` with no table works only inside the `root` of an area.** It renders the routes of
-  that area. It inherits the `placeholder`, the `fallback` and the `notFound` of the parent router,
-  and you can override each one for the section. Everywhere else, `routes` is necessary.
+  that area. It inherits the `loading`, the `error` and the `notFound` of the parent router, and you
+  can override each one for the section. Everywhere else, `routes` is necessary.
 - `root` is a **function** that returns the component. It receives the same `{ params, query }` as a
   screen factory, as in `root: ({ params }) => orgShell(params.orgId)`.
 - The gain over wrapping each screen by hand is the **lifetime**. The root stays mounted while the
@@ -201,16 +199,16 @@ export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
 
 ## Lifetimes, base path, deployment
 
-A screen is a component. So its loading is a `placeholder` and an async `build`, its errors go to
-its `fallback` and then to the `fallback` of the router, and its cleanup is `teardown`. A navigation
-away unmounts the screen, with its state, its subscriptions and its DOM. Put the state of a screen
-in the root component of that screen. Put only app-wide state above the router.
+A screen is a component. So its loading is a `loading` and an async `setup`, its errors go to its
+`error` and then to the `error` of the router, and its cleanup is `onRemove`. A navigation away
+unmounts the screen, with its state, its subscriptions and its DOM. Put the state of a screen in the
+root component of that screen. Put only app-wide state above the router.
 
 imp manages the scroll for you. It goes to the top on a forward navigation, and it restores the
 position on a back or forward navigation. **The focus is yours to manage.** Focus a heading in
-`instance.afterMount`, or announce the change through a live region from `useRoute().watch(...)`. To
-do this once for every screen, give the element that the router slot renders into `tabindex: -1`.
-Focus that element from `useRoute().watch(...)` when the **path** changes. Compare the paths,
+`onMount`, or announce the change through a live region from `useRoute().watch(self, ...)`. To do
+this once for every screen, give the element that the router slot renders into `tabindex: -1`. Focus
+that element from `useRoute().watch(self, ...)` when the **path** changes. Compare the paths,
 because a query change must not take the focus from an input. Skip the first call, because it fires
 with the loaded route. Style that element with `:focus { outline: none }`, or the browser draws a
 ring around the whole screen on arrival.

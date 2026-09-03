@@ -8,18 +8,20 @@ wrap things in, and no re-rendering. A change of state updates exactly the DOM t
 
 - A state is **named**. Every state has a dot-namespaced name, such as `myapp.user`. The namespace
   is necessary, with two or more dot-separated segments. `imp lint` enforces it.
-- A state is **owned by a component**. `initState(name, initialValue)` inside the `build` of a
-  component ties the state to that component. Its descendants reach the state with `useState(name)`.
-  The state lives as long as the component stays mounted. There is no global scope. State for the
-  lifetime of the app belongs in your root component. A call to `initState` outside a component that
-  mounts throws.
+- A state is **owned by a component**. `initState(self, name, initialValue)` inside the `setup` of a
+  component ties the state to that component. Its descendants reach the state with
+  `useState(self, name)`. `self` is the first argument of `setup`, see
+  **[Components](components.md)**. The state lives as long as the component stays mounted. There is
+  no global scope. State for the lifetime of the app belongs in your root component. A call to
+  `initState` with anything but `self` as its first argument throws. The `imp/self-first-argument`
+  lint rule reports a literal, an object or a missing first argument while you write it.
 - Both calls return the **same helper object**. Whoever holds it can read the state, set it, and
   react to it.
 - Reading and writing, with `get` and `set`, work anywhere. You can also **build** a DOM binding
   anywhere. That covers `text`, `view`, `each` and a state-bound prop. A binding stays inert until
   imp mounts the DOM that it belongs to. It goes live at that moment, and it ends when the component
-  that contains it unmounts. `watch` is the one subscription with no DOM, so it runs inside a
-  component that mounts.
+  that contains it unmounts. `watch` is the one subscription with no DOM, so it takes `self` to end
+  with the component.
 - A set is **explicit**. `set(next)` replaces the whole value. Pass the next value, or a function
   that computes it from the current value, exactly like `setState` in React. To change one field of
   an object, spread the rest into a new object.
@@ -36,15 +38,15 @@ import { button, div } from 'imp/html'
 import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
-  build: () => {
-    const user = useState('myapp.user')
+  setup: (self) => {
+    const user = useState(self, 'myapp.user')
     return div(user.text((u) => u.name))
   },
 })
 
 export const app = component('my-app-root', {
-  build: () => {
-    const user = initState('myapp.user', { name: 'Ada', theme: 'dark' })
+  setup: (self) => {
+    const user = initState(self, 'myapp.user', { name: 'Ada', theme: 'dark' })
     return div(
       profile(),
       button('Rename', {
@@ -57,10 +59,10 @@ export const app = component('my-app-root', {
 
 ## The state helper
 
-`initState(name, initialValue)` and `useState(name)` both return the same helper, with the six
-entries below. You can call `get` and `set` from anywhere. `text`, `view` and `each` return live
-DOM. Build that DOM wherever you want. It activates when a component, or `mount`, places it on the
-page. `watch` subscribes directly, and it lives inside the `build` of a component. See _Cleanup_.
+`initState(self, name, initialValue)` and `useState(self, name)` both return the same helper, with
+the six entries below. You can call `get` and `set` from anywhere. `text`, `view` and `each` return
+live DOM. Build that DOM wherever you want. It activates when a component, or `mount`, places it on
+the page. `watch` subscribes directly. With `self` first it ends with the component. See _Cleanup_.
 Beyond the six entries, you can pass the helper itself as an element **prop value**, to keep that
 prop live. See _Binding props_ below.
 
@@ -75,13 +77,13 @@ itself, or a **function**. imp calls the function with the current value, and wh
 returns becomes the next value. That is the get-then-set idiom in one call:
 
 ```js
-const user = useState('myapp.user')
+const user = useState(self, 'myapp.user')
 user.set({ ...user.get(), theme: 'light' })
 
-const count = useState('myapp.count')
+const count = useState(self, 'myapp.count')
 count.set((value) => value + 1)
 
-const todos = useState('myapp.todos')
+const todos = useState(self, 'myapp.todos')
 todos.set((items) => [...items, newTodo])
 ```
 
@@ -121,17 +123,18 @@ But such a value compares by identity, not by content. That breaks, with no mess
 content-based change detection that `set`, `each`, `computed` and a change of provider depend on.
 Treat the error as a bug to fix, not as noise.
 
-### `watch(fn)`
+### `watch(self, fn)` and `watch(fn)`
 
 `watch` reacts to the state. It runs `fn(value)` immediately with the current value, and again after
 every `set`. It is the general-purpose hook. Use it to change DOM that you already hold, to keep
-`localStorage` in step, to drive a chart, or for anything else:
+`localStorage` in step, to drive a chart, or for anything else. Inside a component, pass `self`
+first. imp then stops the subscription when the component unmounts:
 
 ```js
 const themeWatcher = component('my-app-theme-watcher', {
-  build: () => {
-    const theme = useState('myapp.theme')
-    theme.watch((value) => document.body.setAttribute('data-theme', value))
+  setup: (self) => {
+    const theme = useState(self, 'myapp.theme')
+    theme.watch(self, (value) => document.body.setAttribute('data-theme', value))
   },
 })
 ```
@@ -141,13 +144,14 @@ pattern for a reaction to state from code that is not UI. Examples are keeping `
 step, driving a chart library, and sending analytics. Mount it once, anywhere in scope, and the side
 effect runs for as long as it stays mounted.
 
-`watch` differs from the DOM bindings below. It subscribes the moment when you call it. So it lives
-inside the `build` of a component, see _Cleanup_ below, and it ends with the component. It returns
-an unsubscribe function, for the rare case where you want to stop the reaction while the component
-stays mounted. Subscribers are isolated from each other. imp logs a subscriber that throws and skips
-it, the other subscribers still run, and the `set` call itself succeeds. A subscriber can also set
-another state. That is how changes chain. A loop of states that set each other without an end is cut
-off with an error, and the page does not hang.
+`watch` differs from the DOM bindings below. It subscribes the moment when you call it. Without
+`self`, imp registers no cleanup for it. That form is for code outside a component, and it returns
+the function that stops the reaction. A bare `watch(fn)` inside `setup` keeps running after the
+unmount, and the `imp/watch-with-self` lint rule reports it. See _Cleanup_ below. Subscribers are
+isolated from each other. imp logs a subscriber that throws and skips it, the other subscribers
+still run, and the `set` call itself succeeds. A subscriber can also set another state. That is how
+changes chain. A loop of states that set each other without an end is cut off with an error, and the
+page does not hang.
 
 ### `text(select?)`
 
@@ -167,7 +171,7 @@ state. That includes conditional rendering. `render` can return a node, text, an
 `false` to render nothing:
 
 ```js
-const session = useState('myapp.session')
+const session = useState(self, 'myapp.session')
 
 div(session.view((user) => (user ? profileCard(user) : loginForm())))
 
@@ -192,7 +196,7 @@ and updates the list whenever you set the state. The rendered region keeps its p
 siblings around it:
 
 ```js
-const todos = initState('myapp.todos', [])
+const todos = initState(self, 'myapp.todos', [])
 
 ul(todos.each((todo) => li(todo.title)))
 
@@ -232,10 +236,11 @@ nothing.
 
 The entries of the helper render **content**. For an element **prop**, such as `class`, `style`, an
 attribute or a property, pass a state itself as the prop value. The prop then stays live. imp
-applies it when it builds the element, and applies it again on every `set`:
+applies it when it builds the element, and applies it again on every `set`. Pass the handle, not
+`get()`. A `get()` copies the value once, and the `imp/no-get-in-binding` lint rule reports it:
 
 ```js
-const busy = useState('myapp.busy')
+const busy = useState(self, 'myapp.busy')
 
 button('Save', { disabled: busy })
 ```
@@ -253,7 +258,7 @@ More often the value of the prop _derives_ from a state, instead of being a stat
 deriving. A computed state binds in exactly the same way:
 
 ```js
-const theme = useState('myapp.theme')
+const theme = useState(self, 'myapp.theme')
 
 div({ class: computed([theme], (value) => `card card--${value}`) })
 
@@ -277,7 +282,8 @@ Know two boundaries:
 
 imp catches one mistake for you. The state goes in as a **prop value**, not as an argument of its
 own. `div(count)` looks correct, but it means nothing. Render it with `count.text()` instead. imp
-reports the mistake and skips the value.
+reports the mistake and skips the value, and the `imp/no-state-as-child` lint rule catches it while
+you write it.
 
 ## Computed states
 
@@ -289,11 +295,10 @@ import { component } from 'imp'
 import { span } from 'imp/html'
 import { computed, initState } from 'imp/state'
 
-const first = initState('myapp.first', 'Ada')
-const last = initState('myapp.last', 'Lovelace')
-
 export const nameBadge = component('my-app-name-badge', {
-  build: () => {
+  setup: (self) => {
+    const first = initState(self, 'myapp.first', 'Ada')
+    const last = initState(self, 'myapp.last', 'Lovelace')
     const fullName = computed([first, last], (f, l) => `${f} ${l}`)
     return span(fullName.text())
   },
@@ -318,7 +323,7 @@ A computed state can compute again when you need another step. `each` works on a
 So a derived list is one `computed` away:
 
 ```js
-const todos = initState('myapp.todos', [])
+const todos = initState(self, 'myapp.todos', [])
 const remaining = computed([todos], (items) => items.filter((item) => !item.done))
 
 ul(remaining.each((todo) => li(todo.title)))
@@ -353,7 +358,7 @@ piece of data. That is one object, one `set` and one notification, and no combin
 ever exists:
 
 ```js
-const list = initState('myapp.list', { items: [], selected: null })
+const list = initState(self, 'myapp.list', { items: [], selected: null })
 
 list.set((current) => ({ ...current, items: [], selected: null }))
 ```
@@ -367,12 +372,11 @@ binding, such as a large `view` or a chart redraw, add a display state and a hea
 component reacts to all the sources, and sets the display state once per burst:
 
 ```js
-const chartData = initState('myapp.chartData', null)
-
 const chartFeed = component('my-app-chart-feed', {
-  build: () => {
-    const items = useState('myapp.items')
-    const filter = useState('myapp.filter')
+  setup: (self) => {
+    const chartData = useState(self, 'myapp.chartData')
+    const items = useState(self, 'myapp.items')
+    const filter = useState(self, 'myapp.filter')
     let scheduled = false
     const refresh = () => {
       if (scheduled) return
@@ -382,8 +386,8 @@ const chartFeed = component('my-app-chart-feed', {
         chartData.set(buildChartData(items.get(), filter.get()))
       })
     }
-    items.watch(refresh)
-    filter.watch(refresh)
+    items.watch(self, refresh)
+    filter.watch(self, refresh)
   },
 })
 ```
@@ -399,7 +403,7 @@ and **where its DOM lands** decides the owner. `text()`, `view()`, `each()` and 
 are inert when you build them. This holds for a regular state and for a computed state. They
 subscribe the moment when imp mounts the DOM that they belong to, as the output of a component or
 through `mount(...)`. The component that contains them owns them. A binding that lands in the output
-of `build` ends when the component unmounts. A binding rendered inside a `view` or `each` region
+of `setup` ends when the component unmounts. A binding rendered inside a `view` or `each` region
 belongs to that region, and it ends when the region renders again, or when the component unmounts,
 whichever comes first. See **[Components](components.md)**. A binding that you mount with
 `mount(...)` ends when you call the function that `mount` returned. So you can swap whole screens in
@@ -407,32 +411,34 @@ and out. Nothing leaks, and there is nothing to disconnect. The other side of th
 DOM that you insert into the page yourself, without imp, never activates its bindings. Let a
 component or `mount(...)` place it.
 
-`watch(fn)` is the exception, because it has no DOM to land in. It subscribes immediately, and it
-needs a component that mounts to own it. Call it in `build` before any `await`, or in a `view` or
-`each` render function. Anywhere else it throws. That includes module scope, an event handler, and a
-position after an `await`.
+`watch` is the exception, because it has no DOM to land in. It subscribes immediately. So it takes
+`self` to find its owner: `watch(self, fn)` ends when the component unmounts, exactly like a
+binding. `watch(fn)` without `self` registers no cleanup. It is for code outside a component, and it
+returns the function that stops it. A `watch(self, fn)` inside a `view` or `each` render function
+ends with the mount, not with the region, so it accumulates on every rebuild. Prefer a DOM binding
+wherever one fits.
 
-Reading and writing are free. `get()` and `set(next)` work anywhere, at any time. So the natural way
-to write an async `build` needs no ceremony. Resolve the states first, then `await`, then build:
+Reading and writing are free. `get()` and `set(next)` work anywhere, at any time. Resolution goes
+through `self`, so it works at any point in `setup`, before or after an `await`. The natural way to
+write an async `setup` needs no ceremony:
 
 ```js
 const orderList = component('my-app-order-list', {
-  placeholder: () => div('loading orders...'),
-  build: async (instance, { id }) => {
-    const orders = initState('myapp.orders', [])
-    orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
+  loading: () => div('loading orders...'),
+  setup: async (self, { id }) => {
+    const loaded = await fetch(`/api/orders?user=${id}`).then((response) => response.json())
+    const orders = initState(self, 'myapp.orders', loaded)
     return ul(orders.each((order) => li(order.title), (order) => order.id))
   },
 })
 ```
 
-A binding that you build after the `await` goes live when the resolved DOM mounts. Only the
-**resolution** depends on the position. `initState`, `useState` and `watch` belong before the first
-`await`. After it, the component that mounts is out of reach, and all three throw. An ordinary
-closure carries the resolved handles across any number of `await` calls. The
-`imp/state-setup-before-await` lint rule reports a resolution, and a `watch` on a state handle, that
-sits after an `await`. It reports this while you write, before anything runs. See
-**[Linting](lint.md)**.
+A binding that you build after the `await` goes live when the resolved DOM mounts. One case throws.
+When the component unmounts while `setup` still awaits, a later `initState` or `useState` has no
+mount to resolve through, and the error says that the host has left the page. An async `setup` that
+can outlive its host checks `self.abortSignal.aborted` after the `await`, or hands
+`self.abortSignal` to the awaited call. The `imp/abort-check-after-await` lint rule reports a
+resolution after an `await` that does neither.
 
 ## Scope and lifetime
 
@@ -440,19 +446,19 @@ Every state belongs to the component that initializes it. The component that you
 decides who sees the state, and how long it lives:
 
 - The **subtree** of the state is its audience. A component that mounts under the initializing
-  component finds the state with `useState`. A component elsewhere on the page does not. When the
-  component unmounts, imp releases the state with it, and a later remount starts again from the
-  initial value. Two instances of the same component each own an **independent** state under the
+  component finds the state with `useState(self, name)`. A component elsewhere on the page does not.
+  When the component unmounts, imp releases the state with it, and a later remount starts again from
+  the initial value. Two instances of the same component each own an **independent** state under the
   same name. So a gallery of widgets needs no juggling of names.
 - **State for the lifetime of the app**, such as the session and the theme, is state that you
   initialize in your **root component**. That component covers the whole app and never unmounts.
   There is no separate global scope to learn, and none to leak into. One rule covers everything, and
-  `initState` outside a component that mounts throws.
+  `initState` without the `self` of a mounting component throws.
 
 Give every state the **narrowest scope that covers its readers**. Give each screen-sized piece of
 your app a root component that owns the states of that screen. A swap of screens then replaces one
 subtree with another, and releases everything that the old screen created. That is its states, every
-subscription, and, through `teardown`, its timers and connections.
+subscription, and, through `onRemove`, its timers and connections.
 
 A component can also initialize a name that an ancestor already provides. Its subtree then sees the
 nearer state, which shadows the state of the ancestor. A nested CSS rule wins over an outer rule in
@@ -461,17 +467,24 @@ the same way.
 The helper object is self-contained. Whoever holds it can call `get`, `set` and subscribe, wherever
 they sit in the tree. So when imp renders some DOM **outside** the subtree of the provider, such as
 an overlay or a dialog that you append to `document.body`, `useState` there cannot find the name.
-The owning component passes its helper down as an argument, and the receiver subscribes as usual.
+The owning component passes its helper down as an argument, and the receiver binds it as usual.
+
+The withdrawal of a contribution is the one lookup that happens after the mount. `onRemove` runs
+after the component has left the page, so nothing above it can answer. Instead, `self` remembers
+what the mount resolved. `useState(self, name)` in `onRemove` returns the handle that `setup`
+resolved, and a name that `setup` never resolved throws. The `imp/on-remove-through-self` lint rule
+reports such a name. See **[Components](components.md)**.
 
 ## A state that has not loaded yet
 
-`initState(name)` with no initial value starts the state at `undefined`. imp has no separate loading
-phase. `undefined` is an ordinary value, and your app decides to read it as "not loaded yet":
+`initState(self, name)` with no initial value starts the state at `undefined`. imp has no separate
+loading phase. `undefined` is an ordinary value, and your app decides to read it as "not loaded
+yet":
 
 ```js
-build: () => {
-  const session = initState('myapp.session') // undefined - nothing known yet
-  const api = initHttpClient('myapp.api', { baseUrl: env.API_URL })
+setup: (self) => {
+  const session = initState(self, 'myapp.session') // undefined - nothing known yet
+  const api = initHttpClient(self, 'myapp.api', { baseUrl: env.API_URL })
   api.get('/session')
     .then((user) => session.set(user)) //       null when nobody is signed in
     .catch(() => session.set(null))
@@ -494,12 +507,12 @@ div(session.view((user) => (user === undefined ? spinner() : user ? profile(user
 
 ## Rules for initialization and lookup
 
-- **Initialize first, use after.** `useState(name)` throws when nothing in scope has initialized
-  that name. The order follows the mount. The `build` of a parent runs before its children mount. So
-  a child can always `useState` what its ancestors initialized.
+- **Initialize first, use after.** `useState(self, name)` throws when nothing in scope has
+  initialized that name. The order follows the mount. The `setup` of a parent runs before its
+  children mount. So a child can always `useState` what its ancestors initialized.
 - **Initialize once per scope.** A call to `initState` with a name that the same scope already
   provides throws. Each scope initializes a name exactly once. Reach an existing state with
-  `useState(name)` instead.
+  `useState(self, name)` instead.
 - **The position decides, also after a move.** When you move a mounted component, imp resolves its
   `useState` bindings again, against the ancestors at its new position. A state that the component
   initialized itself travels with it. See _Moving components_ in **[Components](components.md)**.
@@ -507,13 +520,13 @@ div(session.view((user) => (user === undefined ? spinner() : user ? profile(user
   `myapp....`, keeps the names honest between your own components. A name in the root component
   covers the whole app, and nothing else protects it.
 
-Inside imp, the lookup travels as a DOM event named `StateSubscription`. It bubbles up from the
-component that asks for the state, and the nearest ancestor that provides that name answers. The
-handshake travels through the DOM, not through a JavaScript registry. So two parts of a page that
-load independently, such as two widgets that you built separately, share a state as long as they
-share the DOM. The event also crosses a shadow root. So it passes through the shadow roots that imp
-components render into, at any depth. It also works for a component embedded inside the shadow DOM
-of another library.
+Inside imp, the lookup travels as a DOM event. It bubbles up from the host of the component that
+asks for the state, which is `self.host`, and the nearest ancestor that provides that name answers.
+The handshake travels through the DOM, not through a JavaScript registry. So two parts of a page
+that load independently, such as two widgets that you built separately, share a state as long as
+they share the DOM. The event also crosses a shadow root. So it passes through the shadow roots that
+imp components render into, at any depth. It also works for a component embedded inside the shadow
+DOM of another library.
 
 ## The naming rule
 

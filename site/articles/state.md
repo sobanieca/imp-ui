@@ -19,15 +19,15 @@ import { button, div } from 'imp/html'
 import { initState, useState } from 'imp/state'
 
 const profile = component('my-app-profile', {
-  build: () => {
-    const user = useState('myapp.user')
+  setup: (self) => {
+    const user = useState(self, 'myapp.user')
     return div(user.text((u) => u.name))
   },
 })
 
 export const app = component('my-app-root', {
-  build: () => {
-    const user = initState('myapp.user', { name: 'Ada', theme: 'dark' })
+  setup: (self) => {
+    const user = initState(self, 'myapp.user', { name: 'Ada', theme: 'dark' })
     return div(
       profile(),
       button('Rename', {
@@ -46,9 +46,9 @@ arrays.
 
 ## The pitch in three sentences
 
-- **State is named and DOM-scoped.** `initState('myapp.cart', [])` in a component makes `myapp.cart`
-  visible to its whole subtree via `useState('myapp.cart')` - and releases it automatically when the
-  component unmounts.
+- **State is named and DOM-scoped.** `initState(self, 'myapp.cart', [])` in a component makes
+  `myapp.cart` visible to its whole subtree via `useState(self, 'myapp.cart')` - and releases it
+  automatically when the component unmounts.
 - **Updates are surgical.** A `set` doesn't re-run your component. It updates the exact text nodes,
   regions, list items, and props you bound - synchronously, on the real DOM.
 - **Cleanup is automatic and total.** Every subscription has an owner and a deterministic end. Swap
@@ -71,7 +71,7 @@ small helper object. Learn these six entries and you know imp state completely.
 Returns the current value. Works anywhere, any time - event handlers, timers, after an `await`.
 
 ```js
-const cart = useState('shop.cart')
+const cart = useState(self, 'shop.cart')
 console.log(cart.get().length)
 ```
 
@@ -223,12 +223,12 @@ store; in Angular, an injected service with an observable; in Vue, a Pinia store
 In imp, it's one line in your root component - the component that spans the app and never unmounts:
 
 ```js
-const cart = initState('shop.cart', [])
+const cart = initState(self, 'shop.cart', [])
 ```
 
-Every component under it reaches the same state with `useState('shop.cart')` - there is no store
-object to define and no separate "global" concept: app-lifetime state is just state owned by the
-component with app-lifetime. The header badge is a text node that updates in place - the header
+Every component under it reaches the same state with `useState(self, 'shop.cart')` - there is no
+store object to define and no separate "global" concept: app-lifetime state is just state owned by
+the component with app-lifetime. The header badge is a text node that updates in place - the header
 never re-renders:
 
 ```js
@@ -264,23 +264,23 @@ there.
 ### The SaaS dashboard: async data without the ceremony
 
 Load orders from an API, show them keyed, and never leak a subscription when the user navigates
-away. Resolve the state, `await`, build:
+away. Fetch, `await`, build:
 
 ```js
 const orderList = component('my-app-order-list', {
-  placeholder: () => div('loading orders...'),
-  build: async (instance, { id }) => {
-    const orders = initState('myapp.orders', [])
-    orders.set(await fetch(`/api/orders?user=${id}`).then((response) => response.json()))
+  loading: () => div('loading orders...'),
+  setup: async (self, { id }) => {
+    const loaded = await fetch(`/api/orders?user=${id}`).then((response) => response.json())
+    const orders = initState(self, 'myapp.orders', loaded)
     return ul(orders.each((order) => li(order.title), (order) => order.id))
   },
 })
 ```
 
 The bindings built after the `await` are inert DOM until the component mounts them - then they go
-live, owned by the component that placed them, and end with it. Only the `initState` call is
-position-sensitive (it has to know which component is initializing), and an ordinary closure carries
-its handle across the `await`. No ambient async-context machinery needed.
+live, owned by the component that placed them, and end with it. `initState` takes `self`, the
+per-mount handle of the component, so it works before or after the `await`. No ambient async-context
+machinery needed.
 
 When several states feed one expensive rendering edge - say a chart that redraws from both a dataset
 and a filter - the documented pattern is a **headless component**: a component that renders nothing
@@ -294,15 +294,15 @@ component that subscribes and renders nothing:
 
 ```js
 const themeWatcher = component('my-app-theme-watcher', {
-  build: () => {
-    const theme = useState('myapp.theme')
-    theme.watch((value) => document.body.setAttribute('data-theme', value))
+  setup: (self) => {
+    const theme = useState(self, 'myapp.theme')
+    theme.watch(self, (value) => document.body.setAttribute('data-theme', value))
   },
 })
 ```
 
-Mount it once; the side effect lives exactly as long as the component does. Unmount it and the
-subscription is gone - no `useEffect` return function, no `ngOnDestroy`, no `onCleanup`.
+Mount it once; the side effect lives exactly as long as the component does. Pass `self` and the
+subscription ends with the mount - no `useEffect` return function, no `ngOnDestroy`, no `onCleanup`.
 
 ### The multi-team page: state that crosses build boundaries
 

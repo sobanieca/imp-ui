@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-get-binding)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-get-in-binding]: 'busy.get()' as the 'disabled' prop of 'button' copies the value once, and the prop never follows the state - pass the state itself: { disabled: busy }
+ --> app.js:11:34
+
+error[imp/no-get-in-binding]: 'busy.get()' as the 'value' prop of 'input' copies the value once, and the prop never follows the state - pass the state itself: { value: busy }
+ --> app.js:12:22
+
+error[imp/no-get-in-binding]: 'theme.get()' as the 'title' prop of 'div' copies the value once, and the prop never follows the state - pass the state itself: { title: theme }
+ --> app.js:13:20
+
+Found 3 problems
+Checked 1 file

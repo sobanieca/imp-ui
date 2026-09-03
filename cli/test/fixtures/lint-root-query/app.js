@@ -2,41 +2,52 @@ import { component } from 'imp'
 import { button, div, span } from 'imp/html'
 
 export const flagged = component('demo-flagged', {
-  build: (instance) => {
+  setup: (self) => {
     const box = div(span({ class: 'label' }, 'hi'))
-    instance.root.querySelector('.label').textContent = 'ready'
-    instance.root.querySelectorAll('span')
+    self.host.shadowRoot.querySelector('.label').textContent = 'ready'
+    self.host.shadowRoot.querySelectorAll('span')
     return box
   },
 })
 
 export const flaggedDestructured = component('demo-flagged-destructured', {
-  build: ({ root }, props) => {
-    root.getElementById('title')
+  setup: ({ host }, props) => {
+    host.shadowRoot.getElementById('title')
     return div(props.title)
   },
 })
 
 export const allowedDeferred = component('demo-allowed-deferred', {
-  build: (instance) => {
+  setup: (self) => {
     const label = span({ class: 'label' }, 'hi')
-    queueMicrotask(() => instance.root.querySelector('.label').focus())
-    return div(label, button({ events: { click: () => instance.root.querySelector('.label') } }))
+    queueMicrotask(() => self.host.shadowRoot.querySelector('.label').focus())
+    return div(
+      label,
+      button({ events: { click: () => self.host.shadowRoot.querySelector('.label') } }),
+    )
   },
 })
 
 export const allowedNodeRef = component('demo-allowed-node-ref', {
-  build: (instance) => {
+  setup: (self) => {
     const label = span('hi')
     label.textContent = 'ready'
-    instance.host.setAttribute('data-ready', 'true')
+    self.host.setAttribute('data-ready', 'true')
     return div(label)
   },
 })
 
-export const allowedUnmount = component('demo-allowed-unmount', {
-  build: () => div(span({ class: 'label' }, 'hi')),
-  teardown: (instance) => {
-    instance.lastLabel = instance.root.querySelector('.label')?.textContent
+export const allowedOnMount = component('demo-allowed-on-mount', {
+  setup: () => div(span({ class: 'label' }, 'hi')),
+  onMount: (self) => self.host.shadowRoot.querySelector('.label').focus(),
+  onRemove: (self) => {
+    self.lastLabel = self.host.shadowRoot.querySelector('.label')?.textContent
   },
 })
+
+export const notADefinition = {
+  setup: (self) => {
+    self.host.shadowRoot.querySelector('.label')
+    return div('plain object, not a component')
+  },
+}

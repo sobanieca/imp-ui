@@ -15,28 +15,28 @@ These are the conventions:
 
 ## Rendering phase
 
-| ADR                                                             | Decision                                             |
-| --------------------------------------------------------------- | ---------------------------------------------------- |
-| [browser-support-baseline](browser-support-baseline.md)         | Current stable browsers; no polyfills or workarounds |
-| [real-dom-no-virtual-dom](real-dom-no-virtual-dom.md)           | Real DOM, no virtual DOM                             |
-| [type-based-argument-dispatch](type-based-argument-dispatch.md) | Type-based argument dispatch                         |
-| [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates          |
-| [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback    |
-| [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events        |
-| [web-component-lifecycle](web-component-lifecycle.md)           | Components are custom elements; build lifecycle      |
-| [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry         |
-| [focus-delegation](focus-delegation.md)                         | Hosts delegate focus to the control they render      |
-| [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind          |
-| [error-boundaries](error-boundaries.md)                         | Fallback boundaries via events; isolated teardown    |
-| [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components  |
-| [route-guards](route-guards.md)                                 | Synchronous guards over declared states, with wait   |
+| ADR                                                             | Decision                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [browser-support-baseline](browser-support-baseline.md)         | Current stable browsers; no polyfills or workarounds                           |
+| [real-dom-no-virtual-dom](real-dom-no-virtual-dom.md)           | Real DOM, no virtual DOM                                                       |
+| [type-based-argument-dispatch](type-based-argument-dispatch.md) | Type-based argument dispatch                                                   |
+| [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates                                    |
+| [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback                              |
+| [special-prop-namespaces](special-prop-namespaces.md)           | Special prop namespaces: class, style, events                                  |
+| [web-component-lifecycle](web-component-lifecycle.md)           | Custom elements; loading/setup/error/onMount/onRemove, resolution through self |
+| [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry                                   |
+| [focus-delegation](focus-delegation.md)                         | Hosts delegate focus to the control they render                                |
+| [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind                                    |
+| [error-boundaries](error-boundaries.md)                         | Error boundaries via events; isolated cleanup                                  |
+| [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components                            |
+| [route-guards](route-guards.md)                                 | Synchronous guards over declared states, with wait                             |
 
 ## State
 
-| ADR                                                   | Decision                                                                                          |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| [event-propagated-state](event-propagated-state.md)   | Named state via initState/useState - subtree-scoped by DOM-event bubbling, auto-cleanup, computed |
-| [state-plain-data-values](state-plain-data-values.md) | Plain-data state values: fused validate+structural-compare on set, deep-frozen when stored        |
+| ADR                                                   | Decision                                                                                        |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [event-propagated-state](event-propagated-state.md)   | Named state via initState(self)/useState(self) - subtree-scoped by DOM-event bubbling, computed |
+| [state-plain-data-values](state-plain-data-values.md) | Plain-data state values: fused validate+structural-compare on set, deep-frozen when stored      |
 
 ## Styling
 

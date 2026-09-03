@@ -16,12 +16,12 @@ of an error, both dispatch a custom event with `composed: true`, see `event-prop
 ## Decision
 
 **The host of every component attaches an open shadow root, and everything that the component
-renders lives there.** imp attaches the root in the constructor of the host. The placeholder, the
-output of the mount, an error fallback, and the placeholder that imp renders again on a remount, all
-render into the shadow root. The light DOM of the host stays empty, and imp does not touch it.
+renders lives there.** imp attaches the root in the constructor of the host. The loading content,
+the output of the mount, an error view, and the loading content that imp renders again on a remount,
+all render into the shadow root. The light DOM of the host stays empty, and imp does not touch it.
 
 - **Styling is per component, through a `styles` entry in the definition.** That entry is an
-  optional CSS string, beside `build`. imp compiles it once per component, into a constructable
+  optional CSS string, beside `setup`. imp compiles it once per component, into a constructable
   stylesheet, at the moment when it defines the component. A parse failure throws there, with the
   imp brand on the message. The shadow root of every instance adopts that stylesheet. To share CSS
   between two components, share a string. That is a plain JavaScript constant, or a module, that you
@@ -68,7 +68,7 @@ render into the shadow root. The light DOM of the host stays empty, and imp does
   would otherwise put a deep combinator in front of every e2e selector, because an imp app has no
   other kind of element. So the page that imp gives a spec goes through a shadow root by default.
   `>>>` remains, and it names a path when a selector is ambiguous.
-- Code in `build` that reaches for DOM across the page, with `document.querySelector`, sees the
+- Code in `setup` that reaches for DOM across the page, with `document.querySelector`, sees the
   light DOM only. The idioms are these. Hold a reference and pass it as an argument. Use
   `getRootNode().host` for the host of the component itself. Use a state for anything shared.
 - A scoped registry of custom elements is the answer of the platform to a collision of component

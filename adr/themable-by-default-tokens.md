@@ -98,11 +98,11 @@ that names no background still has one.
 
 **Somebody writes a theme from four values, and not from ninety.** To write a full token map by hand
 is not a thing that a person must do. So imp derives one. A **primary** colour, a **secondary**
-colour, a **radius** step, which is `none`, `small`, `medium`, `large` or `full`, and a **shadow**
-step, which is `none`, `soft` or `strong`, produce the whole surface of colour, radius and shadow
-for one `colorScheme`. The derivation belongs to imp, and imp computes it in OKLCH. The primary
-colour yields its hover step and its active step, which are darker in light mode and lighter in dark
-mode. It also yields a `color-on-primary`, which imp selects by WCAG contrast, between white and a
+colour, a **radius** step, which is `none`, `small`, `medium` or `large`, and a **shadow** step,
+which is `none`, `soft` or `strong`, produce the whole surface of colour, radius and shadow for one
+`colorScheme`. The derivation belongs to imp, and imp computes it in OKLCH. The primary colour
+yields its hover step and its active step, which are darker in light mode and lighter in dark mode.
+It also yields a `color-on-primary`, which imp selects by WCAG contrast, between white and a
 near-black tint of the same hue. The secondary colour yields `color-text`, `color-surface`,
 `color-surface-sunken`, `color-surface-hover` and `color-border`, at a fixed lightness step per
 mode. imp keeps the hue of the secondary colour, at a capped chroma. So the neutrals of a theme

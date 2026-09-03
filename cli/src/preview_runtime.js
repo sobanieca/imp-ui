@@ -1,6 +1,5 @@
 import { component, init, mount } from 'imp'
 import { a, div, el, h2, pre, span } from 'imp/html'
-import { initState } from 'imp/state'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { button, icon, text } from 'imp/std'
@@ -12,8 +11,8 @@ import { previewHead, previewIndex, previewShell, readCatalog } from './preview_
 import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview_theme_editor.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview_metadata.js'
 import { asNodes } from '../../lib/src/nodes.js'
-import { runInMountScope } from '../../lib/src/component.js'
 import { findStateFrom } from '../../lib/src/state.js'
+import { initState } from 'imp/state'
 
 const THEME_STORAGE_KEY = 'imp.preview.theme'
 const LANGUAGE_STORAGE_KEY = 'imp.preview.lang'
@@ -68,7 +67,7 @@ body {
 const surface = `
   background: var(--imp-color-surface, #ffffff);
   border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-  border-radius: var(--imp-radius-lg, 10px);
+  border-radius: var(--imp-radius-container, 10px);
 `
 
 const SCENARIO_STYLES = `
@@ -105,7 +104,7 @@ const SCENARIO_STYLES = `
     color: var(--imp-color-link, #2563eb);
     font-size: var(--imp-font-size-sm, 0.875rem);
     text-decoration: none;
-    border-radius: var(--imp-radius-sm, 4px);
+    border-radius: var(--imp-radius-item, 6px);
   }
 
   a:hover {
@@ -120,7 +119,7 @@ const SCENARIO_STYLES = `
   .failure {
     margin: 0;
     padding: var(--imp-space-3, 12px);
-    border-radius: var(--imp-radius-md, 6px);
+    border-radius: var(--imp-radius-container, 10px);
     background: var(--imp-color-surface, #ffffff);
     border: var(--imp-border-width, 1px) solid var(--imp-color-danger, #dc2626);
     color: var(--imp-color-danger, #dc2626);
@@ -177,7 +176,7 @@ const STAGE_STYLES = `
   .handle {
     position: absolute;
     touch-action: none;
-    border-radius: var(--imp-radius-sm, 4px);
+    border-radius: var(--imp-radius-item, 6px);
   }
 
   .handle--right {
@@ -437,7 +436,7 @@ const describeValue = (value) => {
 
 const stageDefinition = {
   styles: STAGE_STYLES,
-  build: (_instance, nodes) => {
+  setup: (_self, nodes) => {
     const stage = div({ class: 'stage' }, nodes)
     stages.push(stage)
     const frame = div({ class: 'frame' }, stage)
@@ -505,12 +504,15 @@ const stagePanel = (nodes) => {
 const negated = (source) => ({
   name: source.name,
   get: () => !source.get(),
-  watch: (subscriber) => source.watch((value) => subscriber(!value)),
+  watch: (...args) => {
+    const subscriber = args.pop()
+    return source.watch(...args, (value) => subscriber(!value))
+  },
 })
 
-const stateRow = (nodes, declaration, index) => {
-  const draft = initState(`${DRAFT_STATE}.${index}`, declaration.initial ?? '')
-  const editable = initState(`${DRAFT_STATE}.${index}.editable`, false)
+const stateRow = (self, nodes, declaration, index) => {
+  const draft = initState(self, `${DRAFT_STATE}.${index}`, declaration.initial ?? '')
+  const editable = initState(self, `${DRAFT_STATE}.${index}.editable`, false)
   const messageText = document.createTextNode('looking for this state...')
   const message = span({ class: 'message' }, messageText)
   const field = textArea({
@@ -555,7 +557,7 @@ const stateRow = (nodes, declaration, index) => {
     const found = findStateInTree(nodes, declaration.name)
     if (found) {
       state = found
-      runInMountScope({ addCleanup: () => {} }, () => found.watch(show))
+      found.watch(show)
       return
     }
     if (attemptsLeft <= 0) {
@@ -580,7 +582,7 @@ const stateRow = (nodes, declaration, index) => {
 
 const editorDefinition = {
   styles: EDITOR_STYLES,
-  build: (_instance, nodes, declarations) =>
+  setup: (self, nodes, declarations) =>
     div(
       { class: 'editor' },
       el('h3', 'state'),
@@ -590,7 +592,7 @@ const editorDefinition = {
             { tone: 'secondary', size: 'sm' },
             'Values are JSON. Edit one and apply it (or press Ctrl+Enter) to drive the component.',
           ),
-          ...declarations.map((declaration, index) => stateRow(nodes, declaration, index)),
+          ...declarations.map((declaration, index) => stateRow(self, nodes, declaration, index)),
         ]
         : text(
           { tone: 'secondary', size: 'sm' },
@@ -608,7 +610,7 @@ const stateEditor = (nodes, declarations) => {
 
 const scenarioDefinition = {
   styles: SCENARIO_STYLES,
-  build: (_instance, name, scenario, meta) => scenarioSection(name, scenario, meta),
+  setup: (_self, name, scenario, meta) => scenarioSection(name, scenario, meta),
 }
 
 let createScenario = null
@@ -685,10 +687,12 @@ const mainContent = (scenarios, meta, catalog, groups) => {
 }
 
 const pageDefinition = {
-  build: (_instance, scenarios, meta, catalog, groups) => {
-    const themeChoice = initState(THEME_STATE, readStoredTheme())
-    const directionChoice = initState(DIRECTION_STATE, readStoredDirection())
-    const languageChoice = languages.length ? initState(LANGUAGE_STATE, readStoredLanguage()) : null
+  setup: (self, scenarios, meta, catalog, groups) => {
+    const themeChoice = initState(self, THEME_STATE, readStoredTheme())
+    const directionChoice = initState(self, DIRECTION_STATE, readStoredDirection())
+    const languageChoice = languages.length
+      ? initState(self, LANGUAGE_STATE, readStoredLanguage())
+      : null
 
     themeChoice.watch((name) => {
       if (!themes.has(name)) return
@@ -704,7 +708,7 @@ const pageDefinition = {
       switchTo(readStoredLanguage())
     })
 
-    const editorOpen = initState(EDITOR_STATE, false)
+    const editorOpen = initState(self, EDITOR_STATE, false)
     const controls = [
       languageChoice ? picker('language', 'Language', languages, languageChoice) : null,
       picker('direction', 'Text direction', DIRECTIONS, directionChoice),

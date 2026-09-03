@@ -89,17 +89,15 @@ There is no `layout` enum. The props that you pass are the arrangement.
 
 **A screen cannot push markup into the nav. It pushes data.** Keep a nav state beside the shell and
 compute `items` from it. The screen contributes on mount and withdraws on unmount. The withdrawal
-runs in `teardown`, where `useState` throws, because the screen has left the page. So keep the
-handle from `build` on the instance:
+runs in `onRemove`, where `useState(self, name)` returns the handle that `setup` resolved:
 
 ```js
 const projectScreen = component('acme-project', {
-  build: (instance, projectId) => {
-    instance.project = useState('acme.nav.project')
-    instance.project.set({ id: projectId })
+  setup: (self, projectId) => {
+    useState(self, 'acme.nav.project').set({ id: projectId })
     return overview(projectId)
   },
-  teardown: (instance) => instance.project.set(null),
+  onRemove: (self) => useState(self, 'acme.nav.project').set(null),
 })
 ```
 
@@ -146,11 +144,11 @@ Rules an agent gets wrong:
 - **`gap` floats the chrome.** Step `0` is the default. It is the edge-to-edge frame with hairline
   dividers. Any other step insets the frame by that much. It separates the bar, the column and the
   bottom bar from each other and from the content. It draws each one as a bordered panel, rounded
-  with `radius-lg`. So the radius of a theme reaches the frame only through `gap`. At step `0` it
-  does not, because a rounded corner against the edge of a screen looks broken. The content is not a
-  panel. It sits on the background. The phone drawer also floats. It is inset by the gap, bordered
-  and rounded. The frame publishes `--imp-shell-frame-gap` and `--imp-shell-frame-radius`, so a
-  `drawer` mounted in the main content floats in the same way.
+  with `radius-container`. So the radius of a theme reaches the frame only through `gap`. At step
+  `0` it does not, because a rounded corner against the edge of a screen looks broken. The content
+  is not a panel. It sits on the background. The phone drawer also floats. It is inset by the gap,
+  bordered and rounded. The frame publishes `--imp-shell-frame-gap` and `--imp-shell-frame-radius`,
+  so a `drawer` mounted in the main content floats in the same way.
 - **The background is a theme token first.** The frame paints `background-app`, which takes a colour
   or a gradient and defaults to `color-surface`. Every chrome panel paints `color-surface-sunken`
   over it. Pass `background` only for a backdrop that CSS cannot draw, such as moving shapes or a

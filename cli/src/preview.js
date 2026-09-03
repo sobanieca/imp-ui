@@ -107,7 +107,8 @@ function extractStateDeclarations(source) {
   const declarations = []
   for (const functionName of STATE_ENTRY_POINTS) {
     for (const { argumentSource } of extractCalls(source, functionName)) {
-      const { first, rest } = splitFirstArgument(argumentSource)
+      const { rest: afterSelf } = splitFirstArgument(argumentSource)
+      const { first, rest } = splitFirstArgument(afterSelf)
       const name = parseStringLiteral(first)
       if (name === null) continue
       const initial = functionName === 'initState' ? parseInitialValue(rest) : null

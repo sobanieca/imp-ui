@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-root-query)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-root-query-in-setup]: the shadow root is queried in setup before the returned DOM is placed - setup's output fills the shadow root only after setup returns (after the awaited promise resolves, for an async setup), so this finds the loading content, not your own; keep a reference to the node you build and use it directly, or query self.host.shadowRoot in onMount, which imp runs on the next frame once your DOM is laid out on the page
+ --> app.js:7:5
+
+error[imp/no-root-query-in-setup]: the shadow root is queried in setup before the returned DOM is placed - setup's output fills the shadow root only after setup returns (after the awaited promise resolves, for an async setup), so this finds the loading content, not your own; keep a reference to the node you build and use it directly, or query self.host.shadowRoot in onMount, which imp runs on the next frame once your DOM is laid out on the page
+ --> app.js:8:5
+
+error[imp/no-root-query-in-setup]: the shadow root is queried in setup before the returned DOM is placed - setup's output fills the shadow root only after setup returns (after the awaited promise resolves, for an async setup), so this finds the loading content, not your own; keep a reference to the node you build and use it directly, or query self.host.shadowRoot in onMount, which imp runs on the next frame once your DOM is laid out on the page
+ --> app.js:15:5
+
+Found 3 problems
+Checked 1 file

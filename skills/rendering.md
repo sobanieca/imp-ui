@@ -89,7 +89,7 @@ Rules an agent gets wrong:
 
 - **A plain helper function is not a component.** `card({ title }) => div(...)` is a function only.
   Its name is lowercase and it has no lifecycle. Make it a `component(...)` only when it needs mount
-  and unmount, state resolution, or a loading placeholder. See [components](components.md).
+  and unmount, state resolution, or loading content. See [components](components.md).
 - **Never pass two props objects** to one call. imp reports the `imp/single-props-object` lint
   error.
 - **Never pass a state as a bare child.** imp reports `div(count)` and skips it. Write

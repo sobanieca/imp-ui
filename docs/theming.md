@@ -73,13 +73,13 @@ import { div } from 'imp/html'
 import { theme } from 'imp/theme'
 
 const badge = component('my-app-theme-badge', {
-  build: () => div(theme.text((t) => t.name)),
+  setup: () => div(theme.text((t) => t.name)),
 })
 ```
 
 `theme.get()` returns the active theme object anywhere. Inside a component you can call
-`theme.watch(...)`, or bind the state with `theme.text` or `theme.view`, so it updates when the
-theme changes. Most of your app never needs this, because the re-skin happens through the CSS
+`theme.watch(self, ...)`, or bind the state with `theme.text` or `theme.view`, so it updates when
+the theme changes. Most of your app never needs this, because the re-skin happens through the CSS
 variables. It is there for the rare component that must branch on the active theme, and to build a
 theme switcher.
 
@@ -199,13 +199,13 @@ edit to the file reloads the page with the new tokens. See **[`imp preview`](cli
 You do not have to write ninety tokens to get a theme. `imp preview` ships a **theme editor** beside
 the switcher. Open it with _edit theme_. It asks for four things:
 
-| Knob              | Choices                          | What it drives                                             |
-| ----------------- | -------------------------------- | ---------------------------------------------------------- |
-| **Mode**          | light, dark                      | Which of the two themes you are editing                    |
-| **Primary**       | any color                        | The accent: buttons, links, focus rings                    |
-| **Secondary**     | any color                        | The muted tone, and the hue of every surface, border, text |
-| **Border radius** | none, small, medium, large, full | The whole `radius-*` scale                                 |
-| **Shadow**        | none, soft, strong               | The three `shadow-*` steps                                 |
+| Knob              | Choices                    | What it drives                                             |
+| ----------------- | -------------------------- | ---------------------------------------------------------- |
+| **Mode**          | light, dark                | Which of the two themes you are editing                    |
+| **Primary**       | any color                  | The accent: buttons, links, focus rings                    |
+| **Secondary**     | any color                  | The muted tone, and the hue of every surface, border, text |
+| **Border radius** | none, small, medium, large | `radius-item` and `radius-container`, as one step          |
+| **Shadow**        | none, soft, strong         | The three `shadow-*` steps                                 |
 
 imp **derives** everything else. From the primary colour it builds the hover step and the active
 step, and it selects a readable `color-on-primary`. From the secondary colour it builds the surface,
@@ -258,7 +258,7 @@ them:
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                            |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-sm`, `radius-md`, `radius-lg`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`                                                                                                                                                                                                                 |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`                                                                                                                                                                                                                     |
 
 `color-on-primary` and `color-on-danger` are the text colours that sit **on** those backgrounds. So
 a theme can select a readable pair, and it does not have to hope that white works. `color-secondary`
@@ -283,10 +283,14 @@ serves both themes.
 The three shadow steps and the radius scale set the depth and the softness of a theme. `shadow-sm`
 lifts a card off the page. No standard component is a card, so this step is for your own layout.
 `shadow-md` lifts an element that floats near its trigger, such as the overflow menu of a button.
-`shadow-lg` lifts an overlay that sits above everything, such as a dialog or a drawer. `radius-sm`
-to `radius-lg`, and `radius-full` for a pill, round every corner that the standard components draw.
-A theme that wants flat, square chrome sets every shadow to `none` and every radius to `0`. Every
-component then follows, with no CSS in your app.
+`shadow-lg` lifts an overlay that sits above everything, such as a dialog or a drawer. There are two
+radius tokens, because a corner reads differently at two scales. `radius-item` rounds the small
+things that sit inside a page: a button, an input, a tag, a nav row, a tab. `radius-container`
+rounds the panels that hold them: a dialog, a drawer, a menu, the frame of a `shell`. It is always
+the larger of the two, so a panel and the button inside it never share one corner. `radius-full` is
+the pill, and it stays `9999px` in every theme. A theme that wants flat, square chrome sets every
+shadow to `none` and both radius tokens to `0`. Every component then follows, with no CSS in your
+app.
 
 The spacing scale is **fluid**. `space-3` and the larger steps are `clamp()` values that grow with
 the viewport. So a gap that you set once is tighter on a phone and wider on a monitor, and you write

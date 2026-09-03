@@ -53,8 +53,8 @@ const todoRow = component('todo-row', {
       color: var(--imp-color-secondary);
     }
   `,
-  build: (_instance, { todo }) => {
-    const todos = useState('tasks.todos')
+  setup: (self, { todo }) => {
+    const todos = useState(self, 'tasks.todos')
     return div(
       { class: ['row', todo.done && 'done'] },
       input({
@@ -83,9 +83,9 @@ const addTask = component('todo-add', {
       gap: var(--imp-space-2);
     }
   `,
-  build: () => {
-    const todos = useState('tasks.todos')
-    const draft = initState('tasks.draft', '')
+  setup: (self) => {
+    const todos = useState(self, 'tasks.todos')
+    const draft = initState(self, 'tasks.draft', '')
 
     const add = () => {
       const title = draft.get().trim()
@@ -121,8 +121,8 @@ const taskList = component('todo-list', {
       padding: 0;
     }
   `,
-  build: (_instance, { filter }) => {
-    const todos = useState('tasks.todos')
+  setup: (self, { filter }) => {
+    const todos = useState(self, 'tasks.todos')
     const visible = computed([todos], (items) => items.filter(matching[filter]))
     const nothingToShow = computed([visible], (items) => items.length === 0)
 
@@ -141,7 +141,7 @@ const taskList = component('todo-list', {
 })
 
 export const tasks = component('todo-tasks', {
-  build: (_instance, { filter }) =>
+  setup: (_self, { filter }) =>
     stack(
       { gap: 4 },
       heading({ level: 1 }, titles[filter]),

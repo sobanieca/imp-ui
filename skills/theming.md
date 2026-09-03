@@ -66,7 +66,12 @@ applyTheme({
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                            |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-sm`, `radius-md`, `radius-lg`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`                                                                                                                                                                                                                 |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`                                                                                                                                                                                                                     |
+
+`radius-item` rounds a button, an input, a tag, a nav row and a tab. `radius-container` rounds a
+dialog, a drawer, a menu and the frame of a `shell`. `radius-full` is the pill and is always
+`9999px`. Set `radius-item` and `radius-container` together. The container radius must be the larger
+one.
 
 `color-on-primary` and `color-on-danger` are the text colours that sit **on** those backgrounds.
 `color-secondary` is the muted tone. `color-surface` is a panel, and `color-surface-sunken` is the
@@ -101,8 +106,8 @@ them in your own styles:
 
 `imp preview` has a theme editor. Open it with _edit theme_ in the top bar. It exposes **mode**,
 which is light or dark, **primary**, **secondary**, **border radius**, which is `none`, `small`,
-`medium`, `large` or `full`, and **shadow**, which is `none`, `soft` or `strong`. It derives every
-other colour token from the two base colours. It copies or downloads a complete `theme.js`:
+`medium` or `large`, and **shadow**, which is `none`, `soft` or `strong`. It derives every other
+colour token from the two base colours. It copies or downloads a complete `theme.js`:
 
 ```js
 // theme.js - generated, then edited by hand

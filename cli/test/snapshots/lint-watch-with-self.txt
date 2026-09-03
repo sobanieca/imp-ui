@@ -1,0 +1,24 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-watch)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/watch-with-self]: 'user.watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (user.watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove
+ --> app.js:15:5
+
+error[imp/watch-with-self]: 'lang.watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (lang.watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove
+ --> app.js:19:5
+
+error[imp/watch-with-self]: 'route.watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (route.watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove
+ --> app.js:23:5
+
+error[imp/watch-with-self]: 'useRoute().watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (useRoute().watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove
+ --> app.js:24:5
+
+error[imp/watch-with-self]: 'theme.watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (theme.watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove
+ --> app.js:30:5
+
+Found 5 problems
+Checked 1 file

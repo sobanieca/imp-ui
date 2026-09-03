@@ -70,7 +70,7 @@ Rules for `items`:
   opens no hover menu.
 
 ```js
-const sending = initState('contact.sending', false)
+const sending = initState(self, 'contact.sending', false)
 
 button({ variant: 'primary', loading: sending, events: { click: send } }, 'Send')
 button({ variant: 'danger', size: 'sm', events: { click: remove } }, 'Delete')

@@ -72,30 +72,70 @@ const ICONS_SPECIFIER = 'imp/icons'
 
 const ICON_COUNT = Object.keys(iconsModule).length
 
-const STATE_SETUP_HELPERS = new Set(['initState', 'useState'])
+const STATE_HELPERS = new Map([['initState', 1], ['useState', 1]])
+
+const HTTP_CLIENT_HELPERS = new Map([
+  ['createHttpClient', 0],
+  ['initHttpClient', 1],
+  ['useHttpClient', 1],
+])
 
 const STATE_HANDLE_CREATORS = new Set(['initState', 'useState', 'computed'])
 
-const HTTP_SETUP_HELPERS = new Set(['initHttpClient', 'useHttpClient'])
+const ROUTE_HANDLE_CREATORS = new Set(['useRoute'])
 
-const HTTP_CLIENT_HELPERS = new Set(['createHttpClient', 'initHttpClient', 'useHttpClient'])
+const READABLE_EXPORTS = new Map([
+  ['imp/i18n', new Set(['lang', 'dir'])],
+  ['imp/theme', new Set(['theme'])],
+])
 
-const ROUTER_SETUP_HELPERS = new Set(['router'])
+const WATCH_HOOKS = new Set(['setup', 'error', 'onMount'])
 
-const ROUTE_HANDLE_CREATORS = new Set(['router', 'useRoute'])
+const SELF_NAME = 'self'
 
-const isRoutesKey = (property) =>
-  !property.computed &&
-  ((property.key.type === 'Identifier' && property.key.name === 'routes') ||
-    (property.key.type === 'Literal' && property.key.value === 'routes'))
+const propertyKeyName = (property) =>
+  property.computed ? null : (property.key.name ?? property.key.value ?? null)
 
-const rendersEnclosingArea = (node) => {
-  const [options] = node.arguments
-  if (options === undefined) return true
-  if (options.type !== 'ObjectExpression') return false
-  return !options.properties.some((property) =>
-    property.type === 'SpreadElement' || isRoutesKey(property)
-  )
+const firstParamName = (node) => {
+  const first = node.params[0]
+  return first?.type === 'Identifier' ? first.name : null
+}
+
+const DEFINITION_CALLS = new Map([
+  ['imp', new Set(['component'])],
+  ['imp/router', new Set(['router'])],
+])
+
+const createDefinitionTracker = () => {
+  const locals = new Map()
+  const namespaceLocals = new Set()
+  const isDefinitionCallee = (callee) => {
+    if (callee.type === 'Identifier') return locals.has(callee.name)
+    const name = namespaceCalleeName(callee, namespaceLocals)
+    return name !== null && [...DEFINITION_CALLS.values()].some((names) => names.has(name))
+  }
+  return {
+    visitImport(node) {
+      const names = DEFINITION_CALLS.get(node.source.value)
+      if (!names) return
+      collectImpImports(
+        node,
+        node.source.value,
+        (name) => names.has(name) ? name : null,
+        locals,
+        namespaceLocals,
+      )
+    },
+    isHook(node, hooks) {
+      const property = node.parent
+      if (property?.type !== 'Property' || property.value !== node) return false
+      if (!hooks.has(propertyKeyName(property))) return false
+      const definition = property.parent
+      const call = definition?.parent
+      return definition?.type === 'ObjectExpression' && call?.type === 'CallExpression' &&
+        call.arguments.includes(definition) && isDefinitionCallee(call.callee)
+    },
+  }
 }
 
 const classifyFactory = (importedName) => {
@@ -161,15 +201,16 @@ const namespaceCalleeName = (callee, namespaceLocals) =>
     ? callee.property.name
     : null
 
-const createLiteralNameRule = (source, helperNames, nameProblem) => ({
+const createLiteralNameRule = ({ source, helpers, nameProblem }) => ({
   create(context) {
     const helperLocals = new Map()
     const namespaceLocals = new Set()
     const calls = []
 
-    const isHelperCall = (callee) => {
-      if (callee.type === 'Identifier') return helperLocals.has(callee.name)
-      return helperNames.has(namespaceCalleeName(callee, namespaceLocals))
+    const calledHelper = (callee) => {
+      if (callee.type === 'Identifier') return helperLocals.get(callee.name) ?? null
+      const name = namespaceCalleeName(callee, namespaceLocals)
+      return name !== null && helpers.has(name) ? name : null
     }
 
     return {
@@ -177,7 +218,7 @@ const createLiteralNameRule = (source, helperNames, nameProblem) => ({
         collectImpImports(
           node,
           source,
-          (name) => helperNames.has(name) ? name : null,
+          (name) => helpers.has(name) ? name : null,
           helperLocals,
           namespaceLocals,
         )
@@ -187,112 +228,243 @@ const createLiteralNameRule = (source, helperNames, nameProblem) => ({
       },
       'Program:exit'() {
         for (const node of calls) {
-          if (!isHelperCall(node.callee)) continue
-          const { known, name } = literalArgumentName(node.arguments[0])
+          const helper = calledHelper(node.callee)
+          if (helper === null) continue
+          const argument = node.arguments[helpers.get(helper)]
+          const { known, name } = literalArgumentName(argument)
           if (!known) continue
           const problem = nameProblem(name)
-          if (problem) context.report({ node: node.arguments[0] ?? node, message: problem })
+          if (problem) context.report({ node: argument ?? node, message: problem })
         }
       },
     }
   },
 })
 
-const createSetupBeforeAwaitRule = (
-  { source, setupHelpers, handleCreators, setupMessage, watchMessage, appliesTo = () => true },
-) => ({
-  create(context) {
-    const creatorLocals = new Map()
-    const namespaceLocals = new Set()
-    const handleNames = new Set()
-    const functions = []
-    const candidates = []
+const RESOLUTION_HELPERS = new Map([
+  ['imp/state', new Set(['initState', 'useState'])],
+  ['imp/http', new Set(['initHttpClient', 'useHttpClient'])],
+])
 
-    const calledCreator = (callee) => {
-      if (callee.type === 'Identifier') return creatorLocals.get(callee.name) ?? null
+const RESOLUTION_KINDS = new Map([
+  ['initState', 'state'],
+  ['useState', 'state'],
+  ['initHttpClient', 'http client'],
+  ['useHttpClient', 'http client'],
+])
+
+const RESOLUTION_EXAMPLES = new Map([
+  ['initState', "initState(self, 'myapp.user', value)"],
+  ['useState', "useState(self, 'myapp.user')"],
+  ['initHttpClient', "initHttpClient(self, 'myapp.api', { baseUrl })"],
+  ['useHttpClient', "useHttpClient(self, 'myapp.api')"],
+])
+
+const CLAIMING_HELPERS = new Set(['initState', 'initHttpClient'])
+
+const LOADING_HELPERS = new Map([
+  ['imp/state', new Set(['initState', 'useState'])],
+  ['imp/http', new Set(['initHttpClient', 'useHttpClient'])],
+  ['imp/router', new Set(['useRoute'])],
+])
+
+const HANDLE_CREATORS = new Map([
+  ['imp/state', STATE_HANDLE_CREATORS],
+  ['imp/router', ROUTE_HANDLE_CREATORS],
+])
+
+const BINDING_METHODS = new Set(['text', 'view', 'each', 'watch'])
+
+const WATCH_METHOD = new Set(['watch'])
+
+const GET_METHOD = new Set(['get'])
+
+const SELF_HOOKS = new Set(['setup', 'error', 'onMount', 'onRemove'])
+
+const RESOLVING_HOOKS = new Set(['setup', 'error'])
+
+const SETUP_HOOK = new Set(['setup'])
+
+const LOADING_HOOK = new Set(['loading'])
+
+const SELF_FREE_ARGUMENT_TYPES = new Map([
+  ['Literal', 'a literal'],
+  ['TemplateLiteral', 'a template'],
+  ['ObjectExpression', 'an object'],
+  ['ArrayExpression', 'an array'],
+  ['ArrowFunctionExpression', 'a function'],
+  ['FunctionExpression', 'a function'],
+])
+
+const SELF_HOOKS_TEXT = 'self is the first parameter of setup, error, onMount and onRemove'
+
+const createHelperTracker = (helpersBySource) => {
+  const locals = new Map()
+  const namespaceLocals = new Set()
+  const allHelpers = new Set([...helpersBySource.values()].flatMap((names) => [...names]))
+  return {
+    visitImport(node) {
+      const helpers = helpersBySource.get(node.source.value)
+      if (!helpers) return
+      collectImpImports(
+        node,
+        node.source.value,
+        (name) => helpers.has(name) ? name : null,
+        locals,
+        namespaceLocals,
+      )
+    },
+    calledHelper(callee) {
+      if (callee.type === 'Identifier') return locals.get(callee.name) ?? null
       const name = namespaceCalleeName(callee, namespaceLocals)
-      return name !== null && handleCreators.has(name) ? name : null
-    }
+      return name !== null && allHelpers.has(name) ? name : null
+    },
+  }
+}
 
-    const isHandleCall = (expression) =>
-      expression?.type === 'CallExpression' && calledCreator(expression.callee) !== null
-
-    const watchedHandleName = (callee) =>
-      callee.type === 'MemberExpression' && !callee.computed &&
-        callee.property.type === 'Identifier' && callee.property.name === 'watch' &&
-        callee.object.type === 'Identifier' && handleNames.has(callee.object.name)
-        ? callee.object.name
-        : null
-
-    const isAsyncBuild = (node) =>
-      node.async && node.parent?.type === 'Property' && !node.parent.computed &&
-      node.parent.value === node &&
-      (node.parent.key.name === 'build' || node.parent.key.value === 'build')
-
-    const enterFunction = (node) =>
-      functions.push({ tracked: isAsyncBuild(node), firstAwaitEnd: null })
-    const exitFunction = () => functions.pop()
-
-    const markAwait = (position) => {
-      const current = functions.at(-1)
-      if (current && current.firstAwaitEnd === null) current.firstAwaitEnd = position
-    }
-
-    return {
-      ImportDeclaration(node) {
-        collectImpImports(
-          node,
-          source,
-          (name) => handleCreators.has(name) ? name : null,
-          creatorLocals,
-          namespaceLocals,
-        )
-      },
-      VariableDeclarator(node) {
-        if (node.id.type === 'Identifier' && isHandleCall(node.init)) {
-          handleNames.add(node.id.name)
+const createHandleTracker = () => {
+  const creators = createHelperTracker(HANDLE_CREATORS)
+  const names = new Set()
+  const creatorOf = (expression) =>
+    expression?.type === 'CallExpression' ? creators.calledHelper(expression.callee) : null
+  const isHandleCall = (expression) => creatorOf(expression) !== null
+  return {
+    visitImport(node) {
+      creators.visitImport(node)
+      const readables = READABLE_EXPORTS.get(node.source.value)
+      if (!readables) return
+      for (const specifier of node.specifiers) {
+        if (specifier.type === 'ImportSpecifier' && readables.has(importedName(specifier))) {
+          names.add(specifier.local.name)
         }
-      },
-      AssignmentExpression(node) {
-        if (node.operator === '=' && node.left.type === 'Identifier' && isHandleCall(node.right)) {
-          handleNames.add(node.left.name)
-        }
-      },
-      FunctionDeclaration: enterFunction,
-      'FunctionDeclaration:exit': exitFunction,
-      FunctionExpression: enterFunction,
-      'FunctionExpression:exit': exitFunction,
-      ArrowFunctionExpression: enterFunction,
-      'ArrowFunctionExpression:exit': exitFunction,
-      AwaitExpression(node) {
-        markAwait(node.range[1])
-      },
-      'ForOfStatement[await=true]'(node) {
-        markAwait(node.range[0])
-      },
-      CallExpression(node) {
-        const current = functions.at(-1)
-        if (!current?.tracked || current.firstAwaitEnd === null) return
-        if (node.range[0] < current.firstAwaitEnd) return
-        candidates.push(node)
-      },
-      'Program:exit'() {
-        for (const node of candidates) {
-          const creator = calledCreator(node.callee)
-          if (creator !== null && setupHelpers.has(creator) && appliesTo(node)) {
-            context.report({ node, message: setupMessage(creator) })
-            continue
-          }
-          if (!watchMessage) continue
-          const handleName = watchedHandleName(node.callee)
-          if (handleName !== null) {
-            context.report({ node, message: watchMessage(handleName) })
-          }
-        }
-      },
-    }
-  },
-})
+      }
+    },
+    visitDeclarator(node) {
+      if (node.id.type === 'Identifier' && isHandleCall(node.init)) names.add(node.id.name)
+    },
+    visitAssignment(node) {
+      if (node.operator === '=' && node.left.type === 'Identifier' && isHandleCall(node.right)) {
+        names.add(node.left.name)
+      }
+    },
+    handleText(expression) {
+      if (expression.type === 'Identifier' && names.has(expression.name)) return expression.name
+      const creator = creatorOf(expression)
+      return creator === null ? null : `${creator}()`
+    },
+    methodCall(callee, methods) {
+      if (
+        callee.type !== 'MemberExpression' || callee.computed ||
+        callee.property.type !== 'Identifier' || !methods.has(callee.property.name)
+      ) return null
+      const handle = this.handleText(callee.object)
+      return handle === null ? null : { handle, method: callee.property.name }
+    },
+  }
+}
+
+const createFactoryTracker = () => {
+  const locals = new Map()
+  const namespaceLocals = new Set()
+  return {
+    visitImport(node) {
+      for (const specifier of PROPS_DISPATCHING_SPECIFIERS) {
+        collectImpImports(node, specifier, classifyFactory, locals, namespaceLocals)
+      }
+    },
+    factoryKind(callee) {
+      if (callee.type === 'Identifier') return locals.get(callee.name) ?? null
+      const name = namespaceCalleeName(callee, namespaceLocals)
+      return name === null ? null : classifyFactory(name)
+    },
+    factoryName(callee) {
+      return callee.type === 'Identifier' ? callee.name : callee.property.name
+    },
+    childArguments(node) {
+      const kind = this.factoryKind(node.callee)
+      if (kind === null) return null
+      return node.arguments.slice(kind === 'el' ? 1 : 0)
+    },
+  }
+}
+
+const createHookFrames = ({ hooks, inherit = true, describe }) => {
+  const definitions = createDefinitionTracker()
+  const frames = []
+  const enter = (node) =>
+    frames.push(definitions.isHook(node, hooks) ? describe(node) : (inherit ? frames.at(-1) : null))
+  const exit = () => frames.pop()
+  return {
+    current: () => frames.at(-1) ?? null,
+    visitImport: (node) => definitions.visitImport(node),
+    visitors: {
+      FunctionDeclaration: enter,
+      'FunctionDeclaration:exit': exit,
+      FunctionExpression: enter,
+      'FunctionExpression:exit': exit,
+      ArrowFunctionExpression: enter,
+      'ArrowFunctionExpression:exit': exit,
+    },
+  }
+}
+
+const selfNameOf = (node) => firstParamName(node) ?? SELF_NAME
+
+const isSelfArgument = (argument, selfName) =>
+  argument?.type === 'Identifier' && (argument.name === selfName || argument.name === SELF_NAME)
+
+const isWatchCallee = (callee) =>
+  callee.type === 'MemberExpression' && !callee.computed &&
+  callee.property.type === 'Identifier' && callee.property.name === 'watch'
+
+const isRootedAt = (expression, name) => {
+  let current = expression
+  while (current.type === 'MemberExpression') current = current.object
+  return current.type === 'Identifier' && current.name === name
+}
+
+const rootIdentifier = (expression) => {
+  let current = expression
+  while (current.type === 'MemberExpression') current = current.object
+  return current.type === 'Identifier' ? current : null
+}
+
+const isModuleScoped = (sourceCode, node, name) => {
+  let scope = sourceCode.getScope(node)
+  while (scope) {
+    const variable = scope.set.get(name)
+    if (variable) return scope.type === 'module' || scope.type === 'global'
+    scope = scope.upper
+  }
+  return true
+}
+
+const isAbortSignalRead = (node, selfName) =>
+  node.type === 'MemberExpression' && !node.computed &&
+  node.property.type === 'Identifier' && node.property.name === 'abortSignal' &&
+  node.object.type === 'Identifier' && node.object.name === selfName
+
+const returnsPlainDom = (expression, factories, handles) => {
+  if (expression === null) return true
+  switch (expression.type) {
+    case 'Literal':
+    case 'TemplateLiteral':
+      return true
+    case 'ArrayExpression':
+      return expression.elements.every((element) =>
+        element !== null && element.type !== 'SpreadElement' &&
+        returnsPlainDom(element, factories, handles)
+      )
+    case 'ConditionalExpression':
+      return returnsPlainDom(expression.consequent, factories, handles) &&
+        returnsPlainDom(expression.alternate, factories, handles)
+    case 'CallExpression':
+      return factories.factoryKind(expression.callee) !== null ||
+        handles.methodCall(expression.callee, BINDING_METHODS) !== null
+    default:
+      return false
+  }
+}
 
 export default {
   rules: {
@@ -367,82 +539,530 @@ export default {
         }
       },
     },
-    'state-name-namespace': createLiteralNameRule(
-      'imp/state',
-      STATE_SETUP_HELPERS,
-      stateNameProblem,
-    ),
-    'state-setup-before-await': createSetupBeforeAwaitRule({
+    'state-name-namespace': createLiteralNameRule({
       source: 'imp/state',
-      setupHelpers: STATE_SETUP_HELPERS,
-      handleCreators: STATE_HANDLE_CREATORS,
-      setupMessage: (helper) =>
-        `'${helper}' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve states before the first await (set() and DOM built from the handles work after it)`,
-      watchMessage: (handle) =>
-        `'${handle}.watch' runs after an await in an async build - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the state to DOM with text/view/each or a state-valued prop instead`,
+      helpers: STATE_HELPERS,
+      nameProblem: stateNameProblem,
     }),
-    'http-client-name-namespace': createLiteralNameRule(
-      'imp/http',
-      HTTP_CLIENT_HELPERS,
-      httpClientNameProblem,
-    ),
-    'http-client-setup-before-await': createSetupBeforeAwaitRule({
+    'http-client-name-namespace': createLiteralNameRule({
       source: 'imp/http',
-      setupHelpers: HTTP_SETUP_HELPERS,
-      handleCreators: HTTP_CLIENT_HELPERS,
-      setupMessage: (helper) =>
-        `'${helper}' runs after an await in an async build - past the first await the mounting component is out of reach and the call throws; resolve the client before the first await (calls through the handle work after it)`,
-      watchMessage: null,
+      helpers: HTTP_CLIENT_HELPERS,
+      nameProblem: httpClientNameProblem,
     }),
-    'router-setup-before-await': createSetupBeforeAwaitRule({
-      source: 'imp/router',
-      setupHelpers: ROUTER_SETUP_HELPERS,
-      handleCreators: ROUTE_HANDLE_CREATORS,
-      appliesTo: rendersEnclosingArea,
-      setupMessage: () =>
-        `'router' runs after an await in an async build - past the first await the mounting component is out of reach, so a router with no 'routes' cannot find the area around it and throws that 'routes' is required; call router() before the first await and keep the slot it returns in a variable`,
-      watchMessage: (handle) =>
-        `'${handle}.watch' runs after an await in an async build - past the first await there is no mounting component to own the subscription and the call throws; call watch before the first await, or bind the route to DOM with text/view/each instead`,
-    }),
-    'no-root-query-in-build': {
+    'watch-with-self': {
+      create(context) {
+        const handles = createHandleTracker()
+        const frames = createHookFrames({ hooks: WATCH_HOOKS, describe: selfNameOf })
+        const calls = []
+        return {
+          ...frames.visitors,
+          ImportDeclaration(node) {
+            frames.visitImport(node)
+            handles.visitImport(node)
+          },
+          VariableDeclarator: (node) => handles.visitDeclarator(node),
+          AssignmentExpression: (node) => handles.visitAssignment(node),
+          CallExpression(node) {
+            const selfName = frames.current()
+            if (!selfName || node.parent?.type !== 'ExpressionStatement') return
+            calls.push({ node, selfName })
+          },
+          'Program:exit'() {
+            for (const { node, selfName } of calls) {
+              const call = handles.methodCall(node.callee, WATCH_METHOD)
+              if (call === null || isSelfArgument(node.arguments[0], selfName)) continue
+              context.report({
+                node,
+                message:
+                  `'${call.handle}.watch' runs in a component without self, so nothing stops it when the component unmounts and the subscriber keeps running - pass self first (${call.handle}.watch(self, fn)), or keep the stop that watch(fn) returns and call it in onRemove`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'self-first-argument': {
+      create(context) {
+        const helpers = createHelperTracker(RESOLUTION_HELPERS)
+        const calls = []
+        return {
+          ImportDeclaration: (node) => helpers.visitImport(node),
+          CallExpression(node) {
+            calls.push(node)
+          },
+          'Program:exit'() {
+            for (const node of calls) {
+              const helper = helpers.calledHelper(node.callee)
+              if (helper === null) continue
+              const [first] = node.arguments
+              const given = first === undefined
+                ? 'missing'
+                : SELF_FREE_ARGUMENT_TYPES.get(first.type)
+              if (given === undefined) continue
+              context.report({
+                node: first ?? node,
+                message:
+                  `'${helper}' takes self as its first argument, and here that argument is ${given} - write ${
+                    RESOLUTION_EXAMPLES.get(helper)
+                  }; ${SELF_HOOKS_TEXT}`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'no-self-in-loading': {
+      create(context) {
+        const helpers = createHelperTracker(LOADING_HELPERS)
+        const handles = createHandleTracker()
+        const frames = createHookFrames({ hooks: LOADING_HOOK, describe: () => true })
+        const calls = []
+
+        const bindingArguments = (node) =>
+          node.arguments.flatMap((argument) =>
+            argument.type === 'ObjectExpression'
+              ? argument.properties.filter((property) => property.type === 'Property').map((
+                property,
+              ) => property.value)
+              : [argument]
+          )
+
+        return {
+          ...frames.visitors,
+          ImportDeclaration(node) {
+            frames.visitImport(node)
+            helpers.visitImport(node)
+            handles.visitImport(node)
+          },
+          VariableDeclarator: (node) => handles.visitDeclarator(node),
+          AssignmentExpression: (node) => handles.visitAssignment(node),
+          CallExpression(node) {
+            if (frames.current()) calls.push(node)
+          },
+          'Program:exit'() {
+            for (const node of calls) {
+              const helper = helpers.calledHelper(node.callee)
+              if (helper !== null) {
+                context.report({
+                  node,
+                  message:
+                    `'${helper}' runs in loading, which imp builds before the component mounts and without self, so the call throws - loading takes the factory arguments only; move the call into setup`,
+                })
+                continue
+              }
+              const bound = handles.methodCall(node.callee, BINDING_METHODS) ??
+                bindingArguments(node).map((argument) => handles.handleText(argument)).find((
+                  handle,
+                ) => handle !== null)
+              if (bound === undefined || bound === null) continue
+              const subject = typeof bound === 'string' ? bound : `${bound.handle}.${bound.method}`
+              context.report({
+                node,
+                message:
+                  `'${subject}' binds state in loading, which imp builds before the component mounts, so the binding renders empty and never updates - pass a plain value here, and keep text, view, each, watch and a state-bound prop in setup`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'loading-with-async-setup': {
+      create(context) {
+        const factories = createFactoryTracker()
+        const handles = createHandleTracker()
+        const definitions = createDefinitionTracker()
+        const frames = []
+        const builds = []
+
+        const enter = (node) =>
+          frames.push(definitions.isHook(node, SETUP_HOOK) ? { node, returns: [] } : null)
+        const exit = () => {
+          const frame = frames.pop()
+          if (frame) builds.push(frame)
+        }
+
+        return {
+          FunctionDeclaration: enter,
+          'FunctionDeclaration:exit': exit,
+          FunctionExpression: enter,
+          'FunctionExpression:exit': exit,
+          ArrowFunctionExpression: enter,
+          'ArrowFunctionExpression:exit': exit,
+          ImportDeclaration(node) {
+            definitions.visitImport(node)
+            factories.visitImport(node)
+            handles.visitImport(node)
+          },
+          VariableDeclarator: (node) => handles.visitDeclarator(node),
+          AssignmentExpression: (node) => handles.visitAssignment(node),
+          ReturnStatement(node) {
+            frames.at(-1)?.returns.push(node.argument)
+          },
+          'Program:exit'() {
+            for (const { node, returns } of builds) {
+              if (node.async) continue
+              const loading = node.parent.parent.properties.find((property) =>
+                property.type === 'Property' && propertyKeyName(property) === 'loading'
+              )
+              if (!loading) continue
+              const returned = node.body.type === 'BlockStatement' ? returns : [node.body]
+              if (
+                !returned.every((expression) => returnsPlainDom(expression, factories, handles))
+              ) {
+                continue
+              }
+              context.report({
+                node: loading.key,
+                message:
+                  `loading is set, but setup returns synchronously, so imp swaps the loading content out before paint and nobody sees it - make setup async, or return a promise from it, or remove loading`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'on-remove-through-self': {
+      create(context) {
+        const helpers = createHelperTracker(RESOLUTION_HELPERS)
+        const frames = createHookFrames({
+          hooks: SELF_HOOKS,
+          describe: (node) => ({
+            hook: propertyKeyName(node.parent),
+            definition: node.parent.parent,
+            selfName: selfNameOf(node),
+          }),
+        })
+        const resolved = new Map()
+        const removals = []
+
+        const resolvedIn = (definition) => {
+          let entry = resolved.get(definition)
+          if (!entry) {
+            entry = { names: new Set(), open: false }
+            resolved.set(definition, entry)
+          }
+          return entry
+        }
+
+        const selfStaysInside = (node, frame) => {
+          const { parent } = node
+          if (parent.type === 'MemberExpression') return true
+          if (parent.type === 'Property' && parent.key === node && !parent.shorthand) return true
+          if (
+            parent.type === 'ArrowFunctionExpression' || parent.type === 'FunctionExpression' ||
+            parent.type === 'FunctionDeclaration'
+          ) return true
+          if (parent.type === 'CallExpression' && parent.arguments[0] === node) {
+            return helpers.calledHelper(parent.callee) !== null || isWatchCallee(parent.callee)
+          }
+          return frame.hook === 'onRemove'
+        }
+
+        const isClosedDefinition = (definition) =>
+          definition.properties.every((property) => property.type === 'Property') &&
+          definition.properties.some((property) =>
+            propertyKeyName(property) === 'setup' &&
+            (property.value.type === 'ArrowFunctionExpression' ||
+              property.value.type === 'FunctionExpression')
+          )
+
+        return {
+          ...frames.visitors,
+          ImportDeclaration(node) {
+            frames.visitImport(node)
+            helpers.visitImport(node)
+          },
+          Identifier(node) {
+            const frame = frames.current()
+            if (!frame || !RESOLVING_HOOKS.has(frame.hook) || node.name !== frame.selfName) return
+            if (!selfStaysInside(node, frame)) resolvedIn(frame.definition).open = true
+          },
+          CallExpression(node) {
+            const frame = frames.current()
+            if (!frame) return
+            const helper = helpers.calledHelper(node.callee)
+            if (helper !== null && isSelfArgument(node.arguments[0], frame.selfName)) {
+              const { known, name } = literalArgumentName(node.arguments[1])
+              const kind = RESOLUTION_KINDS.get(helper)
+              if (RESOLVING_HOOKS.has(frame.hook)) {
+                const entry = resolvedIn(frame.definition)
+                if (known && name !== undefined) entry.names.add(`${kind}:${name}`)
+                else entry.open = true
+              } else if (frame.hook === 'onRemove') {
+                removals.push({ node, helper, kind, known, name, definition: frame.definition })
+              }
+              return
+            }
+            if (
+              frame.hook === 'onRemove' && isWatchCallee(node.callee) &&
+              isSelfArgument(node.arguments[0], frame.selfName)
+            ) {
+              removals.push({ node, helper: 'watch', definition: frame.definition })
+            }
+          },
+          'Program:exit'() {
+            for (const removal of removals) {
+              const { node, helper, kind, known, name, definition } = removal
+              if (helper === 'watch') {
+                context.report({
+                  node,
+                  message: `'${
+                    context.sourceCode.getText(node.callee)
+                  }(self, fn)' runs in onRemove, after the host has left the page, so nothing owns the subscription and the call throws - watch in setup, or hold the stop that watch(fn) returns`,
+                })
+                continue
+              }
+              if (CLAIMING_HELPERS.has(helper)) {
+                context.report({
+                  node,
+                  message:
+                    `'${helper}' runs in onRemove, after the host has left the page, so the call throws - initialize the ${kind} in setup, and reach it here with ${
+                      helper === 'initState' ? 'useState' : 'useHttpClient'
+                    }(self, name)`,
+                })
+                continue
+              }
+              const entry = resolvedIn(definition)
+              if (
+                !known || name === undefined || !isClosedDefinition(definition) || entry.open ||
+                entry.names.has(`${kind}:${name}`)
+              ) continue
+              context.report({
+                node: node.arguments[1],
+                message:
+                  `'${helper}' in onRemove reaches ${kind} '${name}', which setup never resolved - in onRemove, ${helper} returns only a handle that setup resolved through self, and a new name throws because the host has left the page; resolve '${name}' in setup, then reach it again here`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'no-self-at-module-scope': {
+      create(context) {
+        const sourceCode = context.sourceCode ?? context.getSourceCode()
+        const helpers = createHelperTracker(RESOLUTION_HELPERS)
+        const frames = createHookFrames({ hooks: SELF_HOOKS, describe: selfNameOf })
+        const assignments = []
+
+        const carriesSelf = (expression, selfName) => {
+          if (expression.type === 'Identifier' || expression.type === 'MemberExpression') {
+            return isRootedAt(expression, selfName)
+          }
+          return expression.type === 'CallExpression' &&
+            helpers.calledHelper(expression.callee) !== null &&
+            isSelfArgument(expression.arguments[0], selfName)
+        }
+
+        return {
+          ...frames.visitors,
+          ImportDeclaration(node) {
+            frames.visitImport(node)
+            helpers.visitImport(node)
+          },
+          AssignmentExpression(node) {
+            const selfName = frames.current()
+            if (selfName && carriesSelf(node.right, selfName)) assignments.push({ node, selfName })
+          },
+          'Program:exit'() {
+            for (const { node, selfName } of assignments) {
+              const target = rootIdentifier(node.left)
+              if (target === null || target.name === selfName) continue
+              if (!isModuleScoped(sourceCode, node, target.name)) continue
+              context.report({
+                node,
+                message: `'${
+                  sourceCode.getText(node.left)
+                }' at module scope stores what belongs to one mount - the module outlives every mount, so the next mount overwrites the value and an unmounted component stays reachable; store a per-mount resource on self instead (self.${
+                  node.left.type === 'Identifier' ? node.left.name : 'field'
+                } = ...)`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'abort-check-after-await': {
+      create(context) {
+        const helpers = createHelperTracker(RESOLUTION_HELPERS)
+        const frames = createHookFrames({
+          hooks: SETUP_HOOK,
+          inherit: false,
+          describe: (node) =>
+            node.async
+              ? {
+                selfName: selfNameOf(node),
+                awaited: false,
+                checked: false,
+                awaitDepth: 0,
+                signalInAwait: false,
+              }
+              : null,
+        })
+        const reports = []
+
+        return {
+          ...frames.visitors,
+          ImportDeclaration(node) {
+            frames.visitImport(node)
+            helpers.visitImport(node)
+          },
+          AwaitExpression() {
+            const frame = frames.current()
+            if (!frame) return
+            if (frame.awaitDepth === 0) frame.signalInAwait = false
+            frame.awaitDepth++
+          },
+          'AwaitExpression:exit'() {
+            const frame = frames.current()
+            if (!frame) return
+            frame.awaitDepth--
+            if (frame.awaitDepth > 0) return
+            frame.awaited = true
+            frame.checked = frame.signalInAwait
+          },
+          MemberExpression(node) {
+            const frame = frames.current()
+            if (!frame || !isAbortSignalRead(node, frame.selfName)) return
+            if (frame.awaitDepth > 0) frame.signalInAwait = true
+            else frame.checked = true
+          },
+          CallExpression(node) {
+            const frame = frames.current()
+            if (!frame || !frame.awaited || frame.checked) return
+            const helper = helpers.calledHelper(node.callee)
+            if (helper === null || !isSelfArgument(node.arguments[0], frame.selfName)) return
+            reports.push({ node, helper })
+          },
+          'Program:exit'() {
+            for (const { node, helper } of reports) {
+              context.report({
+                node,
+                message:
+                  `'${helper}' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; test self.abortSignal.aborted after the await and return, pass self.abortSignal to the awaited call, or resolve before the first await`,
+              })
+            }
+          },
+        }
+      },
+    },
+    'no-state-as-child': {
+      create(context) {
+        const factories = createFactoryTracker()
+        const handles = createHandleTracker()
+        const calls = []
+        return {
+          ImportDeclaration(node) {
+            factories.visitImport(node)
+            handles.visitImport(node)
+          },
+          VariableDeclarator: (node) => handles.visitDeclarator(node),
+          AssignmentExpression: (node) => handles.visitAssignment(node),
+          CallExpression(node) {
+            calls.push(node)
+          },
+          'Program:exit'() {
+            for (const node of calls) {
+              const children = factories.childArguments(node)
+              if (children === null) continue
+              for (const child of children) {
+                const handle = handles.handleText(child)
+                if (handle === null) continue
+                context.report({
+                  node: child,
+                  message: `'${handle}' is a state passed as a child of '${
+                    factories.factoryName(node.callee)
+                  }', and imp skips it - render it with ${handle}.text(), ${handle}.view(fn) or ${handle}.each(fn), or bind a prop with { class: ${handle} }`,
+                })
+              }
+            }
+          },
+        }
+      },
+    },
+    'no-get-in-binding': {
+      create(context) {
+        const factories = createFactoryTracker()
+        const handles = createHandleTracker()
+        const calls = []
+        return {
+          ImportDeclaration(node) {
+            factories.visitImport(node)
+            handles.visitImport(node)
+          },
+          VariableDeclarator: (node) => handles.visitDeclarator(node),
+          AssignmentExpression: (node) => handles.visitAssignment(node),
+          CallExpression(node) {
+            calls.push(node)
+          },
+          'Program:exit'() {
+            for (const node of calls) {
+              const children = factories.childArguments(node)
+              if (children === null) continue
+              for (const argument of children) {
+                if (argument.type !== 'ObjectExpression') continue
+                for (const property of argument.properties) {
+                  if (property.type !== 'Property') continue
+                  const value = property.value
+                  if (value.type !== 'CallExpression' || value.arguments.length > 0) continue
+                  const call = handles.methodCall(value.callee, GET_METHOD)
+                  if (call === null) continue
+                  const key = propertyKeyName(property) ?? 'prop'
+                  context.report({
+                    node: value,
+                    message: `'${call.handle}.get()' as the '${key}' prop of '${
+                      factories.factoryName(node.callee)
+                    }' copies the value once, and the prop never follows the state - pass the state itself: { ${key}: ${call.handle} }`,
+                  })
+                }
+              }
+            }
+          },
+        }
+      },
+    },
+    'no-root-query-in-setup': {
       create(context) {
         const queryMethods = new Set(['querySelector', 'querySelectorAll', 'getElementById'])
+        const definitions = createDefinitionTracker()
         const frames = []
 
-        const isBuild = (node) =>
-          node.parent?.type === 'Property' && !node.parent.computed &&
-          node.parent.value === node &&
-          (node.parent.key.name === 'build' || node.parent.key.value === 'build')
-
-        const rootSpecOf = (node) => {
+        const hostSpecOf = (node) => {
           const first = node.params[0]
           if (!first) return null
-          if (first.type === 'Identifier') return { kind: 'param', name: first.name }
+          if (first.type === 'Identifier') return { kind: 'self', name: first.name }
           if (first.type === 'ObjectPattern') {
             for (const property of first.properties) {
               if (
                 property.type === 'Property' && !property.computed &&
-                property.key.type === 'Identifier' && property.key.name === 'root' &&
+                property.key.type === 'Identifier' && property.key.name === 'host' &&
                 property.value.type === 'Identifier'
               ) {
-                return { kind: 'binding', name: property.value.name }
+                return { kind: 'host', name: property.value.name }
               }
             }
           }
           return null
         }
 
-        const isRootExpression = (expression, spec) =>
-          spec.kind === 'binding'
-            ? expression.type === 'Identifier' && expression.name === spec.name
-            : expression.type === 'MemberExpression' && !expression.computed &&
-              expression.property.type === 'Identifier' && expression.property.name === 'root' &&
-              expression.object.type === 'Identifier' && expression.object.name === spec.name
+        const isMember = (expression, name) =>
+          expression.type === 'MemberExpression' && !expression.computed &&
+          expression.property.type === 'Identifier' && expression.property.name === name
 
-        const enterFunction = (node) => frames.push(isBuild(node) ? rootSpecOf(node) : null)
+        const isHostExpression = (expression, spec) =>
+          spec.kind === 'host'
+            ? expression.type === 'Identifier' && expression.name === spec.name
+            : isMember(expression, 'host') && expression.object.type === 'Identifier' &&
+              expression.object.name === spec.name
+
+        const isShadowRootExpression = (expression, spec) =>
+          isMember(expression, 'shadowRoot') && isHostExpression(expression.object, spec)
+
+        const enterFunction = (node) =>
+          frames.push(definitions.isHook(node, SETUP_HOOK) ? hostSpecOf(node) : null)
         const exitFunction = () => frames.pop()
 
         return {
+          ImportDeclaration: (node) => definitions.visitImport(node),
           FunctionExpression: enterFunction,
           'FunctionExpression:exit': exitFunction,
           ArrowFunctionExpression: enterFunction,
@@ -454,19 +1074,23 @@ export default {
             if (
               callee.type === 'MemberExpression' && !callee.computed &&
               callee.property.type === 'Identifier' && queryMethods.has(callee.property.name) &&
-              isRootExpression(callee.object, spec)
+              isShadowRootExpression(callee.object, spec)
             ) {
               context.report({
                 node,
                 message:
-                  `the shadow root is queried in build before the returned DOM is placed - build's output fills the shadow root only after build returns (after the awaited promise resolves, for an async build), so this finds the placeholder, not your content; keep a reference to the node you build and use it directly, or run the query after placement with instance.afterMount(callback), which imp flushes on the next frame once your DOM is laid out on the page`,
+                  `the shadow root is queried in setup before the returned DOM is placed - setup's output fills the shadow root only after setup returns (after the awaited promise resolves, for an async setup), so this finds the loading content, not your own; keep a reference to the node you build and use it directly, or query self.host.shadowRoot in onMount, which imp runs on the next frame once your DOM is laid out on the page`,
               })
             }
           },
         }
       },
     },
-    'component-name': createLiteralNameRule('imp', new Set(['component']), componentNameProblem),
+    'component-name': createLiteralNameRule({
+      source: 'imp',
+      helpers: new Map([['component', 0]]),
+      nameProblem: componentNameProblem,
+    }),
     'import-source': {
       meta: { fixable: 'code' },
       create(context) {

@@ -289,7 +289,7 @@ const catalogSidebar = (previews, current, groups) => ({
 
 const barDefinition = {
   styles: BAR_STYLES,
-  build: (_instance, _previews) =>
+  setup: (_instance, _previews) =>
     div(
       { class: 'bar' },
       a({ class: 'brand', href: '/' }, 'imp preview'),
@@ -298,7 +298,7 @@ const barDefinition = {
 
 const settingsDefinition = {
   styles: SETTINGS_STYLES,
-  build: (_instance, controls) =>
+  setup: (_instance, controls) =>
     div(
       { class: 'settings' },
       el('h2', 'Preview'),
@@ -308,7 +308,7 @@ const settingsDefinition = {
 
 const indexDefinition = {
   styles: INDEX_STYLES,
-  build: (_instance, previews, groups) => {
+  setup: (_instance, previews, groups) => {
     const listed = groupsOf(previews, groups)
     const cards = listed.map(({ name, entries }) =>
       div(
@@ -354,7 +354,7 @@ const agentStrip = (instruction) =>
 
 const headDefinition = {
   styles: HEAD_STYLES,
-  build: (_instance, entry, isolated, instruction) =>
+  setup: (_instance, entry, isolated, instruction) =>
     div(
       { class: 'head' },
       div(

@@ -245,9 +245,9 @@ Rules an agent gets wrong:
   never in the `groups` of a section. **A section is always activatable**, also with no `href`,
   because a choice of section is what changes the sidebar.
 - **`gap: 0` is the edge-to-edge frame. Any other step floats the chrome** as bordered panels,
-  rounded with `radius-lg`, and inset from the screen and from each other. This covers the phone
-  drawer and any `drawer` inside the frame. The frame paints the `background-app` token, which is a
-  colour or a gradient, and defaults to `color-surface`. `background` is a DOM node under
+  rounded with `radius-container`, and inset from the screen and from each other. This covers the
+  phone drawer and any `drawer` inside the frame. The frame paints the `background-app` token, which
+  is a colour or a gradient, and defaults to `color-surface`. `background` is a DOM node under
   everything. Use it for a backdrop that CSS cannot draw. imp hides it from assistive technology.
 - **`children` nest one level, and are collapsed by default**, behind a caret with `aria-expanded`.
   The parent of the selected row starts expanded. On a phone, a parent that the person taps in the
@@ -416,9 +416,10 @@ tag({ color: 'green', size: 'sm' }, 'Shipped')
 
 The label is the children, not a prop. To render a live label, use `count.text()`. `color` names one
 of the 31 palette colours of the theme, such as `'red'`, `'green'` or `'blue'`. It is never a CSS
-colour. The pill is a 30% tint of that colour, so every pill stays readable in a light theme and in
-a dark theme. A nav row and a group of `shell` take the same value as plain data, in
-`tag: { text, color }`. imp draws it at the small size, to match the row.
+colour. The pill is a faint tint of that colour with a border and text in the same hue, so every
+pill stays readable in a light theme and in a dark theme. A nav row and a group of `shell` take the
+same value as plain data, in `tag: { text, color }`. imp draws it at the small size, to match the
+row.
 
 ## Responsive: fluid values, and your own media query
 
@@ -442,7 +443,7 @@ component('invoice-filters', {
       .filters { flex-direction: row; }
     }
   `,
-  build: () => div({ class: 'filters' }, ...filters()),
+  setup: () => div({ class: 'filters' }, ...filters()),
 })
 ```
 
@@ -462,9 +463,9 @@ Rules an agent gets wrong:
 ## Forms - from `imp/std/inputs`
 
 **The values of a form are ordinary state.** `form({ initialValues })` calls
-`initState('imp.form', initialValues ?? null)` on itself. A control names the field that it owns
-with a **dot path**. It resolves the form from its own position, and it reads and writes that one
-path. This works at any depth, so a layout component in between changes nothing.
+`initState(self, 'imp.form', initialValues ?? null)` on itself. A control names the field that it
+owns with a **dot path**. It resolves the form from its own position, and it reads and writes that
+one path. This works at any depth, so a layout component in between changes nothing.
 
 ```js
 import { form, select, submitButton, textField } from 'imp/std/inputs'
@@ -530,7 +531,7 @@ Rules an agent gets wrong:
   `validate` does not work, because a promise is truthy and every value then looks invalid. An async
   check runs on blur and on submit only, never on a keystroke. Debounce it yourself if you need
   more.
-- To read the values anywhere in the subtree, call `useState('imp.form')`.
+- To read the values anywhere in the subtree, call `useState(self, 'imp.form')`.
 
 ## Navigation - from `imp/std/navigation`
 

@@ -60,7 +60,7 @@ disabled item.
 import { initState } from 'imp/state'
 import { tabs } from 'imp/std/navigation'
 
-const openTab = initState('settings.tab', 'profile')
+const openTab = initState(self, 'settings.tab', 'profile')
 
 tabs({
   label: 'Settings',

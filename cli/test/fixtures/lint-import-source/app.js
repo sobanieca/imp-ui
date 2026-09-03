@@ -4,8 +4,8 @@ import { applyTheme } from 'imp/theme'
 import { button } from 'imp/std'
 
 export const panel = component('demo-panel', {
-  build: () => {
-    const open = useState('demo.open')
+  setup: (self) => {
+    const open = useState(self, 'demo.open')
     applyTheme('imp-light')
     return div(button({ events: { click: () => navigate('/next') } }, open.text()))
   },

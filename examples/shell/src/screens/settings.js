@@ -1,12 +1,12 @@
 import { component } from 'imp'
-import { useState } from 'imp/state'
 import { button, heading, text } from 'imp/std'
 import { flex, stack } from 'imp/std/layout'
 import { seedTodos } from '../todos.js'
+import { useState } from 'imp/state'
 
 export const settings = component('todo-settings', {
-  build: () => {
-    const todos = useState('tasks.todos')
+  setup: (self) => {
+    const todos = useState(self, 'tasks.todos')
     return stack(
       { gap: 4 },
       heading({ level: 1 }, 'Settings'),

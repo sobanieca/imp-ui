@@ -114,12 +114,13 @@ file the way it finds a test file.
   below. It is the one signal the page does not share with what it shows.
 - **The state editor is best-effort static extraction, with no lint rule.** imp scans the preview
   file and the relative modules it reaches for `initState` / `useState` calls. It takes the state
-  name from the string literal. For `initState`, it also takes the initial value when that value
-  parses as JSON. Nothing constrains where state can be declared. A name the scanner misses is not
-  listed. At runtime, the editor resolves each name against the scenario's own instance through the
-  state subscription event, so panels on one page are independent. Edits go through `set`, which
-  drives imp's normal fine-grained update path with no re-mount. Values are edited as JSON
-  (`state-plain-data-values.md`). A value that is not JSON-representable is read-only.
+  name from the string literal, which is the argument after `self`. For `initState`, it also takes
+  the initial value when that value parses as JSON. Nothing constrains where state can be declared.
+  A name the scanner misses is not listed. At runtime, the editor resolves each name against the
+  scenario's own instance through the state subscription event, so panels on one page are
+  independent. Edits go through `set`, which drives imp's normal fine-grained update path with no
+  re-mount. Values are edited as JSON (`state-plain-data-values.md`). A value that is not
+  JSON-representable is read-only.
 - **Chrome controls drive real signals.** A theme switcher calls `applyTheme` with imp's built-in
   themes (`themable-by-default-tokens.md`), so a component is checked light and dark from one page.
   The browser remembers the selection. A project's own themes join the same switcher through

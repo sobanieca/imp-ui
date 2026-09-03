@@ -98,10 +98,17 @@ Deno.test('imp commands', async (t) => {
   await test('lint-capital-component', ['lint', 'components.js'], fixture('lint-bad'))
   await test('lint-multiple-props-objects', ['lint', 'app.js'], fixture('lint-props'))
   await test('lint-state-name-namespace', ['lint', 'app.js'], fixture('lint-state'))
-  await test('lint-state-setup-before-await', ['lint', 'app.js'], fixture('lint-state-async'))
-  await test('lint-http-client-setup', ['lint', 'app.js'], fixture('lint-http-client'))
-  await test('lint-router-setup-before-await', ['lint', 'app.js'], fixture('lint-router-async'))
-  await test('lint-no-root-query-in-build', ['lint', 'app.js'], fixture('lint-root-query'))
+  await test('lint-http-client-name-namespace', ['lint', 'app.js'], fixture('lint-http-client'))
+  await test('lint-no-root-query-in-setup', ['lint', 'app.js'], fixture('lint-root-query'))
+  await test('lint-watch-with-self', ['lint', 'app.js'], fixture('lint-watch'))
+  await test('lint-self-first-argument', ['lint', 'app.js'], fixture('lint-self-first'))
+  await test('lint-no-self-in-loading', ['lint', 'app.js'], fixture('lint-loading-self'))
+  await test('lint-loading-with-async-setup', ['lint', 'app.js'], fixture('lint-loading-sync'))
+  await test('lint-on-remove-through-self', ['lint', 'app.js'], fixture('lint-on-remove'))
+  await test('lint-no-self-at-module-scope', ['lint', 'app.js'], fixture('lint-module-scope'))
+  await test('lint-abort-check-after-await', ['lint', 'app.js'], fixture('lint-abort-check'))
+  await test('lint-no-state-as-child', ['lint', 'app.js'], fixture('lint-state-child'))
+  await test('lint-no-get-in-binding', ['lint', 'app.js'], fixture('lint-get-binding'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
   await test('lint-icons-by-name', ['lint', 'app.js'], fixture('lint-icons'))
@@ -1685,7 +1692,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const primary = token('color-primary')
       const derived = token('color-primary-hover')
       change(field('theme-radius'), 'none')
-      const flat = token('radius-md')
+      const flat = token('radius-item')
       change(field('theme-mode'), 'dark')
       const darkSurface = token('color-surface')
       return {
@@ -2558,7 +2565,7 @@ Deno.test('the theme editor exports a theme file that imports back as two themes
     'the semantic aliases point at the palette, so editing a hue moves the role',
   )
   check(
-    module.light.tokens['radius-md'] === '10px' && module.light.tokens['shadow-md'] !== 'none',
+    module.light.tokens['radius-item'] === '10px' && module.light.tokens['shadow-md'] !== 'none',
     'the radius and shadow steps reach the exported tokens',
   )
   check(

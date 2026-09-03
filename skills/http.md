@@ -1,9 +1,10 @@
 # http - the configured HTTP client, owned by a component
 
-Everything comes from `imp/http`. `initHttpClient(name, options)` in the `build` of a component
-configures a client. `useHttpClient(name)` finds the nearest client above it. The shape is the same
-as [state](state.md). A client is named and namespaced, imp resolves it through the DOM, and the
-component that initialized it owns it. Never write your own `fetch` wrapper.
+Everything comes from `imp/http`. `initHttpClient(self, name, options)` in the `setup` of a
+component configures a client. `useHttpClient(self, name)` finds the nearest client above the host.
+`self` is the first argument of `setup`. The shape is the same as [state](state.md). A client is
+named and namespaced, imp resolves it through the DOM, and the component that initialized it owns
+it. Never write your own `fetch` wrapper.
 
 ```js
 import { component, env } from 'imp'
@@ -11,16 +12,15 @@ import { div, p } from 'imp/html'
 import { initHttpClient, useHttpClient } from 'imp/http'
 
 const profile = component('myapp-profile', {
-  build: async (_instance, { id }) => {
-    const api = useHttpClient('myapp.api') // resolve first...
-    const user = await api.get(`/users/${id}`) // ...then await
+  setup: async (self, { id }) => {
+    const user = await useHttpClient(self, 'myapp.api').get(`/users/${id}`)
     return div(p(user.name))
   },
 })
 
 export const app = component('myapp-root', {
-  build: () => {
-    initHttpClient('myapp.api', {
+  setup: (self) => {
+    initHttpClient(self, 'myapp.api', {
       baseUrl: env.API_URL,
       headers: { accept: 'application/json' },
       retry: { attempts: 3, retryOn: [502, 503, 504] },
@@ -80,10 +80,13 @@ anything else to a `Blob`. A `204` response and an empty body both give `null`.
 
 - **A client name needs a namespace.** Use two or more dot-separated segments, such as `myapp.api`.
   Never write `api`. The lint rule is `imp/http-client-name-namespace`, and the runtime throws.
-- **Resolve the client before the first `await`.** `initHttpClient` and `useHttpClient` throw after
-  the first `await` of an async `build`, and outside a component that mounts. The rule is
-  `imp/http-client-setup-before-await`. Keep the handle, and call it at any time, in an event
-  handler or after an await.
+- **`self` comes first.** `initHttpClient(self, name, options)` and `useHttpClient(self, name)` need
+  the `self` that imp passes to `setup`, `error`, `onMount` and `onRemove`. A call with anything
+  else as the first argument throws. The lint rule is `imp/self-first-argument`.
+- **Resolution goes through `self`, at any point in `setup`.** `useHttpClient` works before and
+  after any `await`. It throws after the component has left the page. In `onRemove` it returns the
+  handle that `setup` resolved, so a component can report its exit through a client of an ancestor
+  that is still mounted.
 - **A failure rejects.** Any response that is not 2xx, a transport failure, a timeout and an abort
   all throw an `HttpError`. There is no `response.ok` to check, and no `null` on failure.
 - **A verb returns the body, not the response.** Use `request` when you need `status` or `headers`.
@@ -117,9 +120,9 @@ component. There is no other scope, and there is nothing to dispose of.
   exists while the user is in that section, and nothing outside the section can reach the name.
 - **Your own.** `createHttpClient(name, options)` builds a client anywhere, including at module
   scope or in a worker. It lives until you call `close()`. To share it with a subtree, pass the
-  client itself to `initHttpClient(client)`. imp provides it under its own name, and does **not**
-  close it when that component unmounts. Use this form only when something outside the DOM holds the
-  client.
+  client itself to `initHttpClient(self, client)`. imp provides it under its own name, and does
+  **not** close it when that component unmounts. Use this form only when something outside the DOM
+  holds the client.
 
 When the owner unmounts, imp cancels the requests in flight, and they reject with `code: 'aborted'`.
 A retry that waits on its backoff stops. imp drops the tracked request state. A later call through a
@@ -154,7 +157,7 @@ or a `503` wins against the computed delay. imp uses one request id per **call**
 ## Interceptors
 
 ```js
-initHttpClient('myapp.api', {
+initHttpClient(self, 'myapp.api', {
   baseUrl,
   onRequest: (request) => {
     request.headers.authorization = `Bearer ${token()}`
@@ -180,7 +183,7 @@ are all hooks. There is no plugin API.
 ```js
 import { computed } from 'imp/state'
 
-const api = useHttpClient('myapp.api')
+const api = useHttpClient(self, 'myapp.api')
 div(
   div({ class: 'spinner', hidden: computed([api.pending], (count) => count === 0) }),
   api.lastError.view((error) => error && p({ class: 'error' }, error.message)),

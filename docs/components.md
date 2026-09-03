@@ -31,8 +31,8 @@ import { div, span } from 'imp/html'
 import { useState } from 'imp/state'
 
 export const profile = component('my-app-profile', {
-  build: () => {
-    const user = useState('myapp.user')
+  setup: (self) => {
+    const user = useState(self, 'myapp.user')
     return div(span(user.text((u) => u.name)))
   },
 })
@@ -61,149 +61,159 @@ from outside that targets the tag always wins for the host element itself.
 
 ## The definition object
 
-`component(name, definition)` takes the name and an object with up to five entries:
+`component(name, definition)` takes the name and an object with up to six entries. A key that
+returns DOM is a noun. A key named `on*` is an effect, and imp discards what it returns.
 
-### `build(instance, ...args)` - required
+### `setup(self, ...args)` - required
 
-`build` holds the whole logic of the component. Its first parameter is the **instance** of the
-component, see _The instance_ below. After that it receives, without a change, the arguments of the
-factory call. So `profile({ id: 42 })` gives `build(instance, { id: 42 })`. It returns the DOM of
-the component, which is a node, a string, an array of children, or nothing. It runs when the browser
-**connects the component to the document**, and a parent runs before its children. So everything
-that an ancestor set up, such as a state, is already there.
+`setup` holds the whole logic of the component. Its first parameter is **`self`**, see _self_ below.
+After that it receives, without a change, the arguments of the factory call. So
+`profile({ id: 42 })` gives `setup(self, { id: 42 })`. It returns the DOM of the component, which is
+a node, a string, an array of children, or nothing. It runs when the browser **connects the
+component to the document**, and a parent runs before its children. So everything that an ancestor
+set up, such as a state, is already there.
 
-`build` can also be `async`. See _Loading states_ below.
+`setup` can also be `async`. See _Loading states_ below.
 
-### `placeholder(...args)` - optional
+### `loading(...args)` - optional
 
-`placeholder` returns what the component shows **whenever its real content is not there**. It is the
+`loading` returns what the component shows **whenever its real content is not there**. It is the
 content of the host at rest, not a loading prop. It covers three moments in the life of the
 component:
 
-1. **Before the mount.** imp renders the placeholder into the host the instant when you call the
+1. **Before the mount.** imp renders the loading content into the host the instant when you call the
    factory. So a component that you compose into a detached tree is never an empty box.
-2. **While an async `build` runs.** The placeholder stays until the promise resolves, and the output
-   of `build` replaces it. You use this most often. It is the built-in loading skeleton.
+2. **While an async `setup` runs.** The loading content stays until the promise resolves, and the
+   output of `setup` replaces it. You use this most often. It is the built-in loading skeleton.
 3. **When a removed host mounts again.** When the same element is inserted again after it left the
-   document, imp renders the placeholder first. So the remount starts from the same content at rest
-   as before, and not from the stale DOM of the previous mount. When you remove a component for
-   good, imp only empties its content. It builds the placeholder again only for a host that comes
-   back.
+   document, imp renders the loading content first. So the remount starts from the same content at
+   rest as before, and not from the stale DOM of the previous mount. When you remove a component for
+   good, imp only empties its content. It builds the loading content again only for a host that
+   comes back.
 
-The placeholder receives the arguments of the factory call, but no instance. It runs outside a live
-mount, so there is no instance to give it. Keep it static: plain DOM, and no state subscription.
+`loading` receives the arguments of the factory call, but no `self`. It runs outside a live mount,
+so there is no mount to give it. Keep it static: plain DOM, and no state subscription.
 
 ```js
 const card = component('my-app-card', {
-  placeholder: () => div({ class: 'skeleton' }),
-  build: async () => renderCard(await loadCard()),
+  loading: () => div({ class: 'skeleton' }),
+  setup: async () => renderCard(await loadCard()),
 })
 ```
 
-This is the definition key of imp. It has no relation to the HTML `placeholder` attribute that you
-pass to a text field as `input({ placeholder: 'what needs doing?' })`. The two never collide. The
-attribute is a string among the props of an element. This one is a function among the definition
-entries of a component.
+A synchronous `setup` replaces the loading content before the paint. So a `loading` with a
+synchronous `setup` is nearly always a mistake, because nobody can see it. The
+`imp/loading-with-async-setup` lint rule reports it while you write it, and imp warns when it sees
+this at runtime. A component whose `loading` rendered something, and whose `setup` returns
+synchronously, logs a warning once. The warning tells you to make `setup` async, or to return a
+promise, when you want the loading content to show. It also tells you that you can remove `loading`.
+A `loading` that returns nothing for the arguments that it got, which is `null`, `undefined` or an
+empty array, had nothing to show. So it never warns. `loading` is useful only when `setup` returns a
+promise. That covers a `setup` written as `async`, and a `setup` that returns a promise, such as
+`setup: () => loadCard().then(renderCard)`. Both keep the loading content up until the promise
+settles, and neither one warns.
 
-A synchronous `build` replaces the placeholder before the paint. So a `placeholder` with a
-synchronous `build` is nearly always a mistake, because nobody can see the placeholder. imp warns
-when it sees this. A component whose `placeholder` rendered something, and whose `build` returns
-synchronously, logs a warning once. The warning tells you to make `build` async, or to return a
-promise, when you want the placeholder to show. It also tells you that you can remove the
-placeholder. A `placeholder` that returns nothing for the arguments that it got, which is `null`,
-`undefined` or an empty array, had nothing to show. So it never warns. A `placeholder` is useful
-only when `build` returns a promise. That covers a `build` written as `async`, and a `build` that
-returns a promise, such as `build: () => loadCard().then(renderCard)`. Both keep the placeholder up
-until the promise settles, and neither one warns.
+Loading content is **content at rest, not live content**. imp builds it before the component mounts.
+So a reactive construct never goes live inside it. That covers `state.text()`, `state.view()`,
+`state.each()` and a prop bound to a state handle. They render empty and stay empty. `initState` and
+`useState` need `self`, which `loading` does not get. A handle that the parent passed in as an
+argument gets past that check. So imp logs a warning once, and names the component, when it sees a
+binding in the output of `loading`. Pass a plain value instead, and keep the live parts in `setup`.
+The `imp/no-self-in-loading` lint rule reports a resolution and a binding inside `loading`.
 
-A placeholder is **content at rest, not live content**. imp builds it before the component mounts.
-So a reactive construct never goes live inside a placeholder. That covers `state.text()`,
-`state.view()`, `state.each()` and a prop bound to a state handle. They render empty and stay empty.
-`initState` and `useState` already throw there, because a placeholder has no mount to own them. A
-handle that the parent passed in as an argument gets past that check. So imp logs a warning once,
-and names the component, when it sees a binding in the output of a placeholder. Pass a plain value
-instead, and keep the live parts in `build`.
+### `error(self, error, ...args)` - optional
 
-### `teardown(instance, ...args)` - optional
+`error` makes the component an **error boundary**. When its own mount fails, or a component anywhere
+in its subtree fails to mount, `error` runs with `self`, the error, and the arguments of the factory
+call. Its output replaces the content of the component. See _Error boundaries_ below.
 
-`teardown` runs after the browser removes the component from the document. Use it for the teardown
-that imp cannot do for you, such as a timer, a socket or a third-party widget. It receives the
-**same instance** as its `build`, and then the arguments of the factory call. So anything that
-`build` stored on the instance, such as a timer handle, a socket or a third-party widget, is there
-to tear down. You rarely need it, because imp cleans a state subscription up automatically. See
-_Automatic cleanup_ below. `teardown` can be `async`. imp awaits it, and logs a rejection without a
-break in the rest of the teardown.
+### `onMount(self, ...args)` - optional
 
-There is one edge case, and it applies only when the same host can **mount again**. An
-`async
-teardown` that tears down a **shared** resource, such as a socket, a listener at document
-level or a global timer, must check `instance.abortSignal.aborted` after each `await`, before it
-touches the resource. A remount can already have taken the resource again. See _The instance_ below.
-A resource stored on the instance itself never needs this check, because each mount gets its own.
+`onMount` runs after imp places the output of `setup` in the shadow root, and after the browser has
+laid it out. So focus, measurement, `scrollIntoView` and the setup of an animation are all safe
+there. See _How to run code after imp places the DOM_ below.
 
-### `fallback(error, ...args)` - optional
+### `onRemove(self, ...args)` - optional
 
-`fallback` makes the component an **error boundary**. When its own mount fails, or a component
-anywhere in its subtree fails to mount, `fallback` runs with the error and with the arguments of the
-factory call. Its output replaces the content of the component. See _Error boundaries_ below.
+`onRemove` runs after the browser removes the component from the document, before imp empties the
+shadow root. Use it for the cleanup that imp cannot do for you, such as a timer, a socket or a
+third-party widget. It receives the **same `self`** as its `setup`, and then the arguments of the
+factory call. So anything that `setup` stored on `self`, such as a timer handle, is there to clean
+up. `onRemove` can be `async`. imp awaits it, and logs a rejection without a break in the rest of
+the unmount.
+
+There is one edge case, and it applies only when the same host can **mount again**. An async
+`onRemove` that tears down a **shared** resource, such as a socket, a listener at document level or
+a global timer, must check `self.abortSignal.aborted` after each `await`, before it touches the
+resource. A remount can already have taken the resource again. See _self_ below. A resource stored
+on `self` itself never needs this check, because each mount gets its own.
 
 ### `styles` - optional
 
 `styles` is the CSS of the component, as a string. It applies inside this component only. See
 _Styling_ below.
 
-## The instance
+## self
 
-`build` and `teardown` both receive an **instance** as their first argument. There is one instance
-per mounted component, and imp creates a new one each time when the component mounts. It gives you
-four things:
+`setup`, `error`, `onMount` and `onRemove` all receive **`self`** as their first argument. `self` is
+what a component knows about itself during one mount. There is one `self` per mounted component, and
+imp creates a new one each time when the component mounts. Name the parameter `self`. It gives you
+three things:
 
-- **`instance.host`** is the element of the component. That is the `<my-app-profile>` tag in the
-  document.
-- **`instance.root`** is the shadow root where your output renders. After the mount you can query
-  it, measure it, or hand a node to a third-party library.
-- **`instance.afterMount(callback)`** schedules `callback` to run after your returned DOM is on the
-  page, and after the browser has laid it out. So focus, measurement, `scrollIntoView` and the setup
-  of an animation are all safe. See _How to run code after imp places the DOM_ below.
-- **`instance.abortSignal`** is a standard
+- **`self.host`** is the element of the component. That is the `<my-app-profile>` tag in the
+  document. Its shadow root, where your output renders, is `self.host.shadowRoot`. After the mount
+  you can query it, measure it, or hand a node to a third-party library.
+- **`self.abortSignal`** is a standard
   [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) tied to this one
-  mounted lifetime. imp aborts it when the component unmounts, and the moment when a remount
-  replaces it. It is a tool for an edge case: a component that you **remove and insert again**. Hand
-  it to `fetch` or `addEventListener` in `build`, to cancel that work when the component goes away.
-  Or check `instance.abortSignal.aborted` in an async `teardown`, before you tear down a _shared_
-  resource that a remount can have taken again. Most components never use it.
+  mounted lifetime. imp aborts it when the component unmounts, after `onRemove` has finished, and
+  the moment when a remount replaces it. A move keeps it. Hand it to `fetch` or `addEventListener`
+  in `setup`, to cancel that work when the component goes away. Or check `self.abortSignal.aborted`
+  in an async `onRemove`, before you tear down a _shared_ resource that a remount can have taken
+  again.
+- **Any property that you assign.** `self` is a plain object that you can write to. That is the
+  clean way to pass a node or a resource from `setup` to `onMount` and `onRemove`.
+
+`self` is also the key that resolves a resource through the DOM. `initState(self, name, value)` and
+`useState(self, name)` from `imp/state`, and `initHttpClient(self, name, options)` and
+`useHttpClient(self, name)` from `imp/http`, all take `self` as their first argument. They dispatch
+the lookup from `self.host`, and they tie the result to this one mount. So they work at any point in
+`setup`, before or after any number of `await` calls. `self` remembers what a mount resolved. Keep
+`self` and what it resolved on `self`, never in a module-level variable, because the module outlives
+every mount. The `imp/no-self-at-module-scope` lint rule reports such an assignment.
+`useState(self, name)` returns the same handle for the same name during one mount, and in `onRemove`
+it returns the handle that `setup` resolved. See **[State](state.md)** and **[HTTP](http.md)**.
 
 imp uses real DOM and no virtual DOM. So an element factory that you call, such as `div(...)`,
 `span(...)` and `input(...)`, already returns a **live DOM node**. The usual way to touch your own
-DOM is to keep the node in a variable and change it. `instance.root` is for the case where you need
-the mounted subtree as a whole, and not one node that you built.
+DOM is to keep the node in a variable and change it. `self.host.shadowRoot` is for the case where
+you need the mounted subtree as a whole, and not one node that you built.
 
-### `build` runs _before_ imp places its DOM
+### `setup` runs _before_ imp places its DOM
 
-One timing rule causes trouble. **While `build` runs, the DOM that it returns is not yet in the
-shadow root.** imp inserts your output _after_ `build` returns. For an **async** `build`, that means
+One timing rule causes trouble. **While `setup` runs, the DOM that it returns is not yet in the
+shadow root.** imp inserts your output _after_ `setup` returns. For an **async** `setup`, that means
 after the returned promise resolves, so after every `await`. Until then, the shadow root still holds
-the placeholder. So this does **not** work:
+the loading content. So this does **not** work:
 
 ```js
 const card = component('my-app-card', {
-  build: async (instance) => {
+  setup: async (self) => {
     const box = div(span({ class: 'label' }, 'hi'))
     await loadData()
-    // ✗ the content is not placed yet - this finds the placeholder (or null), not your span
-    instance.root.querySelector('.label').textContent = 'ready'
+    // ✗ the content is not placed yet - this finds the loading content (or null), not your span
+    self.host.shadowRoot.querySelector('.label').textContent = 'ready'
     return box
   },
 })
 ```
 
-The `imp/no-root-query-in-build` lint rule reports a query on `instance.root` inside `build`, for
-this reason. The imp answer is to **hold the node and change it directly**. That is always correct,
-because the node that you built is a live element, whether or not it is in the document:
+The `imp/no-root-query-in-setup` lint rule reports a query on `self.host.shadowRoot` inside `setup`,
+for this reason. The imp answer is to **hold the node and change it directly**. That is always
+correct, because the node that you built is a live element, whether or not it is in the document:
 
 ```js
 const card = component('my-app-card', {
-  build: async (instance) => {
+  setup: async () => {
     const label = span('hi')
     await loadData()
     label.textContent = 'ready' // ✓ it is the real node
@@ -212,107 +222,98 @@ const card = component('my-app-card', {
 })
 ```
 
-A query on `instance.root` is also correct anywhere that runs _after_ the mount. That covers an
-event handler, a `watch` callback and `teardown`. The rule does not cover `teardown`. When
-`teardown` runs, your mounted content is still in the shadow root, because imp empties it afterward.
-So `instance.root` reaches the real DOM there. It is the natural place to read a final scroll
-position or selection before the component goes away.
+A query on `self.host.shadowRoot` is also correct anywhere that runs _after_ the mount. That covers
+`onMount`, an event handler, a `watch` callback and `onRemove`. When `onRemove` runs, your mounted
+content is still in the shadow root, because imp empties it afterward. So `self.host.shadowRoot`
+reaches the real DOM there. It is the natural place to read a final scroll position or selection
+before the component goes away.
 
 ### How to run code after imp places the DOM
 
 A change to a node covers most cases. Some things work only after the element is **on the page and
 laid out**. Those are a move of the focus, a measurement of a size or a position, `scrollIntoView`,
-and the start of an animation. For those, call **`instance.afterMount(callback)`**. imp runs your
-callback on the next animation frame after it places your DOM. So the element is connected, and the
-browser has done the layout. You never touch a microtask, a `requestAnimationFrame` or an unmount
-check yourself:
+and the start of an animation. For those, write an **`onMount`** entry. imp runs it on the next
+animation frame after it places your DOM. So the element is connected, and the browser has done the
+layout. You never touch a microtask, a `requestAnimationFrame` or an unmount check yourself. A node
+that `setup` made travels to `onMount` as a field on `self`:
 
 ```js
 export const userCard = component('my-app-user-card', {
-  placeholder: () => div({ class: 'card' }, 'Loading...'),
-  build: async (instance, { id }) => {
+  loading: () => div({ class: 'card' }, 'Loading...'),
+  setup: async (self, { id }) => {
     const user = await fetch(`/api/users/${id}`).then((r) => r.json())
-    const field = input({ value: user.name })
-    instance.afterMount(() => {
-      field.focus()
-      field.select()
-    })
-    return div({ class: 'card' }, field)
+    self.field = input({ value: user.name })
+    return div({ class: 'card' }, self.field)
+  },
+  onMount: (self) => {
+    self.field.focus()
+    self.field.select()
   },
 })
 ```
 
-`afterMount` is a method on the instance, not an imported helper. So you can call it **anywhere in
-`build`, and also after an `await`**. That matters. The node that you want to focus often exists
-only after the fetch that produced its data. Here you build the node, register the callback beside
-it, and return. There is no ref system, and no element declared early only to be assigned later. The
-callback is a plain closure over the variables that you already have.
+The node that you want to focus often exists only after the fetch that produced its data. Here you
+build the node after the `await`, store it on `self`, and return. There is no ref system, and no
+element declared early only to be assigned later.
 
 These details are worth knowing:
 
 - **It fires after the layout, not only after the insertion.** So a measurement and `scrollIntoView`
   are safe, and not only `focus()`.
 - **It is safe against cancellation.** When the component unmounts before the frame, or mounts
-  again, or imp discards its async mount, the callback does not run. You never guard against a
+  again, or imp discards its async mount, `onMount` does not run. You never guard against a
   component that is torn down.
-- **It takes one callback per mount.** `afterMount` runs once. So it accepts a single function, and
-  it throws when you call it a second time. When you have several things to do after the placement,
-  such as a focus on a field _and_ a scroll into view, do them inside that one callback:
+- **A throw is a mount failure.** `onMount` is the last step of the mount. So when it throws, the
+  error goes to the nearest error boundary, see _Error boundaries_ below. That is the same place
+  where a failed async `setup` arrives. imp does not hide the error. `onMount` does not run after
+  the error view of the component itself has rendered.
 
-  ```js
-  instance.afterMount(() => {
-    field.focus()
-    field.scrollIntoView()
-  })
-  ```
-
-- **A throw is a mount failure.** `afterMount` is the last step of the mount. So when the callback
-  throws, the error goes to the nearest error boundary, see _Error boundaries_ below. That is the
-  same place where a failed async `build` arrives. imp does not hide the error.
-
-The instance is also a plain object that you can **write to**. That is the clean way to pass a
-resource from `build` to `teardown`. Anything that you assign in `build` is on the same instance
-that `teardown` receives:
+`self` is a plain object that you can **write to**. That is the clean way to pass a resource from
+`setup` to `onRemove`. Anything that you assign in `setup` is on the same `self` that `onRemove`
+receives:
 
 ```js
 const clock = component('my-app-clock', {
-  build: (instance) => {
+  setup: (self) => {
     const face = span('0s')
     const startedAt = Date.now()
-    instance.timer = setInterval(() => {
+    self.timer = setInterval(() => {
       face.textContent = `${Math.round((Date.now() - startedAt) / 1000)}s`
     }, 1000)
     return span('elapsed: ', face)
   },
-  teardown: (instance) => clearInterval(instance.timer),
+  onRemove: (self) => clearInterval(self.timer),
 })
 ```
 
-The same form is how a component **withdraws a contribution to a state** when it leaves. `teardown`
-runs after the component has left the page. So `useState` in `teardown` has no ancestor to resolve
-from, and it throws. A handle that `build` resolved and kept on the instance still reaches the state
-that it was bound to:
+The same route is how a component **withdraws a contribution to a state** when it leaves. `onRemove`
+runs after the component has left the page. So a lookup through the DOM finds nothing there.
+Instead, `useState(self, name)` in `onRemove` returns the handle that `setup` resolved. A name that
+`setup` never resolved throws, and the message says to resolve it in `setup`. The
+`imp/on-remove-through-self` lint rule reports such a name while you write it:
 
 ```js
 const projectScreen = component('my-app-project', {
-  build: (instance, projectId) => {
-    instance.project = useState('myapp.nav.project')
-    instance.project.set({ id: projectId })
+  setup: (self, projectId) => {
+    useState(self, 'myapp.nav.project').set({ id: projectId })
     return overview(projectId)
   },
-  teardown: (instance) => instance.project.set(null),
+  onRemove: (self) => useState(self, 'myapp.nav.project').set(null),
 })
 ```
 
-Each mounted component gets its **own** instance. So a list of one hundred clocks clears one hundred
-timers, and nothing is shared between them. That is why the instance is the correct home for a
-resource of one component. A variable at module level, or a property on the definition, would be
-shared across every instance and overwritten. Name the `instance` parameter only when you use it. A
-component that does not use it can write `build: () => ...`.
+This is also the correct meaning. A component that withdraws on unmount writes to the provider that
+it contributed to at mount, not to whatever sits above its old position.
 
-The instance **travels with the component**. imp does not remount a component that moves, see _How
-to move a component_. So its instance, and everything that you stored on it, survives the move. Only
-a true unmount ends it.
+Each mounted component gets its **own** `self`. So a list of one hundred clocks clears one hundred
+timers, and nothing is shared between them. That is why `self` is the correct home for a resource of
+one component. A variable at module level, or a property on the definition, would be shared across
+every instance and overwritten. Name the `self` parameter only when you use it. A component that
+does not use it can write `setup: () => ...`.
+
+`self` **travels with the component**. imp does not remount a component that moves, see _How to move
+a component_. So `self`, and everything that you stored on it, survives the move. Only a true
+unmount ends it.
 
 ## Styling
 
@@ -330,7 +331,7 @@ export const userCard = component('my-app-user-card', {
     }
     .name { font-weight: 600 }
   `,
-  build: (instance, user) => div({ class: 'card' }, span({ class: 'name' }, user.name)),
+  setup: (_self, user) => div({ class: 'card' }, span({ class: 'name' }, user.name)),
 })
 ```
 
@@ -361,7 +362,7 @@ export const editor = component('my-app-editor', {
     ${buttonStyles}
     .row { display: flex; gap: 8px }
   `,
-  build: () => div({ class: 'row' }, button('save'), button('cancel')),
+  setup: () => div({ class: 'row' }, button('save'), button('cancel')),
 })
 ```
 
@@ -372,22 +373,23 @@ Keep a control, its label and its form together, inside one component.
 ## The lifecycle
 
 1. **Call.** `profile({ id: 42 })` creates the `<my-app-profile>` element, which contains the
-   placeholder when there is one. Nothing else runs. The host is a cheap, inert node, and you can
-   compose it freely while you build a detached tree.
+   loading content when there is one. Nothing else runs. The host is a cheap, inert node, and you
+   can compose it freely while you build a detached tree.
 2. **Mount.** The moment when the host arrives in the document, through `mount(...)` or through any
-   DOM insertion, `build` runs, and its output replaces the placeholder. A parent mounts before its
-   children, from the top down.
+   DOM insertion, `setup` runs, and its output replaces the loading content. A parent mounts before
+   its children, from the top down. `onMount` runs on the next frame.
 3. **Unmount.** When the host leaves the document, and nothing inserts it again immediately, imp
-   unsubscribes every state subscription that the mount created, calls `teardown`, and then puts the
-   placeholder back. The host returns to the same content at rest as when you created it.
-4. **Remount.** A removed component that you insert again later starts a new cycle: the placeholder,
-   `build`, and new subscriptions. Each mounted period is one clean pair of a mount and a cleanup.
+   releases every state binding that the mount created, calls `onRemove`, aborts `self.abortSignal`,
+   and then empties the shadow root.
+4. **Remount.** A removed component that you insert again later starts a new cycle: the loading
+   content, `setup` with a new `self`, and new bindings. Each mounted period is one clean pair of a
+   mount and a cleanup.
 
 ## How to move a component
 
 The lifecycle draws one line. **A component that leaves the document and comes back in the same
 synchronous task has _moved_. A component that stays out of the document longer has unmounted.** A
-move keeps the component alive. `build` does not run again. The DOM of the component, including
+move keeps the component alive. `setup` does not run again. The DOM of the component, including
 anything that the person typed into it, its internal variables, and the states that it initialized
 itself, all travel with the element:
 
@@ -398,10 +400,11 @@ events: {
 ```
 
 What a move _does_ restart is the **subscription layer**. imp resolves every state that the
-component obtained with `useState` again, against the ancestors at its new position. Its bindings
-update in place when the value there differs. A card that you drag to another column keeps the text
-that is half written in its input, and it changes to the sorting state of the new column, in the
-same gesture. The continuity comes from the element, and the scope comes from the position.
+component obtained with `useState`, and every client from `useHttpClient`, again, against the
+ancestors at its new position. Its bindings update in place when the value there differs. A card
+that you drag to another column keeps the text that is half written in its input, and it changes to
+the sorting state of the new column, in the same gesture. The continuity comes from the element, and
+the scope comes from the position.
 
 These details are worth knowing:
 
@@ -417,19 +420,19 @@ These details are worth knowing:
   Initialize that name in an ancestor that covers every place where the component can land.
 - **An insertion in a later task is a remount.** When you detach on the start of a drag, and append
   again on the drop in a different task, that is a real unmount and then a new mount. It is also the
-  deliberate way to make a component run `build` again. An item that a keyed `each` keeps holds its
-  instance across a change and a reorder. An item that an unkeyed `each` rebuilds is a new instance
-  that mounts from the start, as always. See **[State](state.md)**.
+  deliberate way to make a component run `setup` again. An item that a keyed `each` keeps holds its
+  `self` across a change and a reorder. An item that an unkeyed `each` rebuilds is a new mount from
+  the start, as always. See **[State](state.md)**.
 
 ## Loading states
 
-When `build` is async, the placeholder stays visible until the promise resolves. That is a loading
-state with no extra machinery:
+When `setup` is async, the loading content stays visible until the promise resolves. That is a
+loading state with no extra machinery:
 
 ```js
 export const orders = component('my-app-orders', {
-  placeholder: () => div({ class: 'skeleton' }, 'loading orders...'),
-  build: async (instance, { customerId }) => {
+  loading: () => div({ class: 'skeleton' }, 'loading orders...'),
+  setup: async (_self, { customerId }) => {
     const response = await fetch(`/api/customers/${customerId}/orders`)
     const list = await response.json()
     return ul(list.map((order) => li(order.title)))
@@ -438,20 +441,19 @@ export const orders = component('my-app-orders', {
 ```
 
 When the component unmounts while the promise is pending, imp discards the late result. When the
-promise rejects, the nearest error boundary shows its fallback, described below. With no boundary,
-imp logs the error, and the placeholder stays.
+promise rejects, the nearest error boundary shows its error view, described below. With no boundary,
+imp logs the error, and the loading content stays.
 
-When the loaded data must live in a state, resolve the state **before** the `await`. The handle
-stays in the closure. Then `set` the awaited data into it, and build the DOM. The bindings go live
-when the resolved DOM mounts. See **[State](state.md)**:
+When the loaded data must live in a state, initialize the state, `await` the data, and `set` it in.
+The order does not matter, because `self` carries the mount across every `await`. The bindings go
+live when the resolved DOM mounts. See **[State](state.md)**:
 
 ```js
 export const orders = component('my-app-orders', {
-  placeholder: () => div({ class: 'skeleton' }, 'loading orders...'),
-  build: async (instance, { customerId }) => {
-    const orders = initState('myapp.orders', [])
+  loading: () => div({ class: 'skeleton' }, 'loading orders...'),
+  setup: async (self, { customerId }) => {
     const response = await fetch(`/api/customers/${customerId}/orders`)
-    orders.set(await response.json())
+    const orders = initState(self, 'myapp.orders', await response.json())
     return ul(orders.each((order) => li(order.title), (order) => order.id))
   },
 })
@@ -459,15 +461,15 @@ export const orders = component('my-app-orders', {
 
 ## Error boundaries
 
-Give a component a `fallback` entry, and it becomes an error boundary. When a component **in its
+Give a component an `error` entry, and it becomes an error boundary. When a component **in its
 subtree**, or the boundary itself, throws during the mount, the boundary renders
-`fallback(error, ...args)` in place of its children. The throw can be synchronous, or it can be a
-rejection of an async `build`. So a broken screen does not stay on the page:
+`error(self, error, ...args)` in place of its children. The throw can be synchronous, or it can be a
+rejection of an async `setup`. So a broken screen does not stay on the page:
 
 ```js
 export const ordersPane = component('my-app-orders-pane', {
-  build: () => div(ordersList(), ordersSummary()),
-  fallback: (error) =>
+  setup: () => div(ordersList(), ordersSummary()),
+  error: (_self, error) =>
     div(
       p('Orders are unavailable right now.'),
       p({ class: 'detail' }, error.message),
@@ -478,23 +480,24 @@ export const ordersPane = component('my-app-orders-pane', {
 This is how an error travels:
 
 - A mount failure looks for the **nearest boundary**. That is the failing component itself when it
-  has a `fallback`, and otherwise the closest ancestor component that has one. The first boundary
-  wins, and imp does not disturb a boundary further out.
-- When the fallback renders, the previous children of the boundary unmount normally. That includes a
-  component that mounted correctly. Their subscriptions end and their `teardown` hooks run, exactly
-  as if you had replaced them yourself. The boundary component stays mounted. So its own state and
-  its own subscriptions continue to work inside the fallback.
-- A boundary handles **one error per mounted period**. After the fallback is up, a further error
+  has an `error` entry, and otherwise the closest ancestor component that has one. The first
+  boundary wins, and imp does not disturb a boundary further out.
+- When the error view renders, the previous children of the boundary unmount normally. That includes
+  a component that mounted correctly. Their bindings end and their `onRemove` hooks run, exactly as
+  if you had replaced them yourself. The boundary component stays mounted, and its `error` entry
+  gets the same `self` as its `setup`. So the error view can bind a state, reset one, keep
+  `self.abortSignal` for a retry, and store a field that `onRemove` reads.
+- A boundary handles **one error per mounted period**. After the error view is up, a further error
   goes to the next boundary out, or to the console. To retry, mount the boundary again. Remove it,
   and insert it again in a later task. That starts a new mount with a new error budget.
 - With no boundary anywhere, the behaviour does not change. imp logs the error, and the failing
-  component keeps its placeholder.
+  component keeps its loading content.
 
 A boundary catches a **mount failure**. That includes a failed lazy load and a failed data fetch in
-an async `build`, which is the common case. It also includes a throw from an `instance.afterMount`
-callback, which is the end of the mount. A boundary does not catch an error thrown later, in an
-event handler or in a state subscriber. imp isolates those and logs them where they happen. So one
-bad handler cannot stop the page. See **[State](state.md)**.
+an async `setup`, which is the common case. It also includes a throw from `onMount`, which is the
+end of the mount. A boundary does not catch an error thrown later, in an event handler or in a state
+subscriber. imp isolates those and logs them where they happen. So one bad handler cannot stop the
+page. See **[State](state.md)**.
 
 Put a boundary wherever a subtree can fail on its own and the rest of the page must survive.
 Examples are around the page of a route, around a widget that a third party provides, and around
@@ -502,35 +505,33 @@ each card in a dashboard.
 
 ## Automatic cleanup
 
-imp tracks every state subscription that a component owns, and unsubscribes it when the component
-unmounts. That covers each `watch(fn)` in its `build`, and every `text()`, `view()`, `each()` and
-state-bound prop in the DOM that it mounts, on a regular state and on a computed state. A DOM
-binding goes live the moment when imp places the output of the component. So the ownership follows
-the containment. The component that mounts the DOM owns its bindings. imp also tracks a binding
-nested inside a `view` or `each` render function, once per rebuild. Each new render unsubscribes the
-bindings of the previous render before it creates the new ones. So you can swap whole screens in and
-out. Nothing leaks, and there is nothing to disconnect by hand. Two boundaries are worth knowing:
+imp tracks every state binding that a component owns, and releases it when the component unmounts.
+That covers every `text()`, `view()`, `each()` and state-bound prop in the DOM that it mounts, on a
+regular state and on a computed state. A DOM binding goes live the moment when imp places the output
+of the component. So the ownership follows the containment. The component that mounts the DOM owns
+its bindings. imp also tracks a binding nested inside a `view` or `each` render function, once per
+rebuild. Each new render releases the bindings of the previous render before it creates the new
+ones. So you can swap whole screens in and out. Nothing leaks, and there is nothing to disconnect by
+hand. Two boundaries are worth knowing:
 
-- State **resolution** happens before the first `await` of an async `build`. After that point, the
-  component that mounts is out of reach, and `initState`, `useState` and `watch` all throw.
-  Everything else is free of position. `get` and `set` work anywhere. `text`, `view`, `each` and a
-  state-bound prop go live when the returned DOM mounts, wherever you built them. See the patterns
-  in **[State](state.md)**. The `imp/state-setup-before-await` lint rule reports a resolution after
-  an `await` while you write it.
-- `teardown` is only for a resource that imp cannot see. Examples are clearing an interval, closing
-  a connection, and destroying a widget that is not an imp component. It receives the instance of
-  the component, so the resources that `build` stored there are in reach. It can be `async` when the
-  teardown must await something, such as closing a connection or flushing a buffer. imp awaits it
+- `watch` is not a DOM binding. It takes `self` as its first argument to end with the mount, as in
+  `theme.watch(self, paint)`. A bare `watch(fn)` in a component registers no cleanup, and the
+  `imp/watch-with-self` lint rule reports it. Everything else is free of position. `get` and `set`
+  work anywhere. `text`, `view`, `each` and a state-bound prop go live when the returned DOM mounts,
+  wherever you built them. See the patterns in **[State](state.md)**.
+- `onRemove` is only for a resource that imp cannot see. Examples are clearing an interval, closing
+  a connection, and destroying a widget that is not an imp component. It receives the `self` of the
+  component, so the resources that `setup` stored there are in reach. It can be `async` when the
+  cleanup must await something, such as closing a connection or flushing a buffer. imp awaits it
   before it treats the component as fully torn down.
 
-The teardown is also **tolerant of a fault**. imp logs and skips a cleanup step or a `teardown` that
-throws, and an async `teardown` that rejects, and it does not stop the rest. So imp still releases
-every other subscription and resource, and one broken hook cannot turn a swap of screens into a
-leak.
+The unmount is also **tolerant of a fault**. imp logs and skips a cleanup step or an `onRemove` that
+throws, and an async `onRemove` that rejects, and it does not stop the rest. So imp still releases
+every other binding and resource, and one broken hook cannot turn a swap of screens into a leak.
 
 ## Components and state
 
-A component is also a **state scope**. A call to `initState` inside `build` ties the state to that
+A component is also a **state scope**. A call to `initState` inside `setup` ties the state to that
 component. A descendant reaches it with `useState`, and a sibling or an outsider cannot. When the
 component unmounts, imp releases the state with it, and a remount starts again from the initial
 value. Two instances of the same component each own an independent state under the same name. A
@@ -539,8 +540,8 @@ that never unmounts. The full rules are in **[State](state.md)**.
 
 ```js
 const filterButtons = component('my-app-filter-buttons', {
-  build: () => {
-    const filter = useState('myapp.filter')
+  setup: (self) => {
+    const filter = useState(self, 'myapp.filter')
     return div(
       ['all', 'open', 'done'].map((kind) =>
         button({ events: { click: () => filter.set(kind) } }, kind)
@@ -550,8 +551,8 @@ const filterButtons = component('my-app-filter-buttons', {
 })
 
 export const taskBoard = component('my-app-task-board', {
-  build: () => {
-    const filter = initState('myapp.filter', 'all')
+  setup: (self) => {
+    const filter = initState(self, 'myapp.filter', 'all')
     return div(filterButtons(), span('showing: ', filter.text()))
   },
 })

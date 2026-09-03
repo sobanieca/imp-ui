@@ -277,14 +277,14 @@ Two custom properties tune the frame; set them anywhere above it:
 **The frame can float.** By default the bar, the column and the bottom bar of a phone meet the edges
 of the screen, and each other, with hairline dividers. Pass `gap`, which is a step on the same
 spacing scale that `flex` and `stack` take. The frame then insets itself by that much, and pulls
-those regions apart into bordered panels. It rounds each panel with the `radius-lg` of the theme.
-That is the only way in which the corner radius of a theme reaches the frame. At `gap: 0` a rounded
-corner would sit against the edge of the screen, so imp draws none. A theme with `radius: none`
-floats square panels. Your content is not a panel. It sits directly on the background. So a page
-that wants a card draws one. The drawer of a phone floats with the rest, inset by the same gap and
-rounded in the same way. A `drawer` that you mount inside the frame does the same. The frame gives
-it the inset and the radius through two custom properties. So a contextual panel lines up with the
-column that it slides in beside.
+those regions apart into bordered panels. It rounds each panel with the `radius-container` of the
+theme. That is the only way in which the corner radius of a theme reaches the frame. At `gap: 0` a
+rounded corner would sit against the edge of the screen, so imp draws none. A theme with
+`radius: none` floats square panels. Your content is not a panel. It sits directly on the
+background. So a page that wants a card draws one. The drawer of a phone floats with the rest, inset
+by the same gap and rounded in the same way. A `drawer` that you mount inside the frame does the
+same. The frame gives it the inset and the radius through two custom properties. So a contextual
+panel lines up with the column that it slides in beside.
 
 ```js
 shell({ logo: brand(), navbar, sidebar, account, gap: 3 }, page())
@@ -319,20 +319,20 @@ travels upward is **data**. Keep a nav state next to the shell. Let each screen 
 on mount, and withdraw them on unmount. Hand that state to the shell as `items`. The rule is this:
 **at the call site you write a literal array. At runtime a screen writes a state.**
 
-The withdrawal runs in `teardown`, after the screen has left the page. That is too late to look a
-state up, because no ancestor is left to find it in. So resolve the state in `build`. Keep the
-handle on the instance. Write through the handle in `teardown`. A handle that you already hold reads
-and writes anywhere.
+The withdrawal runs in `onRemove`, after the screen has left the page. That is too late to look a
+state up, because no ancestor is left to find it in. So resolve the state in `setup`. In `onRemove`,
+`useState(self, name)` returns the handle that `setup` resolved. A handle that you already hold
+reads and writes anywhere.
 
 ```js
 const projectScreen = component('acme-project', {
-  build: async (instance, projectId) => {
-    instance.project = useState('acme.nav.project')
-    const project = await api.get(`/projects/${projectId}`)
-    instance.project.set({ id: projectId, name: project.name })
+  setup: async (self, projectId) => {
+    const current = useState(self, 'acme.nav.project')
+    const project = await useHttpClient(self, 'acme.api').get(`/projects/${projectId}`)
+    current.set({ id: projectId, name: project.name })
     return overview(project)
   },
-  teardown: (instance) => instance.project.set(null),
+  onRemove: (self) => useState(self, 'acme.nav.project').set(null),
 })
 ```
 
@@ -472,7 +472,7 @@ component('invoice-grid', {
   styles: () => `
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
   `,
-  build: () => div({ class: 'grid' }, ...cards()),
+  setup: () => div({ class: 'grid' }, ...cards()),
 })
 ```
 

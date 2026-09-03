@@ -119,7 +119,7 @@ mockModule('./http.js', ({ spy, orig }) => ({
 
 **The HTTP calls of a component** need neither of those. `spy(globalThis, 'fetch', ...)` replaces
 the network. A host component of one line owns the client, as in
-`build: (_instance, setup) => setup()`, because a component always owns a client.
+`setup: (self, prepare) => prepare(self)`, because a component always owns a client.
 `{ fakeTimers: true }` makes a retry and a timeout instant. Call `await clock.tick(delay)` between
 attempts. See [http](http.md).
 

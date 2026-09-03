@@ -13,10 +13,10 @@ form(
 The call shape is `form(props?, ...children)`. The children are the fields and the buttons. imp lays
 them out in a column.
 
-`form` calls `initState('imp.form', initialValues ?? null)` on itself. So **the values of the form
-are ordinary named state**, and they live at the position of the form in the tree. A control inside
-the form names the field that it owns with a dot path. It reads and writes that state directly.
-There is nothing to connect. When the form unmounts, the state goes with it.
+`form` calls `initState(self, 'imp.form', initialValues ?? null)` on itself. So **the values of the
+form are ordinary named state**, and they live at the position of the form in the tree. A control
+inside the form names the field that it owns with a dot path. It reads and writes that state
+directly. There is nothing to connect. When the form unmounts, the state goes with it.
 
 | Prop            | Values                                   | Default      | Notes                                        |
 | --------------- | ---------------------------------------- | ------------ | -------------------------------------------- |
@@ -27,14 +27,14 @@ There is nothing to connect. When the form unmounts, the state goes with it.
 
 ## The states it owns
 
-| State                 | Holds                                                |
-| --------------------- | ---------------------------------------------------- |
-| `imp.form`            | The values - read it with `useState('imp.form')`     |
-| `imp.form.errors`     | `{ [path]: problem }` for the fields that fail       |
-| `imp.form.touched`    | `{ [path]: true }` once a field has been left        |
-| `imp.form.submitting` | `true` while an async `onSubmit` is in flight        |
-| `imp.form.submits`    | How many times submit has been attempted             |
-| `imp.form.validating` | `{ [path]: true }` for fields with a check in flight |
+| State                 | Holds                                                  |
+| --------------------- | ------------------------------------------------------ |
+| `imp.form`            | The values - read it with `useState(self, 'imp.form')` |
+| `imp.form.errors`     | `{ [path]: problem }` for the fields that fail         |
+| `imp.form.touched`    | `{ [path]: true }` once a field has been left          |
+| `imp.form.submitting` | `true` while an async `onSubmit` is in flight          |
+| `imp.form.submits`    | How many times submit has been attempted               |
+| `imp.form.validating` | `{ [path]: true }` for fields with a check in flight   |
 
 `imp.form` is the only state for your code. The others are how the controls and the buttons agree
 with each other.
@@ -57,7 +57,7 @@ Rules an agent gets wrong:
 - **There is no native `<form>` submit to attach to.** Do not pass `events: { submit }`, and do not
   use a `type: 'submit'` button. `onSubmit` on the form and `submitButton()` are the whole API.
 - **`onSubmit` receives the values object**, already validated. Read the argument. Do not call
-  `useState('imp.form')` again.
+  `useState(self, 'imp.form')` again.
 - **Return the promise from an async `onSubmit`**, so the form knows when the work finished. That
   promise drives the spinner of the submit button, and it stops a double submit.
 - **Use one form per `initialValues`.** Two forms on a page each own their own `imp.form`, and imp

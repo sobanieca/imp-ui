@@ -56,12 +56,13 @@ const signedIn = guard(
 
 - **A guard runs inside the `imp-route` wrapper that already hosts every matched screen**, and it
   runs before the screen factory. That placement is what makes the feature small. The loading
-  placeholder, the token of the mount generation that discards a stale navigation, the `fallback`
-  boundary, and a mount scope with a host, all already exist there. A guard that can decide
-  immediately returns the DOM of the screen in the same tick, with no placeholder. A guard that
-  returns `wait` makes the `build` of the wrapper return a promise, and that is the exact path that
-  the download of the chunk of an area already takes. **One `placeholder` covers both waits**, and
-  the app writes no branch for loading.
+  content, the token of the mount generation that discards a stale navigation, the `error` boundary,
+  and the `self` of the wrapper, all already exist there. The wrapper hands its `self` to the guard
+  and to the loader of an area, so both resolve a state and register a cleanup through it. A guard
+  that can decide immediately returns the DOM of the screen in the same tick, with no loading
+  content. A guard that returns `wait` makes the `setup` of the wrapper return a promise, and that
+  is the exact path that the download of the chunk of an area already takes. **One `loading` covers
+  both waits**, and the app writes no branch for loading.
 
 - **imp watches the declared states for the life of the route, and not only while it decides.** The
   first verdict that is not `wait` resolves the entry. After that, the same subscriptions run the
@@ -70,7 +71,7 @@ const signedIn = guard(
   cannot issue the entry verdict again.
 
 - **`wait` decides the entry only.** imp ignores a guard that returns `wait` again after its screen
-  shows. To enter the placeholder again would mean to remount the screen, and to discard its
+  shows. To enter the loading content again would mean to remount the screen, and to discard its
   component state, its scroll position and the text that somebody typed, on every transient reload.
   imp reports a `false` after the mount as an error, for the same reason. Only a redirect can leave
   a mounted screen. The practical consequence is that a sign-out sets `null`, which is a fact that a
@@ -82,13 +83,13 @@ const signedIn = guard(
   place where a guard goes. `router({ guard })` and `area({ guard })` both throw, and the message
   points at `route()`. There is no default across a table, no inheritance into a nested area, and no
   array of guards. imp rejected a design in which guards accumulated through the same options object
-  per instance that carries `placeholder`, `fallback` and `notFound`. **The app owns the
-  composition, and it needs no API.** A check is a plain function. So a guard that means "signed in
-  and an administrator" calls the shared check, and passes its verdict through. The cost is a
-  repetition of `route({ guard: signedIn, ... })` on every protected entry of an app that is mostly
-  protected. The gain is that the line of a route names every condition that can redirect it. So the
-  question "why did this redirect?" is answered by one function. Nobody reconstructs what each
-  enclosing router and area contributed. imp never guards `notFound`.
+  per router that carries `loading`, `error` and `notFound`. **The app owns the composition, and it
+  needs no API.** A check is a plain function. So a guard that means "signed in and an
+  administrator" calls the shared check, and passes its verdict through. The cost is a repetition of
+  `route({ guard: signedIn, ... })` on every protected entry of an app that is mostly protected. The
+  gain is that the line of a route names every condition that can redirect it. So the question "why
+  did this redirect?" is answered by one function. Nobody reconstructs what each enclosing router
+  and area contributed. imp never guards `notFound`.
 
 - **A guard on the entry of an area covers the whole section, and it runs before the chunk
   downloads.** The `imp-route` of the entry wraps the area. So the `root` of the area does not
@@ -108,7 +109,7 @@ const signedIn = guard(
 
 - **Everything fails closed.** A declared state that nothing provides at the position of the router
   throws the existing message of `useState`. A check that throws, and a check that returns an
-  unknown verdict, both render `fallback`. No path of failure allows a screen.
+  unknown verdict, both render `error`. No path of failure allows a screen.
 
 - **A guard that stays on `wait` gives a warning after five seconds.** The warning names the path,
   and the declared states. It is a warning, and not an error, because a slow network is a legitimate
@@ -131,9 +132,9 @@ const signedIn = guard(
   that. The repetition is local, and you can search for it. A default with a list of exclusions, or
   inheritance, would put the answer to the question "is this route protected?" somewhere other than
   the route.
-- A wait is indistinguishable from the download of an area, by design. There is one `placeholder`,
-  and one mechanism. An app that wants to tell a visitor _why_ it waits overrides `placeholder` per
-  area, and not per reason.
+- A wait is indistinguishable from the download of an area, by design. There is one `loading`, and
+  one mechanism. An app that wants to tell a visitor _why_ it waits overrides `loading` per area,
+  and not per reason.
 - A guard checks again for the life of the route. So a state that changes often, and that a guard
   reads, runs that check on every change. A guard is expected to be a cheap comparison over values
   that are already loaded. Anything expensive belongs in a `computed` that the guard declares.

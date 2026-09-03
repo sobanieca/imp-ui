@@ -65,12 +65,11 @@ mount('#app', app())
 
 const appJs = `import { component } from 'imp'
 import { div, p } from 'imp/html'
-import { initState } from 'imp/state'
 import { button, heading, text } from 'imp/std'
 
 export const app = component('app-root', {
-  build: () => {
-    const clicks = initState('app.clicks', 0)
+  setup: (self) => {
+    const clicks = initState(self, 'app.clicks', 0)
     return div(
       heading('Hello from imp'),
       text('Edit src/app.js and the page reloads itself.'),
@@ -92,6 +91,7 @@ export const app = component('app-root', {
 const unitTest = `import { mount } from 'imp'
 import { beforeEach, expect, test } from 'imp/test'
 import { app } from '../src/app.js'
+import { initState } from 'imp/state'
 
 const inside = (node, selector) => node.shadowRoot.querySelector(selector)
 

@@ -12,8 +12,8 @@ import { initHttpClient, useHttpClient } from 'imp/http'
 import { env } from 'imp'
 
 const app = component('my-app', {
-  build: () => {
-    initHttpClient('myapp.api', {
+  setup: (self) => {
+    initHttpClient(self, 'myapp.api', {
       baseUrl: env.API_URL,
       headers: { accept: 'application/json' },
       retry: { attempts: 3, backoff: 'exponential', retryOn: [502, 503, 504] },
@@ -24,8 +24,8 @@ const app = component('my-app', {
 })
 
 const profile = component('user-profile', {
-  build: async (_instance, { id }) => {
-    const api = useHttpClient('myapp.api')
+  setup: async (self, { id }) => {
+    const api = useHttpClient(self, 'myapp.api')
     const user = await api.get(`/users/${id}`)
     return card(user)
   },
@@ -34,10 +34,12 @@ const profile = component('user-profile', {
 
 ## The mental model
 
-- **A client belongs to a component.** `initHttpClient(name, options)` in the `build` of a component
-  configures the client. Every component that mounts below it reaches the client with
-  `useHttpClient(name)`. The shape is the same as [state](state.md). The client is named, imp
-  resolves it through the DOM, and the component that initialized it owns it.
+- **A client belongs to a component.** `initHttpClient(self, name, options)` in the `setup` of a
+  component configures the client. Every component that mounts below it reaches the client with
+  `useHttpClient(self, name)`. `self` is the first argument of `setup`, see
+  [components](components.md). The `imp/self-first-argument` lint rule reports a call that passes a
+  name or an options object first. The shape is the same as [state](state.md). The client is named,
+  imp resolves it through the DOM, and the component that initialized it owns it.
 - **The client lives as long as that component.** When the owner unmounts, the client goes with it.
   imp cancels the requests in flight, and the retries stop. There is nothing to dispose of by hand.
 - **You can take the lifetime yourself.** `createHttpClient(name, options)` builds a client
@@ -76,8 +78,8 @@ and it never goes away, because the root never unmounts:
 
 ```js
 component('my-app', {
-  build: () => {
-    initHttpClient('myapp.api', { baseUrl: env.API_URL })
+  setup: (self) => {
+    initHttpClient(self, 'myapp.api', { baseUrl: env.API_URL })
     return layout()
   },
 })
@@ -89,8 +91,8 @@ It exists while the user is in that section, and it is gone the moment when they
 ```js
 // admin/area.js - downloaded the first time someone visits /admin
 const shell = component('admin-shell', {
-  build: () => {
-    initHttpClient('myapp.admin', { baseUrl: '/admin/api', timeout: 5000 })
+  setup: (self) => {
+    initHttpClient(self, 'myapp.admin', { baseUrl: '/admin/api', timeout: 5000 })
     return div(adminNav(), router())
   },
 })
@@ -99,9 +101,9 @@ export default area({ root: () => shell(), routes: adminRoutes })
 ```
 
 The screens of the section render into the `router()` inside `admin-shell`. So every one of them
-reaches the client with `useHttpClient('myapp.admin')`, and nothing outside `/admin` can. The shell
-stays mounted while the user moves between the admin screens, so those screens share one client. The
-shell unmounts when the user leaves the section.
+reaches the client with `useHttpClient(self, 'myapp.admin')`, and nothing outside `/admin` can. The
+shell stays mounted while the user moves between the admin screens, so those screens share one
+client. The shell unmounts when the user leaves the section.
 
 That is the whole lifetime story. When `admin-shell` unmounts:
 
@@ -129,15 +131,15 @@ options:
 
 ```js
 component('my-app', {
-  build: () => {
-    initHttpClient(sync) // provided under its own name, 'myapp.sync'
+  setup: (self) => {
+    initHttpClient(self, sync) // provided under its own name, 'myapp.sync'
     return layout()
   },
 })
 ```
 
-Below that component, `useHttpClient('myapp.sync')` reaches the client like any other client. There
-is one client and one set of request state, shared by your worker and your components.
+Below that component, `useHttpClient(self, 'myapp.sync')` reaches the client like any other client.
+There is one client and one set of request state, shared by your worker and your components.
 
 **imp does not close a shared client when that component unmounts.** That is the deliberate trade.
 imp cannot know whether your worker still uses the client. So `createHttpClient` gives you the
@@ -152,10 +154,12 @@ A few rules follow from a component owning a client. They are the same rules tha
   the same name each get their own client, with separate configuration and separate request state.
 - **One name per component.** A second initialization of the same name in one component throws. So
   an accidental collision fails with a message, instead of sharing in silence.
-- **Resolve before the first `await`.** In an `async build`, call `initHttpClient` or
-  `useHttpClient` before you await anything. Keep the handle and call it at any time after that,
-  including in an event handler. The `imp/http-client-setup-before-await` lint rule catches this
-  while you write.
+- **Resolution goes through `self`.** `initHttpClient(self, ...)` and `useHttpClient(self, name)`
+  work at any point in `setup`, before or after an `await`, because `self` carries the mount. Keep
+  the handle and call it at any time after that, including in an event handler. In `onRemove`,
+  `useHttpClient(self, name)` returns the handle that `setup` resolved, so a screen can report its
+  exit through the client of an ancestor that is still mounted. A call after the component has left
+  the page for good throws.
 - **A name is namespaced.** It has two or more dot-separated segments, such as `myapp.api`, like a
   state name.
 
@@ -209,7 +213,7 @@ await api.get('/users') // x-request-id: 2f5a3c1e-9d84-4a17-b0f2-6c1de0b3a7e4
   call:
 
   ```js
-  initHttpClient('myapp.api', { baseUrl, requestId: 'x-correlation-id' })
+  initHttpClient(self, 'myapp.api', { baseUrl, requestId: 'x-correlation-id' })
   await api.get('/users', { requestId: 'x-correlation-id' })
   ```
 
@@ -249,7 +253,7 @@ An `HttpError` carries these fields:
 ## Retries
 
 ```js
-const api = initHttpClient('myapp.api', {
+const api = initHttpClient(self, 'myapp.api', {
   baseUrl,
   retry: { attempts: 3, backoff: 'exponential', delay: 300, retryOn: [502, 503, 504] },
 })
@@ -318,7 +322,7 @@ function, or an array of functions. Each one can be async. A per-call hook **run
 the hook of the client. It does not replace it.
 
 ```js
-const api = initHttpClient('myapp.api', {
+const api = initHttpClient(self, 'myapp.api', {
   baseUrl,
   onRequest: (request) => {
     request.headers.authorization = `Bearer ${token()}`
@@ -348,7 +352,7 @@ An auth refresh, an envelope unwrap, a request signature and logging are all hoo
 ```js
 let refreshing = null
 
-const api = initHttpClient('myapp.api', {
+const api = initHttpClient(self, 'myapp.api', {
   baseUrl,
   onRequest: async (request) => {
     if (isExpired(token)) {
@@ -396,8 +400,8 @@ import { div, p } from 'imp/html'
 import { useHttpClient } from 'imp/http'
 
 const status = component('api-status', {
-  build: () => {
-    const api = useHttpClient('myapp.api')
+  setup: (self) => {
+    const api = useHttpClient(self, 'myapp.api')
     return div(
       div({ class: 'spinner', hidden: computed([api.pending], (count) => count === 0) }),
       api.lastError.view((error) => error && p({ class: 'error' }, error.message)),
@@ -431,7 +435,7 @@ import { component, mount } from 'imp'
 import { expect, spy, test } from 'imp/test'
 import { initHttpClient } from 'imp/http'
 
-const owner = component('test-owner', { build: (_instance, setup) => setup() })
+const owner = component('test-owner', { setup: (self, prepare) => prepare(self) })
 
 test('retries a failing read', async ({ clock }) => {
   let attempt = 0
@@ -445,8 +449,8 @@ test('retries a failing read', async ({ clock }) => {
   let api
   mount(
     document.body,
-    owner(() =>
-      void (api = initHttpClient('test.api', {
+    owner((self) =>
+      void (api = initHttpClient(self, 'test.api', {
         baseUrl: 'https://api.test',
         retry: { attempts: 2, delay: 100, jitter: false },
       }))

@@ -94,8 +94,8 @@ is `text_field` under `inputs`.
   is the command to give an agent before it writes code with this component. A file that declares
   none says so there.
 - **Theme editor.** _edit theme_ is beside the theme button. Knobs: mode (light/dark), primary,
-  secondary, border radius (`none` | `small` | `medium` | `large` | `full`), shadow (`none` | `soft`
-  | `strong`). Every other colour token is derived from the two base colours. Copy or download the
+  secondary, border radius (`none` | `small` | `medium` | `large`), shadow (`none` | `soft` |
+  `strong`). Every other colour token is derived from the two base colours. Copy or download the
   result as a `theme.js` that exports `light` and `dark`, then pass it to `init({ theme })`. Drafts
   are kept per theme in `localStorage`. _reset_ clears one. See [theming](theming.md).
 - **Review widget.** The same widget that `imp start` injects, in the bottom corner. The person

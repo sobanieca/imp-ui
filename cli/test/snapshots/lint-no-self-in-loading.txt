@@ -1,0 +1,21 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-loading-self)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-self-in-loading]: 'useState' runs in loading, which imp builds before the component mounts and without self, so the call throws - loading takes the factory arguments only; move the call into setup
+ --> app.js:8:18
+
+error[imp/no-self-in-loading]: 'user.text' binds state in loading, which imp builds before the component mounts, so the binding renders empty and never updates - pass a plain value here, and keep text, view, each, watch and a state-bound prop in setup
+ --> app.js:9:16
+
+error[imp/no-self-in-loading]: 'lang.text' binds state in loading, which imp builds before the component mounts, so the binding renders empty and never updates - pass a plain value here, and keep text, view, each, watch and a state-bound prop in setup
+ --> app.js:9:29
+
+error[imp/no-self-in-loading]: 'user' binds state in loading, which imp builds before the component mounts, so the binding renders empty and never updates - pass a plain value here, and keep text, view, each, watch and a state-bound prop in setup
+ --> app.js:9:42
+
+Found 4 problems
+Checked 1 file

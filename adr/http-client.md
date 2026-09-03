@@ -20,15 +20,17 @@ mocked.
 
 ## Decision
 
-imp ships **`initHttpClient`, `useHttpClient` and `createHttpClient`, from `imp/http`**. That is a
-new row in the shared table of subpaths, see `library-import-namespaces.md`. The first pair is
-deliberately the pair that `initState` and `useState` already establish. A component initializes a
-named, configured client in its `build`. A component that mounts below it resolves the client by
-name. The lifetime of the client is the lifetime of the component that initialized it. The client
-exposes a method per verb, which are `get`, `post`, `put`, `patch`, `delete` and `head`. Each one
-resolves to the parsed body. There is also a `request()` escape hatch, which returns the whole
-response, for a caller that needs the status or the headers. You declare every concern that cuts
-across calls once, at construction, and you can override it per call.
+imp ships **`initHttpClient`, `useHttpClient` and `createHttpClient`, from `imp/http`**. The first
+two take the `self` of a mounting component as their first argument, see
+`web-component-lifecycle.md`. That is a new row in the shared table of subpaths, see
+`library-import-namespaces.md`. The first pair is deliberately the pair that `initState` and
+`useState` already establish. A component initializes a named, configured client in its `setup`. A
+component that mounts below it resolves the client by name. The lifetime of the client is the
+lifetime of the component that initialized it. The client exposes a method per verb, which are
+`get`, `post`, `put`, `patch`, `delete` and `head`. Each one resolves to the parsed body. There is
+also a `request()` escape hatch, which returns the whole response, for a caller that needs the
+status or the headers. You declare every concern that cuts across calls once, at construction, and
+you can override it per call.
 
 - **The component that owns the client is the default scope.** An app-wide client is a client that
   the root component of the app initializes. A client that must end with a section is a client that
@@ -100,20 +102,20 @@ later, costs a `kind`, and not another lookup. Everything about the scope follow
 provider listens. So the rules are the rules of the state, and they do not change. The nearest
 client wins. An area **shadows** an app-wide client, when it initializes the same name. To
 initialize a name again, in one scope, throws. Two sibling instances own independent clients. imp
-resolves again when a component moves, see `component-moves-rebind.md`. Both helpers throw outside a
-component that mounts, and they must run before the first `await` of an async `build`. A name is
+resolves again when a component moves, see `component-moves-rebind.md`. Both helpers take `self`
+first, and throw with anything else. They work at any point in `setup`, before or after an `await`,
+and `useHttpClient(self, name)` in `onRemove` returns the handle that `setup` resolved. A name is
 namespaced. The rule is the same, and the lint treatment is the same, through
-`imp/http-client-name-namespace` and `imp/http-client-setup-before-await`. **An unmount closes the
-client that the component created**, and never a shared client. imp composes a client-wide
-`AbortController` into the signal of every request. So an attempt in flight aborts. A retry that
-waits on a backoff delay stops, in place of firing into a dead screen. imp drops the tracker of each
-request. A call that somebody makes afterwards, through a handle that they kept, rejects, and it
-does not reach the network. To close a client is about stopping _work_, and not about reclaiming
-memory. Nothing global holds a client. So a client that nothing references was always collectable.
-What the app could not do before was to cancel what a screen that left had started. The same routine
-backs the public `close()`. imp carries the reason for the close into the message of the rejection.
-So "the client was closed when its component unmounted" and "the client was closed" are different at
-the call site.
+`imp/http-client-name-namespace`. **An unmount closes the client that the component created**, and
+never a shared client. imp composes a client-wide `AbortController` into the signal of every
+request. So an attempt in flight aborts. A retry that waits on a backoff delay stops, in place of
+firing into a dead screen. imp drops the tracker of each request. A call that somebody makes
+afterwards, through a handle that they kept, rejects, and it does not reach the network. To close a
+client is about stopping _work_, and not about reclaiming memory. Nothing global holds a client. So
+a client that nothing references was always collectable. What the app could not do before was to
+cancel what a screen that left had started. The same routine backs the public `close()`. imp carries
+the reason for the close into the message of the rejection. So "the client was closed when its
+component unmounted" and "the client was closed" are different at the call site.
 
 **An interceptor is the place to extend the client.** `onRequest` and `onResponse` carry the names
 of the existing lifecycle hooks of imp. Each one takes a function, or an ordered array of functions.
@@ -174,9 +176,9 @@ one request costs one name, and every other call costs nothing.
   received.
 - A client can live longer than the DOM. So imp works in a worker. `createHttpClient` needs no
   document, and the pipeline of a request, with its retries and its hooks, is free of the DOM. The
-  reactive half of the request state does not follow it there. `watch`, `text`, `view` and `each`
-  need a component that mounts. `pending.get()` and `lastError.get()` work anywhere. That costs a
-  worker nothing, because a worker has no DOM to bind to.
+  reactive half of the request state does not follow it there. `text`, `view` and `each` need DOM
+  that imp places. `pending.get()`, `lastError.get()` and `watch` work anywhere. That costs a worker
+  nothing, because a worker has no DOM to bind to.
 - The cost is that you cannot import a client. A plain helper module that used to write
   `import { api }` now takes the client as an argument, from the component that resolved it. That is
   the same trade that a state makes. It is the price of the DOM as the only scope.

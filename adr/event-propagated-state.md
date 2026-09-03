@@ -16,8 +16,9 @@ a live chain of ancestors, and with a defined owner. This decision builds on tha
 ## Decision
 
 A shared state is **named, explicit, and scoped by the DOM**. A component initializes a state with
-`initState(name, initialValue)`, inside its `build`. A component that mounts in its subtree obtains
-that state with `useState(name)`. Both return the same helper:
+`initState(self, name, initialValue)`, inside its `setup`. A component that mounts in its subtree
+obtains that state with `useState(self, name)`. `self` is the per-mount handle of the component, see
+`web-component-lifecycle.md`. Both return the same helper:
 
 - `get()` returns the current value.
 - `set(next)` replaces the value with `next`, as in `set(42)` and `set({ ...user, name: 'x' })`.
@@ -29,7 +30,9 @@ that state with `useState(name)`. Both return the same helper:
   `state-plain-data-values.md`. That dispatch means that a function can never be a state value. imp
   accepts that deliberately. A state holds plain data, which those structural comparisons assume in
   any case.
-- `watch(fn)` runs `fn(value)` now, and after every `set`. It returns a function that unsubscribes.
+- `watch(self, fn)` runs `fn(value)` now, and after every `set`, and stops when the mount of `self`
+  ends. `watch(fn)` does the same with no owner, and returns the function that unsubscribes. imp
+  dispatches on the type of the first argument, see `type-based-argument-dispatch.md`.
 - `text(select?)` returns a live `Text` node. That node shows the value, or a selection of it.
 - `view(render)` returns a live region. imp renders it again, from `render(value)`, on every `set`.
   Comment nodes anchor the region, so imp does not touch the siblings around it. It is the general
@@ -71,27 +74,38 @@ cuts off a cycle of states that set each other, after 100 nested updates. That e
 the setter.
 
 **The resolution bubbles up the real tree.** The provider listens for a `CustomEvent` that looks a
-provider up, on its own host element. `useState` dispatches that event from the host of the
-component that asks. The event bubbles, and it is composed, so it crosses the shadow root that every
-component now renders into, see `shadow-dom-isolation.md`. The nearest ancestor that provides the
-name answers synchronously, with its state, and stops the propagation. The lookup is keyed by a
+provider up, on its own host element. `useState` dispatches that event from `self.host`, the host of
+the component that asks. The event bubbles, and it is composed, so it crosses the shadow root that
+every component now renders into, see `shadow-dom-isolation.md`. The nearest ancestor that provides
+the name answers synchronously, with its state, and stops the propagation. The lookup is keyed by a
 **kind**, and by a name. So it is the one mechanism of resolution for every resource that the DOM
 scopes in imp, and not the mechanism of the state alone. The HTTP client, see `http-client.md`,
 resolves through the same seam. A future resource costs a kind, and not a second mechanism. There is
-**no scope across the page**. `document` never provides. `initState` and `useState` throw when
-somebody calls them outside a component that mounts. imp considered a page-wide scope, and rejected
-it. It is a second concept to learn, and a scope that imp never releases. State for the lifetime of
-the app is instead ordinary component state, initialized in the root component of the app, which
-spans the tree and never unmounts. It follows that a component can **shadow** the state of an
-ancestor, by initializing the same name. To initialize a name again, inside the same scope, throws.
-A scope initializes each name exactly once. So an accidental collision, where two independent
-initializers select one name at one scope, fails loudly, in place of sharing a state in silence.
-`useState` returns a consumer helper, which wraps the resolved provider. When its component moves,
-the helper binds to the provider at the new position, see `component-moves-rebind.md`.
+**no scope across the page**. `document` never provides. `initState` and `useState` throw when their
+first argument is not the `self` of a mounted component. imp considered a page-wide scope, and
+rejected it. It is a second concept to learn, and a scope that imp never releases. State for the
+lifetime of the app is instead ordinary component state, initialized in the root component of the
+app, which spans the tree and never unmounts. It follows that a component can **shadow** the state
+of an ancestor, by initializing the same name. To initialize a name again, inside the same scope,
+throws. A scope initializes each name exactly once. So an accidental collision, where two
+independent initializers select one name at one scope, fails loudly, in place of sharing a state in
+silence. `useState` returns a consumer helper, which wraps the resolved provider. When its component
+moves, the helper binds to the provider at the new position, see `component-moves-rebind.md`.
 
 **The lifetime of a state follows its owner.** imp releases a state when its component unmounts, and
 it removes the listener on the host with the cleanups of that mount. A remount initializes the state
 again. Two sibling instances own independent states, under one name.
+
+**`self` carries the mount, so a resolution has no position rule.** The helper takes `self` as its
+first argument, and looks the mount scope up through the component module. It dispatches from
+`self.host`, and it registers the cleanup and the rebind of the consumer on that scope. So
+`initState` and `useState` work at any point in `setup`, before and after any number of awaits.
+There is no ambient stack. A helper that runs after the component has left the page throws, because
+the scope has ended. In `onRemove`, `useState(self, name)` returns the handle that `setup` resolved,
+from a cache on the mount that is keyed by kind and name. That is how a component withdraws a
+contribution on unmount, see `web-component-lifecycle.md`. The helpers are free functions in
+`imp/state`, and not methods on `self`, so that an app that renders a component without a state does
+not carry the state layer, see `tree-shakeable-library.md`.
 
 **A subscription activates at the insertion, and containment decides the owner.** `text`, `view`,
 `each` and a state-bound prop are inert descriptors when you build them. Each one registers a
@@ -100,22 +114,20 @@ a component into its shadow root, see `web-component-lifecycle.md`, DOM that you
 and the render output of a region. The activation subscribes the binding, and registers its
 unsubscribe function with the scope that placed the DOM. So the component that mounts the DOM owns
 its bindings, and unsubscribes them at the unmount, in a defined way. That makes the construction of
-a binding free of position. DOM that you build after an `await`, in an async `build`, goes live when
+a binding free of position. DOM that you build after an `await`, in an async `setup`, goes live when
 the resolved output mounts, and it needs no ambient context. The relation of containment in the DOM
 answers the question "whose binding is this?", where no mechanism at runtime could attribute the
-call that built it. A `view` or `each` region runs its render function in a scope of its own. That
-scope carries the host of the owning component, so a nested `useState` resolves. The region
+call that built it. A `view` or `each` region collects the cleanups of its own render. The region
 activates the nodes that it inserts. The region owns a nested binding, and imp unsubscribes that
-binding when the region next renders again, or when the component unmounts, whichever comes first.
-`watch` has no node to land on. So, like `initState` and `useState`, it needs an active mount scope,
-and it throws without one. That covers module scope, an event handler, and a position after an
-`await` in an async `build`. The whole surface that depends on position fails loudly at runtime. The
-`imp/state-setup-before-await` lint rule reports it earlier, while you write. That rule finds an
-`initState` and a `useState` call by the imported name. It finds a `watch` by tracking a handle that
-the file assigned from `initState`, `useState` or `computed`. So it does not report an unrelated
-third-party `.watch()` method. There is no fallback path for disposal, and there is no subscription
-that somebody manages by hand. `get` and `set` stay free to call anywhere. `watch` returns its
-unsubscribe function only to stop early, inside a period when the component is mounted.
+binding when the region next renders again, or when the component unmounts, whichever comes first. A
+nested `useState(self, name)` in a render function resolves through the same `self` as the `setup`
+around it. `watch` has no node to land on, and nothing ambient can own it. So it takes `self`, and
+registers its stop with the mount scope of `self`, in the same list as the bindings. `watch(fn)`
+without `self` registers nothing, and returns the function that stops it. That form serves code
+outside a component, such as a test or a page script. The `imp/watch-with-self` lint rule reports a
+bare `watch(fn)` in `setup`, `error` or `onMount` whose result is discarded, on a handle that the
+file created with `initState`, `useState`, `computed` or `useRoute`, and on `lang`, `dir` and
+`theme`. `get` and `set` stay free to call anywhere.
 
 **Composition is one combinator.** `computed(states, compute)` returns a read-only state. It has
 `get`, `watch`, `text`, `view` and `each`, and `set` throws. Its value is
@@ -164,7 +176,8 @@ in hand, and not before it.
 
 **A state name must carry a namespace.** It needs two or more dot-separated segments that are not
 empty, such as `myapp.user`. Both helpers throw at runtime on a name that does not conform. The
-`imp/state-name-namespace` lint rule reports a literal name statically.
+`imp/state-name-namespace` lint rule reports a literal name statically. It finds the call by the
+imported name, and reads the name from the second argument, after `self`.
 
 ## Consequences
 
@@ -187,19 +200,16 @@ empty, such as `myapp.user`. Both helpers throw at runtime on a name that does n
   which was `document`, costs app-wide state one enclosing root component, in place of a bare call
   at module scope. In exchange, imp removes a second lifetime to learn, the scope that nobody
   released, and the silent failure after an `await`, where a stranded `initState` used to fall back
-  to the page. `initState` and `useState` now throw with no component that mounts. So the whole
-  surface of the resolution fails loudly, and in one way.
+  to the page. `initState` and `useState` now throw with no `self` of a mounted component. So the
+  whole surface of the resolution fails loudly, and in one way.
 - imp resolves at the mount, and resolves again on a move. The `useState` helpers of a component
   that moved bind to the providers at its new position, see `component-moves-rebind.md`. So the rule
   of the nearest provider holds wherever a mounted component sits now.
 - Every subscription has exactly one owner, and one defined end. The cost is one walk of activation
-  over each subtree that imp places. The remaining restriction is that an async `build` must resolve
-  its states, with `initState` and `useState`, and call `watch`, before its first `await`. That is a
-  gap in the platform, and not a choice of design. After an `await`, no mechanism at runtime can
-  attribute those calls to the component that mounts. The AsyncContext proposal of TC39 targets that
-  gap, and it has not shipped. If it lands, imp can lift the restriction with no visible change. A
-  closure bridges the gap today, because a handle that you resolved before the `await` works
-  anywhere after it. Activation at the insertion already frees the DOM side completely.
+  over each subtree that imp places, and one `self` argument on a `watch`. A resolution has no
+  position rule, because `self` carries the mount across every `await`. A `watch(self, fn)` inside a
+  `view` or `each` render function ends with the mount, not with the region. So it accumulates on
+  every rebuild, and the guidance is to bind there.
 - A binding that somebody places without imp stays inert, and says nothing. That is DOM that
   somebody inserted by hand, in place of through the output of a component, or through `mount`. An
   eager subscription used to fail loudly at construction. imp accepts the change. Placement by imp

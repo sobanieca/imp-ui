@@ -170,8 +170,8 @@ itself. The main content is its children. It holds the one breakpoint that imp a
 - **`gap` is the one knob for a frame that floats, and it carries the radius with it.** Step `0` is
   the edge-to-edge frame, with hairline dividers. Any other step, on the shared spacing scale,
   insets the frame. It pulls the bar, the column and the bottom bar apart, into bordered panels,
-  rounded with `radius-lg`. imp ties the radius to the gap, in place of offering it on its own,
-  because a rounded corner against the edge of a screen looks broken. So the radius of a theme
+  rounded with `radius-container`. imp ties the radius to the gap, in place of offering it on its
+  own, because a rounded corner against the edge of a screen looks broken. So the radius of a theme
   reaches the frame only when there is room for it, and a theme with `radius: none` floats square
   panels. imp writes the gap as a margin on each panel, and not as a grid `gap`. So a region that
   imp does not render leaves no gap behind. The content is deliberately not a panel. It sits on the
@@ -203,7 +203,8 @@ itself. The main content is its children. It holds the one breakpoint that imp a
   and overflow, and of a nav that the frame can present in three ways.
 - **imp builds the sidebar of every section at the mount, and not on demand.** A tree with many
   sections pays for all of them at the start. A nav tree is small. The alternative is to build on a
-  change of section, and that throws outside a mount scope. So imp accepts the cost.
+  change of section, and a binding built inside a watch callback has no region to own it. So imp
+  accepts the cost.
 - **The renderer of a row lives with the shell.** So a shell pulls the code of a nav row, and the
   `tag` behind it, into every bundle that uses the frame. It does that beside the `userCard` and the
   `button` that `account` already pulls in. imp accepts that. The frame is the recommended way to

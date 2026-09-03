@@ -1,0 +1,21 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-state-child)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-state-as-child]: 'count' is a state passed as a child of 'div', and imp skips it - render it with count.text(), count.view(fn) or count.each(fn), or bind a prop with { class: count }
+ --> app.js:10:16
+
+error[imp/no-state-as-child]: 'lang' is a state passed as a child of 'span', and imp skips it - render it with lang.text(), lang.view(fn) or lang.each(fn), or bind a prop with { class: lang }
+ --> app.js:10:28
+
+error[imp/no-state-as-child]: 'count' is a state passed as a child of 'el', and imp skips it - render it with count.text(), count.view(fn) or count.each(fn), or bind a prop with { class: count }
+ --> app.js:10:43
+
+error[imp/no-state-as-child]: 'useRoute()' is a state passed as a child of 'div', and imp skips it - render it with useRoute().text(), useRoute().view(fn) or useRoute().each(fn), or bind a prop with { class: useRoute() }
+ --> app.js:10:51
+
+Found 4 problems
+Checked 1 file

@@ -19,14 +19,15 @@ added to the kernel.
 
 **The values of a form are ordinary named state, and a control names its field with a dot path.**
 
-- **`form({ initialValues })` calls `initState('imp.form', initialValues ?? null)` on itself.** The
-  values live at the position of the form in the tree. So a second form on the page owns a second
-  `imp.form`, and an unmount of a form releases its values with the rest of the subtree. Nobody
-  registers anything, connects anything, or tears anything down by hand.
+- **`form({ initialValues })` calls `initState(self, 'imp.form', initialValues ?? null)` on
+  itself.** The values live at the position of the form in the tree. So a second form on the page
+  owns a second `imp.form`, and an unmount of a form releases its values with the rest of the
+  subtree. Nobody registers anything, connects anything, or tears anything down by hand.
 - **A control declares `field: 'user.firstName'`.** It resolves `imp.form` from its own position,
-  with `useState`. That is the same lookup that every other component does. So it works at any depth
-  of nesting, through a layout component and through an app component. The control then reads its
-  value by a walk along the path, and it writes by rebuilding the object along that path.
+  with `useState(self, 'imp.form')`. That is the same lookup that every other component does. So it
+  works at any depth of nesting, through a layout component and through an app component. The
+  control then reads its value by a walk along the path, and it writes by rebuilding the object
+  along that path.
 
   That is what makes a nested field work with **no change to the kernel**. A path is data, and the
   form layer can walk it in both directions. `computed` is a function, and it walks one way only. So
@@ -79,8 +80,9 @@ added to the kernel.
   carries one string. That is the shape that an agent writes correctly, and imp can check it. A
   malformed path, and a `field` with no form around it, both fail loudly at mount. They do not bind
   to nothing in silence.
-- Anything in the subtree can read the values, with `useState('imp.form')`. So a live summary, a
-  preview panel and a dependent field are ordinary consumption of a state. They are not a form API.
+- Anything in the subtree can read the values, with `useState(self, 'imp.form')`. So a live summary,
+  a preview panel and a dependent field are ordinary consumption of a state. They are not a form
+  API.
 - The kernel gained nothing. All of this builds on `initState`, `useState`, `watch` and `set`. That
   keeps the state layer complete as it is.
 - Async validation cost nothing structurally. The question "who is still checking?" is another piece

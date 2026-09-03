@@ -57,10 +57,10 @@ catalog map one to one. Nothing in `std/` is privileged. It imports the same sur
   `type-based-argument-dispatch.md`. A plain object is props, wherever it sits. Everything else is
   content. imp reports a state that you pass as a standalone argument, and skips it.
   `defineComponent` does the dispatch once for every component, through the same `splitArgsByType`
-  that `el` uses. It hands `build` the resolved `(instance, props, children)`. So there is one rule
-  of dispatch to learn for the whole library, and not one per import. There is also one
-  implementation of that rule, and not one per component. What a component adds on top is
-  validation, and not a different call shape.
+  that `el` uses. It hands `setup` the resolved `(self, props, children)`. So there is one rule of
+  dispatch to learn for the whole library, and not one per import. There is also one implementation
+  of that rule, and not one per component. What a component adds on top is validation, and not a
+  different call shape.
 - **A component has a closed, documented set of props.** Each component declares that set as the
   `props` list of its definition. So `defineComponent` can check every call against it. A standard
   component does not forward an arbitrary prop onto an inner element. The boundary is the point. imp
@@ -70,10 +70,10 @@ catalog map one to one. Nothing in `std/` is privileged. It imports the same sur
   appearance.
 - **A prop that the documentation marks as _live_ accepts a value with the shape of a state**, which
   is anything with `get` and `watch`, and it also accepts a plain value. The component subscribes
-  with `watch`, and updates the one element property in place. It never rebuilds a region. So the
-  focus and the caret survive. That is the readable half of the two-way binding contract that the
-  input group completes. The writable half, which is how a control commits back into one field of a
-  form state, stays open until a control exists that needs it.
+  with `watch(self, fn)`, which ends with the mount, and updates the one element property in place.
+  It never rebuilds a region. So the focus and the caret survive. That is the readable half of the
+  two-way binding contract that the input group completes. The writable half, which is how a control
+  commits back into one field of a form state, stays open until a control exists that needs it.
 - **Every value that somebody could theme comes from a token.** A component references it as
   `token('name')`, which expands to `var(--imp-name, fallback)`. So a component still renders on its
   own. imp reads the fallback from the built-in light theme, and nobody writes it at the call site.

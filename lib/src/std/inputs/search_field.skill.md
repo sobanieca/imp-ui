@@ -49,7 +49,7 @@ Rules an agent gets wrong:
   name.
 
 ```js
-const query = initState('invoices.query', '')
+const query = initState(self, 'invoices.query', '')
 
 searchField({ value: query, ariaLabel: 'Search invoices', placeholder: 'Search...' })
 searchField({ field: 'term', label: 'Find' })

@@ -2,21 +2,21 @@ import { component } from 'imp'
 import { div } from 'imp/html'
 
 export const profile = component('profile', {
-  build: () => div('profile'),
+  setup: () => div('profile'),
 })
 
 export const settings = component(`Settings-Panel`, {
-  build: () => div('settings'),
+  setup: () => div('settings'),
 })
 
 export const glyph = component('font-face', {
-  build: () => div('glyph'),
+  setup: () => div('glyph'),
 })
 
 export const card = component('my-app-card', {
-  build: () => div('card'),
+  setup: () => div('card'),
 })
 
 export const dynamic = component(globalThis.componentTag, {
-  build: () => div('dynamic'),
+  setup: () => div('dynamic'),
 })

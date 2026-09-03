@@ -1,10 +1,17 @@
 $ imp lint  (cwd: <tmp>/app)
-exit code: 0
+exit code: 1
 
 --- stdout ---
 (empty)
 
 --- stderr ---
+error[no-undef]: 'initState' is not defined.
+ --> src/app.js:7:20
+
+error[no-unused-vars]: 'initState' is defined but never used.
+ --> test/app.test.js:4:10
+
+Found 2 problems
 Checked 5 files
 
 $ imp fmt --check  (cwd: <tmp>/app)
@@ -17,14 +24,43 @@ exit code: 0
 Checked 7 files
 
 $ imp test --unit  (cwd: <tmp>/app)
-exit code: 0
+exit code: 1
 
 --- stdout ---
 imp test: running 1 file in parallel
 
-✓ test/app.test.js
+✗ test/app.test.js
+    test/app.test.js
+      ✗ starts at zero clicks (*ms)
+          TypeError: Cannot read properties of null (reading 'textContent')
+      ✗ counts every click (*ms)
+          TypeError: Cannot read properties of null (reading 'shadowRoot')
+    
+    imp test: 0 passed, 2 failed (1 file, *ms)
+    imp: component 'app-root' failed to mount ReferenceError: initState is not defined
+        at Object.setup (data:text/javascript;base64,Ly8gaW1wLWxpYnJhcnk6......a3M6IDIiKTsKfSk7Cg==:2414:20)
+        at B.connectedCallback (data:text/javascript;base64,Ly8gaW1wLWxpYnJhcnk6......a3M6IDIiKTsKfSk7Cg==:316:30)
+        at Fd.enqueueReaction (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:225:155336)
+        at B.[connectedToDocument] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:100:10529)
+        at B.[connectedToDocument] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:101:2207)
+        at B.[connectedToNode] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:34402)
+        at um.[appendChild] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:30248)
+        at um.[appendChild] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:100:9300)
+        at um.appendChild (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:28891)
+        at Zt.append (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:45749)
+    imp: component 'app-root' failed to mount ReferenceError: initState is not defined
+        at Object.setup (data:text/javascript;base64,Ly8gaW1wLWxpYnJhcnk6......a3M6IDIiKTsKfSk7Cg==:2414:20)
+        at B.connectedCallback (data:text/javascript;base64,Ly8gaW1wLWxpYnJhcnk6......a3M6IDIiKTsKfSk7Cg==:316:30)
+        at Fd.enqueueReaction (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:225:155336)
+        at B.[connectedToDocument] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:100:10529)
+        at B.[connectedToDocument] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:101:2207)
+        at B.[connectedToNode] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:34402)
+        at um.[appendChild] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:30248)
+        at um.[appendChild] (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:100:9300)
+        at um.appendChild (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:28891)
+        at Zt.append (file:///tmp/deno-compile-imp/cli/src/vendor/happy_dom.js:97:45749)
 
-imp test: 1 passed (1 file, *ms)
+imp test: 0 passed, 1 failed (1 file, *ms)
 
 --- stderr ---
 (empty)
