@@ -14,7 +14,7 @@ CI.
 
 There is one command, `imp test`, and the name of a file chooses the level. A `*.test.js` file runs
 in process, against a simulated DOM. A `*.spec.js` file runs against a served app, in a headless
-Chrome. Both import their API from `imp/test`, which is `cli/src/test_library.js`. That API holds
+Chrome. Both import their API from `imp/test`, which is `cli/src/test-library.js`. That API holds
 `test`, `test.only` and `test.skip`, with a timeout per test. It holds `beforeAll`, `beforeEach`,
 `afterEach` and `afterAll`. It holds a set of `expect` matchers. The file walker of imp feeds the
 discovery.
@@ -140,7 +140,7 @@ discovery.
 - **imp resolves the browser in this order.** First it uses `test.browser` in `imp.json`. Then it
   uses the `IMP_BROWSER` environment variable. Then it uses an installed Chrome or Chromium, which
   covers a GitHub Actions runner with no setup. Otherwise it uses a Chrome for Testing build. imp
-  pins that build by version, and by a sha256 hash per platform, in `cli/src/test_browser.js`. imp
+  pins that build by version, and by a sha256 hash per platform, in `cli/src/test-browser.js`. imp
   downloads it once, into the cache for that user at `~/.imp/browser/`, and never inside a project,
   see `vendored-dependencies.md`. imp extracts it with an unzip in pure JavaScript.
 - **`imp test` has two approved exceptions about a subprocess**, against `in-process-toolchain.md`.

@@ -95,8 +95,8 @@ There are three kinds of import, and each one needs a different answer:
 
 3. **A sibling module inside `std/`**, and there are two sorts. The first is a file of an
    implementation that imp does not export, and that exists to be shared by one family. Those are
-   `inputs/field.js`, `inputs/text_input.js`, `inputs/form_state.js`, `inputs/checkable.js`,
-   `inputs/control_css.js`, `layout/bar.js` and `layout/frame.js`. The second is a component that
+   `inputs/field.js`, `inputs/text-input.js`, `inputs/form-state.js`, `inputs/checkable.js`,
+   `inputs/control-css.js`, `layout/bar.js` and `layout/frame.js`. The second is a component that
    imp exports, and that another component composes. `submitButton` imports `general/button.js`.
 
 ## How the shared layer should be handled

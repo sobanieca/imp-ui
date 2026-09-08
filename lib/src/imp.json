@@ -1,0 +1,39 @@
+{
+  "lint": {
+    "publicExports": [
+      "imp.js",
+      "api/html.js",
+      "api/state.js",
+      "api/router.js",
+      "api/theme.js",
+      "api/i18n.js",
+      "api/log.js",
+      "api/http.js",
+      "api/icons.js",
+      "std/index.js",
+      "std/layout/index.js",
+      "std/display/index.js",
+      "std/inputs/index.js",
+      "std/navigation/index.js",
+      "std/shell/index.js",
+      "std/feedback/index.js",
+      "component.js#componentNameProblem",
+      "http.js#httpClientNameProblem",
+      "nodes.js#asNodes",
+      "state.js#findStateFrom",
+      "state.js#stateNameProblem",
+      "theme.js#buildTokens",
+      "theme.js#defaultTokens",
+      "theme.js#THEME_DEFAULTS",
+      "theme-colors.js#isHexColor",
+      "theme-colors.js#paletteTokens",
+      "theme-colors.js#radiusLevelOf",
+      "theme-colors.js#radiusSteps",
+      "theme-colors.js#SEMANTIC_SOURCES",
+      "theme-colors.js#shadowLevelOf",
+      "theme-colors.js#shadowSteps"
+    ]
+  },
+  "maxFileSizeIgnore": ["icons/lucide-icons.js"],
+  "preview": { "groups": "std/preview-groups.js" }
+}

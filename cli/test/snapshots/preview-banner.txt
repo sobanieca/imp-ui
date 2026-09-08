@@ -4,4 +4,5 @@
   themes -> theme/brand.js + built-ins
   languages -> en, pl, ar
   groups -> preview-groups.js
+  entry -> preview.html
   imp auto-injected | live reload | console + network telemetry

@@ -1,221 +1,269 @@
-# routing - one plain-data route table, with lazily loaded areas
+# routing - one application map drives the router, the shell and the trail
 
-Everything comes from `imp/router`. `router()` is the slot where the matched screen renders. Put it
-in your layout. Everything around it stays in place across a navigation.
+`appMap()` comes from `imp`, because the shell reads the map too. The rest comes from `imp/router`.
+The app describes itself once, in `src/app-map.js`, with `appMap()`. The map says what a feature is.
+Everything else is a binding keyed by a handle: `screens` and `options` at the router, `icons` and
+`tags` at the shell. `router()` is the slot where the matched screen renders. Put it in your layout.
+The `shell` frame reads the same map for its nav, see [std](std.md).
 
 ```js
-import { component, mount } from 'imp'
-import { button, div, nav } from 'imp/html'
-import { area, guard, navigate, route, router, useRoute, wait } from 'imp/router'
+// src/app-map.js - the feature list of the app; imports appMap and nothing else
+import { appMap } from 'imp'
+import { admin } from './admin/map.js'
 
-const shell = component('app-shell', {
-  setup: () =>
-    div(
-      nav(button('Home', { events: { click: () => navigate('/') } })),
-      router({
-        routes: {
-          '/': () => home(),
-          '/todos/new': () => newTodo(), //        exact paths before param paths
-          '/todos/:id': ({ params }) => todoDetail(params.id),
-          '/admin': area(() => import('./admin/area.js')),
-        },
-        loading: () => div('Loading...'),
-        error: (self, error) => div(error.message),
-        notFound: () => div('Not found'),
-      }),
-    ),
+export const app = appMap({
+  home: { path: '/', description: 'Counts and recent activity' },
+  projects: {
+    description: 'Everything a team works on',
+    access: 'user',
+    $projectId: {
+      builds: { $buildId: 'One build, with its log' },
+      settings: { access: 'admin', group: 'Manage' },
+    },
+  },
+  admin,
+  login: { nav: false },
+})
+```
+
+```js
+// src/admin/map.js - a part of the map; the first argument is the props of the node it hangs from
+import { appMap } from 'imp'
+
+export const admin = appMap({ access: 'admin' }, {
+  users: 'Everyone with a login',
+  createApiKey: 'Mint a key for a service',
+})
+```
+
+```js
+// src/main.js - the bindings
+import { mount } from 'imp'
+import { area, guard, redirect, router, wait } from 'imp/router'
+import { shell } from 'imp/std/layout'
+import { luFolder, luShield } from 'imp/icons'
+import { app } from './app-map.js'
+
+const access = guard(['acme.session'], (session, { need }) => {
+  if (session === undefined) return wait
+  if (!session) return '/login'
+  return session.roles.includes(need) || '/forbidden'
 })
 
-mount('#app', shell())
+mount(
+  '#app',
+  shell(
+    { navbar: { map: app, icons: { [app.projects]: luFolder, [app.admin]: luShield } } },
+    router({
+      map: app,
+      access,
+      screens: {
+        [app.home]: redirect(app.projects),
+        [app.login]: () => login(),
+        [app.projects]: () => projectList(),
+        [app.projects.$projectId]: ({ params }) => project(params.projectId),
+        [app.admin]: area(() => import('./admin/area.js')),
+      },
+      options: { [app.projects.$projectId]: 'acme.projects' },
+      title: ({ crumbs }) => `${crumbs.at(-1)} - Acme`,
+      loading: () => div('Loading...'),
+      notFound: () => div('Not found'),
+    }),
+  ),
+)
 ```
 
 ## API
 
-| Export                                   | What it does                                                                                |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `router(options)`                        | the slot; `routes` (required, except inside an area `root`), `loading`, `error`, `notFound` |
-| `area(() => import('./x.js'))`           | marks a prefix entry as a lazily loaded area - the **only** on-demand unit                  |
-| `area({ routes, root?, translations? })` | an area's own definition, for its `export default`                                          |
-| `route({ guard, screen })`               | a guarded routes-table entry - one guard; `screen` is the factory or `area()` it maps to    |
-| `guard(states, check)`                   | a synchronous check over the states it names: `true` \| `wait` \| `false` \| `'/path'`      |
-| `wait`                                   | the verdict for "cannot decide yet" - the router keeps `loading` up and re-runs the guard   |
-| `navigate(path, { replace? })`           | navigate programmatically, from anywhere                                                    |
-| `useRoute()`                             | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`        |
-| `url(path)`                              | prefixes `IMP_BASEPATH`, for an `href` you write yourself                                   |
+| Export                                    | What it does                                                                                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `appMap(nodes)`, `appMap(props, nodes)`   | the map, from `imp`; returns the handle tree; with `props`, a part that another map holds                                                  |
+| `router(options)`                         | the slot; `map` (required, except inside an area `root`), `screens`, `options`, `access`, `scope`, `title`, `loading`, `error`, `notFound` |
+| `redirect(handle \| '/path')`             | a `screens` binding: the node forwards there, with the params of the route filled in                                                       |
+| `area(() => import('./x.js'))`            | binds a node to a lazily loaded area - the **only** on-demand unit                                                                         |
+| `area({ screens, root?, translations? })` | an area's own definition, for its `export default`                                                                                         |
+| `guard(states, check)`                    | the one `access` guard: `(...values, { need, params, query, path }) => true \| wait \| false \| '/path'`                                   |
+| `wait`                                    | the verdict for "cannot decide yet" - the router keeps `loading` up and re-runs the guard                                                  |
+| `navigate(path, { replace? })`            | navigate programmatically, from anywhere; give it `handle.href(params)`                                                                    |
+| `useRoute()`                              | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                                       |
+| `url(path)`                               | prefixes `IMP_BASEPATH`, for an `href` you write as a string                                                                               |
 
-These are the router options. `loading` shows while the module of an **area** downloads, and imp
-calls it with `{ params, query }`. `error` is an error boundary at route level, and imp calls it
-with `(self, error, { params, query })`, where `self` belongs to the route host. It catches what the
-`error` of the screen did not catch. `notFound` is the one page for a URL that matches nothing.
+`loading` shows while the module of an **area** downloads or a guard waits. `error` is an error
+boundary at route level, called with `(self, error, { params, query, node })`. `notFound` is the one
+page for a URL that is off the map. A screen factory receives `{ params, query, node }`.
 
-## The route table
+| Router option | Shape                                                   | Meaning                                                                      |
+| ------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `options`     | `{ [paramHandle]: 'state.name' \| [{ value, label }] }` | the choices of a param: its crumb gets a picker, and the label of the choice |
+| `scope`       | a param handle                                          | the tenant node the app lives under; its static children are the sections    |
+| `title`       | `({ crumbs, node, params }) => string`                  | written to `document.title` on every navigation; without it, untouched       |
 
-A pattern is a URL path. A `:name` segment captures a value. The target is a factory that receives
-one argument, `{ params, query }`. A `params` value is a URL-decoded string. `query` is the query
-string, parsed **at the moment when the user enters the screen**.
+## The map
 
-| Pattern      | Matches                         | Factory sees                      |
-| ------------ | ------------------------------- | --------------------------------- |
-| `/`          | the root path                   | `{ params: {}, query }`           |
-| `/todos`     | exactly `/todos` (or `/todos/`) | `{ params: {}, query }`           |
-| `/todos/:id` | `/todos/42`                     | `{ params: { id: '42' }, query }` |
+| Rule                      | Detail                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
+| a key is a child          | when its value is a string, an object or a map; `createApiKey` serves `/create-api-key`          |
+| a string is a description | `users: 'Everyone with a login'`; write `{}` for a node with nothing to say                      |
+| a key is a prop           | when it is one of the props below; any other key with another value throws                       |
+| a map is a part           | `admin: adminMap` grafts it; `adminMap.users` and `app.admin.users` are one handle               |
+| `$name` is a param        | segment `:name`, value in `params.name`, handle `app.x.$name`                                    |
+| the name is the label     | `createApiKey` shows "Create api key"; `label` overrides                                         |
+| `path: '/'` is the index  | on one top-level node only; its children hang from the root, so `app.home.reports` is `/reports` |
+| key order is nav order    | the router matches static siblings before the param sibling on its own                           |
 
-**The first match wins**, in the order in which you write the keys. Put a static path before a param
-path that would also match. imp ignores a trailing slash.
+| Prop          | Values                                      | Meaning                                                         |
+| ------------- | ------------------------------------------- | --------------------------------------------------------------- |
+| `description` | string                                      | shown by the stub, printed by `imp map`                         |
+| `access`      | any value                                   | passed to the `access` guard as `need`; no `access` = open      |
+| `path`        | one segment, or `'/'`                       | overrides the segment                                           |
+| `label`       | string, or `({ params, option }) => string` | overrides the label; a translation is a message, not a function |
+| `nav`         | `false`                                     | hides a static node from the nav; the route stays               |
+| `group`       | string                                      | sidebar group title for consecutive rows                        |
+
+That is the whole set. There is no `title`, `redirect`, `options`, `tag`, `href` or `icon` in the
+map. A translation is not in the map either. The messages of the app translate a node by its id:
+`appMap.admin.users.label`, `appMap.admin.users.group` and `appMap.admin.users.description`, see
+[i18n](i18n.md). A message wins over the prop and over the name. The nav, the trail, the title and
+the stub follow the language.
+
+```js
+// locales/pl.js
+export default { appMap: { admin: { label: 'Administracja', users: { label: 'Uzytkownicy' } } } }
+```
+
+A redirect is `redirect()` in `screens`. Choices are `router({ options })`. A pill is `navbar.tags`
+and an icon is `navbar.icons` of the shell. An external link is a `sidebar.footer` row.
+
+## Handles
+
+| Access                                              | Gives                                                                                         |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `${app.admin.users}`                                | `/admin/users` - so `[app.admin.users]` keys `screens` and `icons`                            |
+| `app.projects.$projectId.href({ projectId: '42' })` | `/projects/42`, through `url()`; a missing param comes from the current route, else it throws |
+| `app.admin.spec`                                    | frozen `{ name, pattern, label, description, access, children, ... }`                         |
+| `({ node }) =>` in a factory                        | the handle of the matched node                                                                |
 
 ## Rules an agent gets wrong
 
+- **Keep `app-map.js` plain.** No component, no icon, no state name, no guard function, no `t()` in
+  it. It imports `appMap` and its parts. `imp map` prints it, from the `map` key of `imp.json`.
+- **Translate a node with a message, not with a `label` function.** The key is `appMap.` plus the id
+  of the node plus `.label`, `.group` or `.description`. Put these keys in the translations of the
+  app, not of an area. A section row shows before the chunk of its area loads.
+- **A mistyped prop with a string value is a node.** `lable: 'Admin'` is a child at `/lable`,
+  because a string is a description. `imp map` and the stub log show it. `lable: 3` throws. A
+  mistyped handle is `undefined`, its key is `"undefined"`, and `router()` throws and says so.
+- **A part takes its props first.** `appMap({ access: 'admin' }, { users: {} })` is a part. Pass the
+  whole map, never a part, to `router()` and `shell()`. A part goes into one map only.
+- **Bind, never mutate.** `screens`, `options`, `icons` and `tags` are objects keyed by handles.
+  Nothing writes into the map.
+- **Every node renders from the first run.** Unbound leaf: a stub with the label and `description`.
+  Unbound parent with static children: forwards to the first child. `redirect(handle)` in `screens`:
+  forwards there. The router logs the stub nodes when it mounts. Write the map first, then bind
+  screens.
 - **A screen factory builds its screen immediately.** Never `await` in it, and never `import()` in
-  it. Fetch the data in the async `setup` of the screen component, where its `loading` covers the
-  wait. Put on-demand code behind an `area()`.
-- **`area()` is the only lazy entry.** There is no lazy screen form, and no eager area form. A
-  pattern that points at an area matches as a **prefix**. Every other pattern matches exactly.
-- **Write the routes of an area relative to the prefix.** So `'/users'` inside `/admin` serves
-  `/admin/users`.
-- **A `router()` with no table renders the routes of the area around it.** It finds that area when
-  it mounts, from its own position in the DOM. So you can build it anywhere in the `root` of an
-  area, also after an `await`. Outside an area it fails at mount and logs the error. A
-  `router({ routes })` looks nothing up.
-- **A change of the query only keeps the current screen mounted.** On a screen whose query can
-  change while the screen stays up, read the live query from `useRoute()`, not from the `query` of
-  the factory. A change of the pattern or of a `:param` mounts a new screen and unmounts the old
-  one.
-- **There is no link component.** Call `navigate()` from a click handler, or use `link` from
-  `imp/std`. Use `{ replace: true }` after a login redirect. A navigation to the current URL does
-  nothing.
-- **A shared layout is a plain function** that you call from each factory. There is no layout route.
-- **imp has no folder convention.** An area is a routing concept, not a directory. Point each
-  `import()` at the real location of the module.
-- When the user leaves an area, imp releases the state and the DOM of its screens. The browser keeps
-  the downloaded module for the life of the page. So a lazy area saves the **download**, not the
-  heap.
+  it. Fetch in the async `setup` of the screen component. Put on-demand code behind `area()`.
+- **`area()` is the only lazy binding.** The nodes of the section stay in the map, so its nav shows
+  before its chunk loads. The area file binds only the node it hangs from and the nodes under it.
+- **A `router()` with no map renders the screens of the area around it.** It works only inside the
+  `root` of an area. Elsewhere pass `router({ map, screens })`.
+- **A change of the query only keeps the current screen mounted.** Read a live query from
+  `useRoute()`, not from the `query` of the factory.
+- **Navigate with a handle.** `navigate(app.projects.$projectId.href({ projectId }))`, and
+  `link({ href: app.x.href() }, ...)` from `imp/std`. Do not write a path string. Use
+  `{ replace: true }` after a login redirect. Inside a param, `app.x.$id.y.href()` fills `id` from
+  the route.
+- **`options` names a state, or lists the choices.** The router resolves the name with `useState` at
+  its own position, so an ancestor must `initState` it. The state holds `[{ value, label }]` or
+  strings. A screen fills it. The choices reach the trail as a picker, never the sidebar as rows.
+- **A tenant is `scope`, not a map prop.** Put `$org` in the map where the URL has it, and pass
+  `router({ scope: app.organizations.$org })`. Inside, the sections are the children of `$org` and
+  the trail starts at its crumb. Outside, on `/login`, the sections are the top-level nodes.
+- **A one-section app puts every page under the index node.**
+  `app: { path: '/', dashboard: {}, reports: {} }` serves `/dashboard` and `/reports`. The nav then
+  has one section with rows, and the shell drops the bar and draws the column alone, see
+  [std](std.md).
+- **The title is a router function.** `title: ({ crumbs, node, params }) => ...`. Without it, imp
+  never writes `document.title`.
 
-## Guards
+## Access
 
-```js
-import { guard, route, router, wait } from 'imp/router'
-
-const requireSession = (session) => session === undefined ? wait : Boolean(session) || '/login'
-
-const requireAdmin = (session) => {
-  const allowed = requireSession(session)
-  return allowed === true ? session.role === 'admin' || '/forbidden' : allowed
-}
-
-const signedIn = guard(['myapp.session'], requireSession)
-const adminOnly = guard(['myapp.session'], requireAdmin)
-
-router({
-  routes: {
-    '/': () => home(), //                                        open
-    '/login': () => login(), //                                  open
-    '/todos': route({ guard: signedIn, screen: () => todos() }),
-    '/admin': route({ guard: adminOnly, screen: area(() => import('./admin/area.js')) }),
-  },
-  loading: () => div('Loading...'), //                           shown while a guard waits
-})
-```
-
-In `guard(states, check)`, `states` is a non-empty array of **state names**, not handles, because a
-table is at module scope. The router resolves the names with `self.state` at its own position. It
-passes the values **by position**, and passes `{ params, query, path }` last.
+`access` on a node is data. The one `access` guard of the router gives it meaning. The same guard
+decides the nav: a row shows only on an allow verdict, and `wait` hides it until the state arrives.
 
 | Verdict              | Effect                                               |
 | -------------------- | ---------------------------------------------------- |
-| `true` / `undefined` | render the screen                                    |
+| `true` / `undefined` | render the screen, show the row                      |
 | `wait`               | keep `loading`; re-run when a declared state changes |
-| `'/path'`            | `navigate(path, { replace: true })`                  |
-| `false`              | render `notFound`                                    |
-| anything else        | throws, route renders `error`                        |
+| `'/path'`            | `navigate(path, { replace: true })`; hide the row    |
+| `false`              | render `notFound`; hide the row                      |
+| anything else        | throws, route renders `error`; row hidden and logged |
 
-## Rules an agent gets wrong about guards
-
-- **A route has exactly one guard, and you declare it on the route.** There is no
-  `router({ guard })` and no `area({ guard })`. Both throw and point at `route()`. There is no
-  inheritance, no stacking and no array. To compose, share a plain check function between two
-  guards, as above.
+- **Every `access` on the chain runs, root first.** `settings` under `projects` needs both. A node
+  with no `access` is open, so `/login` never loops. A map with `access` and no `router({ access })`
+  throws at startup.
 - **imp has no pending state.** `initState(self, 'myapp.session')` with no initial value is
-  `undefined`. The guard is the only place that decides that `undefined` means "not loaded". Return
-  `wait` for it explicitly. A guard that reads `undefined` without a check denies the route or
-  throws, and it never waits.
-- **Sign out with `set(null)`. Do not clear the value to `undefined`.** `null` is an answer that a
-  guard acts on, and it redirects. `undefined` only makes the guard wait, and **imp ignores `wait`
-  after the screen is showing**. Only a redirect removes a mounted screen. `false` after mount is an
-  error for the same reason.
-- **Declare every state that the check reads.** imp does not pass in or watch an undeclared state,
-  so the guard becomes stale. A check has no `self`, so it cannot resolve a state itself.
-- **Guard the entry, not the area file.** `route({ guard, screen: area(() => import(...)) })` covers
-  the root of the section and every screen in it, and it decides before the chunk downloads. A route
-  inside the area can carry its own, narrower guard. Neither guard is authorization. The server must
-  still check.
-- **A guard is synchronous and pure.** Do not `await` in it, do not fetch in it, and do not call
-  `navigate` in it. Return a path instead. It runs again on every change of a declared state, so
-  keep it a cheap comparison.
-- **A failure closes the route.** A guard that throws, an unknown verdict, and a state that no
-  ancestor provides all render `error`. A guard that stays on `wait` gives a warning after 5s that
-  names the states. Two guards that redirect to each other throw after 10 hops.
+  `undefined`. Return `wait` for it explicitly. A guard that reads `undefined` without a check
+  denies the route or throws, and it never waits.
+- **Sign out with `set(null)`. Do not clear the value to `undefined`.** imp ignores `wait` after the
+  screen is showing. Only a redirect removes a mounted screen. `false` after mount is an error.
+- **Declare every state that the check reads.** A check has no `self`, so it cannot resolve a state
+  itself. A declared state that nothing provides fails the router.
+- **`access` on an area node decides before the chunk downloads**, and it keeps watching inside.
+  Neither guard is authorization. The server must still check.
+- **A guard is synchronous and pure.** Do not `await`, fetch or call `navigate` in it. Return a path
+  instead. It runs on every change of a declared state and once per node in the nav, so keep it
+  cheap.
 
 ## An area file
 
 ```js
 import { area } from 'imp/router'
+import { app } from '../app-map.js'
+
+const frame = component('admin-frame', {
+  setup: (self) => {
+    initHttpClient(self, 'myapp.admin', { baseUrl: '/admin/api' }) // section-scoped, see imp skill http
+    return div(adminNav(), router()) // <- the section's screens render here
+  },
+})
 
 export default area({
-  routes: {
-    '/': () => adminHome(), //                       /admin
-    '/users/:id': ({ params }) => userDetail(params.id), // /admin/users/:id
+  root: () => frame(),
+  screens: {
+    [app.admin]: () => adminHome(), //                       /admin
+    [app.admin.users]: () => users(), //                     /admin/users
   },
   translations: { en: () => import('./locales/en.js') }, // imp skill i18n
 })
 ```
 
-[i18n](i18n.md) covers the `translations` of an area. An area nests to any depth, and a prefix can
-capture a param, as in `'/org/:orgId': area(...)`. A prefix param that changes remounts the section.
-A navigation inside an area keeps the area mounted and swaps its inner screen.
+- `root` is optional. It stays mounted while the user moves between the screens of the section, and
+  unmounts when the user leaves. It receives `{ params, query, node }`. A prefix param that changes
+  remounts the area.
+- A `router()` inside the root inherits `loading`, `error` and `notFound`, and can override each.
+- [i18n](i18n.md) covers `translations`. A navigation inside an area keeps it mounted. The browser
+  keeps a downloaded module for the life of the page, so an area saves the **download**, not the
+  heap.
 
-## `root` - one component around a whole section
+## Lifetimes, base path, tooling, deployment
 
-```js
-const shell = component('admin-shell', {
-  setup: () => {
-    initHttpClient('myapp.admin', { baseUrl: '/admin/api' }) // section-scoped, see imp skill http
-    return div(adminNav(), router()) // <- the section's screens render here
-  },
-})
+A screen is a component. Its loading is `loading` and an async `setup`, its errors go to its `error`
+and then to the `error` of the router, and its cleanup is `onRemove`. Put the state of a screen in
+the root component of that screen. Put only app-wide state above the router.
 
-export default area({ root: () => shell(), routes: { '/': () => adminHome() } })
-```
+imp manages the scroll. **The focus is yours to manage.** Focus a heading in `onMount`, or give the
+element around the router slot `tabindex: -1` and focus it from `useRoute().watch(self, ...)` when
+the **path** changes, skipping the first call, with `:focus { outline: none }`.
 
-- **A `router()` with no table works only inside the `root` of an area.** It renders the routes of
-  that area. It inherits the `loading`, the `error` and the `notFound` of the parent router, and you
-  can override each one for the section. Everywhere else, `routes` is necessary.
-- `root` is a **function** that returns the component. It receives the same `{ params, query }` as a
-  screen factory, as in `root: ({ params }) => orgShell(params.orgId)`.
-- The gain over wrapping each screen by hand is the **lifetime**. The root stays mounted while the
-  user moves between the screens of the section, and it unmounts when the user leaves. So the root
-  is the place for a section-wide [http](http.md) client, a section-scoped [state](state.md), or a
-  layout that must keep its scroll position. A prefix param that changes remounts the area, and the
-  root with it.
-
-## Lifetimes, base path, deployment
-
-A screen is a component. So its loading is a `loading` and an async `setup`, its errors go to its
-`error` and then to the `error` of the router, and its cleanup is `onRemove`. A navigation away
-unmounts the screen, with its state, its subscriptions and its DOM. Put the state of a screen in the
-root component of that screen. Put only app-wide state above the router.
-
-imp manages the scroll for you. It goes to the top on a forward navigation, and it restores the
-position on a back or forward navigation. **The focus is yours to manage.** Focus a heading in
-`onMount`, or announce the change through a live region from `useRoute().watch(self, ...)`. To do
-this once for every screen, give the element that the router slot renders into `tabindex: -1`. Focus
-that element from `useRoute().watch(self, ...)` when the **path** changes. Compare the paths,
-because a query change must not take the focus from an input. Skip the first call, because it fires
-with the loaded route. Style that element with `:focus { outline: none }`, or the browser draws a
-ring around the whole screen on arrival.
+`imp map` prints every node with its path, label, access and description, from the `map` file of
+`imp.json`; `imp map src/admin/map.js` prints a part, see [cli](cli.md). `imp init` writes
+`src/app-map.js`, names it in `imp.json`, and writes a frame that binds one screen, see
+[init](init.md). A smoke test walks `handle.spec.children`.
 
 To serve the app under a sub-path, set the `IMP_BASEPATH` environment value of [config](config.md).
-Continue to write a path from the app root, such as `/todos`. imp removes and adds the prefix. Only
-an `href` that you build yourself needs `url('/todos')`.
+`navigate` and `handle.href()` add the prefix. Only an `href` that you write as a string needs
+`url('/todos')`.
 
 A deep link needs the host to serve your entry HTML for an unknown path. Use `try_files` in nginx, a
 `_redirects` file, a copy named `404.html`, or the equivalent on your host. `imp start` already does

@@ -100,7 +100,7 @@ from the item about the standard library, because this ADR answers it.
   component ships a test about accessibility. But the test DOM of imp implements almost none of the
   behaviour that the guarantee covers. `showModal()` is a stub that sets `open`. There is no
   `showPopover`. The focus, `inert` and the handling of Escape are absent. Decide how much of that
-  to fill in `cli/src/test_dom.js`. `todo/overlay-seam.md` scopes the part about the top layer.
+  to fill in `cli/src/test-dom.js`. `todo/overlay-seam.md` scopes the part about the top layer.
   Decide how much stays in an e2e test only. Make that decision per behaviour, and not per
   component.
 - **An automated audit in `imp test`.** Does imp run a check in the style of axe-core, over a

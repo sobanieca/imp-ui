@@ -70,10 +70,11 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   button through its host, which every component now supports, see `adr/focus-delegation.md`.
 - **Shell** - the usual contents of the regions of the frame have landed, as `imp/std/shell`. Those
   are `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`, see
-  `adr/shell-region-components.md`. `breadcrumbs` is the trail only, and its picker is still owed,
-  see `todo/breadcrumbs.md`. Two things are still wanted here. The first is a **switcher for a
-  tenant, or for a workspace**, which needs the anchored panel from `todo/overlay-seam.md`. The
-  second is a **bell for notifications**, which wants `badge`, from _Display_, first.
+  `adr/shell-region-components.md`. `breadcrumbs` carries the picker of a crumb, on the anchored
+  seam, and the application map feeds the trail, see `adr/application-map.md`. Two things are still
+  wanted here. The first is a **switcher for a tenant, or for a workspace**, which needs the
+  anchored panel from `todo/overlay-seam.md`. The second is a **bell for notifications**, which
+  wants `badge`, from _Display_, first.
 - **Navigation** - `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_ and `floatButton`
   _(later)_. `tabs` has landed. It opened the `imp/std/navigation` subpath. It fixed the shape that
   data drives, which every composite widget with an internal ARIA id reference follows.

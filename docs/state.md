@@ -465,9 +465,10 @@ nearer state, which shadows the state of the ancestor. A nested CSS rule wins ov
 the same way.
 
 The helper object is self-contained. Whoever holds it can call `get`, `set` and subscribe, wherever
-they sit in the tree. So when imp renders some DOM **outside** the subtree of the provider, such as
-an overlay or a dialog that you append to `document.body`, `useState` there cannot find the name.
-The owning component passes its helper down as an argument, and the receiver binds it as usual.
+they sit in the tree. So when you mount DOM **outside** the subtree of the provider, such as a
+second `mount` into another element of the page, `useState` there cannot find the name. The owning
+component passes its helper down as an argument, and the receiver binds it as usual. The overlays of
+the standard library never leave their subtree. They open where they render, in the top layer.
 
 The withdrawal of a contribution is the one lookup that happens after the mount. `onRemove` runs
 after the component has left the page, so nothing above it can answer. Instead, `self` remembers

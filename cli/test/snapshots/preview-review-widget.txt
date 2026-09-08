@@ -11,7 +11,7 @@ status after saving: Saved .imp/reviews/<timestamp>.txt
 review files written: 1
 
 time: <timestamp>
-page: http://localhost:<port>/preview/components/counter.preview.js
+page: http://localhost:<port>/widgets/counter
 title: imp preview - Widgets / Counter
 viewport: 900x700
 scheme: light

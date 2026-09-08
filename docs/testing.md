@@ -8,6 +8,7 @@ imp test --unit --jobs 4   cap how many files run at once (default: your CPU cou
 imp test --e2e --filter x  run only tests whose name contains <text>
 imp test --unit --list     print the selected files as JSON (for a CI matrix)
 imp test --e2e --video vid record each e2e spec as an animated GIF into ./vid
+imp test --e2e --screenshots shots  save a screenshot of each failed e2e test into ./shots
 imp test --e2e --mock      answer the specs' requests from your *.mock.js files
 ```
 
@@ -53,6 +54,8 @@ The flags are these:
   skipped.
 - `--list` prints the selected test files as a JSON array, and runs nothing. Combine it with
   `--unit` or `--e2e` to feed a CI matrix. See _One job per spec in CI_.
+- `--screenshots <dir>` saves a screenshot per failed e2e test into `<dir>`. Without the flag, a
+  failure saves it under `.imp/screenshots/`.
 - `--video <dir>` records the browser session of each e2e spec as an animated GIF, into `<dir>`. See
   _How to record a spec as a GIF_.
 - `--mock` and `--no-mock` decide where an e2e spec gets its answers. `--mock` serves the

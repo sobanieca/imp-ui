@@ -8,7 +8,7 @@ import {
   rasterDimensions,
 } from './image.js'
 import { encodeJpeg } from './vendor/video.js'
-import { formatSize, maxFileBytes } from './file_size.js'
+import { formatSize, maxFileBytes } from './file-size.js'
 import { loadImpConfig } from './config.js'
 import { logger } from './logger.js'
 

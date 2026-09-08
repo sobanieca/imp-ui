@@ -22,7 +22,7 @@ publication to another imp app, where the consumer has no access to the source t
 **`skills/` is the corpus of subjects, and imp writes it for an agent.** There is one page per
 subject. Each page is short and mechanical. It gives the imports, the API tables, the rules that an
 agent gets wrong, and a worked example. `deno compile` includes the `skills/` tree in the binary, in
-the same way as it includes `THIRD_PARTY_LICENSES.md` for `imp licenses`. `imp skill` reads the
+the same way as it includes `THIRD-PARTY-LICENSES.md` for `imp licenses`. `imp skill` reads the
 pages from there. There is no network, and there are no project files. The version is the version
 that shipped with the binary that runs. imp no longer compiles `docs/` in. `docs/` is the site for a
 person, and nothing reads it at runtime.

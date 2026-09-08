@@ -26,7 +26,7 @@ that same preview, and it hosts no editor of its own. The preview page is alread
 from `imp/std`. So it is already the live preview that an editor needs. A panel on that page costs
 nothing that somebody must keep in step.
 
-**The editor exposes the decision, not the data. It has four knobs and a mode:**
+**The editor exposes the decision, not the data. It has six knobs and a mode:**
 
 - **mode**, which is `light` or `dark`, selects which of the two themes the editor edits and
   previews. The editor holds the base colours **per mode**. So a dark theme is not forced to be a
@@ -34,6 +34,10 @@ nothing that somebody must keep in step.
   an app has one answer for both modes.
 - **primary** and **secondary** are colours, and the editor derives every other colour token from
   them.
+- **font** and **mono font** are font stacks, and they are `font-family` and `font-family-mono` as
+  written. They are shared between the modes, because a font does not change with the colour scheme.
+  The editor loads no font. A web font shows on the page only when the page loads it. A project
+  points `preview.entry` at an HTML file that links the font, see `component-preview.md`.
 - **border radius**, which is `none`, `small`, `medium` or `large`, and **shadow**, which is `none`,
   `soft` or `strong`. Each one is a step, and it rewrites the whole matching scale.
 
@@ -43,12 +47,13 @@ a reviewer can read it. It is not in a browser panel whose state lives in `local
 
 **The output is an ordinary theme module, and not an artifact that belongs to imp.** _copy_ puts the
 whole file on the clipboard. _download theme.js_ writes it to disk. Both produce the same source. It
-holds a shared `palette` object of the 31 named colours, a `light` export and a `dark` export that
-spread that object, and `export default light`. The file imports nothing from imp. So it cannot fall
-behind an imp version. Its layout suits an edit by hand afterwards, and the palette sits at the top
-for exactly that reason, because the editor will never rewrite it. The panel prints the two lines
-that use the file, which are `await init({ theme: light })`. A downloaded file with no instruction
-is a file that nobody connects.
+holds a shared `fonts` object of the two font stacks, a shared `palette` object of the 31 named
+colours, a `light` export and a `dark` export that spread both objects, and `export default light`.
+The file imports nothing from imp. So it cannot fall behind an imp version. Its layout suits an edit
+by hand afterwards, and the palette sits at the top for exactly that reason, because the editor will
+never rewrite it. The panel prints the two lines that use the file, which are
+`await init({ theme: light })`. A downloaded file with no instruction is a file that nobody
+connects.
 
 **A draft belongs to the selected theme, and it lives in `localStorage`.** When you open the editor
 on a theme, imp seeds the draft from the tokens of that theme. It reads the primary and the
@@ -63,8 +68,9 @@ mathematics.
 
 ## Consequences
 
-- To write a theme, a person selects two colours and two steps, and presses copy. The result is
-  source in the repository of the app, and a reviewer can read it. It is not state in a browser.
+- To write a theme, a person selects two colours, two fonts and two steps, and presses copy. The
+  result is source in the repository of the app, and a reviewer can read it. It is not state in a
+  browser.
 - There is one live preview in the project. The site gets the editor by an embed of `imp preview`.
   When somebody adds a component to the standard library, that component appears in the preview of
   the editor with no extra work.

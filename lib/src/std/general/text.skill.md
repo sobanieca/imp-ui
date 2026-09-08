@@ -10,13 +10,13 @@ The call shape is `text(props?, ...children)`. When a props object is present, i
 **first** argument. Everything after it is the content. A child can be another element or another
 `text` call.
 
-| Prop     | Values                           | Default     | Notes                                |
-| -------- | -------------------------------- | ----------- | ------------------------------------ |
-| `tone`   | `'default'`, `'secondary'`       | `'default'` | Full-strength or muted text          |
-| `size`   | `'sm'`, `'md'`, `'lg'`           | `'md'`      | Type size                            |
-| `weight` | `'normal'`, `'medium'`, `'bold'` | `'normal'`  | Type weight                          |
-| `align`  | `'start'`, `'center'`, `'end'`   | `'start'`   | Text alignment                       |
-| `inline` | boolean                          | `false`     | Render a `<span>` instead of a `<p>` |
+| Prop     | Values                         | Default     | Notes                                |
+| -------- | ------------------------------ | ----------- | ------------------------------------ |
+| `tone`   | `'default'`, `'secondary'`     | `'default'` | Full-strength or muted text          |
+| `size`   | `'sm'`, `'md'`, `'lg'`         | `'md'`      | Type size                            |
+| `weight` | `'normal'`, `'bold'`           | `'normal'`  | Type weight                          |
+| `align`  | `'start'`, `'center'`, `'end'` | `'start'`   | Text alignment                       |
+| `inline` | boolean                        | `false`     | Render a `<span>` instead of a `<p>` |
 
 Rules an agent gets wrong:
 

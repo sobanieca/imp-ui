@@ -30,12 +30,12 @@ the bundler and the assertions all still run in process.
   is `pretty_yaml`. The JavaScript plugin runs with its `deno` preset, so the JavaScript output
   matches `deno fmt`. TypeScript is deliberately out of scope for both commands. imp is buildless,
   and an app is plain JavaScript. imp formats an embedded `<script>` and `<style>` in HTML through
-  the host delegation of the context. `cli/src/fmt_plugins.js` pins each plugin wasm file by version
-  and by checksum. `tools/download_fmt_plugins.js` downloads them, and `deno compile --include`
+  the host delegation of the context. `cli/src/fmt-plugins.js` pins each plugin wasm file by version
+  and by checksum. `tools/download-fmt-plugins.js` downloads them, and `deno compile --include`
   embeds them.
 - **`imp lint` runs the core `Linter` of ESLint.** That is `eslint/universal`, which is pure
   JavaScript and needs no filesystem. imp runs it with the recommended rules of `@eslint/js`, the
-  browser globals, and the rules of imp from `cli/src/lint_rules.js`. imp lints an HTML file by
+  browser globals, and the rules of imp from `cli/src/lint-rules.js`. imp lints an HTML file by
   extracting each inline `<script>` block, and by mapping a diagnostic back to its original line.
   The same embedded `Linter` drives the dead-code pass over the whole project, see
   `project-wide-dead-code.md`. The file walker of imp feeds both commands.
@@ -56,8 +56,8 @@ the bundler and the assertions all still run in process.
   scale of the buildless projects that imp targets. oxlint is available as a replacement later, if
   that changes.
 - The wasm plugins add about 10 MB to the binary. The pre-bundled ESLint adds about 1.3 MB, see
-  `prebundled-npm-dependencies.md`. `deno run -A tools/download_fmt_plugins.js` and
-  `deno run -A tools/prebundle_npm_deps.js` must run before a compile. The `compile` task runs both,
+  `prebundled-npm-dependencies.md`. `deno run -A tools/download-fmt-plugins.js` and
+  `deno run -A tools/prebundle-npm-deps.js` must run before a compile. The `compile` task runs both,
   and every task that invokes imp goes through that task.
 - imp does not support a lint plugin that a user supplies. That would need a dynamic import of user
   JavaScript inside a compiled binary, and imp must verify that separately.

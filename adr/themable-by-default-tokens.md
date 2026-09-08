@@ -26,7 +26,11 @@ wants. To change the theme is to change which module imp applies.
 `theme` state. So the side effect on the DOM and the update of the signal always travel together. It
 accepts a theme object, or the **name of a built-in theme** as a string, which is `'imp-light'` or
 `'imp-dark'`. It resolves such a name to the matching built-in theme, and then treats it in the same
-way. It does the following:
+way. A theme object can also name a built-in theme as its **`base`**. imp then resolves the base,
+and writes the tokens of the object over the tokens of the base. The `name` and the `colorScheme`
+come from the base when the object leaves them out. The result is a complete theme, and it is what
+`theme` holds. So a `base` is the one supported way to change a few tokens, such as the font, and it
+keeps the rule below that a theme is complete. It does the following:
 
 - It writes each token as a custom property with the `--imp-` prefix, on `:root`, which is
   `document.documentElement`. From there the property inherits into the body, and into the shadow
@@ -71,21 +75,32 @@ that the app imports. So imp cannot map a stored name back to a module, and it d
 **not** touch `localStorage`. The `theme` state exposes the active theme, with its `name`. An app
 that wants to remember a choice, and to apply it again on load, reads that state.
 
-imp ships a built-in light theme, and a built-in dark theme. So an app renders correctly before
-somebody writes a theme of their own. That also gives the theme editor, see `theme-editor.md`, a
-base to start from. imp does **not export them as an object**. `applyTheme('imp-light')` and
-`applyTheme('imp-dark')` are the whole API. So the common case is one call, with no import to add,
-and with no name to learn beyond `applyTheme` itself. The names carry the **`imp-` prefix**. So a
-built-in theme of imp never collides, even in a conversation, with a `light` or `dark` theme module
-of an app. A bare name always means a theme of the app. A name with the `imp-` prefix always means a
-theme of imp. `theme.get()` still reaches the resolved object, for anything that must start from it.
-So the hidden exports cost nothing. The state layer deep-freezes every value that it holds. So one
-corner of an app cannot edit an applied built-in theme in place, and silently change what a later
-`applyTheme('imp-dark')` produces. To start from a built-in theme copies its tokens. Theming adds no
-freezing of its own. A standard component references a token through a `token('color-primary')`
-helper, which expands to `var(--imp-color-primary, ...)`, with the fallback taken from the built-in
-light theme. So a component renders on its own, before imp applies a theme, and no component can
-state a default that the themes disagree with.
+imp ships four built-in themes. Those are `imp-light`, `imp-dark`, `imp-high-contrast-light` and
+`imp-high-contrast-dark`. So an app renders correctly before somebody writes a theme of their own.
+That also gives the theme editor, see `theme-editor.md`, a base to start from. imp does **not export
+them as an object**. `applyTheme('imp-light')` and its three siblings are the whole API. So the
+common case is one call, with no import to add, and with no name to learn beyond `applyTheme`
+itself. The high-contrast pair widens `border-width` and `focus-ring-width`, raises
+`disabled-opacity`, and paints pure black on white, or white on black. The names carry the **`imp-`
+prefix**. So a built-in theme of imp never collides, even in a conversation, with a `light` or
+`dark` theme module of an app. A bare name always means a theme of the app. A name with the `imp-`
+prefix always means a theme of imp. `theme.get()` still reaches the resolved object, for anything
+that must start from it. So the hidden exports cost nothing. The state layer deep-freezes every
+value that it holds. So one corner of an app cannot edit an applied built-in theme in place, and
+silently change what a later `applyTheme('imp-dark')` produces. To start from a built-in theme
+copies its tokens. Theming adds no freezing of its own. A standard component references a token
+through a `token('color-primary')` helper, which expands to `var(--imp-color-primary, ...)`, with
+the fallback taken from the built-in light theme. So a component renders on its own, before imp
+applies a theme, and no component can state a default that the themes disagree with.
+
+**The fonts are two tokens, and the page loads them.** `font-family` and `font-family-mono` hold a
+font stack each, and the built-in themes set system stacks. imp loads no font, injects no `<link>`,
+and reads no font from a config. A `<link>` or an `@font-face` rule in `index.html` is what the
+browser needs, and a font face that the document declares reaches every shadow root. So the platform
+owns the loading, and the theme owns the name. The standard components use two weights,
+`font-weight-normal` at 400 and `font-weight-bold` at 600. There is no medium weight. Two weights
+keep a web font to two files, and a label at 600 reads as a control without the heaviness of 700. A
+weight token that no component uses would ask an app to load a file for nothing.
 
 The **scheme for a token name is fixed.** It holds semantic colour roles, numeric scales such as
 `space-*`, `radius-*`, `shadow-*` and `font-size-*`, and font families. The **exact list is not
@@ -130,11 +145,10 @@ generate them again. That buys a few kilobytes, at the price of a second source 
 colour that imp ships.
 
 **The direction, which is RTL or LTR, is not part of a theme.** It belongs with the language, and
-not with the palette, see `translatable-by-default.md`. imp does not resolve it here. Nothing in the
-framework writes the `dir` of the document. So an app that needs right to left sets it itself. The
-rule of the standard library about logical properties, which covers `margin-inline-*`,
-`inset-inline-*` and `text-align: start` or `text-align: end`, mirrors a layout with no extra work,
-after somebody sets `dir`. The theme engine does not touch the direction.
+not with the palette, see `translatable-by-default.md`. The i18n module writes the `dir` of the
+document from the language, and the theme engine does not touch it. The rule of the standard library
+about logical properties, which covers `margin-inline-*`, `inset-inline-*` and `text-align: start`
+or `text-align: end`, mirrors a layout with no extra work once `dir` is set.
 
 ## Consequences
 
@@ -152,6 +166,8 @@ after somebody sets `dir`. The theme engine does not touch the direction.
 - An app that wants to remember a theme stores the name, and applies the matching module again on
   load. It controls the order, to avoid a flash of the wrong theme. imp neither stores the choice
   nor loads it again.
+- To change one token of a built-in theme is one object with a `base`, such as
+  `{ base: 'imp-light', tokens: { 'font-family': '...' } }`. The applied theme is still complete.
 - To get a correct light app, or a correct dark app, is one call, with nothing to import, as in
   `applyTheme('imp-dark')`. A custom theme stays a plain module, and it keeps the obvious names
   `light` and `dark` for itself. The built-in palettes belong to imp, and imp can change them,

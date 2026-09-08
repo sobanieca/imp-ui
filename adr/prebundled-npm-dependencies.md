@@ -17,12 +17,12 @@ binary**. Each one becomes a single minified ESM file under `cli/src/vendor/`. T
 imports that file, and not the npm specifier. This is the same vendoring pattern as for the dprint
 wasm plugins.
 
-- `tools/prebundle_npm_deps.js`, which the `compile` task runs, bundles each entry with the
+- `tools/prebundle-npm-deps.js`, which the `compile` task runs, bundles each entry with the
   in-process esbuild engine. `happy-dom` becomes `vendor/happy_dom.js`. `puppeteer-core` becomes
   `vendor/puppeteer_core.js`. eslint, which is `eslint/universal` with the recommended rules of
   `@eslint/js` and the browser `globals`, becomes `vendor/eslint.js`.
 - **The tool itself pins an exact version.** That mirrors the pins of the wasm plugins in
-  `cli/src/fmt_plugins.js`. The packages must _not_ appear in the imports of `deno.json`.
+  `cli/src/fmt-plugins.js`. The packages must _not_ appear in the imports of `deno.json`.
   `deno compile` embeds every npm package in the lockfile of the workspace, whether or not the
   module graph references it. So an import-map entry alone adds the whole package tree again. The
   tool generates an entry module against `npm:<name>@<version>`. A version banner on the first line
@@ -45,12 +45,12 @@ wasm plugins.
 - The binary falls from about 209 MB to about 155 MB, and the behaviour does not change. The package
   versions are the same, and the APIs are the same. imp embeds a tree-shaken bundle in place of the
   whole tree.
-- A new runtime npm dependency must go through `tools/prebundle_npm_deps.js`. Do not import it
+- A new runtime npm dependency must go through `tools/prebundle-npm-deps.js`. Do not import it
   directly from source that ships in the binary. A direct npm import adds a whole package tree
   again, and nothing reports that.
 - A vendor bundle must exist before imp can compile the binary. That is the same requirement that
   `imp fmt` already has for the vendored wasm plugins. `deno task compile` runs the prebundle tool
   first, and every task that invokes imp compiles through that task. So this is never a manual step.
-- A version change is manual. Edit the version pin in `tools/prebundle_npm_deps.js`. `deno outdated`
+- A version change is manual. Edit the version pin in `tools/prebundle-npm-deps.js`. `deno outdated`
   does not see these packages. The next compile finds that the version banner differs, and bundles
   the package again.

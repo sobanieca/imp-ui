@@ -30,7 +30,9 @@ mount, all travel with it. What restarts is the subscription layer:
   performs in one call. Otherwise it delays the unmount by one microtask. A `connectedCallback` that
   finds the component still mounted starts a rebind, and not a mount. It does that synchronously, at
   the insertion. `connectedMoveCallback` does the same. So a reparent through `moveBefore()`, where
-  the platform keeps the focus and the state of an animation, rebinds in the same way. Both
+  the platform keeps the focus and the state of an animation, rebinds in the same way. The DOM of
+  the unit runner has no `moveBefore`, so the test environment fills it with `insertBefore`. A unit
+  test then exercises the microtask path, and an e2e spec exercises the move callback. Both
   environments then agree. A move inside one task is a move. A longer absence is an unmount. A real
   removal tears the component down exactly as before, through the cleanups, `onRemove`. Each step is
   isolated against a fault, see `error-boundaries.md`.

@@ -7,12 +7,12 @@ import {
   manifestFileContents,
   recordPackageLicenses,
   unlicensedPackages,
-} from './dependency_manifest.js'
-import { licenseViolationProblem, reviewLicenses, unknownLicenseWarning } from './license_policy.js'
+} from './dependency-manifest.js'
+import { licenseViolationProblem, reviewLicenses, unknownLicenseWarning } from './license-policy.js'
 import { defaultAlias, EXACT_VERSION, parseSpecifier, VALID_ALIAS } from './specifiers.js'
-import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file_size.js'
+import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file-size.js'
 import { logger } from './logger.js'
-import { LICENSE_NOTICES_FILE } from './license_notices.js'
+import { LICENSE_NOTICES_FILE } from './license-notices.js'
 
 const NPM_REGISTRY = 'https://registry.npmjs.org'
 const JSR_REGISTRY = 'https://jsr.io'

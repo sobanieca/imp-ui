@@ -20,7 +20,7 @@ theme options: brand, imp-light, imp-dark, imp-high-contrast-light, imp-high-con
 theme after one step from imp-dark: imp-high-contrast-light
 imp-dark surface token: #161719
 brand surface token: #fdf7ff
-theme editor knobs: Mode, Primary, Secondary, Border radius, Shadow
+theme editor knobs: Mode, Primary, Secondary, Font, Mono font, Border radius, Shadow
 after picking a primary: #8821ac (hover #77009a)
 after picking radius none: 0px
 after switching the editor to dark: #161719

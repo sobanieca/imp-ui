@@ -5,11 +5,12 @@ imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
 ```
 
-`imp preview` serves each **preview file** as its own page. The page shows the file's `description`
-as one agent instruction below the page head. Then it shows one labelled panel per named export. A
-panel holds the component in a resizable stage with a state editor beside it. There is no app boot,
-no backend, and no navigation to the right screen. It is the same dev server as [start](start.md)
-underneath, with terminal telemetry and reload on save.
+`imp preview` serves every **preview file** of the project in one app. The catalog is down the side,
+and a click opens a component in place, at `/<group>/<name>`. The page shows the file's
+`description` as one agent instruction below the page head. Then it shows one labelled panel per
+named export. A panel holds the component in a resizable stage with a state editor beside it. There
+is no app boot, no backend, and no navigation to the right screen. It is the same dev server as
+[start](start.md) underneath, with terminal telemetry and reload on save.
 
 ## The preview file
 
@@ -44,7 +45,9 @@ client needs one initialized above it. Preview it inside a small host component 
 `mockModule(specifier, factory)` behaves exactly as in [testing](testing.md). The specifier is
 relative to the preview file, or it is a dependency alias. The factory receives `{ spy, orig }`.
 Every import of that module, at any depth, resolves to what you return. **A mock applies to the
-whole preview file.** Scenarios that need different data differ by the arguments you pass.
+whole preview app**, because every preview shares one module graph. Two files that mock the same
+module must return the same factory, or imp reports both and leaves them out of the build. Scenarios
+that need different data differ by the arguments you pass.
 
 ## Metadata exports
 
@@ -57,7 +60,7 @@ is optional. Each must be a plain string literal, or imp ignores it.
 | `group`       | the group the component is listed under, replacing the folder name               |
 | `description` | the agent instruction below the page head: the command an agent should run first |
 
-Without them, the label falls back to the file name and the folder. `inputs/text_field.preview.js`
+Without them, the label falls back to the file name and the folder. `inputs/text-field.preview.js`
 is `text_field` under `inputs`.
 
 ## Rules an agent gets wrong
@@ -80,10 +83,11 @@ is `text_field` under `inputs`.
 
 ## The page
 
-- **The shell.** Every page is the same frame. The catalog of components is down the side, with one
-  section per group, and the component you look at is marked. The theme button and the language and
-  direction pickers are in a settings panel beside the page. `/` opens the catalog as a card per
-  group.
+- **The shell.** One frame, one app. The catalog of components is down the side, one row per group
+  with the components under it, and the component you look at is marked. A click opens a component
+  in place, with no page load. The theme button and the language and direction pickers are in a
+  settings panel beside the page. `/` opens the catalog as a card per group. A preview file that
+  fails to build shows its error in place of its panels, and the rest of the catalog stays up.
 - **Stage.** Drag the right, bottom or corner handle to resize. `phone`, `tablet` and `desktop` jump
   to common viewports. `fit` returns to full width. The component re-lays-out live, which is how you
   find the width where it breaks.
@@ -94,10 +98,17 @@ is `text_field` under `inputs`.
   is the command to give an agent before it writes code with this component. A file that declares
   none says so there.
 - **Theme editor.** _edit theme_ is beside the theme button. Knobs: mode (light/dark), primary,
-  secondary, border radius (`none` | `small` | `medium` | `large`), shadow (`none` | `soft` |
-  `strong`). Every other colour token is derived from the two base colours. Copy or download the
-  result as a `theme.js` that exports `light` and `dark`, then pass it to `init({ theme })`. Drafts
-  are kept per theme in `localStorage`. _reset_ clears one. See [theming](theming.md).
+  secondary, font, mono font, border radius (`none` | `small` | `medium` | `large`), shadow (`none`
+  | `soft` | `strong`). Every other colour token is derived from the two base colours. Copy or
+  download the result as a `theme.js` that exports `light` and `dark`, then pass it to
+  `init({ theme })`. Drafts are kept per theme in `localStorage`. _reset_ clears one. See
+  [theming](theming.md).
+- **Entry page.** imp generates the page around a preview, with no stylesheet of the app in it. So a
+  web font that `index.html` links does not load there. Set `preview.entry` in `imp.json` to an HTML
+  file of your own, such as `preview.html`, that holds the font links and the icon in its `<head>`
+  and an empty `<body>`. imp replaces the `<title>` and appends its scripts to the body. It keeps
+  every other tag, so never point it at the app's `index.html`, whose scripts would start the app. A
+  path that resolves to no file fails at startup.
 - **Review widget.** The same widget that `imp start` injects, in the bottom corner. The person
   picks a part of the previewed component and comments on it. imp writes the note to `.imp/reviews/`
   with the preview page it came from. Read the folder before you rework a component on a vague
@@ -114,13 +125,15 @@ is `text_field` under `inputs`.
 ## Finding previews
 
 With no path, imp discovers every `*.preview.js` in the project and `/` lists them. A path narrows
-it. A preview file opens straight to it. A **component** path opens its sibling preview
-(`imp preview components/todos.js` -> `components/todos.preview.js`). A folder limits discovery.
-`?scenario=<name>`, or the panel's **isolate** button, renders one scenario alone.
+it. A preview file opens straight to it. The address of a component is `/<group>/<name>`, in lower
+case with hyphens, such as `/widgets/counter`. A reload keeps it, and a bookmark opens it. A
+**component** path opens its sibling preview (`imp preview components/todos.js` ->
+`components/todos.preview.js`). A folder limits discovery. `?scenario=<name>`, or the panel's
+**isolate** button, renders one scenario alone.
 
 A component is listed as **`group/name`**, taken from the file's `group` and `name` exports. Without
 them, imp uses the folder that holds the preview file and the file's own name without `.preview.js`.
-So `src/inputs/text_field.preview.js` with no metadata is `inputs/text_field` in the catalog and in
+So `src/inputs/text-field.preview.js` with no metadata is `inputs/text_field` in the catalog and in
 the search. Put your components in folders and the catalog groups itself. Declare `group` to group
 them your own way. Two files that declare the same `group` land in one group, whatever folders they
 are in.

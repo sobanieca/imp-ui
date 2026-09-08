@@ -12,10 +12,10 @@ import {
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { licensePolicy, loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { resolveEntryPath } from './entry.js'
-import { basePathOf, siteUrl } from './base_path.js'
+import { basePathOf, siteUrl } from './base-path.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
-import { formatSize } from './file_size.js'
+import { formatSize } from './file-size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
@@ -25,9 +25,9 @@ import {
   licenseNoticesFile,
   licenseNoticesReference,
   splitLicenseNotices,
-} from './license_notices.js'
-import { readDependencyManifest, recordedNotices } from './dependency_manifest.js'
-import { licenseViolationProblem, reviewLicenses } from './license_policy.js'
+} from './license-notices.js'
+import { readDependencyManifest, recordedNotices } from './dependency-manifest.js'
+import { licenseViolationProblem, reviewLicenses } from './license-policy.js'
 import { logger } from './logger.js'
 import {
   APPLE_TOUCH_ICON,

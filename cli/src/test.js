@@ -6,11 +6,12 @@ import { collectFiles } from './walk.js'
 import { DATAURL_ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { collectMocks, impResolverPlugin } from './bundling.js'
 import { createRequestHandler, loadApp } from './start.js'
-import { createClock } from './test_clock.js'
-import { piercingBrowser, piercingPage } from './test_page.js'
-import { encodeGif, resolveVideoOptions, startScreencast, stopScreencast } from './test_video.js'
+import { createClock } from './test-clock.js'
+import { piercingBrowser, piercingPage } from './test-page.js'
+import { encodeGif, resolveVideoOptions, startScreencast, stopScreencast } from './test-video.js'
 import { bold, dim, green, red, yellow } from './colors.js'
 import { logger } from './logger.js'
+import { isSpecFile, isTestFile, isUnitFile } from './project-files.js'
 
 const REGISTRY_KEY = Symbol.for('imp.test.registry')
 
@@ -18,10 +19,6 @@ const UNIT_TIMEOUT = 5_000
 const E2E_TIMEOUT = 30_000
 
 const TEST_EXTENSIONS = new Set(['js', 'mjs'])
-
-export const isUnitFile = (path) => path.endsWith('.test.js') || path.endsWith('.test.mjs')
-export const isSpecFile = (path) => path.endsWith('.spec.js') || path.endsWith('.spec.mjs')
-const isTestFile = (path) => isUnitFile(path) || isSpecFile(path)
 
 async function bundleTestFile(file, { root, dependencies }) {
   const mocks = await collectMocks(file, { root, dependencies })
@@ -170,7 +167,7 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
 }
 
 async function runUnitFile({ code, filter }) {
-  const { installDomEnvironment } = await import('./test_dom.js')
+  const { installDomEnvironment } = await import('./test-dom.js')
   const restore = installDomEnvironment()
   try {
     const registry = freshRegistry()
@@ -190,7 +187,7 @@ async function runUnitFile({ code, filter }) {
 const slug = (text) => text.replaceAll(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
 
 async function launchBrowser(executablePath) {
-  const { default: puppeteer } = await import('./vendor/puppeteer_core.js')
+  const { default: puppeteer } = await import('./vendor/puppeteer-core.js')
   const args = ['--disable-dev-shm-usage']
   try {
     if (Deno.uid() === 0) args.push('--no-sandbox')
@@ -474,7 +471,7 @@ export async function runTests(
     for (const alias of app.missingDependencies) {
       logger.warn(`dependency '${alias}' is declared but not vendored - run 'imp install'`)
     }
-    const { resolveBrowser } = await import('./test_browser.js')
+    const { resolveBrowser } = await import('./test-browser.js')
     e2eRun = { app, browserPath: await resolveBrowser(testConfig.browser) }
   }
 

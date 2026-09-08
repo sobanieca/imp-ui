@@ -118,9 +118,9 @@ and a green test run is never about stale code. An unchanged tree costs one `git
 
 ## Previewing the standard components
 
-`deno task preview` serves every `*.preview.js` under `lib/src/std` on <http://localhost:4517/>.
-This is the working surface for the development of a standard component. The task runs `imp preview`
-from `lib/src/std`. The `imp.json` there points `preview.groups` at `preview_groups.js`. That module
+`deno task preview` serves every `*.preview.js` under `lib/src` on <http://localhost:4517/>. This is
+the working surface for the development of a standard component. The task runs `imp preview` from
+`lib/src`. The `imp.json` there points `preview.groups` at `std/preview-groups.js`. That module
 holds the sidebar's groups, their order and their icons. The CLI holds none of them.
 
 **An edit to a component during a session does not reach the page. Restart the task.** The dev
@@ -143,6 +143,12 @@ state is the canonical state of the repo. Leave every change in place and includ
 **`deno lint` must pass clean.** If it reports an error, fix it before you consider the work done.
 This holds for code you just wrote and for anything else it reports. Do not ignore, suppress, or
 leave lint errors behind.
+
+**`deno task lint:lib` must pass clean too.** It runs `imp lint` on `lib/src`, with the rule set
+that users get. That set is stricter than `deno lint`, and it includes the dead code checks. The
+`imp.json` in `lib/src` lists the library entry points in `publicExports`, together with each export
+that the CLI imports from `lib/src` by path. When you add such an import, list it there. Do not add
+an `imp-lint-ignore` directive to library code.
 
 ## Git - commit on the branch you are on
 
@@ -201,6 +207,14 @@ The rule is not cosmetic, for two reasons. Skills and CLI output print into what
 user's terminal has, where a non-ASCII byte is a mojibake risk rather than a nicer glyph. And a
 markdown continuation line that starts with `-` after a wrapped long dash becomes a nested list
 item. That class of bug shows up only when the page is rendered.
+
+**Name a file with a hyphen between words, never an underscore.** `app-map.js`, `theme-colors.js`,
+`user-card.skill.md`. An underscore needs one more key on most keyboards. The rule covers every file
+in this repo: the library, the CLI, the tools, the tests, the scaffold of `imp init`, every path in
+`docs/`, `skills/` and a `*.skill.md`, and the examples. Two things keep an underscore because the
+name is not imp's to choose: an environment value such as `IMP_BASEPATH`, since a shell does not
+accept a hyphen in a name, and a vendored third-party asset that keeps its upstream name, such as
+the `.wasm` files under `cli/src/vendor/`.
 
 **Do not add comments to code.** Write self-explanatory code instead. Use clear, descriptive names
 for functions, variables, and constants, so the intent is obvious without comments. Put prose

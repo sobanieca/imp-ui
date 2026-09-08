@@ -19,25 +19,27 @@ const openSection = async (page, href) => {
 }
 
 test('opens on the full list, framed by the shell', async ({ page }) => {
+  await page.waitForSelector('#add-task >>> input')
   expect(await title(page)).toEqual('All tasks')
+  expect(page.url()).toContain('/tasks/all')
   expect(await page.$eval('imp-app-logo', (node) => node.shadowRoot.textContent))
     .toContain('imp tasks')
   expect((await rowTitles(page)).length).toEqual(4)
 })
 
 test('the sidebar navigates without reloading the page', async ({ page }) => {
-  await openSection(page, '/active')
+  await openSection(page, '/tasks/active')
   expect(await title(page)).toEqual('Active')
-  expect(page.url()).toContain('/active')
+  expect(page.url()).toContain('/tasks/active')
   expect(await rowTitles(page)).not.toContain('Sketch the three shell regions')
 })
 
 test('a new task shows up on the list and in the sidebar count', async ({ page }) => {
-  await openSection(page, '/')
+  await openSection(page, '/tasks/all')
   await page.type('#add-task >>> input', 'Ship the example')
   await page.click('#add-task >>> imp-button >>> button')
   expect(await rowTitles(page)).toContain('Ship the example')
-  expect(await sidebarCount(page, '/')).toEqual('5')
+  expect(await sidebarCount(page, '/tasks/active')).toEqual('4')
 })
 
 test('the sidebar becomes the bottom bar and the navbar a drawer', async ({ page }) => {
@@ -45,7 +47,7 @@ test('the sidebar becomes the bottom bar and the navbar a drawer', async ({ page
     'imp-shell >>> nav[aria-label="Sections"] a',
     (links) => links.map((anchor) => anchor.getAttribute('href')),
   )
-  expect(top).toEqual(['/', '/settings'])
+  expect(top).toEqual(['/tasks', '/settings'])
 
   const topOf = (selector) => page.$eval(selector, (node) => node.getBoundingClientRect().top)
   const visible = (selector) => page.$eval(selector, (node) => node.checkVisibility())
@@ -70,6 +72,21 @@ test('the sidebar becomes the bottom bar and the navbar a drawer', async ({ page
 
   await page.keyboard.press('Escape')
   await page.setViewport({ width: 800, height: 600 })
+})
+
+test('a task opens on its own screen, and the trail offers the other tasks', async ({ page }) => {
+  await openSection(page, '/tasks/all')
+  await page.click('todo-row >>> imp-link >>> a')
+  await page.waitForSelector('todo-detail >>> h1')
+  expect(page.url()).toContain('/tasks/1')
+  const trail = 'imp-shell >>> imp-breadcrumbs'
+  expect(await page.$$eval(`${trail} >>> .crumb`, (nodes) => nodes.map((n) => n.textContent)))
+    .toEqual(['Tasks', 'Sketch the three shell regions'])
+  await page.click(`${trail} >>> .picker`)
+  await page.click(`${trail} >>> .option:nth-child(2)`)
+  await page.waitForFunction(() => location.pathname === '/tasks/2')
+  expect(await page.$eval('todo-detail >>> h1', (node) => node.textContent))
+    .toEqual('Feed the sidebar from the route')
 })
 
 test('the shell fills the viewport, so the page itself never scrolls', async ({ page }) => {

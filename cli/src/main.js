@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run -A
 import { VERSION } from './version.js'
 import { projectRoot } from './config.js'
-import { maybeDelegate, notifyUpdate, prune, update } from './version_manager.js'
+import { maybeDelegate, notifyUpdate, prune, update } from './version-manager.js'
 
 const HELP = `imp - buildless UI toolkit
 
@@ -54,6 +54,9 @@ USAGE
                                         --output writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
+  imp map [file]                        print the application map of the app: every
+                                        node with its path, label, access and
+                                        description (the 'map' file of imp.json)
   imp skill [...subject]                print imp's usage manual for a subject -
              [./component.js]           the documentation shipped inside this binary,
                                         written to be read before writing imp code
@@ -243,6 +246,11 @@ try {
         output: flag(rest, 'output', null),
         stretch: rest.includes('--stretch'),
       })
+      break
+    }
+    case 'map': {
+      const { printMap } = await import('./map.js')
+      await printMap({ cwd: Deno.cwd(), file: positional(rest)[0] ?? null })
       break
     }
     case 'skill': {

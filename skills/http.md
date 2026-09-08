@@ -102,7 +102,7 @@ anything else to a `Blob`. A `204` response and an empty body both give `null`.
   of an ancestor for its subtree.
 - **A helper module takes the client as an argument**, as in `loadUsers(api, page)`. imp reaches a
   client through the DOM. Never import one. Do the same for DOM that imp renders outside the
-  subtree, such as an overlay on `document.body`. Pass the handle.
+  subtree, such as a second `mount` into another element of the page. Pass the handle.
 - **Do not cancel a call by hand for a navigation.** When the owner unmounts, imp aborts the calls
   in flight. Use your own `signal` only for a search-as-you-type call that a newer call replaces, or
   for a cancel button.

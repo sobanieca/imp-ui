@@ -3,8 +3,7 @@ status: 200
 content-type: text/javascript; charset=utf-8
 cache-control: no-store
 
-[preview bundle: imp library inlined]
 defines the component: true
 mocked fixture inlined: true
 real http.js excluded: true
-starts the preview chrome: true
+library shared through a chunk: true

@@ -103,13 +103,13 @@ text({ tone: 'secondary', size: 'sm' }, 'Prices exclude VAT.')
 text('You have ', text({ inline: true, weight: 'bold' }, '3 days'), ' left.')
 ```
 
-| Prop     | Values                           | Default     | Notes                     |
-| -------- | -------------------------------- | ----------- | ------------------------- |
-| `tone`   | `'default'`, `'secondary'`       | `'default'` | Full-strength or muted    |
-| `size`   | `'sm'`, `'md'`, `'lg'`           | `'md'`      | Type size                 |
-| `weight` | `'normal'`, `'medium'`, `'bold'` | `'normal'`  | Type weight               |
-| `align`  | `'start'`, `'center'`, `'end'`   | `'start'`   | Text alignment            |
-| `inline` | boolean                          | `false`     | `<span>` instead of `<p>` |
+| Prop     | Values                         | Default     | Notes                     |
+| -------- | ------------------------------ | ----------- | ------------------------- |
+| `tone`   | `'default'`, `'secondary'`     | `'default'` | Full-strength or muted    |
+| `size`   | `'sm'`, `'md'`, `'lg'`         | `'md'`      | Type size                 |
+| `weight` | `'normal'`, `'bold'`           | `'normal'`  | Type weight               |
+| `align`  | `'start'`, `'center'`, `'end'` | `'start'`   | Text alignment            |
+| `inline` | boolean                        | `false`     | `<span>` instead of `<p>` |
 
 ## link
 
@@ -118,14 +118,14 @@ link({ href: '/settings' }, 'Settings')
 link({ href: 'https://example.com', external: true }, 'Read the docs')
 ```
 
-| Prop       | Values                           | Default     | Notes                                     |
-| ---------- | -------------------------------- | ----------- | ----------------------------------------- |
-| `href`     | string - **required**            | -           | App-root path, no base path - imp adds it |
-| `external` | boolean                          | `false`     | New tab, `rel="noreferrer noopener"`      |
-| `tone`     | `'default'`, `'secondary'`       | `'default'` | Link color or muted                       |
-| `size`     | `'sm'`, `'md'`, `'lg'`           | `'md'`      | Type size                                 |
-| `weight`   | `'normal'`, `'medium'`, `'bold'` | `'normal'`  | Type weight                               |
-| `events`   | event map                        | -           | Handlers, as on any element               |
+| Prop       | Values                     | Default     | Notes                                     |
+| ---------- | -------------------------- | ----------- | ----------------------------------------- |
+| `href`     | string - **required**      | -           | App-root path, no base path - imp adds it |
+| `external` | boolean                    | `false`     | New tab, `rel="noreferrer noopener"`      |
+| `tone`     | `'default'`, `'secondary'` | `'default'` | Link color or muted                       |
+| `size`     | `'sm'`, `'md'`, `'lg'`     | `'md'`      | Type size                                 |
+| `weight`   | `'normal'`, `'bold'`       | `'normal'`  | Type weight                               |
+| `events`   | event map                  | -           | Handlers, as on any element               |
 
 `link` renders a real anchor. The router handles a plain left-click on an in-app path. The browser
 handles a middle-click, a click with a modifier key, an `external` link and an off-site URL.
@@ -158,70 +158,62 @@ the library accepts any DOM.
 
 ## shell - from `imp/std/layout`
 
-**Build the frame of an app with `shell`. Do not assemble a header and sidebar grid by hand.** One
-nav tree, as data, drives the bar, the column and the bottom bar of a phone. `logo` and `extras` are
-DOM. The main content is the children.
+**Build the frame of an app with `shell`. Do not assemble a header and sidebar grid by hand.** The
+application map, see [routing](routing.md), drives the bar, the column, the bottom bar of a phone
+and the trail. `logo` and `extras` are DOM. The main content is the children, and the router sits in
+it.
 
 ```js
 import { shell } from 'imp/std/layout'
+import { appLogo, themeSelect, userCard } from 'imp/std/shell'
+import { router } from 'imp/router'
+import { luChartColumn } from 'imp/icons'
+import { app } from './app-map.js'
 
 shell(
   {
     logo: appLogo({ label: 'Acme' }),
     navbar: {
       label: 'Sections',
-      selected: section,
-      items: [
-        {
-          id: 'reports',
-          label: 'Reports',
-          groups: [{
-            label: 'Money',
-            items: [{ id: 'revenue', label: 'Revenue', href: '/revenue' }],
-          }],
-        },
-        { id: 'directory', label: 'Directory', href: '/directory' },
-      ],
+      map: app,
+      icons: { [app.reports]: luChartColumn },
+      tags: { [app.reports.revenue]: revenueCount },
     },
-    sidebar: { label: 'Reports', selected: page },
-    extras: themeSelect(),
-    account: { name: 'Ada Lovelace', onSignOut },
-    signedIn,
+    sidebar: { label: 'Pages' },
+    extras: [themeSelect(), userCard({ signedIn, name: 'Ada Lovelace', onSignOut })],
   },
-  router({ routes }),
+  router({ map: app, access, screens, options }),
 )
 ```
 
-| Prop         | Values                         | Default | Notes                                                 |
-| ------------ | ------------------------------ | ------- | ----------------------------------------------------- |
-| `logo`       | DOM                            | -       | Heads the bar, the column, or the drawer              |
-| `navbar`     | **data** `{ items, ... }`      | -       | The sections; each may declare its own `groups`       |
-| `sidebar`    | **data** `{ selected, ... }`   | -       | Names, marks and foots the second level               |
-| `account`    | **data** `{ name, ... }`       | -       | The person; becomes a `userCard`                      |
-| `extras`     | DOM, or an array of it         | -       | Theme/language pickers, anything; sits by the account |
-| `signedIn`   | boolean, or a state - **live** | `true`  | `false` withholds the nav; logo and sign-in remain    |
-| `navOpen`    | boolean, or a state - **live** | `false` | Drawer state; shell-owned when omitted                |
-| `gap`        | spacing step `0`-`6`           | `0`     | Floats the chrome apart as rounded, bordered panels   |
-| `background` | DOM                            | -       | Decorative layer under everything, e.g. an animation  |
-| `events`     | `{ navToggle, select }`        | -       | `{ open }` on every drawer change; `{ id, item }`     |
+| Prop          | Values                          | Default | Notes                                                |
+| ------------- | ------------------------------- | ------- | ---------------------------------------------------- |
+| `logo`        | DOM                             | -       | Heads the bar, the column, or the drawer             |
+| `navbar`      | **data** `{ map, icons, tags }` | -       | The map; or plain `items` for a frame with no router |
+| `sidebar`     | **data** `{ label, ... }`       | -       | Names and foots the second level                     |
+| `extras`      | DOM, or an array of it          | -       | Theme/language pickers, `userCard`, anything         |
+| `breadcrumbs` | `false`                         | shown   | Drops the trail the frame renders from the map       |
+| `navOpen`     | boolean, or a state - **live**  | `false` | Drawer state; shell-owned when omitted               |
+| `gap`         | spacing step `0`-`6`            | `0`     | Floats the chrome apart as rounded, bordered panels  |
+| `background`  | DOM                             | -       | Decorative layer under everything, e.g. an animation |
+| `events`      | `{ navToggle, select }`         | -       | `{ open }` on every drawer change; `{ id, item }`    |
 
-`navbar` takes `items`, which are the sections and are live, `selected`, which is live, and `label`.
-`sidebar` takes `selected`, which is live, `label`, an app-wide `extras` of DOM, and `footer` rows.
-`sidebar` also takes `groups` and `items`, but **only when there is no `navbar`**. That is the
-sidebar-only layout. Beside a `navbar`, imp warns and drops them.
+`navbar` takes `map`, `icons` and `tags` keyed by handle, and `label`. With no map it takes `items`,
+which are the sections and are live, and `selected`. `sidebar` takes `label`, an app-wide `extras`
+of DOM, and `footer` rows. `sidebar` also takes `groups`, `items` and `selected`, but **only when
+there is no `navbar`**. That is the sidebar-only layout. Beside a `navbar`, imp warns and drops
+them.
 
-A section is `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. A row is
-`{ id, label, icon, href, onClick, tag, disabled, children? }`. A group is
+Without a map, a section is `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. A
+row is `{ id, label, icon, href, onClick, tag, disabled, children? }`. A group is
 `{ id?, label, tag?, items }`.
 
-The keys of `account` are the props of `userCard`: `name`, `description`, `picture`, `href`,
-`onSignIn` and `onSignOut`. imp warns about any other key.
-
-| Layout                 | Props                                | What you get                                    |
-| ---------------------- | ------------------------------------ | ----------------------------------------------- |
-| Sections with sidebars | `navbar`, sections carrying `groups` | Top bar of sections, column for the current one |
-| Sections only          | `navbar`, no section carrying groups | Top bar, no column, content full width          |
-| Sidebar only           | `sidebar` with `groups` / `items`    | No bar: logo heads the column, account foots it |
+| Layout                 | Props                                | What you get                                     |
+| ---------------------- | ------------------------------------ | ------------------------------------------------ |
+| Sections with sidebars | `navbar.map`, sections with children | Top bar of sections, column for the current one  |
+| Sections only          | `navbar.map`, leaf sections          | Top bar, no column, content full width           |
+| Sidebar only           | `sidebar` with `groups` / `items`    | No bar: logo heads the column, extras foot it    |
+| One section            | `navbar.map`, one section with rows  | Sidebar only; the frame drops the bar on its own |
 
 The sizes are custom properties, not props. They are `--imp-shell-sidebar-inline-size`, which
 defaults to `16rem`, and `--imp-shell-bottom-bar-items`, which defaults to `4` and is clamped
@@ -229,44 +221,48 @@ between 3 and 5.
 
 Rules an agent gets wrong:
 
-- **Put the second level inside the section**, as `groups`. Drive `navbar.selected` and
-  `sidebar.selected` from the route. Do not keep two arrays in step by hand.
+- **Pass the map, and put `router({ map })` in the content.** The router derives the sections, the
+  rows, the marked rows and the crumbs, and the frame draws them. Do not keep a second array in step
+  by hand. `navbar.selected` and `sidebar.selected` beside a map are dropped.
+- **`icons` and `tags` bind by handle**, as `{ [app.reports]: luChartColumn }` and
+  `{ [app.reports.revenue]: count }`. An icon is a Lucide export or any DOM. A tag is
+  `{ text, color }`, a state that holds one, or `null`. Neither is a prop of the map. Bind them at
+  the root, not in an area file.
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
-  shell draws the rows, because it draws each level more than once. `account` is data for the same
-  reason. The main content is the children, as in `shell({ navbar }, page())`. There is no `header`,
-  `footer` or `layout` prop. Put a breadcrumb trail and a page toolbar at the top of the main
-  content.
+  shell draws the rows, because it draws each level more than once. The main content is the
+  children, as in `shell({ navbar }, page())`. There is no `header`, `footer` or `layout` prop. Put
+  a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
+- **Who is signed in is `userCard` in `extras`.** The frame has no account prop and no signed-in
+  flag. Whether a visitor sees a section is the `access` of the map.
 - **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
   of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
   there inline, or do not style it.
-- **A section with no groups renders no sidebar**, and the content goes full width. Do not build a
+- **A section with no rows renders no sidebar**, and the content goes full width. Do not build a
   false column with one row. Only app-wide content keeps the column. **`sidebar.extras` and
   `sidebar.footer` stay whichever section is current.** So a support card or a help link goes there,
-  never in the `groups` of a section. **A section is always activatable**, also with no `href`,
-  because a choice of section is what changes the sidebar.
+  never under a section of the map.
 - **`gap: 0` is the edge-to-edge frame. Any other step floats the chrome** as bordered panels,
   rounded with `radius-container`, and inset from the screen and from each other. This covers the
   phone drawer and any `drawer` inside the frame. The frame paints the `background-app` token, which
   is a colour or a gradient, and defaults to `color-surface`. `background` is a DOM node under
   everything. Use it for a backdrop that CSS cannot draw. imp hides it from assistive technology.
-- **`children` nest one level, and are collapsed by default**, behind a caret with `aria-expanded`.
-  The parent of the selected row starts expanded. On a phone, a parent that the person taps in the
-  bottom bar opens its children in the More sheet.
-- **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, with
-  the section over the row. The sidebar becomes the bottom bar, capped at
+- **Static grandchildren of the context nest one level, and are collapsed by default**, behind a
+  caret with `aria-expanded`. The parent of the selected row starts expanded. On a phone, a parent
+  that the person taps in the bottom bar opens its children in the More sheet.
+- **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, which
+  is the last two crumbs. The sidebar becomes the bottom bar, capped at
   `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections,
-  the footer rows, both `extras` and the account move into the drawer. When the current section has
-  no sidebar, the bottom bar carries the **sections**, and the drawer holds the chrome only.
+  the footer rows and both `extras` move into the drawer. The trail strip hides. When the current
+  section has no sidebar, the bottom bar carries the **sections**, and the drawer holds the chrome
+  only.
 - **There is no aside region.** Every region of the frame has a phone form, and a side column has
   none. Content that comes and goes is a `drawer` in the main content. Content that stands beside
   the page is your own `flex` inside the main content. Make it wrap below the page under your own
   media query.
-- **The desktop column collapses to an icon rail** from a toggle in its head. That is shell state,
-  not a prop. imp offers the toggle only when every row and every footer row has an `icon`. The rail
-  hides the logo, `sidebar.extras`, the `extras` of the shell and the account card.
-- **`signedIn: false` withholds the nav and the bottom bar.** It leaves one top bar with the logo
-  and the sign-in button from `account.onSignIn`. For an app with no authentication, leave
-  `signedIn` out.
+- **The desktop column collapses to an icon rail** from a toggle in its head. That head names the
+  context, which is the param crumb when there is one. imp offers the toggle only when every row and
+  every footer row has an `icon`. The rail hides the logo, `sidebar.extras` and the `extras` of the
+  shell.
 - **`navOpen` must be writable if you pass it.** Never pass a `computed`. The shell writes back when
   the drawer closes itself.
 - **The shell is the only breakpoint exception in imp.** The width is `48rem`, and it is a **media
@@ -436,7 +432,7 @@ component. The query is then scoped to that component:
 
 ```js
 component('invoice-filters', {
-  styles: () => `
+  styles: `
     .filters { display: flex; flex-direction: column; gap: var(--imp-space-4); }
 
     @media (min-width: 48rem) {
@@ -584,7 +580,7 @@ langSelect({ languages: ['en', 'pl'] })
 | Component     | Props                                                                                                                                     |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `appLogo`     | `label`, `tagline`, `href`, `src`, `alt`, `icon`, `compact`, `events`                                                                     |
-| `breadcrumbs` | `items` (live), `label` (live), `separator`, `events`                                                                                     |
+| `breadcrumbs` | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                                                        |
 | `userCard`    | `signedIn`, `name`, `description`, `picture` (all live), `href`, `compact`, `onSignIn`, `onSignOut`, `variant`, `size`, `block`, `events` |
 | `themeSelect` | `themes`, `remember`, `label` (live), `events`                                                                                            |
 | `langSelect`  | `languages`, `remember`, `label` (live), `events`                                                                                         |
@@ -594,7 +590,8 @@ Rules an agent gets wrong:
 - **There is no sidebar-item component and no navbar-item component.** A row is a nav item, and its
   shape takes an `icon` and an `onClick`. Give those items to the frame as data.
 - **The last crumb is the current page.** `breadcrumbs` renders it as text with
-  `aria-current="page"`, never as a link. imp does not derive the trail from the route.
+  `aria-current="page"`, never as a link. A crumb with `options` gets a picker of its siblings. The
+  frame renders the trail from the map; call `breadcrumbs` yourself only outside `shell`.
 - **`onSignIn` and `onSignOut` are function props, not `events`.** Return the promise, and the
   button spins until the promise settles. imp holds no session, and it talks to no identity
   provider.
@@ -608,8 +605,8 @@ Rules an agent gets wrong:
   a `name` only shows the sign-in button. There is no menu inside the card.
 - **`compact` on `appLogo` and on `userCard` hides the words visually, not from assistive
   technology.** That is how a brand block with a mark only keeps its name.
-- **Do not call `userCard` inside `shell`.** Pass the `account` data of the frame. The frame builds
-  the card and places it, in the bar on a wide screen and in the drawer on a phone.
+- **Inside `shell`, `userCard` goes in `extras`.** The frame has no account prop. It places the
+  extras in the bar on a wide screen and in the drawer on a phone.
 
 Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/themeSelect` |
 `std/langSelect`.

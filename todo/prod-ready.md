@@ -28,7 +28,7 @@ block a procurement, in place of being a preference.
   `cli/src/install.js`, and the package fetches of the bundler, trust TLS alone. There is no check
   of the npm `dist.integrity` field. There is no check of a provenance or of an attestation.
   `imp update` already verifies the binary that it downloads, against its published SHA-256, see
-  `cli/src/version_manager.js`. So the standard exists inside imp. The install of a dependency does
+  `cli/src/version-manager.js`. So the standard exists inside imp. The install of a dependency does
   not meet it.
 - **`install.sh` verifies nothing.** It downloads the asset of a release, and moves it into
   `INSTALL_DIR`, with no check of a checksum. The release publishes `imp-{os}-{arch}.sha256`, and
@@ -80,7 +80,7 @@ block a procurement, in place of being a preference.
 
 ## Tier 3 - how to operate the app after it is live
 
-- **There is no global seam for an error.** `lib/src/component.js` gives a `fallback` boundary per
+- **There is no global seam for an error.** `lib/src/component.js` gives an `error` boundary per
   component, see `adr/error-boundaries.md`. But nothing catches an `error` event, or an
   `unhandledrejection` event, at the level of the app. There is also no API for a sink, to forward a
   crash to a backend. The situation is worse than silence. A state subscriber that throws is caught,
@@ -122,11 +122,11 @@ block a procurement, in place of being a preference.
   fixture. Land one before the `table` component, or the data grid, lands. This is the architectural
   risk that is most likely to force a redesign.
 - **A malformed URL breaks the match of a route. It does not render `notFound`.**
-  `decodeURIComponent(pathSegments[i])`, in `matchSegments` in `lib/src/router.js`, throws a
-  `URIError` on bad percent encoding. An example is `/user/%zz`, which arrives from any external
-  link. That surfaces as an error during the mount of a component, in place of the not-found page.
-  There is a related problem. `Object.fromEntries(location.searchParams)` drops a repeated key of a
-  query, and says nothing.
+  `decodeURIComponent(segment)`, in `matchMap` in `lib/src/app-map.js`, throws a `URIError` on bad
+  percent encoding. An example is `/user/%zz`, which arrives from any external link. That surfaces
+  as an error during the mount of a component, in place of the not-found page. There is a related
+  problem. `Object.fromEntries(location.searchParams)` drops a repeated key of a query, and says
+  nothing.
 - **The standard library is still short of the target catalog.** The layout has landed, with `flex`,
   `stack`, `shell` and `dialog`. The `imp/std/shell` group of regions has landed. The form layer has
   landed. `tag` and `breadcrumbs` have landed. But there is still no table, and no data grid. There
@@ -150,7 +150,7 @@ block a procurement, in place of being a preference.
   `adr/binary-distribution.md`, and CI builds no binary for Windows. That excludes many teams
   completely.
 - **A sealed CI system has no documented path.** imp downloads the e2e browser on first use, and
-  verifies its checksum, see `cli/src/test_browser.js`. That is correct. But there is no documented
+  verifies its checksum, see `cli/src/test-browser.js`. That is correct. But there is no documented
   mirror, and no override of the cache, for a CI environment that has no network, or that restricts
   its outbound traffic.
 

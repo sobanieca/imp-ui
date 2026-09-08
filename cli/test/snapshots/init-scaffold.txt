@@ -6,8 +6,9 @@ Created a new imp project in app.
 
   imp.json            the one config file - pins imp <version>
   index.html          the page imp serves
-  src/main.js         entry point: applies the theme, mounts the app
-  src/app.js          the app's components
+  src/main.js         entry point: applies the theme, mounts the frame
+  src/app-map.js      the application map: every feature of the app, one line each
+  src/app.js          the frame, the router and the counter
   test/app.test.js    unit test, runs in-process
   test/app.spec.js    e2e spec, runs in a real browser
   public/favicon.svg  published at the site root - replace it with your own mark
@@ -29,6 +30,7 @@ Now point your AI agent at `imp skill` and start building!
 imp.json
 index.html
 public/favicon.svg
+src/app-map.js
 src/app.js
 src/main.js
 test/app.spec.js
@@ -57,7 +59,8 @@ Thumbs.db
 
 --- imp.json ---
 {
-  "version": "<version>"
+  "version": "<version>",
+  "map": "src/app-map.js"
 }
 
 --- index.html ---
@@ -75,12 +78,25 @@ Thumbs.db
   </body>
 </html>
 
+--- src/app-map.js ---
+import { appMap } from 'imp'
+
+export const app = appMap({
+  home: { path: '/', description: 'The counter the scaffold starts with' },
+  about: 'Bind this node in src/app.js, or delete it here',
+})
+
 --- src/app.js ---
 import { component } from 'imp'
 import { div, p } from 'imp/html'
+import { initState } from 'imp/state'
+import { router } from 'imp/router'
 import { button, heading, text } from 'imp/std'
+import { shell } from 'imp/std/layout'
+import { appLogo } from 'imp/std/shell'
+import { app } from './app-map.js'
 
-export const app = component('app-root', {
+const counter = component('app-counter', {
   setup: (self) => {
     const clicks = initState(self, 'app.clicks', 0)
     return div(
@@ -100,13 +116,21 @@ export const app = component('app-root', {
   },
 })
 
+export const root = component('app-root', {
+  setup: () =>
+    shell(
+      { logo: appLogo({ label: 'App' }), navbar: { map: app } },
+      router({ map: app, screens: { [app.home]: () => counter() } }),
+    ),
+})
+
 --- src/main.js ---
 import { init, mount } from 'imp'
-import { app } from './app.js'
+import { root } from './app.js'
 
 await init({ theme: 'imp-light' })
 
-mount('#app', app())
+mount('#app', root())
 
 --- test/app.spec.js ---
 import { expect, test } from 'imp/test'
@@ -126,30 +150,45 @@ test('counts a click', async ({ page }) => {
 --- test/app.test.js ---
 import { mount } from 'imp'
 import { beforeEach, expect, test } from 'imp/test'
-import { app } from '../src/app.js'
-import { initState } from 'imp/state'
+import { root } from '../src/app.js'
 
-const inside = (node, selector) => node.shadowRoot.querySelector(selector)
+const find = (node, selector) => {
+  const scope = node.shadowRoot ?? node
+  const direct = scope.querySelector(selector)
+  if (direct) return direct
+  for (const child of scope.querySelectorAll('*')) {
+    const found = child.shadowRoot ? find(child, selector) : null
+    if (found) return found
+  }
+  return null
+}
 
 const render = () => {
-  mount(document.body, app())
+  mount(document.body, root())
   return document.querySelector('app-root')
 }
 
 beforeEach(() => {
   document.body.replaceChildren()
+  history.replaceState(null, '', '/')
 })
 
 test('starts at zero clicks', () => {
-  expect(inside(render(), '#clicks').textContent).toEqual('Clicks: 0')
+  expect(find(render(), '#clicks').textContent).toEqual('Clicks: 0')
 })
 
 test('counts every click', () => {
-  const root = render()
-  const control = inside(inside(root, 'imp-button'), 'button')
+  const page = render()
+  const control = find(find(page, 'imp-button'), 'button')
   control.click()
   control.click()
-  expect(inside(root, '#clicks').textContent).toEqual('Clicks: 2')
+  expect(find(page, '#clicks').textContent).toEqual('Clicks: 2')
+})
+
+test('the map gives every node a screen, bound or not', () => {
+  const page = render()
+  expect(find(page, 'imp-shell')).toBeTruthy()
+  expect(find(page, 'nav a[href="/about"]')).toBeTruthy()
 })
 
 $ imp init  (cwd: <tmp>/app)
@@ -159,4 +198,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] imp init writes imp.json, index.html, src/main.js, src/app.js, test/app.test.js, test/app.spec.js, public/favicon.svg, which already exist here - nothing was written. Scaffold into an empty directory instead ('imp init <dir>'), or move those files aside.
+[ERROR] imp init writes imp.json, index.html, src/main.js, src/app-map.js, src/app.js, test/app.test.js, test/app.spec.js, public/favicon.svg, which already exist here - nothing was written. Scaffold into an empty directory instead ('imp init <dir>'), or move those files aside.

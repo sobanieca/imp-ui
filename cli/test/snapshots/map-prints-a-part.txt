@@ -1,0 +1,11 @@
+$ imp map src/admin/map.js  (cwd: test/fixtures/map)
+exit code: 0
+
+--- stdout ---
+admin - a part of another map: access: "admin"
+  /users           Users
+  /create-api-key  Create api key
+    Mint a key for a service
+
+--- stderr ---
+(empty)

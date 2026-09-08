@@ -20,6 +20,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp lint [...paths] [--fix]`        | imp's rules plus a standard set; `--fix` autofixes       | [lint](lint.md)                 |
 | `imp fmt [...paths] [--check]`       | format every file type in the project                    | [fmt](fmt.md)                   |
 | `imp resize <image>`                 | downscale an oversized PNG/JPEG asset                    | [resize](resize.md)             |
+| `imp map [file]`                     | print the application map: paths, labels, access, notes  | [routing](routing.md)           |
 | `imp skill [...subject]`             | print a manual for an AI agent                           | [skill](skill.md)               |
 | `imp update [version]`               | update and pin the version in `imp.json`                 | [update](update.md)             |
 | `imp prune`                          | delete cached versions unused for 30+ days               | [update](update.md)             |
@@ -37,7 +38,7 @@ key, and the `--env` environment files.
 - **A path defaults to the whole project** for `imp lint` and `imp fmt`. Every command that walks
   the tree always skips `.git`, `node_modules`, `dist` and the vendored `dependencies/` folder.
 - **`--env <name>`** selects an environment on `imp start`, `imp build` and `imp preview`. With no
-  flag, imp uses an alias named `default`, then `IMP_ENV`, then no environment. See
+  flag, imp uses `IMP_ENV`, then an alias named `default`, then no environment. See
   [config](config.md).
 - **`--mock` and `--no-mock`** decide, for one run of `imp start`, `imp preview` or
   `imp test --e2e`, whether imp answers a request from the mocks folder. With no flag, the `mocks`

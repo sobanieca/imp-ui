@@ -100,7 +100,7 @@ value or a state. With a state, the component subscribes to it and updates that 
 place. Nothing renders again, and imp disturbs nothing that you focused or typed into:
 
 ```js
-const saving = initState('billing.saving', false)
+const saving = initState(self, 'billing.saving', false)
 
 button({ variant: 'primary', loading: saving }, 'Save')
 
@@ -134,39 +134,33 @@ avoids a fight with collapsing margins.
 ## Start an app with the frame
 
 **`shell` is the recommended way to start an app.** It is not one option among several. It gives you
-a brand block, a top-level navbar, a nav column, a content area, the signed-in person, and whatever
-else the page needs. imp lays all of that out, scrolls each region on its own, and makes it work on
-a phone.
+a brand block, a top-level navbar, a nav column, a breadcrumb trail, a content area, and a place for
+the signed-in person and the pickers. imp lays all of that out, scrolls each region on its own, and
+makes it work on a phone.
 
 ```js
-import { luChartColumn } from 'imp/icons'
+import { luChartColumn, luUsers } from 'imp/icons'
+import { router } from 'imp/router'
 import { shell } from 'imp/std/layout'
+import { appLogo, themeSelect, userCard } from 'imp/std/shell'
+import { app } from './app-map.js'
 
 shell(
   {
     logo: appLogo({ label: 'Acme' }),
     navbar: {
       label: 'Sections',
-      selected: section,
-      items: [
-        {
-          id: 'reports',
-          label: 'Reports',
-          icon: icon(luChartColumn),
-          groups: [
-            { label: 'Money', items: [{ id: 'revenue', label: 'Revenue', href: '/revenue' }] },
-            { label: 'People', items: [{ id: 'churn', label: 'Churn', href: '/churn' }] },
-          ],
-        },
-        { id: 'directory', label: 'Directory', href: '/directory' },
-      ],
+      map: app,
+      icons: { [app.reports]: luChartColumn, [app.directory]: luUsers },
+      tags: { [app.reports.revenue]: revenueCount },
     },
-    sidebar: { label: 'Reports', selected: page },
-    extras: themeSelect(),
-    account: { name: user.name, description: user.email, onSignOut: signOut },
-    signedIn: session,
+    sidebar: { label: 'Pages' },
+    extras: [
+      themeSelect(),
+      userCard({ signedIn: session, name: user.name, description: user.email, onSignOut }),
+    ],
   },
-  router({ routes }),
+  router({ map: app, access, screens }),
 )
 ```
 
@@ -174,64 +168,79 @@ The reason to use `shell` is not your convenience. It is the person who uses you
 must feel like a place where they have been before, with the nav where a nav goes and the brand
 where a brand goes. That happens only when the default shape is the shape that most apps ship.
 
-**One nav tree drives three surfaces.** You describe the navigation once, as data. The top-level
-entries are your **sections**, which are the few destinations that are always there. A section can
-carry its own `groups` of items. That is what the sidebar shows while the section is current. So the
-bar lists the sections, the column lists what is inside the current section, and on a phone the
-bottom bar lists the same items. You declare nothing twice, and a change to the tree arrives
-everywhere at once.
+**The application map drives three surfaces and the trail.** You describe the app once, as a map,
+see **[Routing](routing.md)**. The top-level nodes are your **sections**, which are the few
+destinations that are always there. The children of a node are what the sidebar shows while that
+node is current. So the bar lists the sections, the column lists what is inside the current one, the
+trail above the content lists the levels down to the current page, and on a phone the bottom bar
+lists the same rows. You declare nothing twice, and a change to the map arrives everywhere at once.
+The router in the main content derives all of that from the map and the current URL. The frame only
+draws it.
 
-**A section with no groups gets no sidebar.** It does not get an empty one. It gets none, and the
+**A section with no children gets no sidebar.** It does not get an empty one. It gets none, and the
 content takes the full width. Try it. A move between a section that has a sidebar and a section that
 does not is meant to change the layout, because that change is how a person feels the context
 change. Never imitate a sidebar with a column that holds one link.
+
+**A param node changes the context.** At `/projects/42/builds`, the sidebar shows what is under the
+project, the head of the column names the project, and the crumb for the project opens a picker of
+the other projects. That picker keeps the page you are on. So a person moves from the builds of one
+project to the builds of another in one click.
 
 **Some things do not belong to a section.** A help link, a support card, an upgrade prompt and a
 note about what is new belong to the app. A person expects to find them in the same place, whatever
 they look at. The sidebar takes two app-wide slots for them. The `footer` rows are the
 settings-and-help pair at the foot of most nav columns. `extras` is a block of your own DOM, below
 the rows and above the footer. Both stay in place while the sections change. Both also keep the
-column on the screen, in a section that has no groups of its own. That column is not false. It shows
-the app-wide items. On a phone they are not lost either. The footer rows and the `extras` join the
-hamburger drawer, and imp merges the `extras` of the sidebar with the `extras` of the shell, above
-the account card. So the drawer becomes the one place that holds everything that is not the current
-section.
+column on the screen, in a section that has no children of its own. That column is not false. It
+shows the app-wide items. On a phone they are not lost either. The footer rows and the `extras` join
+the hamburger drawer, and imp merges the `extras` of the sidebar with the `extras` of the shell. So
+the drawer becomes the one place that holds everything that is not the current section.
 
 **Or leave the sections out.** Pass `sidebar` with its own `groups`, and no `navbar`. You then get
-the one-level layout: no top bar, the logo at the head of the column, and the account at its foot.
-It is the same component, and the props that you pass are the arrangement:
+the one-level layout: no top bar, the logo at the head of the column, and the extras at its foot. It
+is the same component, and the props that you pass are the arrangement:
 
-| What you pass                          | What you get                                               |
-| -------------------------------------- | ---------------------------------------------------------- |
-| `navbar` whose sections carry `groups` | A top bar of sections and a column for the current one     |
-| `navbar` whose sections carry none     | A top bar, no column, content full width                   |
-| `sidebar` with `groups`, no `navbar`   | No bar: the logo heads the column and the account foots it |
+| What you pass                        | What you get                                             |
+| ------------------------------------ | -------------------------------------------------------- |
+| `navbar.map` with nested nodes       | A top bar of sections and a column for the current one   |
+| `navbar.map` with leaf sections      | A top bar, no column, content full width                 |
+| `sidebar` with `groups`, no `navbar` | No bar: the logo heads the column and the extras foot it |
+| `navbar.map` with one section        | The same column, and the frame drops the bar on its own  |
 
-A **row** is `{ id, label, href, icon, tag, onClick }`. It can hold `children`. imp renders the
-children indented under a caret, and collapses them by default. The one that holds the selected row
-starts expanded. A parent needs no `href` of its own. It is a button that expands its children. On a
-phone the parents are the bottom bar. A tap on one opens its children in the **More** sheet. So a
-column of collapsible groups folds into something that a thumb can use. The frame draws the rows
-itself. It must, because it draws each level more than once, and it cannot make a second
-presentation out of markup that you handed it. `account` is data for the same reason:
-`{ name, description, picture, href, onSignIn, onSignOut }`.
+A map with one section gets the column layout without a second prop. Put every page of a one-section
+app under the index node, `app: { path: '/', dashboard: {}, reports: {} }`. The nav then has one
+section with rows, and a bar with one item would offer no choice, so the frame leaves it out.
+
+A frame with no router, such as a preview, passes plain rows instead of a map. A **row** is
+`{ id, label, href, icon, tag, onClick }`, and it can hold `children`. The map derives rows of that
+shape for you. imp renders children indented under a caret, and collapses them by default. The one
+that holds the selected row starts expanded. On a phone the parents are the bottom bar. A tap on one
+opens its children in the **More** sheet, one column anchored right above the row you tapped. So a
+column of collapsible groups folds into something that a thumb can use without a move to the top of
+the screen. The frame draws the rows itself. It must, because it draws each level more than once,
+and it cannot make a second presentation out of markup that you handed it.
+
+**Icons bind by handle.** `icons: { [app.reports]: luChartColumn }` gives the row of a node its
+icon. A value is a Lucide export, or any DOM. The map holds no icon, because the map is data that
+runs before a screen exists, and an icon is part of how a screen looks.
 
 **`logo` and `extras` are plain DOM.** So a brand block, a command palette or a pair of pickers is
 markup that you already know how to write, and the shell places it without a look inside. The
 `extras` block of the sidebar, described above, is the same. Know one thing. The frame puts that DOM
 inside its own component tree, where your page stylesheet cannot reach it. Only an inherited text
 property and a custom property of the theme cross over. That is deliberate. What goes in a region
-must be a component, such as `appLogo`, `themeSelect` or one of your own. A component brings its own
-styles with it. So it looks the same in the bar, in the column and in the drawer of a phone. When
-you start to write a page rule for something in `extras`, put it in a component instead.
+must be a component, such as `appLogo`, `themeSelect`, `userCard` or one of your own. A component
+brings its own styles with it. So it looks the same in the bar, in the column and in the drawer of a
+phone. When you start to write a page rule for something in `extras`, put it in a component instead.
 
 **There is no aside region, and that is deliberate.** The frame exists so that one call makes an app
 suit a desktop and a phone at the same time. That is why every region that it owns has a phone form.
-The bar folds into a drawer, the sidebar becomes the bottom bar, and the account moves. A contextual
-side column has no phone form. On a phone there is no room beside the content. The frame would have
-to hide what you put there, or stack it under the page without knowing what it is. So the shell
-offers no such region, instead of a region that works on a wide screen only. The content that would
-go there has two homes, and both are yours:
+The bar folds into a drawer, the sidebar becomes the bottom bar, the trail becomes the title, and
+the extras move. A contextual side column has no phone form. On a phone there is no room beside the
+content. The frame would have to hide what you put there, or stack it under the page without knowing
+what it is. So the shell offers no such region, instead of a region that works on a wide screen
+only. The content that would go there has two homes, and both are yours:
 
 - **Content that comes and goes is a `drawer`.** Filters, an inspector and a detail view are
   examples. Mount the drawer in the main content, and open it from a control there. It slides in
@@ -245,27 +254,27 @@ go there has two homes, and both are yours:
 
 ```js
 shell(
-  { navbar, sidebar, account },
-  flex({ gap: 4 }, page(), div({ class: 'aside' }, filters())),
+  { navbar: { map: app, icons }, extras },
+  flex({ gap: 4 }, router({ map: app, screens }), div({ class: 'aside' }, filters())),
 )
 ```
 
 **The shell is the one component that changes its structure by width.** On a phone it becomes the
-shape that a phone app has. The top bar becomes a hamburger and a two-line title, with the section
-over the row that you are on. On a phone the frame must tell you where you are. The **sidebar
-becomes the bottom bar**, where a thumb can reach it. That is four rows, and then a **More** button
-that opens a sheet with the rest. The **sections, the footer rows, the pickers, the `extras` of the
-sidebar and the account card move into the hamburger drawer**. That drawer is a real `<dialog>`. So
+shape that a phone app has. The top bar becomes a hamburger and a two-line title, which is the last
+two crumbs of the trail. On a phone the frame must tell you where you are. The **sidebar becomes the
+bottom bar**, where a thumb can reach it. That is four rows, and then a **More** button that opens a
+sheet with the rest. The **sections, the footer rows, the pickers, the `extras` of the sidebar and
+the extras of the shell move into the hamburger drawer**. That drawer is a real `<dialog>`. So
 Escape, the focus trap and the return of the focus are the job of the browser. When the current
-section has no sidebar, the bottom bar carries the sections instead. imp drops nothing. It folds
-everything up.
+section has no sidebar, the bottom bar carries the sections instead. The trail strip hides, because
+the title carries it. imp drops nothing. It folds everything up.
 
 On a desktop the column collapses to an icon rail, from a toggle in its head. That head also names
-the section that you are in. The toggle is there only when every row in the column has an `icon`.
-That means the rows of the section and the footer rows. A rail of blank rows would show nothing. So
-a column with a row that has no icon stays open. When the column collapses, the rail keeps the icons
-and hides the rest: the logo, the name of the section, the `extras` of the sidebar, and the pickers
-and the account card at the foot.
+the context that you are in, which is the section, or the project when a param node is on the path.
+The toggle is there only when every row in the column has an `icon`. That means the rows of the
+section and the footer rows. A rail of blank rows would show nothing. So a column with a row that
+has no icon stays open. When the column collapses, the rail keeps the icons and hides the rest: the
+logo, the name of the context, the `extras` of the sidebar, and the extras at the foot.
 
 Two custom properties tune the frame; set them anywhere above it:
 
@@ -287,7 +296,7 @@ same. The frame gives it the inset and the radius through two custom properties.
 panel lines up with the column that it slides in beside.
 
 ```js
-shell({ logo: brand(), navbar, sidebar, account, gap: 3 }, page())
+shell({ logo: brand(), navbar: { map: app, icons }, extras, gap: 3 }, router({ map: app, screens }))
 ```
 
 **What the frame sits on is a theme token.** The shell paints `background-app`. Every built-in theme
@@ -304,40 +313,44 @@ decorative, and imp hides it from assistive technology. So put nothing interacti
 tokens: { ...light.tokens, 'background-app': 'linear-gradient(135deg, #dbeafe, #ffffff 60%)' }
 
 // or, for a moving backdrop
-shell({ navbar, sidebar, gap: 3, background: driftingShapes() }, page())
+shell({ navbar: { map: app }, gap: 3, background: driftingShapes() }, router({ map: app, screens }))
 ```
 
-**Authentication is one prop.** `signedIn: false` withholds the nav and the bottom bar. It closes
-the drawer when the drawer was open. It leaves one top bar, with the logo and the sign-in button. So
-an app with a signed-out state does not need a second layout for it. Leave `signedIn` out
-completely, and there is no authentication concept.
+**Who is signed in is not a prop of the frame.** Put `userCard` in `extras`. It shows a sign-in
+button while nobody is signed in, and the person with a sign-out action once somebody is. Whether a
+signed-out visitor sees a section is the `access` of the map, see **[Routing](routing.md)**. A
+visitor with no session sees only the open nodes, and the frame never learns about the session.
+
+**The trail is chrome.** The shell renders `breadcrumbs` above the main content from the map, and
+`breadcrumbs: false` turns it off. So a screen never renders a trail of its own. A crumb for a param
+node whose `options` the router binds carries a picker of the sibling values.
 
 Know two things before you structure an app. First, the fold is a **media query**. So a shell inside
 a panel narrower than `48rem`, on a wide screen, keeps its desktop layout. Give a frame the room
 that a frame needs. Second, a screen deeper in the tree cannot push markup up into the nav. What
-travels upward is **data**. Keep a nav state next to the shell. Let each screen contribute its rows
-on mount, and withdraw them on unmount. Hand that state to the shell as `items`. The rule is this:
-**at the call site you write a literal array. At runtime a screen writes a state.**
-
-The withdrawal runs in `onRemove`, after the screen has left the page. That is too late to look a
-state up, because no ancestor is left to find it in. So resolve the state in `setup`. In `onRemove`,
-`useState(self, name)` returns the handle that `setup` resolved. A handle that you already hold
-reads and writes anywhere.
+travels upward is **data**, through a state that a binding names. The `options` of a param node,
+bound at the router, and the `tags` of the navbar read a state. A screen fills that state on mount,
+and clears it on unmount. The rule is this: **the binding names the state. A screen writes it.**
 
 ```js
-const projectScreen = component('acme-project', {
-  setup: async (self, projectId) => {
-    const current = useState(self, 'acme.nav.project')
-    const project = await useHttpClient(self, 'acme.api').get(`/projects/${projectId}`)
-    current.set({ id: projectId, name: project.name })
-    return overview(project)
+export const app = appMap({
+  projects: { $projectId: { builds: {} } },
+})
+
+router({ map: app, screens, options: { [app.projects.$projectId]: 'acme.projects' } })
+
+const projectList = component('acme-projects', {
+  setup: async (self) => {
+    const options = useState(self, 'acme.projects')
+    const projects = await useHttpClient(self, 'acme.api').get('/projects')
+    options.set(projects.map((project) => ({ value: project.id, label: project.name })))
+    return list(projects)
   },
-  onRemove: (self) => useState(self, 'acme.nav.project').set(null),
 })
 ```
 
-The owner of the shell computes its `items` from that state. A `computed` over `acme.nav.project`
-adds the `/projects/{id}/...` rows while a project is open, and drops them when the state is `null`.
+The crumb of the project then names the project, and its picker lists the others. Nothing in the
+frame knows where the list came from.
 
 ## The frame comes with its furniture
 
@@ -348,59 +361,56 @@ fit with your own, and you ask the frame for no permission.
 
 ```js
 import { shell } from 'imp/std/layout'
-import { appLogo, langSelect, themeSelect } from 'imp/std/shell'
+import { appLogo, langSelect, themeSelect, userCard } from 'imp/std/shell'
 import { icon } from 'imp/std'
 import { luBox, luChartColumn } from 'imp/icons'
 
 shell(
   {
     logo: appLogo({ label: 'Acme', icon: icon(luBox, { size: 'lg' }) }),
-    navbar: {
-      label: 'Sections',
-      selected: section,
-      items: [
-        { id: 'reports', label: 'Reports', href: '/reports', icon: icon(luChartColumn) },
-        { id: 'orders', label: 'Orders', href: '/orders', icon: icon(luBox) },
-      ],
-    },
-    sidebar: { label: 'Reports', selected: current },
-    extras: [themeSelect(), langSelect({ languages: ['en', 'pl'] })],
-    account: {
-      name: user.name,
-      description: user.email,
-      picture: user.avatar,
-      onSignIn: signIn,
-      onSignOut: signOut,
-    },
-    signedIn: session,
+    navbar: { label: 'Sections', map: app, icons: { [app.reports]: luChartColumn } },
+    sidebar: { label: 'Pages' },
+    extras: [
+      themeSelect(),
+      langSelect({ languages: ['en', 'pl'] }),
+      userCard({
+        signedIn: session,
+        name: user.name,
+        description: user.email,
+        picture: user.avatar,
+        onSignIn: signIn,
+        onSignOut: signOut,
+      }),
+    ],
   },
-  router({ routes }),
+  router({ map: app, access, screens }),
 )
 ```
 
 | Component     | What it is                                                                              |
 | ------------- | --------------------------------------------------------------------------------------- |
 | `appLogo`     | The brand block: a mark, the app name, an optional tagline, linked home                 |
-| `breadcrumbs` | The trail above the main region, as plain data; the last crumb is the page              |
+| `breadcrumbs` | The trail of levels, with a picker per crumb; the frame renders it from the map         |
 | `userCard`    | Who is signed in, with an optional sign-out button - or a sign-in button when nobody is |
 | `themeSelect` | A light / dark / system picker that applies the theme and remembers the choice          |
 | `langSelect`  | A language picker that calls `setLang` and remembers the choice                         |
 
-`userCard` is the exception. Inside `shell` you never call it, because the frame builds it from your
-`account` data. The frame also moves that same card into the drawer on a phone. Call `userCard`
-directly when you write your own frame, or anywhere else that shows a person.
+`breadcrumbs` is the exception. Inside `shell` you never call it, because the frame renders the
+trail from the map. Call `breadcrumbs` directly when you write your own frame, or on a page that has
+no map. A crumb can carry `options`, which gives it a picker: a small button beside the crumb opens
+a list of the sibling levels, as the repository crumb on a code host does.
 
-A sidebar row and a navbar row are not a separate component either. They are the items in the tree
-that you hand to the frame. There is no separate menu component, because the frame is where the
-destinations of an app live. The `tag` of a row is plain data, such as
-`tag: { text: 'new', color: 'green' }`. imp builds the `tag` component from it. So a count or a
-status pill needs no markup of your own. A group takes the same key. An icon comes from `icon` in
-the base group. Every icon prop in the library accepts any DOM, so your own `<svg>` goes wherever
-`icon()` goes.
+A sidebar row and a navbar row are not a separate component either. They are the nodes of the map,
+or the items in the tree that you hand to a frame with no router. There is no separate menu
+component, because the frame is where the destinations of an app live. A pill on a row is a `tags`
+entry of the navbar, keyed by the handle of the node: `{ text: 'new', color: 'green' }`, or a state
+that holds one. imp builds the `tag` component from it. So a count or a status pill needs no markup
+of your own. An icon comes from `icons` on the navbar, keyed the same way. Every icon prop in the
+library accepts any DOM, so your own `<svg>` goes wherever a Lucide export goes.
 
-The furniture of a page is not frame chrome, and it has no region of its own. A breadcrumb trail, a
-page title and a toolbar of actions are examples. They go at the top of the main content that you
-pass as children. That is where they belong. They change with the screen, and the frame does not.
+The furniture of a page is not frame chrome, and it has no region of its own. A page title and a
+toolbar of actions are examples. They go at the top of the main content that you pass as children.
+That is where they belong. They change with the screen, and the frame does not.
 
 Two of these components hold state that lives longer than the page. `themeSelect` and `langSelect`
 remember the choice in `localStorage`. Pass `remember: false` when the app owns that decision.
@@ -469,7 +479,7 @@ platform already has. It gives the system back to you, instead of wrapping it in
 
 ```js
 component('invoice-grid', {
-  styles: () => `
+  styles: `
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
   `,
   setup: () => div({ class: 'grid' }, ...cards()),

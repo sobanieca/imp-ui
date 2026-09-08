@@ -42,7 +42,9 @@ that the first one had hidden.
 
 `lint.publicExports` is the escape hatch for code that the project itself cannot use. A bare path
 makes a whole file public. A `path.js#name` entry makes one export public, and imp still checks the
-rest of the file.
+rest of the file. A grant marks its exports as used the same way an import does, so it follows
+`export *`. A bare path on a barrel makes every export public that the barrel takes from a star
+target. imp's own library uses this for `api/icons.js`, which re-exports the whole icon set.
 
 imp follows a dynamic `import()` as far as it can read the specifier, and no further:
 

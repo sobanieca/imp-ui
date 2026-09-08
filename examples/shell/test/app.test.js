@@ -1,4 +1,5 @@
 import { mount } from 'imp'
+import { navigate } from 'imp/router'
 import { beforeEach, expect, test } from 'imp/test'
 import { app } from '../src/app.js'
 
@@ -21,6 +22,17 @@ const links = (root, label) => [...menu(root, label).querySelectorAll('a')]
 
 const hrefs = (root, label) => links(root, label).map((anchor) => anchor.getAttribute('href'))
 
+const marked = (root, label) =>
+  links(root, label)
+    .filter((anchor) => anchor.getAttribute('aria-current') === 'page')
+    .map((anchor) => anchor.getAttribute('href'))
+
+const crumbs = (root) =>
+  [...region(root, '.trail imp-breadcrumbs').shadowRoot.querySelectorAll('.crumb')]
+    .map((crumb) => crumb.textContent)
+
+const settled = () => new Promise((resolve) => setTimeout(resolve))
+
 const render = () => {
   mount(document.body, app())
   return document.querySelector('app-root')
@@ -29,10 +41,10 @@ const render = () => {
 beforeEach(() => {
   document.body.replaceChildren()
   localStorage.clear()
-  history.replaceState(null, '', '/')
+  navigate('/tasks/all', { replace: true })
 })
 
-test('the shell frames the screen with a navbar, a sidebar and the account chrome', () => {
+test('the shell frames the screen with a navbar, a sidebar and the extras', () => {
   const root = render()
   expect(region(root, '.topbar')).toEqual(expect.anything())
   expect(region(root, '.sidebar')).toEqual(expect.anything())
@@ -41,20 +53,34 @@ test('the shell frames the screen with a navbar, a sidebar and the account chrom
   expect(region(root, '.tools imp-user-card')).toEqual(expect.anything())
 })
 
-test('the navbar carries the top level and the sidebar the filters under it', () => {
+test('the map gives the navbar the sections and the sidebar the filters under the current one', () => {
   const root = render()
-  expect(hrefs(root, 'Sections')).toEqual(['/', '/settings'])
-  expect(hrefs(root, 'Filters')).toEqual(['/', '/active', '/done'])
+  expect(hrefs(root, 'Sections')).toEqual(['/tasks', '/settings'])
+  expect(hrefs(root, 'Filters')).toEqual(['/tasks/all', '/tasks/active', '/tasks/done'])
 })
 
 test('the section and the filter for the current path are the marked ones', () => {
   const root = render()
-  const marked = (label) =>
-    links(root, label)
-      .filter((anchor) => anchor.getAttribute('aria-current') === 'page')
-      .map((anchor) => anchor.getAttribute('href'))
-  expect(marked('Sections')).toEqual(['/'])
-  expect(marked('Filters')).toEqual(['/'])
+  expect(marked(root, 'Sections')).toEqual(['/tasks'])
+  expect(marked(root, 'Filters')).toEqual(['/tasks/all'])
+})
+
+test('the trail and the document title follow the route', async () => {
+  const root = render()
+  expect(crumbs(root)).toEqual(['Tasks', 'All tasks'])
+  expect(document.title).toEqual('All tasks - imp tasks')
+  navigate('/tasks/2')
+  await settled()
+  expect(crumbs(root)).toEqual(['Tasks', 'Feed the sidebar from the route'])
+  expect(marked(root, 'Filters')).toEqual([])
+})
+
+test('the root forwards to the tasks, and the tasks to the first filter', async () => {
+  navigate('/', { replace: true })
+  render()
+  await settled()
+  await settled()
+  expect(location.pathname).toEqual('/tasks/all')
 })
 
 test('the screen lists the seeded tasks', () => {

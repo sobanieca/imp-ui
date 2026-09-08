@@ -150,9 +150,9 @@ independent states under the same name. State for the lifetime of the app is sta
 initialize in your **root** component. There is no global scope. Give each state the narrowest scope
 that covers its readers.
 
-For DOM that imp renders outside the subtree of the provider, such as an overlay appended to
-`document.body`, `useState` cannot find the name. Pass the helper down as an argument. The helper
-works anywhere.
+For DOM that you mount outside the subtree of the provider, such as a second `mount` into another
+element of the page, `useState` cannot find the name. Pass the helper down as an argument. The
+helper works anywhere.
 
 This is the standard shape of an async mount:
 

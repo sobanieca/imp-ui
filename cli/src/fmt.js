@@ -1,6 +1,6 @@
 import { createContext } from '@dprint/formatter'
 import { relative } from '@std/path'
-import { FMT_EXTENSIONS, FMT_PLUGINS, wasmUrl } from './fmt_plugins.js'
+import { FMT_EXTENSIONS, FMT_PLUGINS, wasmUrl } from './fmt-plugins.js'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 

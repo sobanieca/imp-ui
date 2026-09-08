@@ -105,10 +105,10 @@ applyTheme('imp-high-contrast-dark')
 | `imp-high-contrast-dark`  | white on black, the same at the other polarity        |
 
 The high-contrast pair does more than make the text darker. The borders and the focus ring become
-wider, through `border-width` and `focus-ring-width`. A hover state moves in a larger step, so it
-stays visible. Every pair of a foreground and a background is well above the WCAG AA threshold.
-These are ordinary themes. So one of them re-skins the whole app in a single write of the custom
-properties, exactly like a change between light and dark.
+wider, through `border-width` and `focus-ring-width`, and a disabled control stays more visible,
+through `disabled-opacity`. Every pair of a foreground and a background is well above the WCAG AA
+threshold. These are ordinary themes. So one of them re-skins the whole app in a single write of the
+custom properties, exactly like a change between light and dark.
 
 These four names are the only strings that `applyTheme` accepts. Any other string throws. The `imp-`
 prefix keeps them out of your way. Your own themes can have the names `light` and `dark`, and there
@@ -116,21 +116,69 @@ is never a question about whose theme a name refers to. Everything else works ex
 theme object. The tokens arrive as `--imp-*` custom properties, imp sets `colorScheme` to match, and
 the `theme` state updates.
 
-To start from a built-in theme, instead of writing every value, apply the theme and read it back
-through the `theme` state. An applied theme is frozen. So copy the tokens into your own object. Do
-not edit them in place:
+To start from a built-in theme, instead of writing every value, name it as the `base` of your theme.
+imp resolves the base, and then writes your tokens over it. The result is a complete theme. The
+`name` and the `colorScheme` come from the base when you leave them out:
 
 ```js
-import { applyTheme, theme } from 'imp/theme'
-
-applyTheme('imp-dark')
+import { applyTheme } from 'imp/theme'
 
 applyTheme({
+  base: 'imp-dark',
   name: 'midnight',
-  colorScheme: 'dark',
-  tokens: { ...theme.get().tokens, 'color-primary': '#a78bfa' },
+  tokens: { 'color-primary': '#a78bfa' },
 })
 ```
+
+`base` accepts the four built-in names only. `theme.get()` returns the resolved theme, with every
+token filled in and no `base` key. An applied theme is frozen. So to derive one theme from another
+theme of your own, spread its tokens into a new object. Do not edit them in place.
+
+## Fonts
+
+The font of an app is two tokens. `font-family` is the text of every component. `font-family-mono`
+is code and other monospaced text. The built-in themes set both to a system font stack. So an app
+ships no font file, and the text renders in the font of the platform.
+
+To use a web font, do two things. Load the font in `index.html`, and name it in the theme. imp does
+not load a font for you. A `<link>` in the page is what the browser needs, and the font then reaches
+every component, including the inside of a shadow root:
+
+```html
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+  />
+</head>
+```
+
+```js
+await init({
+  theme: {
+    base: 'imp-light',
+    tokens: { 'font-family': "'Inter', system-ui, sans-serif" },
+  },
+})
+```
+
+To host the font yourself, put the font files under `public/fonts/`, and link a stylesheet with an
+`@font-face` rule from the same `<head>`. Either way, follow these rules:
+
+- **Load the weights 400 and 600.** They are the values of `font-weight-normal` and
+  `font-weight-bold`, and they are the only two weights that the standard components use. A weight
+  that is not loaded is synthesized by the browser, or it falls back to the nearest loaded weight.
+  So a bold label loses its emphasis with no error.
+- **Keep the system stack behind your font.** A font that lacks a script, such as Arabic or Chinese,
+  then falls back per glyph, and a translated page still renders.
+- **Set the fonts once, for every theme.** A font does not change between light and dark. A theme
+  file from the theme editor keeps both fonts in one shared block for this reason.
+
+`imp preview` generates its own page, so a font that `index.html` links does not load there. To see
+a web font in the component preview and in the theme editor, point `preview.entry` in `imp.json` at
+an HTML file that links the font. See **[`imp preview`](cli.md#imp-preview)**.
 
 ### How to follow the contrast preference of the reader
 
@@ -197,13 +245,15 @@ edit to the file reloads the page with the new tokens. See **[`imp preview`](cli
 ## How to write a theme with the theme editor
 
 You do not have to write ninety tokens to get a theme. `imp preview` ships a **theme editor** beside
-the switcher. Open it with _edit theme_. It asks for four things:
+the switcher. Open it with _edit theme_. It asks for six things:
 
 | Knob              | Choices                    | What it drives                                             |
 | ----------------- | -------------------------- | ---------------------------------------------------------- |
 | **Mode**          | light, dark                | Which of the two themes you are editing                    |
 | **Primary**       | any color                  | The accent: buttons, links, focus rings                    |
 | **Secondary**     | any color                  | The muted tone, and the hue of every surface, border, text |
+| **Font**          | any font stack             | `font-family`, the text of every component                 |
+| **Mono font**     | any font stack             | `font-family-mono`, code and monospaced text               |
 | **Border radius** | none, small, medium, large | `radius-item` and `radius-container`, as one step          |
 | **Shadow**        | none, soft, strong         | The three `shadow-*` steps                                 |
 
@@ -227,10 +277,12 @@ await init({ theme: light })
 applyTheme(dark)
 ```
 
-From that point the generated file is yours to edit by hand, and its layout suits that. The 31 named
-palette colours sit at the top, as a shared `palette` object that both themes spread in. So a change
-to `color-grass` changes it for light and dark at the same time. The editor never rewrites the file.
-It is a starting point, not a format that it owns.
+From that point the generated file is yours to edit by hand, and its layout suits that. The two
+fonts sit at the top, as a shared `fonts` object, and the 31 named palette colours follow, as a
+shared `palette` object. Both themes spread both objects in. So a change to `color-grass` changes it
+for light and dark at the same time, and so does a change of font. The editor never rewrites the
+file. A web font that you name in the editor shows on the page only when it is loaded there. See
+**[Fonts](#fonts)**. It is a starting point, not a format that it owns.
 
 ## Token names
 
@@ -254,7 +306,7 @@ them:
 
 | Group      | Tokens                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                          |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                                                |
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                            |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |

@@ -53,6 +53,9 @@ USAGE
                                         --output writes a copy instead of overwriting)
   imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
   imp fmt [...paths]                    format source
+  imp map [file]                        print the application map of the app: every
+                                        node with its path, label, access and
+                                        description (the 'map' file of imp.json)
   imp skill [...subject]                print imp's usage manual for a subject -
              [./component.js]           the documentation shipped inside this binary,
                                         written to be read before writing imp code

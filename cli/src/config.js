@@ -1,6 +1,6 @@
 import { dirname, join, resolve } from '@std/path'
 import { applyEdits, modify, parse as parseJsonc, printParseErrorCode } from './vendor/jsonc.js'
-import { DEFAULT_LICENSE_POLICY, LICENSE_POLICIES } from './license_policy.js'
+import { DEFAULT_LICENSE_POLICY, LICENSE_POLICIES } from './license-policy.js'
 
 const isPlainObject = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -99,15 +99,15 @@ export async function loadImpConfig(startDir) {
   if (!isPlainObject(config)) {
     throw new Error(`invalid ${name} - expected a JSON object at the top level`)
   }
-  if (config.imports !== undefined) {
-    throw new Error(
-      `invalid ${name} - 'imports' has been replaced by 'dependencies'; run 'imp install <package>' to declare each dependency`,
-    )
-  }
   for (const key of ['dependencies', 'fmt', 'lint', 'test', 'preview', 'pwa', 'environments']) {
     if (config[key] !== undefined && !isPlainObject(config[key])) {
       throw new Error(`invalid ${name} - '${key}' must be an object`)
     }
+  }
+  if (config.map !== undefined && (typeof config.map !== 'string' || config.map === '')) {
+    throw new Error(
+      `invalid ${name} - 'map' must be the path of the file that exports the application map, like "src/app-map.js"`,
+    )
   }
   if (config.licenses !== undefined) {
     if (Array.isArray(config.licenses)) {
@@ -201,6 +201,11 @@ export async function loadImpConfig(startDir) {
   ) {
     throw new Error(
       `invalid ${name} - 'preview.themes' must be an array of paths to theme modules`,
+    )
+  }
+  if (config.preview?.entry !== undefined && typeof config.preview.entry !== 'string') {
+    throw new Error(
+      `invalid ${name} - 'preview.entry' must be a path to the HTML file that frames every preview page`,
     )
   }
   if (config.preview?.groups !== undefined && typeof config.preview.groups !== 'string') {

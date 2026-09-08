@@ -16,9 +16,10 @@ first components, and not after somebody writes the catalog.
 
 A standard component is an **ordinary imp component, built on the public API of the kernel only**,
 and imp ships it. Those components live under `lib/src/std/<group>/`, with one file per component.
-imp groups them by the taxonomy of the catalog, which is `general`, `layout`, `inputs`, `display`,
-`feedback`, `navigation` and `data`. So a folder, a section of the documentation and an entry of the
-catalog map one to one. Nothing in `std/` is privileged. It imports the same surface as an app.
+imp groups them by the taxonomy of the catalog. The groups that exist are `general`, `layout`,
+`inputs`, `display`, `navigation`, `shell` and `feedback`, and `todo/stdlib-components.md` names the
+ones to come. So a folder, a section of the documentation and an entry of the catalog map one to
+one. Nothing in `std/` is privileged. It imports the same surface as an app.
 
 - **The library is a separate import namespace, split by group.** The kernel is `imp`, with its
   specifiers per subject, which are `imp/html`, `imp/state`, `imp/router`, `imp/theme` and

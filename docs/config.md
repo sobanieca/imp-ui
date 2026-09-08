@@ -42,6 +42,8 @@ one on its own, from where you are.
 - **`targetImpHost`** is `true` when what you build must run inside another imp application.
   `imp build` then keeps the `imp` imports bare, for that host to provide. It does not compile its
   own copy in. See **[Targeting an imp host](cli.md#targeting-an-imp-host--sharing-the-hosts-imp)**.
+- **`map`** is the path of the file that exports your application map, such as `src/app-map.js`.
+  `imp map` prints that file. `imp init` writes the key. See **[Routing](routing.md)**.
 - **`fmt`** holds the formatting options for `imp fmt`. See **[Formatting](fmt.md)**.
 - **`lint`** holds more lint configuration: `rules`, `exclude`, and `publicExports` for code that
   something outside the project uses. imp always applies its own rule set on top. See
@@ -52,8 +54,9 @@ one on its own, from where you are.
   `*.preview.js` files imp leaves out of the discovery. `themes` is an array of paths to your own
   theme modules, which imp offers in the preview theme menu. `translations` maps a language code to
   one of your translation files, which imp offers in the preview language switcher. `groups` is the
-  path to a module that names the groups of the catalog, with their icons and their order. See
-  **[`imp preview`](cli.md#imp-preview)**.
+  path to a module that names the groups of the catalog, with their icons and their order. `entry`
+  is the path to an HTML file that frames every preview page, for a font link or a stylesheet that a
+  preview needs. See **[`imp preview`](cli.md#imp-preview)**.
 - **`pwa`** describes your app as a Progressive Web App. `name` and `icon` are necessary. The
   optional keys are `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl` and `scope`.
   The block drives the manifest and the icons that `imp start` injects automatically, and the full
@@ -147,9 +150,9 @@ imp start --env dev
 imp build --env prod
 ```
 
-With no `--env`, imp uses an alias named `default`, when you defined one. Then it uses the `IMP_ENV`
-shell variable, when it is set. This helps in CI, where `--env` always wins against the variable.
-Otherwise imp serves and builds with no environment. An alias that you never declared stops the
+With no `--env`, imp uses the `IMP_ENV` shell variable, when it is set. This helps in CI, where
+`--env` always wins against the variable. Then it uses an alias named `default`, when you defined
+one. Otherwise imp serves and builds with no environment. An alias that you never declared stops the
 command, and imp lists the aliases that you did declare.
 
 Read the selected values in your app through the `env` object that imp exports. The same code works

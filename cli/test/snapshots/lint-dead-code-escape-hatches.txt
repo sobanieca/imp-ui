@@ -9,11 +9,14 @@ exit code: 1
 error[imp/unused-export]: 'external' is exported by src/lib.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
  --> src/lib.js:3:14
 
+error[imp/unreachable-module]: nothing imports src/sdk_core.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/sdk_core.js:1:1
+
 error[imp/unreachable-module]: nothing imports src/sdk.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
  --> src/sdk.js:1:1
 
-Found 2 problems
-Checked 4 files
+Found 3 problems
+Checked 5 files
 
 --- publicExports ---
 $ imp lint  (cwd: <tmp>)
@@ -23,7 +26,7 @@ exit code: 0
 (empty)
 
 --- stderr ---
-Checked 4 files
+Checked 5 files
 
 --- computed dynamic import ---
 $ imp lint  (cwd: <tmp>)
@@ -40,7 +43,7 @@ error[imp/unreachable-module]: nothing imports src/never.js - no entry page, tes
  --> src/never.js:1:1
 
 Found 2 problems
-Checked 5 files
+Checked 6 files
 
 --- folder named in a template ---
 $ imp lint  (cwd: <tmp>)
@@ -50,4 +53,4 @@ exit code: 0
 (empty)
 
 --- stderr ---
-Checked 5 files
+Checked 6 files

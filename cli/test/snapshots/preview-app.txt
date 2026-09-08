@@ -1,0 +1,9 @@
+GET /@imp/preview/app.js
+status: 200
+content-type: text/javascript; charset=utf-8
+cache-control: no-store
+
+starts the preview chrome: true
+catalog embedded: true
+loads a preview on demand: true
+library shared through a chunk: true

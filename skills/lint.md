@@ -28,23 +28,17 @@ own rules. imp always applies them as errors, and you cannot reconfigure them.
 | `imp/on-remove-through-self`     | in `onRemove`: `useState`/`useHttpClient` of a name `setup` never resolved, `initState`, `initHttpClient`, `watch(self)` | resolve the name in `setup`, then reach it again in `onRemove`                         |
 | `imp/no-self-at-module-scope`    | `self`, a property of `self` or a handle resolved through `self` assigned to a module-scope variable in a hook           | store it on `self`: `self.field = ...`                                                 |
 | `imp/abort-check-after-await`    | a resolution through `self` after an `await` in an async `setup` with no `self.abortSignal` guard                        | check `self.abortSignal.aborted` after the `await`, or pass the signal to the call     |
+| `imp/no-state-as-child`          | a state handle, `lang`, `dir`, `theme` or `useRoute()` passed as a child of an element or a standard component           | render it with `text()`, `view(fn)` or `each(fn)`, or bind a prop with the handle      |
+| `imp/no-get-in-binding`          | `handle.get()` as a prop value of an element or a standard component                                                     | pass the handle itself: `{ disabled: busy }`                                           |
+| `imp/no-root-query-in-setup`     | `querySelector`/`querySelectorAll`/`getElementById` on `self.host.shadowRoot` inside `setup`                             | keep the node you built in a variable, or query in `onMount`                           |
+| `imp/component-name`             | a literal `component()` name that is not lowercase-with-a-dash (or is HTML-reserved)                                     | name it `my-app-profile`                                                               |
+| `imp/import-source`              | an imp export imported from the wrong specifier                                                                          | autofixed - the name is moved to the right import                                      |
+| `imp/icons-by-name`              | `import * as`, `export *` or `import()` of `imp/icons`                                                                   | import each icon by name: `import { luHouse } from 'imp/icons'`                        |
+| `imp/exact-dependency-versions`  | inexact pins in `imp.json`, inline `npm:`/`jsr:` specifiers, undeclared bare imports, unknown `imp/...` subpaths         | pin exactly, or run the `imp install` command the message prints                       |
 
 A rule that names a hook (`setup`, `loading`, `error`, `onMount`, `onRemove`) looks only at an
 object literal passed to `component(...)` from `imp` or `router(...)` from `imp/router`. A `setup`
-key in any other object, such as a bundler plugin, is not a hook. | `imp/no-state-as-child` | a
-state handle, `lang`, `dir`, `theme` or `useRoute()` passed as a child of an element or a standard
-component | render it with `text()`, `view(fn)` or `each(fn)`, or bind a prop with the handle | |
-`imp/no-get-in-binding` | `handle.get()` as a prop value of an element or a standard component |
-pass the handle itself: `{ disabled: busy }` | | `imp/no-root-query-in-setup` |
-`querySelector`/`querySelectorAll`/`getElementById` on `self.host.shadowRoot` inside `setup` | keep
-the node you built in a variable, or query in `onMount` | | `imp/component-name` | a literal
-`component()` name that is not lowercase-with-a-dash (or is HTML-reserved) | name it
-`my-app-profile` | | `imp/import-source` | an imp export imported from the wrong specifier |
-autofixed - the name is moved to the right import | | `imp/icons-by-name` | `import * as`,
-`export *` or `import()` of `imp/icons` | import each icon by name:
-`import { luHouse } from 'imp/icons'` | | `imp/exact-dependency-versions` | inexact pins in
-`imp.json`, inline `npm:`/`jsr:` specifiers, undeclared bare imports, unknown `imp/...` subpaths |
-pin exactly, or run the `imp install` command the message prints |
+key in any other object, such as a bundler plugin, is not a hook.
 
 Each rule protects one subject. Read [components](components.md) for the component rules,
 [state](state.md) for the state rules, [http](http.md) for the http client rules,
@@ -112,9 +106,10 @@ target as used. A template with a literal folder, such as `` `./locales/${code}.
 folder as loaded and used. A computed specifier, such as `import(path)`, is the
 `imp/computed-import` error. To fix it, name the folder in a template, or list what it loads in
 `publicExports`. imp follows `export * from './x.js'` name by name, so it still reports an export
-that nothing takes off the barrel. Only a reachable module counts as an importer, so the imports of
-a dead file keep nothing alive. A file that does not parse stops all three checks for that run, and
-imp prints a `note:` line.
+that nothing takes off the barrel. A `publicExports` entry follows `export *` too. A bare path on a
+barrel makes every re-exported name public. Only a reachable module counts as an importer, so the
+imports of a dead file keep nothing alive. A file that does not parse stops all three checks for
+that run, and imp prints a `note:` line.
 
 ```
 error[imp/unreachable-module]: nothing imports src/orphan.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project

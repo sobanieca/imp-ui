@@ -47,7 +47,7 @@ draws it, and takes the value, not a name.**
 - **The hand-drawn set is gone.** To keep both would mean two components, two naming schemes, and a
   standing question about which one to use. That would save an app that draws one glyph a few
   hundred bytes. `icon` is the one icon component, and Lucide is the one set.
-- **There is one generated file, and not one file per icon.** `lib/src/icons/lucide_icons.js` is 434
+- **There is one generated file, and not one file per icon.** `lib/src/icons/lucide-icons.js` is 434
   kB, and it holds 1791 declarations. `deno task lucide` writes it, from the pinned `lucide-static`
   package, and you commit it. A module per icon would shake in the same way, and it would add 1791
   files to the repository for no gain. esbuild shakes per declaration inside a module. The generator
@@ -59,7 +59,7 @@ draws it, and takes the value, not a name.**
   legal comment. That comment names the version, the licences and both copyright holders.
   `imp build` already collects a legal comment into `LICENSES.txt`, see
   `built-app-license-notices.md`. So an app that draws an icon carries the notice, and an app that
-  draws none carries nothing. The same record is in `THIRD_PARTY_LICENSES.md`, for the binary.
+  draws none carries nothing. The same record is in `THIRD-PARTY-LICENSES.md`, for the binary.
 
 ## Consequences
 
@@ -74,5 +74,5 @@ draws it, and takes the value, not a name.**
 - The binary grows by 434 kB, which is well under one percent of it. `deno fmt` and `deno lint`
   exclude the generated file.
 - Lucide renames an icon between two releases. So an update is one pinned version in
-  `tools/vendor_lucide.js`, a file that imp generates again, and possibly a rename in the public API
+  `tools/vendor-lucide.js`, a file that imp generates again, and possibly a rename in the public API
   of imp. Before version 1.0.0, that is a rename and nothing more.

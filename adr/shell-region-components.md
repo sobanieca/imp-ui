@@ -12,17 +12,20 @@ icon per destination, and imp had four private marks in place of a public `icon`
 There were two shapes. The pieces could be **props on `shell`**, as in `shell({ logo, user })`. That
 would sort content by name again, and it would open the question that the ADR of the frame closed.
 Or they could be **components that an app passes into a region**, which is what a region prop
-already accepts. Nothing about them belongs to the frame. A breadcrumb trail in the body of a page,
-and a theme picker on a settings screen, are the same components.
+already accepts. Nothing about them belongs to the frame. A theme picker on a settings screen is the
+same component as the one in the bar.
 
 ## Decision
 
 **`imp/std/shell` is a component group like any other.** It holds the pieces that usually fill the
 frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`.
 
-- **`shell` gains no prop.** Each piece is DOM that the app passes into a region. So the frame does
-  not change, and you can replace any piece with your own, and you ask the frame for no permission.
-  The name of the group says where these pieces are usually used, not where you can use them.
+- **`shell` gains no prop for a piece.** Each piece is DOM that the app passes into a region. So the
+  frame does not change, and you can replace any piece with your own, and you ask the frame for no
+  permission. The name of the group says where these pieces are usually used, not where you can use
+  them. The one piece the frame renders itself is `breadcrumbs`, from the application map, see
+  `application-map.md`. The trail is chrome, because it derives from the nav tree and folds into the
+  phone title.
 - **A nav row is not a new component.** A sidebar row and a navbar row are nav items. Each one takes
   an `icon`, which is any DOM, and an `onClick`. A row with an `onClick` and no `href` renders a
   real `<button>`. That is how a menu carries an action beside its destinations. One data shape
@@ -32,10 +35,14 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSe
   app imports, see `bundled-icon-set.md`. Every icon prop in the library accepts **any DOM**. So
   `icon` is a convenience, and never a requirement. A component that needs a mark internally still
   draws its own mark, and it imports none.
-- **`breadcrumbs` ships as the trail only.** It sits in this group, and not in `imp/std/navigation`.
-  It is the content of a region. Its other half, the sibling picker, still waits on the seam of an
-  anchored overlay, see `todo/breadcrumbs.md`. The component does not derive a trail from the route.
-  So an app with a literal trail carries no router.
+- **`breadcrumbs` is the trail, and a crumb can carry a picker.** It sits in this group, and not in
+  `imp/std/navigation`. A crumb with `options` renders two controls: the crumb itself, which is a
+  link to that level, and a disclosure button beside it, named "Change {label}" through `t()`. The
+  button opens a `popover="auto"` panel of links that CSS anchor positioning places, on the shared
+  anchored seam, see `overlay-top-layer.md`. To fold both into one control would remove the way to
+  navigate to the level the picker belongs to. The component does not derive a trail from the route.
+  The router derives it, and the shell hands it over. So an app with a literal trail carries no
+  router.
 - **`themeSelect` and `langSelect` own their setting completely.** They apply it, remember it in
   `localStorage`, and apply the remembered choice again on the next mount. `remember: false` turns
   that off. A remembered choice deliberately wins against the `applyTheme` of the app at startup.
@@ -44,6 +51,9 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSe
 - **An action that is asynchronous, and that can fail, is a function prop.** `onSignIn` and
   `onSignOut` of `userCard` are examples, and they follow the `onSubmit` of `bugReport`. You cannot
   await a `CustomEvent`. imp holds no session, and it talks to no identity provider.
+- **`userCard` owns the whole authentication story of the frame.** Its `signedIn` prop picks the
+  sign-in button or the card with its sign-out action. An app puts it in the `extras` of `shell`,
+  and the frame moves it with the rest of the chrome. The frame knows nothing about a session.
 
 ## Consequences
 
@@ -57,5 +67,6 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSe
 - Two components now write to `localStorage`, and imp had not used it before. Both keys carry a
   namespace, which is `imp.theme` and `imp.lang`. imp wraps each read and each write. A browser with
   no storage falls back to behaviour for the session, and it does not fail.
-- `breadcrumbs` lives here, so the navigation group holds no trail. When the picker arrives, it
-  extends this component. It does not open a second one.
+- `breadcrumbs` lives here, so the navigation group holds no trail. The picker extended this
+  component, and it did not open a second one. The panel has no filter field yet. The shared
+  filtered list arrives with `dropdownMenu`, and both panels take it then.

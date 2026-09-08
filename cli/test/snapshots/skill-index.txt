@@ -21,7 +21,7 @@ WRITING AN APP
   components         custom elements with a setup lifecycle: instance, styles, cleanup
   state              named reactive state shared down the tree and bound straight to the DOM
   http               the configured HTTP client a component owns, with retries and request state
-  routing            client-side routes as one plain-data table, with lazily loaded sections
+  routing            one application map drives the routes, the nav of the shell and the trail
   std                the built-in component library: text, layout, forms, navigation and empty states
   icons              the Lucide icon set as tree-shaken exports, drawn by icon
   theming            themes as plain token modules, applied at the entry point and swappable
@@ -55,7 +55,7 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/dialog         dialog - one component for both overlay windows: the modal frame and the movable panel
   std/drawer         drawer - a panel that slides in from the side of the screen, modal or not, on any width
   std/flex           flex - a row of children laid out with CSS flexbox
-  std/shell          shell - the app frame: one nav tree, logo, content, account, and the phone fold
+  std/shell          shell - the app frame: the map drives the nav and the trail, logo, content, and the phone fold
   std/stack          stack - a vertical stack of children laid out with CSS flexbox
   std/emptyState     emptyState - the placeholder for a list, table or search result with nothing in it
   std/tag            tag - a small colored label for a status, a category or a count
@@ -73,7 +73,7 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/toggle         toggle - a switch for a boolean that takes effect immediately
   std/tabs           tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
   std/appLogo        appLogo - the brand block at the head of a navbar or sidebar
-  std/breadcrumbs    breadcrumbs - the trail of levels above the main region, as plain data
+  std/breadcrumbs    breadcrumbs - the trail of levels above the main region, as plain data, with a picker per crumb
   std/userCard       userCard - the signed-in person, or a sign-in button when nobody is
   std/themeSelect    themeSelect - a light / dark / system picker that applies and remembers the theme
   std/langSelect     langSelect - a language picker that calls setLang and remembers the choice

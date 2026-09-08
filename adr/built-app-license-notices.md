@@ -52,7 +52,7 @@ imp writes one aggregate file. It does not scatter the `*.LEGAL.txt` files that 
 output. The notices are a legal artifact. A person reads them, and a deploy ships them. To tie them
 to a hashed chunk name that changes on every build makes them harder to read, and easier to lose.
 
-`LICENSES.txt` is separate from `imp licenses`. That command prints `THIRD_PARTY_LICENSES.md`, for
+`LICENSES.txt` is separate from `imp licenses`. That command prints `THIRD-PARTY-LICENSES.md`, for
 the tools that imp compiles into the binary. Those tools are the toolchain, and they never reach a
 user. `LICENSES.txt` covers only what the app serves. Neither file derives from the other.
 

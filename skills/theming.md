@@ -30,39 +30,63 @@ Apply a theme at the entry point, or through `init({ theme })`, see [i18n](i18n.
 
 The built-in names are `'imp-light'`, `'imp-dark'`, `'imp-high-contrast-light'` and
 `'imp-high-contrast-dark'`. `applyTheme` accepts these four strings only. Any other string throws.
-The high-contrast pair also makes `border-width` and `focus-ring-width` wider, and makes the hover
-steps stronger.
+The high-contrast pair also makes `border-width` and `focus-ring-width` wider, and raises
+`disabled-opacity`.
 
-To start from a built-in theme, apply it and copy the tokens. An applied theme is frozen:
+To start from a built-in theme, name it as `base`. imp fills every token from the base, then writes
+your tokens over it. `name` and `colorScheme` default to the base. `base` takes the four built-in
+names only. `theme.get()` returns the resolved theme, with no `base` key:
 
 ```js
-applyTheme('imp-dark')
-applyTheme({
-  name: 'midnight',
-  colorScheme: 'dark',
-  tokens: { ...theme.get().tokens, 'color-primary': '#a78bfa' },
+applyTheme({ base: 'imp-dark', name: 'midnight', tokens: { 'color-primary': '#a78bfa' } })
+```
+
+## Fonts
+
+`font-family` is the text of every component. `font-family-mono` is code. The built-in themes set
+system stacks. imp loads no font. Load a web font with a `<link>` in `index.html`, then name it in
+the theme:
+
+```html
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+```
+
+```js
+await init({
+  theme: { base: 'imp-light', tokens: { 'font-family': "'Inter', system-ui, sans-serif" } },
 })
 ```
+
+- **Load the weights 400 and 600.** They are `font-weight-normal` and `font-weight-bold`, the only
+  weights the standard components use. A weight that is not loaded is synthesized or snapped.
+- **Keep the system stack behind the font**, so a script the font lacks still renders.
+- **Set the same fonts in every theme.** A font does not change between light and dark.
+- A self-hosted font goes under `public/fonts/`, with an `@font-face` stylesheet linked from
+  `index.html`.
 
 ## Rules an agent gets wrong
 
 - **A token key is a bare name with no prefix**, such as `color-primary`. The map is flat, with no
   nesting. The CSS property is `--imp-color-primary`.
-- **A theme must define the full token set.** A new theme fully replaces the last one. Spread the
-  tokens of a built-in theme. Do not list a few tokens.
+- **A theme must define the full token set.** A new theme fully replaces the last one. Name a
+  built-in theme as `base`, or spread the tokens of a theme of your own. Do not list a few tokens
+  alone.
 - **imp does not store the theme, and it has no light or dark mode axis.** Save `theme.get().name`
   yourself and apply it again on load. To follow `prefers-contrast` or `prefers-color-scheme`, watch
   the media query and call `applyTheme`.
 - **Reference a token with a fallback** in your own CSS: `var(--imp-color-primary, #2563eb)`.
 - **Write logical properties**, such as `margin-inline-*`, `inset-inline-*` and `text-align: start`
   or `text-align: end`. A layout then mirrors under `dir="rtl"`. `flex` and `stack` align with
-  `start` and `end`, and they already mirror. imp does not set `dir` for you outside `init`.
+  `start` and `end`, and they already mirror. `init` and `setLang` write `dir` for you, see
+  [i18n](i18n.md).
 
 ## The tokens that the built-in themes ship
 
 | Group      | Tokens                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-medium`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                          |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                                                |
 | Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
 | Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                            |
 | Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
@@ -105,23 +129,25 @@ them in your own styles:
 ## How to write a theme with the editor
 
 `imp preview` has a theme editor. Open it with _edit theme_ in the top bar. It exposes **mode**,
-which is light or dark, **primary**, **secondary**, **border radius**, which is `none`, `small`,
-`medium` or `large`, and **shadow**, which is `none`, `soft` or `strong`. It derives every other
-colour token from the two base colours. It copies or downloads a complete `theme.js`:
+which is light or dark, **primary**, **secondary**, **font**, **mono font**, **border radius**,
+which is `none`, `small`, `medium` or `large`, and **shadow**, which is `none`, `soft` or `strong`.
+It derives every other colour token from the two base colours. It copies or downloads a complete
+`theme.js`:
 
 ```js
 // theme.js - generated, then edited by hand
+const fonts = { 'font-family': "'Inter', system-ui, sans-serif", 'font-family-mono': '...' }
 const palette = { 'color-green': '#00884d' /* 30 more */ }
 
 export const light = {
   name: 'app-light',
   colorScheme: 'light',
-  tokens: { ...palette /* ... */ },
+  tokens: { ...fonts, ...palette /* ... */ },
 }
 export const dark = {
   name: 'app-dark',
   colorScheme: 'dark',
-  tokens: { ...palette /* ... */ },
+  tokens: { ...fonts, ...palette /* ... */ },
 }
 export default light
 ```

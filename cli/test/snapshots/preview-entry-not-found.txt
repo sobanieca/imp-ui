@@ -1,0 +1,8 @@
+$ imp preview  (cwd: test/fixtures/preview-bad-entry)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] preview entry not found: preview.html - listed in 'preview.entry'

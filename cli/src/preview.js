@@ -1,4 +1,4 @@
-import { dirname, relative, resolve, toFileUrl } from '@std/path'
+import { dirname, extname, relative, resolve, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
@@ -21,12 +21,14 @@ import {
   loadApp,
   watchForChanges,
 } from './start.js'
-import { isPreviewMetadataExport } from './preview_metadata.js'
-import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev_log.js'
+import { isPreviewMetadataExport } from './preview-metadata.js'
+import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev-log.js'
 import { addLogSink, logger } from './logger.js'
 import { dim } from './colors.js'
+import { isPreviewFile } from './project-files.js'
+import { previewHref, previewSlugs } from './preview-map.js'
 
-const PREVIEW_RUNTIME_URL = import.meta.resolve('./preview_runtime.js')
+const PREVIEW_RUNTIME_URL = import.meta.resolve('./preview-runtime.js')
 
 const DEFAULT_PREVIEW_PORT = 4517
 
@@ -35,12 +37,9 @@ const PREVIEW_EXTENSIONS = new Set(['js', 'mjs'])
 const ENTRY_NAMESPACE = 'imp-preview-entry'
 const RUNTIME_SPECIFIER = 'imp-preview-runtime'
 
-const PAGE_PREFIX = '/preview/'
 const BUNDLE_PREFIX = '/@imp/preview/'
-const INDEX_BUNDLE_PATH = '/@imp/preview-index.js'
-const INDEX_BUNDLE_KEY = ''
-
-const CATALOG_ELEMENT_ID = 'imp-preview-catalog'
+const APP_BUNDLE_NAME = 'app'
+const APP_BUNDLE_PATH = `${BUNDLE_PREFIX}${APP_BUNDLE_NAME}.js`
 
 const FAVICON_PATH = '/favicon.svg'
 const IMP_MARK_URL = new URL('./templates/favicon.svg', import.meta.url)
@@ -49,8 +48,6 @@ const STATE_ENTRY_POINTS = ['initState', 'useState']
 const MAX_SCANNED_SOURCES = 40
 
 const IMPORT_SPECIFIERS = /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g
-
-export const isPreviewFile = (path) => path.endsWith('.preview.js') || path.endsWith('.preview.mjs')
 
 const siblingPreviewOf = (path) => path.replace(/\.(js|mjs)$/, '.preview.$1')
 
@@ -375,6 +372,14 @@ export async function resolvePreviewThemes(root, themes) {
   return resolved
 }
 
+export async function resolvePreviewEntry(root, entry) {
+  if (entry === null) return null
+  const file = resolve(root, entry)
+  const exists = await Deno.stat(file).then((info) => info.isFile, () => false)
+  if (!exists) throw new Error(`preview entry not found: ${entry} - listed in 'preview.entry'`)
+  return { source: entry, file }
+}
+
 export async function resolvePreviewGroups(root, groups) {
   if (groups === null) return null
   const file = await resolveModuleFile(resolve(root, groups))
@@ -402,13 +407,15 @@ export async function resolvePreviewTranslations(root, translations) {
 
 const GROUPS_BINDING = 'previewGroups'
 
-function previewEntryPlugin({ file, meta, root, themes, translations, groups }) {
+function previewEntryPlugin({ root, catalog, entries, themes, translations, groups }) {
   const themeBinding = (index) => `customTheme${index}`
   const translationBinding = (index) => `previewTranslations${index}`
+  const loaders = entries.map((entry) =>
+    `  ${JSON.stringify(entry.file)}: () => import(${
+      JSON.stringify(toFileUrl(resolve(root, entry.file)).href)
+    }),`
+  )
   const contents = [
-    file === null
-      ? 'const scenarios = null'
-      : `import * as scenarios from ${JSON.stringify(toFileUrl(file).href)}`,
     ...themes.map((theme, index) =>
       `import * as ${themeBinding(index)} from ${JSON.stringify(toFileUrl(theme.file).href)}`
     ),
@@ -419,19 +426,27 @@ function previewEntryPlugin({ file, meta, root, themes, translations, groups }) 
       ? []
       : [`import * as ${GROUPS_BINDING} from ${JSON.stringify(toFileUrl(groups.file).href)}`]),
     `import { startPreview } from '${RUNTIME_SPECIFIER}'`,
-    `startPreview(scenarios, ${JSON.stringify(meta)}, [${
+    `startPreview({`,
+    `  catalog: ${JSON.stringify(catalog)},`,
+    `  load: {`,
+    ...loaders,
+    `  },`,
+    `  themes: [${
       themes.map((theme, index) =>
         `{ source: ${JSON.stringify(theme.source)}, module: ${themeBinding(index)} }`
       ).join(', ')
-    }], [${
+    }],`,
+    `  translations: [${
       translations.map((entry, index) =>
         `{ code: ${JSON.stringify(entry.code)}, module: ${translationBinding(index)} }`
       ).join(', ')
-    }], ${
+    }],`,
+    `  groups: ${
       groups === null
         ? 'null'
         : `{ source: ${JSON.stringify(groups.source)}, module: ${GROUPS_BINDING} }`
-    })`,
+    },`,
+    `})`,
   ].join('\n') + '\n'
   return {
     name: 'imp-preview-entry',
@@ -468,77 +483,130 @@ export function previewIdentity(file, declared = {}) {
   }
 }
 
-const previewMeta = async (file, root) => {
-  if (file === null) return { file: null }
-  const text = await Deno.readTextFile(file)
-  const { scenarios, declared } = splitPreviewExports(text)
-  return {
-    ...previewIdentity(relative(root, file).replaceAll('\\', '/'), declared),
-    order: scenarios,
-    states: await collectStateDeclarations(file),
-  }
-}
-
-export async function bundlePreview(
-  file,
-  { root, dependencies, themes = [], translations = [], groups = null },
-) {
-  const meta = await previewMeta(file, root)
-  const mocks = file === null ? new Map() : await collectMocks(file, { root, dependencies })
-  const result = await runEsbuild({
-    plugins: [
-      previewEntryPlugin({ file, meta, root, themes, translations, groups }),
-      impResolverPlugin({ root, dependencies, mocks }),
-      denoPlugin(),
-    ],
-    entryPoints: [ENTRY_NAMESPACE],
-    bundle: true,
-    format: 'esm',
-    platform: 'browser',
-    target: 'es2022',
-    legalComments: 'none',
-    write: false,
-    outdir: '/imp-preview',
-    loader: DATAURL_ASSET_LOADERS,
-  })
-  return result.outputFiles[0].text
-}
-
-const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
-
-const escapeHtml = (text) => text.replace(/[&<>"]/g, (character) => HTML_ESCAPES[character])
-
-const pagePath = (file) => PAGE_PREFIX + file.split('/').map(encodeURIComponent).join('/')
-
-const bundlePath = (file) => BUNDLE_PREFIX + file.split('/').map(encodeURIComponent).join('/')
-
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0
 
-const declaredMetadataOf = async (file) => {
+const readPreviewSource = async (file) => {
   try {
-    return splitPreviewExports(await Deno.readTextFile(file)).declared
+    return await Deno.readTextFile(file)
   } catch {
-    return {}
+    return ''
   }
 }
 
 export async function buildPreviewCatalog(root, files) {
   const entries = []
   for (const file of files) {
-    const declared = await declaredMetadataOf(resolve(root, file))
-    entries.push({ ...previewIdentity(file, declared), href: pagePath(file) })
+    const absolute = resolve(root, file)
+    const { scenarios, declared } = splitPreviewExports(await readPreviewSource(absolute))
+    entries.push({
+      ...previewIdentity(file, declared),
+      order: scenarios,
+      states: await collectStateDeclarations(absolute),
+    })
   }
   return entries.sort((left, right) =>
     compareText(left.group, right.group) || compareText(left.name, right.name)
   )
 }
 
-const catalogScript = (previews, current) =>
-  `<script type="application/json" id="${CATALOG_ELEMENT_ID}">${
-    JSON.stringify({ previews, current }).replaceAll('<', '\\u003c')
-  }</script>`
+const BUILD_ROUNDS_LIMIT = 20
 
-const documentShell = (title, body) =>
+const failuresOf = (error) => Array.isArray(error?.errors) ? error.errors : []
+
+const describeFailure = (error, file) => {
+  const own = failuresOf(error).filter((failure) => failure.location?.file?.endsWith(file))
+  if (own.length === 0) return error.message
+  return own.map((failure) => {
+    const { line, column, lineText } = failure.location
+    return `${file}:${line}:${column + 1}: ${failure.text}\n  ${lineText.trim()}`
+  }).join('\n')
+}
+
+const culpritsOf = (error, entries) => {
+  const files = failuresOf(error).map((failure) => failure.location?.file).filter(Boolean)
+  return entries.filter((entry) => files.some((file) => file.endsWith(entry.file)))
+}
+
+async function collectAppMocks(entries, { root, dependencies }) {
+  const mocks = new Map()
+  const owners = new Map()
+  const failed = []
+  for (const entry of entries) {
+    try {
+      const own = await collectMocks(resolve(root, entry.file), { root, dependencies })
+      for (const [id, mock] of own) {
+        const owner = owners.get(id)
+        if (owner !== undefined && mocks.get(id).factorySource !== mock.factorySource) {
+          throw new Error(
+            `mockModule('${
+              mock.specifier ?? id
+            }') - ${owner} already mocks this module with a different factory; the preview app is one module graph, so a module is mocked once, the same way, for every preview`,
+          )
+        }
+        mocks.set(id, mock)
+        owners.set(id, entry.file)
+      }
+    } catch (error) {
+      failed.push({ file: entry.file, error: error.message })
+    }
+  }
+  return { mocks, failed }
+}
+
+export async function bundlePreviewApp(
+  { root, dependencies, catalog, themes = [], translations = [], groups = null },
+) {
+  const { mocks, failed } = await collectAppMocks(catalog, { root, dependencies })
+  let entries = catalog.filter((entry) => !failed.some((failure) => failure.file === entry.file))
+  for (let round = 0; round < BUILD_ROUNDS_LIMIT; round++) {
+    const embedded = catalog.map((entry) => {
+      const failure = failed.find((candidate) => candidate.file === entry.file)
+      return failure === undefined ? entry : { ...entry, error: failure.error }
+    })
+    try {
+      const result = await runEsbuild({
+        plugins: [
+          previewEntryPlugin({ root, catalog: embedded, entries, themes, translations, groups }),
+          impResolverPlugin({ root, dependencies, mocks }),
+          denoPlugin(),
+        ],
+        entryPoints: [
+          { in: ENTRY_NAMESPACE, out: APP_BUNDLE_NAME },
+          ...entries.map((entry) => ({
+            in: resolve(root, entry.file),
+            out: entry.file.replace(/\.(js|mjs)$/, ''),
+          })),
+        ],
+        bundle: true,
+        splitting: true,
+        format: 'esm',
+        platform: 'browser',
+        target: 'es2022',
+        legalComments: 'none',
+        write: false,
+        outdir: BUNDLE_PREFIX,
+        chunkNames: 'chunks/[name]-[hash]',
+        loader: DATAURL_ASSET_LOADERS,
+      })
+      const files = new Map(result.outputFiles.map((file) => [file.path, file.text]))
+      return { files, failed }
+    } catch (error) {
+      const culprits = culpritsOf(error, entries)
+      if (culprits.length === 0) throw error
+      for (const entry of culprits) {
+        failed.push({ file: entry.file, error: describeFailure(error, entry.file) })
+      }
+      entries = entries.filter((entry) => !culprits.includes(entry))
+    }
+  }
+  throw new Error('the preview app could not be built after excluding the files that fail')
+}
+
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
+
+const escapeHtml = (text) => text.replace(/[&<>"]/g, (character) => HTML_ESCAPES[character])
+
+const generatedShell = (title, body) =>
   `<!doctype html>
 <html lang="en">
 <head>
@@ -553,24 +621,36 @@ ${body}
 </html>
 `
 
-const shellPage = (title, previews, current, bundle) =>
-  documentShell(
-    title,
-    `${catalogScript(previews, current)}
-<script type="module" src="${escapeHtml(bundle)}"></script>`,
-  )
+const TITLE_ELEMENT = /<title\b[^>]*>[\s\S]*?<\/title>/i
 
-const previewPage = (file, previews) => {
-  const entry = previews.find((candidate) => candidate.file === file)
-  const title = entry ? `${entry.group} / ${entry.name}` : file
-  return shellPage(`imp preview - ${title}`, previews, file, bundlePath(file))
+const withTitle = (html, title) => {
+  const titleTag = `<title>${escapeHtml(title)}</title>`
+  if (TITLE_ELEMENT.test(html)) return html.replace(TITLE_ELEMENT, titleTag)
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${titleTag}`)
+  }
+  return `${titleTag}\n${html}`
 }
 
-const indexPage = (previews) => shellPage('imp preview', previews, null, INDEX_BUNDLE_PATH)
+const withBody = (html, body) => {
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `\n${body}\n</body>`)
+  return `${html}\n${body}\n`
+}
 
-const failureModule = (file, message) => `
+export const entryShell = (entryHtml, title, body) => withBody(withTitle(entryHtml, title), body)
+
+const PAGE_TITLE = 'imp preview'
+
+const appPage = (entryHtml) => {
+  const body = `<script type="module" src="${APP_BUNDLE_PATH}"></script>`
+  return entryHtml === null
+    ? generatedShell(PAGE_TITLE, body)
+    : entryShell(entryHtml, PAGE_TITLE, body)
+}
+
+const failureModule = (message) => `
 const failure = document.createElement('pre')
-failure.textContent = ${JSON.stringify(`imp preview: ${file} failed to build\n\n`)} + ${
+failure.textContent = ${JSON.stringify('imp preview: the preview app failed to build\n\n')} + ${
   JSON.stringify(message)
 }
 failure.setAttribute(
@@ -600,72 +680,76 @@ const scriptResponse = (body) =>
     headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' },
   })
 
+const isPageRequest = (req, url) => req.method === 'GET' && extname(url.pathname) === ''
+
 export function createPreviewHandler(
   {
     app,
     clients,
     listCatalog,
     dependencies,
-    bundles,
+    cache,
     themes = [],
     translations = [],
     groups = null,
+    entry = null,
     recentLog = null,
   },
 ) {
   const serveApp = createRequestHandler({ ...app, clients, historyFallback: false, recentLog })
 
-  const loadBundle = async (file) => {
-    if (!bundles.has(file)) {
-      try {
-        bundles.set(file, {
-          code: await bundlePreview(file === INDEX_BUNDLE_KEY ? null : resolve(app.root, file), {
-            root: app.root,
-            dependencies,
-            themes,
-            translations,
-            groups,
-          }),
-        })
-      } catch (error) {
-        logger.error(`${file || 'the index page'} failed to build - ${error.message}`)
-        bundles.set(file, { error: error.message })
-      }
+  const readEntry = async () => {
+    if (entry === null) return null
+    try {
+      return await Deno.readTextFile(entry.file)
+    } catch (error) {
+      logger.error(`${entry.source} could not be read - ${error.message}`)
+      return null
     }
-    return bundles.get(file)
   }
+
+  const loadBuild = () => {
+    cache.build ??= bundlePreviewApp({
+      root: app.root,
+      dependencies,
+      catalog: listCatalog(),
+      themes,
+      translations,
+      groups,
+    }).then((built) => {
+      for (const { file, error } of built.failed) logger.error(`${file} failed to build - ${error}`)
+      return built
+    }, (error) => {
+      logger.error(`the preview app failed to build - ${error.message}`)
+      return { error: error.message, files: new Map(), failed: [] }
+    })
+    return cache.build
+  }
+
+  const page = async () => htmlResponse(injectImp(appPage(await readEntry()), app.headInjection))
 
   return async (req, info) => {
     const url = new URL(req.url)
-    const catalog = listCatalog()
-    const previews = catalog.map((entry) => entry.file)
-
-    if (url.pathname === '/') {
-      return htmlResponse(injectImp(indexPage(catalog), app.headInjection))
-    }
-
-    if (url.pathname === INDEX_BUNDLE_PATH) {
-      const bundle = await loadBundle(INDEX_BUNDLE_KEY)
-      return scriptResponse(
-        bundle.error ? failureModule('the index page', bundle.error) : bundle.code,
-      )
-    }
-
-    if (url.pathname.startsWith(PAGE_PREFIX)) {
-      const file = decodeURIComponent(url.pathname.slice(PAGE_PREFIX.length))
-      if (!previews.includes(file)) return new Response(`not found: ${file}`, { status: 404 })
-      return htmlResponse(injectImp(previewPage(file, catalog), app.headInjection))
-    }
 
     if (url.pathname.startsWith(BUNDLE_PREFIX)) {
-      const file = decodeURIComponent(url.pathname.slice(BUNDLE_PREFIX.length))
-      if (!previews.includes(file)) return new Response(`not found: ${file}`, { status: 404 })
-      const bundle = await loadBundle(file)
-      return scriptResponse(bundle.error ? failureModule(file, bundle.error) : bundle.code)
+      const built = await loadBuild()
+      if (url.pathname === APP_BUNDLE_PATH && built.error !== undefined) {
+        return scriptResponse(failureModule(built.error))
+      }
+      const code = built.files.get(url.pathname)
+      if (code === undefined) {
+        return new Response(`not found: ${url.pathname.slice(BUNDLE_PREFIX.length)}`, {
+          status: 404,
+        })
+      }
+      return scriptResponse(code)
     }
+
+    if (url.pathname === '/') return page()
 
     const response = await serveApp(req, info)
     if (response.status === 404 && url.pathname === FAVICON_PATH) return impMarkResponse()
+    if (response.status === 404 && isPageRequest(req, url)) return page()
     return response
   }
 }
@@ -696,10 +780,11 @@ export async function preview(
   const themes = await resolvePreviewThemes(root, imp.preview?.themes ?? [])
   const translations = await resolvePreviewTranslations(root, imp.preview?.translations ?? {})
   const groups = await resolvePreviewGroups(root, imp.preview?.groups ?? null)
+  const entry = await resolvePreviewEntry(root, imp.preview?.entry ?? null)
   const app = await loadApp(resolve(root, 'index.html'), { envAlias: env, mocks })
   const listenPort = port ?? DEFAULT_PREVIEW_PORT
   const clients = new Set()
-  const bundles = new Map()
+  const cache = { build: null }
 
   const devLog = await createDevLog({
     root,
@@ -715,14 +800,16 @@ export async function preview(
 
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, async () => {
-    bundles.clear()
+    cache.build = null
     previews = await discover().catch(() => previews)
     catalog = await buildPreviewCatalog(root, previews)
     logger.debug('change detected -> reload')
     broadcast('reload')
   })
 
-  const openPath = paths.length === 1 && previews.length === 1 ? pagePath(previews[0]) : '/'
+  const openPath = paths.length === 1 && previews.length === 1
+    ? previewHref(previewSlugs(catalog).get(previews[0]))
+    : '/'
   const count = `${previews.length} preview${previews.length === 1 ? '' : 's'}`
 
   const server = Deno.serve(
@@ -743,6 +830,7 @@ export async function preview(
           )
         }
         if (groups !== null) console.log(dim(`  groups -> ${groups.source}`))
+        if (entry !== null) console.log(dim(`  entry -> ${entry.source}`))
         console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
       },
     },
@@ -751,10 +839,11 @@ export async function preview(
       clients,
       listCatalog: () => catalog,
       dependencies,
-      bundles,
+      cache,
       themes,
       translations,
       groups,
+      entry,
       recentLog: devLog.recent,
     }),
   )

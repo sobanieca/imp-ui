@@ -67,13 +67,13 @@ no third way to put them in a box.**
 - **No prop varies by the size of the screen.** A layout that must change shape at a width is a
   media query that the app writes in its own component, see `responsive-fluid-values-only.md`.
   `wrap` and the fluid scale cover the rest.
-- **The other exports of the group, `shell` and `dialog`, are not arrangement primitives, and they
-  do not open this decision again.** `shell` is the app frame. It is a fixed set of named regions
-  for a whole page, and it takes DOM. It does not sort children into a slot, as the removed frame
-  did, see `app-shell-component.md`. `dialog` is the frame that an app opens over its page, promoted
-  into the top layer, see `overlay-top-layer.md`. Both are frames that hold content. Neither one is
-  a component that arranges content. Neither one places anything that an app hands it, beyond a box.
-  So the rule above still holds inside every one of those boxes.
+- **The other exports of the group, `shell`, `dialog` and `drawer`, are not arrangement primitives,
+  and they do not open this decision again.** `shell` is the app frame. It is a fixed set of named
+  regions for a whole page, and it takes DOM. It does not sort children into a slot, as the removed
+  frame did, see `app-shell-component.md`. `dialog` and `drawer` are the frames that an app opens
+  over its page, promoted into the top layer, see `overlay-top-layer.md`. All three are frames that
+  hold content. None of them is a component that arranges content. Neither one places anything that
+  an app hands it, beyond a box. So the rule above still holds inside every one of those boxes.
 
 ## Consequences
 

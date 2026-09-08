@@ -45,9 +45,9 @@ export const isImpStdSpecifier = (specifier) =>
   specifier === 'imp/std' || specifier.startsWith('imp/std/')
 
 export const IMP_TOOLING_MODULES = {
-  'imp/test': { url: new URL('./test_library.js', import.meta.url).href, resolvedBy: 'imp test' },
+  'imp/test': { url: new URL('./test-library.js', import.meta.url).href, resolvedBy: 'imp test' },
   'imp/preview': {
-    url: new URL('./preview_library.js', import.meta.url).href,
+    url: new URL('./preview-library.js', import.meta.url).href,
     resolvedBy: 'imp preview',
   },
 }

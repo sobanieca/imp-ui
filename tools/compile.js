@@ -43,8 +43,8 @@ if (!Deno.args.includes('--force') && await binaryIsFresh()) {
   Deno.exit(0)
 }
 
-await run('run', '-A', 'tools/download_fmt_plugins.js')
-await run('run', '-A', 'tools/prebundle_npm_deps.js')
+await run('run', '-A', 'tools/download-fmt-plugins.js')
+await run('run', '-A', 'tools/prebundle-npm-deps.js')
 const librarySources = (await gitVisibleFiles()).filter((file) => file.startsWith('lib/src/'))
 
 await run(
@@ -56,7 +56,7 @@ await run(
   '--include',
   'skills',
   '--include',
-  'THIRD_PARTY_LICENSES.md',
+  'THIRD-PARTY-LICENSES.md',
   '-o',
   'imp',
   'cli/src/main.js',

@@ -2,8 +2,7 @@ import { isAbsolute, join, relative, SEPARATOR, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
 import { impResolverPlugin } from './bundling.js'
-
-export const MOCK_FILE_SUFFIX = '.mock.js'
+import { isMockFile } from './project-files.js'
 
 const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules', 'dist', '.imp'])
 
@@ -16,7 +15,7 @@ async function findMockFiles(directory) {
       const path = join(current, entry.name)
       if (entry.isDirectory) {
         if (!SKIPPED_DIRECTORIES.has(entry.name)) await walk(path)
-      } else if (entry.isFile && entry.name.endsWith(MOCK_FILE_SUFFIX)) {
+      } else if (entry.isFile && isMockFile(entry.name)) {
         found.push(path)
       }
     }

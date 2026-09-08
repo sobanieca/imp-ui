@@ -2,15 +2,16 @@
   "version": "0.1.0",
   "tasks": {
     "imp": "deno task compile && ./imp",
-    "update": "deno outdated --update --latest && deno run -A tools/update_dprint.js",
+    "update": "deno outdated --update --latest && deno run -A tools/update-dprint.js",
     "compile": "deno run -A tools/compile.js",
-    "preview": "deno task compile && cd lib/src/std && ../../../imp preview",
+    "preview": "deno task compile && cd lib/src && ../../imp preview",
+    "lint:lib": "deno task compile && cd lib/src && ../../imp lint",
     "start": "deno task compile && cd examples/shell && ../../imp start",
-    "size": "deno run -A tools/check_binary_size.js",
-    "lucide": "deno run -A --no-lock tools/vendor_lucide.js",
+    "size": "deno run -A tools/check-binary-size.js",
+    "lucide": "deno run -A --no-lock tools/vendor-lucide.js",
     "test": "deno task test:lib && deno task test:lib:e2e && deno task test:cli",
-    "test:cli": "deno task compile && deno test -A cli/test/cli_test.js",
-    "test:cli:update": "deno task compile && deno test -A cli/test/cli_test.js -- --update",
+    "test:cli": "deno task compile && deno test -A cli/test/cli-test.js",
+    "test:cli:update": "deno task compile && deno test -A cli/test/cli-test.js -- --update",
     "test:lib": "deno task compile && cd lib/test && ../../imp test --unit",
     "test:lib:e2e": "deno task compile && cd lib/test && ../../imp test --e2e"
   },
@@ -26,7 +27,7 @@
   "lint": {
     "exclude": [
       "cli/test/fixtures/",
-      "lib/src/icons/lucide_icons.js",
+      "lib/src/icons/lucide-icons.js",
       "cli/src/vendor/",
       ".claude/worktrees/"
     ]
@@ -38,7 +39,7 @@
     "exclude": [
       "cli/test/fixtures/",
       "cli/test/snapshots/",
-      "lib/src/icons/lucide_icons.js",
+      "lib/src/icons/lucide-icons.js",
       "cli/src/vendor/",
       ".claude/worktrees/"
     ]

@@ -57,8 +57,8 @@ export const SKILLS = [
   {
     name: 'routing',
     group: 'app',
-    aliases: ['router', 'imp/router'],
-    summary: 'client-side routes as one plain-data table, with lazily loaded sections',
+    aliases: ['router', 'imp/router', 'map', 'app-map', 'appmap', 'app-map.js'],
+    summary: 'one application map drives the routes, the nav of the shell and the trail',
   },
   {
     name: 'std',

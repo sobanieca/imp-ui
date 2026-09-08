@@ -15,7 +15,7 @@ The call shape is `link(props?, ...children)`. When a props object is present, i
 | `external` | boolean                              | `false`     | Opens in a new tab with `rel="noreferrer noopener"` |
 | `tone`     | `'default'`, `'secondary'`           | `'default'` | Link color or muted                                 |
 | `size`     | `'sm'`, `'md'`, `'lg'`               | `'md'`      | Type size                                           |
-| `weight`   | `'normal'`, `'medium'`, `'bold'`     | `'normal'`  | Type weight                                         |
+| `weight`   | `'normal'`, `'bold'`                 | `'normal'`  | Type weight                                         |
 | `events`   | event map, e.g. `{ click: handler }` | -           | Handlers, exactly as on any element                 |
 
 Rules an agent gets wrong:

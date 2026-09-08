@@ -2,7 +2,7 @@
 
 The seam is built, and `adr/overlay-top-layer.md` records it. `lib/src/std/shared/overlay.js` ships
 `modalOverlay`, `panelOverlay`, `draggable`, `overlayMotion` and `overlayScrim`. The drawer of
-`shell`, and the `dialog` component, run on them. `cli/src/test_dom.js` carries the fill for the top
+`shell`, and the `dialog` component, run on them. `cli/src/test-dom.js` carries the fill for the top
 layer. This file is the rest. Somebody checked the facts about a browser that it depends on, against
 the compatibility data of MDN, in August 2026. Several earlier assumptions here were wrong, and the
 corrections are below.
@@ -115,12 +115,6 @@ an `imp-button` host. A browser ignores `aria-describedby` on a host with no rol
 `<button>` is one root deeper. So a tooltip is a prop of the component that owns the trigger, as in
 `button({ tooltip: 'Copy' })`. `dropdownMenu({ label, items })` is unaffected, because it renders
 its own trigger.
-
-## Impact on the documentation and the skills
-
-- `docs/state.md`, `skills/state.md` and `skills/http.md` show DOM outside a subtree, as "an overlay
-  appended to `document.body`". That is true of app code. It is misleading about the overlays of
-  imp, which never do that. Reword all three.
 
 ## Open questions
 

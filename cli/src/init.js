@@ -25,7 +25,7 @@ const shortNameFrom = (title) =>
   title.length <= SHORT_NAME_LIMIT ? title : title.split(' ')[0].slice(0, SHORT_NAME_LIMIT)
 
 const impConfig = ({ title, pwa }) => {
-  const config = { version: VERSION }
+  const config = { version: VERSION, map: 'src/app-map.js' }
   if (pwa) {
     config.pwa = {
       name: title,
@@ -55,19 +55,36 @@ const indexHtml = (title) =>
 </html>
 `
 
+const quoted = (text) => text.replaceAll('\\', '\\\\').replaceAll("'", "\\'")
+
 const mainJs = `import { init, mount } from 'imp'
-import { app } from './app.js'
+import { root } from './app.js'
 
 await init({ theme: 'imp-light' })
 
-mount('#app', app())
+mount('#app', root())
 `
 
-const appJs = `import { component } from 'imp'
-import { div, p } from 'imp/html'
-import { button, heading, text } from 'imp/std'
+const appMapJs = () =>
+  `import { appMap } from 'imp'
 
-export const app = component('app-root', {
+export const app = appMap({
+  home: { path: '/', description: 'The counter the scaffold starts with' },
+  about: 'Bind this node in src/app.js, or delete it here',
+})
+`
+
+const appJs = (title) =>
+  `import { component } from 'imp'
+import { div, p } from 'imp/html'
+import { initState } from 'imp/state'
+import { router } from 'imp/router'
+import { button, heading, text } from 'imp/std'
+import { shell } from 'imp/std/layout'
+import { appLogo } from 'imp/std/shell'
+import { app } from './app-map.js'
+
+const counter = component('app-counter', {
   setup: (self) => {
     const clicks = initState(self, 'app.clicks', 0)
     return div(
@@ -86,34 +103,57 @@ export const app = component('app-root', {
     )
   },
 })
+
+export const root = component('app-root', {
+  setup: () =>
+    shell(
+      { logo: appLogo({ label: '${quoted(title)}' }), navbar: { map: app } },
+      router({ map: app, screens: { [app.home]: () => counter() } }),
+    ),
+})
 `
 
 const unitTest = `import { mount } from 'imp'
 import { beforeEach, expect, test } from 'imp/test'
-import { app } from '../src/app.js'
-import { initState } from 'imp/state'
+import { root } from '../src/app.js'
 
-const inside = (node, selector) => node.shadowRoot.querySelector(selector)
+const find = (node, selector) => {
+  const scope = node.shadowRoot ?? node
+  const direct = scope.querySelector(selector)
+  if (direct) return direct
+  for (const child of scope.querySelectorAll('*')) {
+    const found = child.shadowRoot ? find(child, selector) : null
+    if (found) return found
+  }
+  return null
+}
 
 const render = () => {
-  mount(document.body, app())
+  mount(document.body, root())
   return document.querySelector('app-root')
 }
 
 beforeEach(() => {
   document.body.replaceChildren()
+  history.replaceState(null, '', '/')
 })
 
 test('starts at zero clicks', () => {
-  expect(inside(render(), '#clicks').textContent).toEqual('Clicks: 0')
+  expect(find(render(), '#clicks').textContent).toEqual('Clicks: 0')
 })
 
 test('counts every click', () => {
-  const root = render()
-  const control = inside(inside(root, 'imp-button'), 'button')
+  const page = render()
+  const control = find(find(page, 'imp-button'), 'button')
   control.click()
   control.click()
-  expect(inside(root, '#clicks').textContent).toEqual('Clicks: 2')
+  expect(find(page, '#clicks').textContent).toEqual('Clicks: 2')
+})
+
+test('the map gives every node a screen, bound or not', () => {
+  const page = render()
+  expect(find(page, 'imp-shell')).toBeTruthy()
+  expect(find(page, 'nav a[href="/about"]')).toBeTruthy()
 })
 `
 
@@ -193,9 +233,14 @@ async function templateFiles({ title, pwa }) {
     {
       path: 'src/main.js',
       contents: mainJs,
-      note: 'entry point: applies the theme, mounts the app',
+      note: 'entry point: applies the theme, mounts the frame',
     },
-    { path: 'src/app.js', contents: appJs, note: "the app's components" },
+    {
+      path: 'src/app-map.js',
+      contents: appMapJs(),
+      note: 'the application map: every feature of the app, one line each',
+    },
+    { path: 'src/app.js', contents: appJs(title), note: 'the frame, the router and the counter' },
     { path: 'test/app.test.js', contents: unitTest, note: 'unit test, runs in-process' },
     { path: 'test/app.spec.js', contents: e2eSpec, note: 'e2e spec, runs in a real browser' },
     {

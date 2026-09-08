@@ -20,69 +20,65 @@ free `route(pattern, factory)` that changes a hidden list at module level, as a 
 import. That spreads the route map across files. It makes the question "what renders here?"
 impossible to search for. It also gives a sub-section of the app no natural boundary to own its own
 routes. The route map must be **data that you declare in one place**, and not a side effect that
-anything can run.
+anything can run. That place is the application map, see `application-map.md`.
 
 ## Decision
 
 **The router is an element with the shape of a component, that you drop into your layout. You feed
-it a declarative route table, as data.** The public surface is `router`, `area`, `navigate`,
-`useRoute` and `url`. There is no new lifecycle, and no scheduler. A screen cleans up through the
-ordinary `onRemove` of a component.
+it the application map, and the screens that bind to its nodes.** The public surface is `appMap`,
+`router`, `area`, `guard`, `wait`, `navigate`, `useRoute` and `url`. There is no new lifecycle, and
+no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
 
-- **`router({ routes, loading, error, notFound })` renders the matched screen.** It is the slot
-  where the current screen appears. Everything around it, which is the chrome of the app, stays
-  across a navigation. Only its contents change. It behaves like a regular imp component. It takes
-  the same lifecycle options as a component, which are `loading` and `error`, plus one `notFound`. A
-  router is an element that you place. So an app can have none of them, which suits a plain tree of
-  components, for example for server-side rendering. It can also have one. The documented shape is
-  one router per app.
+- **`router({ map, screens, access, loading, error, notFound })` renders the matched screen.** It is
+  the slot where the current screen appears. Everything around it, which is the chrome of the app,
+  stays across a navigation. Only its contents change. It behaves like a regular imp component. It
+  takes the same lifecycle options as a component, which are `loading` and `error`, plus one
+  `notFound`. A router is an element that you place. So an app can have none of them, which suits a
+  plain tree of components, for example for server-side rendering. It can also have one. The
+  documented shape is one router per app.
 
-- **A route is an entry in a table, and not a registration.** `routes` is an object. It maps a
-  pattern for a path to its target, as in
-  `{ '/': () => home(), '/todos/:id': ({ params }) => detail(params.id) }`. A pattern is a path with
-  a `:param` segment. The match splits on `/`, and ignores an empty segment, so a trailing slash
-  does not matter. For a screen, the match needs an equal number of segments. imp decodes a param
-  with `decodeURIComponent`. **The first match wins, in the order in which you declared the table.**
-  The order of the keys of the object is the order of priority. So a static path that you list
-  before a param path shadows that param path. There is no `*` wildcard. The page for a URL that
-  matches nothing is `notFound`. That keeps "the 404" one named concept.
-  `area({ routes, root, translations })` is a builder that validates. It marks a table, and carries
-  the root component of the section, and its translations. It exists for one use, which is the
-  `export default` of an area, from its own file, described below. You write the top-level `routes`
-  option as a plain object.
+- **The route table is the map, and a screen is a binding, not a registration.** `screens` is an
+  object keyed by handles of the map, as in
+  `{ [app.home]: () => home(), [app.todos.$id]: ({ params }) => detail(params.id) }`. The router
+  matches the current path against the whole map. It splits on `/`, and ignores an empty segment, so
+  a trailing slash does not matter. At each level it tries the static children first, then the one
+  param child, so a static path always shadows a param path and no order of declaration matters. imp
+  decodes a param with `decodeURIComponent`. There is no `*` wildcard. The page for a URL that is
+  off the map is `notFound`. That keeps "the 404" one named concept. A node on the map with no
+  screen renders a stub, forwards to its first static child, or forwards where a `redirect()`
+  binding says, see `application-map.md`. A screen factory receives `{ params, query, node }`, where
+  `node` is the handle of the matched node.
 
-- **An area is a table entry whose target is another table, and it is always lazy.** A section of
-  the app that owns a group of routes, under a URL prefix such as `/admin` or `/shop`, maps that
-  prefix to an `area()` marker, in place of a screen factory. An example is
-  `'/admin': area(() => import('./admin/area.js'))`. The module of that area exports
-  `export default area({ routes, translations })`. **One name covers both halves, and imp dispatches
-  on the type of the argument**, see `type-based-argument-dispatch.md`. A function is the pointer of
-  the parent at a chunk. An object is the declaration of that chunk about what it contains. The two
-  never appear in the same position. So there is nothing to tell apart by eye. imp also rejects a
-  definition of an area that somebody places directly in a table, and the message spells the wrapped
-  form out. There is **no eager form**. The target of a prefix is never a plain nested object. An
-  area exists exactly to split the code of a section behind a dynamic `import()`. So every area
-  loads on demand. You write a sub-route **relative** to the prefix. A table nests. So hierarchical
-  routing falls out of the same model of the data, with no registry of a global scope, and with no
-  separate primitive for a boundary. Each area owns its own routing surface, in its own file, and
-  the composition root names every area in one place.
+- **An area is a binding whose value is a loader, and it is always lazy.** A section of the app that
+  loads on demand binds its node to an `area()` marker, in place of a screen factory. An example is
+  `[app.admin]: area(() => import('./admin/area.js'))`. The module of that area exports
+  `export default area({ screens, root, translations })`. **One name covers both halves, and imp
+  dispatches on the type of the argument**, see `type-based-argument-dispatch.md`. A function is the
+  pointer of the parent at a chunk. An object is the declaration of that chunk about what it binds.
+  The two never appear in the same position. imp also rejects a definition of an area that somebody
+  binds directly, and the message spells the wrapped form out. There is **no eager form**. An area
+  exists exactly to split the code of a section behind a dynamic `import()`. So every area loads on
+  demand. The `screens` of an area bind the node the area hangs from and the descendants of that
+  node, and nothing else. The nodes of the section are in the map already, so the nav of the section
+  renders before its chunk arrives. Which subtree loads lazily is an implementation decision, made
+  in `screens`, and the map does not say it.
 
 - **An area can declare a `root`, which is the one component that lives longer than the screens of
   the section.** `root` is a factory that returns the component that the screens of the section
   render inside. The screens of the area render into a `router()` call that you write **with no
-  table**, somewhere in the tree of that component. The route page of the area provides its table,
-  the depth of the prefix that it consumed, and its prefix params, through the shared seam of a
-  provider. That is the same lookup through the DOM that a state and the HTTP client use, on its own
-  `kind`, see `event-propagated-state.md`. A `router()` with no table resolves the nearest one. So
-  you write the slot where the layout wants it, and the area passes nothing into its own components.
-  This is the only way to hold something for exactly one section. A root is keyed with the area. So
-  it survives a navigation _between_ the screens of the section, and it unmounts when the user
-  leaves the prefix. A layout that you wrap around each screen factory cannot do that. Such a layout
-  remounts on every navigation, and it takes a state scoped to the section, or an HTTP client, with
-  it. `root` is optional. Its absence is exactly the previous behaviour, where the route page of the
-  area renders the nested router itself. `root` receives the same `{ params, query }` as a screen
-  factory. So a prefix param reaches the shell. A `router()` with no table, outside an area, throws,
-  and the message names both fixes.
+  map**, somewhere in the tree of that component. The route page of the area provides the scope of
+  the section, which is its node and its bindings, through the shared seam of a provider. That is
+  the same lookup through the DOM that a state and the HTTP client use, on its own `kind`, see
+  `event-propagated-state.md`. A `router()` with no map resolves the nearest one. So you write the
+  slot where the layout wants it, and the area passes nothing into its own components. This is the
+  only way to hold something for exactly one section. A root is keyed with the area. So it survives
+  a navigation _between_ the screens of the section, and it unmounts when the user leaves the
+  prefix. A layout that you wrap around each screen factory cannot do that. Such a layout remounts
+  on every navigation, and it takes a state scoped to the section, or an HTTP client, with it.
+  `root` is optional. Its absence is exactly the previous behaviour, where the route page of the
+  area renders the nested router itself. `root` receives the same `{ params, query, node }` as a
+  screen factory. So a prefix param reaches the shell. A `router()` with no map, outside an area,
+  throws, and the message names both fixes.
 
 - **An area declares the translations that it needs, and the router owns their lifetime.** The
   `translations` key of an area definition is a map, from a language code to a loader, see
@@ -93,17 +89,15 @@ ordinary `onRemove` of a component.
   **inside** an area keeps the section mounted. So its messages load once per visit, and not once
   per screen.
 
-- **A table has exactly two kinds of target.** The first is a screen, which renders immediately. The
-  second is an area, which loads on demand. A screen factory is a function that returns DOM
+- **A binding has exactly two kinds of value.** The first is a screen, which renders immediately.
+  The second is an area, which loads on demand. A screen factory is a function that returns DOM
   synchronously. An area is an `area()` marker. So the split of the code has one unit, which is the
-  area. A table then answers the question "what does this URL cost to reach?" when you read it.
-  There is one rule to learn, which is that a screen is here now, and an area arrives on demand.
-  Laziness is not a property of two different things. To split one screen that people rarely visit
-  is an area with one entry. A screen factory that returns a thenable throws, and the message points
-  at `area()`. imp does not await it. The `area()` marker is what makes a pattern match as a
-  **prefix**, which covers everything under it. Every other pattern matches exactly. Nobody can
-  infer that difference from the target itself. imp rejects any other target, including a plain
-  nested object, when it validates the table.
+  area. The bindings then answer the question "what does this URL cost to reach?" when you read
+  them. There is one rule to learn, which is that a screen is here now, and an area arrives on
+  demand. Laziness is not a property of two different things. To split one screen that people rarely
+  visit is an area with one binding. A screen factory that returns a thenable throws, and the
+  message points at `area()`. imp does not await it. An area covers the node it binds and everything
+  under that node. imp rejects any other value when it validates the bindings.
 
 - **The current location is one state for the lifetime of the app, `imp.route`, which is
   `{ path, query }`.** There is exactly one location per page. It lives longer than every screen,
@@ -113,7 +107,7 @@ ordinary `onRemove` of a component.
   anywhere can read the path and the query, and react to a navigation. That covers a nav bar outside
   a router, and a breadcrumb deep inside a screen.
 
-- **The router keys the matched screen by the pattern and the params, and not by the whole URL.**
+- **The router keys the matched screen by the node and the params, and not by the whole URL.**
   Inside, the router is `computed([imp.route], key).view(renderMatched)`, where `key` is
   `{ kind, pattern, params }`. `computed` notifies only when its result changes by content. So a
   navigation that changes **the query only** keeps the current screen mounted. The screen reacts to
@@ -145,16 +139,16 @@ ordinary `onRemove` of a component.
   `imp-route` that it mounts, as factory arguments. imp does not store them in a global at module
   level. Such a global would make the router a singleton in disguise. It would also couple the
   rendering of a nested area to whichever router somebody constructed last. A nested router of an
-  area inherits the options of its parent router. So a tail with no match, inside an area, falls
+  area inherits the options of its parent router. So a path off the map, under an area, falls
   through to the `notFound` of the app, and the download of an area shows the `loading` of the app.
-  A `router()` with no table, in the `root` of an area, inherits in the same way, and it can
-  override any of the three for that section. That router is a small component of its own,
-  `imp-area-router`. Its `setup` looks the enclosing area up from its own host, which sits inside
-  the shadow root of the caller. So `router()` works anywhere that DOM is built, before or after an
-  `await`, with no dependence on the position of the call. Outside an area it fails at mount, and
-  the error boundary or the log reports it. Nothing in the implementation stops two routers on one
-  page. That is a consequence of options that belong to an instance, and it is not a feature that
-  imp promotes. The documented shape is one router per app.
+  A `router()` with no map, in the `root` of an area, inherits in the same way, and it can override
+  any of the three for that section. That router is a small component of its own, `imp-area-router`.
+  Its `setup` looks the enclosing area up from its own host, which sits inside the shadow root of
+  the caller. So `router()` works anywhere that DOM is built, before or after an `await`, with no
+  dependence on the position of the call. Outside an area it fails at mount, and the error boundary
+  or the log reports it. Nothing in the implementation stops two routers on one page. That is a
+  consequence of options that belong to an instance, and it is not a feature that imp promotes. The
+  documented shape is one router per app.
 
 - **`error` is an error boundary at route level. `notFound` is the one 404.** `ComponentError` is a
   bubbling, composed event, which a component that handles it cancels. So a failure in a screen, or
@@ -162,19 +156,20 @@ ordinary `onRemove` of a component.
   renders its `error` in place of the screen, and it still logs the error. imp calls the option with
   the `self` of the `imp-route` host first, like the `error` of a component. The nearest boundary
   wins, so the `error` of a screen handles the error first. `notFound` is the one screen that imp
-  uses when no pattern matches. You declare it beside the other options of the router. Every option
-  is optional.
+  uses when a path is off the map. You declare it beside the other options of the router. Every
+  option is optional.
 
-- **Access control is a separate primitive, on the same wrapper, see `route-guards.md`.** One
-  `guard` that you declare on a table entry runs inside `imp-route`, before the screen factory. Its
-  `wait` verdict resolves through the same loading content that the download of an area uses. So the
-  router gains no second path for loading, and the screen gains no branch for loading.
+- **Access control is a separate primitive, on the same wrapper, see `route-guards.md`.** The one
+  `access` guard of the router runs inside `imp-route`, before the screen factory, with every
+  `access` value on the chain of the matched node. Its `wait` verdict resolves through the same
+  loading content that the download of an area uses. So the router gains no second path for loading,
+  and the screen gains no branch for loading.
 
-- **There is no built-in link component. `navigate` is the one primitive for a navigation.** A
-  client-side link is a plain `<a href>`, and the app intercepts its left-click, to call `navigate`.
-  That is a few lines that an app writes once. imp ships no `link` or `navLink`, because a useful
-  link cannot be separated from the button of a project, or from the anchor of its design system. To
-  wrap `navigate` is trivial, and it keeps the anchor completely the app's own.
+- **`navigate` is the one primitive for a navigation, and the router itself ships no link.** A
+  client-side link is a plain `<a href>` whose left-click calls `navigate`. The standard library
+  writes that once, in `link` and in every component that renders a destination, see
+  `standard-component-library.md`. The router stays free of any anchor. A handle gives the path, as
+  in `navigate(app.todos.$id.href({ id }))`, so app code writes no path string.
   **`navigate(path, { replace })`** resolves the path against the current URL, pushes or replaces a
   history entry, and brings `imp.route` into step. A target on another origin becomes a full load of
   a document. A navigation to the current URL does nothing, in place of a duplicate history entry.
@@ -226,18 +221,17 @@ ordinary `onRemove` of a component.
   the loading content. An error is the error boundary. The router inherits everything that the
   lifecycle guarantees, which is a defined cleanup, the discard of a stale async result, and
   isolation against a fault.
-- The public surface stayed small enough that a guard on a route needed one more value in a table
-  later, which is `route({ guard, screen })`. It did not need a routing layer of its own.
-- The route map is data, in one place. `router({ routes })` reads from the top down. There is no
-  free `route()` side effect spread across modules. The routes of an area live in the file of the
-  area, and the composition root names them once.
+- The public surface stayed small enough that access control needed one guard on the router and one
+  prop on a node. It did not need a routing layer of its own.
+- The route map is data, in one place, which is the application map. `screens` reads from the top
+  down. There is no free `route()` side effect spread across modules. The screens of an area live in
+  the file of the area, and the composition root names every area once.
 - Hierarchical routing, a split of the code of a whole section, and a not-found screen per section,
-  all fall out of one recursive primitive, which is a table entry that points at another table.
-  There is no registry of a global scope, and there is no separate API for a boundary.
-- The split of the code has exactly one unit, which is the area. So a route table answers the
-  question "what does this URL cost to reach?" when you read it. A function renders now, and an
-  `area()` downloads. The cost is that, to split one screen, you give it a table for an area with
-  one entry.
+  all fall out of one recursive primitive, which is a binding that points at more bindings. There is
+  no registry of a global scope, and there is no separate API for a boundary.
+- The split of the code has exactly one unit, which is the area. So the bindings answer the question
+  "what does this URL cost to reach?" when you read them. A function renders now, and an `area()`
+  downloads. The cost is that, to split one screen, you give it an area file with one binding.
 - imp releases a screen, and an area, completely, on a navigation. A navigation that changes the
   query only keeps the screen mounted. So a page for a search, or for a filter, keeps its focus, its
   scroll position, and its state in progress.

@@ -393,9 +393,10 @@ there.
 ### `imp/import-source`
 
 The library of imp is split by subject: `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
-`imp/i18n`, `imp/log` and `imp/http`. See **[Imports](imports.md)**. Each name has exactly one home.
-An import of a name from a sibling specifier fails at runtime, with a missing-export error that does
-not say where to look. So the rule names the correct specifier instead:
+`imp/i18n`, `imp/log`, `imp/http` and `imp/icons`. See **[Imports](imports.md)**. Each name has
+exactly one home. An import of a name from a sibling specifier fails at runtime, with a
+missing-export error that does not say where to look. So the rule names the correct specifier
+instead:
 
 ```js
 import { component, div } from 'imp'
@@ -599,7 +600,9 @@ imp follows a dynamic `import()` when it can read the path:
 
 imp follows `export * from './x.js'` name by name. An import of `format` from a barrel that
 re-exports `./format.js` counts `format` as used there, and nothing else. So imp still reports an
-export that nothing takes off the barrel.
+export that nothing takes off the barrel. A `publicExports` entry follows `export *` in the same
+way. A bare path on a barrel makes every name public that the barrel takes from a star target, and a
+`#name` entry makes that one name public wherever the barrel finds it.
 
 Only an import that imp can reach counts. A module that nothing loads can import as much as it
 wants. Its imports keep no export of another module alive. So one dead file cannot hide a second

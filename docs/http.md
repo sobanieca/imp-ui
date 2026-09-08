@@ -97,7 +97,7 @@ const shell = component('admin-shell', {
   },
 })
 
-export default area({ root: () => shell(), routes: adminRoutes })
+export default area({ root: () => shell(), screens: adminScreens })
 ```
 
 The screens of the section render into the `router()` inside `admin-shell`. So every one of them

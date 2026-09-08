@@ -41,7 +41,7 @@ The pieces are already in place, and a test of the idea confirmed the whole flow
   of the preview, and each asset as a data URL. imp extracts the order of the scenarios, and the
   declarations of a state, at bundle time, into the metadata of the entry. So the page fetches
   nothing later.
-- `preview_runtime.js` makes **no network call**. It couples to the environment in two places only.
+- `preview-runtime.js` makes **no network call**. It couples to the environment in two places only.
   It reads `location.search` for the `?scenario=` view that isolates one scenario. It uses
   `localStorage` for the theme, the language and the direction. Both are correct on a static host.
 - The behaviour that belongs to development enters through `injectImp`, which is a separate step

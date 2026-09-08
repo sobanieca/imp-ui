@@ -6,8 +6,9 @@ Created a new imp project here.
 
   imp.json            the one config file - pins imp <version>
   index.html          the page imp serves
-  src/main.js         entry point: applies the theme, mounts the app
-  src/app.js          the app's components
+  src/main.js         entry point: applies the theme, mounts the frame
+  src/app-map.js      the application map: every feature of the app, one line each
+  src/app.js          the frame, the router and the counter
   test/app.test.js    unit test, runs in-process
   test/app.spec.js    e2e spec, runs in a real browser
   public/favicon.svg  published at the site root - replace it with your own mark
@@ -31,6 +32,7 @@ icon.svg
 imp.json
 index.html
 public/favicon.svg
+src/app-map.js
 src/app.js
 src/main.js
 test/app.spec.js
@@ -39,6 +41,7 @@ test/app.test.js
 --- imp.json ---
 {
   "version": "<version>",
+  "map": "src/app-map.js",
   "pwa": {
     "name": "My shop",
     "shortName": "My shop",

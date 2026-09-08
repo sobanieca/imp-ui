@@ -4,26 +4,26 @@ imp resolves these specifiers itself. In development it uses the import map that
 injects. In production `imp build` resolves them. There is nothing to install and nothing to
 configure. Never import imp by a relative path, by a URL, or with a version.
 
-| Specifier            | Exports                                                                   |
-| -------------------- | ------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`                               |
-| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)     |
-| `imp/state`          | `initState`, `useState`, `computed`                                       |
-| `imp/router`         | `router`, `area`, `route`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
-| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        |
-| `imp/theme`          | `theme`, `applyTheme`                                                     |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
-| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
-| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                  |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                               |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                              |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...    |
-| `imp/std/display`    | `emptyState`, `tag`                                                       |
-| `imp/std/navigation` | `tabs`                                                                    |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`         |
-| `imp/std/feedback`   | `bugReport`                                                               |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...       |
-| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                   |
+| Specifier            | Exports                                                                      |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                        |
+| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)        |
+| `imp/state`          | `initState`, `useState`, `computed`                                          |
+| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`           |
+| `imp/theme`          | `theme`, `applyTheme`                                                        |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`          |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          |
+| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                     |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                  |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                 |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...       |
+| `imp/std/display`    | `emptyState`, `tag`                                                          |
+| `imp/std/navigation` | `tabs`                                                                       |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`            |
+| `imp/std/feedback`   | `bugReport`                                                                  |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...          |
+| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                      |
 
 ```js
 import { component } from 'imp'

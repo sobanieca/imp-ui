@@ -73,9 +73,8 @@ you can override it per call.
   is wrong is worse than to ship none. A wrong cache serves stale data with no message. Its absence
   costs a request that the author can see in the network panel. An app that needs a cache today
   loads the data once, above the components that share it, and holds it in a named state. That is
-  the existing answer of imp to "two components want the same thing". Somebody can add a cache of
-  responses later, behind a new option, with no change to a call site, see
-  `todo/http-client-cache.md`.
+  the existing answer of imp to "two components want the same thing". A cache of responses can
+  arrive later, behind a new option, with no change to a call site.
 - **Every call has an identity by default.** imp sends a UUID per call, as `x-request-id`. It
   generates that id in the builder of the request. So a hook, a mock and the network all see the
   same value. The id is also **stable across a retry**. The id names the call that the author made,

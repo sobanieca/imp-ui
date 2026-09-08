@@ -20,6 +20,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 | `fmt`               | object                                 | see below    | `imp fmt`                                                      |
 | `lint`              | object                                 | `{}`         | `imp lint`                                                     |
 | `test`              | object                                 | `{}`         | `imp test`                                                     |
+| `map`               | path of the application map file       | -            | `imp map`; `imp init` writes `src/app-map.js`                  |
 | `preview`           | object                                 | `{}`         | `imp preview`                                                  |
 | `pwa`               | object                                 | -            | `imp start`, `imp build --pwa`                                 |
 | `environments`      | alias -> env file path                 | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)              |
@@ -73,7 +74,8 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
     "exclude": ["vendor-demos"],
     "themes": ["src/theme/light.js", "src/theme/brand-dark.js"],
     "translations": { "en": "./locales/en.js", "pl": "./locales/pl.js" },
-    "groups": "src/preview-groups.js"
+    "groups": "src/preview-groups.js",
+    "entry": "preview.html"
   },
   "pwa": {
     "name": "My App",
@@ -121,8 +123,8 @@ change, see [build](build.md). **`dependencies/`** holds the vendored bundles.
 ## Environments - `--env`
 
 `environments` maps an alias to a file of values. Select an alias with `imp start --env dev` or
-`imp build --env prod`. With no flag, imp uses an alias named **`default`**, then the `IMP_ENV`
-shell variable, then no environment. An undeclared alias stops the command, and imp lists the real
+`imp build --env prod`. With no flag, imp uses the `IMP_ENV` shell variable, then an alias named
+**`default`**, then no environment. An undeclared alias stops the command, and imp lists the real
 aliases.
 
 The file is JSON, with a string, number or boolean value. It can also be a `.env` file. A `.env`

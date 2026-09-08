@@ -58,13 +58,17 @@ imp uninstall <package>               remove a vendored dependency
 imp test  <file>                      run one test file: *.test.js unit in-process,
                                       *.spec.js e2e in a real browser
 imp test  --unit | --e2e              run every file of that level, each in its own
-                                      process, in parallel (--jobs <n> caps concurrency)
+                                      process, in parallel (--jobs <n> caps concurrency |
+                                      --screenshots <dir> | --video <dir>)
 imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
            [--output <path>]          keeping aspect ratio unless --stretch is given
            [--stretch]                (neither -w nor -h: report current dimensions
                                       and size, plus a recommended resize command)
 imp lint  [...paths] [--fix]          lint with imp rules (--fix applies autofixes)
 imp fmt   [...paths]                  format source
+imp map   [file]                      print the application map of the app: every node
+                                      with its path, label, access and description
+                                      (the 'map' file of imp.json, or a part you pass)
 imp skill [...subject]                print imp's manual for a subject, for an AI agent to
                                       read (no subject: the index of every subject)
 imp update [version] [--check]        update to the latest release and pin it in imp.json
@@ -113,18 +117,21 @@ What you get is deliberately small. It is a working app, not a template to study
 
 | File                 | What it is                                                             |
 | -------------------- | ---------------------------------------------------------------------- |
-| `imp.json`           | your one config file, pinning the imp version that created the project |
+| `imp.json`           | your one config file: the imp version, and the path of the map         |
 | `index.html`         | the page imp serves, with the mount point and the entry module         |
-| `src/main.js`        | applies the built-in light theme and mounts the app                    |
-| `src/app.js`         | the app's components - a heading, a line of text, and a click counter  |
-| `test/app.test.js`   | a unit test that mounts the component and clicks its button            |
+| `src/main.js`        | applies the built-in light theme and mounts the frame                  |
+| `src/app-map.js`     | the application map - the features of the app, one node per line       |
+| `src/app.js`         | the frame, the router, and a click counter bound to the home node      |
+| `test/app.test.js`   | a unit test that mounts the frame and clicks the button of the counter |
 | `test/app.spec.js`   | an end-to-end spec that drives the same app in a real browser          |
 | `public/favicon.svg` | a placeholder mark, published at the site root                         |
 | `.gitignore`         | ignores `dist/`, `.imp/`, every `.env` file, and the usual OS noise    |
 
 There is no `README`, no `src/components/` tree and no second example. The counter shows the shape
 of an imp app, which is a component, a namespaced state, and a live text node bound to that state.
-Delete the counter when you start to write your own app.
+The map shows the shape of a routed app. It has two nodes. `home` binds the counter, and `about`
+renders a placeholder until you bind a screen to it. So the nav of the frame works from the first
+run. See **[Routing](routing.md)**. Delete the counter when you start to write your own app.
 
 The scaffold is a working project when it arrives. `imp lint`, `imp fmt --check`, `imp test --unit`
 and `imp test --e2e` all pass against it before you change a line. So a failure after your first
@@ -158,6 +165,34 @@ The project is then ready for `imp build --pwa`, and you connect nothing else. T
 App** section under `imp build`, below, describes what that build emits.
 
 At the end, `imp init` prints what it wrote, and the commands to run next.
+
+## `imp map` - the app on one screen
+
+```
+imp map [file]
+```
+
+`imp map` reads the file that exports your application map, named by the `map` key of `imp.json`,
+and prints the tree. Every node shows its path, its label, its `access` and its `description`:
+
+```
+app
+  /                        Home
+  /projects                Projects  access: "user"
+    /projects/:projectId   Project id
+      /projects/:projectId/settings  Settings  access: "admin" | group 'Manage'
+  /admin                   Admin  access: "admin"
+    /admin/users           Users
+  /login                   Login  hidden from the nav
+```
+
+`imp map src/admin/map.js` prints a part of the map on its own, with the props of the node that it
+hangs from on the first line, and its paths relative to that node.
+
+The command runs the file the same way `imp test --unit` runs a test, in process. So the file can
+import `t` for a translated `label`, and nothing else has to be mocked. A file that exports no map,
+or a path that does not exist, exits with code 1 and says what it expected. See
+**[Routing](routing.md)** for the map itself.
 
 ## `imp start`
 
@@ -797,12 +832,14 @@ imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
 ```
 
-`imp preview` builds one component at a time, in isolation. It serves each of your **preview files**
-as its own page. The one line that an AI agent must read before it writes code with the component
-sits below the page head. Every named export becomes a labelled panel. That panel holds the
-component in a stage that you can drag to any size, with a state editor beside it. You start no app,
-you need no backend, and you navigate to no screen. You edit the component, the page reloads, and
-you see it.
+`imp preview` builds one component at a time, in isolation. It serves every one of your **preview
+files** in one app. The catalog is down the side, and a click opens a component in place, with no
+page load. The one line that an AI agent must read before it writes code with the component sits
+below the page head. Every named export becomes a labelled panel. That panel holds the component in
+a stage that you can drag to any size, with a state editor beside it. You start no app, you need no
+backend, and you navigate to no screen. You edit the component, the page reloads, and you see it. A
+preview file that fails to build shows its error in place of its panels, and the rest of the catalog
+stays up.
 
 Underneath, this is the same dev server as `imp start`. So the console and the network activity of
 the browser still stream to your terminal, and a save of any file reloads the page. Your
@@ -848,7 +885,7 @@ export const description = "Run 'imp skill ./components/todos.js' before writing
 is the group that the component is listed under. `description` is the instruction for an agent, and
 imp shows it below the head. Each one is optional, and each one is a plain string. Declare none of
 them, and imp falls back to the name of the file and the folder that the file sits in. So
-`src/inputs/text_field.preview.js` is `text_field` under `inputs`. That is readable, but it is not
+`src/inputs/text-field.preview.js` is `text_field` under `inputs`. That is readable, but it is not
 what you would say out loud.
 
 The grouping comes from `group`, not from the folder. So you can organize the catalog in the way
@@ -857,9 +894,9 @@ different folders that declare the same `group` are listed together.
 
 ### Groups and their icons
 
-The catalog at the side lists one section per group. By default every section has a folder icon, and
-the sections are in alphabetical order. To give the groups their own icons and their own order,
-point `preview.groups` in `imp.json` at a module of yours:
+The catalog at the side lists one row per group, with the components under it. By default every
+group has a folder icon, and the groups are in alphabetical order. To give the groups their own
+icons and their own order, point `preview.groups` in `imp.json` at a module of yours:
 
 ```json
 {
@@ -881,8 +918,8 @@ that a preview file exports as `group`, or the folder name that a file falls bac
 icon from `imp/icons`, the same value that you give to the `icon` component. The groups appear in
 the order in which you list them. A group that your previews use, and that the module does not list,
 comes after them, with the folder icon. The module is ordinary imp code, and imp bundles it into the
-preview page. So an edit to it reloads the catalog, like any other change. A path that resolves to
-no file stops `imp preview` at startup.
+preview app. So an edit to it reloads the catalog, like any other change. A path that resolves to no
+file stops `imp preview` at startup.
 
 ### Mocking what the component imports
 
@@ -909,8 +946,10 @@ any depth. `orig()` keeps the rest of the module real. See
 plain object that you write, and it lives next to the component. So a reviewer sees the fixture and
 the component in one diff.
 
-A mock applies to the whole preview file. So two scenarios that need different data differ in the
-arguments that you pass to them.
+A mock applies to the whole preview app. Every preview shares one module graph, so a module that one
+file mocks is mocked for every component that imports it. Two files that mock the same module must
+return the same factory. Otherwise imp reports both files and leaves them out of the build until
+they agree. Two scenarios that need different data differ in the arguments that you pass to them.
 
 ### The stage
 
@@ -982,18 +1021,57 @@ page with the new tokens applied. So a preview page is also the fastest way to w
 
 **edit theme**, beside the theme button, opens an editor. It is for writing a theme, not for
 selecting one. It asks for the mode that you edit, which is light or dark, a **primary** colour and
-a **secondary** colour, a **border radius** step and a **shadow** step. It derives every other
-colour token from those two colours. That is the hover step and the active step, a readable
-on-primary colour, and the surfaces, the borders and the text, which share the hue of the secondary
-colour.
+a **secondary** colour, a **font** and a **mono font**, a **border radius** step and a **shadow**
+step. It derives every other colour token from those two colours. That is the hover step and the
+active step, a readable on-primary colour, and the surfaces, the borders and the text, which share
+the hue of the secondary colour.
 
 The page re-skins while you type, on real components. imp remembers your choices per theme, across a
 reload. When the theme looks correct, **copy** or **download theme.js** gives you an ordinary theme
 module, with a `light` export and a `dark` export. You drop it into your app and pass it to `init`.
 The editor prints the two lines that do that, in the panel. The editor produces a plain file, with
-no imp import in it. So from that point the file is yours to edit by hand. The 31 named palette
-colours sit at the top of the file for exactly that. **reset** drops the draft, and returns to the
-selected theme. See **[Theming](theming.md)**.
+no imp import in it. So from that point the file is yours to edit by hand. The two fonts and the 31
+named palette colours sit at the top of the file for exactly that. **reset** drops the draft, and
+returns to the selected theme. See **[Theming](theming.md)**.
+
+### The page around a preview - `preview.entry`
+
+imp generates the HTML page that frames every preview. That page has no stylesheet of yours in it.
+So a web font that your app loads through a `<link>` in `index.html` does not load in a preview, and
+the theme editor cannot show it. To frame every preview with a page of your own, point
+`preview.entry` at an HTML file:
+
+```json
+{
+  "preview": { "entry": "preview.html" }
+}
+```
+
+imp serves that file as the page of the app, so the catalog and every component open inside it. It
+replaces the `<title>`, or adds one, and it appends its own script at the end of the `<body>`.
+Everything else in the file is yours, and it stays as written. Put the font links, the icon and any
+stylesheet that a preview needs in its `<head>`:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    />
+  </head>
+  <body></body>
+</html>
+```
+
+Write a file for the preview. Do not point `preview.entry` at the `index.html` of your app. imp
+keeps every script in the entry file, so the app would start inside the preview page. A path that
+resolves to no file fails the command at startup. An edit to the file reloads the page.
 
 ### Language and text direction
 
@@ -1033,8 +1111,9 @@ control to the other side in the middle of a session, and the theme button never
 With no path, imp discovers every `*.preview.js` file in the project, and `/` lists them all. Pass a
 path to narrow the discovery. A preview file opens directly. A component path opens the preview
 beside it, so `imp preview components/todos.js` finds `components/todos.preview.js`. A folder limits
-the discovery to that folder. To render one scenario only, add `?scenario=<name>` to a preview URL,
-or click **isolate** on a panel.
+the discovery to that folder. Every component has an address of its own, `/<group>/<name>` in lower
+case with hyphens, such as `/widgets/counter`. A reload keeps it, and a bookmark opens it. To render
+one scenario only, add `?scenario=<name>` to that address, or click **isolate** on a panel.
 
 `imp preview --list` prints the discovered preview files, one per line. `--list --json` prints them
 as a JSON array, for a tool to read. `--port` selects the port, and the default is 4517. `--env`

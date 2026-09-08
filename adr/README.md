@@ -30,6 +30,7 @@ These are the conventions:
 | [error-boundaries](error-boundaries.md)                         | Error boundaries via events; isolated cleanup                                  |
 | [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components                            |
 | [route-guards](route-guards.md)                                 | Synchronous guards over declared states, with wait                             |
+| [application-map](application-map.md)                           | One plain-data map drives the router, the shell and the trail                  |
 
 ## State
 
@@ -97,7 +98,7 @@ These are the conventions:
 | [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios on a synthesized page          |
 | [in-page-review-capture](in-page-review-capture.md)                   | One capture engine: dev review files and the bugReport component   |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                         |
-| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD_PARTY_LICENSES            |
+| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD-PARTY-LICENSES            |
 | [built-app-license-notices](built-app-license-notices.md)             | imp build writes LICENSES.txt; every script points at it           |
 | [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals          |
 | [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                     |

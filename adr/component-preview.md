@@ -1,4 +1,4 @@
-# Component preview - `*.preview.js` scenarios served on a synthesized page
+# Component preview - `*.preview.js` scenarios served in one app
 
 ## Context
 
@@ -12,10 +12,10 @@ module-mocking seam in the test bundler (`two-level-testing.md`).
 
 ## Decision
 
-`imp preview` serves each `*.preview.js` file as its own generated page. It reuses the `imp start`
-internals (`loadApp` / `createRequestHandler`, head injection, live reload, console and network
-telemetry) instead of a second server. Discovery uses the shared file walker, so imp finds a preview
-file the way it finds a test file.
+`imp preview` serves every `*.preview.js` file in one single-page app, built from imp's own map,
+router and shell. It reuses the `imp start` internals (`loadApp` / `createRequestHandler`, head
+injection, live reload, console and network telemetry) instead of a second server. Discovery uses
+the shared file walker, so imp finds a preview file the way it finds a test file.
 
 - **A preview file is plain imp code. Every named export except three is a scenario.** The export
   name is the panel label, so the name of a scenario lives only in the code. A scenario is the
@@ -42,12 +42,19 @@ file the way it finds a test file.
   namespace, the same `orig`/`spy` helpers, and the same rule that a specifier is a relative module
   or a vendored `imp.json` dependency. The scanning, mock generation, and resolver plugin live in
   one shared module (`cli/src/bundling.js`) that both commands use. A developer who knows one knows
-  the other. A mock is per file, not per scenario.
-- **The page is one bundle, not the module graph of the app.** A generated entry module imports the
-  preview file and the preview chrome. esbuild bundles it with the imp library inlined. So the
-  browser loads the mocked module graph, and there is exactly one instance of the library behind the
-  component, the chrome, and any mock. Bundles are cached per file. Any file change drops them, and
-  the existing watcher already reports that change as a reload.
+  the other. A mock applies to the whole preview app, because every preview shares one module graph.
+  Two files that mock the same module must agree on the factory. Otherwise imp reports both and
+  leaves them out of the build.
+- **The app is one split build, and every preview shares one module graph.** A generated entry
+  module holds the catalog, the themes, the translations, the groups module and one dynamic
+  `import()` per preview file. esbuild bundles that entry and every preview file as entry points,
+  with code splitting. The library and the chrome land in shared chunks, and each preview file is a
+  chunk of its own that the browser fetches on the first visit. So there is exactly one instance of
+  the library behind the chrome, every component and every mock, and a move between components loads
+  the chunk of the next one only. The build is cached until a file changes, and the watcher reports
+  that change as a reload. A preview file that fails to build is left out of the build and marked in
+  the catalog. Its address shows the error, and the rest of the catalog stays up. An error that no
+  preview file owns fails the whole build, and the page shows it.
 - **A scenario panel is a stage and a state editor, and nothing else.** The stage is drag-resizable,
   with the editor beside it. The file's `description` sits once below the page head. There, an agent
   about to write a call site learns where the manual of the component is. A panel shows no code. The
@@ -57,21 +64,24 @@ file the way it finds a test file.
   dragging its right, bottom, or corner handle with pointer events (mouse and touch). It has a live
   size readout and phone/tablet/desktop presets on top of free dragging. A resize changes the parent
   box only, so the component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
-- **Every page wears the same frame, and the frame is `shell`.** `/` and each `/preview/<path>`
-  render one `shell`. The brand block is its `logo`. The catalog is its `sidebar` data, with one
-  section per group. The theme, language and direction pickers are its `extras`. The theme editor is
-  in a non-modal `drawer` opened from a button beside them. The page itself is its content. So
-  navigation between components is one click from anywhere. The workbench uses imp's own frame on
-  purpose: a regression in the frame shows up while you work on anything. The frame is pinned
-  `dir="ltr"` on its host, so the direction control still applies to the stage alone.
-- **The theme editor edits the applied theme, token by token.** The pickers choose which theme is
-  applied. The editor lists every token the applied theme wrote, grouped by kind. It writes each
-  change straight back through `applyTheme`, so the page and the specimen re-skin as you type the
-  value. Edits are kept per theme in `localStorage` and layered back over the theme on reload. The
-  editor offers the result as a theme module to paste into a project. That makes the workbench the
-  place where a theme is designed, not only the place where one is checked. It reads the token names
-  from the custom properties the applied theme left on the document element, not from a list of its
-  own. So a token added to a theme shows up in the editor with no second registry to update.
+- **The frame is `shell`, and an application map drives it.** The runtime builds an `appMap()` from
+  the catalog (`application-map.md`): one index node, one child per group and one grandchild per
+  component. Group and component names become node keys and path segments through one slug function
+  that the CLI shares, so the address the server prints is the address the app serves. The router
+  binds the catalog view to the index node and an `area()` per component that imports its chunk on
+  demand. The sidebar lists the groups with the components under them. The map has one section, so
+  the shell draws the sidebar-only layout on its own (`app-shell-component.md`). Group icons and
+  counts bind at the shell by handle. The brand block is its `logo`. The theme, language and
+  direction pickers are its `extras`. The theme editor is in a non-modal `drawer` opened from a
+  button beside them. So navigation between components is one click from anywhere, with no page
+  load. The workbench uses imp's own map, router and frame on purpose: a regression in any of them
+  shows up while you work on anything. The frame is pinned `dir="ltr"` on its host, so the direction
+  control still applies to the stage alone.
+- **The theme editor is part of the page, and `theme-editor.md` records its design.** The pickers
+  choose which theme is applied. The editor derives a whole theme from a few knobs, writes each
+  change straight back through `applyTheme`, keeps a draft per theme in `localStorage`, and exports
+  a plain theme module. That makes the workbench the place where a theme is designed, not only the
+  place where one is checked.
 - **A preview is identified by `group/name`, declared in the file or derived from its path.** imp
   uses the file's `group` and `name` exports when it has them. Otherwise it uses the folder that
   holds the file and the base name of the file. A project that writes no metadata still gets a
@@ -86,23 +96,20 @@ file the way it finds a test file.
   `{ name, icon }`. The icon is a value from `imp/icons`. The generated entry imports the module
   exactly like a theme or a translations file and hands it to the runtime. Listed groups come first,
   in the order written. A group the module omits follows with a folder icon. A listed group with no
-  previews is not drawn. imp's own standard library is a project like any other here. `lib/src/std`
-  carries an `imp.json` that names its `preview_groups.js`, and the CLI ships no group table at all.
+  previews is not drawn. imp's own standard library is a project like any other here. `lib/src`
+  carries an `imp.json` that names `std/preview-groups.js`, and the CLI ships no group table at all.
   The match is exact and case-sensitive. A group name is a string the project already chose twice,
   in the module and in each preview file, and a lenient match would hide a typo instead of showing
   it as a folder icon.
-- **The catalog travels in the page, not in the bundle, and imp builds it at discovery time.** Every
-  preview document carries a `<script type="application/json">` that lists the discovered previews.
-  Each entry has its file, identity and description, and the list says which one is current. The
-  runtime reads it before it mounts, because `mount` replaces the body. To read the metadata, imp
-  must open every preview file. So imp builds the catalog once when discovery runs, and the same
-  watcher callback that clears the bundle cache rebuilds it. It is never built per request. Bundles
-  stay per file and cacheable. A new preview file changes only the HTML, and a bundle never has to
-  be rebuilt because a sibling appeared.
-- **The index is the same bundle path as a preview page, with no scenarios.** `/` serves a generated
-  entry whose scenarios are `null`. So one runtime renders both the catalog view and the scenarios
-  of a file, and two page builders cannot diverge. Its bundle is cached under its own key and served
-  from `/@imp/preview-index.js`.
+- **The catalog travels in the entry module, and imp builds it at discovery time.** To read the
+  metadata of a file, the order of its scenarios and the state declarations of its graph, imp must
+  open every preview file. So imp builds the catalog once when discovery runs, and the same watcher
+  callback that drops the build rebuilds it. The generated entry embeds the catalog, so the runtime
+  knows every component, and draws the whole sidebar, before one chunk of a component loads.
+- **One page serves every address.** The server answers `/` and every GET without a file extension
+  with the same HTML, and the router reads the address. `/@imp/preview/app.js` is the entry,
+  `/@imp/preview/<file>.js` is the chunk of one preview file, and `/@imp/preview/chunks/` holds the
+  shared code. A project frames that page through `preview.entry`.
 - **The preview page is an imp app built from `imp/std`.** Its bars, stage and state editor are
   `component()`s that read the same `--imp-*` tokens as the library
   (`themable-by-default-tokens.md`). So the theme switcher re-skins the page together with the
@@ -132,6 +139,17 @@ file the way it finds a test file.
   `applyTheme` writes only the tokens a theme names, so a partial theme alone would leave the rest
   at whatever the previous selection set. Now that the page wears the theme too, that showed up as a
   half-styled workbench rather than only a half-styled component.
+- **A project can frame every preview with its own page, through `preview.entry`.** The generated
+  page holds no stylesheet of the app. So a web font that the app links in `index.html` does not
+  load in a preview, and the theme editor cannot show it. `preview.entry` in `imp.json` names an
+  HTML file. imp serves it as the page of the catalog and of every preview. It replaces or adds the
+  `<title>`, appends the catalog and the bundle script at the end of the `<body>`, and keeps
+  everything else as written. imp does not read the `index.html` of the app for this, and it does
+  not pick tags out of any file. A rule that copies some tags and drops others is a guess about
+  which tags matter, and it is invisible when it guesses wrong. An explicit file costs one path in
+  `imp.json`, and what it holds is what the page gets. It is a separate file, and not the
+  `index.html` of the app, because that file starts the app from its own script tag. A path that
+  resolves to no file fails the command at startup.
 - **Language and direction are chrome controls on the same seam.** A language picker calls
   `setLang`, and a direction picker writes `<html dir>` (`translatable-by-default.md`). So a
   component is checked in another language, and right to left, without a code edit. Both selections
@@ -145,11 +163,12 @@ file the way it finds a test file.
   stage element.** So the frame and the panels never mirror under the person who uses them. The
   preview page is the one place where imp's own UI and the previewed component need different
   directions at once.
-- **Routes:** `/` is the generated catalog of discovered previews. `/preview/<path>` renders the
-  scenarios of one file. `?scenario=<name>` isolates one. `/@imp/preview/<path>` serves the bundle
-  of that file, and `/@imp/preview-index.js` serves the bundle of the catalog. A build failure is
-  served as a module that renders the error into the page, and it is also logged to the terminal.
-  The preview server does not fall back to the app's `index.html` for unknown routes.
+- **Routes:** `/` is the catalog of discovered previews. `/<group>/<name>` renders the scenarios of
+  one file, with the names in lower case and hyphens. `?scenario=<name>` isolates one. It changes
+  the query only, so the screen stays mounted and re-renders its panels. `/@imp/preview/` serves the
+  build. A failure of the whole build is served as a module that renders the error into the page,
+  and every build failure is logged to the terminal. The preview server never serves the app's
+  `index.html`. An address off the map gets the preview page, and the router says so.
 - **`imp preview [path]`** with no path serves everything. A `*.preview.js` path, a component path
   whose sibling preview is inferred, or a folder narrows it. `--list` prints what was discovered
   (`--json` for tooling). `--port` defaults to 4517, so a preview server and `imp start` can run
@@ -168,15 +187,17 @@ develop. So a regression in `shell`, `button`, `select` or `textArea` shows up w
 anything. The cost is the circularity: a broken standard component can break the page used to
 diagnose it. So the build-failure path stays raw DOM, and an error always renders.
 
-Preview pages are bundled while the rest of development stays buildless. A preview page reflects a
-file change only after its bundle is rebuilt, which happens on the reload the watcher already
-triggers. Because the bundle inlines the library, a preview page does not share module instances
-with anything served outside it.
+The preview app is bundled while the rest of development stays buildless. A change reflects after
+one rebuild of the whole app, which the watcher already triggers with a reload. The build covers
+every preview file at once, so a project with many previews pays for all of them on the first
+request after a change. The library and the chrome are split into shared chunks, so the chunk of one
+preview stays small, and a move between components costs one small fetch.
 
-Scenario isolation stops at the module graph. Mocks are per file, so two scenarios that need
-different mocked data must differ by their arguments or live in separate preview files. Teardown
-between renders is the page reload. Scenarios are never unmounted and re-mounted in place, so a stub
-that holds timers or subscriptions cannot leak between renders.
+Scenario isolation stops at the module graph, and the whole app shares that graph. A mock applies to
+every component that imports the module, and two scenarios that need different mocked data must
+differ by their arguments. The scenarios of a file mount when its address opens and unmount when you
+leave it. An export that is an instance is the same element on every visit, so a scenario that must
+start fresh each time is a function export.
 
 The three metadata exports are reserved for good. A preview file can never have a scenario called
 `name`, `group` or `description`. One written anyway is taken as a label and not rendered, in

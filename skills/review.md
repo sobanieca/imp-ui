@@ -61,21 +61,21 @@ The save button is disabled until a field is touched, but nothing says so.
 **The header** is `label: value`, one per line, at column 0. imp omits an empty line. So do not
 assume that every line is present.
 
-| field      | what it is                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------------ |
-| `time`     | when imp saved the review, in ISO 8601                                                     |
-| `page`     | the full URL that was open. For a preview page it names the `*.preview.js` file.           |
-| `title`    | the document title at that time                                                            |
-| `viewport` | `<width>x<height>` in CSS pixels. imp adds `at <n>x` when the device pixel ratio is not 1. |
-| `scroll`   | the page scroll as `<x>,<y>`. It is **present only when the page was scrolled**.           |
-| `scheme`   | `light` or `dark`, from `prefers-color-scheme`                                             |
-| `motion`   | `reduce`. It is **present only when reduced motion is on**.                                |
-| `lang`     | `<html lang>`                                                                              |
-| `dir`      | the computed direction of `<html>`, `ltr` or `rtl`                                         |
-| `element`  | a path from `<body>` to the picked node. `>>` marks every shadow boundary.                 |
-| `rect`     | the picked element as `<w>x<h> at <x>,<y>` in the viewport                                 |
-| `text`     | the rendered text of the element, clipped                                                  |
-| `html`     | the `outerHTML` of the element, clipped. It **does not carry a typed-in value**.           |
+| field      | what it is                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| `time`     | when imp saved the review, in ISO 8601                                                       |
+| `page`     | the full URL that was open. For a preview it is the address of the component, `/group/name`. |
+| `title`    | the document title at that time                                                              |
+| `viewport` | `<width>x<height>` in CSS pixels. imp adds `at <n>x` when the device pixel ratio is not 1.   |
+| `scroll`   | the page scroll as `<x>,<y>`. It is **present only when the page was scrolled**.             |
+| `scheme`   | `light` or `dark`, from `prefers-color-scheme`                                               |
+| `motion`   | `reduce`. It is **present only when reduced motion is on**.                                  |
+| `lang`     | `<html lang>`                                                                                |
+| `dir`      | the computed direction of `<html>`, `ltr` or `rtl`                                           |
+| `element`  | a path from `<body>` to the picked node. `>>` marks every shadow boundary.                   |
+| `rect`     | the picked element as `<w>x<h> at <x>,<y>` in the viewport                                   |
+| `text`     | the rendered text of the element, clipped                                                    |
+| `html`     | the `outerHTML` of the element, clipped. It **does not carry a typed-in value**.             |
 
 **A block** starts with `label:` on its own line. The lines after it are indented by two spaces. imp
 omits an empty block.

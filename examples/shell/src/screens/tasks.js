@@ -1,24 +1,13 @@
 import { component } from 'imp'
 import { div, input, label, li, ul } from 'imp/html'
 import { computed, initState, useState } from 'imp/state'
-import { button, heading, icon, text } from 'imp/std'
+import { button, heading, icon, link, text } from 'imp/std'
 import { luTrash } from 'imp/icons'
 import { emptyState } from 'imp/std/display'
 import { textField } from 'imp/std/inputs'
 import { stack } from 'imp/std/layout'
+import { app } from '../app-map.js'
 import { addTodo, matching, removeTodo, toggleTodo } from '../todos.js'
-
-const titles = {
-  all: 'All tasks',
-  active: 'Active',
-  done: 'Done',
-}
-
-const descriptions = {
-  all: 'Every task in the demo list.',
-  active: 'What is still waiting to be done.',
-  done: 'What is already finished.',
-}
 
 const todoRow = component('todo-row', {
   styles: `
@@ -65,6 +54,7 @@ const todoRow = component('todo-row', {
         events: { change: () => toggleTodo(todos, todo.id) },
       }),
       label({ class: 'title', for: 'done' }, todo.title),
+      link({ href: app.tasks.$taskId.href({ taskId: todo.id }), size: 'sm' }, 'Open'),
       button({
         variant: 'ghost',
         size: 'sm',
@@ -141,11 +131,11 @@ const taskList = component('todo-list', {
 })
 
 export const tasks = component('todo-tasks', {
-  setup: (_self, { filter }) =>
+  setup: (_self, { filter, node }) =>
     stack(
       { gap: 4 },
-      heading({ level: 1 }, titles[filter]),
-      text({ tone: 'secondary' }, descriptions[filter]),
+      heading({ level: 1 }, node.spec.label),
+      text({ tone: 'secondary' }, node.spec.description),
       addTask(),
       taskList({ filter }),
     ),

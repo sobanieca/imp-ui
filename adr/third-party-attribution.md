@@ -21,14 +21,14 @@ But it applies to everything that imp already bundled.
 imp keeps one record of attribution that somebody can audit, and imp ships that record with every
 distributed artifact.
 
-- **`THIRD_PARTY_LICENSES.md` at the repository root** lists every component that imp bundles or
+- **`THIRD-PARTY-LICENSES.md` at the repository root** lists every component that imp bundles or
   downloads, with its version, its SPDX licence and its source. After the list comes the full text
   of each licence family, which is MIT, BSD-3-Clause, Apache-2.0 and MPL-2.0, with the copyright
   holders that each one covers. That file is the one home for every third-party notice.
-- **The file ships inside the binary**, through `deno compile --include THIRD_PARTY_LICENSES.md`.
+- **The file ships inside the binary**, through `deno compile --include THIRD-PARTY-LICENSES.md`.
   **`imp licenses`** prints it. So a person can get the notices from the distributed binary, and not
   only from the repository.
-- **The prebundle keeps a notice.** `tools/prebundle_npm_deps.js` uses the esbuild option
+- **The prebundle keeps a notice.** `tools/prebundle-npm-deps.js` uses the esbuild option
   `legalComments: 'eof'`, and not `'none'`. So the licence comment of each dependency survives at
   the end of each vendored file. Minification does not remove it.
 - **imp stays MIT.** imp bundles MPL-2.0 code, in `@resvg/resvg-wasm`, and Apache-2.0 code, in
@@ -40,7 +40,7 @@ distributed artifact.
   directory that `imp build` produces. That directory carries its own notices, through a separate
   mechanism. See `built-app-license-notices.md`.
 - **Record a new bundled dependency here.** When you add a dependency that imp vendors, pre-bundles
-  or downloads, add a row to `THIRD_PARTY_LICENSES.md`, with its licence text. That is the same rule
+  or downloads, add a row to `THIRD-PARTY-LICENSES.md`, with its licence text. That is the same rule
   as for a new runtime npm dependency, which must go through the prebundle tool. See
   `prebundled-npm-dependencies.md`.
 
