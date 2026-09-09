@@ -7,7 +7,7 @@ import { button, icon, link, text } from 'imp/std'
 import { luContrast, luEclipse, luMoon, luPalette, luSun } from 'imp/icons'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
-import { drawer, stack } from 'imp/std/layout'
+import { dialog, drawer, stack } from 'imp/std/layout'
 import { buildFailure, groupsOf, previewHead, previewIndex, previewShell } from './preview-shell.js'
 import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview-theme-editor.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview-metadata.js'
@@ -25,6 +25,7 @@ const THEME_STATE = 'imp.preview.theme'
 const LANGUAGE_STATE = 'imp.preview.lang'
 const DIRECTION_STATE = 'imp.preview.dir'
 const DRAFT_STATE = 'imp.preview.draft'
+const STATE_EDITOR_STATE = 'imp.preview.state-editor'
 
 const BUILT_IN_THEMES = [
   'imp-light',
@@ -76,6 +77,7 @@ const surface = `
 const SCENARIO_STYLES = `
   .scenario {
     display: block;
+    --imp-dialog-inline-size: 26rem;
     padding-block-end: var(--imp-space-5, 24px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
@@ -84,17 +86,9 @@ const SCENARIO_STYLES = `
 
   .scenario-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--imp-space-3, 12px);
     margin-block-end: var(--imp-space-2, 8px);
-  }
-
-  .scenario-body {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--imp-space-4, 16px);
-    flex-wrap: wrap;
   }
 
   .scenario-head h2 {
@@ -121,8 +115,6 @@ const SCENARIO_STYLES = `
 const STAGE_STYLES = `
   :host {
     display: block;
-    flex: 1 1 480px;
-    min-inline-size: 280px;
   }
 
   .bar {
@@ -204,24 +196,6 @@ const STAGE_STYLES = `
 const EDITOR_STYLES = `
   :host {
     display: block;
-    flex: 0 1 320px;
-    min-inline-size: 260px;
-  }
-
-  .editor {
-    box-sizing: border-box;
-    padding: var(--imp-space-3, 12px);
-    ${surface}
-  }
-
-  h3 {
-    margin: 0;
-    color: var(--imp-color-secondary, #64748b);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-weight: var(--imp-font-weight-normal, 400);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
   }
 
   .row {
@@ -577,7 +551,6 @@ const editorDefinition = {
   setup: (self, nodes, declarations) =>
     div(
       { class: 'editor' },
-      el('h3', 'state'),
       declarations.length
         ? [
           text(
@@ -602,7 +575,7 @@ const stateEditor = (nodes, declarations) => {
 
 const scenarioDefinition = {
   styles: SCENARIO_STYLES,
-  setup: (_self, name, scenario, entry) => scenarioSection(name, scenario, entry),
+  setup: (self, name, scenario, entry) => scenarioSection(self, name, scenario, entry),
 }
 
 let createScenario = null
@@ -612,7 +585,7 @@ const scenarioPanel = (name, scenario, entry) => {
   return createScenario(name, scenario, entry)
 }
 
-const scenarioSection = (name, scenario, entry) => {
+const scenarioSection = (self, name, scenario, entry) => {
   let nodes
   try {
     nodes = asNodes(typeof scenario === 'function' ? scenario() : scenario)
@@ -620,24 +593,33 @@ const scenarioSection = (name, scenario, entry) => {
     nodes = null
     console.error(`imp preview: scenario '${name}' failed to build`, error)
   }
-  const head = div(
-    { class: 'scenario-head' },
-    h2(name),
-    link({ href: `${entry.href}?scenario=${encodeURIComponent(name)}`, size: 'sm' }, 'isolate'),
+  const isolate = link(
+    { href: `${entry.href}?scenario=${encodeURIComponent(name)}`, size: 'sm' },
+    'isolate',
   )
   if (!nodes) {
     return el(
       'section',
       { class: 'scenario' },
-      head,
+      div({ class: 'scenario-head' }, h2(name), isolate),
       pre({ class: 'failure' }, `${name} failed to build - see the terminal`),
     )
   }
+  const editing = initState(self, STATE_EDITOR_STATE, false)
+  const toggle = button(
+    { size: 'sm', variant: 'ghost', events: { click: () => editing.set(!editing.get()) } },
+    editing.text((open) => (open ? 'close state' : 'edit state')),
+  )
+  const editor = dialog(
+    { title: `${name} state`, modal: false, open: editing },
+    stateEditor(nodes, entry.states),
+  )
   return el(
     'section',
     { class: 'scenario' },
-    head,
-    div({ class: 'scenario-body' }, stagePanel(nodes), stateEditor(nodes, entry.states)),
+    div({ class: 'scenario-head' }, h2(name), isolate, toggle),
+    stagePanel(nodes),
+    editor,
   )
 }
 
@@ -760,6 +742,7 @@ const pageDefinition = {
     )
 
     return previewShell({
+      mark: bound.mark,
       navbar: { map: bound.app, icons: bound.icons, tags: bound.tags },
       controls,
       editor,
@@ -815,9 +798,25 @@ const readGroups = (declared) => {
   return groups
 }
 
+const ensureFavicon = (mark) => {
+  if (document.head.querySelector('link[rel~="icon"]')) return
+  const icon = document.createElement('link')
+  icon.rel = 'icon'
+  icon.href = mark
+  document.head.append(icon)
+}
+
 export async function startPreview(
-  { catalog, load, themes: customThemes = [], translations = [], groups: declaredGroups = null },
+  {
+    mark,
+    catalog,
+    load,
+    themes: customThemes = [],
+    translations = [],
+    groups: declaredGroups = null,
+  },
 ) {
+  ensureFavicon(mark)
   const listed = groupsOf(catalog, readGroups(declaredGroups))
   const styles = document.createElement('style')
   styles.textContent = DOCUMENT_STYLES
@@ -837,6 +836,6 @@ export async function startPreview(
   )
   await applyLanguage(readStoredLanguage())
 
-  mount(document.body, previewPage(bindCatalog(catalog, load, listed)))
+  mount(document.body, previewPage({ ...bindCatalog(catalog, load, listed), mark }))
   applyStageDirection()
 }

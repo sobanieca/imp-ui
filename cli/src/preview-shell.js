@@ -321,10 +321,10 @@ export const previewHead = (entry, isolated, instruction) => {
   return createHead(entry, isolated, instruction)
 }
 
-export const previewShell = ({ navbar, controls, editor, content }) => {
+export const previewShell = ({ mark, navbar, controls, editor, content }) => {
   const host = shell(
     {
-      logo: appLogo({ label: 'imp preview', href: '/' }),
+      logo: appLogo({ label: 'imp preview', src: mark, href: '/' }),
       navbar,
       sidebar: { label: 'Components', background: previewBackdrop() },
       extras: previewSettings(controls),

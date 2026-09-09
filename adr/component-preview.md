@@ -55,15 +55,17 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   that change as a reload. A preview file that fails to build is left out of the build and marked in
   the catalog. Its address shows the error, and the rest of the catalog stays up. An error that no
   preview file owns fails the whole build, and the page shows it.
-- **A scenario panel is a stage and a state editor, and nothing else.** The stage is drag-resizable,
-  with the editor beside it. The file's `description` sits once below the page head. There, an agent
-  about to write a call site learns where the manual of the component is. A panel shows no code. The
-  job of the workbench is to show what the component looks like. The answer to "what do I write to
-  get that?" lives in the component's `*.skill.md` (`agent-skills.md`). That file is written for
-  that question and cannot drift from the fixtures of a preview file. The stage is resized by
-  dragging its right, bottom, or corner handle with pointer events (mouse and touch). It has a live
-  size readout and phone/tablet/desktop presets on top of free dragging. A resize changes the parent
-  box only, so the component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
+- **A scenario panel is a stage and a state editor, and nothing else.** The stage is drag-resizable
+  and takes the full width of the panel. The state editor opens from a button in the panel head, in
+  a non-modal `dialog` that the person drags where it does not cover the specimen. The file's
+  `description` sits once below the page head. There, an agent about to write a call site learns
+  where the manual of the component is. A panel shows no code. The job of the workbench is to show
+  what the component looks like. The answer to "what do I write to get that?" lives in the
+  component's `*.skill.md` (`agent-skills.md`). That file is written for that question and cannot
+  drift from the fixtures of a preview file. The stage is resized by dragging its right, bottom, or
+  corner handle with pointer events (mouse and touch). It has a live size readout and
+  phone/tablet/desktop presets on top of free dragging. A resize changes the parent box only, so the
+  component re-lays-out through the real DOM path (`real-dom-no-virtual-dom.md`).
 - **The frame is `shell`, and an application map drives it.** The runtime builds an `appMap()` from
   the catalog (`application-map.md`): one index node, one child per group and one grandchild per
   component. Group and component names become node keys and path segments through one slug function
@@ -71,12 +73,14 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   binds the catalog view to the index node and an `area()` per component that imports its chunk on
   demand. The sidebar lists the groups with the components under them. The map has one section, so
   the shell draws the sidebar-only layout on its own (`app-shell-component.md`). Group icons and
-  counts bind at the shell by handle. The brand block is its `logo`. The theme, language and
-  direction pickers are its `extras`. The theme editor is in a non-modal `drawer` opened from a
-  button beside them. So navigation between components is one click from anywhere, with no page
-  load. The workbench uses imp's own map, router and frame on purpose: a regression in any of them
-  shows up while you work on anything. The frame is pinned `dir="ltr"` on its host, so the direction
-  control still applies to the stage alone.
+  counts bind at the shell by handle. The brand block is its `logo`, with the imp mark as the image.
+  The server embeds the mark in the bundle as a base64 data URI, and the generated page uses the
+  same URI as its icon. So the page requests no asset for its own look, and a copy of it stands
+  alone. The theme, language and direction pickers are its `extras`. The theme editor is in a
+  non-modal `drawer` opened from a button beside them. So navigation between components is one click
+  from anywhere, with no page load. The workbench uses imp's own map, router and frame on purpose: a
+  regression in any of them shows up while you work on anything. The frame is pinned `dir="ltr"` on
+  its host, so the direction control still applies to the stage alone.
 - **The theme editor is part of the page, and `theme-editor.md` records its design.** The pickers
   choose which theme is applied. The editor derives a whole theme from a few knobs, writes each
   change straight back through `applyTheme`, keeps a draft per theme in `localStorage`, and exports

@@ -8,9 +8,9 @@ imp preview --list [--json]
 `imp preview` serves every **preview file** of the project in one app. The catalog is down the side,
 and a click opens a component in place, at `/<group>/<name>`. The page shows the file's
 `description` as one agent instruction below the page head. Then it shows one labelled panel per
-named export. A panel holds the component in a resizable stage with a state editor beside it. There
-is no app boot, no backend, and no navigation to the right screen. It is the same dev server as
-[start](start.md) underneath, with terminal telemetry and reload on save.
+named export. A panel holds the component in a resizable stage, with a state editor behind a button.
+There is no app boot, no backend, and no navigation to the right screen. It is the same dev server
+as [start](start.md) underneath, with terminal telemetry and reload on save.
 
 ## The preview file
 
@@ -91,7 +91,8 @@ is `text_field` under `inputs`.
 - **Stage.** Drag the right, bottom or corner handle to resize. `phone`, `tablet` and `desktop` jump
   to common viewports. `fit` returns to full width. The component re-lays-out live, which is how you
   find the width where it breaks.
-- **State editor.** It shows the state the component manages, as JSON. Edit a value and apply it (or
+- **State editor.** _edit state_ in the panel head opens it in a movable window, so the stage keeps
+  the full width. It shows the state the component manages, as JSON. Edit a value and apply it (or
   press `Ctrl`/`Cmd`+`Enter`). The component updates through imp's normal fine-grained path, with no
   remount and no reload. Each panel is bound to its own instance.
 - **Agent instruction.** The file's `description`, ready to copy, once per page below the head. It
@@ -106,10 +107,10 @@ is `text_field` under `inputs`.
   [theming](theming.md).
 - **Entry page.** imp generates the page around a preview, with no stylesheet of the app in it. So a
   web font that `index.html` links does not load there. Set `preview.entry` in `imp.json` to an HTML
-  file of your own, such as `preview.html`, that holds the font links and the icon in its `<head>`
-  and an empty `<body>`. imp replaces the `<title>` and appends its scripts to the body. It keeps
-  every other tag, so never point it at the app's `index.html`, whose scripts would start the app. A
-  path that resolves to no file fails at startup.
+  file of your own, such as `preview.html`, that holds the font links in its `<head>` and an empty
+  `<body>`. imp replaces the `<title>` and appends its scripts to the body. It adds the imp icon
+  when the head has no icon link. It keeps every other tag, so never point it at the app's
+  `index.html`, whose scripts would start the app. A path that resolves to no file fails at startup.
 - **Review widget.** The same widget that `imp start` injects, in the bottom corner. The person
   picks a part of the previewed component and comments on it. imp writes the note to `.imp/reviews/`
   with the preview page it came from. Read the folder before you rework a component on a vague

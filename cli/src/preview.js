@@ -3,6 +3,7 @@ import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
+import { dataUri } from './image.js'
 import {
   collectMocks,
   extractCalls,
@@ -41,8 +42,12 @@ const BUNDLE_PREFIX = '/@imp/preview/'
 const APP_BUNDLE_NAME = 'app'
 const APP_BUNDLE_PATH = `${BUNDLE_PREFIX}${APP_BUNDLE_NAME}.js`
 
-const FAVICON_PATH = '/favicon.svg'
 const IMP_MARK_URL = new URL('./templates/favicon.svg', import.meta.url)
+
+let impMark = null
+
+const readImpMark = async () =>
+  impMark ??= dataUri('image/svg+xml', await Deno.readFile(IMP_MARK_URL))
 
 const STATE_ENTRY_POINTS = ['initState', 'useState']
 const MAX_SCANNED_SOURCES = 40
@@ -407,7 +412,7 @@ export async function resolvePreviewTranslations(root, translations) {
 
 const GROUPS_BINDING = 'previewGroups'
 
-function previewEntryPlugin({ root, catalog, entries, themes, translations, groups }) {
+function previewEntryPlugin({ root, catalog, entries, themes, translations, groups, mark }) {
   const themeBinding = (index) => `customTheme${index}`
   const translationBinding = (index) => `previewTranslations${index}`
   const loaders = entries.map((entry) =>
@@ -427,6 +432,7 @@ function previewEntryPlugin({ root, catalog, entries, themes, translations, grou
       : [`import * as ${GROUPS_BINDING} from ${JSON.stringify(toFileUrl(groups.file).href)}`]),
     `import { startPreview } from '${RUNTIME_SPECIFIER}'`,
     `startPreview({`,
+    `  mark: ${JSON.stringify(mark)},`,
     `  catalog: ${JSON.stringify(catalog)},`,
     `  load: {`,
     ...loaders,
@@ -557,6 +563,7 @@ export async function bundlePreviewApp(
   { root, dependencies, catalog, themes = [], translations = [], groups = null },
 ) {
   const { mocks, failed } = await collectAppMocks(catalog, { root, dependencies })
+  const mark = await readImpMark()
   let entries = catalog.filter((entry) => !failed.some((failure) => failure.file === entry.file))
   for (let round = 0; round < BUILD_ROUNDS_LIMIT; round++) {
     const embedded = catalog.map((entry) => {
@@ -566,7 +573,15 @@ export async function bundlePreviewApp(
     try {
       const result = await runEsbuild({
         plugins: [
-          previewEntryPlugin({ root, catalog: embedded, entries, themes, translations, groups }),
+          previewEntryPlugin({
+            root,
+            catalog: embedded,
+            entries,
+            themes,
+            translations,
+            groups,
+            mark,
+          }),
           impResolverPlugin({ root, dependencies, mocks }),
           denoPlugin(),
         ],
@@ -606,13 +621,13 @@ const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
 
 const escapeHtml = (text) => text.replace(/[&<>"]/g, (character) => HTML_ESCAPES[character])
 
-const generatedShell = (title, body) =>
+const generatedShell = (title, body, mark) =>
   `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="${FAVICON_PATH}">
+<link rel="icon" href="${mark}">
 <title>${escapeHtml(title)}</title>
 </head>
 <body>
@@ -641,10 +656,10 @@ export const entryShell = (entryHtml, title, body) => withBody(withTitle(entryHt
 
 const PAGE_TITLE = 'imp preview'
 
-const appPage = (entryHtml) => {
+const appPage = async (entryHtml) => {
   const body = `<script type="module" src="${APP_BUNDLE_PATH}"></script>`
   return entryHtml === null
-    ? generatedShell(PAGE_TITLE, body)
+    ? generatedShell(PAGE_TITLE, body, await readImpMark())
     : entryShell(entryHtml, PAGE_TITLE, body)
 }
 
@@ -666,13 +681,6 @@ document.body.append(failure)
 const htmlResponse = (body) =>
   new Response(body, {
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
-  })
-
-let impMark = null
-
-const impMarkResponse = async () =>
-  new Response(impMark ??= await Deno.readTextFile(IMP_MARK_URL), {
-    headers: { 'content-type': 'image/svg+xml', 'cache-control': 'no-store' },
   })
 
 const scriptResponse = (body) =>
@@ -726,7 +734,8 @@ export function createPreviewHandler(
     return cache.build
   }
 
-  const page = async () => htmlResponse(injectImp(appPage(await readEntry()), app.headInjection))
+  const page = async () =>
+    htmlResponse(injectImp(await appPage(await readEntry()), app.headInjection))
 
   return async (req, info) => {
     const url = new URL(req.url)
@@ -748,7 +757,6 @@ export function createPreviewHandler(
     if (url.pathname === '/') return page()
 
     const response = await serveApp(req, info)
-    if (response.status === 404 && url.pathname === FAVICON_PATH) return impMarkResponse()
     if (response.status === 404 && isPageRequest(req, url)) return page()
     return response
   }
