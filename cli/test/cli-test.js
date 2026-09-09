@@ -1792,15 +1792,54 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     const index = await page.evaluate(() => {
       const root = globalThis.impOne('imp-preview-index').shadowRoot
       const hero = root.querySelector('.hero')
-      const rendered = (name, from = hero) =>
-        globalThis.impOne(name, from).shadowRoot.textContent.trim()
+      const deepText = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.data
+        const scope = node.shadowRoot ?? node
+        return [...scope.childNodes].map(deepText).join('')
+      }
+      const rendered = (name, from = hero) => deepText(globalThis.impOne(name, from)).trim()
+      const groupLink = (head) => globalThis.impOne('imp-link', head).shadowRoot.querySelector('a')
       return {
         headline: `${rendered('imp-heading')} - ${rendered('imp-text')}`,
         cards: [...root.querySelectorAll('.card-head')]
-          .map((head) => `${rendered('imp-heading', head)} ${rendered('imp-tag', head)}`)
+          .map((head) =>
+            `${rendered('imp-heading', head)} ${rendered('imp-tag', head)} -> ${
+              groupLink(head).getAttribute('href')
+            }`
+          )
           .join(' | '),
       }
     })
+
+    await page.goto(`${base}/widgets`, { waitUntil: 'load' })
+    await page.waitForFunction(() =>
+      globalThis.impOne('imp-preview-group') &&
+      globalThis.impOne('demo-counter', globalThis.impOne('imp-preview-group'))?.shadowRoot
+        ?.querySelector('#value')
+    )
+    const group = await page.evaluate(() => {
+      const root = globalThis.impOne('imp-preview-group').shadowRoot
+      const cards = [...root.querySelectorAll('.card')]
+      const card = cards[0]
+      const specimen = card.querySelector('.specimen')
+      const hero = root.querySelector('.hero')
+      return {
+        headline: globalThis.impOne('imp-heading', hero).shadowRoot.textContent.trim(),
+        cards: cards.map((node) =>
+          `${node.getAttribute('aria-label')} (${node.querySelector('.card-scenario').textContent})`
+        ).join(', '),
+        inert: specimen.hasAttribute('inert'),
+        specimen: globalThis.impOne('demo-counter', specimen).shadowRoot.querySelector('#value')
+          .textContent,
+        href: card.getAttribute('href'),
+        title: document.title,
+      }
+    })
+    await page.evaluate(() =>
+      globalThis.impOne('imp-preview-group').shadowRoot.querySelector('.card').click()
+    )
+    await page.waitForFunction(() => globalThis.impScenarios().length > 0)
+    const opened = await page.evaluate(() => `${location.pathname} - ${document.title}`)
 
     await page.goto(`${base}/widgets/counter?scenario=lazy`, { waitUntil: 'load' })
     await page.waitForFunction(() =>
@@ -1887,6 +1926,11 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `page head: ${shell.head}`,
       `index headline: ${index.headline}`,
       `index cards: ${index.cards}`,
+      `group headline: ${group.headline}`,
+      `group cards: ${group.cards}`,
+      `group card specimen is inert: ${group.inert}, shows ${group.specimen}, links to ${group.href}`,
+      `group title: ${group.title}`,
+      `after a click on the card: ${opened}`,
       `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,
       `mocked todos: ${todos.items.join(', ')}`,
       `mocked todos state row: ${todos.state}`,

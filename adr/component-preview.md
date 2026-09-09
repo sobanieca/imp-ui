@@ -70,17 +70,20 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   the catalog (`application-map.md`): one index node, one child per group and one grandchild per
   component. Group and component names become node keys and path segments through one slug function
   that the CLI shares, so the address the server prints is the address the app serves. The router
-  binds the catalog view to the index node and an `area()` per component that imports its chunk on
-  demand. The sidebar lists the groups with the components under them. The map has one section, so
-  the shell draws the sidebar-only layout on its own (`app-shell-component.md`). Group icons and
-  counts bind at the shell by handle. The brand block is its `logo`, with the imp mark as the image.
-  The server embeds the mark in the bundle as a base64 data URI, and the generated page uses the
-  same URI as its icon. So the page requests no asset for its own look, and a copy of it stands
-  alone. The theme, language and direction pickers are its `extras`. The theme editor is in a
-  non-modal `drawer` opened from a button beside them. So navigation between components is one click
-  from anywhere, with no page load. The workbench uses imp's own map, router and frame on purpose: a
-  regression in any of them shows up while you work on anything. The frame is pinned `dir="ltr"` on
-  its host, so the direction control still applies to the stage alone.
+  binds the catalog view to the index node, a group screen to each group node, and an `area()` per
+  component that imports its chunk on demand. The group screen is a card per component. A card
+  renders the first scenario of the file, inert, and links to the component. The card imports the
+  chunk of its file, so a group page loads every component of the group. The sidebar lists the
+  groups with the components under them. The map has one section, so the shell draws the
+  sidebar-only layout on its own (`app-shell-component.md`). Group icons and counts bind at the
+  shell by handle. The brand block is its `logo`, with the imp mark as the image. The server embeds
+  the mark in the bundle as a base64 data URI, and the generated page uses the same URI as its icon.
+  So the page requests no asset for its own look, and a copy of it stands alone. The theme, language
+  and direction pickers are its `extras`. The theme editor is in a non-modal `drawer` opened from a
+  button beside them. So navigation between components is one click from anywhere, with no page
+  load. The workbench uses imp's own map, router and frame on purpose: a regression in any of them
+  shows up while you work on anything. The frame is pinned `dir="ltr"` on its host, so the direction
+  control still applies to the stage alone.
 - **The theme editor is part of the page, and `theme-editor.md` records its design.** The pickers
   choose which theme is applied. The editor derives a whole theme from a few knobs, writes each
   change straight back through `applyTheme`, keeps a draft per theme in `localStorage`, and exports

@@ -202,14 +202,14 @@ const indexDefinition = {
   styles: INDEX_STYLES,
   setup: (_instance, listed) => {
     const previews = listed.flatMap(({ entries }) => entries)
-    const cards = listed.map(({ name, entries }) =>
+    const cards = listed.map(({ name, href, entries }) =>
       div(
         { class: 'card' },
         div(
           { class: 'card-head' },
           flex(
             { horizontalAlign: 'justify', verticalAlign: 'center', gap: 2 },
-            heading({ level: 2 }, name),
+            heading({ level: 2 }, link({ href }, name)),
             tag({ size: 'sm' }, String(entries.length)),
           ),
         ),

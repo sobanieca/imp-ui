@@ -86,8 +86,10 @@ is `text_field` under `inputs`.
 - **The shell.** One frame, one app. The catalog of components is down the side, one row per group
   with the components under it, and the component you look at is marked. A click opens a component
   in place, with no page load. The theme button and the language and direction pickers are in a
-  settings panel beside the page. `/` opens the catalog as a card per group. A preview file that
-  fails to build shows its error in place of its panels, and the rest of the catalog stays up.
+  settings panel beside the page. `/` opens the catalog as a card per group. A group name opens
+  `/<group>`, a card per component with its first scenario rendered. A click on a card opens the
+  component. A preview file that fails to build shows its error in place of its panels, and the rest
+  of the catalog stays up.
 - **Stage.** Drag the right, bottom or corner handle to resize. `phone`, `tablet` and `desktop` jump
   to common viewports. `fit` returns to full width. The component re-lays-out live, which is how you
   find the width where it breaks.

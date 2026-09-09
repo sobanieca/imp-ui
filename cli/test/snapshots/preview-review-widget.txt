@@ -24,6 +24,7 @@ html: <span id="value">0</span>
 
 state:
   demo.count = 0
+  imp.preview.state-editor = false
   imp.preview.theme = "brand"
   imp.preview.dir = "auto"
   imp.preview.lang = "en"

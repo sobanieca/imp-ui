@@ -32,7 +32,12 @@ sidebar components: todos, Counter
 sidebar current: Counter
 page head: Counter
 index headline: Components - 2 previews in 2 groups.
-index cards: components 1 | Widgets 1
+index cards: components 1 -> /components | Widgets 1 -> /widgets
+group headline: Widgets
+group cards: Counter (zero)
+group card specimen is inert: true, shows 0, links to /widgets/counter
+group title: imp preview - Widgets
+after a click on the card: /widgets/counter - imp preview - Widgets / Counter
 ?scenario=lazy panels: 1 (lazy)
 mocked todos: Buy milk, Ship imp
 mocked todos state row: demo.todos

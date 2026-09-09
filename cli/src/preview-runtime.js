@@ -1,9 +1,9 @@
 import { appMap, component, init, mount } from 'imp'
-import { div, el, h2, pre, span } from 'imp/html'
+import { a, div, el, h2, pre, span } from 'imp/html'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
-import { area, router, useRoute } from 'imp/router'
-import { button, icon, link, text } from 'imp/std'
+import { area, navigate, router, url, useRoute } from 'imp/router'
+import { button, heading, icon, link, text } from 'imp/std'
 import { luContrast, luEclipse, luMoon, luPalette, luSun } from 'imp/icons'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
@@ -228,6 +228,79 @@ const EDITOR_STYLES = `
 
   .message--error {
     color: var(--imp-color-danger, #dc2626);
+  }
+`
+
+const GROUP_STYLES = `
+  .hero {
+    margin-block-end: var(--imp-space-6, 32px);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    gap: var(--imp-space-4, 16px);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--imp-space-2, 8px);
+    box-sizing: border-box;
+    padding: var(--imp-space-3, 12px);
+    background-color: var(--imp-color-surface, #ffffff);
+    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+    border-radius: var(--imp-radius-container, 10px);
+    box-shadow: var(--imp-shadow-sm, 0 1px 2px rgb(15 23 42 / 10%));
+    color: var(--imp-color-text, #0f172a);
+    text-decoration: none;
+  }
+
+  .card:hover {
+    border-color: var(--imp-color-primary, #2563eb);
+  }
+
+  .card:focus-visible {
+    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-primary, #2563eb);
+    outline-offset: 2px;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--imp-space-2, 8px);
+    min-inline-size: 0;
+  }
+
+  .card-name {
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-bold, 600);
+    font-size: var(--imp-font-size-md, 1rem);
+  }
+
+  .card-scenario {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .specimen {
+    flex: 1;
+    box-sizing: border-box;
+    min-block-size: 8rem;
+    max-block-size: 16rem;
+    overflow: hidden;
+    padding: var(--imp-space-4, 16px);
+    ${surface}
+  }
+
+  .specimen--failed {
+    color: var(--imp-color-danger, #dc2626);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
   }
 `
 
@@ -623,6 +696,84 @@ const scenarioSection = (self, name, scenario, entry) => {
   )
 }
 
+const opensElsewhere = (event) =>
+  event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
+  event.shiftKey || event.altKey
+
+const groupCard = (entry, load) => {
+  const scenarioName = span({ class: 'card-scenario' })
+  const specimen = div({ class: 'specimen', inert: true, dir: stageDirection() })
+  stages.push(specimen)
+  const fail = (message) => {
+    specimen.classList.add('specimen--failed')
+    specimen.replaceChildren(message)
+  }
+  if (entry.error !== undefined) fail('failed to build - open the card for the error')
+  else {
+    load().then((scenarios) => {
+      const name = scenarioOrder(scenarios, entry.order)[0]
+      if (name === undefined) {
+        fail('no scenarios in this file')
+        return
+      }
+      scenarioName.textContent = name
+      const scenario = scenarios[name]
+      try {
+        specimen.replaceChildren(
+          ...asNodes(typeof scenario === 'function' ? scenario() : scenario),
+        )
+      } catch (error) {
+        console.error(`imp preview: scenario '${name}' failed to build`, error)
+        fail(`${name} failed to build - see the terminal`)
+      }
+    }, (error) => fail(error.message))
+  }
+  const card = a(
+    {
+      class: 'card',
+      href: url(entry.href),
+      'aria-label': entry.name,
+      events: {
+        click: (event) => {
+          if (opensElsewhere(event)) return
+          event.preventDefault()
+          navigate(entry.href)
+        },
+      },
+    },
+    div({ class: 'card-head' }, span({ class: 'card-name' }, entry.name), scenarioName),
+    specimen,
+  )
+  return card
+}
+
+const groupDefinition = {
+  styles: GROUP_STYLES,
+  setup: (_self, group, load) =>
+    div(
+      div(
+        { class: 'hero' },
+        stack(
+          { gap: 2 },
+          heading({ level: 1 }, group.name),
+          text(
+            { tone: 'secondary' },
+            `${group.entries.length} component${group.entries.length === 1 ? '' : 's'}. ` +
+              'Each card shows the first scenario. Open a card for every scenario.',
+          ),
+        ),
+      ),
+      div({ class: 'cards' }, ...group.entries.map((entry) => groupCard(entry, load[entry.file]))),
+    ),
+}
+
+let createGroup = null
+
+const groupScreen = (group, load) => {
+  createGroup ??= component('imp-preview-group', groupDefinition)
+  return createGroup(group, load)
+}
+
 const scenarioOrder = (scenarios, order) => {
   const exported = Object.keys(scenarios).filter((name) => !PREVIEW_METADATA_EXPORTS.includes(name))
   const written = order.filter((name) => exported.includes(name))
@@ -681,10 +832,14 @@ const bindCatalog = (catalog, load, listed) => {
   const tags = {}
   const screens = { [app.components]: () => listed.length ? previewIndex(listed) : noPreviews() }
   const entries = new Map()
+  const groups = new Map()
   for (const group of listed) {
     const groupHandle = app.components[slugs.get(group.entries[0].file).groupKey]
     icons[groupHandle] = group.icon
     tags[groupHandle] = { text: group.entries.length }
+    group.href = groupHandle.href()
+    groups.set(String(groupHandle), group)
+    screens[groupHandle] = () => groupScreen(group, load)
     for (const entry of group.entries) {
       const handle = groupHandle[slugs.get(entry.file).key]
       entry.href = handle.href()
@@ -696,7 +851,9 @@ const bindCatalog = (catalog, load, listed) => {
   }
   const title = ({ node }) => {
     const entry = entries.get(String(node))
-    return entry === undefined ? 'imp preview' : `imp preview - ${entry.group} / ${entry.name}`
+    if (entry !== undefined) return `imp preview - ${entry.group} / ${entry.name}`
+    const group = groups.get(String(node))
+    return group === undefined ? 'imp preview' : `imp preview - ${group.name}`
   }
   return { app, icons, tags, screens, title }
 }
