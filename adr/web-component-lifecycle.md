@@ -72,12 +72,11 @@ vocabulary for the options that it shares with a component, see `client-side-rou
   `self` first. imp keeps the mount scope of each `self` in a `WeakMap` inside the component module.
   A helper looks the scope up, dispatches the lookup from `self.host`, and registers its cleanup and
   its rebind on that scope. So every resolution works at any point in `setup`, before or after any
-  number of awaits. There is no ambient stack, and there is no rule about the first `await`. The
-  three `*-setup-before-await` lint rules are gone. A helper that does not import the component
-  module cannot resolve anything. That is why the helpers stay free functions in `imp/state` and
-  `imp/http`, and are not methods on `self`. A method on `self` would pin the state layer and the
-  http client into every bundle that has a component, see `tree-shakeable-library.md`. A free
-  function is bundled only by an app that imports it.
+  number of awaits. There is no ambient stack, and there is no rule about the first `await`. A
+  helper that does not import the component module cannot resolve anything. That is why the helpers
+  stay free functions in `imp/state` and `imp/http`, and are not methods on `self`. A method on
+  `self` would pin the state layer and the http client into every bundle that has a component, see
+  `tree-shakeable-library.md`. A free function is bundled only by an app that imports it.
 - **`self` remembers what the mount resolved.** `useState(self, name)` in `setup` resolves through
   the host and caches the handle on the mount by kind and name. The same call in `onRemove` returns
   the cached handle. A state from `initState` is available by the same route. The host is

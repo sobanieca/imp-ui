@@ -37,7 +37,7 @@ That rule shapes the code in four places:
 - **There is one library logger, and not one per module.** `logger.js` exports a ready-made
   `impLogger`. Every module imports it, in place of a call to `createLogger('imp')` at the top.
   Every bundle holds `logger.js` in any case. So the object costs nothing where imp builds it, and
-  the twenty-seven modules that log are no longer pinned by the act of logging.
+  the twenty-seven modules that log are not pinned by the act of logging.
 - **A component export is a function, and never a call.** Each one reads
   `(...args) => defineComponent(name, () => definition)(...args)`. An arrow function is inert, so a
   bundler can drop the export. `defineComponent` memoizes the element by name. It builds the
@@ -76,6 +76,6 @@ module that the rule would keep. So a size test that passes is not evidence that
 - Work moves from import time to first use, which is the correct place for it. imp builds the CSS
   string of a component once, with the registration of its element, and only when somebody renders
   the component.
-- The cost is a little indirection where a value used to be a constant. You write `defaultTokens()`
+- The cost is a little indirection where a constant would read better. You write `defaultTokens()`
   in place of `defaultTokens`, and `sizeRules()` in place of `sizeRules`. The parentheses remind you
   that imp builds the value on demand.

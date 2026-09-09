@@ -20,8 +20,7 @@ So a further split was a decision about where to cut, and not a construction of 
 
 The library is **split by subject, with one bare specifier per subject**. A curated barrel module in
 `lib/src/api/` backs each specifier, and `imp` itself stays `lib/src/imp.js`. A barrel re-exports
-exactly the public names. An implementation module stays internal, and app code can no longer reach
-it.
+exactly the public names. An implementation module stays internal, and app code cannot reach it.
 
 | Specifier     | Exports                                                                   |
 | ------------- | ------------------------------------------------------------------------- |
@@ -50,12 +49,12 @@ it.
   name from a sibling imp specifier, imp reports the specifier that the name belongs to. The import
   does not fail later, as a missing-export error that explains nothing. `imp lint --fix` moves the
   name. The framework assumes that an agent writes the code, and an agent with no imp in its
-  training data guesses the old flat namespace by default. The rule derives its table by reading the
+  training data guesses a flat namespace by default. The rule derives its table by reading the
   exports of the barrel modules. So the table cannot fall behind the library. The rule inspects the
   specifiers of imp only. So it never reports an app name that happens to match.
-- **imp stopped exporting its internals.** `isPlainObject`, `isStateShaped` and
-  `componentNameProblem` reached app code through the old barrel that held everything. The CLI is
-  the only real consumer, and it imports them from the implementation modules, by path.
+- **imp does not export its internals.** `isPlainObject`, `isStateShaped` and `componentNameProblem`
+  are in no barrel. The CLI is the only real consumer, and it imports them from the implementation
+  modules, by path.
 - **`imp/html` declares the tag factories one by one**, as a plain `export const` per tag. It does
   not re-export a generated map. So a bundler can analyze each one on its own, and a bundle carries
   only the tags that an app imports. The lint rules read the export names of the module, in place of
@@ -76,8 +75,8 @@ it.
 - To add a subject means to add one row to the shared table of subpaths, and one barrel module. The
   resolvers, the import map of the dev server, the specifier check of the lint, and the table of
   `import-source`, all follow from that.
-- The tree-shaking improved twice over. An import of `imp` no longer reaches the tag factories at
-  all. Inside `imp/html`, a bundler drops an unused factory. An entry that uses two tags builds 3.9
-  kB, against 7.0 kB for an entry that uses all of them. A specifier per subject is the coarse half
-  of that result. The fine half stops a subject from bringing in its neighbours, and that is
+- The tree-shaking works at two levels. An import of `imp` does not reach the tag factories at all.
+  Inside `imp/html`, a bundler drops an unused factory. An entry that uses two tags builds 3.9 kB,
+  against 7.0 kB for an entry that uses all of them. A specifier per subject is the coarse half of
+  that result. The fine half stops a subject from bringing in its neighbours, and that is
   `tree-shakeable-library.md`.

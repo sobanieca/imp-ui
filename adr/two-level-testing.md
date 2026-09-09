@@ -156,13 +156,12 @@ discovery.
   compiled binary share one code path. The total e2e time in CI falls to the time of the slowest
   spec file. The deliberate cost is that each spec repeats its own setup state, such as a sign-in.
   That repetition is what makes a spec schedulable on its own.
-- A bare `imp test` no longer runs the suite. It asks which level to run. To run a level is now one
-  command, which is `imp test --unit` or `imp test --e2e`, and it fans out across local processes.
-  An existing pipeline that relied on a bare `imp test` to run everything must add the flag for the
-  level. It can also keep feeding `imp test --list` into a CI matrix, for a fan-out across machines.
-  One file is still the unit of the isolation, and of the exit code per file. A run of a level is
-  many such processes for one file, scheduled together. So no two files ever share the globals, the
-  timers, the server or the browser of one process.
+- A bare `imp test` does not run the suite. It asks which level to run. To run a level is one
+  command, which is `imp test --unit` or `imp test --e2e`, and it fans out across local processes. A
+  pipeline can also feed `imp test --list` into a CI matrix, for a fan-out across machines. One file
+  is still the unit of the isolation, and of the exit code per file. A run of a level is many such
+  processes for one file, scheduled together. So no two files ever share the globals, the timers,
+  the server or the browser of one process.
 - The fan-out makes imp start copies of itself. So it depends on the ability to invoke its own entry
   point again. That is `Deno.execPath()` for the compiled binary, and `deno run <mainModule>` from
   source. A run of a level costs one process per file. For an e2e run it also costs one browser and

@@ -87,11 +87,10 @@ customer who reports a bug.
     a general widget for feedback does not. A state is **named**. It holds **plain data that is safe
     as JSON**, see `state-plain-data-values.md`. It is reachable from any node. So the block is not
     a description of the state. It **is** the state. To set the same names to the same values
-    reproduces the screen. Before this decision, a state was findable one name at a time, because
-    `findProvided(kind, name, origin)` answers one lookup. That is why the state editor of the
-    preview must scan the source for a literal `initState` call. A `collect` variant of the same
-    bubbling lookup makes the set enumerable from a node, with the nearest provider first. In that
-    variant every provider answers, and the first match does not stop the walk.
+    reproduces the screen. `findProvided(kind, name, origin)` answers one lookup, so it finds a
+    state one name at a time. A `collect` variant of the same bubbling lookup makes the set
+    enumerable from a node, with the nearest provider first. In that variant every provider answers,
+    and the first match does not stop the walk.
   - **The live values of the form controls.** `outerHTML` really is untrue here. A value that
     somebody typed is a property, and not an attribute. So a review of a form that somebody filled
     in would otherwise record an empty form. When the person picks any element inside a `<form>`,
@@ -150,8 +149,8 @@ customer who reports a bug.
 - A report and a review carry the same fields. So an agent learns one shape. An app that forwards
   the output of `bugReport` into a tracker hands the agent something that it already knows how to
   read.
-- **The library grew `lib/src/report.js`, and the dev server depends on it at runtime.** A page that
-  `imp start` serves now fetches one more module, when somebody first uses the review widget.
+- **The library holds `lib/src/report.js`, and the dev server depends on it at runtime.** A page
+  that `imp start` serves fetches one more module, when somebody first uses the review widget.
   `imp build` still cannot emit the widget. An app that never calls `bugReport` never bundles the
   module.
 - An unclear report gains the two facts that make it something a person can act on, and it costs the

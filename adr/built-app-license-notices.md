@@ -63,10 +63,9 @@ user. `LICENSES.txt` covers only what the app serves. Neither file derives from 
   dependencies.
 - The detection of a comment is the detection of esbuild. A comment is legal when it is
   `/*! ... */`, or `//!`, or when it contains `@license` or `@preserve`. A package whose header uses
-  none of those markers contributes no comment block. That used to mean that the package contributed
-  nothing at all. Its licence now arrives from the manifest that imp writes at vendor time. imp
-  reads that licence from the `LICENSE` file of the package, while `imp install` still holds the
-  package and not only the bundle.
+  none of those markers contributes no comment block. Its licence arrives from the manifest that imp
+  writes at vendor time instead. imp reads that licence from the `LICENSE` file of the package,
+  while `imp install` still holds the package and not only the bundle.
 - A vendored bundle, and the built output, grow by the size of the notices that they carry. That
   counts toward the `maxFileSize` warning on `dependencies/`. It is a few hundred bytes against a
   limit of hundreds of kilobytes.

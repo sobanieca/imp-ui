@@ -31,7 +31,7 @@ imp builds the resize entirely from dependencies that the binary already holds. 
   So there is one initialization of the rasterizer, and one convention for the wrapper SVG.
 - **The encode keeps the format of the source.** PNG output is the `asPng()` of resvg. JPEG output
   is encoded again from the resized RGBA pixels, with `jpeg-js`. imp already vendors `jpeg-js` for
-  the recording of an e2e video, see `test-video-recording.md`. Its prebundle now also exports
+  the recording of an e2e video, see `test-video-recording.md`. Its prebundle also exports
   `encodeJpeg`. So one copy of `jpeg-js` serves both features, and imp does not duplicate the codec.
 - **The behaviour is fixed, and you do not configure it.** A resize only downscales. imp clamps a
   requested dimension that is larger than the source to the source, and never upscales. With one

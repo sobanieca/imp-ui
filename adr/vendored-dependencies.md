@@ -14,9 +14,9 @@ two structural weaknesses:
   its transitive graph. So the resolved graph changed with no message, whenever a cache was cold at
   a different time.
 
-The previous decision said that there is no lock file, that an exact version lives in the source,
-and that imp never writes into the project. It rested on assumptions about a transitive graph that
-behaves well, and that setup left those assumptions permanently unverifiable.
+That design had no lock file, kept the exact version in the source, and never wrote into the
+project. It rested on assumptions about a transitive graph that behaves well, and it left those
+assumptions permanently unverifiable.
 
 ## Decision
 
@@ -25,9 +25,8 @@ repository. `imp install` and `imp uninstall` manage that.
 
 - **The `dependencies` key of `imp.json` is the one source of truth.** It maps a bare import alias
   to an exact `npm:` or `jsr:` specifier, and that specifier can carry a subpath. An example is
-  `{ "dependencies": { "mitt": "npm:mitt@3.0.1" } }`. The old `imports` section for an alias is
-  removed. imp rejects its presence, and the error hints at the migration. App code imports a
-  dependency by its alias only, as in `import mitt from 'mitt'`. It never uses an inline specifier.
+  `{ "dependencies": { "mitt": "npm:mitt@3.0.1" } }`. App code imports a dependency by its alias
+  only, as in `import mitt from 'mitt'`. It never uses an inline specifier.
 - **`dependencies/` at the project root holds the committed output.** There is one subfolder per
   top-level dependency, keyed by its alias, as in `dependencies/mitt/mitt.js`. Each subfolder holds
   a self-contained, minified ESM bundle, and any asset that imp emitted, such as a wasm file, an
@@ -70,10 +69,9 @@ repository. `imp install` and `imp uninstall` manage that.
   bare import that matches no declared alias, other than `imp`, is an error, and the message hints
   at `imp install`.
 
-This replaces the previous decision, which said that imp never writes into the project.
-`imp install` writes exactly two things, and a user asked for both. They are committed source. They
-are the `dependencies/` vendor directory, and the pin in `imp.json`. imp still writes no derived
-toolchain config, no cache, and no lock file into the project.
+`imp install` writes exactly two things into the project, and a user asked for both. They are
+committed source. They are the `dependencies/` vendor directory, and the pin in `imp.json`. imp
+writes no derived toolchain config, no cache, and no lock file into the project.
 
 ## Consequences
 
@@ -86,7 +84,7 @@ toolchain config, no cache, and no lock file into the project.
   bundle.
 - An update is one line. `imp install <package>` moves one dependency, with its transitive graph.
   `imp install` moves everything. A transitive version between two updates is frozen in the
-  committed bytes. So a drift can no longer happen with no message.
+  committed bytes. So a drift cannot happen with no message.
 - Each bundle is self-contained. So two dependencies that share a transitive package each carry
   their own copy of it. For a stateless utility that is harmless. A library in the style of a
   singleton depends on shared module state, and it stays a poor fit. `imp build` emits each vendored

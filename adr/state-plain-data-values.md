@@ -93,12 +93,12 @@ concrete consumer, and never in advance.
 ## Consequences
 
 - imp enforces the promise about plain data where somebody breaks it, and gives a path. The problem
-  no longer appears later, as a rebuild that nobody can explain, or as an update that imp missed.
+  does not appear later, as a rebuild that nobody can explain, or as an update that imp missed.
 - imp compares a value object by content, everywhere that `valuesEqual` runs. So a freshly
   constructed but equal `Date`, Temporal value, `URL` or `RegExp`, stays quiet through a keyed
-  `each`, a `computed`, a rebind of a provider, and now the gate of `set`.
-- A component that sets a freshly built but unchanged value no longer notifies a subscriber, and no
-  longer rebuilds its `view` region. That is the common shape when a value crosses a boundary of
+  `each`, a `computed`, a rebind of a provider, and the gate of `set`.
+- A component that sets a freshly built but unchanged value does not notify a subscriber, and does
+  not rebuild its `view` region. That is the common shape when a value crosses a boundary of
   serialization, such as the network, storage or a worker, and comes back as a new reference.
 - Every value that you read from a state is deep-frozen. That covers the `get()` of a base state,
   and the result of a `computed`. A change to such a value throws. So the anti-pattern of a change

@@ -54,5 +54,5 @@ component, and there is no `focus()` entry in the definition of a component.
   spec asserts the focus with `:focus` on the element that it pierced to, and not by a comparison of
   `activeElement`.
 - The setting applies to every component at once, and that includes an app component. A component
-  that renders something focusable is now a focus target for its parent, whether or not somebody
+  that renders something focusable is a focus target for its parent, whether or not somebody
   designed it to be one.

@@ -65,8 +65,8 @@ mount, all travel with it. What restarts is the subscription layer:
   DOM state next to the focus survives. The state that the component accumulated survives. Only a
   binding that comes from the position changes. imp rebuilds DOM nested in a `view` or `each` region
   only when the bound value of the region differs structurally at the new position. That is the
-  normal rule for a new render of the region, and it now tolerates a move for plain data. A state
-  value that holds an object that is not plain renders again on every change of provider. A state is
+  normal rule for a new render of the region, and it tolerates a move for plain data. A state value
+  that holds an object that is not plain renders again on every change of provider. A state is
   expected to hold plain data. imp treats a cyclic value as never equal. The comparison stops
   instead of recursing forever. In the worst case it fires a binding again that plain data would
   have kept.

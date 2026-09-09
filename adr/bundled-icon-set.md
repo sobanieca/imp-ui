@@ -44,8 +44,8 @@ draws it, and takes the value, not a name.**
   which takes three steps or any CSS length, and which sets both axes because every icon is square.
   It also exposes `color`, which takes the name of a theme token, and never a CSS colour. So an icon
   re-skins with the theme.
-- **The hand-drawn set is gone.** To keep both would mean two components, two naming schemes, and a
-  standing question about which one to use. That would save an app that draws one glyph a few
+- **There is one set.** A second set, drawn by hand, would mean two components, two naming schemes,
+  and a standing question about which one to use. That would save an app that draws one glyph a few
   hundred bytes. `icon` is the one icon component, and Lucide is the one set.
 - **There is one generated file, and not one file per icon.** `lib/src/icons/lucide-icons.js` is 434
   kB, and it holds 1791 declarations. `deno task lucide` writes it, from the pinned `lucide-static`

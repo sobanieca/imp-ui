@@ -24,7 +24,7 @@ subject. Each page is short and mechanical. It gives the imports, the API tables
 agent gets wrong, and a worked example. `deno compile` includes the `skills/` tree in the binary, in
 the same way as it includes `THIRD-PARTY-LICENSES.md` for `imp licenses`. `imp skill` reads the
 pages from there. There is no network, and there are no project files. The version is the version
-that shipped with the binary that runs. imp no longer compiles `docs/` in. `docs/` is the site for a
+that shipped with the binary that runs. imp does not compile `docs/` in. `docs/` is the site for a
 person, and nothing reads it at runtime.
 
 **The two corpora are otherwise independent.** They reach their readers through different channels.

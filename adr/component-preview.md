@@ -137,8 +137,8 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   the built-ins, and the first one is applied by default, so a preview opens in the app's own skin.
   A project theme is layered over the built-in that matches its `colorScheme`, not applied alone.
   `applyTheme` writes only the tokens a theme names, so a partial theme alone would leave the rest
-  at whatever the previous selection set. Now that the page wears the theme too, that showed up as a
-  half-styled workbench rather than only a half-styled component.
+  at whatever the previous selection set. The page wears the theme too, so that would be a
+  half-styled workbench, and not only a half-styled component.
 - **A project can frame every preview with its own page, through `preview.entry`.** The generated
   page holds no stylesheet of the app. So a web font that the app links in `index.html` does not
   load in a preview, and the theme editor cannot show it. `preview.entry` in `imp.json` names an

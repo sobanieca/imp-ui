@@ -83,8 +83,8 @@ added to the kernel.
 - Anything in the subtree can read the values, with `useState(self, 'imp.form')`. So a live summary,
   a preview panel and a dependent field are ordinary consumption of a state. They are not a form
   API.
-- The kernel gained nothing. All of this builds on `initState`, `useState`, `watch` and `set`. That
-  keeps the state layer complete as it is.
+- Nothing is added to the kernel. All of this builds on `initState`, `useState`, `watch` and `set`.
+  That keeps the state layer complete as it is.
 - Async validation cost nothing structurally. The question "who is still checking?" is another piece
   of state. So the form waits for a state to become empty. It does not wait on a set of promises
   that it would have to collect from a registry that it deliberately does not have.

@@ -5,9 +5,8 @@
 `shell` frames an app in named regions, see `app-shell-component.md`. It draws the nav levels
 itself, from data. The rest of a region is DOM, and the frame places that DOM without a look inside.
 So every app wrote the same pieces by hand: a brand block, a breadcrumb trail, the signed-in person,
-a sign-out button, and the theme and language pickers. `todo/stdlib-components.md` recorded that gap
-as "ready-made contents for the regions of `shell`". It also named the blocker. A nav row wants an
-icon per destination, and imp had four private marks in place of a public `icon`.
+a sign-out button, and the theme and language pickers. A nav row also wants an icon per destination,
+and that needs a public `icon`.
 
 There were two shapes. The pieces could be **props on `shell`**, as in `shell({ logo, user })`. That
 would sort content by name again, and it would open the question that the ADR of the frame closed.
@@ -64,9 +63,8 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSe
   pieces that belong together would no longer sit together.
 - `icon` costs only the icons that an app names, because each one is its own export, see
   `bundled-icon-set.md`. The props that accept DOM keep even that cost optional.
-- Two components now write to `localStorage`, and imp had not used it before. Both keys carry a
-  namespace, which is `imp.theme` and `imp.lang`. imp wraps each read and each write. A browser with
-  no storage falls back to behaviour for the session, and it does not fail.
-- `breadcrumbs` lives here, so the navigation group holds no trail. The picker extended this
-  component, and it did not open a second one. The panel has no filter field yet. The shared
-  filtered list arrives with `dropdownMenu`, and both panels take it then.
+- Two components write to `localStorage`. Both keys carry a namespace, which is `imp.theme` and
+  `imp.lang`. imp wraps each read and each write. A browser with no storage falls back to behaviour
+  for the session, and it does not fail.
+- `breadcrumbs` lives here, so the navigation group holds no trail. The picker is part of this
+  component, and not a second one. The panel has no filter field.

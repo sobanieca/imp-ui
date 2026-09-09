@@ -34,8 +34,8 @@ and every project that reads a config gains a case to handle.
 These consequences follow from a list of what to include:
 
 - **The build holds no exclusion list.** Module sources, `imp.json`, an environment file, the mocks
-  folder, `.git`, `node_modules` and `.imp` are all excluded, because they are not in `public/`. So
-  imp no longer reads the esbuild metafile for this purpose, and the fixed sets are gone.
+  folder, `.git`, `node_modules` and `.imp` are all excluded, because they are not in `public/`. imp
+  does not read the esbuild metafile for this purpose.
 - **The entry HTML stays at the project root.** imp processes that file. It bundles the scripts,
   injects the environment values, and adds the PWA tags. `public/` passes through without a change.
   The two roles are different, so they live in different places.
@@ -55,16 +55,14 @@ change a URL inside the body of a `<script>`, an external URL, a protocol-relati
 that is already relative. The CLI normalizes the value exactly as the router does. So one value
 drives the asset URLs and the matching of a route.
 
-The PWA URLs became root-absolute, and no longer relative, as part of this change. A relative URL
-resolves against the current document. So a deep link, such as `/todos/42`, resolved such a URL
-against the wrong directory. A root-absolute URL with the base in front is correct from any route.
+The PWA URLs are root-absolute, and not relative. A relative URL resolves against the current
+document. So a deep link, such as `/todos/42`, resolved such a URL against the wrong directory. A
+root-absolute URL with the base in front is correct from any route.
 
 ## Consequences
 
-- **This breaks an existing project.** imp no longer publishes an asset at the project root. Move it
-  into `public/`. imp took that break deliberately, before version 1.0. `imp init` scaffolds
-  `public/` with a favicon in it, see `project-scaffold.md`. So the layout is visible from the first
-  minute of a project.
+- **`imp init` scaffolds `public/` with a favicon in it**, see `project-scaffold.md`. So the layout
+  is visible from the first minute of a project.
 - **A file that belongs at the site root lives in `public/`.** Examples are `favicon.ico`,
   `robots.txt`, `404.html` and `_redirects`.
 - **There is slightly more ceremony than a file beside the page.** In exchange, there is an explicit

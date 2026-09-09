@@ -15,9 +15,9 @@ applied token as a text field. So a change to an accent meant an edit of `color-
 twice, for light and for dark. That editor could only ever produce the theme that it already showed.
 So it was a token inspector, and not a tool for authoring.
 
-Where such a tool must live was also open. `todo/theme-editor.md` scoped it as a deliverable of the
-public site. That would mean a second implementation of the live preview, which is a page that
-renders real components under a candidate theme, beside the page that `imp preview` already is.
+Where such a tool must live was also open. One option was a deliverable of the public site. That
+would mean a second implementation of the live preview, which is a page that renders real components
+under a candidate theme, beside the page that `imp preview` already is.
 
 ## Decision
 

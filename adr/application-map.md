@@ -116,10 +116,10 @@ handle per node.**
 - **The trail is chrome of the frame.** The shell renders `breadcrumbs` above the main content when
   a map is present, and `breadcrumbs: false` turns it off. The two-line phone title is the last two
   crumbs. `breadcrumbs` stays an export of `imp/std/shell` for a frame that an app writes itself,
-  and it gained `options` on a crumb: a disclosure button beside the crumb opens an anchored panel
-  of links.
+  and a crumb takes `options`: a disclosure button beside the crumb opens an anchored panel of
+  links.
 
-- **Authentication leaves the shell.** The frame no longer knows who is signed in. `userCard` owns
+- **Authentication is outside the shell.** The frame does not know who is signed in. `userCard` owns
   both halves of that story through its own `signedIn` prop, and an app puts it in `extras`. Whether
   a signed-out visitor sees a section is the decision of `access`.
 

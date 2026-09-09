@@ -178,8 +178,8 @@ one request costs one name, and every other call costs nothing.
   reactive half of the request state does not follow it there. `text`, `view` and `each` need DOM
   that imp places. `pending.get()`, `lastError.get()` and `watch` work anywhere. That costs a worker
   nothing, because a worker has no DOM to bind to.
-- The cost is that you cannot import a client. A plain helper module that used to write
-  `import { api }` now takes the client as an argument, from the component that resolved it. That is
-  the same trade that a state makes. It is the price of the DOM as the only scope.
+- The cost is that you cannot import a client. A plain helper module cannot write `import { api }`.
+  It takes the client as an argument, from the component that resolved it. That is the same trade
+  that a state makes. It is the price of the DOM as the only scope.
 - A test and a preview mount a host component, to initialize a client in. They already do that for a
   state.

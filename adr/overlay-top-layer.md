@@ -118,10 +118,10 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   `requestClose()` already works. The attribute is not usable yet. Chrome 134 and Firefox 141 ship
   it, and Safari has it in a preview only. So the handler stays until the attribute is
   interoperable, and its removal is a pure subtraction.
-- `drawer` is the second component on the seam, and it shows what this ADR claimed. It uses the same
-  two promotions, the same `open` contract, and the same `modal` boolean, as `dialog`. The only
-  thing that it owns is its geometry. It docks to the inline end, with `margin-inline-start: auto`.
-  Its size comes from `--imp-drawer-inline-size`. It enters along `--overlay-offset: 100% 0`, which
+- `drawer` shares the seam with `dialog`, and it shows what this ADR claims. It uses the same two
+  promotions, the same `open` contract, and the same `modal` boolean, as `dialog`. The only thing
+  that it owns is its geometry. It docks to the inline end, with `margin-inline-start: auto`. Its
+  size comes from `--imp-drawer-inline-size`. It enters along `--overlay-offset: 100% 0`, which
   `:dir(rtl)` mirrors. There is no side prop. The contextual panel has one place, and a panel from
   the start of the line is the drawer of the shell. It also has no phone mode. imp caps the panel at
   `85dvi`, and on a narrow screen that already is the phone form. So nobody added a breakpoint, see

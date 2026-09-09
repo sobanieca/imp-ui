@@ -76,8 +76,8 @@ the setter.
 **The resolution bubbles up the real tree.** The provider listens for a `CustomEvent` that looks a
 provider up, on its own host element. `useState` dispatches that event from `self.host`, the host of
 the component that asks. The event bubbles, and it is composed, so it crosses the shadow root that
-every component now renders into, see `shadow-dom-isolation.md`. The nearest ancestor that provides
-the name answers synchronously, with its state, and stops the propagation. The lookup is keyed by a
+every component renders into, see `shadow-dom-isolation.md`. The nearest ancestor that provides the
+name answers synchronously, with its state, and stops the propagation. The lookup is keyed by a
 **kind**, and by a name. So it is the one mechanism of resolution for every resource that the DOM
 scopes in imp, and not the mechanism of the state alone. The HTTP client, see `http-client.md`,
 resolves through the same seam. A future resource costs a kind, and not a second mechanism. There is
@@ -196,12 +196,11 @@ imported name, and reads the name from the second argument, after `self`.
   an automatic release at the unmount, all come from where the provider listens. They do not come
   from extra machinery.
 - There is one concept of a scope, and not two. A component owns every state. State for the lifetime
-  of the app is state that the root component of the app owns. To drop the scope across the page,
-  which was `document`, costs app-wide state one enclosing root component, in place of a bare call
-  at module scope. In exchange, imp removes a second lifetime to learn, the scope that nobody
-  released, and the silent failure after an `await`, where a stranded `initState` used to fall back
-  to the page. `initState` and `useState` now throw with no `self` of a mounted component. So the
-  whole surface of the resolution fails loudly, and in one way.
+  of the app is state that the root component of the app owns. That costs app-wide state one
+  enclosing root component, in place of a bare call at module scope. In exchange, there is no second
+  lifetime to learn, no scope that nobody releases, and no silent failure after an `await`, where a
+  stranded `initState` would fall back to the page. `initState` and `useState` throw with no `self`
+  of a mounted component. So the whole surface of the resolution fails loudly, and in one way.
 - imp resolves at the mount, and resolves again on a move. The `useState` helpers of a component
   that moved bind to the providers at its new position, see `component-moves-rebind.md`. So the rule
   of the nearest provider holds wherever a mounted component sits now.
@@ -212,9 +211,9 @@ imported name, and reads the name from the second argument, after `self`.
   every rebuild, and the guidance is to bind there.
 - A binding that somebody places without imp stays inert, and says nothing. That is DOM that
   somebody inserted by hand, in place of through the output of a component, or through `mount`. An
-  eager subscription used to fail loudly at construction. imp accepts the change. Placement by imp
-  is the documented path. An inert binding also beats the failure mode of the eager alternative,
-  which is a subscription with no owner, that leaks past a removal.
+  eager subscription would fail loudly at construction. imp accepts the trade. Placement by imp is
+  the documented path. An inert binding also beats the failure mode of the eager alternative, which
+  is a subscription with no owner, that leaks past a removal.
 - A computed state costs one recompute, and one structural comparison of the result, per set of a
   source. That cost does not depend on the number of subscribers. imp pays it to keep a freshly
   built result, which is the normal case, from notifying again. A result that is deeply equal is

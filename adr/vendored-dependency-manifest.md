@@ -73,9 +73,8 @@ without a change.
   There is no network call, no registry and no rebuild. An export of a software bill of materials, a
   scan for a vulnerability, and a gate on a licence policy, all become transforms over data that is
   already in the repository.
-- The attribution is complete for the common case that it used to miss. A package whose licence
-  lives only in a `LICENSE` file now appears in `LICENSES.txt`. Before, it contributed nothing, and
-  nothing said so.
+- The attribution is complete for the common case. A package whose licence lives only in a `LICENSE`
+  file appears in `LICENSES.txt`.
 - `LICENSES.txt` grows. It holds a full licence text in place of a banner of one line, which is
   about one kilobyte per package. It is a legal artifact that a person reads, and not a payload. So
   completeness beats brevity.

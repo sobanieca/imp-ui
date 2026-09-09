@@ -27,9 +27,9 @@ all render into the shadow root. The light DOM of the host stays empty, and imp 
   between two components, share a string. That is a plain JavaScript constant, or a module, that you
   compose into `styles`. It is not a mechanism of the framework.
 - **A host stays invisible to the layout by default.** Every root adopts a shared default sheet
-  first, and that sheet holds `:host { display: contents }`. It replaces the old global rule. The
-  `styles` of a component can override it, with `:host { display: block }`, because imp adopts the
-  sheet of the component after the default sheet.
+  first, and that sheet holds `:host { display: contents }`. The `styles` of a component can
+  override it, with `:host { display: block }`, because imp adopts the sheet of the component after
+  the default sheet.
 - **A root delegates the focus.** imp attaches it with `delegatesFocus: true`. So `host.focus()`
   reaches the control that the component rendered. It does not do nothing without a message. See
   `focus-delegation.md`.
@@ -49,14 +49,14 @@ all render into the shadow root. The light DOM of the host stays empty, and imp 
 ## Consequences
 
 - The encapsulation is full, and it works in both directions. Page CSS cannot reach the internals of
-  a component. The CSS of a component cannot leak out. `document.querySelector` no longer sees into
-  a component. The look of a component ships with the component. So a component library carries its
+  a component. The CSS of a component cannot leak out. `document.querySelector` does not see into a
+  component. The look of a component ships with the component. So a component library carries its
   own styling, and a page needs no setup.
 - The global stylesheet shrinks to concerns at page level. Those are the variables, `body`, and any
-  light-DOM content outside a component. imp no longer injects anything into `document.head`.
+  light-DOM content outside a component. imp injects nothing into `document.head`.
 - Theming crosses the boundary through an inherited custom property only. So a component that must
   be themable consumes a variable. It must not expect a page rule to restyle its internals.
-- The native couplings of the platform that cannot cross a shadow boundary are now contained. A form
+- The native couplings of the platform that cannot cross a shadow boundary are contained. A form
   control inside a component does not join a `<form>` outside it. A `label[for]` reference, and an
   ARIA id reference, cannot point across the boundary. So a component must keep such a pair inside
   itself. The CSS `anchor-name` and `position-anchor` resolve within one tree scope, for the same

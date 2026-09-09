@@ -79,8 +79,8 @@ writing direction of a language.
   the authors of imp can check. Is it _Delete_ or _Remove_? Is it _OK_ or _Got it_? It is a
   fallback, and an app overrides it key by key. The alternative for a key with no translation was to
   render `imp.state.empty` to a reader, and that is worse than English wording in a Polish page. imp
-  accepts one cost. A key with no translation is no longer loud. imp reports it through the logger,
-  at **debug** level, because an app that leans on the built-in wording on purpose makes no mistake.
+  accepts one cost. A key with no translation is not loud. imp reports it through the logger, at
+  **debug** level, because an app that leans on the built-in wording on purpose makes no mistake.
   `missingMessages()` returns the declared keys that the active language does not translate, for an
   app that wants to check its coverage. A key with no default wording still gives a warning, and
   renders as itself.
