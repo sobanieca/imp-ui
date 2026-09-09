@@ -59,8 +59,10 @@ await init({
 })
 ```
 
-- **Load the weights 400 and 600.** They are `font-weight-normal` and `font-weight-bold`, the only
-  weights the standard components use. A weight that is not loaded is synthesized or snapped.
+- **Load the weights of `font-weight-normal` and `font-weight-bold`**, 400 and 600 by default. They
+  are the only weights the standard components use. Every component sets its text to
+  `font-weight-normal`, so a heavy regular cut is one token change, `'font-weight-normal': '300'`. A
+  weight that is not loaded is synthesized or snapped.
 - **Keep the system stack behind the font**, so a script the font lacks still renders.
 - **Set the same fonts in every theme.** A font does not change between light and dark.
 - A self-hosted font goes under `public/fonts/`, with an `@font-face` stylesheet linked from

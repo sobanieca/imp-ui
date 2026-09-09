@@ -9,7 +9,7 @@ include. Each component is a real imp component. It renders as its own element, 
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                             |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                            |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `emptyState`, `tag`                                                                                                                                         | `imp skill std/emptyState`, `std/tag`                                                                                                                                                                                 |
+| `imp/std/display`    | `emptyState`, `tag`, `tooltip`                                                                                                                              | `imp skill std/emptyState`, `std/tag`, `std/tooltip`                                                                                                                                                                  |
 | `imp/std/navigation` | `tabs`                                                                                                                                                      | `imp skill std/tabs`                                                                                                                                                                                                  |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                       |
 | `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
@@ -246,9 +246,12 @@ Rules an agent gets wrong:
   phone drawer and any `drawer` inside the frame. The frame paints the `background-app` token, which
   is a colour or a gradient, and defaults to `color-surface`. `background` is a DOM node under
   everything. Use it for a backdrop that CSS cannot draw. imp hides it from assistive technology.
+  `navbar.background` and `sidebar.background` are the same kind of node under the bar and under the
+  column. The column backdrop follows the column into the phone drawer.
 - **Static grandchildren of the context nest one level, and are collapsed by default**, behind a
-  caret with `aria-expanded`. The parent of the selected row starts expanded. On a phone, a parent
-  that the person taps in the bottom bar opens its children in the More sheet.
+  caret with `aria-expanded`. The parent of the selected row starts expanded. A parent that the
+  person folds stays folded until the selection moves to another parent. On a phone, a parent that
+  the person taps in the bottom bar opens its children in the More sheet.
 - **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, which
   is the last two crumbs. The sidebar becomes the bottom bar, capped at
   `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections,
@@ -262,7 +265,7 @@ Rules an agent gets wrong:
 - **The desktop column collapses to an icon rail** from a toggle in its head. That head names the
   context, which is the param crumb when there is one. imp offers the toggle only when every row and
   every footer row has an `icon`. The rail hides the logo, `sidebar.extras` and the `extras` of the
-  shell.
+  shell. A rail row shows its label as a tooltip on hover, on focus and on a touch hold.
 - **`navOpen` must be writable if you pass it.** Never pass a `computed`. The shell writes back when
   the drawer closes itself.
 - **The shell is the only breakpoint exception in imp.** The width is `48rem`, and it is a **media
@@ -355,13 +358,14 @@ drawer({ title: 'Filters', open: filtering, pin: true }, form({ initialValues },
 drawer({ title: 'Details', modal: false, open: inspecting }, details())
 ```
 
-| Prop     | Values                            | Default | Notes                                              |
-| -------- | --------------------------------- | ------- | -------------------------------------------------- |
-| `title`  | string - **live**                 | -       | Names the drawer for a screen reader; give one     |
-| `modal`  | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
-| `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                           |
-| `pin`    | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
-| `events` | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
+| Prop         | Values                            | Default | Notes                                              |
+| ------------ | --------------------------------- | ------- | -------------------------------------------------- |
+| `title`      | string - **live**                 | -       | Names the drawer for a screen reader; give one     |
+| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
+| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                           |
+| `pin`        | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
+| `background` | DOM                               | -       | Decorative node under the panel; not interactive   |
+| `events`     | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
 
 - **A drawer is a dialog docked to the end of the line.** That is the right edge under `dir="ltr"`,
   and the left edge under `dir="rtl"`. There is no side prop. The modes and the `open` contract are
@@ -416,6 +420,32 @@ colour. The pill is a faint tint of that colour with a border and text in the sa
 pill stays readable in a light theme and in a dark theme. A nav row and a group of `shell` take the
 same value as plain data, in `tag: { text, color }`. imp draws it at the small size, to match the
 row.
+
+## tooltip - from `imp/std/display`
+
+```js
+import { tooltip } from 'imp/std/display'
+
+tooltip({ text: 'Delete' }, button({ label: 'Delete' }, icon(luTrash)))
+tooltip({ text: 'Refresh' }, refreshButton)
+```
+
+| Prop   | Values                        | Default    | Notes                 |
+| ------ | ----------------------------- | ---------- | --------------------- |
+| `text` | string, or a state - **live** | - required | What the tooltip says |
+
+- **The one child is the control.** The tooltip anchors a popover to it, in the top layer, so no
+  ancestor clips it.
+- **There is no placement prop.** imp picks the side from where the control sits: beside it near a
+  screen edge, below it in the upper half, above it in the lower half. The browser flips it when
+  that side has no room.
+- **It opens on a resting pointer, on focus, and on a touch hold.** A tap activates the control and
+  opens nothing. It closes when the pointer leaves, the focus moves, the finger lifts, or on Escape.
+- **It is visual only.** The control must carry its own accessible name, such as the `label` of an
+  icon-only button. imp hides the tooltip from assistive technology.
+- **The icon rail of `shell` shows one per row by itself.** Do not wrap a nav row.
+
+Full manual: `imp skill std/tooltip`.
 
 ## Responsive: fluid values, and your own media query
 

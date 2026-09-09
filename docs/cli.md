@@ -994,7 +994,7 @@ an icon. A sun means `imp-light`, a moon means `imp-dark`, a contrast circle and
 two high-contrast themes, and a palette means a theme of your own. Click the button to move to the
 next theme. Put the pointer over the button, or give it the focus, to open a menu of every theme.
 Select any theme from that list. imp remembers your choice across a reload. imp always offers the
-built-in `imp-light` and `imp-dark`.
+built-in `imp-light` and `imp-dark`, unless a theme of yours takes one of those names.
 
 The whole page changes, and the toolbar with it. The preview page is itself an imp app, built from
 `imp/std`. It uses the same buttons, tabs, selects and text fields as your app, and it reads the
@@ -1013,9 +1013,11 @@ Each path is a module that default-exports a theme. It is the same file that you
 `applyTheme`, and there is nothing about it that is only for a preview. The label in the menu is the
 `name` of the theme. When the theme has no name, or when two themes share a name, imp uses the file
 path. imp lists your themes first, and selects the first one by default. So a preview opens with the
-look of your app, and not with the look of the starter theme. An edit to a theme file reloads the
-page with the new tokens applied. So a preview page is also the fastest way to work on a theme. See
-**[Theming](theming.md)**.
+look of your app, and not with the look of the starter theme. A theme of yours that carries the name
+of a built-in theme replaces that built-in theme in the menu. Use this to keep the four names, and
+the remembered choice of a person, while you change a token such as `font-family`. An edit to a
+theme file reloads the page with the new tokens applied. So a preview page is also the fastest way
+to work on a theme. See **[Theming](theming.md)**.
 
 ### The theme editor
 
@@ -1024,7 +1026,8 @@ selecting one. It asks for the mode that you edit, which is light or dark, a **p
 a **secondary** colour, a **font** and a **mono font**, a **border radius** step and a **shadow**
 step. It derives every other colour token from those two colours. That is the hover step and the
 active step, a readable on-primary colour, and the surfaces, the borders and the text, which share
-the hue of the secondary colour.
+the hue of the secondary colour. A token that has no knob, such as `background-app`, a font weight
+or a spacing step, stays as the selected theme sets it, and the exported file carries it too.
 
 The page re-skins while you type, on real components. imp remembers your choices per theme, across a
 reload. When the theme looks correct, **copy** or **download theme.js** gives you an ordinary theme

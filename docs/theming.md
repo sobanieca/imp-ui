@@ -167,10 +167,11 @@ await init({
 To host the font yourself, put the font files under `public/fonts/`, and link a stylesheet with an
 `@font-face` rule from the same `<head>`. Either way, follow these rules:
 
-- **Load the weights 400 and 600.** They are the values of `font-weight-normal` and
-  `font-weight-bold`, and they are the only two weights that the standard components use. A weight
-  that is not loaded is synthesized by the browser, or it falls back to the nearest loaded weight.
-  So a bold label loses its emphasis with no error.
+- **Load the weights of `font-weight-normal` and `font-weight-bold`.** They default to 400 and 600,
+  and they are the only two weights that the standard components use. Every component sets its text
+  to `font-weight-normal`, so a font whose regular cut looks heavy takes one token change, such as
+  `'font-weight-normal': '300'`. A weight that is not loaded is synthesized by the browser, or it
+  falls back to the nearest loaded weight. So a bold label loses its emphasis with no error.
 - **Keep the system stack behind your font.** A font that lacks a script, such as Arabic or Chinese,
   then falls back per glyph, and a translated page still renders.
 - **Set the fonts once, for every theme.** A font does not change between light and dark. A theme

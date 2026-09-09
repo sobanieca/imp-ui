@@ -52,7 +52,7 @@ split by group:
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                                              |
 | `imp/std/layout`     | The app frame, the two arrangement primitives and the two overlay frames - `shell`, `flex`, `stack`, `dialog`, `drawer` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...                                     |
-| `imp/std/display`    | Components that present content - `emptyState`, `tag`, ...                                                              |
+| `imp/std/display`    | Components that present content - `emptyState`, `tag`, `tooltip`, ...                                                   |
 | `imp/std/navigation` | Getting around the app - `tabs`, ...                                                                                    |
 | `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...                                 |
 | `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                                                 |
@@ -215,11 +215,13 @@ section with rows, and a bar with one item would offer no choice, so the frame l
 A frame with no router, such as a preview, passes plain rows instead of a map. A **row** is
 `{ id, label, href, icon, tag, onClick }`, and it can hold `children`. The map derives rows of that
 shape for you. imp renders children indented under a caret, and collapses them by default. The one
-that holds the selected row starts expanded. On a phone the parents are the bottom bar. A tap on one
-opens its children in the **More** sheet, one column anchored right above the row you tapped. So a
-column of collapsible groups folds into something that a thumb can use without a move to the top of
-the screen. The frame draws the rows itself. It must, because it draws each level more than once,
-and it cannot make a second presentation out of markup that you handed it.
+that holds the selected row starts expanded. A parent that you fold stays folded, also when the
+selection moves within it, until the selection moves to another parent. On a phone the parents are
+the bottom bar. A tap on one opens its children in the **More** sheet, one column anchored right
+above the row you tapped. So a column of collapsible groups folds into something that a thumb can
+use without a move to the top of the screen. The frame draws the rows itself. It must, because it
+draws each level more than once, and it cannot make a second presentation out of markup that you
+handed it.
 
 **Icons bind by handle.** `icons: { [app.reports]: luChartColumn }` gives the row of a node its
 icon. A value is a Lucide export, or any DOM. The map holds no icon, because the map is data that
@@ -269,12 +271,14 @@ Escape, the focus trap and the return of the focus are the job of the browser. W
 section has no sidebar, the bottom bar carries the sections instead. The trail strip hides, because
 the title carries it. imp drops nothing. It folds everything up.
 
-On a desktop the column collapses to an icon rail, from a toggle in its head. That head also names
-the context that you are in, which is the section, or the project when a param node is on the path.
-The toggle is there only when every row in the column has an `icon`. That means the rows of the
-section and the footer rows. A rail of blank rows would show nothing. So a column with a row that
-has no icon stays open. When the column collapses, the rail keeps the icons and hides the rest: the
-logo, the name of the context, the `extras` of the sidebar, and the extras at the foot.
+On a desktop the column collapses to an icon rail, from a toggle in its head. In the rail every row
+shows its label as a tooltip, when a pointer rests on it, when it takes the focus, and when a finger
+holds it. The label stays in the row for a screen reader. That head also names the context that you
+are in, which is the section, or the project when a param node is on the path. The toggle is there
+only when every row in the column has an `icon`. That means the rows of the section and the footer
+rows. A rail of blank rows would show nothing. So a column with a row that has no icon stays open.
+When the column collapses, the rail keeps the icons and hides the rest: the logo, the name of the
+context, the `extras` of the sidebar, and the extras at the foot.
 
 Two custom properties tune the frame; set them anywhere above it:
 
@@ -316,6 +320,21 @@ tokens: { ...light.tokens, 'background-app': 'linear-gradient(135deg, #dbeafe, #
 shell({ navbar: { map: app }, gap: 3, background: driftingShapes() }, router({ map: app, screens }))
 ```
 
+**Each chrome panel can carry a backdrop of its own.** `navbar.background` sits under the top bar,
+and `sidebar.background` sits under the column. Both take the same kind of node as `background`: one
+DOM element that imp stretches to the panel, clips to its corners and hides from assistive
+technology. Use them for an image, a texture or an animation that a theme token cannot draw. The
+panel still paints `color-surface-sunken` under the node, so a translucent node tints the panel, and
+an opaque node replaces it. On a phone the column folds into the drawer, and its backdrop moves with
+it. A `drawer` in the main content takes a `background` prop of the same kind.
+
+```js
+shell(
+  { navbar: { map: app, background: barGlow() }, sidebar: { background: columnImage() } },
+  router({ map: app, screens }),
+)
+```
+
 **Who is signed in is not a prop of the frame.** Put `userCard` in `extras`. It shows a sign-in
 button while nobody is signed in, and the person with a sign-out action once somebody is. Whether a
 signed-out visitor sees a section is the `access` of the map, see **[Routing](routing.md)**. A
@@ -323,7 +342,9 @@ visitor with no session sees only the open nodes, and the frame never learns abo
 
 **The trail is chrome.** The shell renders `breadcrumbs` above the main content from the map, and
 `breadcrumbs: false` turns it off. So a screen never renders a trail of its own. A crumb for a param
-node whose `options` the router binds carries a picker of the sibling values.
+node whose `options` the router binds carries a picker of the sibling values. The trail row is as
+tall as the head of the column, so the top edge of your content lines up with the divider under the
+logo.
 
 Know two things before you structure an app. First, the fold is a **media query**. So a shell inside
 a panel narrower than `48rem`, on a wide screen, keeps its desktop layout. Give a frame the room
@@ -572,6 +593,23 @@ import { dialog } from 'imp/std/layout'
 dialog({ title: 'Edit user', open: editing }, form({ initialValues }, textField({ field: 'name' })))
 ```
 
+**A tooltip is a popover, anchored.** `tooltip({ text: 'Delete' }, deleteButton)` shows a short
+label beside its one child. The label appears when a pointer rests on the control, when the focus
+lands on it, and when a finger holds it. A tap still activates the control. The label is a popover
+in the top layer, placed with CSS anchor positioning, so it never gets clipped and needs no z-index.
+There is no side to choose. imp reads where the control sits when the tooltip opens: near the start
+or the end edge of the screen the label appears beside the control, in the upper half it appears
+below, and in the lower half above. The browser flips it when that side has no room. The tooltip is
+visual. It is hidden from assistive technology, because the control carries its own name, such as
+the `label` of an icon-only button. The icon rail of the frame shows one for every row without any
+code from you.
+
+```js
+import { tooltip } from 'imp/std/display'
+
+tooltip({ text: 'Delete' }, button({ label: 'Delete', events: { click: remove } }, icon(luTrash)))
+```
+
 **`open` is the whole API.** Pass a writable state, and set it to open the window. imp sets it back
 to `false` when the person closes the window. So the state is always the truth about what is on the
 screen. There is no `show()` to call, and no handle to keep.
@@ -593,7 +631,9 @@ side is the drawer of the frame. The width of a drawer is a custom property,
 is no separate phone mode, because the same panel on a narrow screen already is one. `modal` and
 `open` work exactly as on a dialog. A modal drawer adds `pin`. That is a toggle in its bar, and it
 keeps the drawer open when the person clicks outside it. Use it for a panel that they still work in.
-While the drawer is pinned, only Escape and the close button close it.
+While the drawer is pinned, only Escape and the close button close it. A drawer also takes a
+`background`. That is one decorative node under its bar and its content, stretched to the panel and
+hidden from assistive technology, the same as the backdrops of the frame.
 
 ```js
 import { drawer } from 'imp/std/layout'

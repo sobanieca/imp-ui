@@ -35,5 +35,9 @@
     ]
   },
   "maxFileSizeIgnore": ["icons/lucide-icons.js"],
-  "preview": { "groups": "std/preview-groups.js" }
+  "preview": {
+    "entry": "preview.html",
+    "themes": ["std/preview-theme-light.js", "std/preview-theme-dark.js"],
+    "groups": "std/preview-groups.js"
+  }
 }

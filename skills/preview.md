@@ -99,7 +99,8 @@ is `text_field` under `inputs`.
   none says so there.
 - **Theme editor.** _edit theme_ is beside the theme button. Knobs: mode (light/dark), primary,
   secondary, font, mono font, border radius (`none` | `small` | `medium` | `large`), shadow (`none`
-  | `soft` | `strong`). Every other colour token is derived from the two base colours. Copy or
+  | `soft` | `strong`). Every other colour token is derived from the two base colours. A token with
+  no knob, such as `background-app` or a font weight, stays as the selected theme sets it. Copy or
   download the result as a `theme.js` that exports `light` and `dark`, then pass it to
   `init({ theme })`. Drafts are kept per theme in `localStorage`. _reset_ clears one. See
   [theming](theming.md).
@@ -114,13 +115,14 @@ is `text_field` under `inputs`.
   with the preview page it came from. Read the folder before you rework a component on a vague
   report. See [start](start.md).
 - **Theme button, language and direction pickers.** `preview.themes` and `preview.translations` in
-  `imp.json` feed them (see [config](config.md)). Choices survive reloads. The theme button shows
-  the current theme with an icon. A click steps to the next theme. A pointer over the button, or the
-  focus on it, opens a menu that lists every theme with an icon. So one click picks any of them.
-  Direction has **auto** (follows the language), **ltr** and **rtl**. Pin it while you read English
-  to catch a hardcoded `margin-left`. Direction applies to the component only, never to the toolbar,
-  so the controls stay in place. The theme applies to the whole page, because the page is itself
-  built from `imp/std`. See [theming](theming.md) and [i18n](i18n.md).
+  `imp.json` feed them (see [config](config.md)). Choices survive reloads. imp lists your themes
+  first, then the built-in ones. A theme of yours named like a built-in theme replaces it. The theme
+  button shows the current theme with an icon. A click steps to the next theme. A pointer over the
+  button, or the focus on it, opens a menu that lists every theme with an icon. So one click picks
+  any of them. Direction has **auto** (follows the language), **ltr** and **rtl**. Pin it while you
+  read English to catch a hardcoded `margin-left`. Direction applies to the component only, never to
+  the toolbar, so the controls stay in place. The theme applies to the whole page, because the page
+  is itself built from `imp/std`. See [theming](theming.md) and [i18n](i18n.md).
 
 ## Finding previews
 

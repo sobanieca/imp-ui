@@ -31,17 +31,17 @@ shell(
 The call shape is `shell(props?, ...mainContent)`. When a props object is present, it must be the
 **first** argument. **Everything after it is the main content**, because it is the content.
 
-| Prop          | Values                         | Default | Notes                                                       |
-| ------------- | ------------------------------ | ------- | ----------------------------------------------------------- |
-| `logo`        | DOM                            | none    | Brand block; heads the bar, the sidebar, or the drawer      |
-| `navbar`      | **data** - see below           | none    | The map, or plain sections for a frame with no router       |
-| `sidebar`     | **data** - see below           | none    | The second level: names it, foots it                        |
-| `extras`      | DOM, or an array of it         | none    | Theme picker, language picker, `userCard`, anything         |
-| `breadcrumbs` | `false`                        | shown   | Turns the trail above the content off; needs a map          |
-| `navOpen`     | boolean, or a state - **live** | `false` | Drawer state; the shell owns one if the prop is omitted     |
-| `gap`         | spacing step `0`-`6`           | `0`     | Floats bar, column and bottom bar apart, rounded            |
-| `background`  | DOM                            | none    | Decorative layer under everything; the animated backdrop    |
-| `events`      | `{ navToggle, select }`        | -       | `navToggle` gives `{ open }`, `select` gives `{ id, item }` |
+| Prop          | Values                         | Default | Notes                                                         |
+| ------------- | ------------------------------ | ------- | ------------------------------------------------------------- |
+| `logo`        | DOM                            | none    | Brand block; heads the bar, the sidebar, or the drawer        |
+| `navbar`      | **data** - see below           | none    | The map, or plain sections for a frame with no router         |
+| `sidebar`     | **data** - see below           | none    | The second level: names it, foots it                          |
+| `extras`      | DOM, or an array of it         | none    | Theme picker, language picker, `userCard`, anything           |
+| `breadcrumbs` | `false`                        | shown   | Turns the trail above the content off; needs a map            |
+| `navOpen`     | boolean, or a state - **live** | `false` | Drawer state; the shell owns one if the prop is omitted       |
+| `gap`         | spacing step `0`-`6`           | `0`     | Floats bar, column and bottom bar apart, rounded              |
+| `background`  | DOM                            | none    | Decorative layer under the whole frame; the animated backdrop |
+| `events`      | `{ navToggle, select }`        | -       | `navToggle` gives `{ open }`, `select` gives `{ id, item }`   |
 
 **One map drives three surfaces and the trail.** With `navbar.map`, the router derives the sections,
 the rows of the current section, the marked rows, the head of the sidebar and the crumbs. The bar
@@ -52,26 +52,28 @@ map.
 
 The `navbar` keys are these:
 
-| Key        | Values                              | Notes                                                                 |
-| ---------- | ----------------------------------- | --------------------------------------------------------------------- |
-| `map`      | the value of `appMap()`             | The nav tree; the router in the content fills it                      |
-| `icons`    | `{ [handle]: icon }`                | An icon per node: a Lucide export, or any DOM                         |
-| `tags`     | `{ [handle]: tag }`                 | A pill per node: `{ text, color }`, or a state holding one, or `null` |
-| `label`    | string, or a state                  | Names the bar's `<nav>`; defaults to a translated "Navigation"        |
-| `items`    | array of sections - live            | Frame with no map only; see the section shape below                   |
-| `selected` | a section's `id`, or a state - live | Frame with no map only; which section is current                      |
+| Key          | Values                              | Notes                                                                 |
+| ------------ | ----------------------------------- | --------------------------------------------------------------------- |
+| `map`        | the value of `appMap()`             | The nav tree; the router in the content fills it                      |
+| `icons`      | `{ [handle]: icon }`                | An icon per node: a Lucide export, or any DOM                         |
+| `tags`       | `{ [handle]: tag }`                 | A pill per node: `{ text, color }`, or a state holding one, or `null` |
+| `label`      | string, or a state                  | Names the bar's `<nav>`; defaults to a translated "Navigation"        |
+| `items`      | array of sections - live            | Frame with no map only; see the section shape below                   |
+| `selected`   | a section's `id`, or a state - live | Frame with no map only; which section is current                      |
+| `background` | DOM                                 | Decorative layer under the bar; hidden from assistive technology      |
 
 The `sidebar` keys are these. imp reads **`groups` and `items` only when there is no `navbar`**.
 Beside a `navbar`, imp warns and drops them, because a section declares its own:
 
-| Key        | Values                                 | Notes                                                 |
-| ---------- | -------------------------------------- | ----------------------------------------------------- |
-| `label`    | string, or a state                     | Names the sidebar's `<nav>`; defaults to "Section"    |
-| `extras`   | DOM, or an array of it                 | App-wide block below the rows - support, upgrade, CTA |
-| `footer`   | array of items                         | App-wide rows at the foot of the column - settings    |
-| `selected` | an item's `id`, or a state - live      | Frame with no map only; the row with `aria-current`   |
-| `groups`   | array of `{ id?, label, tag?, items }` | Sidebar-only layout: the whole column                 |
-| `items`    | array of items                         | Sidebar-only layout: one unlabelled group             |
+| Key          | Values                                 | Notes                                                   |
+| ------------ | -------------------------------------- | ------------------------------------------------------- |
+| `label`      | string, or a state                     | Names the sidebar's `<nav>`; defaults to "Section"      |
+| `extras`     | DOM, or an array of it                 | App-wide block below the rows - support, upgrade, CTA   |
+| `footer`     | array of items                         | App-wide rows at the foot of the column - settings      |
+| `selected`   | an item's `id`, or a state - live      | Frame with no map only; the row with `aria-current`     |
+| `groups`     | array of `{ id?, label, tag?, items }` | Sidebar-only layout: the whole column                   |
+| `items`      | array of items                         | Sidebar-only layout: one unlabelled group               |
+| `background` | DOM                                    | Decorative layer under the column, and the phone drawer |
 
 Without a map, a **section** is `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`
 and a **row** is `{ id, label, icon, href, onClick, tag, disabled, children? }`, where `children` is
@@ -117,7 +119,10 @@ Rules an agent gets wrong:
   map.
 - **The trail is chrome.** With a map, the shell renders `breadcrumbs` above the content, and the
   phone title shows the last two crumbs. Do not render a second trail in a screen. Pass
-  `breadcrumbs: false` to drop the strip.
+  `breadcrumbs: false` to drop the strip. The head of the column and the trail row share one height,
+  `3.5rem`, so the top edge of the content lines up with the divider under the head. A gapped frame
+  without a trail drops the top padding of the main region instead, so the content lines up with the
+  top edge of the column. On a phone, where the trail hides, it does the same.
 - **Page CSS does not reach a region.** imp puts `logo`, `extras`, `sidebar.extras` and the main
   content inside the shadow root of the shell. So a rule in the stylesheet of the app never styles
   them. Only an inherited property and an `--imp-*` custom property cross the boundary. This is
@@ -140,10 +145,16 @@ Rules an agent gets wrong:
 - **The background is a theme token first.** The frame paints `background-app`. Pass `background`
   only for a backdrop that CSS cannot draw. It is one DOM node, stretched to the frame and painted
   under everything, hidden from assistive technology. So put nothing interactive in it.
+- **The bar and the column take a backdrop of their own.** `navbar.background` is one DOM node under
+  the top bar. `sidebar.background` is one DOM node under the column. Each is stretched to its
+  panel, clipped to its corners, and hidden from assistive technology, like `background`. On a phone
+  the column backdrop moves into the drawer with the rest of the column. A `drawer` in the main
+  content takes its own `background` prop.
 - **`children` nest one level, and are collapsed by default.** Static grandchildren of the context
   are the one collapsible level. The parent gets a caret and `aria-expanded`. The parent of the
-  selected row starts expanded. On a phone the parents are the bottom bar, and a tap opens the
-  children in the **More** sheet, one column anchored above the tapped row.
+  selected row starts expanded. A parent that the person folds stays folded until the selection
+  moves to another parent. On a phone the parents are the bottom bar, and a tap opens the children
+  in the **More** sheet, one column anchored above the tapped row.
 - **The main content is the children, not a `main` prop.** Write `shell({ navbar }, page())`.
 - **There is no aside region. Do not ask for one.** Content that comes and goes is a `drawer` in the
   main content. Content that must stand beside the page is your own layout inside the main content,
@@ -156,11 +167,14 @@ Rules an agent gets wrong:
   both `extras` move into the drawer. The trail strip hides, and the title carries the crumbs.
 - **The desktop sidebar collapses to an icon rail** from a toggle in its head. That head names the
   context, which is the param crumb when there is one. imp shows the toggle only when every row has
-  an `icon`.
+  an `icon`. In the rail, every row keeps its label for a screen reader and shows it as a tooltip on
+  hover, on focus and on a touch hold.
 - **`navOpen` is optional.** Without it, the shell owns the drawer state. Pass a **writable** state,
   never a `computed`, when the app must drive the drawer.
 - **The shell renders the `<nav>` landmarks itself**, named from the `label` of each level. It also
-  renders `<header>` and `<main>`. It is `100dvb` tall, and it scrolls each region on its own.
+  renders `<header>` and `<main>`. It is `100dvb` tall, and it scrolls each region on its own. The
+  main region is a column flex box. A child with `flex: 1` and `min-block-size: 0` takes the height
+  that the trail leaves, and can scroll on its own inside the region.
 
 ```js
 shell(
@@ -173,6 +187,10 @@ shell({
   sidebar: { extras: supportCard(), footer: [{ id: 'help', label: 'Help', href: '/help' }] },
   gap: 3,
   background: driftingShapes(),
+}, router({ map: app, screens }))
+shell({
+  navbar: { map: app, background: barGlow() },
+  sidebar: { background: columnImage() },
 }, router({ map: app, screens }))
 ```
 

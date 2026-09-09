@@ -16,9 +16,10 @@ chrome direction while previewing ar: ltr
 lang/dir/stage after pinning ltr: ar/ltr/ltr
 lang/dir/stage back on auto: ar/rtl/rtl
 lang/dir/stage back on en: en/ltr/ltr
-theme options: brand, imp-light, imp-dark, imp-high-contrast-light, imp-high-contrast-dark (selected brand, every item has an icon: true)
-theme after one step from imp-dark: imp-high-contrast-light
+theme options: brand, imp-dark, imp-light, imp-high-contrast-light, imp-high-contrast-dark (selected brand, every item has an icon: true)
+theme after one step from imp-dark: imp-light
 imp-dark surface token: #161719
+imp-dark font token, from the theme file that replaces it: Prompt, sans-serif
 brand surface token: #fdf7ff
 theme editor knobs: Mode, Primary, Secondary, Font, Mono font, Border radius, Shadow
 after picking a primary: #8821ac (hover #77009a)
@@ -29,7 +30,7 @@ sidebar groups: components 1, Widgets 1
 sidebar group icons: 3 shapes, 4 shapes
 sidebar components: todos, Counter
 sidebar current: Counter
-page head: Widgets / Counter
+page head: Counter
 index headline: Components - 2 previews in 2 groups.
 index cards: components 1 | Widgets 1
 ?scenario=lazy panels: 1 (lazy)

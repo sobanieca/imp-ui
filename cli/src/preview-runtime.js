@@ -3,19 +3,12 @@ import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { area, router, useRoute } from 'imp/router'
-import { button, icon, text } from 'imp/std'
+import { button, icon, link, text } from 'imp/std'
 import { luContrast, luEclipse, luMoon, luPalette, luSun } from 'imp/icons'
 import { emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
-import { drawer } from 'imp/std/layout'
-import {
-  buildFailure,
-  groupsOf,
-  pageLink,
-  previewHead,
-  previewIndex,
-  previewShell,
-} from './preview-shell.js'
+import { drawer, stack } from 'imp/std/layout'
+import { buildFailure, groupsOf, previewHead, previewIndex, previewShell } from './preview-shell.js'
 import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview-theme-editor.js'
 import { PREVIEW_METADATA_EXPORTS } from './preview-metadata.js'
 import { previewSlugs } from './preview-map.js'
@@ -70,11 +63,12 @@ body {
   margin: 0;
   background: var(--imp-color-surface-hover, #f1f5f9);
   font-family: var(--imp-font-family, system-ui, sans-serif);
+  font-weight: var(--imp-font-weight-normal, 400);
 }
 `
 
 const surface = `
-  background: var(--imp-color-surface, #ffffff);
+  background: var(--imp-color-surface-sunken, #f8fafc);
   border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
   border-radius: var(--imp-radius-container, 10px);
 `
@@ -85,6 +79,7 @@ const SCENARIO_STYLES = `
     padding-block-end: var(--imp-space-5, 24px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-normal, 400);
   }
 
   .scenario-head {
@@ -106,23 +101,8 @@ const SCENARIO_STYLES = `
     margin: 0;
     color: var(--imp-color-text, #0f172a);
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-weight: var(--imp-font-weight-bold, 600);
     font-size: var(--imp-font-size-md, 1rem);
-  }
-
-  a {
-    color: var(--imp-color-link, #2563eb);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    text-decoration: none;
-    border-radius: var(--imp-radius-item, 6px);
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  a:focus-visible {
-    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
-    outline-offset: 2px;
   }
 
   .failure {
@@ -152,6 +132,7 @@ const STAGE_STYLES = `
     margin-block-end: var(--imp-space-2, 8px);
     color: var(--imp-color-secondary, #64748b);
     font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-normal, 400);
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
@@ -237,6 +218,7 @@ const EDITOR_STYLES = `
     margin: 0;
     color: var(--imp-color-secondary, #64748b);
     font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-normal, 400);
     font-size: var(--imp-font-size-sm, 0.875rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -265,6 +247,7 @@ const EDITOR_STYLES = `
     margin-block-start: var(--imp-space-1, 4px);
     color: var(--imp-color-secondary, #64748b);
     font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-normal, 400);
     font-size: var(--imp-font-size-sm, 0.875rem);
     line-height: var(--imp-line-height-normal, 1.6);
   }
@@ -297,7 +280,9 @@ const registerThemes = (customThemes) => {
     }
     themes.set(customThemeLabel(source, definition), definition)
   }
-  for (const name of BUILT_IN_THEMES) themes.set(name, name)
+  for (const name of BUILT_IN_THEMES) {
+    if (!themes.has(name)) themes.set(name, name)
+  }
 }
 
 const colorSchemeOf = (definition) =>
@@ -370,12 +355,7 @@ const switchTo = (code) => {
   })
 }
 
-const picker = (kind, ariaLabel, values, choice) =>
-  div(
-    { class: 'picker' },
-    text({ tone: 'secondary', size: 'sm' }, kind),
-    select({ ariaLabel, value: choice, options: values }),
-  )
+const picker = (label, values, choice) => select({ label, value: choice, options: values })
 
 const themeIcon = (name) => icon(BUILT_IN_THEME_ICONS[name] ?? luPalette, { size: 'sm' })
 
@@ -385,9 +365,9 @@ const nextThemeName = (current) => {
 }
 
 const themeSwitcher = (choice) =>
-  div(
-    { class: 'picker' },
-    text({ tone: 'secondary', size: 'sm' }, 'theme'),
+  stack(
+    { gap: 1, horizontalAlign: 'start' },
+    text({ tone: 'secondary', size: 'sm' }, 'Theme'),
     button(
       {
         size: 'sm',
@@ -643,7 +623,7 @@ const scenarioSection = (name, scenario, entry) => {
   const head = div(
     { class: 'scenario-head' },
     h2(name),
-    pageLink({ href: `${entry.href}?scenario=${encodeURIComponent(name)}` }, 'isolate'),
+    link({ href: `${entry.href}?scenario=${encodeURIComponent(name)}`, size: 'sm' }, 'isolate'),
   )
   if (!nodes) {
     return el(
@@ -763,8 +743,8 @@ const pageDefinition = {
 
     const editorOpen = initState(self, EDITOR_STATE, false)
     const controls = [
-      languageChoice ? picker('language', 'Language', languages, languageChoice) : null,
-      picker('direction', 'Text direction', DIRECTIONS, directionChoice),
+      languageChoice ? picker('Language', languages, languageChoice) : null,
+      picker('Text direction', DIRECTIONS, directionChoice),
       themeSwitcher(themeChoice),
       button(
         { size: 'sm', events: { click: () => editorOpen.set(!editorOpen.get()) } },

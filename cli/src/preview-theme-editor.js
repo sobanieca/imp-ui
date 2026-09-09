@@ -1,9 +1,12 @@
 import { component } from 'imp'
-import { div, input, label, option, p, pre, select } from 'imp/html'
+import { div, input, pre } from 'imp/html'
 import { applyTheme } from 'imp/theme'
+import { initState } from 'imp/state'
 import { button, text } from 'imp/std'
+import { select, textField } from 'imp/std/inputs'
+import { flex, stack } from 'imp/std/layout'
 import { copyButton } from './preview-copy.js'
-import { themeFileSource, themeFromDraft } from './preview-theme-source.js'
+import { keptTokens, themeFileSource, themeFromDraft } from './preview-theme-source.js'
 import { defaultTokens, THEME_DEFAULTS } from '../../lib/src/theme.js'
 import {
   isHexColor,
@@ -26,80 +29,27 @@ const EDITOR_STYLES = `
     display: block;
   }
 
-  .editor {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imp-space-3, 12px);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .field > label {
-    color: var(--imp-color-secondary, #64748b);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  .inputs {
-    display: flex;
-    align-items: center;
-    gap: var(--imp-space-2, 8px);
-  }
-
-  .actions {
-    display: flex;
-    gap: var(--imp-space-2, 8px);
-    flex-wrap: wrap;
-  }
-
-  input[type='text'],
-  select {
-    flex: 1;
-    min-inline-size: 0;
-    box-sizing: border-box;
-    padding: var(--imp-space-1, 4px) var(--imp-space-2, 8px);
-    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-item, 6px);
-    background: var(--imp-color-surface, #ffffff);
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  input[type='color'] {
+  .swatch {
     flex: none;
     inline-size: 2.25rem;
-    block-size: 2rem;
+    block-size: 2.25rem;
+    margin-block-end: 1px;
     padding: 0;
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     border-radius: var(--imp-radius-item, 6px);
     background: var(--imp-color-surface, #ffffff);
   }
 
-  input:focus-visible,
-  select:focus-visible {
+  .swatch:focus-visible {
     outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
     outline-offset: 1px;
   }
 
   .usage {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imp-space-1, 4px);
     padding: var(--imp-space-2, 8px);
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     border-radius: var(--imp-radius-item, 6px);
     background: var(--imp-color-surface-sunken, #f1f5f9);
-  }
-
-  .usage p {
-    margin: 0;
-    color: var(--imp-color-text, #0f172a);
-    font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
   .usage pre {
@@ -110,6 +60,8 @@ const EDITOR_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 `
+
+const STATE_PREFIX = 'imp.preview.theme-editor'
 
 let baseTokens = {}
 
@@ -155,6 +107,7 @@ const seedDraft = (colorScheme) => {
     shadow: shadowLevelOf(baseTokens, scheme),
     light: scheme === 'light' ? fromTheme : { ...LIGHT_DEFAULTS },
     dark: scheme === 'dark' ? fromTheme : { ...DARK_DEFAULTS },
+    kept: keptTokens(baseTokens),
   }
 }
 
@@ -168,7 +121,7 @@ const validDraft = (value) =>
 const readDraft = (themeName) => {
   try {
     const stored = JSON.parse(localStorage.getItem(draftKey(themeName)) ?? 'null')
-    return validDraft(stored) ? stored : null
+    return validDraft(stored) ? { kept: keptTokens(baseTokens), ...stored } : null
   } catch {
     return null
   }
@@ -200,49 +153,41 @@ const download = (fileName, content) => {
   URL.revokeObjectURL(url)
 }
 
-const colorField = (id, labelText, value, onChange) => {
-  const field = input({ id, type: 'text', value, spellcheck: 'false', autocomplete: 'off' })
-  const swatch = input({ type: 'color', value, 'aria-label': `${labelText} colour picker` })
-  const commit = (next) => {
-    if (isHexColor(next)) onChange(next)
-  }
-  field.addEventListener('input', () => {
-    if (isHexColor(field.value)) swatch.value = field.value
-    commit(field.value)
+const colorField = (self, key, labelText, value, onChange) => {
+  const hex = initState(self, `${STATE_PREFIX}.${key}`, value)
+  const swatch = input({
+    class: 'swatch',
+    type: 'color',
+    value,
+    'aria-label': `${labelText} colour picker`,
   })
-  swatch.addEventListener('input', () => {
-    field.value = swatch.value
-    commit(swatch.value)
-  })
-  const node = div(
-    { class: 'field' },
-    label({ for: id }, labelText),
-    div({ class: 'inputs' }, field, swatch),
-  )
-  node.show = (next) => {
-    field.value = next
+  hex.watch(self, (next) => {
+    if (!isHexColor(next)) return
     swatch.value = next
-  }
+    onChange(next)
+  })
+  swatch.addEventListener('input', () => hex.set(swatch.value))
+  const node = flex(
+    { gap: 2, verticalAlign: 'bottom' },
+    textField({ label: labelText, value: hex, autocomplete: 'off' }),
+    swatch,
+  )
+  node.show = (next) => hex.set(next)
   return node
 }
 
-const textField = (id, labelText, value, onChange) => {
-  const field = input({ id, type: 'text', value, spellcheck: 'false', autocomplete: 'off' })
-  field.addEventListener('change', () => {
-    if (isFontStack(field.value)) onChange(field.value.trim())
+const fontField = (self, key, labelText, value, onChange) => {
+  const stack_ = initState(self, `${STATE_PREFIX}.${key}`, value)
+  stack_.watch(self, (next) => {
+    if (isFontStack(next)) onChange(next.trim())
   })
-  return div({ class: 'field' }, label({ for: id }, labelText), div({ class: 'inputs' }, field))
+  return textField({ label: labelText, value: stack_, autocomplete: 'off' })
 }
 
-const choiceField = (id, labelText, choices, value, onChange) => {
-  const control = select(
-    { id },
-    ...choices.map((choice) =>
-      option(choice === value ? { value: choice, selected: 'selected' } : { value: choice }, choice)
-    ),
-  )
-  control.addEventListener('change', () => onChange(control.value))
-  return div({ class: 'field' }, label({ for: id }, labelText), div({ class: 'inputs' }, control))
+const choiceField = (self, key, labelText, choices, value, onChange) => {
+  const choice = initState(self, `${STATE_PREFIX}.${key}`, value)
+  choice.watch(self, onChange)
+  return select({ label: labelText, value: choice, options: choices })
 }
 
 const USAGE_EXAMPLE = `import { init } from 'imp'
@@ -256,14 +201,20 @@ applyTheme(dark)`
 const usage = () =>
   div(
     { class: 'usage' },
-    p('Save the copied file as theme.js in your app and pass it to init():'),
-    pre(USAGE_EXAMPLE),
-    p('A web font named in Font or Mono font loads only when index.html links it, at weights 400 and 600.'),
+    stack(
+      { gap: 1 },
+      text({ size: 'sm' }, 'Save the copied file as theme.js in your app and pass it to init():'),
+      pre(USAGE_EXAMPLE),
+      text(
+        { size: 'sm' },
+        'A web font named in Font or Mono font loads only when index.html links it, at the weights of font-weight-normal and font-weight-bold.',
+      ),
+    ),
   )
 
 const definition = {
   styles: EDITOR_STYLES,
-  setup: (_instance, themeName, colorScheme) => {
+  setup: (self, themeName, colorScheme) => {
     const draft = readDraft(themeName) ?? seedDraft(colorScheme)
 
     const apply = () => {
@@ -277,31 +228,35 @@ const definition = {
     }
 
     const setColor = (key) => (value) => {
+      if (draft[draft.mode][key] === value) return
       draft[draft.mode][key] = value
       apply()
     }
 
     const primary = colorField(
-      'theme-primary',
+      self,
+      'primary',
       'Primary',
       draft[draft.mode].primary,
       setColor('primary'),
     )
     const secondary = colorField(
-      'theme-secondary',
+      self,
+      'secondary',
       'Secondary',
       draft[draft.mode].secondary,
       setColor('secondary'),
     )
 
-    const root = div(
-      { class: 'editor' },
+    const root = stack(
+      { gap: 3 },
       text(
         { tone: 'secondary', size: 'sm' },
         'Pick the base colours and imp derives the rest of the palette - hover and active steps, ' +
           'surfaces, borders and text - for the mode you are editing.',
       ),
-      choiceField('theme-mode', 'Mode', MODES, draft.mode, (value) => {
+      choiceField(self, 'mode', 'Mode', MODES, draft.mode, (value) => {
+        if (value === draft.mode) return
         draft.mode = value
         primary.show(draft[draft.mode].primary)
         secondary.show(draft[draft.mode].secondary)
@@ -309,25 +264,29 @@ const definition = {
       }),
       primary,
       secondary,
-      textField('theme-font', 'Font', draft.font, (value) => {
+      fontField(self, 'font', 'Font', draft.font, (value) => {
+        if (value === draft.font) return
         draft.font = value
         apply()
       }),
-      textField('theme-font-mono', 'Mono font', draft.fontMono, (value) => {
+      fontField(self, 'font-mono', 'Mono font', draft.fontMono, (value) => {
+        if (value === draft.fontMono) return
         draft.fontMono = value
         apply()
       }),
-      choiceField('theme-radius', 'Border radius', radiusSteps(), draft.radius, (value) => {
+      choiceField(self, 'radius', 'Border radius', radiusSteps(), draft.radius, (value) => {
+        if (value === draft.radius) return
         draft.radius = value
         apply()
       }),
-      choiceField('theme-shadow', 'Shadow', shadowSteps(), draft.shadow, (value) => {
+      choiceField(self, 'shadow', 'Shadow', shadowSteps(), draft.shadow, (value) => {
+        if (value === draft.shadow) return
         draft.shadow = value
         apply()
       }),
       usage(),
-      div(
-        { class: 'actions' },
+      flex(
+        { gap: 2, wrap: true },
         copyButton(() => themeFileSource(themeName, draft)),
         button(
           {

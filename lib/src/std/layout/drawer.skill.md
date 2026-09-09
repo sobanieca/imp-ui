@@ -13,13 +13,14 @@ the content of the drawer. The component renders a real `<dialog>`, promoted to 
 platform. So an ancestor never clips it, and it needs no z-index. You can mount it anywhere: in a
 page, in a card, in a `shell` region, or in another component.
 
-| Prop     | Values                            | Default | Notes                                              |
-| -------- | --------------------------------- | ------- | -------------------------------------------------- |
-| `title`  | string, or a state - **live**     | -       | Names the drawer for a screen reader; give one     |
-| `modal`  | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
-| `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                           |
-| `pin`    | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
-| `events` | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
+| Prop         | Values                            | Default | Notes                                              |
+| ------------ | --------------------------------- | ------- | -------------------------------------------------- |
+| `title`      | string, or a state - **live**     | -       | Names the drawer for a screen reader; give one     |
+| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
+| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                           |
+| `pin`        | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
+| `background` | DOM                               | none    | Decorative layer under the bar and the content     |
+| `events`     | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
 
 | Property                   | Default | Notes                                                  |
 | -------------------------- | ------- | ------------------------------------------------------ |
@@ -74,6 +75,10 @@ Rules an agent gets wrong:
   `prefers-reduced-motion`. Every imp overlay shares this animation.
 - **The platform owns the focus.** The pin button is the first element in the drawer, so the focus
   lands there. On close, the focus returns to the element that had it before the drawer opened.
+- **`background` is one DOM node under the panel.** imp stretches it to the panel, clips it to the
+  corners of the panel, and hides it from assistive technology. Use it for an image or an animation
+  that CSS cannot draw. Put nothing interactive in it. The panel still paints `color-surface`, so a
+  translucent node tints it.
 
 Related: imp skill std/dialog - the centred window, same modes; imp skill std/shell - the frame a
 drawer usually opens inside; imp skill std/form - the usual content of a filters drawer.

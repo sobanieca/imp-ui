@@ -1576,11 +1576,29 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         return found
       }
       globalThis.impOne = (name, from) => globalThis.impAll(name, from)[0] ?? null
+      globalThis.impDeep = (selector, from) => {
+        const search = (root) => {
+          const direct = root.querySelector(selector)
+          if (direct) return direct
+          for (const element of root.querySelectorAll('*')) {
+            if (element.shadowRoot) {
+              const found = search(element.shadowRoot)
+              if (found) return found
+            }
+          }
+          return null
+        }
+        const start = from ?? globalThis.impRoot()
+        return start ? search(start.shadowRoot ?? start) : null
+      }
       globalThis.impScenarios = () => globalThis.impAll('imp-preview-scenario')
+      globalThis.impLabelled = (name, from) =>
+        globalThis.impAll(name, from).map((host) => ({
+          label: host.shadowRoot.querySelector('label')?.textContent.trim() ?? '',
+          control: host.shadowRoot.querySelector('input, select'),
+        }))
       globalThis.impPicker = (label) =>
-        globalThis.impAll('imp-select')
-          .map((host) => host.shadowRoot.querySelector('select'))
-          .find((control) => control.getAttribute('aria-label') === label)
+        globalThis.impLabelled('imp-select').find((entry) => entry.label === label)?.control
       globalThis.impTextareas = (editor) =>
         [...editor.shadowRoot.querySelectorAll('imp-text-area')]
           .map((host) => host.shadowRoot.querySelector('textarea'))
@@ -1676,6 +1694,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const selected = () => shadow.querySelector('.label').textContent
       const surface = () =>
         getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
+      const font = () =>
+        getComputedStyle(document.documentElement).getPropertyValue('--imp-font-family')
       const apply = (value) => {
         items().find((item) => item.textContent === value).click()
         return surface()
@@ -1683,6 +1703,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const iconOf = (item) => item.querySelector('imp-icon') !== null
       const initial = selected()
       const dark = apply('imp-dark')
+      const darkFont = font()
       shadow.querySelector('.button:not(.more)').click()
       const stepped = selected()
       return {
@@ -1690,6 +1711,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         icons: items().every(iconOf),
         selected: initial,
         dark,
+        darkFont,
         stepped,
         custom: apply('brand'),
       }
@@ -1700,21 +1722,36 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         .find((node) => node.shadowRoot.textContent.includes('edit theme'))
       open.shadowRoot.querySelector('button').click()
       await new Promise((resolve) => setTimeout(resolve, 0))
-      const panel = globalThis.impOne('imp-preview-theme').shadowRoot
-      const field = (id) => panel.querySelector(`#${id}`)
+      const editorHost = globalThis.impOne('imp-preview-theme')
+      const panel = editorHost.shadowRoot
+      const labelled = () => [
+        ...globalThis.impLabelled('imp-select', editorHost),
+        ...globalThis.impLabelled('imp-text-field', editorHost),
+      ]
+      const field = (label) => labelled().find((entry) => entry.label === label).control
       const token = (name) =>
         getComputedStyle(document.documentElement).getPropertyValue(`--imp-${name}`).trim()
       const change = (node, value) => {
         node.value = value
         node.dispatchEvent(new Event(node.localName === 'select' ? 'change' : 'input'))
       }
-      const knobs = [...panel.querySelectorAll('.field > label')].map((node) => node.textContent)
-      change(field('theme-primary'), '#8821ac')
+      const knobHosts = []
+      const walkKnobs = (root) => {
+        for (const element of root.querySelectorAll('*')) {
+          if (['imp-select', 'imp-text-field'].includes(element.localName)) knobHosts.push(element)
+          if (element.shadowRoot) walkKnobs(element.shadowRoot)
+        }
+      }
+      walkKnobs(panel)
+      const knobs = knobHosts.map((host) =>
+        host.shadowRoot.querySelector('label')?.textContent.trim() ?? '(no label)'
+      )
+      change(field('Primary'), '#8821ac')
       const primary = token('color-primary')
       const derived = token('color-primary-hover')
-      change(field('theme-radius'), 'none')
+      change(field('Border radius'), 'none')
       const flat = token('radius-item')
-      change(field('theme-mode'), 'dark')
+      change(field('Mode'), 'dark')
       const darkSurface = token('color-surface')
       return {
         knobs: knobs.join(', '),
@@ -1722,7 +1759,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         derived,
         flat,
         darkSurface,
-        usage: panel.querySelector('.usage pre').textContent.split('\n')[0],
+        usage: globalThis.impDeep('pre', globalThis.impDeep('.usage', editorHost)).textContent
+          .split('\n')[0],
       }
     })
 
@@ -1744,7 +1782,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
           .map((svg) => (svg ? `${svg.querySelectorAll('*').length} shapes` : 'no icon'))
           .join(', '),
         current: links.find((link) => link.hasAttribute('aria-current'))?.textContent ?? 'none',
-        head: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.path').textContent,
+        head: globalThis.impOne('imp-heading', globalThis.impOne('imp-preview-head')).shadowRoot
+          .textContent.trim(),
       }
     })
 
@@ -1753,11 +1792,12 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     const index = await page.evaluate(() => {
       const root = globalThis.impOne('imp-preview-index').shadowRoot
       const hero = root.querySelector('.hero')
-      const rendered = (name) => globalThis.impOne(name, hero).shadowRoot.textContent.trim()
+      const rendered = (name, from = hero) =>
+        globalThis.impOne(name, from).shadowRoot.textContent.trim()
       return {
         headline: `${rendered('imp-heading')} - ${rendered('imp-text')}`,
         cards: [...root.querySelectorAll('.card-head')]
-          .map((head) => [...head.childNodes].map((child) => child.textContent).join(' '))
+          .map((head) => `${rendered('imp-heading', head)} ${rendered('imp-tag', head)}`)
           .join(' | '),
       }
     })
@@ -1833,6 +1873,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       } (selected ${themed.selected}, every item has an icon: ${themed.icons})`,
       `theme after one step from imp-dark: ${themed.stepped}`,
       `imp-dark surface token: ${themed.dark}`,
+      `imp-dark font token, from the theme file that replaces it: ${themed.darkFont}`,
       `brand surface token: ${themed.custom}`,
       `theme editor knobs: ${themeEdits.knobs}`,
       `after picking a primary: ${themeEdits.primary} (hover ${themeEdits.derived})`,
@@ -2585,6 +2626,7 @@ Deno.test('the theme editor exports a theme file that imports back as two themes
     shadow: 'strong',
     light: { primary: '#3b6fe0', secondary: '#6b7280' },
     dark: { primary: '#7c9cff', secondary: '#94a3b8' },
+    kept: { 'background-app': 'linear-gradient(#fff, #eee)', 'font-weight-bold': '500' },
   }
   const source = themeFileSource('acme', draft)
   const module = await import(`data:text/javascript,${encodeURIComponent(source)}`)
@@ -2614,6 +2656,11 @@ Deno.test('the theme editor exports a theme file that imports back as two themes
   check(
     module.light.tokens['color-success'] === module.light.tokens['color-green'],
     'the semantic aliases point at the palette, so editing a hue moves the role',
+  )
+  check(
+    module.dark.tokens['background-app'] === 'linear-gradient(#fff, #eee)' &&
+      module.dark.tokens['font-weight-bold'] === '500',
+    'the tokens the editor has no knob for reach both exported themes',
   )
   check(
     module.light.tokens['radius-item'] === '10px' && module.light.tokens['shadow-md'] !== 'none',
@@ -2827,6 +2874,45 @@ Deno.test('nothing in the library runs work when it is imported', async () => {
   }
   if (problems.length) {
     throw new Error(`the library is not tree-shakeable:\n  ${problems.join('\n  ')}`)
+  }
+})
+
+const libraryPreviews = async () => {
+  const found = []
+  const walk = async (dir, prefix) => {
+    for await (const entry of Deno.readDir(dir)) {
+      const path = prefix ? `${prefix}/${entry.name}` : entry.name
+      if (entry.isDirectory) await walk(join(dir, entry.name), path)
+      else if (entry.name.endsWith('.preview.js')) {
+        found.push({ path, source: await Deno.readTextFile(join(dir, entry.name)) })
+      }
+    }
+  }
+  await walk(join(REPO_ROOT, 'lib', 'src'), '')
+  return found.sort((a, b) => a.path.localeCompare(b.path))
+}
+
+const RELATIVE_IMPORT = /^import\b[^'"]*['"](\.{1,2}\/[^'"]*)['"]/
+
+Deno.test('a library preview imports imp through its entry points only', async () => {
+  const problems = []
+  for (const { path, source } of await libraryPreviews()) {
+    for (const [index, line] of source.split('\n').entries()) {
+      const relativeImport = line.match(RELATIVE_IMPORT)?.[1]
+      if (relativeImport) {
+        problems.push(
+          `lib/src/${path}:${
+            index + 1
+          }: imports '${relativeImport}' by path. The preview bundles ` +
+            'that file as a second copy of the library beside the one in the binary, and the two ' +
+            "copies do not recognise each other's components. Import from 'imp', 'imp/std', " +
+            "'imp/state' or another imp entry point instead",
+        )
+      }
+    }
+  }
+  if (problems.length) {
+    throw new Error(`a preview bypasses the imp entry points:\n  ${problems.join('\n  ')}`)
   }
 })
 

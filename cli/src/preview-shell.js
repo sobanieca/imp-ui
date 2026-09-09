@@ -1,71 +1,14 @@
 import { component } from 'imp'
-import { a, div, el, pre, span } from 'imp/html'
-import { navigate } from 'imp/router'
-import { heading, text } from 'imp/std'
-import { shell, stack } from 'imp/std/layout'
+import { div, el, pre, span } from 'imp/html'
+import { heading, link, text } from 'imp/std'
+import { tag } from 'imp/std/display'
+import { flex, shell, stack } from 'imp/std/layout'
+import { appLogo } from 'imp/std/shell'
 import { luFolder } from 'imp/icons'
 import { copyButton } from './preview-copy.js'
 
-const BAR_STYLES = `
-  .bar {
-    display: flex;
-    align-items: center;
-    gap: var(--imp-space-3, 12px);
-    flex: 1;
-    flex-wrap: wrap;
-    min-inline-size: 0;
-  }
-
-  .brand {
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-size: var(--imp-font-size-md, 1rem);
-    font-weight: var(--imp-font-weight-bold, 600);
-    text-decoration: none;
-    white-space: nowrap;
-    border-radius: var(--imp-radius-item, 6px);
-  }
-
-  .brand:focus-visible {
-    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
-    outline-offset: 2px;
-  }
-
-`
-
-const SETTINGS_STYLES = `
-  .settings {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imp-space-3, 12px);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-  }
-
-  .picker {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--imp-space-2, 8px);
-  }
-
-  h2 {
-    margin: 0;
-    color: var(--imp-color-secondary, #64748b);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-`
-
 const INDEX_STYLES = `
-  .root {
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-  }
-
   .hero {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imp-space-2, 8px);
     margin-block-end: var(--imp-space-6, 32px);
   }
 
@@ -86,55 +29,20 @@ const INDEX_STYLES = `
   }
 
   .card-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--imp-space-2, 8px);
     padding-block-end: var(--imp-space-2, 8px);
     padding-inline: var(--imp-space-2, 8px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     margin-block-end: var(--imp-space-2, 8px);
   }
 
-  .card-title {
-    color: var(--imp-color-text, #0f172a);
-    font-size: var(--imp-font-size-md, 1rem);
-    font-weight: var(--imp-font-weight-bold, 600);
-  }
-
-  .card-count {
-    color: var(--imp-color-secondary, #64748b);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
   .card-list {
     display: flex;
     flex-direction: column;
-    gap: var(--imp-space-1, 4px);
+    gap: var(--imp-space-2, 8px);
     margin: 0;
-    padding: 0;
+    padding-block: var(--imp-space-1, 4px);
+    padding-inline: var(--imp-space-2, 8px);
     list-style: none;
-  }
-
-  .card-link {
-    display: block;
-    border-radius: var(--imp-radius-item, 6px);
-    padding-block: var(--imp-space-2, 8px);
-    padding-inline: var(--imp-space-3, 12px);
-    color: var(--imp-color-text, #0f172a);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    line-height: var(--imp-line-height-tight, 1.25);
-    text-decoration: none;
-  }
-
-  .card-link:hover {
-    background-color: var(--imp-color-surface-hover, #f1f5f9);
-  }
-
-  .card-link:focus-visible {
-    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
-    outline-offset: 2px;
   }
 `
 
@@ -146,6 +54,7 @@ const HEAD_STYLES = `
     padding-block-end: var(--imp-space-4, 16px);
     border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-normal, 400);
   }
 
   .title {
@@ -162,7 +71,7 @@ const HEAD_STYLES = `
     flex-wrap: wrap;
     padding-block: var(--imp-space-2, 8px);
     padding-inline: var(--imp-space-3, 12px);
-    background-color: var(--imp-color-surface, #ffffff);
+    background-color: var(--imp-color-surface-sunken, #f8fafc);
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     border-radius: var(--imp-radius-md, 6px);
   }
@@ -193,59 +102,16 @@ const HEAD_STYLES = `
     line-height: var(--imp-line-height-normal, 1.6);
   }
 
-  .path {
-    color: var(--imp-color-text, #0f172a);
-    font-size: var(--imp-font-size-lg, 1.125rem);
-    font-weight: var(--imp-font-weight-bold, 600);
-  }
-
-  .group {
-    color: var(--imp-color-secondary, #64748b);
-    font-weight: var(--imp-font-weight-normal, 400);
-  }
-
   .file {
     color: var(--imp-color-secondary, #64748b);
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
-  a {
+  .title imp-link {
     margin-inline-start: auto;
-    color: var(--imp-color-link, #2563eb);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    text-decoration: none;
-    border-radius: var(--imp-radius-item, 6px);
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  a:focus-visible {
-    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
-    outline-offset: 2px;
   }
 `
-
-const opensElsewhere = (event) =>
-  event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
-  event.shiftKey || event.altKey
-
-export const pageLink = (attributes, ...children) =>
-  a(
-    {
-      ...attributes,
-      events: {
-        click: (event) => {
-          if (opensElsewhere(event)) return
-          event.preventDefault()
-          navigate(attributes.href)
-        },
-      },
-    },
-    ...children,
-  )
 
 export const groupsOf = (previews, groups = []) => {
   const byName = new Map()
@@ -271,27 +137,63 @@ const componentList = (entries, label) =>
     el(
       'ul',
       { class: 'card-list' },
-      ...entries.map((entry) =>
-        el('li', pageLink({ class: 'card-link', href: entry.href }, entry.name))
-      ),
+      ...entries.map((entry) => el('li', link({ href: entry.href, size: 'sm' }, entry.name))),
     ),
   )
 
-const barDefinition = {
-  styles: BAR_STYLES,
-  setup: () =>
-    div(
-      { class: 'bar' },
-      a({ class: 'brand', href: '/' }, 'imp preview'),
-    ),
+const BACKDROP_STYLES = `
+  :host {
+    display: block;
+    position: relative;
+  }
+
+  .wash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--imp-background-app, #ffffff);
+  }
+`
+
+const CANVAS_STYLES = `
+  :host {
+    display: block;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    margin-inline: calc(-1 * var(--imp-space-4, 16px));
+    margin-block-end: calc(-1 * var(--imp-space-4, 16px));
+    padding: var(--imp-space-2, 8px);
+    overflow: hidden;
+    border-radius: var(--imp-shell-frame-radius, 0);
+    background: var(--imp-color-surface, #ffffff);
+  }
+
+  .scroll {
+    box-sizing: border-box;
+    block-size: 100%;
+    overflow: auto;
+    padding: var(--imp-space-2, 8px);
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--imp-color-text, #0f172a) 28%, transparent) transparent;
+  }
+`
+
+const canvasDefinition = {
+  styles: CANVAS_STYLES,
+  setup: (_instance, content) => div({ class: 'scroll' }, content),
+}
+
+const backdropDefinition = {
+  styles: BACKDROP_STYLES,
+  setup: () => div({ class: 'wash' }),
 }
 
 const settingsDefinition = {
-  styles: SETTINGS_STYLES,
   setup: (_instance, controls) =>
-    div(
-      { class: 'settings' },
-      el('h2', 'Preview'),
+    stack(
+      { gap: 3 },
+      text({ tone: 'secondary', size: 'sm', weight: 'bold' }, 'Preview'),
       ...controls,
     ),
 }
@@ -305,22 +207,27 @@ const indexDefinition = {
         { class: 'card' },
         div(
           { class: 'card-head' },
-          span({ class: 'card-title' }, name),
-          span({ class: 'card-count' }, String(entries.length)),
+          flex(
+            { horizontalAlign: 'justify', verticalAlign: 'center', gap: 2 },
+            heading({ level: 2 }, name),
+            tag({ size: 'sm' }, String(entries.length)),
+          ),
         ),
         componentList(entries, `${name} components`),
       )
     )
     return div(
-      { class: 'root' },
       div(
         { class: 'hero' },
-        heading({ level: 1 }, 'Components'),
-        text(
-          { tone: 'secondary' },
-          `${previews.length} preview${previews.length === 1 ? '' : 's'} in ${listed.length} group${
-            listed.length === 1 ? '' : 's'
-          }.`,
+        stack(
+          { gap: 2 },
+          heading({ level: 1 }, 'Components'),
+          text(
+            { tone: 'secondary' },
+            `${previews.length} preview${
+              previews.length === 1 ? '' : 's'
+            } in ${listed.length} group${listed.length === 1 ? '' : 's'}.`,
+          ),
         ),
       ),
       div({ class: 'cards' }, ...cards),
@@ -369,19 +276,16 @@ const headDefinition = {
       { class: 'head' },
       div(
         { class: 'title' },
-        span(
-          { class: 'path' },
-          span({ class: 'group' }, `${entry.group} / `),
-          entry.name,
-        ),
+        heading({ level: 1 }, entry.name),
         span({ class: 'file' }, entry.file),
-        isolated ? pageLink({ href: entry.href }, 'all scenarios') : null,
+        isolated ? link({ href: entry.href, size: 'sm' }, 'all scenarios') : null,
       ),
       agentStrip(instruction),
     ),
 }
 
-let createBar = null
+let createCanvas = null
+let createBackdrop = null
 let createSettings = null
 let createIndex = null
 let createHead = null
@@ -392,9 +296,14 @@ export const buildFailure = (entry) => {
   return createFailure(entry)
 }
 
-export const previewBar = () => {
-  createBar ??= component('imp-preview-bar', barDefinition)
-  return createBar()
+export const previewCanvas = (content) => {
+  createCanvas ??= component('imp-preview-canvas', canvasDefinition)
+  return createCanvas(content)
+}
+
+export const previewBackdrop = () => {
+  createBackdrop ??= component('imp-preview-backdrop', backdropDefinition)
+  return createBackdrop()
 }
 
 export const previewSettings = (controls) => {
@@ -415,14 +324,13 @@ export const previewHead = (entry, isolated, instruction) => {
 export const previewShell = ({ navbar, controls, editor, content }) => {
   const host = shell(
     {
-      logo: previewBar(),
+      logo: appLogo({ label: 'imp preview', href: '/' }),
       navbar,
-      sidebar: { label: 'Components' },
-      breadcrumbs: false,
+      sidebar: { label: 'Components', background: previewBackdrop() },
       extras: previewSettings(controls),
       gap: 3,
     },
-    stack({ gap: 4 }, content),
+    previewCanvas(stack({ gap: 4 }, content)),
     editor,
   )
   host.setAttribute('dir', 'ltr')
