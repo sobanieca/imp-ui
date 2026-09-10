@@ -11,14 +11,14 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/state`          | `initState`, `useState`, `computed`                                          |
 | `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
 | `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`           |
-| `imp/theme`          | `theme`, `applyTheme`                                                        |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                       |
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`          |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                     |
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                  |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                 |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...       |
-| `imp/std/display`    | `emptyState`, `tag`, `tooltip`                                               |
+| `imp/std/display`    | `card`, `emptyState`, `tag`, `tooltip`                                       |
 | `imp/std/navigation` | `tabs`                                                                       |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`            |
 | `imp/std/feedback`   | `bugReport`                                                                  |

@@ -1,4 +1,4 @@
-import { dirname, extname, relative, resolve, toFileUrl } from '@std/path'
+import { dirname, extname, fromFileUrl, relative, resolve, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
@@ -6,14 +6,10 @@ import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
 import { dataUri } from './image.js'
 import {
   collectMocks,
-  extractCalls,
+  IMP_LIBRARY_ROOT,
   impResolverPlugin,
-  isIdentChar,
   LIBRARY_NAMESPACE,
-  parseStringLiteral,
   resolveModuleFile,
-  skipStringLiteral,
-  splitFirstArgument,
 } from './bundling.js'
 import {
   createBroadcaster,
@@ -22,7 +18,10 @@ import {
   loadApp,
   watchForChanges,
 } from './start.js'
-import { isPreviewMetadataExport } from './preview-metadata.js'
+import { PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
+import { scanGroupsModule, scanPreviewSource } from './preview-source.js'
+import { retargetLinks, skillFileFor, standardComponentSubjects } from './skill.js'
+import { marked } from './vendor/marked.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev-log.js'
 import { addLogSink, logger } from './logger.js'
 import { dim } from './colors.js'
@@ -42,17 +41,27 @@ const BUNDLE_PREFIX = '/@imp/preview/'
 const APP_BUNDLE_NAME = 'app'
 const APP_BUNDLE_PATH = `${BUNDLE_PREFIX}${APP_BUNDLE_NAME}.js`
 
-const IMP_MARK_URL = new URL('./templates/favicon.svg', import.meta.url)
+const IMP_MARK_URLS = {
+  light: new URL('./templates/mark-light.svg', import.meta.url),
+  dark: new URL('./templates/favicon.svg', import.meta.url),
+}
+
+const IMP_FAVICON_URL = new URL('./templates/favicon.ico', import.meta.url)
 
 let impMark = null
 
+let impFavicon = null
+
+const readMarkFile = async (url) => dataUri('image/svg+xml', await Deno.readFile(url))
+
 const readImpMark = async () =>
-  impMark ??= dataUri('image/svg+xml', await Deno.readFile(IMP_MARK_URL))
+  impMark ??= {
+    light: await readMarkFile(IMP_MARK_URLS.light),
+    dark: await readMarkFile(IMP_MARK_URLS.dark),
+  }
 
-const STATE_ENTRY_POINTS = ['initState', 'useState']
-const MAX_SCANNED_SOURCES = 40
-
-const IMPORT_SPECIFIERS = /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g
+const readImpFavicon = async () =>
+  impFavicon ??= dataUri('image/x-icon', await Deno.readFile(IMP_FAVICON_URL))
 
 const siblingPreviewOf = (path) => path.replace(/\.(js|mjs)$/, '.preview.$1')
 
@@ -93,278 +102,6 @@ export async function selectPreviewFiles({ root, paths, exclude }) {
     exclude,
   })
   return files.filter(isPreviewFile)
-}
-
-const parseInitialValue = (source) => {
-  const text = source.trim()
-  if (!text) return null
-  try {
-    return JSON.stringify(JSON.parse(text), null, 2)
-  } catch {
-    return null
-  }
-}
-
-function extractStateDeclarations(source) {
-  const declarations = []
-  for (const functionName of STATE_ENTRY_POINTS) {
-    for (const { argumentSource } of extractCalls(source, functionName)) {
-      const { rest: afterSelf } = splitFirstArgument(argumentSource)
-      const { first, rest } = splitFirstArgument(afterSelf)
-      const name = parseStringLiteral(first)
-      if (name === null) continue
-      const initial = functionName === 'initState' ? parseInitialValue(rest) : null
-      declarations.push({ name, initial })
-    }
-  }
-  return declarations
-}
-
-const EXPRESSION_CONTINUES = new Set([...'.?+-*/%<>=&|^:`'])
-
-function skipTrivia(source, index) {
-  while (index < source.length) {
-    const char = source[index]
-    if (/\s/.test(char)) {
-      index++
-      continue
-    }
-    if (char === '/' && source[index + 1] === '/') {
-      while (index < source.length && source[index] !== '\n') index++
-      continue
-    }
-    if (char === '/' && source[index + 1] === '*') {
-      index += 2
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
-      index += 2
-      continue
-    }
-    return index
-  }
-  return index
-}
-
-function readWord(source, index) {
-  let end = index
-  while (end < source.length && isIdentChar(source[end])) end++
-  return { word: source.slice(index, end), end }
-}
-
-function readExpressionEnd(source, start) {
-  let index = start
-  let depth = 0
-  while (index < source.length) {
-    const char = source[index]
-    if (char === '/' && source[index + 1] === '/') {
-      while (index < source.length && source[index] !== '\n') index++
-      continue
-    }
-    if (char === '/' && source[index + 1] === '*') {
-      index += 2
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
-      index += 2
-      continue
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      index = skipStringLiteral(source, index)
-      continue
-    }
-    if ('([{'.includes(char)) {
-      depth++
-      index++
-      continue
-    }
-    if (')]}'.includes(char)) {
-      if (depth === 0) return index
-      depth--
-      index++
-      continue
-    }
-    if (depth === 0 && (char === ';' || char === ',')) return index
-    if (depth === 0 && char === '\n') {
-      const next = skipTrivia(source, index)
-      if (next >= source.length || !EXPRESSION_CONTINUES.has(source[next])) return index
-      index = next
-      continue
-    }
-    index++
-  }
-  return source.length
-}
-
-function readBlockEnd(source, start) {
-  let index = start
-  let depth = 0
-  while (index < source.length) {
-    const char = source[index]
-    if (char === '/' && source[index + 1] === '/') {
-      while (index < source.length && source[index] !== '\n') index++
-      continue
-    }
-    if (char === '/' && source[index + 1] === '*') {
-      index += 2
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
-      index += 2
-      continue
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      index = skipStringLiteral(source, index)
-      continue
-    }
-    if (char === '{') depth++
-    else if (char === '}') {
-      depth--
-      if (depth === 0) return index + 1
-    }
-    index++
-  }
-  return source.length
-}
-
-function readGroupedExport(source, start, exports) {
-  const close = source.indexOf('}', start)
-  const end = close === -1 ? source.length : close
-  for (const entry of source.slice(start + 1, end).split(',')) {
-    const parts = entry.trim().split(/\s+as\s+/)
-    const name = (parts.at(-1) ?? '').trim()
-    if (name) exports.push({ name, value: null })
-  }
-  return end + 1
-}
-
-function readDeclaredExport(source, start, exports) {
-  let cursor = start
-  while (cursor < source.length) {
-    const declared = readWord(source, cursor)
-    if (!declared.word) return cursor
-    const afterName = skipTrivia(source, declared.end)
-    if (source[afterName] !== '=') {
-      exports.push({ name: declared.word, value: null })
-      return afterName
-    }
-    const valueStart = skipTrivia(source, afterName + 1)
-    const valueEnd = readExpressionEnd(source, valueStart)
-    exports.push({
-      name: declared.word,
-      value: isPreviewMetadataExport(declared.word)
-        ? source.slice(valueStart, valueEnd).trim()
-        : null,
-    })
-    cursor = skipTrivia(source, valueEnd)
-    if (source[cursor] !== ',') return cursor
-    cursor = skipTrivia(source, cursor + 1)
-  }
-  return cursor
-}
-
-function readFunctionExport(source, start, exports) {
-  let cursor = skipTrivia(source, start)
-  if (source[cursor] === '*') cursor = skipTrivia(source, cursor + 1)
-  const named = readWord(source, cursor)
-  if (!named.word) return named.end
-  const bodyStart = source.indexOf('{', named.end)
-  if (bodyStart === -1) return named.end
-  const bodyEnd = readBlockEnd(source, bodyStart)
-  exports.push({ name: named.word, value: null })
-  return bodyEnd
-}
-
-function readExportStatement(source, afterKeyword, exports) {
-  const start = skipTrivia(source, afterKeyword)
-  if (source[start] === '{') return readGroupedExport(source, start, exports)
-  const first = readWord(source, start)
-  if (first.word === 'default') return first.end
-  let keyword = first
-  if (first.word === 'async') keyword = readWord(source, skipTrivia(source, first.end))
-  if (keyword.word === 'function' || keyword.word === 'class') {
-    return readFunctionExport(source, keyword.end, exports)
-  }
-  if (keyword.word === 'const' || keyword.word === 'let' || keyword.word === 'var') {
-    return readDeclaredExport(source, skipTrivia(source, keyword.end), exports)
-  }
-  return keyword.end
-}
-
-function readPreviewExports(source) {
-  const exports = []
-  let index = 0
-  while (index < source.length) {
-    const char = source[index]
-    if (char === '/' && source[index + 1] === '/') {
-      while (index < source.length && source[index] !== '\n') index++
-      continue
-    }
-    if (char === '/' && source[index + 1] === '*') {
-      index += 2
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) index++
-      index += 2
-      continue
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      index = skipStringLiteral(source, index)
-      continue
-    }
-    if (isIdentChar(char) && !isIdentChar(source[index - 1])) {
-      const { word, end } = readWord(source, index)
-      if (word === 'export' && source[index - 1] !== '.') {
-        index = readExportStatement(source, end, exports)
-        continue
-      }
-      index = end
-      continue
-    }
-    index++
-  }
-  return exports
-}
-
-export function splitPreviewExports(source) {
-  const scenarios = []
-  const declared = {}
-  for (const { name, value } of readPreviewExports(source)) {
-    if (!isPreviewMetadataExport(name)) {
-      scenarios.push(name)
-      continue
-    }
-    const literal = value === null ? null : parseStringLiteral(value)
-    if (literal !== null) declared[name] = literal
-  }
-  return { scenarios, declared }
-}
-
-function relativeImports(source) {
-  const specifiers = []
-  for (const [, specifier] of source.matchAll(IMPORT_SPECIFIERS)) {
-    if (specifier.startsWith('.')) specifiers.push(specifier)
-  }
-  return specifiers
-}
-
-export async function collectStateDeclarations(entryFile) {
-  const declarations = new Map()
-  const visited = new Set()
-  const queue = [entryFile]
-  while (queue.length && visited.size < MAX_SCANNED_SOURCES) {
-    const file = queue.shift()
-    if (visited.has(file)) continue
-    visited.add(file)
-    let source
-    try {
-      source = await Deno.readTextFile(file)
-    } catch {
-      continue
-    }
-    for (const declaration of extractStateDeclarations(source)) {
-      const known = declarations.get(declaration.name)
-      if (!known) declarations.set(declaration.name, declaration)
-      else if (known.initial === null) known.initial = declaration.initial
-    }
-    for (const specifier of relativeImports(source)) {
-      const target = await resolveModuleFile(resolve(dirname(file), specifier))
-      if (target && !visited.has(target)) queue.push(target)
-    }
-  }
-  return [...declarations.values()]
 }
 
 export async function resolvePreviewThemes(root, themes) {
@@ -412,7 +149,11 @@ export async function resolvePreviewTranslations(root, translations) {
 
 const GROUPS_BINDING = 'previewGroups'
 
-function previewEntryPlugin({ root, catalog, entries, themes, translations, groups, mark }) {
+const PREVIEW_SUFFIX = /\.preview\.(js|mjs)$/
+
+function previewEntryPlugin(
+  { root, catalog, entries, themes, translations, groups, mark, favicon },
+) {
   const themeBinding = (index) => `customTheme${index}`
   const translationBinding = (index) => `previewTranslations${index}`
   const loaders = entries.map((entry) =>
@@ -433,6 +174,7 @@ function previewEntryPlugin({ root, catalog, entries, themes, translations, grou
     `import { startPreview } from '${RUNTIME_SPECIFIER}'`,
     `startPreview({`,
     `  mark: ${JSON.stringify(mark)},`,
+    `  favicon: ${JSON.stringify(favicon)},`,
     `  catalog: ${JSON.stringify(catalog)},`,
     `  load: {`,
     ...loaders,
@@ -470,11 +212,13 @@ function previewEntryPlugin({ root, catalog, entries, themes, translations, grou
         path: PREVIEW_RUNTIME_URL,
         namespace: LIBRARY_NAMESPACE,
       }))
+      build.onLoad({ filter: PREVIEW_SUFFIX, namespace: 'file' }, async (args) => ({
+        contents: await withSkill(args.path, await Deno.readTextFile(args.path)),
+        loader: 'js',
+      }))
     },
   }
 }
-
-const PREVIEW_SUFFIX = /\.preview\.(js|mjs)$/
 
 export function previewIdentity(file, declared = {}) {
   const segments = file.split('/')
@@ -485,8 +229,51 @@ export function previewIdentity(file, declared = {}) {
     path: `${folder}/${component}`,
     name: declared.name ?? component,
     group: declared.group ?? folder,
-    description: declared.description ?? null,
   }
+}
+
+const componentModuleOf = (previewFile) => previewFile.replace(PREVIEW_SUFFIX, '.$1')
+
+const sidecarOf = (previewFile) => skillFileFor(componentModuleOf(previewFile))
+
+const fileExists = (path) => Deno.stat(path).then((info) => info.isFile, () => false)
+
+let standardSidecars = null
+
+const readStandardSidecars = async () =>
+  standardSidecars ??= new Map(
+    (await standardComponentSubjects()).map(({ name, url }) => [
+      relative(fromFileUrl(IMP_LIBRARY_ROOT), fromFileUrl(url)).replaceAll('\\', '/'),
+      { name, url },
+    ]),
+  )
+
+const sameText = async (file, url) => {
+  const [own, embedded] = await Promise.all([Deno.readTextFile(file), Deno.readTextFile(url)])
+  return own === embedded
+}
+
+export async function skillCommandOf(root, file) {
+  const sidecar = resolve(root, sidecarOf(file))
+  if (!await fileExists(sidecar)) return null
+  const standard = (await readStandardSidecars()).get(sidecarOf(file))
+  const isStandard = standard !== undefined && await sameText(sidecar, standard.url)
+  return `imp skill ${isStandard ? standard.name : `./${componentModuleOf(file)}`}`
+}
+
+export const renderSkill = (skillText) =>
+  marked.parse(retargetLinks(skillText.trimEnd()).retargeted)
+
+const withSkill = async (previewFile, source) => {
+  let skillText
+  try {
+    skillText = await Deno.readTextFile(sidecarOf(previewFile))
+  } catch {
+    return source
+  }
+  return `${source}\nexport const ${PREVIEW_SKILL_EXPORT} = ${
+    JSON.stringify(renderSkill(skillText))
+  }\n`
 }
 
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0
@@ -499,15 +286,63 @@ const readPreviewSource = async (file) => {
   }
 }
 
-export async function buildPreviewCatalog(root, files) {
+const GROUP_SHAPE =
+  "import { groups } from './preview-groups.js' and export const group = groups.widgets"
+
+async function readGroupNames(groups) {
+  if (groups === null) return null
+  const names = scanGroupsModule(await readPreviewSource(groups.file))
+  if (names === null) {
+    logger.warn(
+      `${groups.source} (preview.groups) must export an object named groups, like ` +
+        "export const groups = { widgets: { name: 'Widgets', icon: luBox } }",
+    )
+    return new Map()
+  }
+  for (const [key, name] of names) {
+    if (name === null) logger.warn(`${groups.source} (preview.groups): group '${key}' has no name`)
+  }
+  return names
+}
+
+async function resolveGroupName(root, file, reference, groups, names) {
+  if (reference === undefined) return undefined
+  const fallback = () => undefined
+  if (reference.key === undefined) {
+    logger.warn(`${file}: 'group' must be a key of the groups module, like ${GROUP_SHAPE}`)
+    return fallback()
+  }
+  if (groups === null || names === null) {
+    logger.warn(`${file}: 'group' needs 'preview.groups' in imp.json to name the groups module`)
+    return fallback()
+  }
+  const imported = reference.specifier === null
+    ? null
+    : await resolveModuleFile(resolve(dirname(resolve(root, file)), reference.specifier))
+  if (imported !== groups.file) {
+    logger.warn(`${file}: 'group' must import groups from ${groups.source}, like ${GROUP_SHAPE}`)
+    return fallback()
+  }
+  const name = names.get(reference.key)
+  if (name === undefined || name === null) {
+    logger.warn(`${file}: 'group' is groups.${reference.key}, which ${groups.source} does not name`)
+    return fallback()
+  }
+  return name
+}
+
+export async function buildPreviewCatalog(root, files, groups = null) {
   const entries = []
+  const names = await readGroupNames(groups)
   for (const file of files) {
     const absolute = resolve(root, file)
-    const { scenarios, declared } = splitPreviewExports(await readPreviewSource(absolute))
+    const { scenarios, declared, code } = scanPreviewSource(await readPreviewSource(absolute))
+    const group = await resolveGroupName(root, file, declared.group, groups, names)
     entries.push({
-      ...previewIdentity(file, declared),
+      ...previewIdentity(file, { name: declared.name, group }),
       order: scenarios,
-      states: await collectStateDeclarations(absolute),
+      code,
+      skill: await skillCommandOf(root, file),
     })
   }
   return entries.sort((left, right) =>
@@ -564,6 +399,7 @@ export async function bundlePreviewApp(
 ) {
   const { mocks, failed } = await collectAppMocks(catalog, { root, dependencies })
   const mark = await readImpMark()
+  const favicon = await readImpFavicon()
   let entries = catalog.filter((entry) => !failed.some((failure) => failure.file === entry.file))
   for (let round = 0; round < BUILD_ROUNDS_LIMIT; round++) {
     const embedded = catalog.map((entry) => {
@@ -581,6 +417,7 @@ export async function bundlePreviewApp(
             translations,
             groups,
             mark,
+            favicon,
           }),
           impResolverPlugin({ root, dependencies, mocks }),
           denoPlugin(),
@@ -621,13 +458,13 @@ const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
 
 const escapeHtml = (text) => text.replace(/[&<>"]/g, (character) => HTML_ESCAPES[character])
 
-const generatedShell = (title, body, mark) =>
+const generatedShell = (title, body, favicon) =>
   `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="${mark}">
+<link rel="icon" href="${favicon}">
 <title>${escapeHtml(title)}</title>
 </head>
 <body>
@@ -659,7 +496,7 @@ const PAGE_TITLE = 'imp preview'
 const appPage = async (entryHtml) => {
   const body = `<script type="module" src="${APP_BUNDLE_PATH}"></script>`
   return entryHtml === null
-    ? generatedShell(PAGE_TITLE, body, await readImpMark())
+    ? generatedShell(PAGE_TITLE, body, await readImpFavicon())
     : entryShell(entryHtml, PAGE_TITLE, body)
 }
 
@@ -804,13 +641,13 @@ export async function preview(
     logger.warn(`dependency '${alias}' is declared but not vendored - run 'imp install'`)
   }
 
-  let catalog = await buildPreviewCatalog(root, previews)
+  let catalog = await buildPreviewCatalog(root, previews, groups)
 
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, async () => {
     cache.build = null
     previews = await discover().catch(() => previews)
-    catalog = await buildPreviewCatalog(root, previews)
+    catalog = await buildPreviewCatalog(root, previews, groups)
     logger.debug('change detected -> reload')
     broadcast('reload')
   })

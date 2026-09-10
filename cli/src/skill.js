@@ -43,6 +43,13 @@ export const SKILLS = [
     summary: 'custom elements with a setup lifecycle: instance, styles, cleanup',
   },
   {
+    name: 'custom-components',
+    group: 'app',
+    aliases: ['custom', 'guidelines', 'component-guidelines', 'own-components'],
+    summary:
+      'the theme, direction, wording and accessibility rules a component of yours must follow',
+  },
+  {
     name: 'state',
     group: 'app',
     aliases: ['imp/state'],
@@ -151,7 +158,8 @@ export const SKILLS = [
     name: 'review',
     group: 'toolkit',
     aliases: ['reviews', 'feedback', 'comments'],
-    summary: 'reading what the person looking at the page said, from .imp/reviews',
+    summary:
+      'run it when the person mentions a review, a comment or an element they marked in the browser',
   },
   {
     name: 'testing',
@@ -297,7 +305,7 @@ function fencedLines(lines) {
   return fenced
 }
 
-function retargetLinks(text) {
+export function retargetLinks(text) {
   const related = new Set()
   const original = text.split('\n')
   const fenced = fencedLines(original)
@@ -399,8 +407,10 @@ Read one in full - no flags, the text goes to stdout:
 
 const OUTRO =
   `A component documents itself in a 'counter.skill.md' file next to it - write one for every
-component you build, and an agent can learn it the same way it learns imp. 'imp help' lists
-every command; run 'imp lint' and 'imp fmt' when you are done editing.`
+component you build, and an agent can learn it the same way it learns imp. When the person
+mentions a review, a comment they left, or an element they marked in the browser, run
+'imp review' first: it tells you the page, the element and the state they mean. 'imp help'
+lists every command; run 'imp lint' and 'imp fmt' when you are done editing.`
 
 const section = (title, entries, width) => {
   const lines = entries.map(({ name, summary }) => `  ${name.padEnd(width)}${summary}`)

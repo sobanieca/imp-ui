@@ -1,0 +1,59 @@
+scenarios: basic, lazy, plain, arrowWithBody, declared, labelled, labelledLazy, reexported
+declared: {"name":"Select","group":{"literal":"Inputs"}}
+--- basic
+import { form, select } from 'imp/std/inputs'
+
+const wrap = (...fields) => form({ initialValues: { plan: 'pro' } }, ...fields)
+
+const plans = ['free', 'pro']
+
+wrap(select({ field: 'plan', label: 'Plan', options: plans }))
+--- lazy
+import { select } from 'imp/std/inputs'
+import { luBox } from 'imp/icons'
+import { icon } from 'imp/std'
+import * as fixtures from './fixtures.js'
+
+const badge = () =>
+  icon(luBox, { size: 'sm' })
+
+select({ field: 'plan', options: fixtures.plans, icon: badge() })
+--- plain
+import { select } from 'imp/std/inputs'
+
+const plans = ['free', 'pro']
+
+select({ field: 'plan', label: `Plan ${plans.length}` })
+--- arrowWithBody
+import { select } from 'imp/std/inputs'
+
+const plans = ['free', 'pro']
+
+() => {
+  const options = plans
+  return select({ field: 'plan', options })
+}
+--- declared
+import { select } from 'imp/std/inputs'
+
+const plans = ['free', 'pro']
+
+function declared() {
+  return select({ field: 'plan', options: plans })
+}
+--- labelled
+import { form, select } from 'imp/std/inputs'
+
+const wrap = (...fields) => form({ initialValues: { plan: 'pro' } }, ...fields)
+
+const plans = ['free', 'pro']
+
+wrap(select({ field: 'plan', placeholder: 'Pick a plan', options: plans }))
+--- labelledLazy
+import { select } from 'imp/std/inputs'
+
+const plans = ['free', 'pro']
+
+select(plans)
+--- reexported
+(no code)

@@ -20,7 +20,7 @@
       "component.js#componentNameProblem",
       "http.js#httpClientNameProblem",
       "nodes.js#asNodes",
-      "state.js#findStateFrom",
+      "state.js#statesProvidedBy",
       "state.js#stateNameProblem",
       "theme.js#buildTokens",
       "theme.js#defaultTokens",

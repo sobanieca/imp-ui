@@ -1,4 +1,11 @@
-import { dirname, fromFileUrl, join, relative, toFileUrl } from '@std/path'
+import {
+  dirname,
+  fromFileUrl,
+  join,
+  normalize as normalizePath,
+  relative,
+  toFileUrl,
+} from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
 import { createMockBundler } from '../src/mocks.js'
@@ -6,9 +13,12 @@ import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../s
 import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
-import { formatReview, isLocalRequest, reviewFileName } from '../src/review.js'
+import { formatReview, isLocalRequest, readWidgetMark, reviewFileName } from '../src/review.js'
 import { themeFileSource } from '../src/preview-theme-source.js'
-import { entryShell } from '../src/preview.js'
+import { entryShell, renderSkill } from '../src/preview.js'
+import { scanGroupsModule, scanPreviewSource } from '../src/preview-source.js'
+
+const widgetMark = await readWidgetMark()
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import impPlugin, { IMP_MODULE_EXPORTS } from '../src/lint-rules.js'
 import { MAX_FILE_SIZE_RULE } from '../src/lint.js'
@@ -18,7 +28,7 @@ import {
   UNUSED_EXPORT_RULE,
 } from '../src/dead-code.js'
 import { IMP_MODULES, IMP_TOOLING_MODULES } from '../src/specifiers.js'
-import { defaultTokens } from '../../lib/src/theme.js'
+import { colorSchemeOf, defaultTokens } from '../../lib/src/theme.js'
 import { VERSION } from '../src/version.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
@@ -1233,7 +1243,9 @@ Deno.test('imp start', async (t) => {
 
     await get('start-injected-html', '/', {
       maskBody: (body) =>
-        normalize(body.replace(clientScript({ mocks: false }), '\n[imp client script]\n')),
+        normalize(
+          body.replace(clientScript({ mocks: false, mark: widgetMark }), '\n[imp client script]\n'),
+        ),
     })
     await get('start-serves-module-verbatim', '/app.js')
 
@@ -1272,7 +1284,10 @@ Deno.test('imp start', async (t) => {
         headers: { accept: 'text/html' },
       })
       const body = normalize(
-        (await response.text()).replace(clientScript({ mocks: false }), '\n[imp client script]\n'),
+        (await response.text()).replace(
+          clientScript({ mocks: false, mark: widgetMark }),
+          '\n[imp client script]\n',
+        ),
       )
       await assertSnapshot('start-history-fallback', responseTranscript(path, response, body))
     })
@@ -1344,7 +1359,10 @@ Deno.test('imp start serves mocks through the service worker', async (t) => {
     await t.step('start-mocks-injected-html', async () => {
       const response = await fetch(`http://127.0.0.1:${port}/`)
       const html = normalize(
-        (await response.text()).replace(clientScript({ mocks: true }), '\n[imp client script]\n'),
+        (await response.text()).replace(
+          clientScript({ mocks: true, mark: widgetMark }),
+          '\n[imp client script]\n',
+        ),
       )
       await assertSnapshot(
         'start-mocks-injected-html',
@@ -1506,11 +1524,15 @@ Deno.test('imp preview', async (t) => {
 
     await get('preview-index', '/', {
       maskBody: (body) =>
-        normalize(body.replace(clientScript({ mocks: false }), '\n[imp client script]\n')),
+        normalize(
+          body.replace(clientScript({ mocks: false, mark: widgetMark }), '\n[imp client script]\n'),
+        ),
     })
     await get('preview-page', '/widgets/counter', {
       maskBody: (body) =>
-        normalize(body.replace(clientScript({ mocks: false }), '\n[imp client script]\n')),
+        normalize(
+          body.replace(clientScript({ mocks: false, mark: widgetMark }), '\n[imp client script]\n'),
+        ),
     })
     await get('preview-unknown-page', '/@imp/preview/components/missing.preview.js')
     await get('preview-app', '/@imp/preview/app.js', {
@@ -1556,9 +1578,15 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     const page = await browser.newPage()
     await page.evaluateOnNewDocument(() => {
       globalThis.impResizeLoops = 0
+      globalThis.impErrors = []
       globalThis.addEventListener('error', (event) => {
         if (String(event.message).includes('ResizeObserver loop')) globalThis.impResizeLoops++
       })
+      const reportError = console.error.bind(console)
+      console.error = (...args) => {
+        globalThis.impErrors.push(args.map(String).join(' '))
+        reportError(...args)
+      }
       globalThis.impRoot = () => document.querySelector('imp-preview-page')?.shadowRoot ?? null
       globalThis.impAll = (name, from) => {
         const found = []
@@ -1619,21 +1647,92 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         rendered: scenarios.map(read),
         states: scenarios.map((scenario) => {
           const editor = globalThis.impOne('imp-preview-state', scenario)
-          return `${editor.shadowRoot.querySelector('.name').textContent}=${
-            globalThis.impTextareas(editor)[0].value
-          }`
+          const row = editor.shadowRoot
+          return `${row.querySelector('.name').textContent} ${
+            row.querySelector('.provider').textContent
+          }=${globalThis.impTextareas(editor)[0].value}`
         }),
         handles: globalThis.impOne('imp-preview-stage', scenarios[0])
           .shadowRoot.querySelectorAll('.handle').length,
       }
     })
     const agent = await page.evaluate(() => {
-      const head = globalThis.impOne('imp-preview-head').shadowRoot
+      const skill = globalThis.impOne('imp-preview-skill')
+      const strip = skill.shadowRoot.querySelector('.agent')
+      const copy = globalThis.impOne('imp-button', strip)
       return {
-        strips: globalThis.impAll('imp-preview-head').length,
-        region: head.querySelector('.agent').getAttribute('aria-label'),
-        instruction: head.querySelector('.instruction').textContent,
+        strips: globalThis.impAll('imp-preview-skill').length,
+        region: strip.getAttribute('aria-label'),
+        instruction: strip.querySelector('.instruction').textContent,
+        copy: `${copy.shadowRoot.querySelector('button').getAttribute('aria-label')} button ` +
+          `with ${globalThis.impAll('imp-icon', copy).length} icon, ${
+            globalThis.impAll('imp-tooltip', strip).some((host) =>
+                globalThis.impOne('imp-button', host) === copy
+              )
+              ? 'in a tooltip'
+              : 'without a tooltip'
+          }`,
       }
+    })
+    const codeAndSkill = await page.evaluate(async () => {
+      const scenario = globalThis.impScenarios()[0]
+      const toggle = globalThis.impAll('imp-button', scenario)
+        .find((node) => node.shadowRoot.querySelector('[aria-label="Show code"]') !== null)
+        .shadowRoot.querySelector('button')
+      const block = () => scenario.shadowRoot.querySelector('.code')
+      const hidden = block().hidden
+      const before = toggle.getAttribute('aria-pressed')
+      const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+      toggle.click()
+      await settle()
+      toggle.click()
+      await settle()
+      const hiddenAgain = block().hidden
+      toggle.click()
+      await settle()
+      const [pageTabs, scenarioTabs] = globalThis.impAll('imp-tabs')
+      const labels = (host) =>
+        [...host.shadowRoot.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent.trim())
+      const selected = (host) =>
+        host.shadowRoot.querySelector('[role="tab"][aria-selected="true"]').textContent.trim()
+      const skill = globalThis.impOne('imp-preview-skill').shadowRoot
+      return {
+        hidden: `${hidden}, hidden again after a second click: ${hiddenAgain}`,
+        toggle: `${before} -> ${toggle.getAttribute('aria-pressed')}`,
+        code: scenario.shadowRoot.querySelector('.code-block').textContent,
+        stored: localStorage.getItem('imp.preview.code'),
+        tabs: labels(pageTabs).join(', '),
+        scenarioTabs: `${labels(scenarioTabs).join(', ')} (${
+          scenarioTabs.shadowRoot.querySelector('[role="tablist"]').getAttribute('aria-orientation')
+        }, selected ${selected(scenarioTabs)})`,
+        heading: skill.querySelector('h1').textContent,
+        rows: skill.querySelectorAll('table tr').length,
+        link: skill.querySelector('p:last-of-type').textContent,
+      }
+    })
+    const stateToggle = await page.evaluate(async () => {
+      const scenario = globalThis.impScenarios()[0]
+      const toggle = globalThis.impAll('imp-button', scenario)
+        .find((node) => node.shadowRoot.querySelector('[aria-label="Edit state"]') !== null)
+        .shadowRoot.querySelector('button')
+      const dialog = globalThis.impOne('imp-dialog', scenario)
+      const panel = dialog.shadowRoot.querySelector('dialog')
+      const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
+      const before = toggle.getAttribute('aria-pressed')
+      toggle.click()
+      await settle()
+      const showing = () => panel.matches(':popover-open, [open]')
+      const until = async (condition) => {
+        for (let attempt = 0; attempt < 40 && !condition(); attempt++) await settle()
+      }
+      await until(showing)
+      const opened = `${toggle.getAttribute('aria-pressed')}/${showing()}`
+      dialog.shadowRoot.querySelector('.close').click()
+      await until(() => !showing())
+      const closed = `${toggle.getAttribute('aria-pressed')}/${showing()}`
+      toggle.click()
+      await settle()
+      return { before, opened, closed }
     })
     const edited = await page.evaluate(() => {
       const scenario = globalThis.impScenarios()[0]
@@ -1801,7 +1900,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const groupLink = (head) => globalThis.impOne('imp-link', head).shadowRoot.querySelector('a')
       return {
         headline: `${rendered('imp-heading')} - ${rendered('imp-text')}`,
-        cards: [...root.querySelectorAll('.card-head')]
+        cards: [...root.querySelectorAll('imp-card')]
+          .map((host) => host.shadowRoot.querySelector('.header'))
           .map((head) =>
             `${rendered('imp-heading', head)} ${rendered('imp-tag', head)} -> ${
               groupLink(head).getAttribute('href')
@@ -1819,7 +1919,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     )
     const group = await page.evaluate(() => {
       const root = globalThis.impOne('imp-preview-group').shadowRoot
-      const cards = [...root.querySelectorAll('.card')]
+      const cards = [...root.querySelectorAll('imp-card')]
+        .map((host) => host.shadowRoot.querySelector('.card'))
       const card = cards[0]
       const specimen = card.querySelector('.specimen')
       const hero = root.querySelector('.hero')
@@ -1836,7 +1937,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
     })
     await page.evaluate(() =>
-      globalThis.impOne('imp-preview-group').shadowRoot.querySelector('.card').click()
+      globalThis.impOne('imp-preview-group').shadowRoot.querySelector('imp-card').shadowRoot
+        .querySelector('.card').click()
     )
     await page.waitForFunction(() => globalThis.impScenarios().length > 0)
     const opened = await page.evaluate(() => `${location.pathname} - ${document.title}`)
@@ -1845,29 +1947,89 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     await page.waitForFunction(() =>
       globalThis.impRoot() && globalThis.impOne('demo-counter')?.shadowRoot?.children
     )
-    const isolated = await page.evaluate(() => ({
-      panels: globalThis.impScenarios().length,
-      name: globalThis.impScenarios()[0].shadowRoot.querySelector('h2').textContent,
-    }))
+    const isolated = await page.evaluate(() => {
+      const scenarioTabs = globalThis.impAll('imp-tabs')[1].shadowRoot
+      const selectedTab = scenarioTabs.querySelector('[role="tab"][aria-selected="true"]')
+      const panel = scenarioTabs.getElementById(selectedTab.getAttribute('aria-controls'))
+      const scenario = panel.querySelector('imp-preview-scenario')
+      return {
+        panels: globalThis.impScenarios().length,
+        name: selectedTab.textContent.trim(),
+        shown: scenario.shadowRoot.querySelector('h2').textContent,
+        hiddenPanels: scenarioTabs.querySelectorAll('[role="tabpanel"][hidden]').length,
+        code: scenario.shadowRoot.querySelector('.code-block').textContent.split('\n').at(-1),
+      }
+    })
 
     await page.goto(`${base}/components/todos`, { waitUntil: 'load' })
     await page.waitForFunction(() =>
       globalThis.impRoot() &&
-      globalThis.impOne('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
+      globalThis.impOne('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2 &&
+      globalThis.impOne('imp-preview-state') !== null
     )
     const todos = await page.evaluate(() => ({
       items: [...globalThis.impOne('demo-todos').shadowRoot.querySelectorAll('.todo')]
         .map((item) => item.textContent),
-      state: globalThis.impOne('imp-preview-state').shadowRoot.querySelector('.name').textContent,
-      agent: globalThis.impOne('imp-preview-head').shadowRoot.querySelector('.missing').textContent,
+      state: [
+        ...globalThis.impOne('imp-preview-state').shadowRoot.querySelectorAll('.name, .provider'),
+      ]
+        .map((node) => node.textContent).join(' '),
+      agent: globalThis.impOne('imp-preview-skill').shadowRoot.querySelector('.missing')
+        .textContent,
+      skill: globalThis.impOne('imp-empty-state', globalThis.impOne('imp-preview-skill'))
+        .shadowRoot.querySelector('.title').textContent.trim(),
     }))
 
+    const stageWidths = () => {
+      const stage = globalThis.impOne('imp-preview-stage').shadowRoot
+      const frame = stage.querySelector('.frame').getBoundingClientRect().width
+      const panel = stage.querySelector('.viewport').clientWidth
+      const canvas = globalThis.impOne('imp-preview-canvas').shadowRoot.querySelector('.scroll')
+      return {
+        ratio: Math.round(frame * 100 / panel),
+        scrolls: canvas.scrollWidth > canvas.clientWidth,
+      }
+    }
+    const wide = await page.evaluate(stageWidths)
+    await page.setViewport({ width: 390, height: 844 })
+    await page.waitForFunction(() =>
+      globalThis.impOne('imp-preview-stage').shadowRoot.querySelector('.viewport').clientWidth < 300
+    )
+    const phone = await page.evaluate(stageWidths)
+    const anchored = await page.evaluate(async () => {
+      const scenario = globalThis.impScenarios()[0]
+      const toggle = globalThis.impAll('imp-button', scenario)
+        .map((node) => node.shadowRoot.querySelector('[aria-label="Edit state"]'))
+        .find((node) => node !== null)
+      const panel = globalThis.impOne('imp-dialog', scenario).shadowRoot.querySelector('dialog')
+      toggle.click()
+      for (let attempt = 0; attempt < 40 && !panel.matches(':popover-open'); attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const toggleBox = toggle.getBoundingClientRect()
+      const box = panel.getBoundingClientRect()
+      const result = {
+        anchored: panel.hasAttribute('data-anchored') &&
+          getComputedStyle(panel).positionAnchor !== 'none',
+        below: Math.round(box.top - toggleBox.bottom),
+        inside: box.left >= 0 && box.right <= innerWidth && box.bottom <= innerHeight,
+      }
+      globalThis.impOne('imp-dialog', scenario).shadowRoot.querySelector('.close').click()
+      for (let attempt = 0; attempt < 40 && panel.matches(':popover-open'); attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+      return result
+    })
+    await page.setViewport({ width: 1280, height: 800 })
     const resizeLoops = await page.evaluate(() => globalThis.impResizeLoops)
     check(
       resizeLoops === 0,
       `the preview chrome drove ${resizeLoops} ResizeObserver feedback loops - something read a ` +
         'size and then wrote layout that changes it',
     )
+    const errors = await page.evaluate(() => globalThis.impErrors)
+    check(errors.length === 0, `the preview page logged errors:\n${errors.join('\n')}`)
 
     const readout = await page.evaluate(() => {
       const stage = globalThis.impOne('imp-preview-stage').shadowRoot
@@ -1893,8 +2055,20 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `rendered values: ${counter.rendered.join(', ')}`,
       `state rows: ${counter.states.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
+      `stage width as % of its panel: ${wide.ratio} wide (canvas scrolls sideways: ${wide.scrolls}), ${phone.ratio} on a phone (canvas scrolls sideways: ${phone.scrolls})`,
+      `state editor on a phone: anchored ${anchored.anchored}, ${anchored.below}px under its toggle, inside the viewport ${anchored.inside}`,
       `agent instruction strips on the page: ${agent.strips} (region '${agent.region}')`,
       `agent instruction: ${agent.instruction}`,
+      `agent instruction copy control: ${agent.copy}`,
+      `code hidden before the toggle: ${codeAndSkill.hidden}`,
+      `code toggle pressed: ${codeAndSkill.toggle} (remembered as ${codeAndSkill.stored})`,
+      `scenario tabs: ${codeAndSkill.scenarioTabs}`,
+      `state toggle: ${stateToggle.before} -> opened ${stateToggle.opened} -> closed ${stateToggle.closed}`,
+      `code of the first scenario:\n${codeAndSkill.code}`,
+      `tabs: ${codeAndSkill.tabs}`,
+      `skill heading: ${codeAndSkill.heading}`,
+      `skill table rows: ${codeAndSkill.rows}`,
+      `skill link retargeted: ${codeAndSkill.link}`,
       `after setting demo.count to 42: ${edited}`,
       `invalid JSON rejected: ${rejected}`,
       `language options: ${localized.languages.join(', ')}`,
@@ -1931,10 +2105,11 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `group card specimen is inert: ${group.inert}, shows ${group.specimen}, links to ${group.href}`,
       `group title: ${group.title}`,
       `after a click on the card: ${opened}`,
-      `?scenario=lazy panels: ${isolated.panels} (${isolated.name})`,
+      `?scenario=lazy: ${isolated.panels} panels mounted, ${isolated.hiddenPanels} hidden, tab ${isolated.name} shows ${isolated.shown}, call site ${isolated.code}`,
       `mocked todos: ${todos.items.join(', ')}`,
       `mocked todos state row: ${todos.state}`,
-      `agent instruction without a description: ${todos.agent}`,
+      `agent strip without a sidecar: ${todos.agent}`,
+      `skill tab without a sidecar: ${todos.skill}`,
     ].join('\n')
     await assertSnapshot('preview-browser', `${report}\n`)
   } finally {
@@ -2100,9 +2275,16 @@ Deno.test('the review widget picks an element in the preview page', async () => 
           await new Promise((resolve) => setTimeout(resolve, 20))
         }
       }
-      const steps = { hiddenAtFirst: shadow.querySelector('.panel').hidden }
+      const steps = {
+        hiddenAtFirst: shadow.querySelector('.panel').hidden &&
+          shadow.querySelector('.actions').hidden,
+        markShown: Boolean(shadow.querySelector('.toggle svg ellipse')),
+      }
       shadow.querySelector('.toggle').click()
-      steps.openedView = view()
+      steps.actionsShown = !shadow.querySelector('.actions').hidden
+      steps.actionLabels = [...shadow.querySelectorAll('.action')]
+        .map((button) => button.getAttribute('aria-label')).join(', ')
+      steps.panelStillHidden = shadow.querySelector('.panel').hidden
       steps.expanded = shadow.querySelector('.toggle').getAttribute('aria-expanded')
       await waitFor(
         'the demo component to render',
@@ -2128,14 +2310,88 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       steps.status = shadow.querySelector('.status').textContent
       steps.viewAfterSaving = view()
       steps.outlineGone = outline().hidden
+      console.warn('widget check')
+      globalThis.__impFlushTelemetry()
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      shadow.querySelector('[data-action="console"]').click()
+      await waitFor(
+        'the console lines',
+        () => shadow.querySelector('.lines').textContent.includes('widget check'),
+      )
+      steps.consoleView = view()
+      steps.consoleTitle = shadow.querySelector('[data-log-title]').textContent
+      steps.consolePressed = shadow.querySelector('[data-action="console"]')
+        .getAttribute('aria-pressed')
+      steps.consoleLine = [...shadow.querySelectorAll('.entry')]
+        .find((item) => item.textContent.includes('widget check'))?.className
+      console.error('arrived live')
+      globalThis.__impFlushTelemetry()
+      await waitFor(
+        'the live line',
+        () => shadow.querySelector('.lines').textContent.includes('arrived live'),
+      )
+      steps.liveLine = [...shadow.querySelectorAll('.entry')]
+        .find((item) => item.textContent.includes('arrived live'))?.className
+      const entry = shadow.querySelector('.entry')
+      steps.collapsedAtFirst = entry.getAttribute('aria-expanded')
+      entry.click()
+      steps.expandedOnClick = entry.getAttribute('aria-expanded')
+      const chip = (name) => shadow.querySelector(`.chip[data-filter="${name}"]`)
+      steps.consoleChips = [...shadow.querySelectorAll('.chip')]
+        .map((button) => button.textContent).join(', ')
+      chip('Error').click()
+      steps.filtered = [...shadow.querySelectorAll('.entry .text')]
+        .map((text) => text.textContent).join(' | ')
+      steps.pressedChip = chip('Error').getAttribute('aria-pressed')
+      chip('Info').click()
+      steps.noMatch = shadow.querySelector('.lines').textContent.trim()
+      chip('All').click()
+      shadow.querySelector('[data-action="network"]').click()
+      await waitFor(
+        'the network title',
+        () => shadow.querySelector('[data-log-title]').textContent === 'Network logs',
+      )
+      steps.networkView = view()
+      steps.networkChips = [...shadow.querySelectorAll('[data-group]')]
+        .map((row) =>
+          [...row.querySelectorAll('.chip')]
+            .map((button) =>
+              button.getAttribute('aria-pressed') === 'true'
+                ? `[${button.textContent}]`
+                : button.textContent
+            ).join(', ')
+        ).join(' / ')
+      const toggle = shadow.querySelector('.toggle')
+      const pointer = (type, x, y) =>
+        toggle.dispatchEvent(
+          new PointerEvent(type, {
+            clientX: x,
+            clientY: y,
+            button: 0,
+            pointerId: 1,
+            bubbles: true,
+          }),
+        )
+      const before = document.getElementById('imp-review').getBoundingClientRect()
+      pointer('pointerdown', before.left + 20, before.top + 20)
+      pointer('pointermove', before.left - 300, before.top - 200)
+      pointer('pointerup', before.left - 300, before.top - 200)
+      toggle.click()
+      const after = document.getElementById('imp-review').getBoundingClientRect()
+      steps.moved = `${Math.round(before.left - after.left)},${Math.round(before.top - after.top)}`
+      steps.collapsedByDrag = shadow.querySelector('.actions').hidden
+      steps.remembered = localStorage.getItem('imp-review-position')
       return steps
     })
     const files = []
     for await (const entry of Deno.readDir(join(dir, '.imp', 'reviews'))) files.push(entry.name)
     const written = await Deno.readTextFile(join(dir, '.imp', 'reviews', files[0]))
     const report = [
-      `panel hidden before the toggle: ${flow.hiddenAtFirst}`,
-      `view after opening it: ${flow.openedView} (aria-expanded ${flow.expanded})`,
+      `widget collapsed before the toggle: ${flow.hiddenAtFirst}`,
+      `imp mark on the toggle: ${flow.markShown}`,
+      `actions shown after the toggle: ${flow.actionsShown} (aria-expanded ${flow.expanded})`,
+      `actions: ${flow.actionLabels}`,
+      `panel still hidden: ${flow.panelStillHidden}`,
       `view after Add review: ${flow.pickingView}`,
       `element highlighted on hover: ${flow.highlighted}`,
       `view after clicking the element: ${flow.commentingView}`,
@@ -2144,6 +2400,16 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       `view after saving: ${flow.viewAfterSaving}`,
       `outline cleared after saving: ${flow.outlineGone}`,
       `status after saving: ${flow.status.replace(/[\d-]+T[\d-]+Z/, '<timestamp>')}`,
+      `console view: ${flow.consoleView} titled ${flow.consoleTitle} (aria-pressed ${flow.consolePressed})`,
+      `console warning listed with tone: ${flow.consoleLine}`,
+      `line that arrived live, with tone: ${flow.liveLine}`,
+      `entry collapsed at first: aria-expanded ${flow.collapsedAtFirst}, after a click: ${flow.expandedOnClick}`,
+      `console filters: ${flow.consoleChips}`,
+      `filtered to Error (aria-pressed ${flow.pressedChip}): ${flow.filtered}`,
+      `filter with no match: ${flow.noMatch}`,
+      `network view: ${flow.networkView}, filters: ${flow.networkChips}`,
+      `moved by a drag: ${flow.moved}, collapsed: ${flow.collapsedByDrag}`,
+      `position remembered: ${flow.remembered !== null}`,
       `review files written: ${files.length}`,
       '',
       written
@@ -2631,6 +2897,90 @@ Deno.test('bundleDependency keeps bare imp imports external', async () => {
   }
 })
 
+Deno.test('imp preview slices the call site of every scenario', async () => {
+  const source = `import { form, select } from 'imp/std/inputs'
+import { luBox, luUser } from 'imp/icons'
+import { icon } from 'imp/std'
+import * as fixtures from './fixtures.js'
+import { mockModule } from 'imp/preview'
+
+export const name = 'Select'
+export const group = 'Inputs'
+
+mockModule('./http.js', ({ spy }) => ({ load: spy(async () => []) }))
+
+const wrap = (...fields) => form({ initialValues: { plan: 'pro' } }, ...fields)
+const plans = ['free', 'pro']
+const badge = () =>
+  icon(luBox, { size: 'sm' })
+
+export const basic = wrap(select({ field: 'plan', label: 'Plan', options: plans }))
+export const lazy = () => select({ field: 'plan', options: fixtures.plans, icon: badge() })
+export const plain = select({ field: 'plan', label: \`Plan \${plans.length}\` })
+export const arrowWithBody = () => {
+  const options = plans
+  return select({ field: 'plan', options })
+}
+export function declared() {
+  return select({ field: 'plan', options: plans })
+}
+export const labelled = {
+  scenario: 'With a placeholder',
+  component: wrap(select({ field: 'plan', placeholder: 'Pick a plan', options: plans })),
+}
+export const labelledLazy = { scenario: 'Built at render time', component: () => select(plans) }
+export { luUser as reexported }
+`
+  const { scenarios, declared, code } = scanPreviewSource(source)
+  const report = [
+    `scenarios: ${scenarios.join(', ')}`,
+    `declared: ${JSON.stringify(declared)}`,
+    ...scenarios.map((scenario) => `--- ${scenario}\n${code[scenario] ?? '(no code)'}`),
+  ].join('\n')
+  await assertSnapshot('preview-source-slices', `${report}\n`)
+})
+
+Deno.test('imp preview reads a group as a key of the groups module', () => {
+  const module = `import { luBox, luUser } from 'imp/icons'
+
+export const groups = {
+  widgets: { name: 'Widgets', icon: luBox },
+  people: { icon: luUser, name: "People" },
+  unnamed: { icon: luBox },
+}
+`
+  const names = scanGroupsModule(module)
+  check(
+    JSON.stringify([...names]) === '[["widgets","Widgets"],["people","People"],["unnamed",null]]',
+    `group names read from the module: ${JSON.stringify([...names])}`,
+  )
+  check(scanGroupsModule('export const groups = []') === null, 'an array is not a groups object')
+
+  const keyed = scanPreviewSource(`import { groups } from '../preview-groups.js'
+export const group = groups.widgets
+export const one = 1
+`).declared.group
+  check(
+    JSON.stringify(keyed) === '{"key":"widgets","specifier":"../preview-groups.js"}',
+    `a member expression on an import is a key: ${JSON.stringify(keyed)}`,
+  )
+  const literal = scanPreviewSource("export const group = 'Widgets'\n").declared.group
+  check(
+    literal.literal === 'Widgets',
+    `a string is reported as a literal: ${JSON.stringify(literal)}`,
+  )
+  const local = scanPreviewSource('const groups = {}\nexport const group = groups.widgets\n')
+    .declared.group
+  check(local.specifier === null, `a local object has no specifier: ${JSON.stringify(local)}`)
+})
+
+Deno.test('imp preview renders a sidecar to HTML with its links retargeted', () => {
+  const html = renderSkill('# counter - a number\n\nSee [state](state.md) and `demo.count`.\n')
+  check(html.includes('<h1>counter - a number</h1>'), `a heading is rendered: ${html}`)
+  check(html.includes('state (imp skill state)'), `a subject link is retargeted: ${html}`)
+  check(html.includes('<code>demo.count</code>'), `inline code is rendered: ${html}`)
+})
+
 Deno.test('imp preview frames a page with the entry file, keeping its head', () => {
   const entry = `<!doctype html>
 <html lang="en">
@@ -2676,8 +3026,8 @@ Deno.test('the theme editor exports a theme file that imports back as two themes
   const module = await import(`data:text/javascript,${encodeURIComponent(source)}`)
 
   check(module.default === module.light, 'the default export is the light theme')
-  check(module.light.colorScheme === 'light', 'the light theme declares its colour scheme')
-  check(module.dark.colorScheme === 'dark', 'the dark theme declares its colour scheme')
+  check(colorSchemeOf(module.light.tokens) === 'light', 'the light theme has a light surface')
+  check(colorSchemeOf(module.dark.tokens) === 'dark', 'the dark theme has a dark surface')
   check(module.light.name === 'acme-light', `unexpected theme name ${module.light.name}`)
 
   for (const theme of [module.light, module.dark]) {
@@ -2938,11 +3288,20 @@ const libraryPreviews = async () => {
 
 const RELATIVE_IMPORT = /^import\b[^'"]*['"](\.{1,2}\/[^'"]*)['"]/
 
+const libraryGroupsModule = async () => {
+  const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, 'lib', 'src', 'imp.json')))
+  return normalizePath(config.preview.groups)
+}
+
 Deno.test('a library preview imports imp through its entry points only', async () => {
   const problems = []
+  const groupsModule = await libraryGroupsModule()
   for (const { path, source } of await libraryPreviews()) {
     for (const [index, line] of source.split('\n').entries()) {
       const relativeImport = line.match(RELATIVE_IMPORT)?.[1]
+      if (relativeImport && normalize(join(dirname(path), relativeImport)) === groupsModule) {
+        continue
+      }
       if (relativeImport) {
         problems.push(
           `lib/src/${path}:${

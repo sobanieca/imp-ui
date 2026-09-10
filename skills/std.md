@@ -9,7 +9,7 @@ include. Each component is a real imp component. It renders as its own element, 
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                             |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                            |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `emptyState`, `tag`, `tooltip`                                                                                                                              | `imp skill std/emptyState`, `std/tag`, `std/tooltip`                                                                                                                                                                  |
+| `imp/std/display`    | `card`, `emptyState`, `tag`, `tooltip`                                                                                                                      | `imp skill std/card`, `std/emptyState`, `std/tag`, `std/tooltip`                                                                                                                                                      |
 | `imp/std/navigation` | `tabs`                                                                                                                                                      | `imp skill std/tabs`                                                                                                                                                                                                  |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                       |
 | `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
@@ -186,17 +186,18 @@ shell(
 )
 ```
 
-| Prop          | Values                          | Default | Notes                                                |
-| ------------- | ------------------------------- | ------- | ---------------------------------------------------- |
-| `logo`        | DOM                             | -       | Heads the bar, the column, or the drawer             |
-| `navbar`      | **data** `{ map, icons, tags }` | -       | The map; or plain `items` for a frame with no router |
-| `sidebar`     | **data** `{ label, ... }`       | -       | Names and foots the second level                     |
-| `extras`      | DOM, or an array of it          | -       | Theme/language pickers, `userCard`, anything         |
-| `breadcrumbs` | `false`                         | shown   | Drops the trail the frame renders from the map       |
-| `navOpen`     | boolean, or a state - **live**  | `false` | Drawer state; shell-owned when omitted               |
-| `gap`         | spacing step `0`-`6`            | `0`     | Floats the chrome apart as rounded, bordered panels  |
-| `background`  | DOM                             | -       | Decorative layer under everything, e.g. an animation |
-| `events`      | `{ navToggle, select }`         | -       | `{ open }` on every drawer change; `{ id, item }`    |
+| Prop          | Values                          | Default  | Notes                                                |
+| ------------- | ------------------------------- | -------- | ---------------------------------------------------- |
+| `logo`        | DOM                             | -        | Heads the bar, the column, or the drawer             |
+| `navbar`      | **data** `{ map, icons, tags }` | -        | The map; or plain `items` for a frame with no router |
+| `sidebar`     | **data** `{ label, ... }`       | -        | Names and foots the second level                     |
+| `extras`      | DOM, or an array of it          | -        | Theme/language pickers, `userCard`, anything         |
+| `breadcrumbs` | `false`                         | shown    | Drops the trail the frame renders from the map       |
+| `navOpen`     | boolean, or a state - **live**  | `false`  | Drawer state; shell-owned when omitted               |
+| `gap`         | spacing step `0`-`6`            | `0`      | Floats the chrome apart as rounded, bordered panels  |
+| `maxWidth`    | CSS length, or `'none'`         | `125rem` | Caps column and content, centred on a wider screen   |
+| `background`  | DOM                             | -        | Decorative layer under everything, e.g. an animation |
+| `events`      | `{ navToggle, select }`         | -        | `{ open }` on every drawer change; `{ id, item }`    |
 
 `navbar` takes `map`, `icons` and `tags` keyed by handle, and `label`. With no map it takes `items`,
 which are the sections and are live, and `selected`. `sidebar` takes `label`, an app-wide `extras`
@@ -248,6 +249,9 @@ Rules an agent gets wrong:
   everything. Use it for a backdrop that CSS cannot draw. imp hides it from assistive technology.
   `navbar.background` and `sidebar.background` are the same kind of node under the bar and under the
   column. The column backdrop follows the column into the phone drawer.
+- **The frame is capped at `125rem` by default.** Beyond `maxWidth` the column and the content sit
+  in the middle, the background fills the rest, and the top bar centres its controls over them. A
+  `drawer` in the content opens at the end edge of the content. Pass `'none'` to fill the screen.
 - **Static grandchildren of the context nest one level, and are collapsed by default**, behind a
   caret with `aria-expanded`. The parent of the selected row starts expanded. A parent that the
   person folds stays folded until the selection moves to another parent. On a phone, a parent that
@@ -379,6 +383,31 @@ drawer({ title: 'Details', modal: false, open: inspecting }, details())
   from a control there. It covers the page. It never pushes the page.
 
 Full manual: `imp skill std/drawer`.
+
+## card - from `imp/std/display`
+
+```js
+import { card } from 'imp/std/display'
+
+card(text('A block of content on a surface.'))
+card({ header: heading({ level: 2 }, 'Invoices'), footer: actions }, invoiceList)
+card({ href: '/projects/42', label: 'Atlas' }, thumbnail)
+```
+
+| Prop      | Values                   | Default | Notes                                          |
+| --------- | ------------------------ | ------- | ---------------------------------------------- |
+| `header`  | string or DOM - **live** | -       | Above the body, under a rule                   |
+| `footer`  | string or DOM - **live** | -       | Below the body, over a rule                    |
+| `href`    | string                   | -       | The whole card is one `a`, routed in the app   |
+| `label`   | string                   | -       | The accessible name of a link card or a region |
+| `padding` | `'sm'`, `'md'`, `'lg'`   | `'md'`  | `space-3`, `space-4` or `space-6`              |
+
+The children are the body. The panel reads `color-surface`, `color-border`, `radius-container` and
+`shadow-sm` from the theme, so a flat theme gives a flat card. The host is a block that fills the
+height of its grid cell. A link card must hold no control, and it takes a `label` when its body is
+not text. The grid around a set of cards is CSS grid in your own component.
+
+Full manual: `imp skill std/card`.
 
 ## emptyState - from `imp/std/display`
 
@@ -609,7 +638,7 @@ langSelect({ languages: ['en', 'pl'] })
 
 | Component     | Props                                                                                                                                     |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `appLogo`     | `label`, `tagline`, `href`, `src`, `alt`, `icon`, `compact`, `events`                                                                     |
+| `appLogo`     | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `compact`, `events`                                    |
 | `breadcrumbs` | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                                                        |
 | `userCard`    | `signedIn`, `name`, `description`, `picture` (all live), `href`, `compact`, `onSignIn`, `onSignOut`, `variant`, `size`, `block`, `events` |
 | `themeSelect` | `themes`, `remember`, `label` (live), `events`                                                                                            |

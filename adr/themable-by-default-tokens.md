@@ -17,20 +17,20 @@ that the whole app reads.
 ## Decision
 
 A **theme is a plain JavaScript module** that the app writes and imports. Its default export is an
-object with a flat `tokens` map, from a bare token name to a CSS value, plus the optional metadata
-`name` and `colorScheme`. There is no registry at runtime. There is no `defineTheme`. There is **no
-built-in axis of modes**. Light and dark are two theme files, and an app ships as many themes as it
-wants. To change the theme is to change which module imp applies.
+object with a flat `tokens` map, from a bare token name to a CSS value, plus an optional `name`.
+There is no registry at runtime. There is no `defineTheme`. There is **no built-in axis of modes**.
+Light and dark are two theme files, and an app ships as many themes as it wants. To change the theme
+is to change which module imp applies.
 
 `applyTheme(themeOrBuiltInName)` is the one entry point, and the **only writer** of the reactive
 `theme` state. So the side effect on the DOM and the update of the signal always travel together. It
 accepts a theme object, or the **name of a built-in theme** as a string, which is `'imp-light'` or
 `'imp-dark'`. It resolves such a name to the matching built-in theme, and then treats it in the same
 way. A theme object can also name a built-in theme as its **`base`**. imp then resolves the base,
-and writes the tokens of the object over the tokens of the base. The `name` and the `colorScheme`
-come from the base when the object leaves them out. The result is a complete theme, and it is what
-`theme` holds. So a `base` is the one supported way to change a few tokens, such as the font, and it
-keeps the rule below that a theme is complete. It does the following:
+and writes the tokens of the object over the tokens of the base. The `name` comes from the base when
+the object leaves it out. The result is a complete theme, and it is what `theme` holds. So a `base`
+is the one supported way to change a few tokens, such as the font, and it keeps the rule below that
+a theme is complete. It does the following:
 
 - It writes each token as a custom property with the `--imp-` prefix, on `:root`, which is
   `document.documentElement`. From there the property inherits into the body, and into the shadow
@@ -42,16 +42,21 @@ keeps the rule below that a theme is complete. It does the following:
   in the theme, and it is the responsibility of the app. imp does not compensate for it. So a
   complete theme fully replaces a complete theme. imp can add a check at runtime later, which warns
   when an applied theme has no value for a known token key. But there is no cleanup pass per change.
-- It sets `color-scheme` on the same root, from `colorScheme`, which is `'light'` or `'dark'`. It
-  clears the property when `colorScheme` is absent, or when imp does not recognize it. CSS inherits
-  `color-scheme`. So a value on `:root` reaches a native control, a scrollbar, and CSS that reads
-  `prefers-color-scheme`, also **inside** the shadow root of a component. Nobody stamps a value on
-  each `:host`. imp writes **no attribute for a mode** on the root. A descendant selector in the
-  light DOM is the only thing that can reach such an attribute. A standard component, and any
-  component with shadow DOM, cannot use it. So the attribute would be a hook that works exactly
-  where theming matters least. A branch between light and dark belongs in the tokens themselves,
-  where two themes carry different values under the same names. The inherited `color-scheme` covers
-  what the browser renders.
+- It sets `color-scheme` on the same root, from the lightness of `color-surface`. A theme carries no
+  mode field. A dark theme is a theme whose surface is dark, so imp reads that fact from the colour
+  instead of a second field that can disagree with it. `colorSchemeOf(tokens)` parses the hex value,
+  converts it to OKLCH, and returns `'dark'` below a lightness of 0.5, else `'light'`. The built-in
+  surfaces sit at 0.995 and 0.205, far from the boundary. The token must be a hex colour, because
+  imp parses it without the browser. When it is absent, or not hex, imp warns and clears the
+  property. `colorSchemeOf` is public, so a component that must branch on the scheme uses the same
+  test. CSS inherits `color-scheme`. So a value on `:root` reaches a native control, a scrollbar,
+  and CSS that reads `prefers-color-scheme`, also **inside** the shadow root of a component. Nobody
+  stamps a value on each `:host`. imp writes **no attribute for a mode** on the root. A descendant
+  selector in the light DOM is the only thing that can reach such an attribute. A standard
+  component, and any component with shadow DOM, cannot use it. So the attribute would be a hook that
+  works exactly where theming matters least. A branch between light and dark belongs in the tokens
+  themselves, where two themes carry different values under the same names. The inherited
+  `color-scheme` covers what the browser renders.
 - It updates the reactive `theme` state to the applied theme object, and returns that object.
 
 **`theme`** is a readable state for the lifetime of the app. It has `get`, `watch`, `text`, `view`
@@ -67,8 +72,8 @@ value with no `tokens` object. That is the same behaviour as a bad `component()`
 string that is not a known built-in name throws for the same reason, because a built-in name with a
 spelling mistake is a bug, and not a theme. imp logs a problem that is not fatal through the shared
 `impLogger`, see `built-in-logger.md`, and never through a raw `console`. That covers a token name
-that looks wrong, a value that the browser ignores in silence, and a `colorScheme` that imp does not
-recognize. imp does not otherwise validate the CSS value of a token.
+that looks wrong, a value that the browser ignores in silence, and a `color-surface` that imp cannot
+read as light or dark. imp does not otherwise validate the CSS value of a token.
 
 **Persistence is the job of the app.** imp keeps no registry of themes, because a theme is a module
 that the app imports. So imp cannot map a stored name back to a module, and it deliberately does
@@ -115,7 +120,7 @@ that names no background still has one.
 is not a thing that a person must do. So imp derives one. A **primary** colour, a **secondary**
 colour, a **radius** step, which is `none`, `small`, `medium` or `large`, and a **shadow** step,
 which is `none`, `soft` or `strong`, produce the whole surface of colour, radius and shadow for one
-`colorScheme`. The derivation belongs to imp, and imp computes it in OKLCH. The primary colour
+mode, light or dark. The derivation belongs to imp, and imp computes it in OKLCH. The primary colour
 yields its hover step and its active step, which are darker in light mode and lighter in dark mode.
 It also yields a `color-on-primary`, which imp selects by WCAG contrast, between white and a
 near-black tint of the same hue. The secondary colour yields `color-text`, `color-surface`,

@@ -19,6 +19,7 @@ WRITING AN APP
   imports            every bare specifier imp resolves, and what each one exports
   rendering          element factories, props objects, children, and mount
   components         custom elements with a setup lifecycle: instance, styles, cleanup
+  custom-components  the theme, direction, wording and accessibility rules a component of yours must follow
   state              named reactive state shared down the tree and bound straight to the DOM
   http               the configured HTTP client a component owns, with retries and request state
   routing            one application map drives the routes, the nav of the shell and the trail
@@ -37,7 +38,7 @@ WORKING IN AN IMP PROJECT
   build              the production build, JS entries for publishing, and the offline PWA output
   mocks              answering the app's requests from *.mock.js files instead of the network
   preview            rendering components in isolation from a *.preview.js file
-  review             reading what the person looking at the page said, from .imp/reviews
+  review             run it when the person mentions a review, a comment or an element they marked in the browser
   testing            unit tests in-process and e2e specs against a real browser
   dependencies       vendoring packages into dependencies/ and importing them
   lint               the imp lint rules, what each one prevents, and how to apply fixes
@@ -57,6 +58,7 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/flex           flex - a row of children laid out with CSS flexbox
   std/shell          shell - the app frame: the map drives the nav and the trail, logo, content, and the phone fold
   std/stack          stack - a vertical stack of children laid out with CSS flexbox
+  std/card           card - a themed panel that lifts a block of content off the page
   std/emptyState     emptyState - the placeholder for a list, table or search result with nothing in it
   std/tag            tag - a small colored label for a status, a category or a count
   std/tooltip        tooltip - a short label that appears beside a control on hover, on focus and on a touch hold
@@ -81,11 +83,14 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/bugReport      bugReport - a trigger that lets a person point at an element and describe what is wrong with it
 
 THIS PROJECT - components with a skill file | read: imp skill ./path/to/component.js
-  ./test/fixtures/skill-project/counter.js  counter - a self-contained increment/decrement widget
+  ./test/fixtures/preview/components/counter.js  counter - a number with a minus and a plus button
+  ./test/fixtures/skill-project/counter.js       counter - a self-contained increment/decrement widget
 
 A component documents itself in a 'counter.skill.md' file next to it - write one for every
-component you build, and an agent can learn it the same way it learns imp. 'imp help' lists
-every command; run 'imp lint' and 'imp fmt' when you are done editing.
+component you build, and an agent can learn it the same way it learns imp. When the person
+mentions a review, a comment they left, or an element they marked in the browser, run
+'imp review' first: it tells you the page, the element and the state they mean. 'imp help'
+lists every command; run 'imp lint' and 'imp fmt' when you are done editing.
 
 --- stderr ---
 (empty)

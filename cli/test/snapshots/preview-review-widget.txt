@@ -1,5 +1,8 @@
-panel hidden before the toggle: true
-view after opening it: idle (aria-expanded true)
+widget collapsed before the toggle: true
+imp mark on the toggle: true
+actions shown after the toggle: true (aria-expanded true)
+actions: Add review, Console logs, Network logs
+panel still hidden: true
 view after Add review: picking
 element highlighted on hover: true
 view after clicking the element: commenting
@@ -8,6 +11,16 @@ element locator shown to the reviewer: false
 view after saving: idle
 outline cleared after saving: true
 status after saving: Saved .imp/reviews/<timestamp>.txt
+console view: log titled Console logs (aria-pressed true)
+console warning listed with tone: entry warn
+line that arrived live, with tone: entry error
+entry collapsed at first: aria-expanded false, after a click: true
+console filters: All, Log, Info, Warn, Error
+filtered to Error (aria-pressed true): arrived live
+filter with no match: No line matches.
+network view: log, filters: [Fetch], Resource, Any / [All], OK, Failed
+moved by a drag: 320,220, collapsed: true
+position remembered: true
 review files written: 1
 
 time: <timestamp>
@@ -25,6 +38,9 @@ html: <span id="value">0</span>
 state:
   demo.count = 0
   imp.preview.state-editor = false
+  imp.preview.states-found = true
+  imp.preview.code = false
+  imp.preview.copy.code = "copy"
   imp.preview.theme = "brand"
   imp.preview.dir = "auto"
   imp.preview.lang = "en"

@@ -14,6 +14,7 @@ const VERSIONS = {
   'jpeg-js': '0.4.4',
   'gifenc': '1.0.3',
   'jsonc-parser': '3.3.1',
+  'marked': '18.0.12',
 }
 
 const PREBUNDLES = [
@@ -60,6 +61,11 @@ const PREBUNDLES = [
       `export { applyEdits, modify, parse, printParseErrorCode } from 'npm:jsonc-parser@${
         v['jsonc-parser']
       }'\n`,
+  },
+  {
+    file: 'marked.js',
+    packages: ['marked'],
+    entryCode: (v) => `export { marked } from 'npm:marked@${v['marked']}'\n`,
   },
 ]
 

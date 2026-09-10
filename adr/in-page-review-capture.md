@@ -61,12 +61,30 @@ customer who reports a bug.
   with no work, and `imp build` cannot emit it. A preview page is the same dev server underneath,
   see `component-preview.md`. So a component is reviewable in isolation, with no extra wiring. There
   is no config key. The widget is present on every development page, or on none.
-- **The widget is one small button in the corner. It opens a toolbox that holds one action, which is
-  to add a review.** A press enters pick mode. imp outlines the element under the pointer. A click
-  chooses that element. The comment field then opens, and the chosen element stays outlined.
-  `Escape` cancels. `Enter` takes the highlighted element. `Ctrl` or `Cmd` with `Enter` saves.
-  Nothing else is configurable. A review is one element and one comment, because anything more is a
-  bug tracker.
+- **The widget is the imp mark, one small round button, and a person can drag it anywhere.** It
+  starts in the corner at the block end and the inline end. A drag moves it, and imp remembers the
+  place in `localStorage`, because the dev server reloads the page on every save, and a widget that
+  jumps back on each reload is a widget that somebody stops moving. A press opens three round
+  buttons: **Add review**, **Console logs** and **Network logs**. The buttons scale in from the
+  mark, and a person who asked for reduced motion gets them at once.
+- **Add review is the one action that writes anything.** A press enters pick mode. imp outlines the
+  element under the pointer. A click chooses that element. The comment field then opens, and the
+  chosen element stays outlined. `Escape` cancels. `Enter` takes the highlighted element. `Ctrl` or
+  `Cmd` with `Enter` saves. Nothing else is configurable. A review is one element and one comment,
+  because anything more is a bug tracker.
+- **Console logs and Network logs show the person the same entries that the terminal gets, and
+  nothing more.** The injected client already captures every console call and every page error
+  before it posts them to the server. It also keeps them in the page, in a buffer capped at 2000
+  entries, and tells a watcher about each new one. The service worker, which sees every request,
+  posts each network entry to the page that made it, through `postMessage` to the client of the
+  fetch event, beside the batch it posts to the server. So the widget reads one buffer in the page,
+  a new line appears as it happens, and no request goes to the server for it. The buffer starts
+  again on a reload, and the terminal and `.imp/dev.log` keep the whole session. Each line is one
+  row with the level or the status in colour, cut with an ellipsis, and a click expands it. The
+  filters are fixed: a level for the console, and OK or Failed for the network. There is no text
+  search, because a person who searches a log wants the developer tools. It is a glance, not a
+  debugger. A stack trace, a request body and a timing chart are the developer tools of the browser,
+  and imp does not rebuild them.
 - **The widget lives in its own shadow root**, on a host that imp appends to `<body>`. imp styles it
   from a reset, with `all: initial`. A `MutationObserver` appends the host again when the app
   replaces the children of the body. So the widget cannot inherit the styles of the app, and to
@@ -182,7 +200,7 @@ customer who reports a bug.
   `onSubmit` straight to a third-party endpoint sends whatever its states hold. A password is the
   one thing that imp removes. The documentation says that everything else is the decision of the
   app. That is a real sharp edge, and imp accepts it in exchange for a report that is useful.
-- The widget is another thing on top of the app, in development. It sits in the corner at the block
-  end and the inline end. It can cover an element of the app that somebody pinned there. A person
-  can dismiss it, and cannot move it. A component that somebody previews in isolation has room
-  around it in any case.
+- The widget is another thing on top of the app, in development. It starts in the corner at the
+  block end and the inline end, and it can cover an element of the app that somebody pinned there.
+  So a person can drag it away, and it stays where they put it. The remembered place is per origin,
+  so two projects on two ports keep two places.

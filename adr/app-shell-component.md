@@ -195,6 +195,19 @@ approves.**
   `--imp-shell-frame-radius`. Those are inherited custom properties. A `drawer` that somebody mounts
   anywhere inside reads them, and floats in the same way. So the one contextual panel lines up with
   the frame that it opens over, and the shell does not know that it exists.
+- **`maxWidth` caps the frame, and it is `125rem` by default.** A line that runs across a very wide
+  screen is hard to read, and a column at its far edge is far from the content. So the column and
+  the content together never get wider than `maxWidth`, and beyond it they sit in the middle of the
+  screen. The grid does the centring. Its two outer tracks are `minmax(gap, 1fr)`, so they share
+  what the capped tracks leave, and nothing measures the screen. The background keeps painting from
+  edge to edge, because it is the grid, not the tracks. The top bar spans every track and lays its
+  controls out in a subgrid over the capped ones. So its surface and its divider stay edge to edge,
+  and the controls line up with the content. With a `gap` the bar is a bordered panel, and a panel
+  against the edge of the screen is the corner case that `gap` exists to avoid. So a gapped bar is
+  capped like the column. The frame publishes the end-edge margin as `--imp-shell-frame-inset`, and
+  a `drawer` in the content opens at the end edge of the content. The inset is a percentage of the
+  screen, because the drawer is in the top layer and has no other box to measure. `'none'` lifts the
+  cap for a dashboard that wants every pixel.
 - **The background is a theme token first, and a DOM node second.** The frame paints
   `background-app`, which is the one token that is a CSS `background`, and not a colour. A gradient
   in a theme is the common case, and it needs no prop. Every chrome panel paints

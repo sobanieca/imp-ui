@@ -56,9 +56,12 @@ is `maxLogEntries`, and the default is 4000 entries. imp removes the oldest entr
 
 ## `.imp/reviews/` - what the person who looks at the page said
 
-The same injected client puts a **review widget** on every served page. The person selects an
-element and writes a comment. imp writes one text file per review to `.imp/reviews/`. `imp review`
-lists them. Read that folder before you act on an unclear report. See [review](review.md).
+The same injected client puts a **review widget** on every served page, as the imp mark in the
+corner. The person selects an element and writes a comment. imp writes one text file per review to
+`.imp/reviews/`. `imp review` lists them. When the person mentions a review, a comment they left or
+an element they marked, run `imp review` before you ask which element they mean. See
+[review](review.md). The same mark shows the person the last console and network lines of
+`.imp/dev.log`, so what they saw there is also in the file you read.
 
 ## Rules an agent gets wrong
 

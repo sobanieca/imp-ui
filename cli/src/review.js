@@ -41,6 +41,15 @@ const MAX_COMMENT = 20000
 
 export const REVIEW_LOG_LINES = 20
 
+export const TELEMETRY_ENTRIES = 2000
+
+const WIDGET_MARK_URL = new URL('./templates/favicon.svg', import.meta.url)
+
+export const readWidgetMark = async () =>
+  (await Deno.readTextFile(WIDGET_MARK_URL))
+    .replace(' role="img" aria-label="imp"', ' aria-hidden="true"')
+    .trim()
+
 export const reviewsDirectory = (root) => join(root, '.imp', REVIEWS_FOLDER)
 
 export const reviewDisplayPath = (name) => `.imp/${REVIEWS_FOLDER}/${name}`
@@ -202,8 +211,8 @@ export async function clearReviews(root) {
 }
 
 const NOTHING_YET =
-  'no reviews yet - serve the app with imp start or imp preview, press the review button in the ' +
-  'corner of the page, and pick the element you want to comment on'
+  'no reviews yet - serve the app with imp start or imp preview, press the imp mark on the page, ' +
+  'press Add review, and pick the element you want to comment on'
 
 const count = (total) => `${total} review${total === 1 ? '' : 's'}`
 
@@ -247,12 +256,20 @@ export async function review({ root, args = [] }) {
 
 export const REPORT_MODULE = '/@imp/report.js'
 
+const WIDGET_SIZE = 40
+
+const WIDGET_MARGIN = 16
+
+const WIDGET_POSITION_KEY = 'imp-review-position'
+
 const WIDGET_STYLES = `
   :host {
     all: initial;
     position: fixed;
-    inset-block-end: 16px;
-    inset-inline-end: 16px;
+    inset-block-end: ${WIDGET_MARGIN}px;
+    inset-inline-end: ${WIDGET_MARGIN}px;
+    inline-size: ${WIDGET_SIZE}px;
+    block-size: ${WIDGET_SIZE}px;
     z-index: 2147483647;
     font-family: ui-sans-serif, system-ui, sans-serif;
     font-size: 13px;
@@ -272,27 +289,95 @@ const WIDGET_STYLES = `
   }
 
   .dock {
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block-end: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 8px;
   }
 
+  .dock.down {
+    inset-block-end: auto;
+    inset-block-start: 0;
+    flex-direction: column-reverse;
+  }
+
+  .dock.start {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    align-items: flex-start;
+  }
+
   .toggle {
-    display: grid;
-    place-items: center;
-    inline-size: 40px;
-    block-size: 40px;
+    display: block;
+    inline-size: ${WIDGET_SIZE}px;
+    block-size: ${WIDGET_SIZE}px;
     padding: 0;
     border: 1px solid #334155;
-    border-radius: 999px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #0f3a5d;
+    box-shadow: 0 6px 20px rgb(2 6 23 / 45%);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .toggle svg {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    pointer-events: none;
+  }
+
+  .toggle.dragging {
+    cursor: grabbing;
+  }
+
+  .toggle[aria-expanded='true'] {
+    border-color: #38bdf8;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action {
+    display: grid;
+    place-items: center;
+    inline-size: 36px;
+    block-size: 36px;
+    padding: 0;
+    border: 1px solid #334155;
+    border-radius: 50%;
     background: #0f172a;
     color: #7dd3fc;
     box-shadow: 0 6px 20px rgb(2 6 23 / 45%);
     cursor: pointer;
+    transition: opacity 160ms ease, scale 160ms ease, border-color 160ms ease;
   }
 
-  .toggle[aria-expanded='true'] {
+  .action:nth-child(2) {
+    transition-delay: 40ms;
+  }
+
+  .action:nth-child(3) {
+    transition-delay: 80ms;
+  }
+
+  @starting-style {
+    .actions:not([hidden]) .action {
+      opacity: 0;
+      scale: 0.5;
+    }
+  }
+
+  .action:hover,
+  .action[aria-pressed='true'] {
     border-color: #38bdf8;
   }
 
@@ -300,8 +385,9 @@ const WIDGET_STYLES = `
     display: flex;
     flex-direction: column;
     gap: 10px;
-    inline-size: 300px;
-    max-inline-size: calc(100dvi - 32px);
+    box-sizing: border-box;
+    inline-size: 340px;
+    max-inline-size: calc(100dvi - ${WIDGET_MARGIN * 2}px);
     padding: 12px;
     border: 1px solid #334155;
     border-radius: 10px;
@@ -352,9 +438,111 @@ const WIDGET_STYLES = `
     resize: vertical;
   }
 
+  .lines {
+    margin: 0;
+    padding: 8px;
+    max-block-size: min(240px, 40dvb);
+    overflow: auto;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #020617;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    list-style: none;
+    overflow-wrap: anywhere;
+  }
+
+  .entry {
+    display: flex;
+    gap: 8px;
+    inline-size: 100%;
+    padding: 2px 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .entry:hover {
+    background: #0f172a;
+  }
+
+  .entry .level {
+    flex: none;
+    min-inline-size: 3.5em;
+    color: #64748b;
+  }
+
+  .entry .text {
+    flex: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .entry[aria-expanded='true'] .text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .error .level,
+  .failed .level {
+    color: #f87171;
+  }
+
+  .warn .level {
+    color: #fbbf24;
+  }
+
+  .info .level {
+    color: #22d3ee;
+  }
+
+  .ok .level {
+    color: #4ade80;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    --chip: #94a3b8;
+    padding: 2px 10px;
+    border: 1px solid color-mix(in srgb, var(--chip) 45%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--chip);
+    font-size: 12px;
+  }
+
+  .chip:hover {
+    border-color: var(--chip);
+  }
+
+  .chip[aria-pressed='true'] {
+    border-color: var(--chip);
+    background: color-mix(in srgb, var(--chip) 28%, #0f172a);
+    color: #f8fafc;
+  }
+
+  .lines .empty {
+    color: #64748b;
+  }
+
   .row {
     display: flex;
     gap: 8px;
+  }
+
+  .row .grow {
+    flex: 1;
   }
 
   button {
@@ -394,25 +582,45 @@ const WIDGET_STYLES = `
     outline: 2px solid #7dd3fc;
     outline-offset: 2px;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .action {
+      transition: none;
+    }
+  }
 `
 
-const WIDGET_MARKUP = `<div class="outline" hidden></div>
+const ICON = (paths) =>
+  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
+  `stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`
+
+const ICONS = {
+  review: ICON('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'),
+  console: ICON('<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>'),
+  network: ICON(
+    '<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>',
+  ),
+}
+
+const widgetMarkup = (mark) =>
+  `<div class="outline" hidden></div>
 <div class="dock">
   <div class="panel" id="imp-review-panel" hidden>
-    <p class="title">imp review</p>
     <div class="view" data-view="idle">
-      <p class="hint">Pick an element and leave a comment - imp writes it to .imp/reviews/ for an
-        AI agent to read.</p>
-      <button type="button" class="primary" data-action="pick">Add review</button>
+      <p class="title">imp review</p>
       <p class="status" role="status"></p>
     </div>
     <div class="view" data-view="picking" hidden>
-      <p class="hint">Click the element you want to review. Enter picks the highlighted one,
-        Escape cancels.</p>
+      <p class="title">imp review</p>
+      <p class="hint">Click the element you want to review. imp saves your comment on this
+        machine, with the page and the element. Your AI agent reads the reviews with imp review,
+        so it knows exactly which element you mean.</p>
       <button type="button" class="ghost" data-action="cancel">Cancel</button>
     </div>
     <div class="view" data-view="commenting" hidden>
-      <p class="hint">The element you picked stays outlined on the page.</p>
+      <p class="title">imp review</p>
+      <p class="hint">The element you picked stays outlined on the page. Say what is wrong with
+        it.</p>
       <label class="label" for="imp-review-comment">Comment</label>
       <textarea id="imp-review-comment" rows="4"></textarea>
       <div class="row">
@@ -420,50 +628,150 @@ const WIDGET_MARKUP = `<div class="outline" hidden></div>
         <button type="button" class="ghost" data-action="cancel">Cancel</button>
       </div>
     </div>
+    <div class="view" data-view="log" hidden>
+      <p class="title" data-log-title></p>
+      <div class="chips" role="group" aria-label="Filter the lines" style="flex-direction: column"></div>
+      <ol class="lines"></ol>
+      <p class="hint">What the page did since it loaded, as it happens. Click a line to see all of
+        it. Open the developer tools of the browser for more.</p>
+    </div>
   </div>
-  <button type="button" class="toggle" aria-label="imp review" aria-expanded="false"
-    aria-controls="imp-review-panel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-    aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-    /></svg></button>
+  <div class="actions" id="imp-review-actions" hidden>
+    <button type="button" class="action" data-action="pick" aria-label="Add review"
+      title="Add review">${ICONS.review}</button>
+    <button type="button" class="action" data-action="console" aria-label="Console logs"
+      title="Console logs" aria-pressed="false">${ICONS.console}</button>
+    <button type="button" class="action" data-action="network" aria-label="Network logs"
+      title="Network logs" aria-pressed="false">${ICONS.network}</button>
+  </div>
+  <button type="button" class="toggle" aria-label="imp tools" aria-expanded="false"
+    aria-controls="imp-review-actions">${mark}</button>
 </div>`
 
-export const reviewWidgetScript = () => `
+const LOG_VIEWS = {
+  console: {
+    title: 'Console logs',
+    empty: 'Nothing logged since the page loaded.',
+    filters: [{ key: 'level', options: ['All', 'Log', 'Info', 'Warn', 'Error'], initial: 'All' }],
+  },
+  network: {
+    title: 'Network logs',
+    empty: 'No requests since the page loaded.',
+    filters: [
+      { key: 'kind', options: ['Fetch', 'Resource', 'Any'], initial: 'Fetch' },
+      { key: 'outcome', options: ['All', 'OK', 'Failed'], initial: 'All' },
+    ],
+  },
+}
+
+const CHIP_COLORS = {
+  All: '#94a3b8',
+  Any: '#94a3b8',
+  Log: '#cbd5e1',
+  Info: '#22d3ee',
+  Warn: '#fbbf24',
+  Error: '#f87171',
+  OK: '#4ade80',
+  Failed: '#f87171',
+  Fetch: '#38bdf8',
+  Resource: '#c084fc',
+}
+
+export const reviewWidgetScript = ({ mark }) => `
 (() => {
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
   if (!LOOPBACK.has(location.hostname)) return
+
+  const SIZE = ${WIDGET_SIZE}
+  const MARGIN = ${WIDGET_MARGIN}
+  const DRAG_THRESHOLD = 4
+  const LOG_VIEWS = ${JSON.stringify(LOG_VIEWS)}
 
   const host = document.createElement('div')
   host.id = 'imp-review'
   host.setAttribute('dir', 'ltr')
   const shadow = host.attachShadow({ mode: 'open' })
-  shadow.innerHTML = ${JSON.stringify(`<style>${WIDGET_STYLES}</style>\n${WIDGET_MARKUP}`)}
+  shadow.innerHTML = ${JSON.stringify(`<style>${WIDGET_STYLES}</style>\n`)} + ${
+  JSON.stringify(widgetMarkup(mark))
+}
 
   const find = (selector) => shadow.querySelector(selector)
   const outline = find('.outline')
+  const dock = find('.dock')
   const panel = find('.panel')
+  const actions = find('.actions')
   const toggle = find('.toggle')
   const status = find('.status')
   const comment = find('textarea')
   const saveButton = find('[data-action="save"]')
+  const logTitle = find('[data-log-title]')
+  const chips = find('.chips')
+  const lines = find('.lines')
   const views = {
     idle: find('[data-view="idle"]'),
     picking: find('[data-view="picking"]'),
     commenting: find('[data-view="commenting"]'),
+    log: find('[data-view="log"]'),
   }
 
   let engine = null
   let stopPicking = null
   let report = null
+  let logView = null
+  let unwatch = null
+  let active = {}
+  const CHIP_COLORS = ${JSON.stringify(CHIP_COLORS)}
 
   const load = () => (engine ??= import('${REPORT_MODULE}'))
+
+  const clamp = (value, low, high) => Math.min(Math.max(value, low), high)
+
+  const place = (x, y) => {
+    const left = clamp(x, MARGIN, Math.max(MARGIN, innerWidth - SIZE - MARGIN))
+    const top = clamp(y, MARGIN, Math.max(MARGIN, innerHeight - SIZE - MARGIN))
+    host.style.insetInlineEnd = 'auto'
+    host.style.insetBlockEnd = 'auto'
+    host.style.insetInlineStart = \`\${Math.round(left)}px\`
+    host.style.insetBlockStart = \`\${Math.round(top)}px\`
+  }
+
+  const remember = () => {
+    const rect = host.getBoundingClientRect()
+    try {
+      localStorage.setItem('${WIDGET_POSITION_KEY}', JSON.stringify({ x: rect.left, y: rect.top }))
+    } catch { /* storage unavailable */ }
+  }
+
+  const restore = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('${WIDGET_POSITION_KEY}'))
+      if (typeof stored?.x === 'number' && typeof stored?.y === 'number') place(stored.x, stored.y)
+    } catch { /* nothing remembered */ }
+  }
+
+  const orient = () => {
+    const rect = host.getBoundingClientRect()
+    dock.classList.toggle('down', rect.top + rect.height / 2 < innerHeight / 2)
+    dock.classList.toggle('start', rect.left + rect.width / 2 < innerWidth / 2)
+  }
 
   const showView = (name) => {
     for (const [key, node] of Object.entries(views)) node.hidden = key !== name
   }
 
-  const openPanel = (open) => {
+  const showPanel = (open) => {
     panel.hidden = !open
+  }
+
+  const pressLogButtons = () => {
+    for (const button of actions.querySelectorAll('[aria-pressed]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.action === logView))
+    }
+  }
+
+  const expand = (open) => {
+    if (open) orient()
+    actions.hidden = !open
     toggle.setAttribute('aria-expanded', String(open))
   }
 
@@ -476,17 +784,36 @@ export const reviewWidgetScript = () => `
     outline.hidden = false
   }
 
+  const stopLog = () => {
+    unwatch?.()
+    unwatch = null
+    logView = null
+  }
+
   const reset = () => {
     stopPicking?.()
     stopPicking = null
     report = null
+    stopLog()
+    pressLogButtons()
     outline.hidden = true
     showView('idle')
+    showPanel(Boolean(status.textContent))
+  }
+
+  const collapse = () => {
+    reset()
+    status.textContent = ''
+    showPanel(false)
+    expand(false)
   }
 
   const pick = async () => {
     status.textContent = ''
+    stopLog()
+    pressLogButtons()
     showView('picking')
+    showPanel(true)
     let picker
     try {
       picker = await load()
@@ -507,7 +834,7 @@ export const reviewWidgetScript = () => `
         comment.value = ''
         status.textContent = ''
         showView('commenting')
-        openPanel(true)
+        showPanel(true)
         comment.focus()
       },
       onCancel: () => {
@@ -529,30 +856,201 @@ export const reviewWidgetScript = () => `
       })
       const body = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(body.error ?? \`the server answered \${response.status}\`)
-      reset()
       status.textContent = \`Saved \${body.path}\`
     } catch (error) {
-      reset()
       status.textContent = \`Could not save the review - \${error.message}\`
     } finally {
       saveButton.disabled = false
+      reset()
     }
   }
 
+  const CONSOLE_FILTERS = { log: 'Log', debug: 'Log', info: 'Info', warn: 'Warn', error: 'Error' }
+
+  const describe = (entry) => {
+    if (entry.type === 'console') {
+      return {
+        level: entry.level,
+        text: entry.text,
+        tone: entry.level,
+        group: CONSOLE_FILTERS[entry.level] ?? 'Log',
+      }
+    }
+    if (entry.type === 'page') {
+      return { level: 'uncaught', text: entry.text, tone: 'error', group: 'Error' }
+    }
+    const result = entry.error ?? String(entry.status)
+    const failed = entry.error !== undefined || entry.status >= 400
+    const from = entry.mock ? \` (mock: \${entry.mock})\` : ''
+    const what = entry.destination ? \` (\${entry.destination})\` : ''
+    return {
+      level: result,
+      text: \`\${entry.method} \${entry.url} \${entry.ms}ms\${what}\${from}\`,
+      tone: failed ? 'failed' : 'ok',
+      group: failed ? 'Failed' : 'OK',
+      kind: entry.kind === 'resource' ? 'Resource' : 'Fetch',
+    }
+  }
+
+  const belongs = (entry) =>
+    logView === 'network' ? entry.type === 'net' : entry.type === 'console' || entry.type === 'page'
+
+  const matchesFilter = (entry) => {
+    const described = describe(entry)
+    const byGroup = active.level ?? active.outcome ?? 'All'
+    if (byGroup !== 'All' && described.group !== byGroup) return false
+    return !active.kind || active.kind === 'Any' || described.kind === active.kind
+  }
+
+  const renderChips = () => {
+    chips.replaceChildren(...LOG_VIEWS[logView].filters.map((group) => {
+      const row = document.createElement('div')
+      row.className = 'chips'
+      row.dataset.group = group.key
+      row.append(...group.options.map((name) => {
+        const chip = document.createElement('button')
+        chip.type = 'button'
+        chip.className = 'chip'
+        chip.dataset.filter = name
+        chip.style.setProperty('--chip', CHIP_COLORS[name])
+        chip.setAttribute('aria-pressed', String(name === active[group.key]))
+        chip.textContent = name
+        return chip
+      }))
+      return row
+    }))
+  }
+
+  const entryFor = (entry) => {
+    const { level, text, tone } = describe(entry)
+    const item = document.createElement('li')
+    const row = document.createElement('button')
+    row.type = 'button'
+    row.className = \`entry \${tone}\`
+    row.setAttribute('aria-expanded', 'false')
+    const tag = document.createElement('span')
+    tag.className = 'level'
+    tag.textContent = level
+    const body = document.createElement('span')
+    body.className = 'text'
+    body.textContent = text
+    row.append(tag, body)
+    item.append(row)
+    return item
+  }
+
+  const emptyItem = (text) => {
+    const item = document.createElement('li')
+    item.className = 'empty'
+    item.textContent = text
+    return item
+  }
+
+  const render = () => {
+    const { empty } = LOG_VIEWS[logView]
+    const all = (globalThis.__impTelemetry?.entries() ?? []).filter(belongs)
+    const shown = all.filter(matchesFilter)
+    lines.replaceChildren(...shown.map(entryFor))
+    if (!shown.length) lines.append(emptyItem(all.length ? 'No line matches.' : empty))
+    lines.scrollTop = lines.scrollHeight
+  }
+
+  const append = (entry) => {
+    if (!belongs(entry) || !matchesFilter(entry)) return
+    const atEnd = lines.scrollTop + lines.clientHeight >= lines.scrollHeight - 4
+    lines.querySelector('.empty')?.remove()
+    lines.append(entryFor(entry))
+    while (lines.children.length > ${TELEMETRY_ENTRIES}) lines.firstElementChild.remove()
+    if (atEnd) lines.scrollTop = lines.scrollHeight
+  }
+
+  const showLog = (name) => {
+    stopPicking?.()
+    stopPicking = null
+    report = null
+    outline.hidden = true
+    status.textContent = ''
+    stopLog()
+    logView = name
+    pressLogButtons()
+    logTitle.textContent = LOG_VIEWS[name].title
+    active = Object.fromEntries(LOG_VIEWS[name].filters.map((group) => [group.key, group.initial]))
+    renderChips()
+    showView('log')
+    showPanel(true)
+    render()
+    unwatch = globalThis.__impTelemetry?.watch(append) ?? null
+  }
+
+  let drag = null
+  let dragged = false
+
+  toggle.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return
+    const rect = host.getBoundingClientRect()
+    drag = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top }
+    dragged = false
+    toggle.setPointerCapture(event.pointerId)
+  })
+
+  toggle.addEventListener('pointermove', (event) => {
+    if (!drag) return
+    const dx = event.clientX - drag.x
+    const dy = event.clientY - drag.y
+    if (!dragged && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+    if (!dragged) {
+      dragged = true
+      toggle.classList.add('dragging')
+      collapse()
+    }
+    place(drag.left + dx, drag.top + dy)
+  })
+
+  const endDrag = () => {
+    if (!drag) return
+    drag = null
+    toggle.classList.remove('dragging')
+    if (dragged) remember()
+  }
+
+  toggle.addEventListener('pointerup', endDrag)
+  toggle.addEventListener('pointercancel', endDrag)
+
   toggle.addEventListener('click', () => {
-    if (panel.hidden) {
-      openPanel(true)
+    if (dragged) {
+      dragged = false
       return
     }
-    reset()
-    openPanel(false)
+    if (actions.hidden) expand(true)
+    else collapse()
+  })
+
+  actions.addEventListener('click', (event) => {
+    const action = event.target.closest('[data-action]')?.dataset.action
+    if (action === 'pick') pick()
+    else if (action === 'console' || action === 'network') {
+      if (logView === action) reset()
+      else showLog(action)
+    }
   })
 
   panel.addEventListener('click', (event) => {
+    const entry = event.target.closest('.entry')
+    if (entry) {
+      entry.setAttribute('aria-expanded', String(entry.getAttribute('aria-expanded') !== 'true'))
+      return
+    }
     const action = event.target.closest('[data-action]')?.dataset.action
-    if (action === 'pick') pick()
-    else if (action === 'save') save()
+    if (action === 'save') save()
     else if (action === 'cancel') reset()
+  })
+
+  chips.addEventListener('click', (event) => {
+    const chip = event.target.closest('.chip')
+    if (!chip || !logView) return
+    active[chip.closest('[data-group]').dataset.group] = chip.dataset.filter
+    renderChips()
+    render()
   })
 
   comment.addEventListener('keydown', (event) => {
@@ -563,16 +1061,22 @@ export const reviewWidgetScript = () => `
   })
 
   addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || panel.hidden || stopPicking) return
-    reset()
-    openPanel(false)
+    if (event.key !== 'Escape' || actions.hidden || stopPicking) return
+    collapse()
   }, true)
+
+  addEventListener('resize', () => {
+    if (host.style.insetInlineStart) {
+      place(parseFloat(host.style.insetInlineStart), parseFloat(host.style.insetBlockStart))
+    }
+  })
 
   const attach = () => {
     if (!host.isConnected) document.body.append(host)
   }
 
   const install = () => {
+    restore()
     attach()
     new MutationObserver(attach).observe(document.body, { childList: true })
   }

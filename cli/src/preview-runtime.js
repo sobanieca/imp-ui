@@ -1,24 +1,42 @@
 import { appMap, component, init, mount } from 'imp'
-import { a, div, el, h2, pre, span } from 'imp/html'
-import { applyTheme } from 'imp/theme'
+import { code, div, el, h2, pre, span } from 'imp/html'
+import { applyTheme, colorSchemeOf } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
-import { area, navigate, router, url, useRoute } from 'imp/router'
-import { button, heading, icon, link, text } from 'imp/std'
-import { luContrast, luEclipse, luMoon, luPalette, luSun } from 'imp/icons'
-import { emptyState } from 'imp/std/display'
+import { area, navigate, router, useRoute } from 'imp/router'
+import { button, heading, icon, text } from 'imp/std'
+import {
+  luCode,
+  luContrast,
+  luEclipse,
+  luMoon,
+  luPalette,
+  luSlidersHorizontal,
+  luSun,
+} from 'imp/icons'
+import { card, emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { dialog, drawer, stack } from 'imp/std/layout'
-import { buildFailure, groupsOf, previewHead, previewIndex, previewShell } from './preview-shell.js'
+import { tabs } from 'imp/std/navigation'
+import {
+  buildFailure,
+  groupsOf,
+  previewHead,
+  previewIndex,
+  previewShell,
+  previewSkill,
+} from './preview-shell.js'
 import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview-theme-editor.js'
-import { PREVIEW_METADATA_EXPORTS } from './preview-metadata.js'
+import { PREVIEW_METADATA_EXPORTS, PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
+import { copyButton } from './preview-copy.js'
 import { previewSlugs } from './preview-map.js'
 import { asNodes } from '../../lib/src/nodes.js'
-import { findStateFrom } from '../../lib/src/state.js'
+import { statesProvidedBy } from '../../lib/src/state.js'
 import { computed, initState } from 'imp/state'
 
 const THEME_STORAGE_KEY = 'imp.preview.theme'
 const LANGUAGE_STORAGE_KEY = 'imp.preview.lang'
 const DIRECTION_STORAGE_KEY = 'imp.preview.dir'
+const CODE_STORAGE_KEY = 'imp.preview.code'
 
 const EDITOR_STATE = 'imp.preview.editor'
 const THEME_STATE = 'imp.preview.theme'
@@ -26,6 +44,8 @@ const LANGUAGE_STATE = 'imp.preview.lang'
 const DIRECTION_STATE = 'imp.preview.dir'
 const DRAFT_STATE = 'imp.preview.draft'
 const STATE_EDITOR_STATE = 'imp.preview.state-editor'
+const STATES_FOUND_STATE = 'imp.preview.states-found'
+const CODE_STATE = 'imp.preview.code'
 
 const BUILT_IN_THEMES = [
   'imp-light',
@@ -48,15 +68,9 @@ const languages = []
 
 let stages = []
 
-const PRESETS = [
-  { label: 'phone', width: 375, height: 667 },
-  { label: 'tablet', width: 768, height: 1024 },
-  { label: 'desktop', width: 1280, height: 800 },
-]
-
 const MIN_STAGE_SIZE = 80
-const STATE_LOOKUP_ATTEMPTS = 30
-const STATE_LOOKUP_INTERVAL = 100
+const STATE_SCAN_ATTEMPTS = 30
+const STATE_SCAN_INTERVAL = 100
 const MAX_SCANNED_ELEMENTS = 500
 
 const DOCUMENT_STYLES = `
@@ -91,6 +105,10 @@ const SCENARIO_STYLES = `
     margin-block-end: var(--imp-space-2, 8px);
   }
 
+  .state-toggle {
+    display: inline-flex;
+  }
+
   .scenario-head h2 {
     margin: 0;
     color: var(--imp-color-text, #0f172a);
@@ -110,6 +128,32 @@ const SCENARIO_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
     white-space: pre-wrap;
   }
+
+  .code {
+    margin-block-start: var(--imp-space-3, 12px);
+  }
+
+  .code-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--imp-space-2, 8px);
+    margin-block-end: var(--imp-space-1, 4px);
+    color: var(--imp-color-secondary, #64748b);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .code-block {
+    margin: 0;
+    padding: var(--imp-space-3, 12px);
+    overflow: auto;
+    ${surface}
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-sm, 0.875rem);
+    line-height: var(--imp-line-height-normal, 1.6);
+    tab-size: 2;
+  }
 `
 
 const STAGE_STYLES = `
@@ -119,22 +163,22 @@ const STAGE_STYLES = `
 
   .bar {
     display: flex;
-    align-items: center;
-    gap: var(--imp-space-2, 8px);
-    margin-block-end: var(--imp-space-2, 8px);
+    justify-content: flex-end;
+    margin-block-end: var(--imp-space-1, 4px);
     color: var(--imp-color-secondary, #64748b);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-weight: var(--imp-font-weight-normal, 400);
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
   .readout {
     flex: none;
-    margin-inline-start: auto;
     inline-size: 11ch;
     text-align: end;
     font-variant-numeric: tabular-nums;
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+  }
+
+  .viewport {
+    container-type: inline-size;
   }
 
   .frame {
@@ -142,6 +186,13 @@ const STAGE_STYLES = `
     box-sizing: border-box;
     inline-size: 100%;
     max-inline-size: 100%;
+  }
+
+  @container (inline-size < 20rem) {
+    .frame {
+      inline-size: 200%;
+      max-inline-size: none;
+    }
   }
 
   .stage {
@@ -216,6 +267,12 @@ const EDITOR_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
+  .provider {
+    color: var(--imp-color-secondary, #64748b);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: var(--imp-font-size-xs, 0.75rem);
+  }
+
   .message {
     display: block;
     margin-block-start: var(--imp-space-1, 4px);
@@ -240,29 +297,6 @@ const GROUP_STYLES = `
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
     gap: var(--imp-space-4, 16px);
-  }
-
-  .card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--imp-space-2, 8px);
-    box-sizing: border-box;
-    padding: var(--imp-space-3, 12px);
-    background-color: var(--imp-color-surface, #ffffff);
-    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-container, 10px);
-    box-shadow: var(--imp-shadow-sm, 0 1px 2px rgb(15 23 42 / 10%));
-    color: var(--imp-color-text, #0f172a);
-    text-decoration: none;
-  }
-
-  .card:hover {
-    border-color: var(--imp-color-primary, #2563eb);
-  }
-
-  .card:focus-visible {
-    outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-primary, #2563eb);
-    outline-offset: 2px;
   }
 
   .card-head {
@@ -321,7 +355,7 @@ const registerThemes = (customThemes) => {
     if (!isThemeDefinition(definition)) {
       console.error(
         `imp preview: '${source}' is listed in preview.themes but does not default-export a theme ` +
-          'object like { name, colorScheme, tokens } - skipping it',
+          'object like { name, tokens } - skipping it',
       )
       continue
     }
@@ -332,16 +366,11 @@ const registerThemes = (customThemes) => {
   }
 }
 
-const colorSchemeOf = (definition) =>
-  typeof definition === 'string'
-    ? (definition.includes('dark') ? 'dark' : 'light')
-    : (definition?.colorScheme ?? 'light')
-
 const applySelectedTheme = (name) => {
   const definition = themes.get(name)
   if (typeof definition === 'string') applyTheme(definition)
   else {
-    applyTheme(BASE_THEME_FOR[definition?.colorScheme] ?? 'imp-light')
+    applyTheme(BASE_THEME_FOR[colorSchemeOf(definition.tokens)] ?? 'imp-light')
     applyTheme(definition)
   }
   snapshotBaseTokens()
@@ -373,6 +402,11 @@ const readStoredLanguage = () =>
 
 const readStoredDirection = () =>
   readStored(DIRECTION_STORAGE_KEY, (value) => DIRECTIONS.includes(value), 'auto')
+
+const CODE_CHOICES = ['shown', 'hidden']
+
+const readStoredCode = () =>
+  readStored(CODE_STORAGE_KEY, (value) => CODE_CHOICES.includes(value), 'hidden') === 'shown'
 
 const registerLanguages = (previewTranslations) => {
   languages.length = 0
@@ -448,13 +482,10 @@ const elementsInTree = (nodes) => {
   return elements
 }
 
-const findStateInTree = (nodes, name) => {
-  for (const element of elementsInTree(nodes)) {
-    const found = findStateFrom(element, name)
-    if (found) return found.state
-  }
-  return null
-}
+const statesInTree = (nodes) =>
+  elementsInTree(nodes).flatMap((provider) =>
+    statesProvidedBy(provider).map(({ name, state }) => ({ name, state, provider }))
+  )
 
 const describeValue = (value) => {
   let text
@@ -513,23 +544,7 @@ const stageDefinition = {
       readout.textContent = `${Math.round(rect.width)} x ${Math.round(rect.height)}`
     }
     new ResizeObserver(updateReadout).observe(frame)
-    const setSize = (width, height) => {
-      frame.style.width = width === null ? '' : `${width}px`
-      frame.style.height = height === null ? '' : `${height}px`
-    }
-    const sizeButton = (label, width, height) =>
-      button(
-        { size: 'sm', variant: 'ghost', events: { click: () => setSize(width, height) } },
-        label,
-      )
-    const bar = div(
-      { class: 'bar' },
-      span('size'),
-      ...PRESETS.map(({ label, width, height }) => sizeButton(label, width, height)),
-      sizeButton('fit', null, null),
-      readout,
-    )
-    return div(bar, frame)
+    return div(div({ class: 'bar' }, readout), div({ class: 'viewport' }, frame))
   },
 }
 
@@ -549,18 +564,17 @@ const negated = (source) => ({
   },
 })
 
-const stateRow = (self, nodes, declaration, index) => {
-  const draft = initState(self, `${DRAFT_STATE}.${index}`, declaration.initial ?? '')
+const stateRow = (self, { name, state, provider }, index) => {
+  const draft = initState(self, `${DRAFT_STATE}.${index}`, '')
   const editable = initState(self, `${DRAFT_STATE}.${index}.editable`, false)
-  const messageText = document.createTextNode('looking for this state...')
+  const messageText = document.createTextNode('')
   const message = span({ class: 'message' }, messageText)
   const field = textArea({
-    ariaLabel: `${declaration.name} value as JSON`,
+    ariaLabel: `${name} value as JSON`,
     value: draft,
     rows: 2,
     disabled: negated(editable),
   })
-  let state = null
 
   const setMessage = (content, isError = false) => {
     messageText.data = content
@@ -568,7 +582,6 @@ const stateRow = (self, nodes, declaration, index) => {
   }
 
   const apply = () => {
-    if (!state) return
     let parsed
     try {
       parsed = JSON.parse(draft.get())
@@ -585,27 +598,12 @@ const stateRow = (self, nodes, declaration, index) => {
     'apply',
   )
 
-  const show = (value) => {
+  state.watch(self, (value) => {
     const described = describeValue(value)
     if (!field.matches(':focus-within')) draft.set(described.text)
     editable.set(described.editable)
     setMessage(described.note)
-  }
-
-  const lookForState = (attemptsLeft) => {
-    const found = findStateInTree(nodes, declaration.name)
-    if (found) {
-      state = found
-      found.watch(show)
-      return
-    }
-    if (attemptsLeft <= 0) {
-      setMessage('not initialized in this scenario')
-      return
-    }
-    setTimeout(() => lookForState(attemptsLeft - 1), STATE_LOOKUP_INTERVAL)
-  }
-  lookForState(STATE_LOOKUP_ATTEMPTS)
+  })
 
   field.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) apply()
@@ -613,7 +611,12 @@ const stateRow = (self, nodes, declaration, index) => {
 
   return div(
     { class: 'row' },
-    div({ class: 'row-head' }, span({ class: 'name' }, declaration.name), applyButton),
+    div(
+      { class: 'row-head' },
+      span({ class: 'name' }, name),
+      span({ class: 'provider' }, `<${provider.localName}>`),
+      applyButton,
+    ),
     field,
     message,
   )
@@ -621,29 +624,55 @@ const stateRow = (self, nodes, declaration, index) => {
 
 const editorDefinition = {
   styles: EDITOR_STYLES,
-  setup: (self, nodes, declarations) =>
+  setup: (self, entries) =>
     div(
       { class: 'editor' },
-      declarations.length
-        ? [
-          text(
-            { tone: 'secondary', size: 'sm' },
-            'Values are JSON. Edit one and apply it (or press Ctrl+Enter) to drive the component.',
-          ),
-          ...declarations.map((declaration, index) => stateRow(self, nodes, declaration, index)),
-        ]
-        : text(
-          { tone: 'secondary', size: 'sm' },
-          'No state declarations were found in the sources this preview imports.',
-        ),
+      text(
+        { tone: 'secondary', size: 'sm' },
+        'Values are JSON. Edit one and apply it (or press Ctrl+Enter) to drive the component.',
+      ),
+      ...entries.map((entry, index) => stateRow(self, entry, index)),
     ),
 }
 
 let createEditor = null
 
-const stateEditor = (nodes, declarations) => {
+const stateEditor = (entries) => {
   createEditor ??= component('imp-preview-state', editorDefinition)
-  return createEditor(nodes, declarations)
+  return createEditor(entries)
+}
+
+const statePanel = (self, label, nodes) => {
+  const editing = initState(self, STATE_EDITOR_STATE, false)
+  const found = initState(self, STATES_FOUND_STATE, false)
+  const editorSlot = div()
+  const scan = () => {
+    const entries = statesInTree(nodes)
+    found.set(entries.length > 0)
+    editorSlot.replaceChildren(stateEditor(entries))
+    return entries.length
+  }
+  const scanUntilFound = (attemptsLeft) => {
+    if (scan() > 0 || attemptsLeft <= 0) return
+    setTimeout(() => scanUntilFound(attemptsLeft - 1), STATE_SCAN_INTERVAL)
+  }
+  queueMicrotask(() => scanUntilFound(STATE_SCAN_ATTEMPTS))
+  editing.watch(self, (open) => {
+    if (open) scan()
+  })
+  const toggle = button(
+    { size: 'sm', variant: 'ghost', label: 'Edit state', pressed: editing },
+    icon(luSlidersHorizontal),
+  )
+  const anchor = span({ class: 'state-toggle' }, toggle)
+  found.watch(self, (present) => {
+    anchor.hidden = !present
+  })
+  const editor = dialog(
+    { title: `${label} state`, modal: false, open: editing, anchor },
+    editorSlot,
+  )
+  return { toggle: anchor, editor }
 }
 
 const scenarioDefinition = {
@@ -658,47 +687,64 @@ const scenarioPanel = (name, scenario, entry) => {
   return createScenario(name, scenario, entry)
 }
 
-const scenarioSection = (self, name, scenario, entry) => {
+const isLabelledScenario = (exported) =>
+  exported !== null && typeof exported === 'object' && !(exported instanceof Node) &&
+  !Array.isArray(exported) && typeof exported.scenario === 'string' && 'component' in exported
+
+const scenarioOf = (name, exported) =>
+  isLabelledScenario(exported)
+    ? { label: exported.scenario, component: exported.component }
+    : { label: name, component: exported }
+
+const buildScenario = (component) =>
+  asNodes(typeof component === 'function' ? component() : component)
+
+const scenarioSection = (self, name, exported, entry) => {
+  const { label, component } = scenarioOf(name, exported)
   let nodes
   try {
-    nodes = asNodes(typeof scenario === 'function' ? scenario() : scenario)
+    nodes = buildScenario(component)
   } catch (error) {
     nodes = null
     console.error(`imp preview: scenario '${name}' failed to build`, error)
   }
-  const isolate = link(
-    { href: `${entry.href}?scenario=${encodeURIComponent(name)}`, size: 'sm' },
-    'isolate',
-  )
   if (!nodes) {
     return el(
       'section',
       { class: 'scenario' },
-      div({ class: 'scenario-head' }, h2(name), isolate),
+      div({ class: 'scenario-head' }, h2(label)),
       pre({ class: 'failure' }, `${name} failed to build - see the terminal`),
     )
   }
-  const editing = initState(self, STATE_EDITOR_STATE, false)
-  const toggle = button(
-    { size: 'sm', variant: 'ghost', events: { click: () => editing.set(!editing.get()) } },
-    editing.text((open) => (open ? 'close state' : 'edit state')),
-  )
-  const editor = dialog(
-    { title: `${name} state`, modal: false, open: editing },
-    stateEditor(nodes, entry.states),
+  const { toggle: stateToggle, editor } = statePanel(self, label, nodes)
+  const source = entry.code?.[name] ?? null
+  const showingCode = initState(self, CODE_STATE, source !== null && readStoredCode())
+  showingCode.watch((open) => remember(CODE_STORAGE_KEY, open ? 'shown' : 'hidden'))
+  const codeToggle = source === null ? null : button(
+    { size: 'sm', variant: 'ghost', label: 'Show code', pressed: showingCode },
+    icon(luCode),
   )
   return el(
     'section',
     { class: 'scenario' },
-    div({ class: 'scenario-head' }, h2(name), isolate, toggle),
+    div({ class: 'scenario-head' }, h2(label), stateToggle, codeToggle),
     stagePanel(nodes),
+    source === null ? null : codePanel(self, source, showingCode),
     editor,
   )
 }
 
-const opensElsewhere = (event) =>
-  event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
-  event.shiftKey || event.altKey
+const codePanel = (self, source, showing) => {
+  const panel = div(
+    { class: 'code' },
+    div({ class: 'code-head' }, span('Call site'), copyButton(self, 'code', source)),
+    pre({ class: 'code-block' }, code(source)),
+  )
+  showing.watch((open) => {
+    panel.hidden = !open
+  })
+  return panel
+}
 
 const groupCard = (entry, load) => {
   const scenarioName = span({ class: 'card-scenario' })
@@ -716,35 +762,25 @@ const groupCard = (entry, load) => {
         fail('no scenarios in this file')
         return
       }
-      scenarioName.textContent = name
-      const scenario = scenarios[name]
+      const { label, component } = scenarioOf(name, scenarios[name])
+      scenarioName.textContent = label
       try {
-        specimen.replaceChildren(
-          ...asNodes(typeof scenario === 'function' ? scenario() : scenario),
-        )
+        specimen.replaceChildren(...buildScenario(component))
       } catch (error) {
         console.error(`imp preview: scenario '${name}' failed to build`, error)
         fail(`${name} failed to build - see the terminal`)
       }
     }, (error) => fail(error.message))
   }
-  const card = a(
+  return card(
     {
-      class: 'card',
-      href: url(entry.href),
-      'aria-label': entry.name,
-      events: {
-        click: (event) => {
-          if (opensElsewhere(event)) return
-          event.preventDefault()
-          navigate(entry.href)
-        },
-      },
+      padding: 'sm',
+      href: entry.href,
+      label: entry.name,
+      header: div({ class: 'card-head' }, span({ class: 'card-name' }, entry.name), scenarioName),
     },
-    div({ class: 'card-head' }, span({ class: 'card-name' }, entry.name), scenarioName),
     specimen,
   )
-  return card
 }
 
 const groupDefinition = {
@@ -774,32 +810,61 @@ const groupScreen = (group, load) => {
   return createGroup(group, load)
 }
 
+const isScenarioExport = (name) =>
+  !PREVIEW_METADATA_EXPORTS.includes(name) && name !== PREVIEW_SKILL_EXPORT
+
 const scenarioOrder = (scenarios, order) => {
-  const exported = Object.keys(scenarios).filter((name) => !PREVIEW_METADATA_EXPORTS.includes(name))
+  const exported = Object.keys(scenarios).filter(isScenarioExport)
   const written = order.filter((name) => exported.includes(name))
   return [...written, ...exported.filter((name) => !written.includes(name))]
 }
 
-const scenarioList = (scenarios, entry, requested) => {
+const scenarioTabs = (scenarios, entry) => {
   const names = scenarioOrder(scenarios, entry.order)
-  const isolated = requested !== null && names.includes(requested)
-  const shown = isolated ? [requested] : names
-  return [
-    previewHead(entry, isolated, entry.description),
-    ...(names.length ? shown.map((name) => scenarioPanel(name, scenarios[name], entry)) : [
-      emptyState({
-        title: 'No scenarios in this file',
-        description: `${entry.file} has no named exports - export one instance per scenario, ` +
-          'like export const empty = myComponent()',
-      }),
-    ]),
-  ]
+  if (!names.length) {
+    return emptyState({
+      title: 'No scenarios in this file',
+      description: `${entry.file} has no named exports - export one instance per scenario, ` +
+        'like export const empty = myComponent()',
+    })
+  }
+  const selected = computed(
+    [useRoute()],
+    ({ query }) => names.includes(query.scenario) ? query.scenario : names[0],
+  )
+  return tabs({
+    orientation: 'vertical',
+    label: `${entry.name} scenarios`,
+    selected,
+    items: names.map((name) => ({
+      id: name,
+      label: scenarioOf(name, scenarios[name]).label,
+      content: scenarioPanel(name, scenarios[name], entry),
+    })),
+    events: {
+      select: (event) =>
+        navigate(`${entry.href}?scenario=${encodeURIComponent(event.detail.id)}`, {
+          replace: true,
+        }),
+    },
+  })
 }
 
-const scenarioScreen = (scenarios, entry) => {
-  const requested = computed([useRoute()], ({ query }) => query.scenario ?? null)
-  return div(requested.view((name) => div(...scenarioList(scenarios, entry, name))))
-}
+const scenarioScreen = (scenarios, entry) =>
+  div(
+    previewHead(entry),
+    tabs({
+      label: `${entry.name} views`,
+      items: [
+        { id: 'scenarios', label: 'Scenarios', content: scenarioTabs(scenarios, entry) },
+        {
+          id: 'skill',
+          label: 'Skill',
+          content: previewSkill(scenarios[PREVIEW_SKILL_EXPORT] ?? null, entry),
+        },
+      ],
+    }),
+  )
 
 const noPreviews = () =>
   emptyState({
@@ -893,9 +958,7 @@ const pageDefinition = {
 
     const editor = drawer(
       { title: 'Theme editor', modal: false, open: editorOpen },
-      editorOpen.view((open) =>
-        open ? themeChoice.view((name) => themeEditor(name, colorSchemeOf(themes.get(name)))) : null
-      ),
+      editorOpen.view((open) => open ? themeChoice.view((name) => themeEditor(name)) : null),
     )
 
     return previewShell({
@@ -926,46 +989,68 @@ const previewPage = (bound) => {
 }
 
 const GROUPS_SHAPE =
-  "export const groups = [{ name: 'Widgets', icon: luBox }] - a name per group and an icon from 'imp/icons'"
+  "export const groups = { widgets: { name: 'Widgets', icon: luBox } } - a key per group, with a name and an icon from 'imp/icons'"
+
+const isPlainObject = (value) =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
 
 const readGroups = (declared) => {
   if (declared === null) return []
   const { source, module } = declared
-  if (!Array.isArray(module.groups)) {
+  if (!isPlainObject(module.groups)) {
     console.error(
-      `imp preview: ${source} (preview.groups) must export an array named groups, like ${GROUPS_SHAPE}`,
+      `imp preview: ${source} (preview.groups) must export an object named groups, like ${GROUPS_SHAPE}`,
     )
     return []
   }
   const groups = []
-  for (const entry of module.groups) {
+  for (const [key, entry] of Object.entries(module.groups)) {
     if (typeof entry?.name !== 'string' || !entry.name.trim()) {
       console.error(
-        `imp preview: ${source} (preview.groups) lists a group without a name - each entry is ${GROUPS_SHAPE}`,
+        `imp preview: ${source} (preview.groups) group '${key}' has no name - each entry is ${GROUPS_SHAPE}`,
       )
       continue
     }
     if (entry.icon !== undefined && !Array.isArray(entry.icon)) {
       console.error(
-        `imp preview: ${source} (preview.groups) group '${entry.name}' has an icon that is not one from 'imp/icons' - it is drawn with the folder icon`,
+        `imp preview: ${source} (preview.groups) group '${key}' has an icon that is not one from 'imp/icons' - it is drawn with the folder icon`,
       )
     }
-    groups.push({ name: entry.name, icon: Array.isArray(entry.icon) ? entry.icon : null })
+    if (entry.priority !== undefined && !Number.isFinite(entry.priority)) {
+      console.error(
+        `imp preview: ${source} (preview.groups) group '${key}' has a priority that is not a number - it is ignored`,
+      )
+    }
+    groups.push({
+      name: entry.name,
+      icon: Array.isArray(entry.icon) ? entry.icon : null,
+      priority: Number.isFinite(entry.priority) ? entry.priority : null,
+    })
   }
-  return groups
+  return groups.map((group, index) => ({ ...group, index })).sort(byPriorityThenOrder)
 }
 
-const ensureFavicon = (mark) => {
+const byPriorityThenOrder = (left, right) => {
+  if (left.priority !== null && right.priority !== null) {
+    return left.priority - right.priority || left.index - right.index
+  }
+  if (left.priority !== null) return -1
+  if (right.priority !== null) return 1
+  return left.index - right.index
+}
+
+const ensureFavicon = (favicon) => {
   if (document.head.querySelector('link[rel~="icon"]')) return
   const icon = document.createElement('link')
   icon.rel = 'icon'
-  icon.href = mark
+  icon.href = favicon
   document.head.append(icon)
 }
 
 export async function startPreview(
   {
     mark,
+    favicon,
     catalog,
     load,
     themes: customThemes = [],
@@ -973,7 +1058,7 @@ export async function startPreview(
     groups: declaredGroups = null,
   },
 ) {
-  ensureFavicon(mark)
+  ensureFavicon(favicon)
   const listed = groupsOf(catalog, readGroups(declaredGroups))
   const styles = document.createElement('style')
   styles.textContent = DOCUMENT_STYLES

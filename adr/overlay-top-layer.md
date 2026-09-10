@@ -86,7 +86,24 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   offset rides on `transform`, while the entry and the exit ride on the `translate` property. The
   two compose in the browser, in place of a fight over one value. That is why a window that somebody
   dragged can still animate out from where the user left it. The position belongs to the instance,
-  and imp never stores it. A window that opens again is centred again.
+  and imp never stores it. A window that opens again starts from its resting place again.
+- **A non-modal window can open at its `anchor`.** The centre of the viewport is where a popover
+  lands by default, and on a tall or pinch-zoomed phone screen that centre is outside what the
+  person looks at. So a non-modal dialog takes an `anchor` element, the control that opens it. At
+  each open imp gives that element an `anchor-name`, and CSS anchor positioning places the panel
+  under the control, centred on it, or above it when it does not fit below. The panel is capped to
+  the room it has and scrolls inside, and it follows the control when the page scrolls. The drag
+  offset still rides on `transform`, so a dragged anchored window moves the same way.
+- **The anchor reference is a `::part` rule in the scope of the anchor.** An anchor name is a
+  tree-scoped name, and a reference resolves only in the tree scope that declares it. The panel
+  lives in the shadow tree of the dialog, and the control lives in the tree of the component that
+  renders both. A `position-anchor` written on the panel never finds the name. So the panel is
+  `part="panel"`, and imp adopts one constructed stylesheet into the tree of the control, with the
+  rule `[data-imp-dialog="N"]::part(panel) { position-anchor: --imp-dialog-N }`. That declaration is
+  in the scope of the name, and it reaches the panel through the part. The rule follows from this:
+  the anchor must be in the tree of the dialog's host, or inside a component in that tree, in which
+  case imp names that component's host. A host renders no box, so imp warns and asks for a `span`
+  around it. An anchor in an ancestor tree is out of reach, and the window opens centred.
 - **A component delays an initial open to `onMount`.** Both promotions throw an `InvalidStateError`
   on an element that is not in the document. `setup` returns its tree before imp puts that tree in
   the shadow root. So a dialog whose `open` is already true at mount opens in `onMount`, on the next

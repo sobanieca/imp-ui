@@ -31,17 +31,18 @@ shell(
 The call shape is `shell(props?, ...mainContent)`. When a props object is present, it must be the
 **first** argument. **Everything after it is the main content**, because it is the content.
 
-| Prop          | Values                         | Default | Notes                                                         |
-| ------------- | ------------------------------ | ------- | ------------------------------------------------------------- |
-| `logo`        | DOM                            | none    | Brand block; heads the bar, the sidebar, or the drawer        |
-| `navbar`      | **data** - see below           | none    | The map, or plain sections for a frame with no router         |
-| `sidebar`     | **data** - see below           | none    | The second level: names it, foots it                          |
-| `extras`      | DOM, or an array of it         | none    | Theme picker, language picker, `userCard`, anything           |
-| `breadcrumbs` | `false`                        | shown   | Turns the trail above the content off; needs a map            |
-| `navOpen`     | boolean, or a state - **live** | `false` | Drawer state; the shell owns one if the prop is omitted       |
-| `gap`         | spacing step `0`-`6`           | `0`     | Floats bar, column and bottom bar apart, rounded              |
-| `background`  | DOM                            | none    | Decorative layer under the whole frame; the animated backdrop |
-| `events`      | `{ navToggle, select }`        | -       | `navToggle` gives `{ open }`, `select` gives `{ id, item }`   |
+| Prop          | Values                         | Default  | Notes                                                         |
+| ------------- | ------------------------------ | -------- | ------------------------------------------------------------- |
+| `logo`        | DOM                            | none     | Brand block; heads the bar, the sidebar, or the drawer        |
+| `navbar`      | **data** - see below           | none     | The map, or plain sections for a frame with no router         |
+| `sidebar`     | **data** - see below           | none     | The second level: names it, foots it                          |
+| `extras`      | DOM, or an array of it         | none     | Theme picker, language picker, `userCard`, anything           |
+| `breadcrumbs` | `false`                        | shown    | Turns the trail above the content off; needs a map            |
+| `navOpen`     | boolean, or a state - **live** | `false`  | Drawer state; the shell owns one if the prop is omitted       |
+| `gap`         | spacing step `0`-`6`           | `0`      | Floats bar, column and bottom bar apart, rounded              |
+| `maxWidth`    | CSS length, or `'none'`        | `125rem` | Widest the column and the content get; centred beyond it      |
+| `background`  | DOM                            | none     | Decorative layer under the whole frame; the animated backdrop |
+| `events`      | `{ navToggle, select }`        | -        | `navToggle` gives `{ open }`, `select` gives `{ id, item }`   |
 
 **One map drives three surfaces and the trail.** With `navbar.map`, the router derives the sections,
 the rows of the current section, the marked rows, the head of the sidebar and the crumbs. The bar
@@ -140,8 +141,14 @@ Rules an agent gets wrong:
 - **`gap` floats the chrome.** Step `0` is the default. It is the edge-to-edge frame with hairline
   dividers. Any other step insets the frame by that much and draws each region as a bordered panel,
   rounded with `radius-container`. The content is not a panel. The frame publishes
-  `--imp-shell-frame-gap` and `--imp-shell-frame-radius`, so a `drawer` mounted in the main content
-  floats in the same way.
+  `--imp-shell-frame-gap`, `--imp-shell-frame-radius` and `--imp-shell-frame-inset`, so a `drawer`
+  mounted in the main content floats in the same way.
+- **`maxWidth` caps the frame, and it is on by default.** The column and the content together never
+  get wider than `maxWidth`. On a wider screen they sit in the middle, and the background fills the
+  rest. The top bar keeps its surface edge to edge, and centres its controls over the content. With
+  a `gap` the bar is a panel, and the panel is capped too. A `drawer` in the main content opens at
+  the end edge of the content, not of the screen. Pass any CSS length, such as `'90rem'`, or
+  `'none'` for a frame that always fills the screen.
 - **The background is a theme token first.** The frame paints `background-app`. Pass `background`
   only for a backdrop that CSS cannot draw. It is one DOM node, stretched to the frame and painted
   under everything, hidden from assistive technology. So put nothing interactive in it.

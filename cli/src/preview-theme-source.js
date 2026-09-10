@@ -19,12 +19,11 @@ export const keptTokens = (tokens) =>
 
 export const themeFromDraft = (themeName, draft, mode) => ({
   name: `${themeName} (${mode})`,
-  colorScheme: mode,
   tokens: buildTokens({
     ...draft[mode],
     radius: draft.radius,
     shadow: draft.shadow,
-    colorScheme: mode,
+    mode,
     overrides: { ...draft.kept, ...fontTokens(draft) },
   }),
 })
@@ -53,7 +52,6 @@ const themeSource = (themeName, draft, mode) => {
     .join('\n')
   return `export const ${mode} = {
   name: ${quote(`${themeName}-${mode}`)},
-  colorScheme: ${quote(mode)},
   tokens: {
     ...fonts,
     ...palette,

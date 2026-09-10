@@ -12,7 +12,9 @@ an error and a theming variable, crosses through a declared channel.
 
 This page is about how to write your own component. imp also ships ready-made components, such as a
 button, a heading and text, built exactly this way. See
-**[Standard components](std-components.md)**.
+**[Standard components](std-components.md)**. A component of yours fits next to them when it follows
+the same rules for the theme, the text direction, the wording and accessibility. See
+**[Custom components](custom-components.md)**.
 
 ## Two layers
 

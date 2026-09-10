@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="imp">
+  <rect width="512" height="512" rx="104" fill="#F4EFE6" />
+  <g transform="translate(256 306) scale(1.8) translate(-256 -188)">
+    <path
+      d="M196 142C174 118 162 90 168 58C196 74 224 104 234 130Z"
+      fill="#F5811A"
+      stroke="#0F3A5D"
+      stroke-width="11"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M316 142C338 118 350 90 344 58C316 74 288 104 278 130Z"
+      fill="#F5811A"
+      stroke="#0F3A5D"
+      stroke-width="11"
+      stroke-linejoin="round"
+    />
+    <ellipse cx="256" cy="188" rx="80" ry="76" fill="#F9A51E" stroke="#0F3A5D" stroke-width="12" />
+    <ellipse cx="220" cy="216" rx="17" ry="10" fill="#F2907B" />
+    <ellipse cx="292" cy="216" rx="17" ry="10" fill="#F2907B" />
+    <ellipse cx="228" cy="180" rx="11" ry="14" fill="#0F3A5D" />
+    <ellipse cx="284" cy="180" rx="11" ry="14" fill="#0F3A5D" />
+    <circle cx="232" cy="174" r="4" fill="#FFFFFF" />
+    <circle cx="288" cy="174" r="4" fill="#FFFFFF" />
+    <path
+      d="M238 212C246 226 266 226 274 212"
+      fill="none"
+      stroke="#0F3A5D"
+      stroke-width="10"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>

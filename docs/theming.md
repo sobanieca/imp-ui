@@ -15,10 +15,10 @@ a typography value:
 // dark.js
 export default {
   name: 'dark',
-  colorScheme: 'dark',
   tokens: {
     'color-primary': '#7c9cff',
     'color-secondary': '#94a3b8',
+    'color-surface': '#1f2028',
   },
 }
 ```
@@ -27,10 +27,11 @@ export default {
   `color-primary`. imp adds an `--imp-` prefix. So the CSS custom property that your styles
   reference is `--imp-color-primary`. There is no nesting. There is one flat namespace.
 - **`name`** labels the theme. It helps in a theme switcher UI, and when you store a choice.
-- **`colorScheme`** is `'light'` or `'dark'`, and it is optional. It tells the browser how to render
-  a native form control, a scrollbar, and CSS that reads `prefers-color-scheme`. So those match your
-  palette. It is metadata on one theme. It is not a mode that imp manages for you. When you leave it
-  out, imp does not change the colour scheme.
+- **Light or dark is read from `color-surface`.** imp looks at the lightness of that token. A dark
+  surface makes a dark theme. imp then sets the `color-scheme` of the page to match. So a native
+  form control, a scrollbar, and CSS that reads `prefers-color-scheme` follow your palette. There is
+  no mode to declare. The value must be a hex colour, such as `#1f2028`. When the token is absent,
+  or not a hex colour, imp warns and leaves the colour scheme unset.
 
 An app can ship as many theme files as it wants. There is no registry to register them in. A theme
 is a module that you import.
@@ -54,7 +55,7 @@ applyTheme(dark)
 
 `applyTheme` writes the tokens of the theme as `--imp-*` custom properties on the document root.
 From there they inherit into everything: your components, their shadow DOM, and any content that imp
-adds to the page. It also sets the colour scheme from `colorScheme`.
+adds to the page. It also sets the colour scheme from the lightness of `color-surface`.
 
 **A change of theme re-skins the app immediately.** A token is a CSS custom property. So a new theme
 rewrites the variables in one pass, and every rule that references a token re-skins at the same
@@ -82,6 +83,11 @@ const badge = component('my-app-theme-badge', {
 the theme changes. Most of your app never needs this, because the re-skin happens through the CSS
 variables. It is there for the rare component that must branch on the active theme, and to build a
 theme switcher.
+
+To branch on light against dark, call `colorSchemeOf(tokens)` from `imp/theme`. It returns `'light'`
+or `'dark'` from the lightness of `color-surface`, the same way `applyTheme` does. So
+`colorSchemeOf(theme.get().tokens)` is the scheme of the active theme. It returns `undefined` when
+the token is absent, or not a hex colour.
 
 ## Built-in starter themes
 
@@ -113,12 +119,12 @@ custom properties, exactly like a change between light and dark.
 These four names are the only strings that `applyTheme` accepts. Any other string throws. The `imp-`
 prefix keeps them out of your way. Your own themes can have the names `light` and `dark`, and there
 is never a question about whose theme a name refers to. Everything else works exactly as with a
-theme object. The tokens arrive as `--imp-*` custom properties, imp sets `colorScheme` to match, and
-the `theme` state updates.
+theme object. The tokens arrive as `--imp-*` custom properties, imp sets the colour scheme, and the
+`theme` state updates.
 
 To start from a built-in theme, instead of writing every value, name it as the `base` of your theme.
 imp resolves the base, and then writes your tokens over it. The result is a complete theme. The
-`name` and the `colorScheme` come from the base when you leave them out:
+`name` comes from the base when you leave it out:
 
 ```js
 import { applyTheme } from 'imp/theme'
@@ -334,7 +340,7 @@ text, and to stay legible on a light surface and on a dark surface. So the same 
 serves both themes.
 
 The three shadow steps and the radius scale set the depth and the softness of a theme. `shadow-sm`
-lifts a card off the page. No standard component is a card, so this step is for your own layout.
+lifts a card off the page. The `card` component reads it, and so does a panel of your own.
 `shadow-md` lifts an element that floats near its trigger, such as the overflow menu of a button.
 `shadow-lg` lifts an overlay that sits above everything, such as a dialog or a drawer. There are two
 radius tokens, because a corner reads differently at two scales. `radius-item` rounds the small

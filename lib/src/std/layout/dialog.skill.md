@@ -16,6 +16,7 @@ of the platform. So an ancestor never clips it, and it needs no z-index.
 | `title`  | string, or a state - **live**     | -       | Names the dialog for a screen reader; give one |
 | `modal`  | boolean - **read once, at mount** | `true`  | `false` is the movable, non-blocking window    |
 | `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                       |
+| `anchor` | element - **read once, at mount** | -       | Non-modal only: the window opens next to it    |
 | `events` | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
 
 | Property                   | Default |
@@ -53,8 +54,17 @@ Rules an agent gets wrong:
   with the close button. Mount several dialogs and they stack in the order in which they opened.
 - **Dragging is included and needs no prop.** A non-modal dialog is movable because it is non-modal.
   The title bar takes the focus, and an arrow key moves the window 16px per step. imp clamps the
-  window to the viewport as it moves, and when the viewport resizes. A dialog that opens again is
-  centred again. imp never stores the position.
+  window to the viewport as it moves, and when the viewport resizes. A dialog that opens again
+  starts from its resting place again. imp never stores the position.
+- **Pass the control that opens a window as `anchor`, so the window opens next to it.** Without an
+  anchor a non-modal window opens in the centre of the viewport. On a tall or zoomed screen that is
+  out of view. With `anchor: toggle` it opens under the control, centred on it, and above it when it
+  does not fit below. It shrinks to the room it has and scrolls inside, and it follows the control
+  when the page scrolls. `anchor` is an element, read once, and it is ignored by a modal.
+- **The anchor must have a box, in the tree of the dialog.** Put the control and the dialog in the
+  same component. A control inside a nested component is reached through its host, and a host has no
+  box. So wrap an imp component in a `span` and pass the `span`. A control in an ancestor component
+  is out of reach, and the window opens centred.
 - **Do not animate the dialog yourself.** It fades and rises in, and it slides out. It obeys
   `prefers-reduced-motion`. Every imp overlay shares this animation.
 - **The platform owns the focus.** The close button is the first element in the dialog, so the focus

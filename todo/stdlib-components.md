@@ -48,9 +48,10 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   `radioGroup`, `submitButton` and `resetButton`. They opened the `imp/std/inputs` subpath, and they
   settled the contract that binds a field, see `adr/state-driven-forms.md`. _Form handling_, below,
   gives the details.
-- **Display** - `card`, `badge`, `avatar`, `tooltip`, `popover`, `accordion`, `descriptionList`,
-  `statistic`, `timeline` _(later)_, `image`, which previews and zooms, _(later)_, `calendar`
-  _(later)_ and `qrCode` _(later)_. **`carousel` waits** until `::scroll-button()` and
+- **Display** - `badge`, `avatar`, `popover`, `accordion`, `descriptionList`, `statistic`,
+  `timeline` _(later)_, `image`, which previews and zooms, _(later)_, `calendar` _(later)_ and
+  `qrCode` _(later)_. `card` and `tooltip` have landed. `card` is the panel of the index and the
+  group pages of `imp preview`. **`carousel` waits** until `::scroll-button()` and
   `::scroll-marker()` work in every browser. To write JavaScript for a scroll button in the meantime
   is what `adr/browser-support-baseline.md` forbids. `emptyState` has landed. It opened the
   `imp/std/display` subpath, and it fixed the convention for wording, see

@@ -1,6 +1,6 @@
-import { reviewWidgetScript } from './review.js'
+import { reviewWidgetScript, TELEMETRY_ENTRIES } from './review.js'
 
-export const clientScript = ({ mocks = false } = {}) => `
+export const clientScript = ({ mocks = false, mark = '' } = {}) => `
 (() => {
   let es = null
   const connect = () => {
@@ -13,6 +13,21 @@ export const clientScript = ({ mocks = false } = {}) => `
 
   const queue = []
   let timer = null
+  const kept = []
+  const watchers = new Set()
+
+  const keep = (entry) => {
+    kept.push(entry)
+    if (kept.length > ${TELEMETRY_ENTRIES}) kept.shift()
+    for (const watcher of watchers) watcher(entry)
+  }
+  globalThis.__impTelemetry = {
+    entries: () => kept.slice(),
+    watch: (watcher) => {
+      watchers.add(watcher)
+      return () => watchers.delete(watcher)
+    },
+  }
 
   const safe = (v) => {
     try {
@@ -37,6 +52,7 @@ export const clientScript = ({ mocks = false } = {}) => `
   }
 
   const push = (entry) => {
+    keep(entry)
     queue.push(entry)
     if (!timer) timer = setTimeout(flush, 200)
   }
@@ -58,6 +74,9 @@ export const clientScript = ({ mocks = false } = {}) => `
   })
 
   if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.imp === 'telemetry') keep(event.data.entry)
+    })
     navigator.serviceWorker.register('/@imp/sw.js', { scope: '/' })
       .catch((error) => console.error('imp: the dev service worker failed to start -', error))
 
@@ -76,7 +95,7 @@ export const clientScript = ({ mocks = false } = {}) => `
     }
   }
 })()
-;${reviewWidgetScript()}`
+;${reviewWidgetScript({ mark })}`
 
 export const serviceWorkerScript = ({ mockBundle = '' } = {}) => `
 self.addEventListener('install', () => self.skipWaiting())
@@ -96,9 +115,14 @@ const flush = () => {
   }).catch(() => {})
 }
 
-const report = (entry) => {
+const report = (entry, clientId = null) => {
   queue.push(entry)
   if (!timer) timer = setTimeout(flush, 200)
+  if (clientId) {
+    self.clients.get(clientId)
+      .then((client) => client?.postMessage({ imp: 'telemetry', entry }))
+      .catch(() => {})
+  }
 }
 
 self.__impMocks = []
@@ -167,49 +191,48 @@ const matchingMock = async (description) => {
   return null
 }
 
-const answerFromMock = async (entry, description, started) => {
+const answerFromMock = async (entry, description, base, started, clientId) => {
   try {
     if (entry.delay) await sleep(entry.delay)
     const response = mockResponse(await entry.handler(description))
-    report({
-      type: 'net',
-      method: description.method,
-      url: description.url,
-      status: response.status,
-      ms: Date.now() - started,
-      mock: entry.source,
-    })
+    report({ ...base, status: response.status, ms: Date.now() - started, mock: entry.source }, clientId)
     return response
   } catch (error) {
     report({
-      type: 'net',
-      method: description.method,
-      url: description.url,
+      ...base,
       error: String(error?.message || error),
       ms: Date.now() - started,
       mock: entry.source,
-    })
+    }, clientId)
     throw error
   }
 }
 
+const describeTarget = (request) => {
+  const { url, method, destination } = request
+  return destination === ''
+    ? { type: 'net', method, url, kind: 'fetch' }
+    : { type: 'net', method, url, kind: 'resource', destination }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
-  const { url, method } = request
-  if (url.includes('/@imp/')) return
+  if (request.url.includes('/@imp/')) return
+  const base = describeTarget(request)
   const started = Date.now()
+  const clientId = event.clientId || null
   event.respondWith((async () => {
     if (self.__impMocks.length) {
       const description = await describeRequest(request)
       const entry = await matchingMock(description)
-      if (entry) return answerFromMock(entry, description, started)
+      if (entry) return answerFromMock(entry, description, base, started, clientId)
     }
     try {
       const response = await fetch(request)
-      report({ type: 'net', method, url, status: response.status, ms: Date.now() - started })
+      report({ ...base, status: response.status, ms: Date.now() - started }, clientId)
       return response
     } catch (error) {
-      report({ type: 'net', method, url, error: String(error), ms: Date.now() - started })
+      report({ ...base, error: String(error), ms: Date.now() - started }, clientId)
       throw error
     }
   })())

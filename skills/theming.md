@@ -9,19 +9,24 @@ renders again.
 // dark.js
 export default {
   name: 'dark',
-  colorScheme: 'dark', // 'light' | 'dark' | omitted - drives native controls and prefers-color-scheme
-  tokens: { 'color-primary': '#7c9cff', 'color-secondary': '#94a3b8' },
+  tokens: { 'color-primary': '#7c9cff', 'color-secondary': '#94a3b8', 'color-surface': '#1f2028' },
 }
 ```
 
 ```js
-import { applyTheme, theme } from 'imp/theme'
+import { applyTheme, colorSchemeOf, theme } from 'imp/theme'
 import dark from './dark.js'
 
 applyTheme('imp-light') // a built-in name...
 applyTheme(dark) // ...or your own module
 theme.get().name // the active theme; also theme.watch/text/view
+colorSchemeOf(theme.get().tokens) // 'light' | 'dark' | undefined
 ```
+
+There is no mode field. imp reads light or dark from the lightness of `color-surface`, and sets
+`color-scheme` on the root to match. So native controls and `prefers-color-scheme` follow the theme.
+`color-surface` must be a hex colour. When it is absent, or not hex, imp warns and leaves
+`color-scheme` unset. `colorSchemeOf(tokens)` is the same test, for a component that must branch.
 
 Apply a theme at the entry point, or through `init({ theme })`, see [i18n](i18n.md). Do it before
 `mount`. The page then does not flash the wrong theme.
@@ -34,8 +39,8 @@ The high-contrast pair also makes `border-width` and `focus-ring-width` wider, a
 `disabled-opacity`.
 
 To start from a built-in theme, name it as `base`. imp fills every token from the base, then writes
-your tokens over it. `name` and `colorScheme` default to the base. `base` takes the four built-in
-names only. `theme.get()` returns the resolved theme, with no `base` key:
+your tokens over it. `name` defaults to the base. `base` takes the four built-in names only.
+`theme.get()` returns the resolved theme, with no `base` key:
 
 ```js
 applyTheme({ base: 'imp-dark', name: 'midnight', tokens: { 'color-primary': '#a78bfa' } })
@@ -110,9 +115,9 @@ not a colour, so a gradient or an image is valid. The built-in themes set it to 
 
 `space-3` and the larger spaces are **fluid** `clamp()` values that grow with the viewport. Each one
 keeps a `rem` term, so zoom still scales it. `space-page` is the gutter for the outside of a page
-that you lay out yourself. No component uses it for padding. Use `shadow-sm` for your own card. Use
-`shadow-md` for a menu that floats beside its trigger. Use `shadow-lg` for a dialog or a drawer. A
-theme can set a plain length instead.
+that you lay out yourself. No component uses it for padding. `card` reads `shadow-sm`. Use it for a
+panel of your own. Use `shadow-md` for a menu that floats beside its trigger. Use `shadow-lg` for a
+dialog or a drawer. A theme can set a plain length instead.
 
 `breakpoint-desktop` is `48rem`. It is the width where imp separates a phone from a desktop. Use it
 anywhere a length goes, and read it from JavaScript with `getComputedStyle`. **It cannot go inside a
@@ -143,12 +148,10 @@ const palette = { 'color-green': '#00884d' /* 30 more */ }
 
 export const light = {
   name: 'app-light',
-  colorScheme: 'light',
   tokens: { ...fonts, ...palette /* ... */ },
 }
 export const dark = {
   name: 'app-dark',
-  colorScheme: 'dark',
   tokens: { ...fonts, ...palette /* ... */ },
 }
 export default light

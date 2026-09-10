@@ -26,12 +26,14 @@ page, in a card, in a `shell` region, or in another component.
 | -------------------------- | ------- | ------------------------------------------------------ |
 | `--imp-drawer-inline-size` | `24rem` | Its width; capped at `85dvi`, so a phone keeps an edge |
 
-Inside a `shell` that has a `gap`, the drawer follows the frame. It insets itself by the gap of the
-frame from the top, the bottom and the end edge. It rounds its corners with `radius-container`, like
-the bar and the column. So it reads as one more floating panel. It does this by reading the custom
-properties that a gapped frame publishes, which are `--imp-shell-frame-gap` and
-`--imp-shell-frame-radius`. Both are `0` outside a frame, and at `gap: 0`. There the drawer is flush
-with the edge of the screen.
+Inside a `shell`, the drawer follows the frame. It opens at the end edge of the content, so on a
+screen wider than the `maxWidth` of the frame it does not sit at the edge of the screen. In a frame
+that has a `gap`, it also insets itself by the gap from the top and the bottom, and it rounds its
+corners with `radius-container`, like the bar and the column. So it reads as one more floating
+panel. It does this by reading the custom properties that the frame publishes, which are
+`--imp-shell-frame-inset`, `--imp-shell-frame-gap` and `--imp-shell-frame-radius`. All are `0`
+outside a frame. The inset is measured from the width of the screen, so it lines up with the content
+only when the frame fills the screen.
 
 ## The two modes
 

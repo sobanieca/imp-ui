@@ -12,6 +12,11 @@ change the shape of anything.
   Delete the old design.
 - **Never let the old design survive in prose.** Docs, skills and ADRs describe what imp does now.
   They are not a changelog. They must not say what a key or an export used to be called.
+- **Do not narrate a previous implementation.** A sentence such as "imp used to poll the server" or
+  "the widget once read the log through a route" is history with no reader. Delete it. Mention a
+  previous approach only when its outcome is the reason for the current decision, and then state the
+  outcome: "a server round-trip per line made the list lag behind the click". A record of what
+  changed is the git history, not a doc or an ADR.
 - Reconsider this rule only when the version reaches `1.0.0`. From then on, a breaking change has a
   real cost.
 

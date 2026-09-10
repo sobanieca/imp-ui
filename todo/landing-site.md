@@ -16,9 +16,10 @@ writes the site a second time, by hand.
 - Generate the navigation from the set of documents, as a sidebar or an index. So a new document
   appears with no edit to a menu.
 - Run the engine **in process**, to honour `adr/in-process-toolchain.md`. Do not call an external
-  Markdown CLI. Select a Markdown renderer in pure JavaScript or in wasm. Vendor it, and pin it by a
-  checksum, in the way that imp pins esbuild-wasm. See `adr/in-process-dependency-bundling.md`, and
-  `cli/src/vendor`.
+  Markdown CLI. Use the vendored `marked`, which `imp preview` already uses to render a component's
+  skill file into its Skill tab, see `adr/component-preview.md`. It is pinned in
+  `tools/prebundle-npm-deps.js` and bundled into `cli/src/vendor/marked.js`. Add the highlighting of
+  code on top of it.
 - Use imp on imp. Build the site itself with imp, and ship it with `imp build`, see
   `adr/production-bundling.md`. So the home page and the documentation are a static bundle. That
   practises exactly the story about an SPA on a CDN that the copy states.
@@ -176,8 +177,8 @@ published output. Only `docs/`, and the home page, ship.
 
 ## Open questions
 
-- **Which Markdown renderer.** It must satisfy the constraint about running in process, and about a
-  vendored wasm module. It must also cover the highlighting of code.
+- **Which highlighter for code.** `marked` renders no highlighting of its own. The highlighter must
+  run in process, as a vendored JavaScript or wasm module.
 - **The styling and the theming.** Does the site reuse the theming system of an app, see
   `adr/themable-by-default-tokens.md`, so that the site and an imp app share one look? Or does the
   site have a theme of its own?

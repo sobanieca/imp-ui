@@ -161,7 +161,7 @@ events and the mistakes that the component invites. The first line is the summar
 the component name. Read one with `imp skill ./components/counter.js`. `imp build counter.js` folds
 the file into the bundle as `impSkill`. An HTML build removes all skill text, see [build](build.md).
 Read [skill](skill.md) to learn how to write one. Write a sidecar for every component that you
-build. Give the component a `*.preview.js` sibling as well, so a person can look at it. Point the
-`description` export of the preview back at the sidecar, as in
-`export const description = "Run 'imp skill ./components/counter.js' before writing code with it."`
-See [preview](preview.md).
+build. Give the component a `*.preview.js` sibling as well, so a person can look at it. The preview
+page shows the sidecar as its Skill tab, and it shows the `imp skill` command of the component. See
+[preview](preview.md). The rules that make the component fit next to a standard one, for the theme,
+the direction, the wording and accessibility, are in [custom-components](custom-components.md).

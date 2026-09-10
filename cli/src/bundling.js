@@ -9,7 +9,7 @@ import {
   isImpToolingSubpath,
 } from './specifiers.js'
 
-const IMP_LIBRARY_ROOT = import.meta.resolve('../../lib/src/')
+export const IMP_LIBRARY_ROOT = import.meta.resolve('../../lib/src/')
 
 export const impModuleUrl = (specifier) => new URL(IMP_MODULES[specifier], IMP_LIBRARY_ROOT).href
 

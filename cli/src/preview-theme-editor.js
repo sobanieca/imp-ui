@@ -1,6 +1,6 @@
 import { component } from 'imp'
 import { div, input, pre } from 'imp/html'
-import { applyTheme } from 'imp/theme'
+import { applyTheme, colorSchemeOf } from 'imp/theme'
 import { initState } from 'imp/state'
 import { button, text } from 'imp/std'
 import { select, textField } from 'imp/std/inputs'
@@ -95,8 +95,8 @@ const baseFont = (name) => {
   return typeof value === 'string' && value !== '' ? value : defaultTokens()[name]
 }
 
-const seedDraft = (colorScheme) => {
-  const scheme = colorScheme === 'dark' ? 'dark' : 'light'
+const seedDraft = () => {
+  const scheme = colorSchemeOf(baseTokens) ?? 'light'
   const defaults = scheme === 'dark' ? DARK_DEFAULTS : LIGHT_DEFAULTS
   const fromTheme = baseColors(baseTokens, defaults)
   return {
@@ -214,8 +214,8 @@ const usage = () =>
 
 const definition = {
   styles: EDITOR_STYLES,
-  setup: (self, themeName, colorScheme) => {
-    const draft = readDraft(themeName) ?? seedDraft(colorScheme)
+  setup: (self, themeName) => {
+    const draft = readDraft(themeName) ?? seedDraft()
 
     const apply = () => {
       writeDraft(themeName, draft)
@@ -287,7 +287,7 @@ const definition = {
       usage(),
       flex(
         { gap: 2, wrap: true },
-        copyButton(() => themeFileSource(themeName, draft)),
+        copyButton(self, 'theme', () => themeFileSource(themeName, draft)),
         button(
           {
             size: 'sm',
@@ -304,7 +304,7 @@ const definition = {
 
 let createEditor = null
 
-export const themeEditor = (themeName, colorScheme) => {
+export const themeEditor = (themeName) => {
   createEditor ??= component('imp-preview-theme', definition)
-  return createEditor(themeName, colorScheme)
+  return createEditor(themeName)
 }

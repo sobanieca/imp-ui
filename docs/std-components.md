@@ -52,7 +52,7 @@ split by group:
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                                              |
 | `imp/std/layout`     | The app frame, the two arrangement primitives and the two overlay frames - `shell`, `flex`, `stack`, `dialog`, `drawer` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...                                     |
-| `imp/std/display`    | Components that present content - `emptyState`, `tag`, `tooltip`, ...                                                   |
+| `imp/std/display`    | Components that present content - `card`, `emptyState`, `tag`, `tooltip`, ...                                           |
 | `imp/std/navigation` | Getting around the app - `tabs`, ...                                                                                    |
 | `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...                                 |
 | `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                                                 |
@@ -287,6 +287,23 @@ Two custom properties tune the frame; set them anywhere above it:
 | `--imp-shell-sidebar-inline-size` | `16rem` | The nav column, and the drawer                 |
 | `--imp-shell-bottom-bar-items`    | `4`     | Rows in the phone's bottom bar before **More** |
 
+**The frame has a maximum width, and it is centred beyond it.** A line of text that runs across a
+very wide screen is hard to read, and a column that sits at the far left of it is far from the
+content. So the column and the content together never get wider than `maxWidth`, which is `125rem`
+by default. On a wider screen they sit in the middle, and the background of the frame fills the
+rest. The top bar keeps its surface from edge to edge, and it centres its controls over the content.
+When the frame floats with a `gap`, the bar is a panel, and that panel is capped in the same way. A
+`drawer` that you mount in the content opens at the end edge of the content, not at the edge of the
+screen. `maxWidth` takes any CSS length. Pass `'none'` for a frame that always fills the screen,
+such as a dashboard of many panels.
+
+```js
+shell(
+  { logo: brand(), navbar: { map: app, icons }, maxWidth: '90rem' },
+  router({ map: app, screens }),
+)
+```
+
 **The frame can float.** By default the bar, the column and the bottom bar of a phone meet the edges
 of the screen, and each other, with hairline dividers. Pass `gap`, which is a step on the same
 spacing scale that `flex` and `stack` take. The frame then insets itself by that much, and pulls
@@ -296,8 +313,8 @@ rounded corner would sit against the edge of the screen, so imp draws none. A th
 `radius: none` floats square panels. Your content is not a panel. It sits directly on the
 background. So a page that wants a card draws one. The drawer of a phone floats with the rest, inset
 by the same gap and rounded in the same way. A `drawer` that you mount inside the frame does the
-same. The frame gives it the inset and the radius through two custom properties. So a contextual
-panel lines up with the column that it slides in beside.
+same. The frame gives it the inset and the radius through custom properties. So a contextual panel
+lines up with the column that it slides in beside.
 
 ```js
 shell({ logo: brand(), navbar: { map: app, icons }, extras, gap: 3 }, router({ map: app, screens }))
@@ -432,6 +449,14 @@ library accepts any DOM, so your own `<svg>` goes wherever a Lucide export goes.
 The furniture of a page is not frame chrome, and it has no region of its own. A page title and a
 toolbar of actions are examples. They go at the top of the main content that you pass as children.
 That is where they belong. They change with the screen, and the frame does not.
+
+The mark of `appLogo` is an `icon`, or an image by `src`. A brand often has one image for a light
+background and another for a dark one. Give `src` both:
+`{ light: '/logo-light.svg', dark:
+'/logo-dark.svg' }`. imp shows the one that matches the colour
+scheme of the active theme, which it reads from the lightness of the `color-surface` token. It swaps
+the image the moment the theme changes. The name of the theme plays no part, and the theme knows
+nothing about the logo. One entry alone serves both schemes.
 
 Two of these components hold state that lives longer than the page. `themeSelect` and `langSelect`
 remember the choice in `localStorage`. Pass `remember: false` when the app owns that decision.
@@ -622,6 +647,21 @@ many windows as you want, and the person can drag one by its title bar, or move 
 keys. Both windows animate themselves, and neither animates for a reader who asked their system for
 reduced motion.
 
+**A window opens next to the control that opened it when you name that control.** Pass the control
+as `anchor`, and the window opens under it, centred on it. When it does not fit below, it opens
+above. It shrinks to the room it has, and its content scrolls. It follows the control when the page
+scrolls. Without an anchor, a window opens in the centre of the viewport. On a tall screen, or one
+that the person zoomed into, that centre is out of view. So give a window an anchor when a control
+opens it.
+
+The anchor must be a box in the same component as the dialog. An imp component renders no box of its
+own, so wrap it in a `span` and pass the `span`:
+
+```js
+const inspect = span(button({ label: 'Inspect', pressed: inspecting }, icon(luSlidersHorizontal)))
+dialog({ title: 'Inspector', modal: false, open: inspecting, anchor: inspect }, details())
+```
+
 **A drawer is the same window, docked to the side.** Use it for filters, an inspector, a detail
 view, and anything else that belongs beside the page instead of in the middle of it. It slides in
 from the end of the line, which is the right edge in English and the left edge under `dir="rtl"`.
@@ -684,6 +724,45 @@ wrong, and nothing to keep in step while the page scrolls.
 The browser can connect a trigger and its panel only when one component renders both. So a menu is
 always a prop of the control that it belongs to. It is never a wrapper that you put around one.
 
+## A card is the panel that a page is made of
+
+Most of a dashboard is panels. Each one has a surface, a border, a rounded corner and a small
+shadow, and each one takes those from the theme. `card` is that panel, so you never write it. It
+takes a `header` and a `footer`, and its children are the body:
+
+```js
+import { card, tag } from 'imp/std/display'
+import { button, heading, text } from 'imp/std'
+import { flex } from 'imp/std/layout'
+
+card(
+  {
+    header: flex(
+      { horizontalAlign: 'justify', verticalAlign: 'center', gap: 2 },
+      heading({ level: 2 }, 'Invoices'),
+      tag({ size: 'sm' }, count.text()),
+    ),
+    footer: flex({ horizontalAlign: 'end', gap: 2 }, button({ variant: 'primary' }, 'New invoice')),
+  },
+  text({ tone: 'secondary' }, 'Three invoices are overdue.'),
+)
+```
+
+**A card can be a link.** Give it an `href`, and the whole panel becomes one anchor. The router
+handles a click on an in-app path, and the browser keeps the middle click and the context menu. A
+link card holds content only. A button inside a link is invalid HTML. When the body is a picture or
+a chart, give the card a `label`, which is the name a screen reader announces.
+
+**The grid is yours.** A card is a block that fills the height of its cell, so a CSS grid of cards
+has even rows with no extra work. The grid itself lives in the styles of your own component, as
+every two-dimensional layout does. See
+**[Layout is two components](#layout-is-two-components-deliberately)**.
+
+**A card follows the theme.** Its surface is `color-surface`, its border is `color-border` at
+`border-width`, its corner is `radius-container` and its lift is `shadow-sm`. A theme that sets the
+shadow to `none` and the radius to `0` gets a flat, square card, with no CSS in your app. See
+**[Theming](theming.md)**.
+
 ## Custom elements next to yours
 
 Each standard component defines its own element the first time when you call it. `button` renders as
@@ -697,3 +776,8 @@ Each standard component defines its own element the first time when you call it.
 The content of a component lives inside its own element. So to read the content from outside, you go
 through that boundary. `host.textContent` is empty by design. A test walks the `shadowRoot`. An
 end-to-end selector uses the deep combinator. See **[Testing](testing.md)**.
+
+The library does not cover every app. When you build a component that the library lacks, follow the
+rules that the standard components follow, so that it reads the theme, mirrors in a right-to-left
+script, brings its own words and works from a keyboard. See
+**[Custom components](custom-components.md)**.

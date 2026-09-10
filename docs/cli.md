@@ -270,19 +270,35 @@ a directory redirects to the URL with a trailing slash, and serves the `index.ht
 directory. imp rejects a path outside the served directory.
 
 These internal endpoints are reserved, and they are not part of your app: `/@imp/events` is the
-reload stream, `/@imp/log` is the telemetry sink, `/@imp/review` is the review sink, described next,
-`/@imp/sw.js` is the service worker, and `/@imp/*` is the library source.
+reload stream, `/@imp/log` is the telemetry sink, which the widget below also reads back,
+`/@imp/review` is the review sink, described next, `/@imp/sw.js` is the service worker, and
+`/@imp/*` is the library source.
 
 ### Reviewing the page - notes for your agent
 
-Every page that the dev server serves carries a small **review widget** in the bottom corner. Click
-it, and the toolbox opens with one button, **Add review**. Click that button, and the next element
-that you click on the page is the element that you review. Move the pointer to see what imp is about
-to select, because imp outlines the element under the pointer. Then click the element, type a
-comment, and press **Save review**, or `Ctrl` or `Cmd` with `Enter`. The element that you selected
-stays outlined while you type. So you never have to check a DOM path to know what you describe.
-`Escape` cancels the selection. `Enter` takes the highlighted element, when you prefer the keyboard
-to the mouse.
+Every page that the dev server serves carries a small **review widget**. It is the imp mark in the
+bottom corner. Drag it to any place on the page when it covers something, and imp remembers the
+place across reloads. Click it, and three round buttons appear: **Add review**, **Console logs** and
+**Network logs**.
+
+**Add review** starts a selection. The next element that you click on the page is the element that
+you review. Move the pointer to see what imp is about to select, because imp outlines the element
+under the pointer. Then click the element, type a comment, and press **Save review**, or `Ctrl` or
+`Cmd` with `Enter`. The element that you selected stays outlined while you type. So you never have
+to check a DOM path to know what you describe. `Escape` cancels the selection. `Enter` takes the
+highlighted element, when you prefer the keyboard to the mouse.
+
+**Console logs** and **Network logs** show what the page sent to your terminal since it loaded: what
+it logged, what failed, and each request with its status and its time. A new line appears as it
+happens, so press a button in the app and watch what it logged. Each line is one row, cut with an
+ellipsis. Click a row to read all of it. The console view filters by level. The network view filters
+by kind and by outcome. It starts on **Fetch**, which is a request that your code made, with `fetch`
+or `XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
+font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and
+the level or the status of a row carries the same colour. The page keeps the last 2000 entries, and
+a reload starts the list again. The terminal and `.imp/dev.log` keep the whole session. The views
+are a glance, not a debugger. For a stack trace, a request body or a timing chart, open the
+developer tools of the browser.
 
 That is the whole interaction. You click through the app, and you describe what is wrong in the
 words that you would say out loud. imp records which page you were on, and which element you meant.
@@ -834,19 +850,20 @@ imp preview --list [--json]
 
 `imp preview` builds one component at a time, in isolation. It serves every one of your **preview
 files** in one app. The catalog is down the side, and a click opens a component in place, with no
-page load. The one line that an AI agent must read before it writes code with the component sits
-below the page head. Every named export becomes a labelled panel. That panel holds the component in
-a stage that you can drag to any size, with a state editor beside it. You start no app, you need no
-backend, and you navigate to no screen. You edit the component, the page reloads, and you see it. A
-preview file that fails to build shows its error in place of its panels, and the rest of the catalog
-stays up.
+page load. The `imp skill` command that an AI agent must run before it writes code with the
+component sits below the page head. Every named export becomes a tab in a vertical strip, and the
+panel of a tab holds the component in a stage that you can drag to any size, with the code of the
+call site and a state editor behind two toggle buttons. A **Skill** tab shows the skill file of the
+component, rendered as a page. You start no app, you need no backend, and you navigate to no screen.
+You edit the component, the page reloads, and you see it. A preview file that fails to build shows
+its error in place of its panels, and the rest of the catalog stays up.
 
 Underneath, this is the same dev server as `imp start`. So the console and the network activity of
 the browser still stream to your terminal, and a save of any file reloads the page. Your
 `public/favicon.svg` marks the tab, as it does in your running app. When the project has none, the
-mark of imp stands in. The review widget is in the corner. Select a part of the component that you
-preview, comment on it, and the note arrives in `.imp/reviews/`, with the preview page that it came
-from. See **[Reviewing the page](#reviewing-the-page---notes-for-your-agent)**.
+mark of imp stands in. The imp mark in the corner is the review widget. Select a part of the
+component that you preview, comment on it, and the note arrives in `.imp/reviews/`, with the preview
+page that it came from. See **[Reviewing the page](#reviewing-the-page---notes-for-your-agent)**.
 
 ### The preview file
 
@@ -870,23 +887,60 @@ scenario needs a setup at render time, export a function in place of an instance
 `export const lazy = () => todoList(buildFixture())`. imp calls the function when it renders the
 panel.
 
+An export name is an identifier, and an identifier reads badly as a label. So a scenario can carry a
+label of its own. Export an object with a `scenario` string and a `component`:
+
+```js
+export const overdue = {
+  scenario: 'Three overdue items, one of them done',
+  component: todoList({ todos: overdueFixture() }),
+}
+```
+
+imp shows the `scenario` text as the tab and as the title of the panel. `component` is the instance,
+or a function that returns one, exactly as a plain export. The export name stays the id of the
+scenario in the address, so a link to it reads `?scenario=overdue`.
+
+### The code of a scenario
+
+Every panel has a code toggle in its head. It opens the call site of the scenario, ready to copy:
+
+```js
+import { todoList } from './todos.js'
+
+todoList({ todos: [] })
+```
+
+imp does not ask you to write that snippet. It reads the preview file and cuts the snippet out of
+it. The snippet is the expression of the export, with every import that the expression uses, and
+every helper of the file that it reaches. So a scenario that wraps a field in a shared `form(...)`
+helper shows that helper above the call. Nothing is hidden, and the code that you see is the code
+that rendered the panel. A scenario that is a function shows the call inside it. Once you open the
+code of one panel, every panel opens with its code shown, until you hide it again.
+
+### The skill of a component
+
+The **Skill** tab renders the skill file of the component, the `todos.skill.md` that sits next to
+`todos.js`. See **[Components](components.md)**. It is the same text that `imp skill` prints for an
+agent, with the prop table and the rules as a page. The line below the page head is the `imp skill`
+command for this component. imp derives it from the path of the file, so there is nothing to
+declare. A component with no skill file says so in both places.
+
 ### Naming the component
 
-Three export names are reserved, and none of them is a scenario. They are how the component
+Two export names are reserved, and neither of them is a scenario. They are how the component
 introduces itself on the page:
 
 ```js
 export const name = 'Todo list'
 export const group = 'Widgets'
-export const description = "Run 'imp skill ./components/todos.js' before writing code with it."
 ```
 
 `name` is the label in the catalog, in the search, in the page head and in the browser tab. `group`
-is the group that the component is listed under. `description` is the instruction for an agent, and
-imp shows it below the head. Each one is optional, and each one is a plain string. Declare none of
-them, and imp falls back to the name of the file and the folder that the file sits in. So
-`src/inputs/text-field.preview.js` is `text_field` under `inputs`. That is readable, but it is not
-what you would say out loud.
+is the group that the component is listed under. Each one is optional, and each one is a plain
+string. Declare none of them, and imp falls back to the name of the file and the folder that the
+file sits in. So `src/inputs/text-field.preview.js` is `text_field` under `inputs`. That is
+readable, but it is not what you would say out loud.
 
 The grouping comes from `group`, not from the folder. So you can organize the catalog in the way
 that you talk about the components, and not in the way that the files happen to sit. Two files in
@@ -894,9 +948,10 @@ different folders that declare the same `group` are listed together.
 
 ### Groups and their icons
 
-The catalog at the side lists one row per group, with the components under it. By default every
-group has a folder icon, and the groups are in alphabetical order. To give the groups their own
-icons and their own order, point `preview.groups` in `imp.json` at a module of yours:
+The catalog at the side lists one row per group, with the components under it. By default a
+component belongs to the folder that holds its preview file, every group has a folder icon, and the
+groups are in alphabetical order. To name the groups yourself, with their own icons and their own
+order, point `preview.groups` in `imp.json` at a module of yours:
 
 ```json
 {
@@ -907,19 +962,32 @@ icons and their own order, point `preview.groups` in `imp.json` at a module of y
 ```js
 import { luLayoutGrid, luTextCursorInput } from 'imp/icons'
 
-export const groups = [
-  { name: 'Widgets', icon: luLayoutGrid },
-  { name: 'Inputs', icon: luTextCursorInput },
-]
+export const groups = {
+  widgets: { name: 'Widgets', icon: luLayoutGrid },
+  inputs: { name: 'Inputs', icon: luTextCursorInput },
+}
 ```
 
-The module exports an array named `groups`, with one entry per group. `name` is the exact string
-that a preview file exports as `group`, or the folder name that a file falls back to. `icon` is an
-icon from `imp/icons`, the same value that you give to the `icon` component. The groups appear in
-the order in which you list them. A group that your previews use, and that the module does not list,
-comes after them, with the folder icon. The module is ordinary imp code, and imp bundles it into the
-preview app. So an edit to it reloads the catalog, like any other change. A path that resolves to no
-file stops `imp preview` at startup.
+The module exports an object named `groups`, with one key per group. `name` is the label of the
+group in the catalog. `icon` is an icon from `imp/icons`, the same value that you give to the `icon`
+component. `priority` is an optional number. A group with a priority comes before every group
+without one, and a lower number comes first. So `priority: 1` puts a group at the top, whatever its
+place in the object. A preview file then imports the object and exports one of its entries as
+`group`:
+
+```js
+import { groups } from '../preview-groups.js'
+
+export const group = groups.widgets
+```
+
+So a group is a value that your editor completes and that a rename refactors, not a string that must
+match another string. The groups appear in the order in which you list them, after the ones with a
+priority. A component with no `group` export falls back to its folder, and such a folder comes after
+the listed groups, with the folder icon. The module is ordinary imp code, and imp bundles it into
+the preview app. So an edit to it reloads the catalog, like any other change. A path that resolves
+to no file stops `imp preview` at startup. A `group` that is not an entry of that module, or that is
+imported from another file, is reported in the terminal, and the component falls back to its folder.
 
 ### Mocking what the component imports
 
@@ -956,35 +1024,45 @@ they agree. Two scenarios that need different data differ in the arguments that 
 Each panel holds its component in a stage. Resize the stage by **dragging its right handle, its
 bottom handle or its corner handle**, with a mouse or a finger. The component lays itself out again
 at every width. That is the fastest way to find the width where it breaks, and you open no device
-emulation. A readout shows the current size. The `phone`, `tablet` and `desktop` buttons go to a
-common viewport. `fit` returns the stage to the full width of the page.
+emulation. A readout shows the current size.
+
+On a phone, the scenario tabs leave a narrow panel. So a stage in a narrow panel starts at twice the
+width of the panel. The page scrolls sideways, and the tabs move out of view as you swipe. The
+component then gets the width it needs. A stage that you drag wider than its panel scrolls the same
+way.
 
 ### The state editor
 
-Beside each stage is a form. It lists the state that the component manages. imp finds that state by
-reading your source for an `initState` name and a `useState` name. It shows a value as JSON. Edit
-one value, and apply it, or press `Ctrl` or `Cmd` with `Enter`. The component then updates through
-the normal fine-grained path of imp. There is no remount and no reload. The form also follows the
-state. So a click inside the component shows the new value.
+The sliders button in the head of a panel opens a movable window with a form. The window opens under
+that button, so it is where you look, on a phone as well. It lists every state that a component in
+the scenario initialized, with the tag of the component that holds it. imp finds that state in the
+running scenario, not in your source. So a state with a computed name, or one declared behind a
+helper, is listed like any other. A state that a child reads with `useState` appears once, under the
+component that initialized it. A scenario with no state gets no button.
+
+A component that reads a state with `useState` needs a provider above it, or it does not mount. So
+wrap it in a small component in the preview file, one that calls `initState` with that name and a
+fixture value, and pass the wrapper as the scenario. The editor then lists the state under the
+wrapper, and an edit there drives the component.
+
+The form shows a value as JSON. Edit one value, and apply it, or press `Ctrl` or `Cmd` with `Enter`.
+The component then updates through the normal fine-grained path of imp. There is no remount and no
+reload. The form also follows the state. So a click inside the component shows the new value. It
+shows a value that is not JSON data as read-only.
 
 Each panel gets its own form, bound to its own instance. So you can change `empty` and `populated`
-independently, on the same page. This discovery is a convenience, not a rule about how you write a
-component. imp does not list a state name that you compute at runtime, or build behind a helper. It
-shows a value that is not JSON data as read-only.
+independently, on the same page. imp reads the scenario again each time you open the window. So a
+state that a component initialized after the first paint is listed when you open it.
 
 ### The instruction for an agent
 
-imp shows the `description` of the file once, below the page head and above the first scenario, with
-a button to copy it. It exists because the two readers of a component need different things from the
-same page. A person looks at the stage. An agent that is about to write a call site must learn where
-the manual of the component is. The description belongs to the component, not to one scenario. That
-is why imp states it once at the top, and does not repeat it beside every panel.
-
-Write an instruction, not a summary. For example, write
-`Run 'imp skill std/button' to learn what button can do before using it.` A person can then paste it
-into an agent, and that is enough for the agent to get the whole manual. The manual stays in one
-place, and it cannot differ from the component. A file that declares no `description` says so in the
-same place.
+The Skill tab starts with the `imp skill` command of the component, with a button to copy it. It
+exists because the two readers of a component need different things from the same page. A person
+looks at the stage. An agent that is about to write a call site must learn the component first, and
+that command prints the whole skill file. imp derives the command from the path of the file. A
+standard component gets `imp skill std/button`, and a component of yours gets
+`imp skill ./components/todos.js`. So there is nothing to write, and the command cannot point at the
+wrong file. A component without a skill file gets a line that names the file to write.
 
 ### Themes
 
@@ -1115,8 +1193,8 @@ With no path, imp discovers every `*.preview.js` file in the project, and `/` li
 path to narrow the discovery. A preview file opens directly. A component path opens the preview
 beside it, so `imp preview components/todos.js` finds `components/todos.preview.js`. A folder limits
 the discovery to that folder. Every component has an address of its own, `/<group>/<name>` in lower
-case with hyphens, such as `/widgets/counter`. A reload keeps it, and a bookmark opens it. To render
-one scenario only, add `?scenario=<name>` to that address, or click **isolate** on a panel.
+case with hyphens, such as `/widgets/counter`. A reload keeps it, and a bookmark opens it. A click
+on a scenario tab adds `?scenario=<name>` to the address, so a link opens that scenario.
 
 `imp preview --list` prints the discovered preview files, one per line. `--list --json` prints them
 as a JSON array, for a tool to read. `--port` selects the port, and the default is 4517. `--env`

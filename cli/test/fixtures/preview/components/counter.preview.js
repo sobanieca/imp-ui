@@ -1,9 +1,9 @@
 import { counter } from './counter.js'
+import { groups } from '../preview-groups.js'
 
 export const name = 'Counter'
-export const group = 'Widgets'
-export const description = "Run 'imp skill ./components/counter.js' before writing code with it."
+export const group = groups.widgets
 
 export const zero = counter()
-export const startsAtFive = counter({ start: 5 })
-export const lazy = () => counter({ start: 9 })
+export const startsAtFive = { scenario: 'Starts at five', component: counter({ start: 5 }) }
+export const lazy = { scenario: 'Built at render time', component: () => counter({ start: 9 }) }

@@ -36,7 +36,7 @@ the heading should be quieter
 --- imp review clear ---
 [INFO] cleared 2 reviews from .imp/reviews
 --- imp review after clearing ---
-[INFO] no reviews yet - serve the app with imp start or imp preview, press the review button in the corner of the page, and pick the element you want to comment on
+[INFO] no reviews yet - serve the app with imp start or imp preview, press the imp mark on the page, press Add review, and pick the element you want to comment on
 --- imp review clear again ---
 [INFO] no reviews to clear
 reviews folder left behind: false

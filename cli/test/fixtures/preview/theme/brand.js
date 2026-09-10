@@ -1,6 +1,5 @@
 export default {
   name: 'brand',
-  colorScheme: 'light',
   tokens: {
     'color-primary': '#7c3aed',
     'color-on-primary': '#ffffff',

@@ -12,7 +12,7 @@ The library is split by subject. So an import line says which part of imp a file
 | `imp/html`    | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...)    | [Rendering](rendering.md)                |
 | `imp/state`   | `initState`, `useState`, `computed`                                          | [State](state.md)                        |
 | `imp/router`  | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `useRoute`, `url` | [Routing](routing.md)                    |
-| `imp/theme`   | `theme`, `applyTheme`                                                        | [Theming](theming.md)                    |
+| `imp/theme`   | `theme`, `applyTheme`, `colorSchemeOf`                                       | [Theming](theming.md)                    |
 | `imp/i18n`    | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`          | [Translations](i18n.md)                  |
 | `imp/log`     | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          | [Logging](logging.md)                    |
 | `imp/http`    | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`           | [HTTP](http.md)                          |

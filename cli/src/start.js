@@ -20,7 +20,13 @@ import { dim, green, red } from './colors.js'
 import { addLogSink, logger } from './logger.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev-log.js'
 import { APPLE_TOUCH_ICON, buildManifest, pwaHeadTags, renderIconSet } from './pwa.js'
-import { isLocalRequest, REVIEW_ENDPOINT, REVIEW_LOG_LINES, writeReview } from './review.js'
+import {
+  isLocalRequest,
+  readWidgetMark,
+  REVIEW_ENDPOINT,
+  REVIEW_LOG_LINES,
+  writeReview,
+} from './review.js'
 import { IMP_MODULES } from './specifiers.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
@@ -82,7 +88,7 @@ const impImports = Object.fromEntries(
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
-function buildHeadInjection(dependencies, pwa, env, flags, mocks) {
+function buildHeadInjection(dependencies, pwa, env, flags, mocks, mark) {
   const importMap = {
     imports: { ...impImports, ...dependencyImports(dependencies) },
   }
@@ -97,7 +103,7 @@ function buildHeadInjection(dependencies, pwa, env, flags, mocks) {
     .filter(Boolean)
     .map((tag) => tag + '\n')
     .join('')
-  return `<script>${clientScript({ mocks })}</script>\n${valueTags}<script type="importmap">${
+  return `<script>${clientScript({ mocks, mark })}</script>\n${valueTags}<script type="importmap">${
     JSON.stringify(importMap)
   }</script>${pwaTags}`
 }
@@ -167,7 +173,14 @@ export async function loadApp(entryPath, { envAlias = null, mocks = null } = {})
   const declaredMocks = mocksSetting(imp)
   const mockingOn = Boolean(declaredMocks) && (mocks ?? declaredMocks.enabled)
   const mocksDirectory = mockingOn ? resolve(root, declaredMocks.folder) : null
-  const headInjection = buildHeadInjection(dependencies, pwa, env, flags, mockingOn)
+  const headInjection = buildHeadInjection(
+    dependencies,
+    pwa,
+    env,
+    flags,
+    mockingOn,
+    await readWidgetMark(),
+  )
   const buildMocks = mocksDirectory
     ? createMockBundler({ root, directory: mocksDirectory, dependencies })
     : null

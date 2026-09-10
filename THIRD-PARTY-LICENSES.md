@@ -28,6 +28,7 @@ Run `imp licenses` to print this notice from the binary.
 | dprint-plugin-json            | 0.22.0  | MIT          | https://github.com/dprint/dprint-plugin-json           |
 | dprint-plugin-markdown        | 0.22.1  | MIT          | https://github.com/dprint/dprint-plugin-markdown       |
 | malva (CSS)                   | 0.16.0  | MIT          | https://github.com/g-plane/malva                       |
+| marked                        | 18.0.12 | MIT          | https://github.com/markedjs/marked                     |
 | markup_fmt (HTML)             | 0.27.3  | MIT          | https://github.com/g-plane/markup_fmt                  |
 | pretty_yaml (YAML)            | 0.6.0   | MIT          | https://github.com/g-plane/pretty_yaml                 |
 | lax-sql (SQL)                 | 0.3.0   | MIT          | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
@@ -60,10 +61,11 @@ the app is served to.
 
 Applies to: happy-dom (© David Ortner and contributors), eslint and @eslint/js (© OpenJS Foundation
 and other contributors), globals (© Sindre Sorhus), gifenc (© Matt DesLauriers), esbuild-wasm (©
-Evan Wallace), @dprint/formatter and dprint-plugin-typescript / -json / -markdown (© David Sherret
-and dprint contributors), malva / markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (©
-Bartłomiej Iwańczuk and dprint contributors), @std (© the Deno authors), @deno/esbuild-plugin (© the
-Deno authors), and the Feather-derived Lucide icons (© 2013-present Cole Bemis).
+Evan Wallace), marked (© MarkedJS and Christopher Jeffrey), @dprint/formatter and
+dprint-plugin-typescript / -json / -markdown (© David Sherret and dprint contributors), malva /
+markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (© Bartłomiej Iwańczuk and dprint
+contributors), @std (© the Deno authors), @deno/esbuild-plugin (© the Deno authors), and the
+Feather-derived Lucide icons (© 2013-present Cole Bemis).
 
 ```
 MIT License

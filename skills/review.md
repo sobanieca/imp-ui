@@ -5,10 +5,17 @@ imp review          list every saved review: page, element picked, comment left
 imp review clear    delete them all
 ```
 
-The dev server puts a **review widget** on every page that it serves. The person presses the widget,
-presses **Add review**, clicks an element and types a comment. imp writes the result to
-`.imp/reviews/`. This is the inbound half of the development loop. [start](start.md) is the outbound
-half, through `.imp/dev.log`.
+**Run `imp review` before you ask "which element?".** A person who says "I left a review", "see my
+comment", "the button I marked", "fix what I reviewed in the browser" or "check the reviews" has
+already told imp the page, the element and the state of the app. The command prints all of it. Read
+it first, then act on it.
+
+The dev server puts a **review widget** on every page that it serves. It is the imp mark in the
+corner, and the person can drag it anywhere. The person presses the mark, presses **Add review**,
+clicks an element and types a comment. imp writes the result to `.imp/reviews/`. This is the inbound
+half of the development loop. [start](start.md) is the outbound half, through `.imp/dev.log`. The
+mark also opens **Console logs** and **Network logs**, which show the person the same entries in the
+page, live, since the page loaded. They add nothing that the file does not hold.
 
 The widget shares its element picker and its capture with `bugReport`, see
 `imp skill std/bugReport`. `bugReport` is the component that an app ships to its own users. So a

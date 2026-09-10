@@ -13,17 +13,18 @@ button({ variant: 'primary', events: { click: save } }, 'Save changes')
 The call shape is `button(props?, ...children)`. When a props object is present, it must be the
 **first** argument. Everything after it is content.
 
-| Prop          | Values                                                    | Default     | Notes                                                  |
-| ------------- | --------------------------------------------------------- | ----------- | ------------------------------------------------------ |
-| `variant`     | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                               |
-| `size`        | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                                  |
-| `disabled`    | boolean, or a state holding one - **live**                | `false`     | Blocks interaction                                     |
-| `loading`     | boolean, or a state holding one - **live**                | `false`     | Shows a spinner, disables the button, sets `aria-busy` |
-| `block`       | boolean                                                   | `false`     | Fills the width of its container                       |
-| `label`       | string, or a state holding one - **live**                 | -           | `aria-label` on the button - names an icon-only one    |
-| `items`       | array of menu items                                       | -           | Adds a menu to the button                              |
-| `menuTrigger` | `'more'`, `'hover'`                                       | `'more'`    | What opens the `items` menu                            |
-| `events`      | event map, e.g. `{ click: handler }`                      | -           | Handlers, exactly as on any element                    |
+| Prop          | Values                                                    | Default     | Notes                                                     |
+| ------------- | --------------------------------------------------------- | ----------- | --------------------------------------------------------- |
+| `variant`     | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                                  |
+| `size`        | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                                     |
+| `disabled`    | boolean, or a state holding one - **live**                | `false`     | Blocks interaction                                        |
+| `loading`     | boolean, or a state holding one - **live**                | `false`     | Shows a spinner, disables the button, sets `aria-busy`    |
+| `block`       | boolean                                                   | `false`     | Fills the width of its container                          |
+| `label`       | string, or a state holding one - **live**                 | -           | `aria-label` on the button - names an icon-only one       |
+| `pressed`     | boolean, or a state holding one - **live**                | -           | Makes it a toggle button - `aria-pressed`, flips on click |
+| `items`       | array of menu items                                       | -           | Adds a menu to the button                                 |
+| `menuTrigger` | `'more'`, `'hover'`                                       | `'more'`    | What opens the `items` menu                               |
+| `events`      | event map, e.g. `{ click: handler }`                      | -           | Handlers, exactly as on any element                       |
 
 An `items` entry is `{ id?, label, icon?, onClick?, disabled? }`. `id` defaults to the index.
 `label` is necessary. `icon` is a node.
@@ -39,6 +40,11 @@ Rules an agent gets wrong:
 - **The button has no outer margin.** Spacing between buttons belongs to whatever lays them out.
 - The accessible name is the content of the button. An icon-only button needs `label`. There is no
   `aria-label` prop, and imp warns that it is unknown.
+- **`pressed` makes a toggle button, and the same `<button>` stays.** With `pressed`, a click flips
+  the value and paints `aria-pressed`. Pass a **state** to read the value and to drive it from
+  outside, as with the `open` state of a dialog. imp writes the flip back to the state. The host
+  also fires a `toggle` event with `detail: { pressed }`. A `click` handler in `events` still runs.
+  A disabled button does not flip. Give an icon-only toggle a `label`.
 - **`variant: 'link'` is a button that looks like a link.** Use it for an action inside running
   text. For a place that a person can go to, use link (imp skill std/link), which needs an `href`.
 - **The host forwards the focus.** So a component that composes `button` keeps the returned element
@@ -76,6 +82,9 @@ button({ variant: 'primary', loading: sending, events: { click: send } }, 'Send'
 button({ variant: 'danger', size: 'sm', events: { click: remove } }, 'Delete')
 button({ block: true, events: { click: next } }, 'Continue')
 button({ variant: 'link', events: { click: showDetails } }, 'What is this?')
+
+const showingCode = initState(self, 'panel.code', false)
+button({ variant: 'ghost', label: 'Show code', pressed: showingCode }, icon(luCode))
 
 button({
   variant: 'primary',
