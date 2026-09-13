@@ -14,6 +14,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp build [file.html\|file.js]`     | production build; `--pwa` for an installable offline app | [build](build.md)               |
 | `imp preview [path]`                 | render components in isolation from `*.preview.js`       | [preview](preview.md)           |
 | `imp review [clear]`                 | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |
+| `imp logs [-n <count>] [-f]`         | print the log of the dev server session; `-f` follows it | [start](start.md)               |
 | `imp test <file> \| --unit \| --e2e` | `*.test.js` in-process, `*.spec.js` in a real browser    | [testing](testing.md)           |
 | `imp install [pkg[@version]]`        | vendor a dependency into `dependencies/`                 | [dependencies](dependencies.md) |
 | `imp uninstall <pkg>`                | remove one                                               | [dependencies](dependencies.md) |

@@ -44,7 +44,7 @@ These are the conventions:
 | ADR                                                         | Decision                                                                           |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` - `--imp-*` vars on :root |
-| [theme-editor](theme-editor.md)                             | imp preview edits four knobs and exports a plain light/dark theme file             |
+| [theme-editor](theme-editor.md)                             | One theme editor, in imp preview and in the dev widget, exports a plain theme file |
 
 ## Internationalization
 
@@ -55,16 +55,18 @@ These are the conventions:
 
 ## Components
 
-| ADR                                                             | Decision                                                                         |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [standard-component-library](standard-component-library.md)     | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props |
-| [responsive-fluid-values-only](responsive-fluid-values-only.md) | Fluid theme values only; no per-screen props - an app writes its own media query |
-| [layout-two-flex-primitives](layout-two-flex-primitives.md)     | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale         |
-| [app-shell-component](app-shell-component.md)                   | `shell`: one nav tree drives three surfaces; the library's one breakpoint        |
-| [shell-region-components](shell-region-components.md)           | `imp/std/shell`: the frame's usual contents as their own group                   |
-| [overlay-top-layer](overlay-top-layer.md)                       | Overlays promoted in place; shared seam of plain functions, no portal            |
-| [state-driven-forms](state-driven-forms.md)                     | Form values are named state; controls bind one field by dot path                 |
-| [bundled-icon-set](bundled-icon-set.md)                         | Lucide in the binary; one export per icon, drawn by `icon`                       |
+| ADR                                                                 | Decision                                                                         |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [standard-component-library](standard-component-library.md)         | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props |
+| [responsive-fluid-values-only](responsive-fluid-values-only.md)     | Fluid theme values only; no per-screen props - an app writes its own media query |
+| [layout-two-flex-primitives](layout-two-flex-primitives.md)         | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale         |
+| [app-shell-component](app-shell-component.md)                       | `shell`: one nav tree drives three surfaces; the library's one breakpoint        |
+| [shell-region-components](shell-region-components.md)               | `imp/std/shell`: the frame's usual contents as their own group                   |
+| [overlay-top-layer](overlay-top-layer.md)                           | Overlays promoted in place; shared seam of plain functions, no portal            |
+| [state-driven-forms](state-driven-forms.md)                         | Form values are named state; controls bind one field by dot path                 |
+| [bundled-icon-set](bundled-icon-set.md)                             | Lucide in the binary; one export per icon, drawn by `icon`                       |
+| [code-block-syntax-highlighting](code-block-syntax-highlighting.md) | `codeBlock`: imp's own scanner, theme-mixed colours, line links in the fragment  |
+| [code-editor-textarea-mirror](code-editor-textarea-mirror.md)       | `codeEditor`: a native textarea over a highlighted mirror, and three keys        |
 
 ## Library
 
@@ -93,6 +95,7 @@ These are the conventions:
 | [transitive-duplication-accepted](transitive-duplication-accepted.md) | No dedupe across vendored bundles - by design                           |
 | [two-level-testing](two-level-testing.md)                             | imp test: in-process unit runner, per-spec e2e Chrome                   |
 | [dev-server-mocks](dev-server-mocks.md)                               | Mocks from *.mock.js files, answered by the dev service worker          |
+| [service-worker-dev-mode](service-worker-dev-mode.md)                 | Dev mode is startDevMode() in any worker; a project keeps its own       |
 | [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                         |
 | [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg             |
 | [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios, their code and manual, on one page |

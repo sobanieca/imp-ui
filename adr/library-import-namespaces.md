@@ -22,20 +22,21 @@ The library is **split by subject, with one bare specifier per subject**. A cura
 `lib/src/api/` backs each specifier, and `imp` itself stays `lib/src/imp.js`. A barrel re-exports
 exactly the public names. An implementation module stays internal, and app code cannot reach it.
 
-| Specifier     | Exports                                                                   |
-| ------------- | ------------------------------------------------------------------------- |
-| `imp`         | `component`, `mount`, `init`, `env`, `flag`                               |
-| `imp/html`    | `el`, `html`, one factory per HTML tag                                    |
-| `imp/state`   | `initState`, `useState`, `computed`                                       |
-| `imp/router`  | `router`, `area`, `route`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
-| `imp/theme`   | `theme`, `applyTheme`                                                     |
-| `imp/i18n`    | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
-| `imp/log`     | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
-| `imp/http`    | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        |
-| `imp/icons`   | One export per Lucide icon, see `bundled-icon-set.md`                     |
-| `imp/std`     | The standard component library, split by group                            |
-| `imp/test`    | The test library, resolved by `imp test` only                             |
-| `imp/preview` | `mockModule` for a preview file, resolved by `imp preview` only           |
+| Specifier            | Exports                                                                   |
+| -------------------- | ------------------------------------------------------------------------- |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`                               |
+| `imp/html`           | `el`, `html`, one factory per HTML tag                                    |
+| `imp/state`          | `initState`, `useState`, `computed`                                       |
+| `imp/router`         | `router`, `area`, `route`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
+| `imp/theme`          | `theme`, `applyTheme`                                                     |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        |
+| `imp/icons`          | One export per Lucide icon, see `bundled-icon-set.md`                     |
+| `imp/service-worker` | `startDevMode`, see `service-worker-dev-mode.md`                          |
+| `imp/std`            | The standard component library, split by group                            |
+| `imp/test`           | The test library, resolved by `imp test` only                             |
+| `imp/preview`        | `mockModule` for a preview file, resolved by `imp preview` only           |
 
 - **`imp` keeps what defines an app, and not what defines a subject.** That is `component`, which is
   the centre of the framework, `mount` and `init`, which are the entry point, `env` and `flag`,

@@ -33,16 +33,18 @@ function entrySource(files, root) {
     `import * as ${imported(index)} from ${JSON.stringify(toFileUrl(file).href)}`
   )
   lines.push(
+    `self.__impMockProblems = []`,
+    `const problem = (text) => self.__impMockProblems.push(text)`,
     `const collect = (module, file) => {`,
     `  const declared = module.mocks ?? module.default`,
     `  if (!Array.isArray(declared)) {`,
-    '    self.__impMockProblem(file + " must export \'mocks\' - an array of { match, handler }")',
+    '    problem(file + " must export \'mocks\' - an array of { match, handler }")',
     `    return []`,
     `  }`,
     `  return declared.flatMap((entry, index) => {`,
     '    const source = file + " #" + (index + 1)',
     `    if (typeof entry?.match !== 'function' || typeof entry?.handler !== 'function') {`,
-    `      self.__impMockProblem(source + ' must be { match, handler }, both functions')`,
+    `      problem(source + ' must be { match, handler }, both functions')`,
     `      return []`,
     `    }`,
     `    return [{ match: entry.match, handler: entry.handler, delay: entry.delay ?? 0, source }]`,
@@ -101,7 +103,7 @@ const locate = (file, root) => {
   return asPosix(file)
 }
 
-function describeProblem(error, root) {
+export function describeBundleProblem(error, root) {
   const reported = error?.errors?.map((issue) => {
     const file = issue.location?.file
     const where = file ? `${locate(file, root)}:${issue.location.line} - ` : ''
@@ -139,7 +141,7 @@ export function createMockBundler({ root, directory, dependencies = {} }) {
         problem: null,
       }
     } catch (error) {
-      return { key: `${key}!`, files, source: '', problem: describeProblem(error, root) }
+      return { key: `${key}!`, files, source: '', problem: describeBundleProblem(error, root) }
     }
   }
   return async () => {

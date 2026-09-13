@@ -135,11 +135,15 @@ them in your own styles:
 
 ## How to write a theme with the editor
 
-`imp preview` has a theme editor. Open it with _edit theme_ in the top bar. It exposes **mode**,
-which is light or dark, **primary**, **secondary**, **font**, **mono font**, **border radius**,
-which is `none`, `small`, `medium` or `large`, and **shadow**, which is `none`, `soft` or `strong`.
-It derives every other colour token from the two base colours. It copies or downloads a complete
-`theme.js`:
+imp has one theme editor. In `imp preview`, open it with _edit theme_ in the top bar. In
+`imp start`, press the imp mark in the corner of the app, then **Theme editor**. It edits the theme
+the app applied, and it keeps a draft per theme name in `localStorage` across reloads, until the
+person presses _reset_. It exposes **mode**, which is light or dark, **primary**, **secondary**,
+**font**, **mono font**, **border radius**, which is `none`, `small`, `medium` or `large`, and
+**shadow**, which is `none`, `soft` or `strong`. It derives every other colour token from the two
+base colours. Under the knobs, **Tokens** is the whole theme of the mode as JSON, in a `codeEditor`.
+An edit there applies as soon as the JSON parses. A knob rewrites the tokens it drives, and it
+leaves every other token as edited. It copies or downloads a complete `theme.js`:
 
 ```js
 // theme.js - generated, then edited by hand
@@ -166,9 +170,10 @@ await init({ theme: light })
 
 The editor follows these derivation rules. Follow them as well when you write a theme by hand.
 `color-primary-hover` and `color-primary-active` step the primary colour darker in light mode, and
-lighter in dark mode. `color-on-primary` is white or a near-black tint of the same hue, whichever
-has the better contrast. A surface, a border and the text take the hue of the secondary colour, at a
-fixed lightness step for each mode.
+lighter in dark mode. `color-on-primary` is white when white reaches a contrast of 3:1 against the
+primary, and a near-black tint of the same hue otherwise. Set `color-on-primary` by hand when a
+brand needs another colour there. A surface, a border and the text take the hue of the secondary
+colour, at a fixed lightness step for each mode.
 
 ## Forced colours
 

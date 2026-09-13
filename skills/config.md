@@ -11,25 +11,26 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 
 ## Every key
 
-| Key                 | Type                                   | Default      | Read by                                                        |
-| ------------------- | -------------------------------------- | ------------ | -------------------------------------------------------------- |
-| `version`           | exact version string                   | -            | every command (self-delegation); written by `imp update`       |
-| `dependencies`      | alias -> exact `npm:`/`jsr:` specifier | `{}`         | `imp start`, `imp build`, `imp lint`; written by `imp install` |
-| `licenses`          | tier string or SPDX id array           | `permissive` | `imp install`, `imp build` (both error on a violation)         |
-| `targetImpHost`     | boolean                                | `false`      | `imp build` with a **JS** entry                                |
-| `fmt`               | object                                 | see below    | `imp fmt`                                                      |
-| `lint`              | object                                 | `{}`         | `imp lint`                                                     |
-| `test`              | object                                 | `{}`         | `imp test`                                                     |
-| `map`               | path of the application map file       | -            | `imp map`; `imp init` writes `src/app-map.js`                  |
-| `preview`           | object                                 | `{}`         | `imp preview`                                                  |
-| `pwa`               | object                                 | -            | `imp start`, `imp build --pwa`                                 |
-| `environments`      | alias -> env file path                 | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)              |
-| `flags`             | array of feature flag names            | `[]`         | `imp start`, `imp build` (folds them), `imp preview`           |
-| `mocks`             | `{ folder, enabled }`, both required   | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)   |
-| `maxFileSize`       | bytes                                  | `204800`     | `imp lint` (errors), `imp install` (warns)                     |
-| `maxFileSizeIgnore` | array of repo-relative paths           | `[]`         | the same size check                                            |
-| `maxLogEntries`     | number                                 | `4000`       | `imp start` (`.imp/dev.log`)                                   |
-| `devServerPort`     | number                                 | `4507`       | `imp start` (`--port` wins)                                    |
+| Key                 | Type                                   | Default      | Read by                                                           |
+| ------------------- | -------------------------------------- | ------------ | ----------------------------------------------------------------- |
+| `version`           | exact version string                   | -            | every command (self-delegation); written by `imp update`          |
+| `dependencies`      | alias -> exact `npm:`/`jsr:` specifier | `{}`         | `imp start`, `imp build`, `imp lint`; written by `imp install`    |
+| `licenses`          | tier string or SPDX id array           | `permissive` | `imp install`, `imp build` (both error on a violation)            |
+| `targetImpHost`     | boolean                                | `false`      | `imp build` with a **JS** entry                                   |
+| `fmt`               | object                                 | see below    | `imp fmt`                                                         |
+| `lint`              | object                                 | `{}`         | `imp lint`                                                        |
+| `test`              | object                                 | `{}`         | `imp test`                                                        |
+| `map`               | path of the application map file       | -            | `imp map`; `imp init` writes `src/app-map.js`                     |
+| `preview`           | object                                 | `{}`         | `imp preview`                                                     |
+| `pwa`               | object                                 | -            | `imp start`, `imp build --pwa`                                    |
+| `environments`      | alias -> env file path                 | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)                 |
+| `flags`             | array of feature flag names            | `[]`         | `imp start`, `imp build` (folds them), `imp preview`              |
+| `mocks`             | `{ folder, enabled }`, both required   | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)      |
+| `serviceWorker`     | path of your service worker source     | -            | `imp start` (serves it at `/sw.js`), `imp build` (writes `sw.js`) |
+| `maxFileSize`       | bytes                                  | `204800`     | `imp lint` (errors), `imp install` (warns)                        |
+| `maxFileSizeIgnore` | array of repo-relative paths           | `[]`         | the same size check                                               |
+| `maxLogEntries`     | number                                 | `4000`       | `imp start` (the log that `imp logs` prints)                      |
+| `devServerPort`     | number                                 | `4507`       | `imp start` (`--port` wins)                                       |
 
 ## A file that uses every key
 
@@ -51,6 +52,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
   },
   "flags": ["CHECKOUT_V2", "NEW_NAV"],
   "mocks": { "folder": "mocks", "enabled": false },
+  "serviceWorker": "src/sw.js",
   "fmt": {
     "lineWidth": 100,
     "indentWidth": 2,
@@ -93,8 +95,8 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 Inside `pwa`, only `name` and `icon` are necessary. Every other block is optional, as a whole and in
 each part. When the `mocks` block is present, both of its keys are necessary. For the full detail of
 each block, read [fmt](fmt.md), [lint](lint.md), [testing](testing.md),
-[dependencies](dependencies.md), [preview](preview.md), [mocks](mocks.md), [start](start.md) and
-[build](build.md).
+[dependencies](dependencies.md), [preview](preview.md), [mocks](mocks.md),
+[service-worker](service-worker.md), [start](start.md) and [build](build.md).
 
 Two folders have a fixed name and no key. **`public/`** goes to the root of the built site without a
 change, see [build](build.md). **`dependencies/`** holds the vendored bundles.

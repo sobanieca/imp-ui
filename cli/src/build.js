@@ -29,6 +29,7 @@ import {
 import { readDependencyManifest, recordedNotices } from './dependency-manifest.js'
 import { licenseViolationProblem, reviewLicenses } from './license-policy.js'
 import { logger } from './logger.js'
+import { assertServiceWorkerSource, runtimeValues } from './service-worker.js'
 import {
   APPLE_TOUCH_ICON,
   buildManifest,
@@ -160,38 +161,78 @@ function impResolverPlugin(
   }
 }
 
-async function buildEntryPoints(
+function buildEntryPoints(
   { root, entryPoints, dependencies, inlineSources, outdir, impProvidedByHost, isHtmlEntry, flags },
 ) {
+  return runEsbuild({
+    plugins: [
+      impResolverPlugin({
+        root,
+        dependencies,
+        inlineSources,
+        impProvidedByHost,
+        isHtmlEntry,
+        flags,
+      }),
+      denoPlugin(),
+    ],
+    entryPoints,
+    external: impProvidedByHost ? ['imp', 'imp/*'] : [],
+    bundle: true,
+    splitting: true,
+    minify: true,
+    format: 'esm',
+    platform: 'browser',
+    target: 'es2022',
+    legalComments: 'external',
+    metafile: true,
+    write: false,
+    outdir,
+    chunkNames: 'chunks/[name]-[hash]',
+    assetNames: 'assets/[name]-[hash]',
+    loader: ASSET_LOADERS,
+  })
+}
+
+const SERVICE_WORKER_FILE = 'sw.js'
+
+function buildServiceWorkerEntry({ root, entry, dependencies, outdir, flags }) {
+  return runEsbuild({
+    plugins: [
+      impResolverPlugin({
+        root,
+        dependencies,
+        inlineSources: [],
+        impProvidedByHost: false,
+        isHtmlEntry: true,
+        flags,
+      }),
+      denoPlugin(),
+    ],
+    entryPoints: [{ in: toFileUrl(entry).href, out: withoutExtension(SERVICE_WORKER_FILE) }],
+    bundle: true,
+    minify: true,
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2022',
+    legalComments: 'external',
+    metafile: true,
+    write: false,
+    outdir,
+    assetNames: 'assets/[name]-[hash]',
+    loader: ASSET_LOADERS,
+  })
+}
+
+async function bundleApp(options, serviceWorker) {
   try {
-    return await runEsbuild({
-      plugins: [
-        impResolverPlugin({
-          root,
-          dependencies,
-          inlineSources,
-          impProvidedByHost,
-          isHtmlEntry,
-          flags,
-        }),
-        denoPlugin(),
-      ],
-      entryPoints,
-      external: impProvidedByHost ? ['imp', 'imp/*'] : [],
-      bundle: true,
-      splitting: true,
-      minify: true,
-      format: 'esm',
-      platform: 'browser',
-      target: 'es2022',
-      legalComments: 'external',
-      metafile: true,
-      write: false,
-      outdir,
-      chunkNames: 'chunks/[name]-[hash]',
-      assetNames: 'assets/[name]-[hash]',
-      loader: ASSET_LOADERS,
-    })
+    const page = await buildEntryPoints(options)
+    if (!serviceWorker) return page
+    const worker = await buildServiceWorkerEntry({ ...options, entry: serviceWorker })
+    return {
+      outputFiles: [...page.outputFiles, ...worker.outputFiles],
+      metafile: { inputs: { ...page.metafile.inputs, ...worker.metafile.inputs } },
+    }
   } finally {
     await shutdownBundler()
   }
@@ -320,6 +361,8 @@ export async function build(
   const impProvidedByHost = targetImpHost && !isHtmlEntry
   const impPwa = imp.pwa ?? null
   if (pwa) await validatePwaBuild(impPwa, isHtmlEntry, root)
+  const serviceWorker = imp.serviceWorker && isHtmlEntry ? resolve(root, imp.serviceWorker) : null
+  if (serviceWorker) await assertServiceWorkerSource(serviceWorker, imp.serviceWorker)
 
   let html = null
   let scripts = [entryPath]
@@ -345,7 +388,7 @@ export async function build(
     })),
   ]
 
-  const result = await buildEntryPoints({
+  const result = await bundleApp({
     root,
     entryPoints,
     dependencies,
@@ -354,7 +397,7 @@ export async function build(
     impProvidedByHost,
     isHtmlEntry,
     flags,
-  })
+  }, serviceWorker)
 
   assertEveryFlagFolded(result.outputFiles)
 
@@ -381,6 +424,9 @@ export async function build(
     ? licenseNoticesReference(siteUrl(base, LICENSE_NOTICES_FILE))
     : ''
   const withNoticeReference = (text) => new TextEncoder().encode(noticeReference + text)
+  const workerPath = serviceWorker ? join(outdirPath, SERVICE_WORKER_FILE) : null
+  const scriptText = (file) =>
+    file.path === workerPath ? runtimeValues({ env: resolvedEnv }) + file.text : file.text
 
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
   await Deno.mkdir(outdirPath, { recursive: true })
@@ -395,7 +441,7 @@ export async function build(
     await Deno.mkdir(dirname(file.path), { recursive: true })
     await Deno.writeFile(
       file.path,
-      file.path.endsWith('.js') ? withNoticeReference(file.text) : file.contents,
+      file.path.endsWith('.js') ? withNoticeReference(scriptText(file)) : file.contents,
     )
     written.push(asPosix(relative(outdirPath, file.path)))
   }
@@ -436,21 +482,23 @@ export async function build(
     await Deno.writeTextFile(join(outdirPath, entryName), builtHtml)
     written.push(entryName)
     await copyPublicFiles({ publicDir: publicDirectory(root), outdir: outdirPath, written })
-    if (pwa) {
-      const precache = written.filter((name) => name !== 'sw.js' && !name.endsWith('.map'))
+    if (pwa && !serviceWorker) {
+      const precache = written.filter(
+        (name) => name !== SERVICE_WORKER_FILE && !name.endsWith('.map'),
+      )
       const files = await Promise.all(
         precache.map(async (name) => ({
           path: siteUrl(base, name),
           bytes: await Deno.readFile(join(outdirPath, name)),
         })),
       )
-      const serviceWorker = buildServiceWorker({
+      const offlineWorker = buildServiceWorker({
         cacheName: `imp-pwa-${await cacheVersion(files)}`,
         precache: precache.map((name) => siteUrl(base, name)),
         shell: siteUrl(base, entryName),
       })
-      await Deno.writeTextFile(join(outdirPath, 'sw.js'), serviceWorker)
-      written.push('sw.js')
+      await Deno.writeTextFile(join(outdirPath, SERVICE_WORKER_FILE), offlineWorker)
+      written.push(SERVICE_WORKER_FILE)
     }
   }
 
@@ -471,8 +519,15 @@ export async function build(
     const states = flagNames.map((flagName) => `${flagName} ${flags[flagName] ? 'on' : 'off'}`)
     console.log(`  flags folded in - ${states.join(', ')}`)
   }
+  if (serviceWorker && isHtmlEntry) {
+    console.log(`  ${SERVICE_WORKER_FILE} - your service worker, bundled from ${imp.serviceWorker}`)
+  }
   if (pwa) {
-    console.log('  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker')
+    console.log(
+      serviceWorker
+        ? '  PWA: manifest, icons (192, 512, maskable, apple-touch), your service worker registered'
+        : '  PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker',
+    )
     console.log('  installable - name, 192 + 512 icons, display, start_url all present')
   }
   if (impProvidedByHost) {

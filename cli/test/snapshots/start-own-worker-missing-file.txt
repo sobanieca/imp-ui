@@ -1,0 +1,8 @@
+$ imp start index.html --port 0  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] serviceWorker - src/sw.js does not exist

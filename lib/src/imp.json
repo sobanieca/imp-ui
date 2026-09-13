@@ -10,6 +10,7 @@
       "api/log.js",
       "api/http.js",
       "api/icons.js",
+      "api/service-worker.js",
       "std/index.js",
       "std/layout/index.js",
       "std/display/index.js",
@@ -31,7 +32,12 @@
       "theme-colors.js#radiusSteps",
       "theme-colors.js#SEMANTIC_SOURCES",
       "theme-colors.js#shadowLevelOf",
-      "theme-colors.js#shadowSteps"
+      "theme-colors.js#shadowSteps",
+      "theme-draft.js#followAppliedTheme",
+      "theme-draft.js#themeFileSource",
+      "theme-editor.js#appliedThemeName",
+      "theme-editor.js#themeEditor",
+      "std/shared/copy-button.js#copyButton"
     ]
   },
   "maxFileSizeIgnore": ["icons/lucide-icons.js"],

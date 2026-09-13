@@ -1,0 +1,8 @@
+$ imp logs bogus  (cwd: test/fixtures/basic)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] unknown argument 'bogus' - imp logs takes -n <count> and -f only

@@ -1,7 +1,8 @@
 # mocks - running the app without its backend, from `*.mock.js` files
 
-Point `imp.json` at a folder. The dev server then answers a matching request itself, through the
-service worker that it already registers. **Nothing in the app changes.** The app keeps its real
+Point `imp.json` at a folder. The dev server then answers a matching request itself, through the dev
+service worker, or through your own worker when it calls `startDevMode()`, see
+[service-worker](service-worker.md). **Nothing in the app changes.** The app keeps its real
 `baseUrl` and its real calls. There is no stub and no import. `imp build` never copies the folder.
 
 ```json

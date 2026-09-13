@@ -1,0 +1,13 @@
+primary before editing: #2563eb
+actions: Add review, Console logs, Network logs, Theme editor
+view after Theme editor: theme (aria-pressed true)
+editor mounted in the panel: imp-theme-editor
+after picking a primary: #8821ac (hover #77009a)
+after picking radius none: 0px
+tokens editor shows: 82 tokens, primary #8821ac, radius 0px
+after editing the JSON: surface #fff7ed, primary #0f766e, primary knob #0f766e
+surface while the JSON is broken: #fff7ed
+draft stored under: imp.theme-draft.imp-light
+editor removed when closed: true
+primary after a reload: #0f766e
+primary after reset: #2563eb, drafts left: 0

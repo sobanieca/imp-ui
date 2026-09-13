@@ -32,6 +32,10 @@ USAGE
                                         widget the dev server puts on every page - the page,
                                         the element picked and the comment left on it
                                         (clear: delete every saved review)
+  imp logs [-n <count>] [-f]            print the log of the dev server session: the browser
+                                        console, the errors, the network and imp's own lines
+                                        (-n: the last <count> entries | -f: keep printing
+                                        each new entry until Ctrl-C)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest | no package: update all)
   imp uninstall <package>               remove a vendored dependency

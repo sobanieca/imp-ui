@@ -27,21 +27,21 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   the label of the tab and of the panel, and `component` is the instance or the function. An
   identifier such as `withClickHandler` is a poor label, and the object form gives a scenario a
   sentence for a label without a second registry. The export name stays the id in the `scenario`
-  query, and the scanner shows the `component` expression as the call site. Panels are ordered by
-  the order of the exports in the file. Exports the scanner does not recognize fall back to module
-  order.
+  query, and the code panel shows the `component` expression as the call site. Panels are ordered by
+  the order of the exports in the file, which the parser reads. A module namespace lists its exports
+  in alphabetical order, so the file order must come from the source.
 - **`name` and `group` are metadata, not scenarios.** These two optional string exports declare a
   component's human label and its group in the catalog. They sit in the preview file itself, next to
   the scenarios that demonstrate the component. There is no manifest, no registry and no second file
   to keep in sync. A component that declares nothing still appears, labelled by its file and folder
   as before. The price is two reserved export names. That is why they are the plainest words
   available rather than a prefixed convention: a scenario worth calling `name` does not exist, and
-  the obvious words keep the file readable. The same export scanner that orders the panels reads
-  them, and each must be a string literal. imp ignores anything else, and the fallback stands. A
-  preview page that fails to load because a label was computed would be a poor trade. The preview
-  file describes the component nowhere. The manual is the component's `*.skill.md`
-  (`agent-skills.md`), and the page shows it, see below. A description in the preview file would
-  give an agent two sources that drift.
+  the obvious words keep the file readable. The same parse that orders the panels reads them, and
+  each must be a string literal. imp ignores anything else, and the fallback stands. A preview page
+  that fails to load because a label was computed would be a poor trade. The preview file describes
+  the component nowhere. The manual is the component's `*.skill.md` (`agent-skills.md`), and the
+  page shows it, see below. A description in the preview file would give an agent two sources that
+  drift.
 - **The agent line is the `imp skill` command, and imp derives it from the path.** Below the page
   head, the page shows the command an agent runs to learn the component, with a copy button. The
   sidecar of `todos.preview.js` is `todos.skill.md`, so the command is `imp skill ./todos.js`. When
@@ -49,24 +49,28 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   text, the command is `imp skill std/<name>`. The line is computed, so nothing in the preview file
   can point at the wrong manual. A component with no sidecar gets a line that says which file to
   write.
-- **The code of a scenario is cut from the preview file, and a panel shows it as a call site.** The
-  export scanner keeps the span of every scenario expression, and it collects the top-level
-  statements of the file. For one scenario it takes the identifiers of the expression, follows each
-  one to the import or the top-level declaration that binds it, and repeats for every declaration it
-  pulls in. The snippet is those imports, cut down to the used names, then those declarations in
-  file order, then the expression. A zero-argument arrow that returns an expression is shown as the
-  expression, so a function scenario reads as the same call. A function declaration is shown whole.
-  The result is code that a person pastes: the imports resolve, a helper such as `wrap(...)` stands
-  above the call that uses it, and nothing is hidden. The snippet is a subset of the file that
-  rendered the panel, so it cannot drift from what is shown. The alternatives were rejected. A
-  hand-written snippet in a comment or in a second export is untested text next to tested code, and
-  it drifts. A rule that bans helpers makes the preview files worse for no gain. A marker comment
-  that selects a region is unchecked, so a moved line breaks the display in silence. The scanner
-  over-includes on purpose. An identifier that matches a top-level name is followed even where it is
-  a parameter or a key, because an extra helper in a snippet is noise, and a missing one is a
-  snippet that does not run. The catalog carries the snippet per scenario, and the panel shows it
-  under the stage behind a _code_ button, with a copy button. The choice to show the code is
-  remembered, so a person who wants the code sees it on every panel.
+- **The code of a scenario is cut from the preview file, and a panel shows it as a call site.** imp
+  parses the file with the eslint parser that the binary carries for `imp lint`, and it reads the
+  scope analysis of that parse. Every scenario export gives the exact span of its value. For one
+  scenario it takes the module bindings that the expression references, which are the imports and
+  the top-level declarations, and repeats for every declaration it pulls in. The snippet is those
+  imports, cut down to the used names, then those declarations in file order, then the expression. A
+  zero-argument arrow that returns an expression is shown as the expression, so a function scenario
+  reads as the same call. A function declaration is shown whole. The result is code that a person
+  pastes: the imports resolve, a helper such as `wrap(...)` stands above the call that uses it, and
+  nothing is hidden. The snippet is a subset of the file that rendered the panel, so it cannot drift
+  from what is shown. The alternatives were rejected. A hand-written snippet in a comment or in a
+  second export is untested text next to tested code, and it drifts. A rule that bans helpers makes
+  the preview files worse for no gain. A marker comment that selects a region is unchecked, so a
+  moved line breaks the display in silence. The scope analysis is why the parser is a real one. A
+  parameter or an object key that has the name of a helper is not a reference to it, and only a
+  reference pulls the helper in. The call site must stay a build-time text job, because the browser
+  sees the reprint of the bundle, with normalized quotes, rewritten whitespace and inlined imports,
+  and `Function.prototype.toString()` returns nothing for a value scenario. The catalog carries the
+  snippet per scenario, and the panel shows it under the stage behind a _code_ button, as a
+  `codeBlock` highlighted as JavaScript, with the copy button of the block, see
+  `code-block-syntax-highlighting.md`. The choice to show the code is remembered, so a person who
+  wants the code sees it on every panel.
 - **The skill of the component is a tab on its page.** The page has two tabs, _Scenarios_ and
   _Skill_. The skill is the component's `*.skill.md`, the same file that `imp skill` prints and that
   `imp build` folds into a bundle as `impSkill` (`agent-skills.md`). The preview bundler folds it
@@ -74,7 +78,8 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   runtime receives HTML and the entry module stays small. The renderer is the vendored `marked`
   (`in-process-dependency-bundling.md`). Subject links are retargeted first, exactly as `imp skill`
   prints them, so a link to a sibling skill reads `state (imp skill state)` on the page too. The
-  page styles the HTML with the same `--imp-*` tokens as the rest of the workbench. A component
+  page styles the HTML with the same `--imp-*` tokens as the rest of the workbench, and it renders
+  every fenced code block as a `codeBlock`, highlighted in the language of its fence. A component
   without a sidecar gets an empty state that names the file to write.
 - **Module mocking reuses the seam of the test runner.** `mockModule(specifier, factory)` is
   imported from `imp/preview` and behaves as in `imp test`. It uses the same `imp-mock` esbuild
@@ -101,10 +106,12 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   query, and an address with a query opens that tab. So a link to one scenario is the address of the
   page plus `?scenario=<name>`. There is no separate isolated view.
 - **A scenario panel is a stage, a code panel and a state editor.** The stage is drag-resizable and
-  takes the full width of the panel. In a panel narrower than `20rem`, where the vertical scenario
-  tabs leave a phone little room, a container query starts the stage at twice the panel width. The
-  stage overflows the panel, and the page canvas scrolls sideways, so a swipe moves the tabs out of
-  view and gives the component the screen. Two icon-only toggle buttons sit in the panel head, built
+  takes the full width of the panel. The scenario `tabs` are `foldable`. On a phone, where the
+  vertical strip leaves little room, the strip starts folded, and the panel gets the width of the
+  screen with its head, its stage and its code panel. On a screen of `40rem` or wider the strip
+  starts open. A tap on the fold button is remembered in the browser, so the choice survives a
+  reload. Nothing overflows and the canvas does not scroll sideways. A width is a concern of the
+  parent, so `tabs` gets no prop for it. Two icon-only toggle buttons sit in the panel head, built
   from `button` with `pressed`. The code toggle opens the call site under the stage. The state
   toggle opens the editor in a non-modal `dialog`, anchored to the toggle so it opens where the
   person looks, and the person drags it where it does not cover the specimen. The dialog and the
@@ -135,10 +142,11 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   shows up while you work on anything. The frame is pinned `dir="ltr"` on its host, so the direction
   control still applies to the stage alone.
 - **The theme editor is part of the page, and `theme-editor.md` records its design.** The pickers
-  choose which theme is applied. The editor derives a whole theme from a few knobs, writes each
-  change straight back through `applyTheme`, keeps a draft per theme in `localStorage`, and exports
-  a plain theme module. That makes the workbench the place where a theme is designed, not only the
-  place where one is checked.
+  choose which theme is applied. The editor is a library component that the review widget of
+  `imp start` also hosts. It derives a whole theme from a few knobs, writes each change straight
+  back through `applyTheme`, keeps a draft per theme name in `localStorage`, and exports a plain
+  theme module. That makes the workbench the place where a theme is designed, not only the place
+  where one is checked.
 - **A preview is identified by `group/name`, declared in the file or derived from its path.** imp
   uses the file's `group` and `name` exports when it has them. Otherwise it uses the folder that
   holds the file and the base name of the file. A project that writes no metadata still gets a
@@ -154,17 +162,19 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   value from `imp/icons`. A preview file imports that object and exports `group = groups.widgets`.
   So the editor completes a group, a rename refactors every preview, and a typo is a broken import
   rather than a group that silently appears twice. imp builds the catalog before the bundle runs, so
-  it reads the key from the source of the preview file, as it reads `name`. The value must be the
+  it reads the key from the parse of the preview file, as it reads `name`. The value must be the
   plain member expression `groups.<key>` on an import of the groups module. imp resolves that import
-  and reads the `name` of the key from the source of the groups module. A `group` that is a string,
-  that is not a key, or that comes from another file is reported in the terminal, and the component
-  falls back to its folder. The generated entry imports the module exactly like a theme or a
-  translations file and hands it to the runtime for the icons. Listed groups come first, by their
-  optional `priority` number, lowest first, and then in the order of the keys. A priority exists so
-  that one group can lead the catalog without a move of its entry in the object, and a lower number
-  first reads as a rank. A folder group follows with a folder icon. A listed group with no previews
-  is not drawn. imp's own standard library is a project like any other here. `lib/src` carries an
-  `imp.json` that names `std/preview-groups.js`, and the CLI ships no group table at all.
+  and reads the `name` of the key from the parse of the groups module. A read from the running
+  module would cost the lazy chunks, because a value exists only once its module has been imported,
+  and the sidebar must draw before any of them loads. A `group` that is a string, that is not a key,
+  or that comes from another file is reported in the terminal, and the component falls back to its
+  folder. The generated entry imports the module exactly like a theme or a translations file and
+  hands it to the runtime for the icons. Listed groups come first, by their optional `priority`
+  number, lowest first, and then in the order of the keys. A priority exists so that one group can
+  lead the catalog without a move of its entry in the object, and a lower number first reads as a
+  rank. A folder group follows with a folder icon. A listed group with no previews is not drawn.
+  imp's own standard library is a project like any other here. `lib/src` carries an `imp.json` that
+  names `std/preview-groups.js`, and the CLI ships no group table at all.
 - **The catalog travels in the entry module, and imp builds it at discovery time.** To read the
   metadata of a file, the order of its scenarios and the state declarations of its graph, imp must
   open every preview file. So imp builds the catalog once when discovery runs, and the same watcher
@@ -267,16 +277,16 @@ start fresh each time is a function export.
 
 The two metadata exports are reserved for good. A preview file can never have a scenario called
 `name` or `group`. One written anyway is taken as a label and not rendered, in silence. Nothing
-warns about it, because the scanner cannot tell an intended label from an intended scenario. The
-same nothing-happens rule covers a value that is not a string literal. So metadata is never a reason
-a preview page fails to open.
+warns about it, because imp cannot tell an intended label from an intended scenario. The same
+nothing-happens rule covers a value that is not a string literal. So metadata is never a reason a
+preview page fails to open.
 
-The code panel is only as good as the scanner. It reads JavaScript with a tokenizer, not a parser. A
-top-level destructuring pattern binds its names, but a name bound inside a block, a regular
-expression literal with a quote in it, or a computed export is outside what it reads. A scenario the
-scanner cannot slice shows no code button, and the page still opens. A helper that a scenario
-reaches only through a module-level side effect, such as a `mockModule` call, is not in the snippet,
-because nothing in the expression names it. The snippet is the call site, not the fixture setup.
+The code panel reads the file with a parser, so what it cannot slice is what has no single
+expression to show. A destructured export and a re-export list their names for the order, but they
+show no code button, and the page still opens. A file that does not parse fails the build too, so it
+is marked in the catalog. A helper that a scenario reaches only through a module-level side effect,
+such as a `mockModule` call, is not in the snippet, because nothing in the expression references it.
+The snippet is the call site, not the fixture setup.
 
 The skill tab costs one Markdown renderer in the binary, and one HTML string per component in its
 chunk. The renderer is shared with the site generator, so the cost is paid once.

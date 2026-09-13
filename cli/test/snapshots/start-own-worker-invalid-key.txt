@@ -1,0 +1,8 @@
+$ imp start index.html --port 0  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] invalid imp.json - 'serviceWorker' must be the path of your service worker source, like "src/sw.js"

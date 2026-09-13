@@ -52,7 +52,7 @@ split by group:
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                                              |
 | `imp/std/layout`     | The app frame, the two arrangement primitives and the two overlay frames - `shell`, `flex`, `stack`, `dialog`, `drawer` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...                                     |
-| `imp/std/display`    | Components that present content - `card`, `emptyState`, `tag`, `tooltip`, ...                                           |
+| `imp/std/display`    | Components that present content - `card`, `codeBlock`, `emptyState`, `tag`, `tooltip`, ...                              |
 | `imp/std/navigation` | Getting around the app - `tabs`, ...                                                                                    |
 | `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...                                 |
 | `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                                                 |
@@ -488,11 +488,13 @@ artwork, not the 434 kB of the full set. The cost is one rule. Never write
 holds that line for you. A namespace import, an `export *` re-export and a dynamic `import()` of
 `imp/icons` are each an `imp/icons-by-name` error. See **[Linting](lint.md)**.
 
-`size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length. Every Lucide icon is
-square, so one length sets both axes. `color` names a **theme token**, not a CSS colour. The names
-are `'primary'`, `'danger'`, `'success'` and any palette hue. So an icon re-skins with the theme,
-like everything else in the library. The default is `'current'`. It takes the colour of the text
-around it, which is what an icon inside a button, or inside a menu row, needs.
+`size` takes the three steps `'sm'`, `'md'` and `'lg'`, or any CSS length. They are `1rem`, `1.5rem`
+and `2rem`. Lucide draws its icons on a 24-unit grid, so the default `'md'` is 24px at the usual
+root font size, and every stroke lands on whole pixels. Every Lucide icon is square, so one length
+sets both axes. `color` names a **theme token**, not a CSS colour. The names are `'primary'`,
+`'danger'`, `'success'` and any palette hue. So an icon re-skins with the theme, like everything
+else in the library. The default is `'current'`. It takes the colour of the text around it, which is
+what an icon inside a button, or inside a menu row, needs.
 
 Lucide uses the ISC licence, and the icons that it inherited from Feather use MIT. Both licences ask
 you to ship the copyright notice with what you distribute. `imp build` does this. The notice goes
@@ -512,6 +514,12 @@ stack(
   flex({ horizontalAlign: 'end', gap: 2 }, button('Cancel'), button('Save')),
 )
 ```
+
+Each one aligns its children along its own axis and across it. A row takes `horizontalAlign` along
+and `verticalAlign` across. A stack takes `verticalAlign` along and `horizontalAlign` across. Along
+an axis, `'justify'` spreads the children apart into the spare room. A stack has spare room only
+when a parent gives it a height. Then it fills that height, and a sidebar with its sign-out button
+at the foot is `stack({ verticalAlign: 'justify' }, links, signOut)`.
 
 That is the whole layout library. There is no grid, no box, and no wrapper with padding, background
 and width props. Every arrangement is rows inside stacks inside rows. Two primitives cover the
@@ -762,6 +770,67 @@ every two-dimensional layout does. See
 `border-width`, its corner is `radius-container` and its lift is `shadow-sm`. A theme that sets the
 shadow to `none` and the radius to `0` gets a flat, square card, with no CSS in your app. See
 **[Theming](theming.md)**.
+
+## Code is a block that highlights itself
+
+Documentation, a settings page that shows a snippet to paste, and a log viewer all need to show
+code. `codeBlock` shows it the way a person expects: in a monospace panel that scrolls sideways,
+with the syntax coloured, with a button that copies the whole text, and with the text itself free to
+select.
+
+```js
+import { codeBlock } from 'imp/std/display'
+
+codeBlock({ language: 'bash', lineNumbers: true, id: 'install', code: installScript })
+```
+
+**Name the language, and imp colours the code.** `language` takes the usual name or its short form:
+`js`, `ts`, `json`, `html`, `css`, `bash`, `python`, `go`, `rust`, `java`, `sql`, `yaml`,
+`markdown`, `diff` and about twenty-five more. HTML colours the script and the style inside it, and
+Markdown colours a fenced block in the language of its fence. A language imp does not know is
+logged, and the code is shown as plain text. imp brings its own highlighter, so an app ships no
+grammar files and no highlighting library.
+
+**Line numbers are links.** With `lineNumbers: true`, every line gets a number in a rail that stays
+in view when the code scrolls sideways. A click on a number selects that line and writes it into the
+address, as `#L12`. A Shift-click extends the selection to a range, `#L12-L20`. So a person who
+opens that address sees those lines highlighted, and the page scrolls to them. When a page holds
+more than one block, give each an `id`, and the fragment names it: `#install-L12`. The numbers are
+not part of the text, so a copy and a selection never include them.
+
+**The colours come from the theme.** The keyword, string and number colours are mixed from the
+palette of the theme and its text colour, so they read on a light theme and on a dark one, and a new
+theme recolours the code together with the rest of the app. There is nothing to configure.
+
+## A code editor is the same block, and you can type in it
+
+A settings page with custom CSS, a rule that a person writes as JSON, and a theme that somebody
+tunes by hand all need a place to edit code. `codeEditor` is that place. It is a form control, from
+`imp/std/inputs`. It binds to a field of a `form`, or to a state through `value`, exactly like
+`textArea`. Behind the text sits the highlighter of `codeBlock`, so the code is coloured as you
+type, in the language that you name.
+
+```js
+import { codeEditor, form, submitButton } from 'imp/std/inputs'
+
+form(
+  { initialValues: { css: '.card { padding: 1rem }' }, onSubmit: save },
+  codeEditor({ field: 'css', label: 'Custom CSS', language: 'css', rows: 12 }),
+  submitButton('Save'),
+)
+```
+
+**The control is a real `<textarea>`.** The caret, the selection, the undo history, the input method
+of a script, and the screen reader all come from the platform. imp adds only what the platform
+lacks: the colours, and three keys. Tab inserts two spaces, or indents every line of a selection,
+and Shift-Tab outdents. Enter keeps the indentation of the line. So Tab does not leave the editor. A
+person presses Escape, then Tab, to move on, and the control tells assistive technology so.
+
+**The value is the text, on every keystroke.** A parse check belongs in `validate`. The error shows
+after the person leaves the editor, as in every other control, because the text goes invalid on most
+keystrokes while somebody types. The editor has a fixed height of `rows` lines, and it scrolls
+inside. Long lines scroll sideways. For a listing with line numbers and a copy button, use
+`codeBlock`.
 
 ## Custom elements next to yours
 

@@ -66,9 +66,14 @@ Installability in development is automatic, and it needs no flag. When a `pwa` b
 `imp start` injects the tags for the manifest, the theme colour and the apple-touch-icon. It also
 generates and serves the manifest and the icons while it runs, in `buildHeadInjection`. That mirrors
 the automatic injection of the import map. The **offline** service worker stays in production only.
-In development, the telemetry service worker at `/@imp/sw.js` keeps its place. That worker reports
-network activity, and it caches nothing. So development keeps live reload and telemetry, and
-production gets the offline behaviour.
+In development, the dev service worker keeps its place, see `service-worker-dev-mode.md`. That
+worker reports network activity, and it caches nothing. So development keeps live reload and
+telemetry, and production gets the offline behaviour.
+
+A project that names its own `serviceWorker` in `imp.json` keeps that worker. `imp build --pwa` then
+writes the manifest and the icons, registers the worker of the project, and writes no offline
+worker. Two workers cannot share `sw.js` and root scope. Offline behaviour is then the job of that
+worker. `todo/own-service-worker-offline-precache.md` tracks a precache that imp could hand to it.
 
 ## Consequences
 

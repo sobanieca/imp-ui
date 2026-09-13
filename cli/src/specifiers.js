@@ -32,6 +32,7 @@ export const IMP_MODULES = {
   'imp/log': 'api/log.js',
   'imp/http': 'api/http.js',
   'imp/icons': 'api/icons.js',
+  'imp/service-worker': 'api/service-worker.js',
   'imp/std': 'std/index.js',
   'imp/std/layout': 'std/layout/index.js',
   'imp/std/display': 'std/display/index.js',

@@ -39,11 +39,13 @@ no third way to put them in a box.**
 - **`flex` is a row**, with `flex-direction: row`. It takes `horizontalAlign`, which is `start`,
   `end`, `center` or `justify`, `verticalAlign`, which is `top`, `bottom`, `center` or `stretch`,
   `wrap` and `gap`. **`stack` is a column**, with `flex-direction: column`. It takes
-  `horizontalAlign`, which is `start`, `end`, `center` or `stretch`, and `gap`.
+  `horizontalAlign`, which is `start`, `end`, `center` or `stretch`, `verticalAlign`, which is
+  `top`, `bottom`, `center` or `justify`, and `gap`.
 - **A prop name is the axis that the user sees**, and not the axis of flexbox. The `horizontalAlign`
   of a row is its `justify-content`, and its `verticalAlign` is its `align-items`. The
-  `horizontalAlign` of a stack is its `align-items`. To name the axes by what they look like is what
-  makes the pair learnable, with no knowledge of which axis flexbox calls the main axis.
+  `horizontalAlign` of a stack is its `align-items`, and its `verticalAlign` is its
+  `justify-content`. To name the axes by what they look like is what makes the pair learnable, with
+  no knowledge of which axis flexbox calls the main axis.
 - **Along the horizontal axis, the values are `start` and `end`, and they follow the reading
   direction.** That is the same spelling that `text` and `heading` use for the alignment of text,
   and it means the same thing. It is the edge where the language starts. `start` is the left edge
@@ -54,8 +56,10 @@ no third way to put them in a box.**
   warns about one, and falls back, as it does for any other value outside the list.
 - **`verticalAlign` keeps `top` and `bottom`.** The direction mirrors the inline axis only. So a
   logical spelling there would be jargon with no behaviour behind it.
-- **A stack has no vertical alignment**, because a stack is as tall as its children. To place things
-  in spare room along an axis is what a row is for.
+- **A stack fills the height that its parent gives it.** The host is a block, and the column is
+  `block-size: 100%` of it. A stack with no height from its parent is as tall as its children, and
+  its `verticalAlign` does nothing. With a height, the spare room is along the column, and
+  `verticalAlign` places the children in it. That is how a column puts one item at its foot.
 - **Spacing is `gap` only.** It is a step from `0` to `6` on the spacing scale of the theme, and not
   a length. So it stays fluid and themable, see `responsive-fluid-values-only.md`. There is no
   margin prop, and no standard component carries an outer margin. So a `gap` on the parent is the

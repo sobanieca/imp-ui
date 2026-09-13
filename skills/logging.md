@@ -38,8 +38,9 @@ an environment file, see [config](config.md):
 ```
 
 To see only the library's messages, filter the browser console by `imp:`. To see only your own
-messages, filter by your prefix. In development, `imp start` also writes every console message to
-`.imp/dev.log`, one entry per line. Search that file instead of watching the terminal.
+messages, filter by your prefix. In development, `imp start` also keeps every console message in the
+log of the session, one entry per line. Run `imp logs` and search it instead of watching the
+terminal, see [start](start.md).
 
 ## What `debug` traces
 

@@ -1,0 +1,17 @@
+$ imp logs  (cwd: <tmp>/src)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] no dev server has run in this project - imp start writes the log to <tmp>/.imp/dev.log
+
+$ imp logs  (cwd: <tmp>/src, log in lib/src)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] no session log at <tmp>/.imp/dev.log - there is one in lib/src, run imp logs from that folder

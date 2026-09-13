@@ -33,6 +33,10 @@ USAGE
                                         widget the dev server puts on every page - the page,
                                         the element picked and the comment left on it
                                         (clear: delete every saved review)
+  imp logs [-n <count>] [-f]            print the log of the dev server session: the browser
+                                        console, the errors, the network and imp's own lines
+                                        (-n: the last <count> entries | -f: keep printing
+                                        each new entry until Ctrl-C)
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest | no package: update all)
   imp uninstall <package>               remove a vendored dependency
@@ -168,6 +172,25 @@ try {
     case 'review': {
       const { review } = await import('./review.js')
       await review({ root: await projectRoot(Deno.cwd()), args: positional(rest) })
+      break
+    }
+    case 'logs': {
+      const { logs } = await import('./logs.js')
+      const countIndex = rest.indexOf('-n')
+      let count = null
+      if (countIndex !== -1) {
+        const raw = rest[countIndex + 1]
+        count = Number(raw)
+        if (!raw || !Number.isInteger(count) || count <= 0) {
+          throw new Error(`-n must be a positive integer, got '${raw ?? ''}'`)
+        }
+      }
+      const known = new Set(['-f', '-n'])
+      const stray = rest.find((arg, index) => !known.has(arg) && rest[index - 1] !== '-n')
+      if (stray !== undefined) {
+        throw new Error(`unknown argument '${stray}' - imp logs takes -n <count> and -f only`)
+      }
+      await logs({ root: await projectRoot(Deno.cwd()), count, follow: rest.includes('-f') })
       break
     }
     case 'build': {

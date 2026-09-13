@@ -1,7 +1,7 @@
 [WARN] public/index.html is ignored - index.html is served from the project root, and 'imp build' fails on the collision
 [INFO] imp start serving index.html from <tmp>
   -> http://localhost:<port>/
-  logs -> <tmp>/.imp/dev.log
+  logs -> imp logs (-f follows the session)
   imp auto-injected | live reload | console + network telemetry
 
 GET / serves index.html

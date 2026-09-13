@@ -16,7 +16,7 @@ scheme.
 | Prop    | Values                                    | Default     | Notes                                               |
 | ------- | ----------------------------------------- | ----------- | --------------------------------------------------- |
 | `icon`  | an export from `imp/icons` - **required** | -           | Also accepted positionally; a missing one is logged |
-| `size`  | `'sm'`, `'md'`, `'lg'`, or any CSS length | `'md'`      | `1rem`, `1.25rem`, `1.5rem` square                  |
+| `size`  | `'sm'`, `'md'`, `'lg'`, or any CSS length | `'md'`      | `1rem`, `1.5rem`, `2rem` square                     |
 | `color` | a colour name below, or `'current'`       | `'current'` | `'current'` inherits the surrounding text colour    |
 | `label` | string, or a state - **live**             | -           | Names the icon; without it it is decorative         |
 

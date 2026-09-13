@@ -5,6 +5,7 @@
     "update": "deno outdated --update --latest && deno run -A tools/update-dprint.js",
     "compile": "deno run -A tools/compile.js",
     "preview": "deno task compile && cd lib/src && ../../imp preview",
+    "logs": "deno task compile && cd lib/src && ../../imp logs",
     "lint:lib": "deno task compile && cd lib/src && ../../imp lint",
     "start": "deno task compile && cd examples/shell && ../../imp start",
     "size": "deno run -A tools/check-binary-size.js",

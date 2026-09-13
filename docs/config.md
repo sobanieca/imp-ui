@@ -72,14 +72,18 @@ one on its own, from where you are.
   `folder` and `enabled` are necessary, so a project always states which backend it develops
   against. `--mock` and `--no-mock` override `enabled` for one run. `imp build` never copies the
   folder. See **[Mock responses](cli.md#mock-responses--mockjs)**.
+- **`serviceWorker`** is the path of your own service worker source, such as `src/sw.js`.
+  `imp start` then registers no dev worker of its own. It bundles yours and serves it at `/sw.js`,
+  and `imp build` writes the same bundle as `sw.js`. See
+  **[Your own service worker](cli.md#your-own-service-worker)**.
 - **`maxFileSize`** is the largest size, in bytes, that any single committed file can reach before
   `imp lint` reports an error and `imp install` gives a warning. The default is 200 kB, which is
   `204800`. See **[Linting](lint.md)**.
 - **`maxFileSizeIgnore`** is an array of repo-relative paths that `maxFileSize` does not cover. A
   listed file, and everything under a listed folder, never causes the size check to fail.
-- **`maxLogEntries`** is the number of recent entries that `imp start` keeps in its dev log file,
-  `.imp/dev.log`. The default is 4000. imp removes an older entry when the file reaches the limit.
-  See **[`imp start`](cli.md#imp-start)**.
+- **`maxLogEntries`** is the number of recent entries that `imp start` keeps in the log of the
+  session, the one that `imp logs` prints. The default is 4000. imp removes an older entry when the
+  log reaches the limit. See **[`imp logs`](cli.md#imp-logs)**.
 - **`devServerPort`** is the port where `imp start` listens. The default is 4507. A `--port` flag on
   the command line overrides it. See **[`imp start`](cli.md#imp-start)**.
 

@@ -29,23 +29,27 @@ const previewModules = (preview = {}) => [
   ...(typeof preview.groups === 'string' ? [preview.groups] : []),
 ]
 
+export const bindingNamesOf = (pattern) => {
+  const names = []
+  const walk = (node) => {
+    if (node.type === 'Identifier') names.push({ name: node.name, node })
+    else if (node.type === 'ObjectPattern') {
+      for (const property of node.properties) {
+        walk(property.type === 'RestElement' ? property.argument : property.value)
+      }
+    } else if (node.type === 'ArrayPattern') {
+      for (const element of node.elements) if (element) walk(element)
+    } else if (node.type === 'AssignmentPattern') walk(node.left)
+    else if (node.type === 'RestElement') walk(node.argument)
+  }
+  walk(pattern)
+  return names
+}
+
 const declaredNames = (declaration) => {
   if (!declaration) return []
   if (declaration.type === 'VariableDeclaration') {
-    const names = []
-    const walk = (pattern) => {
-      if (pattern.type === 'Identifier') names.push({ name: pattern.name, node: pattern })
-      else if (pattern.type === 'ObjectPattern') {
-        for (const property of pattern.properties) {
-          walk(property.type === 'RestElement' ? property.argument : property.value)
-        }
-      } else if (pattern.type === 'ArrayPattern') {
-        for (const element of pattern.elements) if (element) walk(element)
-      } else if (pattern.type === 'AssignmentPattern') walk(pattern.left)
-      else if (pattern.type === 'RestElement') walk(pattern.argument)
-    }
-    for (const declarator of declaration.declarations) walk(declarator.id)
-    return names
+    return declaration.declarations.flatMap((declarator) => bindingNamesOf(declarator.id))
   }
   return declaration.id ? [{ name: declaration.id.name, node: declaration.id }] : []
 }

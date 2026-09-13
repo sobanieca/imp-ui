@@ -20,8 +20,10 @@ imp warns about a child and drops it.
 | `items`       | array of `{ id, label, content, disabled }`       | `[]`               | Required in practice - see the table below |
 | `selected`    | an item's `id`, or a state holding one - **live** | first enabled item | Which panel is showing                     |
 | `orientation` | `'horizontal'`, `'vertical'`                      | `'horizontal'`     | Vertical puts the strip beside the panels  |
+| `foldable`    | boolean                                           | `false`            | Vertical only: a button folds the strip    |
+| `folded`      | boolean, or a state holding one - **live**        | `false`            | Whether the strip is folded - see below    |
 | `label`       | string, or a state holding one - **live**         | -                  | Accessible name for the tab strip          |
-| `events`      | `{ select }`                                      | -                  | `select` fires on the host - see below     |
+| `events`      | `{ select, fold }`                                | -                  | Both fire on the host - see below          |
 
 Each entry in `items` has these keys:
 
@@ -43,10 +45,22 @@ Rules an agent gets wrong:
   **state** to keep control after mount, because imp reads a plain string once.
 - **Listen with `events: { select }`, not with `onSelect`.** `select` is a `CustomEvent` on the
   host, with `detail: { id, index }`. It fires only for a choice by the person, never for a change
-  that the `selected` state drives. So a state that is bound in both directions cannot loop.
+  that the `selected` state drives. So a state that is bound in both directions cannot loop. A
+  `select` from a component inside a panel, such as nested `tabs`, does not reach `events.select`.
+  The same holds for `fold`.
 - **imp renders every panel at mount** and hides it with `hidden`. So state inside a panel survives
   a change of tab. Do not pass content that is expensive to build for every tab at once.
 - **`label` names the strip, not a tab.** Each tab names itself from its own `label` text.
+- **`foldable` needs `orientation: 'vertical'`.** It adds a button at the foot of the strip that
+  folds the tabs away, so the panel gets the width. The button carries `aria-expanded` and a
+  translated label. A folded strip is `inert`, so unfold it to switch tabs. imp warns about
+  `foldable` on a horizontal strip, and about `folded` without `foldable`, and ignores both.
+- **`folded` works like `selected`.** A plain boolean sets the start. A writable state keeps control
+  after mount, and a tap on the button writes it back. `fold` fires on the host with
+  `detail: { folded }`, for a tap only, never for a change that the state drives.
+- **The parent sets the height.** The strip is as tall as the host. Give the host a `block-size`,
+  and the fold button sits at the foot, at the inline end of the strip, with the free space between
+  the tabs and the button.
 - imp warns about an unknown prop at mount. It warns about an `orientation` outside the list and
   falls back. It warns about an item with no `label` and skips it. It warns about a `selected` that
   matches no item, and ignores it.

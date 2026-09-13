@@ -67,8 +67,9 @@ The names are `'primary'`, `'secondary'`, `'text'`, `'link'`, `'border'`, `'dang
 what a button or a menu row needs. imp logs a colour outside that list and ignores it. To paint an
 icon in any other colour, set `color` on the box around it and leave the icon on `'current'`.
 
-Every Lucide icon is square, so `size` sets both axes. The three steps are `1rem`, `1.25rem` and
-`1.5rem`. For any other size, pass a CSS length.
+Every Lucide icon is square, so `size` sets both axes. The three steps are `1rem`, `1.5rem` and
+`2rem`. Lucide draws on a 24-unit grid, so `md` at the default root font size is 24px and its
+strokes land on whole pixels. For any other size, pass a CSS length.
 
 ```js
 import { flex } from 'imp/std/layout'

@@ -139,6 +139,10 @@ own rounded box, so its scrollbar stays clear of the corners. The themes are nam
 look. Prompt is licensed under the SIL Open Font License 1.1 and Roboto Mono under the Apache
 License 2.0, so this use is permitted.
 
+The task serves from `lib/src`, so the session log is `lib/src/.imp/dev.log`. `deno task logs`
+prints it. It runs `imp logs` from the same folder, and it takes the same `-n` and `-f` flags. An
+`imp logs` at the repo root finds no log there, and its message points at `lib/src`.
+
 **An edit to a component during a session does not reach the page. Restart the task.** The dev
 server reloads on save and rebuilds the preview page. But a preview imports `button` from `imp/std`,
 and that import resolves to the library embedded in the running binary. So the page comes back

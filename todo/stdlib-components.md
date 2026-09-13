@@ -46,8 +46,9 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   `treeSelect` _(later)_. `form`, and the form layer, have landed. They landed with `textField`,
   `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`,
   `radioGroup`, `submitButton` and `resetButton`. They opened the `imp/std/inputs` subpath, and they
-  settled the contract that binds a field, see `adr/state-driven-forms.md`. _Form handling_, below,
-  gives the details.
+  settled the contract that binds a field, see `adr/state-driven-forms.md`. `codeEditor` has landed.
+  It is the tokens editor of the theme editor, see `adr/code-editor-textarea-mirror.md`. _Form
+  handling_, below, gives the details.
 - **Display** - `badge`, `avatar`, `popover`, `accordion`, `descriptionList`, `statistic`,
   `timeline` _(later)_, `image`, which previews and zooms, _(later)_, `calendar` _(later)_ and
   `qrCode` _(later)_. `card` and `tooltip` have landed. `card` is the panel of the index and the
@@ -56,26 +57,29 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   is what `adr/browser-support-baseline.md` forbids. `emptyState` has landed. It opened the
   `imp/std/display` subpath, and it fixed the convention for wording, see
   `adr/translatable-by-default.md`. `tag` landed with it. `tag` is what the `tag` data of a nav row
-  of `shell` renders.
+  of `shell` renders. `codeBlock` has landed. It is the code panel of `imp preview`, see
+  `adr/code-block-syntax-highlighting.md`.
 - **Feedback** - `spinner`, `progress`, `alert`, `toast`, `skeleton`, `popconfirm` and `result`
-  _(later)_. Every overlay in this group builds on the seam that `dialog` opened, see
-  `adr/overlay-top-layer.md`. But **`dialog` itself belongs to _Layout and placement_**, below. It
-  is a frame to put content in. It is not something that the app says to the user. `bugReport` has
-  landed before the rest. It opened the `imp/std/feedback` subpath. It shares the element picker of
-  the development server, and its capture of the context, through `lib/src/report.js`, see
-  `adr/in-page-review-capture.md`. It settled two things that the group inherits. The first is that
-  **an action that runs asynchronously, and that can fail, is a function prop**, such as `onSubmit`,
-  and not an entry in `events`. The reason is that nobody can await a `CustomEvent`. The second is
-  that **a component composes `button`, and does not restyle a native one**. It drives the nested
-  button through a prop, such as a state handle for `disabled` or for `loading`. It focuses that
-  button through its host, which every component now supports, see `adr/focus-delegation.md`.
+  _(later)_. `toast` is shaped, with the `notifications` bell of the shell, in
+  `todo/toast-notifications.md`. Every overlay in this group builds on the seam that `dialog`
+  opened, see `adr/overlay-top-layer.md`. But **`dialog` itself belongs to _Layout and placement_**,
+  below. It is a frame to put content in. It is not something that the app says to the user.
+  `bugReport` has landed before the rest. It opened the `imp/std/feedback` subpath. It shares the
+  element picker of the development server, and its capture of the context, through
+  `lib/src/report.js`, see `adr/in-page-review-capture.md`. It settled two things that the group
+  inherits. The first is that **an action that runs asynchronously, and that can fail, is a function
+  prop**, such as `onSubmit`, and not an entry in `events`. The reason is that nobody can await a
+  `CustomEvent`. The second is that **a component composes `button`, and does not restyle a native
+  one**. It drives the nested button through a prop, such as a state handle for `disabled` or for
+  `loading`. It focuses that button through its host, which every component now supports, see
+  `adr/focus-delegation.md`.
 - **Shell** - the usual contents of the regions of the frame have landed, as `imp/std/shell`. Those
   are `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`, see
   `adr/shell-region-components.md`. `breadcrumbs` carries the picker of a crumb, on the anchored
   seam, and the application map feeds the trail, see `adr/application-map.md`. Two things are still
   wanted here. The first is a **switcher for a tenant, or for a workspace**, which needs the
-  anchored panel from `todo/overlay-seam.md`. The second is a **bell for notifications**, which
-  wants `badge`, from _Display_, first.
+  anchored panel from `todo/overlay-seam.md`. The second is a **bell for notifications**, which is
+  `notifications`, see `todo/toast-notifications.md`.
 - **Navigation** - `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_ and `floatButton`
   _(later)_. `tabs` has landed. It opened the `imp/std/navigation` subpath. It fixed the shape that
   data drives, which every composite widget with an internal ARIA id reference follows.

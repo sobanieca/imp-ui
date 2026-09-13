@@ -9,11 +9,17 @@ import {
   resolve,
   SEPARATOR,
 } from '@std/path'
-import { clientScript, serviceWorkerScript } from './client.js'
+import { clientScript } from './client.js'
 import { loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { publicCopyOfEntry, resolveEntryPath } from './entry.js'
 import { isSkippedPath } from './walk.js'
 import { createMockBundler } from './mocks.js'
+import {
+  assembleServiceWorker,
+  assertServiceWorkerSource,
+  createServiceWorkerBundler,
+  SERVICE_WORKER_PATH,
+} from './service-worker.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { flagsInjectionScript, splitEnvAndFlags } from './flags.js'
 import { dim, green, red } from './colors.js'
@@ -88,7 +94,9 @@ const impImports = Object.fromEntries(
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
-function buildHeadInjection(dependencies, pwa, env, flags, mocks, mark) {
+const DEV_WORKER_PATH = '/@imp/sw.js'
+
+function buildHeadInjection(dependencies, pwa, env, flags, mocks, ownWorker, widget) {
   const importMap = {
     imports: { ...impImports, ...dependencyImports(dependencies) },
   }
@@ -103,9 +111,9 @@ function buildHeadInjection(dependencies, pwa, env, flags, mocks, mark) {
     .filter(Boolean)
     .map((tag) => tag + '\n')
     .join('')
-  return `<script>${clientScript({ mocks, mark })}</script>\n${valueTags}<script type="importmap">${
-    JSON.stringify(importMap)
-  }</script>${pwaTags}`
+  return `<script>${
+    clientScript({ mocks, ownWorker, ...widget })
+  }</script>\n${valueTags}<script type="importmap">${JSON.stringify(importMap)}</script>${pwaTags}`
 }
 
 export function injectImp(html, headInjection) {
@@ -162,7 +170,10 @@ async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
   return new Response(bytes, { headers: { 'content-type': type } })
 }
 
-export async function loadApp(entryPath, { envAlias = null, mocks = null } = {}) {
+export async function loadApp(
+  entryPath,
+  { envAlias = null, mocks = null, themeEditor = true } = {},
+) {
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
   const imp = await loadImpConfig(root)
@@ -173,17 +184,25 @@ export async function loadApp(entryPath, { envAlias = null, mocks = null } = {})
   const declaredMocks = mocksSetting(imp)
   const mockingOn = Boolean(declaredMocks) && (mocks ?? declaredMocks.enabled)
   const mocksDirectory = mockingOn ? resolve(root, declaredMocks.folder) : null
+  const serviceWorkerEntry = imp.serviceWorker ? resolve(root, imp.serviceWorker) : null
+  if (serviceWorkerEntry) await assertServiceWorkerSource(serviceWorkerEntry, imp.serviceWorker)
   const headInjection = buildHeadInjection(
     dependencies,
     pwa,
     env,
     flags,
     mockingOn,
-    await readWidgetMark(),
+    Boolean(serviceWorkerEntry),
+    { mark: await readWidgetMark(), themeEditor },
   )
   const buildMocks = mocksDirectory
     ? createMockBundler({ root, directory: mocksDirectory, dependencies })
     : null
+  const buildServiceWorker = createServiceWorkerBundler({
+    root,
+    entry: serviceWorkerEntry,
+    dependencies,
+  })
   if (declaredMocks && !mockingOn) {
     logger.info(
       `mocks - ${declaredMocks.folder}/ is declared but off for this run; pass --mock to serve it`,
@@ -209,7 +228,24 @@ export async function loadApp(entryPath, { envAlias = null, mocks = null } = {})
     devServerPort,
     mocksDirectory,
     buildMocks,
+    serviceWorker: serviceWorkerEntry
+      ? relative(root, serviceWorkerEntry).replaceAll('\\', '/')
+      : null,
+    buildServiceWorker,
+    runtimeValues: { env, flags },
     publicDir: publicDirectory(root),
+  }
+}
+
+export function reportServiceWorker(state, { serviceWorker }) {
+  if (!state.changed) return
+  if (state.problem) {
+    logger.error(`service worker - ${state.problem}`)
+  } else {
+    logger.info(
+      `service worker - ${serviceWorker} serving at ${SERVICE_WORKER_PATH}; ` +
+        'dev mode runs when it calls startDevMode()',
+    )
   }
 }
 
@@ -261,10 +297,14 @@ export function createRequestHandler(
     historyFallback = true,
     mocksDirectory = null,
     buildMocks = null,
+    serviceWorker = null,
+    buildServiceWorker = null,
+    runtimeValues = {},
     publicDir = null,
     recentLog = null,
   },
 ) {
+  const servedWorkerPath = serviceWorker ? SERVICE_WORKER_PATH : DEV_WORKER_PATH
   let iconSet = null
   const devIcons = () => (iconSet ??= renderIconSet({ root, pwa }))
   const serveAsset = async (pathname) => {
@@ -324,20 +364,31 @@ export function createRequestHandler(
       return new Response('ok')
     }
 
-    if (url.pathname === '/@imp/sw.js') {
+    if (url.pathname === servedWorkerPath) {
+      const worker = await buildServiceWorker()
+      if (serviceWorker) reportServiceWorker(worker, { serviceWorker })
+      if (worker.problem) {
+        return new Response(`service worker - ${worker.problem}`, {
+          status: 500,
+          headers: { 'content-type': CONTENT_TYPES['.txt'], 'cache-control': 'no-store' },
+        })
+      }
       let mockBundle = ''
       if (buildMocks) {
         const state = await buildMocks()
         reportMocks(state, { root, directory: mocksDirectory })
         mockBundle = state.source
       }
-      return new Response(serviceWorkerScript({ mockBundle }), {
-        headers: {
-          'content-type': CONTENT_TYPES['.js'],
-          'service-worker-allowed': '/',
-          'cache-control': 'no-store',
+      return new Response(
+        assembleServiceWorker({ worker: worker.source, mockBundle, ...runtimeValues }),
+        {
+          headers: {
+            'content-type': CONTENT_TYPES['.js'],
+            'service-worker-allowed': '/',
+            'cache-control': 'no-store',
+          },
         },
-      })
+      )
     }
 
     if (url.pathname.startsWith('/@imp/')) {
@@ -405,6 +456,9 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
     devServerPort,
     mocksDirectory,
     buildMocks,
+    serviceWorker,
+    buildServiceWorker,
+    runtimeValues,
     publicDir,
   } = await loadApp(entryPath, { envAlias: env, mocks })
   const listenPort = port ?? devServerPort ?? DEFAULT_DEV_SERVER_PORT
@@ -425,6 +479,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
   }
 
   if (buildMocks) reportMocks(await buildMocks(), { root, directory: mocksDirectory })
+  if (serviceWorker) reportServiceWorker(await buildServiceWorker(), { serviceWorker })
 
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, () => {
@@ -438,7 +493,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
       onListen: ({ port }) => {
         logger.info(`imp start serving ${entryName} from ${root}`)
         console.log(`  -> http://localhost:${port}/`)
-        console.log(dim(`  logs -> ${devLog.path}`))
+        console.log(dim('  logs -> imp logs (-f follows the session)'))
         console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
       },
     },
@@ -450,6 +505,9 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
       pwa,
       mocksDirectory,
       buildMocks,
+      serviceWorker,
+      buildServiceWorker,
+      runtimeValues,
       publicDir,
       recentLog: devLog.recent,
     }),

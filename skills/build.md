@@ -139,6 +139,10 @@ cache, so a user is never held on a stale version.
 Without the flag, a PWA project still builds normally. In development, installability needs no flag.
 But the **offline** worker comes only from `imp build --pwa`. See [start](start.md).
 
+When `imp.json` names a `serviceWorker`, every page build bundles that source and writes it as
+`sw.js`. With `--pwa`, imp registers that worker in the HTML and writes no offline worker. Offline
+behaviour is then the job of your worker. See [service-worker](service-worker.md).
+
 ## Rules an agent gets wrong
 
 - **Never edit a file in the output directory.** imp deletes and writes the directory again on every

@@ -254,6 +254,14 @@ export async function loadImpConfig(startDir) {
       )
     }
   }
+  if (
+    config.serviceWorker !== undefined &&
+    (typeof config.serviceWorker !== 'string' || config.serviceWorker === '')
+  ) {
+    throw new Error(
+      `invalid ${name} - 'serviceWorker' must be the path of your service worker source, like "src/sw.js"`,
+    )
+  }
   if (config.version !== undefined && typeof config.version !== 'string') {
     throw new Error(
       `invalid ${name} - 'version' must be a string (an exact imp version, e.g. '1.2.3')`,

@@ -98,9 +98,9 @@ stayed on the screen.
 ### 2. `toast`, the one region
 
 Several toasts share one region, for the order of reading, and for the stacking. That region is a
-component that the app mounts once. imp finds it through a composed, bubbling event, in the way that
-`useState` resolves a state. The region builds each toast from plain data. It is still not a
-container that another component renders into.
+component that the app mounts once. It builds each toast from plain data, out of one app-wide store.
+It is still not a container that another component renders into. The full shape, with the
+`notifications` bell of the shell, is in `todo/toast-notifications.md`.
 
 ## Where the component boundary falls
 

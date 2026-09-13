@@ -40,7 +40,6 @@ state:
   imp.preview.state-editor = false
   imp.preview.states-found = true
   imp.preview.code = false
-  imp.preview.copy.code = "copy"
   imp.preview.theme = "brand"
   imp.preview.dir = "auto"
   imp.preview.lang = "en"

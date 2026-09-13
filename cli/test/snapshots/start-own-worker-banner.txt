@@ -1,0 +1,6 @@
+[INFO] mocks - 1 file(s) from mocks/ serving through the browser
+[INFO] service worker - src/sw.js serving at /sw.js; dev mode runs when it calls startDevMode()
+[INFO] imp start serving index.html from <root>/test/fixtures/start-service-worker
+  -> http://localhost:<port>/
+  logs -> imp logs (-f follows the session)
+  imp auto-injected | live reload | console + network telemetry

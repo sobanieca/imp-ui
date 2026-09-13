@@ -1,4 +1,4 @@
 [INFO] imp start serving index.html from <root>/test/fixtures/basic
   -> http://localhost:<port>/
-  logs -> <root>/test/fixtures/basic/.imp/dev.log
+  logs -> imp logs (-f follows the session)
   imp auto-injected | live reload | console + network telemetry

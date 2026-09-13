@@ -1,0 +1,33 @@
+$ imp logs  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+[INFO] imp start serving index.html
+[browser:log] counter mounted
+[net] GET /api/todos -> 200 *ms
+[browser:error] Uncaught TypeError: x is not a function
+
+--- stderr ---
+(empty)
+
+$ imp logs -n 2  (cwd: <tmp>/src)
+exit code: 0
+
+--- stdout ---
+[net] GET /api/todos -> 200 *ms
+[browser:error] Uncaught TypeError: x is not a function
+
+--- stderr ---
+(empty)
+
+$ imp logs -n 10  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+[INFO] imp start serving index.html
+[browser:log] counter mounted
+[net] GET /api/todos -> 200 *ms
+[browser:error] Uncaught TypeError: x is not a function
+
+--- stderr ---
+(empty)

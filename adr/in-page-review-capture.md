@@ -64,14 +64,21 @@ customer who reports a bug.
 - **The widget is the imp mark, one small round button, and a person can drag it anywhere.** It
   starts in the corner at the block end and the inline end. A drag moves it, and imp remembers the
   place in `localStorage`, because the dev server reloads the page on every save, and a widget that
-  jumps back on each reload is a widget that somebody stops moving. A press opens three round
-  buttons: **Add review**, **Console logs** and **Network logs**. The buttons scale in from the
-  mark, and a person who asked for reduced motion gets them at once.
+  jumps back on each reload is a widget that somebody stops moving. A press opens round buttons:
+  **Add review**, **Console logs** and **Network logs**, and on a page of `imp start` also **Theme
+  editor**. The buttons scale in from the mark, and a person who asked for reduced motion gets them
+  at once.
 - **Add review is the one action that writes anything.** A press enters pick mode. imp outlines the
   element under the pointer. A click chooses that element. The comment field then opens, and the
   chosen element stays outlined. `Escape` cancels. `Enter` takes the highlighted element. `Ctrl` or
   `Cmd` with `Enter` saves. Nothing else is configurable. A review is one element and one comment,
   because anything more is a bug tracker.
+- **Theme editor hosts the theme editor of the library in the panel of the widget**, on a card in
+  the surface colour of the theme, for the theme that the app applied. The widget reaches it the
+  same way it reaches the picker, by a dynamic import of the served module, `/@imp/theme-editor.js`.
+  So the editor renders with the same copy of imp as the app. The design of the editor and of its
+  draft is in `theme-editor.md`. The button is absent on a preview page, which runs its own bundle
+  of the library and already has _edit theme_.
 - **Console logs and Network logs show the person the same entries that the terminal gets, and
   nothing more.** The injected client already captures every console call and every page error
   before it posts them to the server. It also keeps them in the page, in a buffer capped at 2000

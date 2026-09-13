@@ -1,0 +1,20 @@
+$ imp build  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built index.html -> dist/
+  mocks/ left out - mocks serve in imp start
+  sw.js - your service worker, bundled from src/sw.js
+  app.js (<size>)
+  index.html (<size>)
+  sw.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- dist/sw.js ---
+first line: globalThis.__IMP_ENV__ = {"IMP_LOG_LEVEL":"info","DEV_TOOLS":"on"};
+bare imports left: no
+worker code ran: {"greeting":"hello from the worker","devTools":"on"}
+listeners: activate, fetch, install
+mocks bundled: 0

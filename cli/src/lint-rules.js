@@ -19,6 +19,7 @@ import * as i18nModule from '../../lib/src/api/i18n.js'
 import * as logModule from '../../lib/src/api/log.js'
 import * as httpModule from '../../lib/src/api/http.js'
 import * as iconsModule from '../../lib/src/api/icons.js'
+import * as serviceWorkerModule from '../../lib/src/api/service-worker.js'
 import * as stdModule from '../../lib/src/std/index.js'
 import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdDisplayModule from '../../lib/src/std/display/index.js'
@@ -37,6 +38,7 @@ export const IMP_MODULE_EXPORTS = {
   'imp/log': logModule,
   'imp/http': httpModule,
   'imp/icons': iconsModule,
+  'imp/service-worker': serviceWorkerModule,
   'imp/std': stdModule,
   'imp/std/layout': stdLayoutModule,
   'imp/std/display': stdDisplayModule,

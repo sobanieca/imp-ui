@@ -13,9 +13,11 @@ it first, then act on it.
 The dev server puts a **review widget** on every page that it serves. It is the imp mark in the
 corner, and the person can drag it anywhere. The person presses the mark, presses **Add review**,
 clicks an element and types a comment. imp writes the result to `.imp/reviews/`. This is the inbound
-half of the development loop. [start](start.md) is the outbound half, through `.imp/dev.log`. The
-mark also opens **Console logs** and **Network logs**, which show the person the same entries in the
-page, live, since the page loaded. They add nothing that the file does not hold.
+half of the development loop. [start](start.md) is the outbound half, through `imp logs`. The mark
+also opens **Console logs** and **Network logs**, which show the person the same entries in the
+page, live, since the page loaded. They add nothing that `imp logs` does not print. On a page of
+`imp start` the mark also opens the **Theme editor**, see [theming](theming.md). It writes no
+review.
 
 The widget shares its element picker and its capture with `bugReport`, see
 `imp skill std/bugReport`. `bugReport` is the component that an app ships to its own users. So a
@@ -91,7 +93,7 @@ omits an empty block.
 | ---------- | ------------------------------------------------------------------------------------- |
 | `state`    | `<state name> = <JSON>` for every imp state in scope at the picked element            |
 | `controls` | `<tag>[name=<n>] = <JSON>` for every form control, plus `(disabled)` or `(read-only)` |
-| `log`      | the last 20 lines of `.imp/dev.log` at that moment                                    |
+| `log`      | the last 20 entries of the session log, `imp logs`, at that moment                    |
 
 **`comment`** is last. It starts at column 0 and runs to the end of the file, and imp keeps its
 newlines. To parse a review, split on the first `\ncomment:\n`. Nothing above it can produce that
@@ -140,8 +142,8 @@ disabled submit button carries the field values that explain why the button is d
 
 - **Do not delete a review after you act on it.** `imp review clear` is the decision of the person.
   They decide when a comment is settled. Run the command only when a person asks for it.
-- **imp does not truncate the reviews between runs**, as it truncates `.imp/dev.log`. So the folder
-  is the whole backlog, not the current session.
+- **imp does not clear the reviews between runs**, as it clears the session log. So the folder is
+  the whole backlog, not the current session.
 - **Everything below the header was true at the moment when the person picked the element**, not
   when they finished typing. So `state` and `controls` describe the screen that the comment is
   about, even when the app moved on while the person wrote the comment.

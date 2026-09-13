@@ -1,0 +1,24 @@
+$ imp build --pwa  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built index.html -> dist/
+  sw.js - your service worker, bundled from src/sw.js
+  PWA: manifest, icons (192, 512, maskable, apple-touch), your service worker registered
+  installable - name, 192 + 512 icons, display, start_url all present
+  app.js (<size>)
+  icons/apple-touch-icon.png (<size>)
+  icons/icon-192.png (<size>)
+  icons/icon-512.png (<size>)
+  icons/icon-maskable-512.png (<size>)
+  index.html (<size>)
+  manifest.webmanifest (<size>)
+  sw.js (<size>)
+
+--- stderr ---
+(empty)
+
+--- output ---
+registration: serviceWorker.register("/sw.js")
+dist/sw.js is the project worker: yes
+dist/sw.js precaches: no

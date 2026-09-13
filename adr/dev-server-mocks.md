@@ -10,8 +10,8 @@ production bundle. It made the question "is mocking on?" a branch at runtime tha
 fold away. It also limited mocking to the client of imp. A plain `fetch`, an `<img>`, and an
 `XMLHttpRequest` inside a dependency, all went to the real network.
 
-The dev server already registers a service worker at root scope, for the network telemetry, see
-`built-in-logger.md`. It also already bundles code in process, with esbuild, see
+The dev server already runs a service worker at root scope, for the network telemetry, see
+`service-worker-dev-mode.md`. It also already bundles code in process, with esbuild, see
 `in-process-dependency-bundling.md`. Between them, the machinery to answer a request before it
 leaves the browser already runs in development, and it is absent from a build.
 
@@ -53,13 +53,13 @@ across files, in the way that the app is split.
   in the HTTP client, see `http-client.md`, cannot tell the two apart. From their side there is
   nothing to tell apart.
 
-**The bundle rides on the service worker script that the dev server already serves.** imp generates
-`/@imp/sw.js` per request. The telemetry worker comes first, and imp appends the bundled mocks. So
-the mock set is whatever is on disk at that moment. imp rebuilds the bundle only when the timestamp
-or the size of a mock file changes. The bytes of the script change with the bundle. So the ordinary
-update check of the browser, on the next navigation, installs the new worker. An edit to a mock file
-then reloads like an edit to any other file. imp reports a file that fails to bundle in the
-terminal, with its line, and serves the worker with no mocks, in place of no worker at all.
+**The bundle rides on the service worker script that the dev server serves.** imp generates the
+worker per request. The bundled mocks come first, and the worker code that calls `startDevMode()`
+follows. So the mock set is whatever is on disk at that moment. imp rebuilds the bundle only when
+the timestamp or the size of a mock file changes. The bytes of the script change with the bundle. So
+the ordinary update check of the browser, on the next navigation, installs the new worker. An edit
+to a mock file then reloads like an edit to any other file. imp reports a file that fails to bundle
+in the terminal, with its line, and serves the worker with no mocks, in place of no worker at all.
 
 **A page that loaded before the worker took control reloads itself, but only when it missed
 something.** A newly installed worker claims the page a moment after the page loads. A request in

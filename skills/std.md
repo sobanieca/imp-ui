@@ -4,15 +4,15 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import               | Exports                                                                                                                                                     | Per-component skill                                                                                                                                                                                                   |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                             |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                            |
-| `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `card`, `emptyState`, `tag`, `tooltip`                                                                                                                      | `imp skill std/card`, `std/emptyState`, `std/tag`, `std/tooltip`                                                                                                                                                      |
-| `imp/std/navigation` | `tabs`                                                                                                                                                      | `imp skill std/tabs`                                                                                                                                                                                                  |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                       |
-| `imp/std/feedback`   | `bugReport`                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                             |
+| Import               | Exports                                                                                                                                                                   | Per-component skill                                                                                                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                               | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                               |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                              | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                              |
+| `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `codeEditor`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/codeEditor`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `tag`, `tooltip`                                                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/tag`, `std/tooltip`                                                                                                                                                       |
+| `imp/std/navigation` | `tabs`                                                                                                                                                                    | `imp skill std/tabs`                                                                                                                                                                                                                    |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                                         | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                                         |
+| `imp/std/feedback`   | `bugReport`                                                                                                                                                               | `imp skill std/bugReport`                                                                                                                                                                                                               |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -143,7 +143,7 @@ icon(luTrash, { size: 'sm', color: 'danger', label: 'Delete invoice' })
 | Prop    | Values                                    | Default     | Notes                                       |
 | ------- | ----------------------------------------- | ----------- | ------------------------------------------- |
 | `icon`  | an export from `imp/icons` - **required** | -           | Also accepted positionally                  |
-| `size`  | `'sm'`, `'md'`, `'lg'`, or a CSS length   | `'md'`      | `1rem`, `1.25rem`, `1.5rem` square          |
+| `size`  | `'sm'`, `'md'`, `'lg'`, or a CSS length   | `'md'`      | `1rem`, `1.5rem`, `2rem` square             |
 | `color` | a theme colour name, or `'current'`       | `'current'` | `'primary'`, `'danger'`, any palette hue    |
 | `label` | string - **live**                         | -           | Names the icon; without it it is decorative |
 
@@ -308,15 +308,18 @@ stack(
 
 ### stack
 
-| Prop              | Values                                      | Default     | Notes                  |
-| ----------------- | ------------------------------------------- | ----------- | ---------------------- |
-| `horizontalAlign` | `'start'`, `'end'`, `'center'`, `'stretch'` | `'stretch'` | Across the stack       |
-| `gap`             | spacing step `0`-`6`                        | `3`         | Space between children |
+| Prop              | Values                                       | Default     | Notes                          |
+| ----------------- | -------------------------------------------- | ----------- | ------------------------------ |
+| `horizontalAlign` | `'start'`, `'end'`, `'center'`, `'stretch'`  | `'stretch'` | Across the stack               |
+| `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'justify'` | `'top'`     | Along the stack, in spare room |
+| `gap`             | spacing step `0`-`6`                         | `3`         | Space between children         |
 
 - **`gap` is a step number from the theme scale, never a length.** Write `gap: 4`, not
   `gap: '1rem'`. The scale is fluid, so one step is correct at every width. imp warns about a bad
   value and falls back to `3`.
-- **`stack` has no `verticalAlign`.** A stack is as tall as its children.
+- **`verticalAlign` on a `stack` needs a height from the parent.** A stack is as tall as its
+  children until the parent sets a `block-size` on the host. Then the stack fills it, and
+  `verticalAlign` places the children in the spare room.
 - **`horizontalAlign` takes `'start'` and `'end'`, never `'left'` and `'right'`.** It follows the
   reading direction. So `'start'` is the right edge under `dir="rtl"`, and one call is correct in
   both directions. `verticalAlign` keeps `'top'` and `'bottom'`, because direction never mirrors the
@@ -476,6 +479,33 @@ tooltip({ text: 'Refresh' }, refreshButton)
 
 Full manual: `imp skill std/tooltip`.
 
+## codeBlock - from `imp/std/display`
+
+```js
+import { codeBlock } from 'imp/std/display'
+
+codeBlock({ language: 'js', code: source })
+codeBlock({ language: 'bash', lineNumbers: true, id: 'install', code: script })
+```
+
+| Prop          | Values                        | Default  | Notes                                                       |
+| ------------- | ----------------------------- | -------- | ----------------------------------------------------------- |
+| `code`        | string, or a state - **live** | `''`     | The code to show                                            |
+| `language`    | string                        | `'text'` | `js`, `ts`, `html`, `css`, `json`, `bash`, `python`, ...    |
+| `lineNumbers` | boolean                       | `false`  | Numbers the lines. A number is a link that selects the line |
+| `id`          | string                        | -        | Names the block in the fragment: `#install-L12`             |
+| `label`       | string                        | -        | The accessible name, such as the file name                  |
+
+- **The code is a prop, not a child.** imp drops one line break at each end of the string, so a
+  template literal can open and close on its own line.
+- **The copy button is built in.** It copies the whole code without the line numbers.
+- **A click on a line number writes `#L12` into the address in place**, and a Shift-click extends it
+  to `#L12-L20`. A page opened with that fragment highlights the lines and scrolls to them. Give
+  every numbered block on a page an `id`.
+- **An unknown language is logged and shown as plain text.** Every colour comes from the theme.
+
+Full manual: `imp skill std/codeBlock`.
+
 ## Responsive: fluid values, and your own media query
 
 **No prop takes a value per screen, and no component hides itself at a width.** Every prop takes one
@@ -588,6 +618,35 @@ Rules an agent gets wrong:
   more.
 - To read the values anywhere in the subtree, call `useState(self, 'imp.form')`.
 
+## codeEditor - from `imp/std/inputs`
+
+```js
+import { codeEditor } from 'imp/std/inputs'
+
+codeEditor({ field: 'config', label: 'imp.json', language: 'json', rows: 8 })
+codeEditor({ value: source, label: 'Script', language: 'js' })
+```
+
+| Prop       | Values                         | Default  | Notes                                        |
+| ---------- | ------------------------------ | -------- | -------------------------------------------- |
+| `field`    | dot path                       | -        | Binds to that path of the surrounding form   |
+| `value`    | a state, or a plain string     | -        | Standalone use, when there is no form        |
+| `language` | string                         | `'text'` | Same names as `codeBlock`                    |
+| `rows`     | positive integer               | `10`     | The visible lines. The editor scrolls inside |
+| `label`    | string, or a state holding one | -        | Rendered as a real `<label>`                 |
+| `readonly` | boolean                        | `false`  | Selectable, not editable                     |
+
+- **It is `textArea` with a highlighted mirror behind the text.** Every form prop and rule of
+  `textArea` holds: `help`, `placeholder`, `required`, `disabled`, the validation props.
+- **The value is the whole text, on every keystroke.** Put a parse check in `validate`. The error
+  shows after the person leaves the editor, not while they type.
+- **Tab indents two spaces, Shift-Tab outdents, Enter keeps the indentation.** Escape, then Tab,
+  leaves the editor. Escape also closes a `dialog` or `drawer` around it.
+- **No line numbers, no copy button, no wrapping, no growth.** Set `rows`. Use `codeBlock` for a
+  read-only listing.
+
+Full manual: `imp skill std/codeEditor`.
+
 ## Navigation - from `imp/std/navigation`
 
 ```js
@@ -602,9 +661,9 @@ tabs({
 })
 ```
 
-| Component | Props                                                        |
-| --------- | ------------------------------------------------------------ |
-| `tabs`    | `items`, `selected` (live), `orientation`, `label`, `events` |
+| Component | Props                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------- |
+| `tabs`    | `items`, `selected` (live), `orientation`, `foldable`, `folded` (live), `label`, `events` |
 
 Rules an agent gets wrong:
 
@@ -616,6 +675,9 @@ Rules an agent gets wrong:
 - **`select` fires only for a choice by the person.** So a state that is bound in both directions
   cannot loop.
 - The arrow keys, `Home`, `End` and the RTL mirroring are included. Write no key handling.
+- **`foldable: true` on a vertical strip adds a fold button at its foot.** `folded` takes a boolean
+  or a state, and `events: { fold }` reports a tap. The host's `block-size` sets the height of the
+  strip, so the button sits at the foot.
 - **A menu of destinations is the `shell` nav.** There is no separate menu component. Give the rows
   to the frame as `navbar` or `sidebar` data. Full manual: `imp skill std/tabs`.
 

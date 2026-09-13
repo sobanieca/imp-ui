@@ -1,0 +1,10 @@
+{
+  "serviceWorker": "src/sw.js",
+  "mocks": {
+    "folder": "mocks",
+    "enabled": true
+  },
+  "environments": {
+    "default": "env/dev.json"
+  }
+}

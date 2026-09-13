@@ -110,19 +110,20 @@ you want a person to copy. A helper is fine. It is shown above the call.
   of the catalog stays up.
 - **Scenario tabs.** One vertical tab per export, in file order. The selected tab is in the address
   as `?scenario=<name>`, so a link opens a scenario. Every panel mounts at once, so a stage keeps
-  its state across a change of tab.
+  its state across a change of tab. The button at the foot of the strip folds the tabs away, so the
+  panel gets the width. The strip starts folded on a screen narrower than `40rem`, and imp remembers
+  a fold in the browser.
 - **Stage.** Drag the right, bottom or corner handle to resize. A readout shows the size. The
-  component re-lays-out live, which is how you find the width where it breaks. In a narrow panel, as
-  on a phone, the stage starts at twice the panel width, and the page scrolls sideways past the
-  tabs.
+  component re-lays-out live, which is how you find the width where it breaks.
 - **State editor.** The sliders toggle in the panel head opens it in a movable window under the
   toggle, so the stage keeps the full width. A close of the window releases the toggle. A scenario
   with no state gets no toggle. It shows the state the components in the scenario hold, as JSON.
   Edit a value and apply it (or press `Ctrl`/`Cmd`+`Enter`). The component updates through imp's
   normal fine-grained path, with no remount and no reload. Each panel is bound to its own instance,
   and the list is read again each time the window opens.
-- **Code.** The code toggle in the panel head opens the call site under the stage, with a copy
-  button. The choice is remembered, so every panel opens with the code shown until you hide it.
+- **Code.** The code toggle in the panel head opens the call site under the stage, as a highlighted
+  `codeBlock` with a copy button. The choice is remembered, so every panel opens with the code shown
+  until you hide it.
 - **Skill.** The second tab of the page. It is the component's `*.skill.md`, rendered to HTML, the
   same text that `imp skill` prints. A component without one says so.
 - **Agent line.** The `imp skill` command of the component, ready to copy, at the top of the Skill
@@ -130,21 +131,24 @@ you want a person to copy. A helper is fine. It is shown above the call.
   `imp skill ./<path>.js`. A component without a skill file says so there.
 - **Theme editor.** _edit theme_ is beside the theme button. Knobs: mode (light/dark), primary,
   secondary, font, mono font, border radius (`none` | `small` | `medium` | `large`), shadow (`none`
-  | `soft` | `strong`). Every other colour token is derived from the two base colours. A token with
-  no knob, such as `background-app` or a font weight, stays as the selected theme sets it. Copy or
-  download the result as a `theme.js` that exports `light` and `dark`, then pass it to
-  `init({ theme })`. Drafts are kept per theme in `localStorage`. _reset_ clears one. See
-  [theming](theming.md).
+  | `soft` | `strong`). Every other colour token is derived from the two base colours. Under the
+  knobs, **Tokens** is the whole theme of the mode as JSON. An edit there applies as soon as it
+  parses, and a knob rewrites the tokens it drives. A token with no knob, such as `background-app`
+  or a font weight, starts as the selected theme sets it. Copy or download the result as a
+  `theme.js` that exports `light` and `dark`, then pass it to `init({ theme })`. Drafts are kept per
+  theme name in `localStorage`. _reset_ clears one. The review widget of `imp start` opens the same
+  editor on a page of the app. See [theming](theming.md).
 - **Entry page.** imp generates the page around a preview, with no stylesheet of the app in it. So a
   web font that `index.html` links does not load there. Set `preview.entry` in `imp.json` to an HTML
   file of your own, such as `preview.html`, that holds the font links in its `<head>` and an empty
   `<body>`. imp replaces the `<title>` and appends its scripts to the body. It adds the imp icon
   when the head has no icon link. It keeps every other tag, so never point it at the app's
   `index.html`, whose scripts would start the app. A path that resolves to no file fails at startup.
-- **Review widget.** The same widget that `imp start` injects, as the imp mark in the bottom corner.
-  The person picks a part of the previewed component and comments on it. imp writes the note to
-  `.imp/reviews/` with the preview page it came from. Read the folder before you rework a component
-  on a vague report. See [start](start.md).
+- **Review widget.** The same widget that `imp start` injects, as the imp mark in the bottom corner,
+  without its **Theme editor** button, because the page has _edit theme_. The person picks a part of
+  the previewed component and comments on it. imp writes the note to `.imp/reviews/` with the
+  preview page it came from. Read the folder before you rework a component on a vague report. See
+  [start](start.md).
 - **Theme button, language and direction pickers.** `preview.themes` and `preview.translations` in
   `imp.json` feed them (see [config](config.md)). Choices survive reloads. imp lists your themes
   first, then the built-in ones. A theme of yours named like a built-in theme replaces it. The theme

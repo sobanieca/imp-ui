@@ -251,8 +251,11 @@ edit to the file reloads the page with the new tokens. See **[`imp preview`](cli
 
 ## How to write a theme with the theme editor
 
-You do not have to write ninety tokens to get a theme. `imp preview` ships a **theme editor** beside
-the switcher. Open it with _edit theme_. It asks for six things:
+You do not have to write ninety tokens to get a theme. imp ships a **theme editor**. In
+`imp preview` it is beside the theme switcher. Open it with _edit theme_. In `imp start` it is
+behind the imp mark in the corner of your app. Press the mark, then **Theme editor**. Both open the
+same editor. The first shows the standard components under your theme. The second shows your own
+screens. It has six knobs, and under them the whole theme as JSON. It asks for six things:
 
 | Knob              | Choices                    | What it drives                                             |
 | ----------------- | -------------------------- | ---------------------------------------------------------- |
@@ -265,10 +268,21 @@ the switcher. Open it with _edit theme_. It asks for six things:
 | **Shadow**        | none, soft, strong         | The three `shadow-*` steps                                 |
 
 imp **derives** everything else. From the primary colour it builds the hover step and the active
-step, and it selects a readable `color-on-primary`. From the secondary colour it builds the surface,
-sunken, hover, border and text colours. They then share one hue, and they land at a lightness that
-is safe for the contrast of the mode that you are in. The page re-skins while you type, on the real
-components, and your choices survive a reload.
+step, and it selects a readable `color-on-primary`. That is white when white reaches a contrast of
+3:1 against the primary, and a near-black tint of the same hue otherwise. So a saturated red or
+green gets white text, and a pale amber gets dark text. When the automatic choice is not what your
+brand wants, set `color-on-primary` by hand in the JSON. From the secondary colour imp builds the
+surface, sunken, hover, border and text colours. They then share one hue, and they land at a
+lightness that is safe for the contrast of the mode that you are in. The page re-skins while you
+type, on the real components, and your choices survive a reload.
+
+**Tokens** is the whole theme of the mode that you edit, as JSON, in a code editor. Every token that
+the knobs drive is there, and every token that they do not, such as `background-app`, a spacing step
+or a font weight. Edit any value. The page re-skins as soon as the JSON parses, and an edit that
+does not parse yet changes nothing. The two views show one state. An edit of `color-primary` in the
+JSON moves the **Primary** knob. A knob rewrites the tokens that it drives, in the mode that you
+edit, and it leaves every other token as you set it. So set the accent with the knob, then tune
+`color-primary-hover` by hand, and the hand edit holds until you move the knob again.
 
 The editor changes nothing about what a theme _is_. Press **copy**, or **download theme.js**, and
 you get an ordinary module. It is the same flat token map that this page describes, with a `light`
@@ -287,9 +301,10 @@ applyTheme(dark)
 From that point the generated file is yours to edit by hand, and its layout suits that. The two
 fonts sit at the top, as a shared `fonts` object, and the 31 named palette colours follow, as a
 shared `palette` object. Both themes spread both objects in. So a change to `color-grass` changes it
-for light and dark at the same time, and so does a change of font. The editor never rewrites the
-file. A web font that you name in the editor shows on the page only when it is loaded there. See
-**[Fonts](#fonts)**. It is a starting point, not a format that it owns.
+for light and dark at the same time, and so does a change of font. A font or a palette colour that
+you set in one mode only is listed in that theme alone. A web font that you name in the editor shows
+on the page only when it is loaded there. See **[Fonts](#fonts)**. The file is a starting point, not
+a format that the editor owns.
 
 ## Token names
 

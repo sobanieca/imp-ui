@@ -34,9 +34,10 @@ WORKING IN AN IMP PROJECT
   cli                every command, and which skill covers it
   init               scaffolding a runnable project: what imp init writes and what it refuses
   config             the imp.json file key by key, and the --env environment files
-  start              the dev server: injected imports, live reload and the .imp/dev.log to grep
+  start              the dev server: injected imports, live reload and the session log of imp logs
   build              the production build, JS entries for publishing, and the offline PWA output
   mocks              answering the app's requests from *.mock.js files instead of the network
+  service-worker     a service worker of your own, bundled by imp, with dev mode from startDevMode()
   preview            rendering components in isolation from a *.preview.js file
   review             run it when the person mentions a review, a comment or an element they marked in the browser
   testing            unit tests in-process and e2e specs against a real browser
@@ -59,10 +60,12 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/shell          shell - the app frame: the map drives the nav and the trail, logo, content, and the phone fold
   std/stack          stack - a vertical stack of children laid out with CSS flexbox
   std/card           card - a themed panel that lifts a block of content off the page
+  std/codeBlock      codeBlock - source code with syntax highlighting, a copy button and linkable line numbers
   std/emptyState     emptyState - the placeholder for a list, table or search result with nothing in it
   std/tag            tag - a small colored label for a status, a category or a count
   std/tooltip        tooltip - a short label that appears beside a control on hover, on focus and on a touch hold
   std/checkbox       checkbox - a single boolean bound to a form field
+  std/codeEditor     codeEditor - a multi-line code input with syntax highlighting, bound to a form field or a state
   std/form           form - a form whose values are ordinary imp state, addressed by field path
   std/numberField    numberField - a numeric input that commits a number, not a string
   std/passwordField  passwordField - a masked single-line input bound to a form field

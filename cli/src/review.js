@@ -256,6 +256,8 @@ export async function review({ root, args = [] }) {
 
 export const REPORT_MODULE = '/@imp/report.js'
 
+export const THEME_EDITOR_MODULE = '/@imp/theme-editor.js'
+
 const WIDGET_SIZE = 40
 
 const WIDGET_MARGIN = 16
@@ -367,6 +369,10 @@ const WIDGET_STYLES = `
 
   .action:nth-child(3) {
     transition-delay: 80ms;
+  }
+
+  .action:nth-child(4) {
+    transition-delay: 120ms;
   }
 
   @starting-style {
@@ -536,6 +542,19 @@ const WIDGET_STYLES = `
     color: #64748b;
   }
 
+  .card {
+    max-block-size: min(520px, 60dvb);
+    overflow: auto;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--imp-color-surface, #ffffff);
+    color: var(--imp-color-text, #0f172a);
+  }
+
+  .card:empty {
+    display: none;
+  }
+
   .row {
     display: flex;
     gap: 8px;
@@ -600,9 +619,20 @@ const ICONS = {
   network: ICON(
     '<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>',
   ),
+  theme: ICON(
+    '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/>' +
+      '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>' +
+      '<circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>' +
+      '<circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>' +
+      '<circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+  ),
 }
 
-const widgetMarkup = (mark) =>
+const themeAction = `
+    <button type="button" class="action" data-action="theme" aria-label="Theme editor"
+      title="Theme editor" aria-pressed="false">${ICONS.theme}</button>`
+
+const widgetMarkup = (mark, themeEditor) =>
   `<div class="outline" hidden></div>
 <div class="dock">
   <div class="panel" id="imp-review-panel" hidden>
@@ -635,6 +665,13 @@ const widgetMarkup = (mark) =>
       <p class="hint">What the page did since it loaded, as it happens. Click a line to see all of
         it. Open the developer tools of the browser for more.</p>
     </div>
+    <div class="view" data-view="theme" hidden>
+      <p class="title">Theme editor</p>
+      <p class="status" role="status" data-theme-status></p>
+      <div class="card"></div>
+      <p class="hint">The page re-skins as you pick. imp keeps the draft for the applied theme
+        across reloads, until you press reset. Copy or download theme.js and pass it to init().</p>
+    </div>
   </div>
   <div class="actions" id="imp-review-actions" hidden>
     <button type="button" class="action" data-action="pick" aria-label="Add review"
@@ -642,7 +679,9 @@ const widgetMarkup = (mark) =>
     <button type="button" class="action" data-action="console" aria-label="Console logs"
       title="Console logs" aria-pressed="false">${ICONS.console}</button>
     <button type="button" class="action" data-action="network" aria-label="Network logs"
-      title="Network logs" aria-pressed="false">${ICONS.network}</button>
+      title="Network logs" aria-pressed="false">${ICONS.network}</button>${
+    themeEditor ? themeAction : ''
+  }
   </div>
   <button type="button" class="toggle" aria-label="imp tools" aria-expanded="false"
     aria-controls="imp-review-actions">${mark}</button>
@@ -677,7 +716,7 @@ const CHIP_COLORS = {
   Resource: '#c084fc',
 }
 
-export const reviewWidgetScript = ({ mark }) => `
+export const reviewWidgetScript = ({ mark, themeEditor }) => `
 (() => {
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
   if (!LOOPBACK.has(location.hostname)) return
@@ -692,7 +731,7 @@ export const reviewWidgetScript = ({ mark }) => `
   host.setAttribute('dir', 'ltr')
   const shadow = host.attachShadow({ mode: 'open' })
   shadow.innerHTML = ${JSON.stringify(`<style>${WIDGET_STYLES}</style>\n`)} + ${
-  JSON.stringify(widgetMarkup(mark))
+  JSON.stringify(widgetMarkup(mark, themeEditor))
 }
 
   const find = (selector) => shadow.querySelector(selector)
@@ -712,12 +751,16 @@ export const reviewWidgetScript = ({ mark }) => `
     picking: find('[data-view="picking"]'),
     commenting: find('[data-view="commenting"]'),
     log: find('[data-view="log"]'),
+    theme: find('[data-view="theme"]'),
   }
+  const card = find('.card')
+  const themeStatus = find('[data-theme-status]')
 
   let engine = null
+  let editor = null
   let stopPicking = null
   let report = null
-  let logView = null
+  let tool = null
   let unwatch = null
   let active = {}
   const CHIP_COLORS = ${JSON.stringify(CHIP_COLORS)}
@@ -763,9 +806,9 @@ export const reviewWidgetScript = ({ mark }) => `
     panel.hidden = !open
   }
 
-  const pressLogButtons = () => {
+  const pressToolButtons = () => {
     for (const button of actions.querySelectorAll('[aria-pressed]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.action === logView))
+      button.setAttribute('aria-pressed', String(button.dataset.action === tool))
     }
   }
 
@@ -784,18 +827,20 @@ export const reviewWidgetScript = ({ mark }) => `
     outline.hidden = false
   }
 
-  const stopLog = () => {
+  const stopTool = () => {
     unwatch?.()
     unwatch = null
-    logView = null
+    tool = null
+    card.replaceChildren()
+    themeStatus.textContent = ''
   }
 
   const reset = () => {
     stopPicking?.()
     stopPicking = null
     report = null
-    stopLog()
-    pressLogButtons()
+    stopTool()
+    pressToolButtons()
     outline.hidden = true
     showView('idle')
     showPanel(Boolean(status.textContent))
@@ -810,8 +855,8 @@ export const reviewWidgetScript = ({ mark }) => `
 
   const pick = async () => {
     status.textContent = ''
-    stopLog()
-    pressLogButtons()
+    stopTool()
+    pressToolButtons()
     showView('picking')
     showPanel(true)
     let picker
@@ -893,7 +938,7 @@ export const reviewWidgetScript = ({ mark }) => `
   }
 
   const belongs = (entry) =>
-    logView === 'network' ? entry.type === 'net' : entry.type === 'console' || entry.type === 'page'
+    tool === 'network' ? entry.type === 'net' : entry.type === 'console' || entry.type === 'page'
 
   const matchesFilter = (entry) => {
     const described = describe(entry)
@@ -903,7 +948,7 @@ export const reviewWidgetScript = ({ mark }) => `
   }
 
   const renderChips = () => {
-    chips.replaceChildren(...LOG_VIEWS[logView].filters.map((group) => {
+    chips.replaceChildren(...LOG_VIEWS[tool].filters.map((group) => {
       const row = document.createElement('div')
       row.className = 'chips'
       row.dataset.group = group.key
@@ -947,7 +992,7 @@ export const reviewWidgetScript = ({ mark }) => `
   }
 
   const render = () => {
-    const { empty } = LOG_VIEWS[logView]
+    const { empty } = LOG_VIEWS[tool]
     const all = (globalThis.__impTelemetry?.entries() ?? []).filter(belongs)
     const shown = all.filter(matchesFilter)
     lines.replaceChildren(...shown.map(entryFor))
@@ -970,9 +1015,9 @@ export const reviewWidgetScript = ({ mark }) => `
     report = null
     outline.hidden = true
     status.textContent = ''
-    stopLog()
-    logView = name
-    pressLogButtons()
+    stopTool()
+    tool = name
+    pressToolButtons()
     logTitle.textContent = LOG_VIEWS[name].title
     active = Object.fromEntries(LOG_VIEWS[name].filters.map((group) => [group.key, group.initial]))
     renderChips()
@@ -980,6 +1025,32 @@ export const reviewWidgetScript = ({ mark }) => `
     showPanel(true)
     render()
     unwatch = globalThis.__impTelemetry?.watch(append) ?? null
+  }
+
+  const loadEditor = () => (editor ??= import('${THEME_EDITOR_MODULE}'))
+
+  const showTheme = async () => {
+    stopPicking?.()
+    stopPicking = null
+    report = null
+    outline.hidden = true
+    status.textContent = ''
+    stopTool()
+    tool = 'theme'
+    pressToolButtons()
+    showView('theme')
+    showPanel(true)
+    let module
+    try {
+      module = await loadEditor()
+    } catch (error) {
+      editor = null
+      if (tool !== 'theme') return
+      themeStatus.textContent = \`The theme editor could not be loaded - \${error.message}\`
+      return
+    }
+    if (tool !== 'theme') return
+    card.replaceChildren(module.themeEditor(module.appliedThemeName()))
   }
 
   let drag = null
@@ -1028,8 +1099,9 @@ export const reviewWidgetScript = ({ mark }) => `
   actions.addEventListener('click', (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action
     if (action === 'pick') pick()
-    else if (action === 'console' || action === 'network') {
-      if (logView === action) reset()
+    else if (action === 'console' || action === 'network' || action === 'theme') {
+      if (tool === action) reset()
+      else if (action === 'theme') showTheme()
       else showLog(action)
     }
   })
@@ -1047,7 +1119,7 @@ export const reviewWidgetScript = ({ mark }) => `
 
   chips.addEventListener('click', (event) => {
     const chip = event.target.closest('.chip')
-    if (!chip || !logView) return
+    if (!chip || !tool) return
     active[chip.closest('[data-group]').dataset.group] = chip.dataset.filter
     renderChips()
     render()

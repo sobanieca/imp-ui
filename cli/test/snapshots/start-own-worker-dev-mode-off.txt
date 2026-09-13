@@ -1,0 +1,3 @@
+worker code ran: {"greeting":"hello from the worker","devTools":"off"}
+listeners: (none)
+mocks bundled: 1

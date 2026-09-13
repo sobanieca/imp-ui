@@ -1,5 +1,5 @@
 import { appMap, component, init, mount } from 'imp'
-import { code, div, el, h2, pre, span } from 'imp/html'
+import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme, colorSchemeOf } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { area, navigate, router, useRoute } from 'imp/router'
@@ -13,7 +13,7 @@ import {
   luSlidersHorizontal,
   luSun,
 } from 'imp/icons'
-import { card, emptyState } from 'imp/std/display'
+import { card, codeBlock, emptyState } from 'imp/std/display'
 import { select, textArea } from 'imp/std/inputs'
 import { dialog, drawer, stack } from 'imp/std/layout'
 import { tabs } from 'imp/std/navigation'
@@ -25,9 +25,9 @@ import {
   previewShell,
   previewSkill,
 } from './preview-shell.js'
-import { applyStoredDraft, snapshotBaseTokens, themeEditor } from './preview-theme-editor.js'
+import { themeEditor } from '../../lib/src/theme-editor.js'
+import { followAppliedTheme } from '../../lib/src/theme-draft.js'
 import { PREVIEW_METADATA_EXPORTS, PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
-import { copyButton } from './preview-copy.js'
 import { previewSlugs } from './preview-map.js'
 import { asNodes } from '../../lib/src/nodes.js'
 import { statesProvidedBy } from '../../lib/src/state.js'
@@ -69,6 +69,8 @@ const languages = []
 let stages = []
 
 const MIN_STAGE_SIZE = 80
+const TABS_STORAGE_KEY = 'imp.preview.tabs'
+const NARROW_SCREEN = '(width < 40rem)'
 const STATE_SCAN_ATTEMPTS = 30
 const STATE_SCAN_INTERVAL = 100
 const MAX_SCANNED_ELEMENTS = 500
@@ -143,17 +145,6 @@ const SCENARIO_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
-  .code-block {
-    margin: 0;
-    padding: var(--imp-space-3, 12px);
-    overflow: auto;
-    ${surface}
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    line-height: var(--imp-line-height-normal, 1.6);
-    tab-size: 2;
-  }
 `
 
 const STAGE_STYLES = `
@@ -177,22 +168,11 @@ const STAGE_STYLES = `
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
   }
 
-  .viewport {
-    container-type: inline-size;
-  }
-
   .frame {
     position: relative;
     box-sizing: border-box;
     inline-size: 100%;
     max-inline-size: 100%;
-  }
-
-  @container (inline-size < 20rem) {
-    .frame {
-      inline-size: 200%;
-      max-inline-size: none;
-    }
   }
 
   .stage {
@@ -370,11 +350,12 @@ const applySelectedTheme = (name) => {
   const definition = themes.get(name)
   if (typeof definition === 'string') applyTheme(definition)
   else {
-    applyTheme(BASE_THEME_FOR[colorSchemeOf(definition.tokens)] ?? 'imp-light')
-    applyTheme(definition)
+    applyTheme({
+      ...definition,
+      name,
+      base: definition.base ?? BASE_THEME_FOR[colorSchemeOf(definition.tokens)] ?? 'imp-light',
+    })
   }
-  snapshotBaseTokens()
-  applyStoredDraft(name)
 }
 
 const defaultThemeName = () => themes.keys().next().value
@@ -404,6 +385,15 @@ const readStoredDirection = () =>
   readStored(DIRECTION_STORAGE_KEY, (value) => DIRECTIONS.includes(value), 'auto')
 
 const CODE_CHOICES = ['shown', 'hidden']
+
+const TABS_CHOICES = ['folded', 'unfolded']
+
+const readStoredTabs = () =>
+  readStored(
+    TABS_STORAGE_KEY,
+    (value) => TABS_CHOICES.includes(value),
+    matchMedia(NARROW_SCREEN).matches ? 'folded' : 'unfolded',
+  ) === 'folded'
 
 const readStoredCode = () =>
   readStored(CODE_STORAGE_KEY, (value) => CODE_CHOICES.includes(value), 'hidden') === 'shown'
@@ -544,7 +534,7 @@ const stageDefinition = {
       readout.textContent = `${Math.round(rect.width)} x ${Math.round(rect.height)}`
     }
     new ResizeObserver(updateReadout).observe(frame)
-    return div(div({ class: 'bar' }, readout), div({ class: 'viewport' }, frame))
+    return div(div({ class: 'bar' }, readout), frame)
   },
 }
 
@@ -729,16 +719,16 @@ const scenarioSection = (self, name, exported, entry) => {
     { class: 'scenario' },
     div({ class: 'scenario-head' }, h2(label), stateToggle, codeToggle),
     stagePanel(nodes),
-    source === null ? null : codePanel(self, source, showingCode),
+    source === null ? null : codePanel(source, showingCode),
     editor,
   )
 }
 
-const codePanel = (self, source, showing) => {
+const codePanel = (source, showing) => {
   const panel = div(
     { class: 'code' },
-    div({ class: 'code-head' }, span('Call site'), copyButton(self, 'code', source)),
-    pre({ class: 'code-block' }, code(source)),
+    div({ class: 'code-head' }, span('Call site')),
+    codeBlock({ language: 'js', code: source }),
   )
   showing.watch((open) => {
     panel.hidden = !open
@@ -834,6 +824,8 @@ const scenarioTabs = (scenarios, entry) => {
   )
   return tabs({
     orientation: 'vertical',
+    foldable: true,
+    folded: readStoredTabs(),
     label: `${entry.name} scenarios`,
     selected,
     items: names.map((name) => ({
@@ -846,6 +838,7 @@ const scenarioTabs = (scenarios, entry) => {
         navigate(`${entry.href}?scenario=${encodeURIComponent(event.detail.id)}`, {
           replace: true,
         }),
+      fold: (event) => remember(TABS_STORAGE_KEY, event.detail.folded ? 'folded' : 'unfolded'),
     },
   })
 }
@@ -1064,6 +1057,7 @@ export async function startPreview(
   styles.textContent = DOCUMENT_STYLES
   document.head.append(styles)
   registerThemes(customThemes)
+  followAppliedTheme()
   applySelectedTheme(readStoredTheme())
   registerLanguages(translations)
 

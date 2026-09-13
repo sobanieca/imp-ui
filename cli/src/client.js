@@ -1,7 +1,28 @@
 import { reviewWidgetScript, TELEMETRY_ENTRIES } from './review.js'
 
-export const clientScript = ({ mocks = false, mark = '' } = {}) => `
-(() => {
+const THEME_DRAFT_MODULE = '/@imp/theme-draft.js'
+
+const THEME_DRAFT_PREFIX = 'imp.theme-draft.'
+
+const themeDraftScript = () => `
+  const hasThemeDraft = () => {
+    try {
+      return Object.keys(localStorage).some((key) => key.startsWith('${THEME_DRAFT_PREFIX}'))
+    } catch {
+      return false
+    }
+  }
+  if (hasThemeDraft()) {
+    import('${THEME_DRAFT_MODULE}')
+      .then((drafts) => drafts.followAppliedTheme())
+      .catch((error) => console.error('imp: the theme draft could not be applied -', error))
+  }
+`
+
+export const clientScript = (
+  { mocks = false, ownWorker = false, mark = '', themeEditor = true } = {},
+) => `
+(() => {${themeEditor ? themeDraftScript() : ''}
   let es = null
   const connect = () => {
     es = new EventSource('/@imp/events')
@@ -77,8 +98,10 @@ export const clientScript = ({ mocks = false, mark = '' } = {}) => `
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data?.imp === 'telemetry') keep(event.data.entry)
     })
-    navigator.serviceWorker.register('/@imp/sw.js', { scope: '/' })
-      .catch((error) => console.error('imp: the dev service worker failed to start -', error))
+    ${
+  ownWorker ? '' : `navigator.serviceWorker.register('/@imp/sw.js', { scope: '/' })
+      .catch((error) => console.error('imp: the dev service worker failed to start -', error))`
+}
 
     if (${mocks} && !navigator.serviceWorker.controller) {
       const network = globalThis.fetch
@@ -95,146 +118,4 @@ export const clientScript = ({ mocks = false, mark = '' } = {}) => `
     }
   }
 })()
-;${reviewWidgetScript({ mark })}`
-
-export const serviceWorkerScript = ({ mockBundle = '' } = {}) => `
-self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
-
-const queue = []
-let timer = null
-
-const flush = () => {
-  timer = null
-  const batch = queue.splice(0)
-  if (!batch.length) return
-  fetch('/@imp/log', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(batch),
-  }).catch(() => {})
-}
-
-const report = (entry, clientId = null) => {
-  queue.push(entry)
-  if (!timer) timer = setTimeout(flush, 200)
-  if (clientId) {
-    self.clients.get(clientId)
-      .then((client) => client?.postMessage({ imp: 'telemetry', entry }))
-      .catch(() => {})
-  }
-}
-
-self.__impMocks = []
-self.__impMockProblem = (text) =>
-  report({ type: 'console', level: 'error', text: \`imp mocks: \${text}\` })
-
-const JSON_BODY = /^application\\/([\\w.-]+\\+)?json\\b/i
-
-const EMPTY_BODY_STATUSES = new Set([204, 205, 304])
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const requestBody = async (request) => {
-  if (request.method === 'GET' || request.method === 'HEAD') return null
-  const text = await request.clone().text()
-  if (text === '') return null
-  if (!JSON_BODY.test(request.headers.get('content-type') || '')) return text
-  try {
-    return JSON.parse(text)
-  } catch {
-    return text
-  }
-}
-
-const describeRequest = async (request) => {
-  const url = new URL(request.url)
-  return {
-    method: request.method,
-    url: request.url,
-    path: url.pathname,
-    query: Object.fromEntries(url.searchParams),
-    headers: Object.fromEntries(request.headers),
-    body: await requestBody(request),
-  }
-}
-
-const isRawBody = (body) =>
-  body instanceof Blob || body instanceof ArrayBuffer || ArrayBuffer.isView(body) ||
-  body instanceof FormData || body instanceof URLSearchParams || body instanceof ReadableStream
-
-const mockResponse = (result) => {
-  if (result instanceof Response) return result
-  const descriptor = result || {}
-  const status = descriptor.status ?? 200
-  const headers = new Headers(descriptor.headers || {})
-  let body = descriptor.body
-  if (body === undefined || body === null || EMPTY_BODY_STATUSES.has(status)) {
-    body = null
-  } else if (typeof body === 'string') {
-    if (!headers.has('content-type')) headers.set('content-type', 'text/plain;charset=utf-8')
-  } else if (!isRawBody(body)) {
-    body = JSON.stringify(body)
-    if (!headers.has('content-type')) headers.set('content-type', 'application/json')
-  }
-  return new Response(body, { status, statusText: descriptor.statusText || '', headers })
-}
-
-const matchingMock = async (description) => {
-  for (const entry of self.__impMocks) {
-    try {
-      if (await entry.match(description)) return entry
-    } catch (error) {
-      self.__impMockProblem(\`\${entry.source} match() threw: \${error?.message || error}\`)
-    }
-  }
-  return null
-}
-
-const answerFromMock = async (entry, description, base, started, clientId) => {
-  try {
-    if (entry.delay) await sleep(entry.delay)
-    const response = mockResponse(await entry.handler(description))
-    report({ ...base, status: response.status, ms: Date.now() - started, mock: entry.source }, clientId)
-    return response
-  } catch (error) {
-    report({
-      ...base,
-      error: String(error?.message || error),
-      ms: Date.now() - started,
-      mock: entry.source,
-    }, clientId)
-    throw error
-  }
-}
-
-const describeTarget = (request) => {
-  const { url, method, destination } = request
-  return destination === ''
-    ? { type: 'net', method, url, kind: 'fetch' }
-    : { type: 'net', method, url, kind: 'resource', destination }
-}
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event
-  if (request.url.includes('/@imp/')) return
-  const base = describeTarget(request)
-  const started = Date.now()
-  const clientId = event.clientId || null
-  event.respondWith((async () => {
-    if (self.__impMocks.length) {
-      const description = await describeRequest(request)
-      const entry = await matchingMock(description)
-      if (entry) return answerFromMock(entry, description, base, started, clientId)
-    }
-    try {
-      const response = await fetch(request)
-      report({ ...base, status: response.status, ms: Date.now() - started }, clientId)
-      return response
-    } catch (error) {
-      report({ ...base, error: String(error), ms: Date.now() - started }, clientId)
-      throw error
-    }
-  })())
-})
-${mockBundle ? `\n;${mockBundle}` : ''}`
+;${reviewWidgetScript({ mark, themeEditor })}`

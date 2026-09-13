@@ -133,8 +133,8 @@ export const SKILLS = [
   {
     name: 'start',
     group: 'toolkit',
-    aliases: ['serve', 'dev', 'dev-server', 'dev.log'],
-    summary: 'the dev server: injected imports, live reload and the .imp/dev.log to grep',
+    aliases: ['serve', 'dev', 'dev-server', 'logs', 'dev.log'],
+    summary: 'the dev server: injected imports, live reload and the session log of imp logs',
   },
   {
     name: 'build',
@@ -147,6 +147,12 @@ export const SKILLS = [
     group: 'toolkit',
     aliases: ['mock', 'mock.js', 'fixtures', 'backend'],
     summary: "answering the app's requests from *.mock.js files instead of the network",
+  },
+  {
+    name: 'service-worker',
+    group: 'toolkit',
+    aliases: ['imp/service-worker', 'sw', 'sw.js', 'startdevmode', 'dev-mode'],
+    summary: 'a service worker of your own, bundled by imp, with dev mode from startDevMode()',
   },
   {
     name: 'preview',

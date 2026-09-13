@@ -1,4 +1,4 @@
-scenarios: basic, lazy, plain, arrowWithBody, declared, labelled, labelledLazy, reexported
+scenarios: basic, lazy, plain, arrowWithBody, declared, labelled, labelledLazy, shadowed, reexported
 declared: {"name":"Select","group":{"literal":"Inputs"}}
 --- basic
 import { form, select } from 'imp/std/inputs'
@@ -55,5 +55,12 @@ import { select } from 'imp/std/inputs'
 const plans = ['free', 'pro']
 
 select(plans)
+--- shadowed
+import { select } from 'imp/std/inputs'
+
+() => {
+  const plans = ['enterprise']
+  return select({ field: 'plan', options: plans })
+}
 --- reexported
 (no code)

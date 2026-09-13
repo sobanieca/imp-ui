@@ -626,7 +626,11 @@ export async function preview(
   const translations = await resolvePreviewTranslations(root, imp.preview?.translations ?? {})
   const groups = await resolvePreviewGroups(root, imp.preview?.groups ?? null)
   const entry = await resolvePreviewEntry(root, imp.preview?.entry ?? null)
-  const app = await loadApp(resolve(root, 'index.html'), { envAlias: env, mocks })
+  const app = await loadApp(resolve(root, 'index.html'), {
+    envAlias: env,
+    mocks,
+    themeEditor: false,
+  })
   const listenPort = port ?? DEFAULT_PREVIEW_PORT
   const clients = new Set()
   const cache = { build: null }
@@ -663,7 +667,7 @@ export async function preview(
       onListen: ({ port }) => {
         logger.info(`imp preview serving ${count} from ${root}`)
         console.log(`  -> http://localhost:${port}${openPath}`)
-        console.log(dim(`  logs -> ${devLog.path}`))
+        console.log(dim('  logs -> imp logs (-f follows the session)'))
         if (themes.length) {
           console.log(
             dim(`  themes -> ${themes.map(({ source }) => source).join(', ')} + built-ins`),

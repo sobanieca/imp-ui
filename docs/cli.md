@@ -52,6 +52,8 @@ imp preview [path] [--port 4517]      preview components in isolation, one page 
             [--mock | --no-mock]
 imp review [clear]                    list the reviews written from the browser
                                       (clear: delete every saved review)
+imp logs [-n <count>] [-f]            print the log of the dev server session
+                                      (-n: the last <count> entries | -f: follow it)
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest | no package: update all)
 imp uninstall <package>               remove a vendored dependency
@@ -239,16 +241,16 @@ path. imp skips the injection for a document that already contains the item:
   each one as `[net] METHOD url -> status ms`. imp passes a request under `/@imp/` through without a
   change.
 
-imp **also writes everything that `imp start` prints to a log file**, at `.imp/dev.log`, one entry
-per line. That covers the browser console, the error telemetry, the network telemetry and the status
-lines of imp. So you do not have to watch the terminal to see what happened. This is what makes the
-development session readable for an AI coding agent. While you click through the app, the agent can
-run `grep .imp/dev.log` for a `[browser:error]`, for a failed request, or for any message that it
-expects. It does not have to watch the terminal. imp truncates the file each time when you start the
-server, so the file always holds the current session. imp also caps the file. It keeps the most
-recent entries, 4000 by default, and removes an older entry as a new one arrives. So a long session
-never grows the file without a limit. To raise or lower the cap, set **`maxLogEntries`** in
-`imp.json`:
+imp **also keeps everything that `imp start` prints as a log of the session**, one entry per line.
+That covers the browser console, the error telemetry, the network telemetry and the status lines of
+imp. **[`imp logs`](#imp-logs)** prints that log. So you do not have to watch the terminal to see
+what happened. This is what makes the development session readable for an AI coding agent. While you
+click through the app, the agent can run `imp logs | grep '\[browser:error\]'` for an error, for a
+failed request, or for any message that it expects. It does not have to watch the terminal. imp
+starts the log again each time when you start the server, so the log always holds the current
+session. imp also caps the log. It keeps the most recent entries, 4000 by default, and removes an
+older entry as a new one arrives. So a long session never grows the log without a limit. To raise or
+lower the cap, set **`maxLogEntries`** in `imp.json`:
 
 ```json
 {
@@ -256,8 +258,9 @@ never grows the file without a limit. To raise or lower the cap, set **`maxLogEn
 }
 ```
 
-The path is `.imp/dev.log`, under the served project. `.imp/` is the working directory of imp for
-that project, and git must ignore it. A fresh `imp init` project already ignores it.
+The log is a plain text file, `.imp/dev.log`, under the served project. `.imp/` is the working
+directory of imp for that project, and git must ignore it. A fresh `imp init` project already
+ignores it.
 
 Live reload is included. A file change under the served directory reloads the browser. imp ignores a
 change inside `.git/`, `node_modules/`, `dist/` and its own `.imp/` working directory.
@@ -271,15 +274,58 @@ directory. imp rejects a path outside the served directory.
 
 These internal endpoints are reserved, and they are not part of your app: `/@imp/events` is the
 reload stream, `/@imp/log` is the telemetry sink, which the widget below also reads back,
-`/@imp/review` is the review sink, described next, `/@imp/sw.js` is the service worker, and
+`/@imp/review` is the review sink, described next, `/@imp/sw.js` is the dev service worker, and
 `/@imp/*` is the library source.
+
+### Your own service worker
+
+A browser runs one service worker per scope. So when your app registers a worker of its own, for a
+push notification or for a background sync, that worker and the dev service worker of imp would
+replace each other at root scope. Name your worker in `imp.json`, and imp steps aside:
+
+```json
+{
+  "serviceWorker": "src/sw.js"
+}
+```
+
+With that key, the dev server registers no worker of its own. It bundles your source and serves the
+bundle at `/sw.js`, so your worker can import from imp and from your own modules. Your app registers
+`/sw.js` itself, in development and in production alike. `imp build` writes the same bundle as
+`sw.js` in the output folder.
+
+Dev mode is one call inside your worker. `startDevMode` from `imp/service-worker` adds the network
+telemetry, the answers from your `*.mock.js` files, and the immediate activation that an edit needs.
+It changes nothing else about the worker. You decide when it runs. The bundle carries the values of
+the selected environment, so `env` from `imp` works in the worker as it does in the page:
+
+```js
+import { env } from 'imp'
+import { startDevMode } from 'imp/service-worker'
+
+self.addEventListener('push', (event) => {
+  event.waitUntil(self.registration.showNotification(event.data.text()))
+})
+
+if (env.DEV_TOOLS === 'on') startDevMode()
+```
+
+Call `startDevMode` at the top level of the worker, not inside an event. A browser only honours a
+listener that a worker adds while the script first runs. A production build with the call still in
+it would report every request to a dev server that does not exist. So gate the call on a value that
+the production environment does not set.
+
+An edit to the worker, or to a file that it imports, reloads the browser like any other change. The
+new bundle installs on that navigation. When the bundle cannot be built, imp reports the file and
+the line in the terminal, and the worker request fails with the same message. Under a sub-path, see
+[Deploying under a sub-path](#deploying-under-a-sub-path), register `url('/sw.js')`.
 
 ### Reviewing the page - notes for your agent
 
 Every page that the dev server serves carries a small **review widget**. It is the imp mark in the
 bottom corner. Drag it to any place on the page when it covers something, and imp remembers the
-place across reloads. Click it, and three round buttons appear: **Add review**, **Console logs** and
-**Network logs**.
+place across reloads. Click it, and four round buttons appear: **Add review**, **Console logs**,
+**Network logs** and **Theme editor**.
 
 **Add review** starts a selection. The next element that you click on the page is the element that
 you review. Move the pointer to see what imp is about to select, because imp outlines the element
@@ -296,9 +342,17 @@ by kind and by outcome. It starts on **Fetch**, which is a request that your cod
 or `XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
 font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and
 the level or the status of a row carries the same colour. The page keeps the last 2000 entries, and
-a reload starts the list again. The terminal and `.imp/dev.log` keep the whole session. The views
-are a glance, not a debugger. For a stack trace, a request body or a timing chart, open the
-developer tools of the browser.
+a reload starts the list again. The terminal and `imp logs` keep the whole session. The views are a
+glance, not a debugger. For a stack trace, a request body or a timing chart, open the developer
+tools of the browser.
+
+**Theme editor** opens the same editor that `imp preview` has, in the panel of the widget, for the
+theme that your app applied. Pick a primary and a secondary colour, a font, a mono font, a border
+radius step and a shadow step, or edit any token in the JSON under the knobs, and the app re-skins
+as you type, on its own screens. imp keeps the draft for that theme across reloads, so a save in
+your editor does not undo your picks. **copy** or **download theme.js** gives you the theme as an
+ordinary module. Pass it to `init`, then press **reset** to drop the draft. See
+**[the theme editor](#the-theme-editor)** under `imp preview` for the knobs and the file.
 
 That is the whole interaction. You click through the app, and you describe what is wrong in the
 words that you would say out loud. imp records which page you were on, and which element you meant.
@@ -744,6 +798,11 @@ knows the exact set of files that the app is made of:
   or an error response. Those choices avoid the common offline problems, and they apply with no
   setup.
 
+**A project with its own service worker keeps it.** When `imp.json` names a `serviceWorker`, see
+[Your own service worker](#your-own-service-worker), `imp build --pwa` still writes the manifest and
+the icons, and it registers your worker in the built HTML. It writes no offline worker, because the
+two would claim the same file and the same scope. Offline behaviour is then the job of your worker.
+
 **In development, with `imp start`, installability is automatic.** You need no `--pwa` flag and no
 edit to the HTML. When your `imp.json` has a `pwa` block, the dev server injects the manifest link
 and the icon links. It generates and serves the manifest and the icons while it runs. So you can
@@ -903,7 +962,8 @@ scenario in the address, so a link to it reads `?scenario=overdue`.
 
 ### The code of a scenario
 
-Every panel has a code toggle in its head. It opens the call site of the scenario, ready to copy:
+Every panel has a code toggle in its head. It opens the call site of the scenario, highlighted and
+ready to copy:
 
 ```js
 import { todoList } from './todos.js'
@@ -1026,10 +1086,10 @@ bottom handle or its corner handle**, with a mouse or a finger. The component la
 at every width. That is the fastest way to find the width where it breaks, and you open no device
 emulation. A readout shows the current size.
 
-On a phone, the scenario tabs leave a narrow panel. So a stage in a narrow panel starts at twice the
-width of the panel. The page scrolls sideways, and the tabs move out of view as you swipe. The
-component then gets the width it needs. A stage that you drag wider than its panel scrolls the same
-way.
+On a phone, the scenario tabs leave little room beside them. So the strip of tabs folds. The button
+at its foot folds the tabs away, and the panel, with its head, its stage and its code panel, gets
+the width of the screen. The strip starts folded on a narrow screen and open on a wide one, and imp
+remembers your choice in the browser. Unfold the strip to pick another scenario.
 
 ### The state editor
 
@@ -1099,21 +1159,26 @@ to work on a theme. See **[Theming](theming.md)**.
 
 ### The theme editor
 
-**edit theme**, beside the theme button, opens an editor. It is for writing a theme, not for
-selecting one. It asks for the mode that you edit, which is light or dark, a **primary** colour and
-a **secondary** colour, a **font** and a **mono font**, a **border radius** step and a **shadow**
-step. It derives every other colour token from those two colours. That is the hover step and the
-active step, a readable on-primary colour, and the surfaces, the borders and the text, which share
-the hue of the secondary colour. A token that has no knob, such as `background-app`, a font weight
-or a spacing step, stays as the selected theme sets it, and the exported file carries it too.
+**edit theme**, beside the theme button, opens an editor. It is the same editor that the review
+widget of `imp start` opens on a page of your app. It is for writing a theme, not for selecting one.
+It asks for the mode that you edit, which is light or dark, a **primary** colour and a **secondary**
+colour, a **font** and a **mono font**, a **border radius** step and a **shadow** step. It derives
+every other colour token from those two colours. That is the hover step and the active step, a
+readable on-primary colour, and the surfaces, the borders and the text, which share the hue of the
+secondary colour. Under the knobs, **Tokens** holds the whole theme of that mode as JSON. Edit any
+value there, and the page re-skins as soon as the JSON parses. A token that has no knob, such as
+`background-app`, a font weight or a spacing step, starts as the selected theme sets it, and the
+exported file carries it too. A knob rewrites the tokens that it drives, and it leaves the rest as
+you set them.
 
 The page re-skins while you type, on real components. imp remembers your choices per theme, across a
-reload. When the theme looks correct, **copy** or **download theme.js** gives you an ordinary theme
-module, with a `light` export and a `dark` export. You drop it into your app and pass it to `init`.
-The editor prints the two lines that do that, in the panel. The editor produces a plain file, with
-no imp import in it. So from that point the file is yours to edit by hand. The two fonts and the 31
-named palette colours sit at the top of the file for exactly that. **reset** drops the draft, and
-returns to the selected theme. See **[Theming](theming.md)**.
+reload. The draft belongs to the name of the applied theme, so the same draft follows that theme
+into your app when you open the editor there. When the theme looks correct, **copy** or **download
+theme.js** gives you an ordinary theme module, with a `light` export and a `dark` export. You drop
+it into your app and pass it to `init`. The editor prints the two lines that do that, in the panel.
+The editor produces a plain file, with no imp import in it. So from that point the file is yours to
+edit by hand. The two fonts and the 31 named palette colours sit at the top of the file for exactly
+that. **reset** drops the draft, and returns to the selected theme. See **[Theming](theming.md)**.
 
 ### The page around a preview - `preview.entry`
 
@@ -1317,6 +1382,35 @@ and a restart never loses one.
 A review lives in `.imp/`, and a fresh `imp init` project already tells git to ignore that folder.
 So a review stays on the machine that wrote it. To share one, paste it. There is nothing to
 synchronize.
+
+## `imp logs`
+
+```
+imp logs [-n <count>] [-f]
+```
+
+`imp logs` prints the log of the current dev server session, one entry per line. It is everything
+that `imp start` or `imp preview` printed since it started: the browser console, the errors, each
+request with its status, and the status lines of imp. See
+**[Console and error telemetry](#imp-start)** for what each prefix means. The output is the log as
+it is, with no colour and no header. So the command composes with the tools that you already use:
+
+```sh
+imp logs | grep '\[browser:error\]'
+imp logs | grep '\[net\] POST' | tail -20
+imp logs -n 50
+imp logs -f
+```
+
+**`-n <count>`** prints the last `<count>` entries only. **`-f`** prints the log, then keeps the
+process open and prints each new entry as the dev server writes it. Press Ctrl-C to stop. This is
+the one command that an AI coding agent runs to watch the session while you click through the app.
+
+`imp start` and `imp preview` write the same log, so one command reads both. The command reads the
+project that you run it from, so it works from any subdirectory. It reads and never writes. The log
+holds the current session only, because the dev server starts it again at each start. When no dev
+server has run in the project yet, the command says so and exits `1`. When a nested folder of the
+project holds a session log, because you started the server there, the message names that folder.
 
 ## `imp resize`
 

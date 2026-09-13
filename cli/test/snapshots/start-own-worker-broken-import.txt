@@ -1,0 +1,19 @@
+--- banner ---
+[INFO] mocks - 1 file(s) from mocks/ serving through the browser
+✘ [ERROR] Import 'file://<tmp>/src/missing.js' failed, not found. [plugin deno]
+
+    <tmp>/src/sw.js:8:7:
+      8 │ import './missing.js'
+        ╵        ~~~~~~~~~~~~~~
+
+[INFO] imp start serving index.html from <tmp>
+  -> http://localhost:<port>/
+  logs -> imp logs (-f follows the session)
+  imp auto-injected | live reload | console + network telemetry
+
+GET /sw.js
+status: 500
+content-type: text/plain; charset=utf-8
+cache-control: no-store
+
+service worker - src/sw.js:8 - Import 'file://<tmp>/src/missing.js' failed, not found.

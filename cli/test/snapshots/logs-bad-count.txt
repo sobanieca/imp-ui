@@ -1,0 +1,8 @@
+$ imp logs -n abc  (cwd: test/fixtures/basic)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] -n must be a positive integer, got 'abc'

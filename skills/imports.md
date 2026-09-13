@@ -15,10 +15,11 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`          |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                     |
+| `imp/service-worker` | `startDevMode`, called from a service worker of your own                     |
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                  |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                 |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...       |
-| `imp/std/display`    | `card`, `emptyState`, `tag`, `tooltip`                                       |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `tag`, `tooltip`                          |
 | `imp/std/navigation` | `tabs`                                                                       |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`            |
 | `imp/std/feedback`   | `bugReport`                                                                  |
@@ -35,8 +36,9 @@ Each specifier is one subject, and each subject has a manual. Read [rendering](r
 `imp/html`, [components](components.md) for `component`, [state](state.md) for `imp/state`,
 [routing](routing.md) for `imp/router`, [http](http.md) for `imp/http`, [theming](theming.md) for
 `imp/theme`, [i18n](i18n.md) for `imp/i18n`, [logging](logging.md) for `imp/log`, [std](std.md) for
-`imp/std`, [icons](icons.md) for `imp/icons`, [testing](testing.md) for `imp/test`, and
-[feature-flags](feature-flags.md) for `flag`.
+`imp/std`, [icons](icons.md) for `imp/icons`, [service-worker](service-worker.md) for
+`imp/service-worker`, [testing](testing.md) for `imp/test`, and [feature-flags](feature-flags.md)
+for `flag`.
 
 Rules an agent gets wrong:
 

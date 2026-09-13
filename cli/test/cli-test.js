@@ -9,12 +9,13 @@ import {
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
 import { createMockBundler } from '../src/mocks.js'
+import { createDevLog } from '../src/dev-log.js'
 import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
 import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 import { formatReview, isLocalRequest, readWidgetMark, reviewFileName } from '../src/review.js'
-import { themeFileSource } from '../src/preview-theme-source.js'
+import { themeFileSource } from '../../lib/src/theme-draft.js'
 import { entryShell, renderSkill } from '../src/preview.js'
 import { scanGroupsModule, scanPreviewSource } from '../src/preview-source.js'
 
@@ -28,7 +29,7 @@ import {
   UNUSED_EXPORT_RULE,
 } from '../src/dead-code.js'
 import { IMP_MODULES, IMP_TOOLING_MODULES } from '../src/specifiers.js'
-import { colorSchemeOf, defaultTokens } from '../../lib/src/theme.js'
+import { buildTokens, colorSchemeOf, defaultTokens, THEME_DEFAULTS } from '../../lib/src/theme.js'
 import { VERSION } from '../src/version.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
@@ -143,6 +144,99 @@ Deno.test('imp commands', async (t) => {
   await test('fmt-invalid-imp-json', ['fmt', '--check', 'app.js'], fixture('broken-config'))
   await test('review-empty', ['review'], fixture('basic'))
   await test('review-unknown-argument', ['review', 'bogus'], fixture('basic'))
+  await test('logs-unknown-argument', ['logs', 'bogus'], fixture('basic'))
+  await test('logs-bad-count', ['logs', '-n', 'abc'], fixture('basic'))
+
+  await t.step('logs-no-log', async () => {
+    const dir = await Deno.makeTempDir()
+    await Deno.writeTextFile(join(dir, 'imp.json'), '{}\n')
+    await Deno.mkdir(join(dir, 'src'))
+    const result = await runImp(['logs'], join(dir, 'src'))
+    await Deno.mkdir(join(dir, 'lib', 'src', '.imp'), { recursive: true })
+    await Deno.writeTextFile(join(dir, 'lib', 'src', '.imp', 'dev.log'), '[INFO] preview\n')
+    await Deno.mkdir(join(dir, 'node_modules', 'pkg', '.imp'), { recursive: true })
+    await Deno.writeTextFile(join(dir, 'node_modules', 'pkg', '.imp', 'dev.log'), 'hidden\n')
+    const nested = await runImp(['logs'], join(dir, 'src'))
+    await Deno.remove(dir, { recursive: true })
+    for (const run of [result, nested]) run.stderr = run.stderr.replaceAll(dir, '<tmp>')
+    await assertSnapshot(
+      'logs-no-log',
+      `${commandTranscript('imp logs  (cwd: <tmp>/src)', result)}\n` +
+        `${commandTranscript('imp logs  (cwd: <tmp>/src, log in lib/src)', nested)}`,
+    )
+  })
+
+  await t.step('logs-prints-the-session', async () => {
+    const dir = await Deno.makeTempDir()
+    await Deno.writeTextFile(join(dir, 'imp.json'), '{}\n')
+    await Deno.mkdir(join(dir, '.imp'))
+    await Deno.mkdir(join(dir, 'src'))
+    const entries = [
+      '[INFO] imp start serving index.html',
+      '[browser:log] counter mounted',
+      '[net] GET /api/todos -> 200 12ms',
+      '[browser:error] Uncaught TypeError: x is not a function',
+    ]
+    await Deno.writeTextFile(join(dir, '.imp', 'dev.log'), entries.join('\n') + '\n')
+    const whole = await runImp(['logs'], dir)
+    const last = await runImp(['logs', '-n', '2'], join(dir, 'src'))
+    const more = await runImp(['logs', '-n', '10'], dir)
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'logs-prints-the-session',
+      `${commandTranscript('imp logs  (cwd: <tmp>)', whole)}\n` +
+        `${commandTranscript('imp logs -n 2  (cwd: <tmp>/src)', last)}\n` +
+        `${commandTranscript('imp logs -n 10  (cwd: <tmp>)', more)}`,
+    )
+  })
+
+  await t.step('logs-follows-the-session', async () => {
+    const dir = await Deno.makeTempDir()
+    await Deno.writeTextFile(join(dir, 'imp.json'), '{ "maxLogEntries": 3 }\n')
+    const devLog = await createDevLog({ root: dir, maxEntries: 3 })
+    await devLog.write('first')
+    await devLog.write('second')
+    const child = new Deno.Command(IMP, {
+      args: ['logs', '-f'],
+      cwd: dir,
+      stdin: 'null',
+      stdout: 'piped',
+      stderr: 'piped',
+    }).spawn()
+    const reader = child.stdout.getReader()
+    const decoder = new TextDecoder()
+    let output = ''
+    const readUntil = async (text) => {
+      while (!output.includes(text)) {
+        const { value, done } = await reader.read()
+        if (done) break
+        output += decoder.decode(value)
+      }
+    }
+    await readUntil('second\n')
+    const later = Array.from({ length: 9 }, (_, index) => `entry ${index + 1}`)
+    for (const entry of later) {
+      await devLog.write(entry)
+      await readUntil(`${entry}\n`)
+    }
+    child.kill('SIGINT')
+    const status = await child.status
+    await reader.cancel().catch(() => {})
+    await devLog.close()
+    const stderr = await new Response(child.stderr).text()
+    const finalLog = await Deno.readTextFile(devLog.path)
+    await Deno.remove(dir, { recursive: true })
+    check(
+      output === ['first', 'second', ...later].join('\n') + '\n',
+      `imp logs -f printed every entry once and in order:\n${output}`,
+    )
+    check(stderr === '', `imp logs -f wrote nothing to stderr:\n${stderr}`)
+    check(status.code === 0, `imp logs -f exits 0 on Ctrl-C, got ${status.code}`)
+    check(
+      finalLog === 'entry 5\nentry 6\nentry 7\nentry 8\nentry 9\n',
+      `the log was rewritten in place while it was followed:\n${finalLog}`,
+    )
+  })
   await test('resize-guidance', ['resize', 'logo.png'], fixture('resize'))
   await test('resize-usage', ['resize'], fixture('resize'))
   await test('resize-unsupported-format', ['resize', 'photo.bmp', '-w', '100'], fixture('resize'))
@@ -1323,7 +1417,7 @@ function runServiceWorker(source) {
       new Response('from the network', { headers: { 'content-type': 'text/plain' } }),
     )
   }
-  new Function('self', 'fetch', source)(scope, network)
+  new Function('self', 'fetch', 'globalThis', source)(scope, network, scope)
 
   const send = async (path, init) => {
     let answered
@@ -1343,7 +1437,13 @@ function runServiceWorker(source) {
     }
   }
 
-  return { registered: scope.__impMocks.map((entry) => entry.source), send, telemetry }
+  return {
+    registered: (scope.__impMocks ?? []).map((entry) => entry.source),
+    send,
+    telemetry,
+    listeners,
+    scope,
+  }
 }
 
 Deno.test('imp start serves mocks through the service worker', async (t) => {
@@ -1435,6 +1535,210 @@ Deno.test('--mock and --no-mock decide whether the mocks folder is served', asyn
   })
 })
 
+const ownWorkerFixture = async (edit = null) => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('start-service-worker'), dir)
+  if (edit) await edit(dir)
+  return dir
+}
+
+const telemetryLines = (entries) =>
+  entries.map((entry) =>
+    `${entry.type} ${entry.method} ${new URL(entry.url).pathname} -> ${
+      entry.error ?? entry.status
+    }${entry.mock ? ` (mock: ${entry.mock})` : ''}`
+  )
+
+const settled = () => new Promise((resolve) => setTimeout(resolve, 300))
+
+Deno.test('a project with its own service worker gets dev mode from startDevMode()', async (t) => {
+  const server = await startServer(fixture('start-service-worker'))
+  const { port } = server
+
+  try {
+    await t.step('start-own-worker-banner', async () => {
+      const banner = normalize(server.banner).replaceAll(`:${port}`, ':<port>')
+      await assertSnapshot('start-own-worker-banner', banner)
+    })
+
+    await t.step('start-own-worker-page', async () => {
+      const response = await fetch(`http://127.0.0.1:${port}/`)
+      const html = await response.text()
+      const ownClient = clientScript({ mocks: true, ownWorker: true, mark: widgetMark })
+      const report = [
+        `registers /@imp/sw.js: ${html.includes('/@imp/sw.js') ? 'yes' : 'no'}`,
+        `client script without the dev worker registration: ${
+          html.includes(ownClient) ? 'yes' : 'no'
+        }`,
+      ]
+      await assertSnapshot(
+        'start-own-worker-page',
+        responseTranscript('/', response, report.join('\n')),
+      )
+    })
+
+    await t.step('start-own-worker-bundle', async () => {
+      const path = '/sw.js'
+      const response = await fetch(`http://127.0.0.1:${port}${path}`)
+      const source = await response.text()
+      const worker = runServiceWorker(source)
+      const transcript = [
+        `bare imports left: ${/^\s*import\s/m.test(source) ? 'yes' : 'no'}`,
+        `first line: ${source.split('\n')[0]}`,
+        `worker code ran: ${JSON.stringify(worker.scope.__fixture)}`,
+        `listeners: ${Object.keys(worker.listeners).sort().join(', ')}`,
+        `registered mocks: ${worker.registered.join(', ')}`,
+        '',
+        await worker.send('/api/users'),
+        await worker.send('/api/other'),
+      ]
+      await settled()
+      transcript.push('', ...telemetryLines(worker.telemetry))
+      await assertSnapshot(
+        'start-own-worker-bundle',
+        responseTranscript(path, response, transcript.join('\n')),
+      )
+    })
+
+    await t.step('start-own-worker-imp-worker-gone', async () => {
+      const path = '/@imp/sw.js'
+      const response = await fetch(`http://127.0.0.1:${port}${path}`)
+      await assertSnapshot(
+        'start-own-worker-imp-worker-gone',
+        responseTranscript(path, response, await response.text()),
+      )
+    })
+  } finally {
+    await server.stop()
+  }
+
+  await t.step('start-own-worker-dev-mode-off', async () => {
+    const dir = await ownWorkerFixture((root) =>
+      Deno.writeTextFile(join(root, 'env', 'dev.json'), '{ "DEV_TOOLS": "off" }\n')
+    )
+    const quiet = await startServer(dir)
+    try {
+      const worker = runServiceWorker(
+        await (await fetch(`http://127.0.0.1:${quiet.port}/sw.js`)).text(),
+      )
+      await assertSnapshot(
+        'start-own-worker-dev-mode-off',
+        [
+          `worker code ran: ${JSON.stringify(worker.scope.__fixture)}`,
+          `listeners: ${Object.keys(worker.listeners).sort().join(', ') || '(none)'}`,
+          `mocks bundled: ${worker.registered.length}`,
+        ].join('\n') + '\n',
+      )
+    } finally {
+      await quiet.stop()
+    }
+  })
+
+  await t.step('start-own-worker-broken-import', async () => {
+    const dir = await ownWorkerFixture(async (root) => {
+      const file = join(root, 'src', 'sw.js')
+      await Deno.writeTextFile(file, `${await Deno.readTextFile(file)}import './missing.js'\n`)
+    })
+    const broken = await startServer(dir)
+    try {
+      const path = '/sw.js'
+      const response = await fetch(`http://127.0.0.1:${broken.port}${path}`)
+      const withoutTmp = (text) => text.replaceAll(dir, '<tmp>').replaceAll(dir.slice(1), '<tmp>')
+      const banner = withoutTmp(normalize(broken.banner).replaceAll(`:${broken.port}`, ':<port>'))
+      await assertSnapshot(
+        'start-own-worker-broken-import',
+        `${section('banner', banner)}\n\n${
+          responseTranscript(path, response, withoutTmp(await response.text()))
+        }`,
+      )
+    } finally {
+      await broken.stop()
+    }
+  })
+
+  await t.step('start-own-worker-missing-file', async () => {
+    const dir = await ownWorkerFixture((root) => Deno.remove(join(root, 'src', 'sw.js')))
+    const result = await runImp(['start', 'index.html', '--port', '0'], dir)
+    await assertSnapshot(
+      'start-own-worker-missing-file',
+      commandTranscript('imp start index.html --port 0  (cwd: <tmp>)', result).replaceAll(
+        dir,
+        '<tmp>',
+      ),
+    )
+  })
+
+  await t.step('start-own-worker-invalid-key', async () => {
+    const dir = await ownWorkerFixture((root) =>
+      Deno.writeTextFile(join(root, 'imp.json'), '{ "serviceWorker": 5 }\n')
+    )
+    const result = await runImp(['start', 'index.html', '--port', '0'], dir)
+    await assertSnapshot(
+      'start-own-worker-invalid-key',
+      commandTranscript('imp start index.html --port 0  (cwd: <tmp>)', result).replaceAll(
+        dir,
+        '<tmp>',
+      ),
+    )
+  })
+})
+
+Deno.test('imp build bundles the service worker of the project', async (t) => {
+  const mask = (text, dir) =>
+    text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+
+  await t.step('build-own-worker', async () => {
+    const dir = await ownWorkerFixture()
+    const result = await runImp(['build'], dir)
+    const sw = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
+    const worker = runServiceWorker(sw)
+    const report = [
+      `first line: ${sw.split('\n')[0]}`,
+      `bare imports left: ${/^\s*import\s/m.test(sw) ? 'yes' : 'no'}`,
+      `worker code ran: ${JSON.stringify(worker.scope.__fixture)}`,
+      `listeners: ${Object.keys(worker.listeners).sort().join(', ')}`,
+      `mocks bundled: ${worker.registered.length}`,
+    ]
+    await assertSnapshot(
+      'build-own-worker',
+      mask(
+        `${commandTranscript('imp build  (cwd: <tmp>)', result)}\n${
+          section('dist/sw.js', report.join('\n'))
+        }\n`,
+        dir,
+      ),
+    )
+  })
+
+  await t.step('build-own-worker-pwa', async () => {
+    const dir = await Deno.makeTempDir()
+    await copyDirectory(fixture('build-pwa'), dir)
+    await copyDirectory(join(fixture('start-service-worker'), 'src'), join(dir, 'src'))
+    const config = JSON.parse(await Deno.readTextFile(join(dir, 'imp.json')))
+    await Deno.writeTextFile(
+      join(dir, 'imp.json'),
+      JSON.stringify({ ...config, serviceWorker: 'src/sw.js' }, null, 2) + '\n',
+    )
+    const result = await runImp(['build', '--pwa'], dir)
+    const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+    const sw = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
+    const report = [
+      `registration: ${html.match(/serviceWorker\.register\([^)]*\)/)?.[0] ?? '(none)'}`,
+      `dist/sw.js is the project worker: ${sw.includes('__fixture') ? 'yes' : 'no'}`,
+      `dist/sw.js precaches: ${sw.includes('imp-pwa-') ? 'yes' : 'no'}`,
+    ]
+    await assertSnapshot(
+      'build-own-worker-pwa',
+      mask(
+        `${commandTranscript('imp build --pwa  (cwd: <tmp>)', result)}\n${
+          section('output', report.join('\n'))
+        }\n`,
+        dir,
+      ),
+    )
+  })
+})
+
 Deno.test('an incomplete mocks config is reported', async () => {
   const dir = await Deno.makeTempDir()
   await Deno.writeTextFile(join(dir, 'index.html'), '<!doctype html>\n<div id="app"></div>\n')
@@ -1522,17 +1826,12 @@ Deno.test('imp preview', async (t) => {
       await assertSnapshot('preview-banner', banner)
     })
 
+    const previewClient = clientScript({ mocks: false, mark: widgetMark, themeEditor: false })
     await get('preview-index', '/', {
-      maskBody: (body) =>
-        normalize(
-          body.replace(clientScript({ mocks: false, mark: widgetMark }), '\n[imp client script]\n'),
-        ),
+      maskBody: (body) => normalize(body.replace(previewClient, '\n[imp client script]\n')),
     })
     await get('preview-page', '/widgets/counter', {
-      maskBody: (body) =>
-        normalize(
-          body.replace(clientScript({ mocks: false, mark: widgetMark }), '\n[imp client script]\n'),
-        ),
+      maskBody: (body) => normalize(body.replace(previewClient, '\n[imp client script]\n')),
     })
     await get('preview-unknown-page', '/@imp/preview/components/missing.preview.js')
     await get('preview-app', '/@imp/preview/app.js', {
@@ -1620,6 +1919,9 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         return start ? search(start.shadowRoot ?? start) : null
       }
       globalThis.impScenarios = () => globalThis.impAll('imp-preview-scenario')
+      globalThis.impCodeOf = (scenario) =>
+        [...globalThis.impOne('imp-code-block', scenario).shadowRoot.querySelectorAll('.line')]
+          .map((line) => line.textContent).join('\n')
       globalThis.impLabelled = (name, from) =>
         globalThis.impAll(name, from).map((host) => ({
           label: host.shadowRoot.querySelector('label')?.textContent.trim() ?? '',
@@ -1699,7 +2001,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       return {
         hidden: `${hidden}, hidden again after a second click: ${hiddenAgain}`,
         toggle: `${before} -> ${toggle.getAttribute('aria-pressed')}`,
-        code: scenario.shadowRoot.querySelector('.code-block').textContent,
+        code: globalThis.impCodeOf(scenario),
         stored: localStorage.getItem('imp.preview.code'),
         tabs: labels(pageTabs).join(', '),
         scenarioTabs: `${labels(scenarioTabs).join(', ')} (${
@@ -1821,7 +2123,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         .find((node) => node.shadowRoot.textContent.includes('edit theme'))
       open.shadowRoot.querySelector('button').click()
       await new Promise((resolve) => setTimeout(resolve, 0))
-      const editorHost = globalThis.impOne('imp-preview-theme')
+      const editorHost = globalThis.impOne('imp-theme-editor')
       const panel = editorHost.shadowRoot
       const labelled = () => [
         ...globalThis.impLabelled('imp-select', editorHost),
@@ -1957,7 +2259,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         name: selectedTab.textContent.trim(),
         shown: scenario.shadowRoot.querySelector('h2').textContent,
         hiddenPanels: scenarioTabs.querySelectorAll('[role="tabpanel"][hidden]').length,
-        code: scenario.shadowRoot.querySelector('.code-block').textContent.split('\n').at(-1),
+        code: globalThis.impCodeOf(scenario).split('\n').at(-1),
       }
     })
 
@@ -1980,22 +2282,46 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         .shadowRoot.querySelector('.title').textContent.trim(),
     }))
 
-    const stageWidths = () => {
-      const stage = globalThis.impOne('imp-preview-stage').shadowRoot
-      const frame = stage.querySelector('.frame').getBoundingClientRect().width
-      const panel = stage.querySelector('.viewport').clientWidth
+    const panelWidths = () => {
+      const scenario = globalThis.impScenarios()[0]
+      const width = (node) => Math.round(node.getBoundingClientRect().width)
+      const panel = width(scenario.shadowRoot.querySelector('.scenario'))
+      const head = width(scenario.shadowRoot.querySelector('.scenario-head'))
+      const frame = width(
+        globalThis.impOne('imp-preview-stage', scenario).shadowRoot.querySelector('.frame'),
+      )
       const canvas = globalThis.impOne('imp-preview-canvas').shadowRoot.querySelector('.scroll')
+      const strip = globalThis.impAll('imp-tabs')[1].shadowRoot
+      const fold = strip.querySelector('.fold')
       return {
-        ratio: Math.round(frame * 100 / panel),
+        folded: fold.getAttribute('aria-expanded') === 'false',
+        foldLabel: fold.getAttribute('aria-label'),
+        tabsInert: strip.querySelector('[role="tablist"]').inert,
+        share: Math.round(panel * 100 / canvas.clientWidth),
+        filled: head === panel && frame === panel,
         scrolls: canvas.scrollWidth > canvas.clientWidth,
       }
     }
-    const wide = await page.evaluate(stageWidths)
+    const wide = await page.evaluate(panelWidths)
     await page.setViewport({ width: 390, height: 844 })
+    await page.reload({ waitUntil: 'load' })
     await page.waitForFunction(() =>
-      globalThis.impOne('imp-preview-stage').shadowRoot.querySelector('.viewport').clientWidth < 300
+      globalThis.impScenarios().length > 0 &&
+      globalThis.impOne('imp-preview-stage')?.shadowRoot?.querySelector('.frame')
     )
-    const phone = await page.evaluate(stageWidths)
+    const phone = await page.evaluate(panelWidths)
+    const unfolded = await page.evaluate(async () => {
+      const strip = globalThis.impAll('imp-tabs')[1].shadowRoot
+      strip.querySelector('.fold').click()
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const tab = strip.querySelector('[role="tab"]')
+      return {
+        expanded: strip.querySelector('.fold').getAttribute('aria-expanded'),
+        tabsInert: strip.querySelector('[role="tablist"]').inert,
+        tabVisible: tab.getBoundingClientRect().width > 0,
+        remembered: localStorage.getItem('imp.preview.tabs'),
+      }
+    })
     const anchored = await page.evaluate(async () => {
       const scenario = globalThis.impScenarios()[0]
       const toggle = globalThis.impAll('imp-button', scenario)
@@ -2055,7 +2381,9 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `rendered values: ${counter.rendered.join(', ')}`,
       `state rows: ${counter.states.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
-      `stage width as % of its panel: ${wide.ratio} wide (canvas scrolls sideways: ${wide.scrolls}), ${phone.ratio} on a phone (canvas scrolls sideways: ${phone.scrolls})`,
+      `scenario tabs on a wide screen: folded ${wide.folded} ('${wide.foldLabel}', tabs inert ${wide.tabsInert}), panel is ${wide.share}% of the canvas, head and stage fill it ${wide.filled}, canvas scrolls sideways ${wide.scrolls}`,
+      `scenario tabs on a phone: folded ${phone.folded} ('${phone.foldLabel}', tabs inert ${phone.tabsInert}), panel is ${phone.share}% of the canvas, head and stage fill it ${phone.filled}, canvas scrolls sideways ${phone.scrolls}`,
+      `after a tap on the fold button: aria-expanded ${unfolded.expanded}, tabs inert ${unfolded.tabsInert}, a tab is visible ${unfolded.tabVisible}, remembered as '${unfolded.remembered}'`,
       `state editor on a phone: anchored ${anchored.anchored}, ${anchored.below}px under its toggle, inside the viewport ${anchored.inside}`,
       `agent instruction strips on the page: ${agent.strips} (region '${agent.region}')`,
       `agent instruction: ${agent.instruction}`,
@@ -2421,6 +2749,167 @@ Deno.test('the review widget picks an element in the preview page', async () => 
         .replaceAll(dir, '<tmp>'),
     ].join('\n')
     await assertSnapshot('preview-review-widget', report)
+  } finally {
+    await browser.close().catch(() => {})
+    await server.stop()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('the review widget edits the applied theme of an app, and the draft survives a reload', async () => {
+  const dir = await Deno.makeTempDir()
+  await Deno.writeTextFile(join(dir, 'imp.json'), '{ "name": "themed" }\n')
+  await Deno.writeTextFile(
+    join(dir, 'index.html'),
+    '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>themed</title></head>' +
+      '<body><div id="app"></div><script type="module" src="/app.js"></script></body></html>\n',
+  )
+  await Deno.writeTextFile(
+    join(dir, 'app.js'),
+    "import { init, mount } from 'imp'\nimport { button } from 'imp/std'\n" +
+      "await init({ theme: 'imp-light' })\nmount('#app', () => button('hello'))\n",
+  )
+  const server = await startServer(dir)
+  const { resolveBrowser } = await import('../src/test-browser.js')
+  const { default: puppeteer } = await import('../src/vendor/puppeteer-core.js')
+  const args = ['--disable-dev-shm-usage']
+  try {
+    if (Deno.uid() === 0) args.push('--no-sandbox')
+  } catch { /* not available on this platform */ }
+  const browser = await puppeteer.launch({
+    executablePath: await resolveBrowser(),
+    headless: true,
+    args,
+  })
+  const widgetReady = () => document.getElementById('imp-review')?.shadowRoot
+  const primaryToken = () =>
+    getComputedStyle(document.documentElement).getPropertyValue('--imp-color-primary').trim()
+  try {
+    const page = await browser.newPage()
+    await page.setViewport({ width: 900, height: 700 })
+    await page.goto(`http://localhost:${server.port}/`, { waitUntil: 'load' })
+    await page.waitForFunction(widgetReady)
+    const edited = await page.evaluate(async () => {
+      const shadow = document.getElementById('imp-review').shadowRoot
+      const waitFor = async (description, ready) => {
+        const deadline = Date.now() + 10000
+        while (!ready()) {
+          if (Date.now() > deadline) throw new Error(`timed out waiting for ${description}`)
+          await new Promise((resolve) => setTimeout(resolve, 20))
+        }
+      }
+      const token = (name) =>
+        getComputedStyle(document.documentElement).getPropertyValue(`--imp-${name}`).trim()
+      const labelled = (root, tag, label) => {
+        for (const element of root.querySelectorAll('*')) {
+          if (
+            element.localName === tag &&
+            element.shadowRoot?.querySelector('label')?.textContent.trim() === label
+          ) {
+            return element.shadowRoot.querySelector('input, select, textarea')
+          }
+          const found = element.shadowRoot ? labelled(element.shadowRoot, tag, label) : null
+          if (found) return found
+        }
+        return null
+      }
+      const change = (node, value) => {
+        node.value = value
+        node.dispatchEvent(new Event(node.localName === 'select' ? 'change' : 'input'))
+      }
+      const steps = { before: token('color-primary') }
+      shadow.querySelector('.toggle').click()
+      steps.actions = [...shadow.querySelectorAll('.action')]
+        .map((button) => button.getAttribute('aria-label')).join(', ')
+      shadow.querySelector('[data-action="theme"]').click()
+      steps.view = [...shadow.querySelectorAll('.view')].find((panel) => !panel.hidden).dataset.view
+      steps.pressed = shadow.querySelector('[data-action="theme"]').getAttribute('aria-pressed')
+      await waitFor(
+        'the theme editor to load',
+        () => labelled(shadow.querySelector('.card'), 'imp-text-field', 'Primary'),
+      )
+      steps.editor = shadow.querySelector('.card').firstElementChild.localName
+      change(labelled(shadow.querySelector('.card'), 'imp-text-field', 'Primary'), '#8821ac')
+      steps.primary = token('color-primary')
+      steps.derived = token('color-primary-hover')
+      change(labelled(shadow.querySelector('.card'), 'imp-select', 'Border radius'), 'none')
+      steps.flat = token('radius-item')
+      const editor = labelled(shadow.querySelector('.card'), 'imp-code-editor', 'Tokens')
+      const shown = JSON.parse(editor.value)
+      steps.json = `${Object.keys(shown).length} tokens, primary ${shown['color-primary']}, ` +
+        `radius ${shown['radius-item']}`
+      change(
+        editor,
+        JSON.stringify({ ...shown, 'color-primary': '#0f766e', 'color-surface': '#fff7ed' }),
+      )
+      steps.jsonSurface = token('color-surface')
+      steps.jsonPrimary = token('color-primary')
+      steps.jsonKnob = labelled(shadow.querySelector('.card'), 'imp-text-field', 'Primary').value
+      change(editor, '{ not json')
+      steps.jsonBroken = token('color-surface')
+      steps.draftKeys = Object.keys(localStorage).filter((key) =>
+        key.startsWith('imp.theme-draft.')
+      )
+        .join(', ')
+      shadow.querySelector('[data-action="theme"]').click()
+      steps.closed = shadow.querySelector('.card').childElementCount
+      return steps
+    })
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForFunction(widgetReady)
+    await page.waitForFunction(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--imp-color-primary').trim() ===
+        '#0f766e'
+    )
+    const afterReload = await page.evaluate(primaryToken)
+    const findResetButton = () => {
+      const deep = (root) => {
+        for (const element of root.querySelectorAll('*')) {
+          if (
+            element.localName === 'imp-button' && element.shadowRoot.textContent.trim() === 'reset'
+          ) {
+            return element
+          }
+          const found = element.shadowRoot ? deep(element.shadowRoot) : null
+          if (found) return found
+        }
+        return null
+      }
+      return deep(document.getElementById('imp-review').shadowRoot.querySelector('.card'))
+    }
+    await page.evaluate(() => {
+      const shadow = document.getElementById('imp-review').shadowRoot
+      shadow.querySelector('.toggle').click()
+      shadow.querySelector('[data-action="theme"]').click()
+    })
+    const resetButton = await page.waitForFunction(findResetButton)
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'load' }),
+      resetButton.evaluate((host) => host.shadowRoot.querySelector('button').click()),
+    ])
+    await page.waitForFunction(widgetReady)
+    const afterReset = await page.evaluate(() => ({
+      primary: getComputedStyle(document.documentElement).getPropertyValue('--imp-color-primary')
+        .trim(),
+      draftKeys: Object.keys(localStorage).filter((key) => key.startsWith('imp.theme-draft.'))
+        .length,
+    }))
+    const report = [
+      `primary before editing: ${edited.before}`,
+      `actions: ${edited.actions}`,
+      `view after Theme editor: ${edited.view} (aria-pressed ${edited.pressed})`,
+      `editor mounted in the panel: ${edited.editor}`,
+      `after picking a primary: ${edited.primary} (hover ${edited.derived})`,
+      `after picking radius none: ${edited.flat}`,
+      `tokens editor shows: ${edited.json}`,
+      `after editing the JSON: surface ${edited.jsonSurface}, primary ${edited.jsonPrimary}, primary knob ${edited.jsonKnob}`,
+      `surface while the JSON is broken: ${edited.jsonBroken}`,
+      `draft stored under: ${edited.draftKeys}`,
+      `editor removed when closed: ${edited.closed === 0}`,
+      `primary after a reload: ${afterReload}`,
+      `primary after reset: ${afterReset.primary}, drafts left: ${afterReset.draftKeys}`,
+    ].join('\n')
+    await assertSnapshot('start-theme-editor-widget', report + '\n')
   } finally {
     await browser.close().catch(() => {})
     await server.stop()
@@ -2929,6 +3418,10 @@ export const labelled = {
   component: wrap(select({ field: 'plan', placeholder: 'Pick a plan', options: plans })),
 }
 export const labelledLazy = { scenario: 'Built at render time', component: () => select(plans) }
+export const shadowed = () => {
+  const plans = ['enterprise']
+  return select({ field: 'plan', options: plans })
+}
 export { luUser as reexported }
 `
   const { scenarios, declared, code } = scanPreviewSource(source)
@@ -3011,16 +3504,28 @@ Deno.test('imp preview frames a page with the entry file, keeping its head', () 
   )
 })
 
+Deno.test('a derived theme puts white text on a saturated primary and dark text on a pale one', () => {
+  const onPrimary = (primary) =>
+    buildTokens({ ...THEME_DEFAULTS, primary, mode: 'light' })['color-on-primary']
+  check(onPrimary('#ef4444') === '#ffffff', 'a saturated red gets white text')
+  check(onPrimary('#ea580c') === '#ffffff', 'a saturated orange gets white text')
+  check(onPrimary('#f59e0b') !== '#ffffff', 'a pale amber gets dark text')
+  check(onPrimary('#0ea5e9') !== '#ffffff', 'a pale sky blue gets dark text')
+})
+
 Deno.test('the theme editor exports a theme file that imports back as two themes', async () => {
+  const shared = {
+    'font-family': "'Inter', system-ui, sans-serif",
+    'font-family-mono': "'JetBrains Mono', ui-monospace, monospace",
+    'background-app': 'linear-gradient(#fff, #eee)',
+    'font-weight-bold': '500',
+  }
+  const tokensFor = (mode, primary, secondary) =>
+    buildTokens({ primary, secondary, radius: 'large', shadow: 'strong', mode, overrides: shared })
   const draft = {
     mode: 'light',
-    font: "'Inter', system-ui, sans-serif",
-    fontMono: "'JetBrains Mono', ui-monospace, monospace",
-    radius: 'large',
-    shadow: 'strong',
-    light: { primary: '#3b6fe0', secondary: '#6b7280' },
-    dark: { primary: '#7c9cff', secondary: '#94a3b8' },
-    kept: { 'background-app': 'linear-gradient(#fff, #eee)', 'font-weight-bold': '500' },
+    light: { tokens: tokensFor('light', '#3b6fe0', '#6b7280') },
+    dark: { tokens: { ...tokensFor('dark', '#7c9cff', '#94a3b8'), 'color-green': '#12b76a' } },
   }
   const source = themeFileSource('acme', draft)
   const module = await import(`data:text/javascript,${encodeURIComponent(source)}`)
@@ -3044,8 +3549,14 @@ Deno.test('the theme editor exports a theme file that imports back as two themes
     'the dark theme carries its own primary',
   )
   check(
-    module.light.tokens['color-green'] === module.dark.tokens['color-green'],
+    module.light.tokens['color-blue'] === module.dark.tokens['color-blue'],
     'both themes share one palette block',
+  )
+  check(
+    module.light.tokens['color-green'] !== '#12b76a' &&
+      module.dark.tokens['color-green'] === '#12b76a' &&
+      module.dark.tokens['color-success'] === module.light.tokens['color-green'],
+    'a palette colour edited in one mode stays in that theme only, and a role keeps its literal',
   )
   check(
     module.light.tokens['color-success'] === module.light.tokens['color-green'],

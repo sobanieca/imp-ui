@@ -1,11 +1,11 @@
 import { component } from 'imp'
 import { div, el, pre, span } from 'imp/html'
 import { heading, link, text } from 'imp/std'
-import { card, emptyState, tag } from 'imp/std/display'
+import { card, codeBlock, emptyState, tag } from 'imp/std/display'
 import { flex, shell, stack } from 'imp/std/layout'
 import { appLogo } from 'imp/std/shell'
 import { luFolder } from 'imp/icons'
-import { copyButton } from './preview-copy.js'
+import { copyButton } from '../../lib/src/std/shared/copy-button.js'
 
 const INDEX_STYLES = `
   .hero {
@@ -304,20 +304,8 @@ const SKILL_STYLES = `
     font-size: 0.9em;
   }
 
-  .skill pre {
-    padding: var(--imp-space-3, 12px);
-    overflow: auto;
-    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-container, 10px);
-    background: var(--imp-color-surface-sunken, #f8fafc);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-    tab-size: 2;
-  }
-
-  .skill pre code {
-    padding: 0;
-    background: none;
-    font-size: inherit;
+  .skill imp-code-block {
+    margin-block: var(--imp-space-3, 12px);
   }
 
   .skill table {
@@ -358,6 +346,10 @@ const skillBody = (html, entry) => {
   }
   const body = div({ class: 'skill' })
   body.innerHTML = html
+  for (const block of body.querySelectorAll('pre > code')) {
+    const language = block.className.match(/language-(\S+)/)?.[1]
+    block.parentElement.replaceWith(codeBlock({ language, code: block.textContent }))
+  }
   return body
 }
 
