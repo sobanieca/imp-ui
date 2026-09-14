@@ -61,11 +61,11 @@ Rules an agent gets wrong:
 ## Colour and size
 
 `color` names a theme token, so the icon changes with the theme instead of holding a fixed colour.
-The names are `'primary'`, `'secondary'`, `'text'`, `'link'`, `'border'`, `'danger'`, `'success'`,
-`'warning'` and `'info'`, and every palette hue from [theming](theming.md), such as `'jade'`,
-`'violet'` and `'amber'`. The default `'current'` takes the colour of the text around it, which is
-what a button or a menu row needs. imp logs a colour outside that list and ignores it. To paint an
-icon in any other colour, set `color` on the box around it and leave the icon on `'current'`.
+The names are `'primary'`, `'secondary'`, `'text'`, `'border'`, `'danger'`, `'success'`, `'warning'`
+and `'info'`, and every palette hue from [theming](theming.md), such as `'teal'`, `'violet'` and
+`'amber'`. The default `'current'` takes the colour of the text around it, which is what a button or
+a menu row needs. imp logs a colour outside that list and ignores it. To paint an icon in any other
+colour, set `color` on the box around it and leave the icon on `'current'`.
 
 Every Lucide icon is square, so `size` sets both axes. The three steps are `1rem`, `1.5rem` and
 `2rem`. Lucide draws on a 24-unit grid, so `md` at the default root font size is 24px and its

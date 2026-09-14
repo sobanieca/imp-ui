@@ -16,11 +16,10 @@ The call shape is `tag(props?, ...children)`. When a props object is present, it
 | `color` | `'neutral'`, or any theme palette name | `'neutral'` | Tints the pill; the text stays readable |
 | `size`  | `'sm'`, `'md'`, `'lg'`                 | `'md'`      | The height of the pill                  |
 
-`color` accepts these 31 palette names, in palette order:
+`color` accepts these 16 palette names, in palette order:
 
-`gray`, `mauve`, `slate`, `sage`, `olive`, `sand`, `tomato`, `red`, `ruby`, `crimson`, `pink`,
-`plum`, `purple`, `violet`, `iris`, `indigo`, `blue`, `cyan`, `teal`, `jade`, `green`, `grass`,
-`bronze`, `gold`, `brown`, `orange`, `amber`, `yellow`, `lime`, `mint`, `sky`.
+`gray`, `brown`, `red`, `orange`, `amber`, `yellow`, `lime`, `green`, `teal`, `cyan`, `sky`, `blue`,
+`indigo`, `violet`, `purple`, `pink`.
 
 Rules an agent gets wrong:
 
@@ -32,7 +31,7 @@ Rules an agent gets wrong:
   change the hue, retheme `color-green`. Do not pass a literal colour.
 - **The pill is a tint of the colour, not the colour itself.** imp draws a faint fill and a border
   in the colour, and it mixes the colour into the text colour of the theme. That is what keeps all
-  31 colours readable in a light theme and in a dark theme. So do not restyle the pill to a solid
+  16 colours readable in a light theme and in a dark theme. So do not restyle the pill to a solid
   fill. A solid fill is readable for some hues and not for others.
 - **A count renders as a compact pill.** Each size has a fixed height, and a short label such as `4`
   is at least as wide as it is tall. The corners follow `radius-item` of the theme. Do not pad the

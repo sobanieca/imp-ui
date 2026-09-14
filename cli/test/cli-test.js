@@ -16,7 +16,7 @@ import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
 import { formatReview, isLocalRequest, readWidgetMark, reviewFileName } from '../src/review.js'
 import { themeFileSource } from '../../lib/src/theme-draft.js'
-import { entryShell, renderSkill } from '../src/preview.js'
+import { entryShell, previewIdentity, renderDescription, renderSkill } from '../src/preview.js'
 import { scanGroupsModule, scanPreviewSource } from '../src/preview-source.js'
 
 const widgetMark = await readWidgetMark()
@@ -2149,17 +2149,17 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       )
       change(field('Primary'), '#8821ac')
       const primary = token('color-primary')
-      const derived = token('color-primary-hover')
+      const derived = token('color-on-primary')
       change(field('Border radius'), 'none')
       const flat = token('radius-item')
-      change(field('Mode'), 'dark')
-      const darkSurface = token('color-surface')
+      change(field('Shadow colour'), '#ff0000')
+      const shadow = token('color-shadow')
       return {
         knobs: knobs.join(', '),
         primary,
         derived,
         flat,
-        darkSurface,
+        shadow,
         usage: globalThis.impDeep('pre', globalThis.impDeep('.usage', editorHost)).textContent
           .split('\n')[0],
       }
@@ -2185,6 +2185,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         current: links.find((link) => link.hasAttribute('aria-current'))?.textContent ?? 'none',
         head: globalThis.impOne('imp-heading', globalThis.impOne('imp-preview-head')).shadowRoot
           .textContent.trim(),
+        description: globalThis.impOne('imp-preview-head').shadowRoot
+          .querySelector('.md.description').innerHTML.replace(/\s+/g, ' ').trim(),
       }
     })
 
@@ -2417,15 +2419,16 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `imp-dark font token, from the theme file that replaces it: ${themed.darkFont}`,
       `brand surface token: ${themed.custom}`,
       `theme editor knobs: ${themeEdits.knobs}`,
-      `after picking a primary: ${themeEdits.primary} (hover ${themeEdits.derived})`,
+      `after picking a primary: ${themeEdits.primary} (on-primary ${themeEdits.derived})`,
       `after picking radius none: ${themeEdits.flat}`,
-      `after switching the editor to dark: ${themeEdits.darkSurface}`,
+      `after picking a shadow colour: ${themeEdits.shadow}`,
       `theme editor usage line: ${themeEdits.usage}`,
       `sidebar groups: ${shell.groups}`,
       `sidebar group icons: ${shell.groupIcons}`,
       `sidebar components: ${shell.sidebar}`,
       `sidebar current: ${shell.current}`,
       `page head: ${shell.head}`,
+      `page head description: ${shell.description}`,
       `index headline: ${index.headline}`,
       `index cards: ${index.cards}`,
       `group headline: ${group.headline}`,
@@ -2822,29 +2825,40 @@ Deno.test('the review widget edits the applied theme of an app, and the draft su
       steps.actions = [...shadow.querySelectorAll('.action')]
         .map((button) => button.getAttribute('aria-label')).join(', ')
       shadow.querySelector('[data-action="theme"]').click()
+      const probe = document.body.appendChild(document.createElement('div'))
+      probe.style.background = 'var(--imp-color-surface)'
+      steps.panel = getComputedStyle(shadow.querySelector('.panel')).backgroundColor ===
+          getComputedStyle(probe).backgroundColor
+        ? `the surface of the theme, ${token('color-surface')}`
+        : getComputedStyle(shadow.querySelector('.panel')).backgroundColor
+      probe.remove()
       steps.view = [...shadow.querySelectorAll('.view')].find((panel) => !panel.hidden).dataset.view
       steps.pressed = shadow.querySelector('[data-action="theme"]').getAttribute('aria-pressed')
       await waitFor(
         'the theme editor to load',
-        () => labelled(shadow.querySelector('.card'), 'imp-text-field', 'Primary'),
+        () => labelled(shadow.querySelector('.card'), 'imp-code-editor', 'Tokens'),
       )
       steps.editor = shadow.querySelector('.card').firstElementChild.localName
-      change(labelled(shadow.querySelector('.card'), 'imp-text-field', 'Primary'), '#8821ac')
-      steps.primary = token('color-primary')
-      steps.derived = token('color-primary-hover')
-      change(labelled(shadow.querySelector('.card'), 'imp-select', 'Border radius'), 'none')
-      steps.flat = token('radius-item')
+      const knobHosts = []
+      const walkKnobs = (root) => {
+        for (const element of root.querySelectorAll('*')) {
+          if (['imp-tabs', 'imp-select', 'imp-text-field'].includes(element.localName)) {
+            knobHosts.push(element.localName)
+          }
+          if (element.shadowRoot) walkKnobs(element.shadowRoot)
+        }
+      }
+      walkKnobs(shadow.querySelector('.card'))
+      steps.knobs = knobHosts.length === 0 ? 'none' : knobHosts.join(', ')
       const editor = labelled(shadow.querySelector('.card'), 'imp-code-editor', 'Tokens')
       const shown = JSON.parse(editor.value)
-      steps.json = `${Object.keys(shown).length} tokens, primary ${shown['color-primary']}, ` +
-        `radius ${shown['radius-item']}`
+      steps.json = `${Object.keys(shown).length} tokens, primary ${shown['color-primary']}`
       change(
         editor,
         JSON.stringify({ ...shown, 'color-primary': '#0f766e', 'color-surface': '#fff7ed' }),
       )
       steps.jsonSurface = token('color-surface')
       steps.jsonPrimary = token('color-primary')
-      steps.jsonKnob = labelled(shadow.querySelector('.card'), 'imp-text-field', 'Primary').value
       change(editor, '{ not json')
       steps.jsonBroken = token('color-surface')
       steps.draftKeys = Object.keys(localStorage).filter((key) =>
@@ -2898,11 +2912,11 @@ Deno.test('the review widget edits the applied theme of an app, and the draft su
       `primary before editing: ${edited.before}`,
       `actions: ${edited.actions}`,
       `view after Theme editor: ${edited.view} (aria-pressed ${edited.pressed})`,
+      `panel background: ${edited.panel}`,
       `editor mounted in the panel: ${edited.editor}`,
-      `after picking a primary: ${edited.primary} (hover ${edited.derived})`,
-      `after picking radius none: ${edited.flat}`,
+      `knobs in the panel: ${edited.knobs}`,
       `tokens editor shows: ${edited.json}`,
-      `after editing the JSON: surface ${edited.jsonSurface}, primary ${edited.jsonPrimary}, primary knob ${edited.jsonKnob}`,
+      `after editing the JSON: surface ${edited.jsonSurface}, primary ${edited.jsonPrimary}`,
       `surface while the JSON is broken: ${edited.jsonBroken}`,
       `draft stored under: ${edited.draftKeys}`,
       `editor removed when closed: ${edited.closed === 0}`,
@@ -3395,6 +3409,11 @@ import { mockModule } from 'imp/preview'
 
 export const name = 'Select'
 export const group = 'Inputs'
+export const description = \`
+  Picks one plan.
+
+  - the **free** plan is the default
+\`
 
 mockModule('./http.js', ({ spy }) => ({ load: spy(async () => []) }))
 
@@ -3467,6 +3486,28 @@ export const one = 1
   check(local.specifier === null, `a local object has no specifier: ${JSON.stringify(local)}`)
 })
 
+Deno.test('imp preview renders a multiline description as markdown', () => {
+  const declared = scanPreviewSource(
+    'export const description = `\n  A number.\n\n  - counts up\n`\nexport const one = 1\n',
+  ).declared
+  check(
+    declared.description === 'A number.\n\n- counts up',
+    `a template literal is dedented: ${JSON.stringify(declared.description)}`,
+  )
+  const html = renderDescription(declared.description)
+  check(html.includes('<p>A number.</p>'), `a paragraph is rendered: ${html}`)
+  check(html.includes('<li>counts up</li>'), `a list is rendered: ${html}`)
+  check(
+    scanPreviewSource('export const description = `count: ${1}`\n').declared.description ===
+      undefined,
+    'a template literal with a substitution is ignored',
+  )
+  check(
+    previewIdentity('components/counter.preview.js').description === null,
+    'a preview file without a description has none',
+  )
+})
+
 Deno.test('imp preview renders a sidecar to HTML with its links retargeted', () => {
   const html = renderSkill('# counter - a number\n\nSee [state](state.md) and `demo.count`.\n')
   check(html.includes('<h1>counter - a number</h1>'), `a heading is rendered: ${html}`)
@@ -3513,72 +3554,52 @@ Deno.test('a derived theme puts white text on a saturated primary and dark text 
   check(onPrimary('#0ea5e9') !== '#ffffff', 'a pale sky blue gets dark text')
 })
 
-Deno.test('the theme editor exports a theme file that imports back as two themes', async () => {
-  const shared = {
-    'font-family': "'Inter', system-ui, sans-serif",
-    'font-family-mono': "'JetBrains Mono', ui-monospace, monospace",
-    'background-app': 'linear-gradient(#fff, #eee)',
-    'font-weight-bold': '500',
+Deno.test('the theme editor exports a theme file that imports back as one theme', async () => {
+  const tokens = {
+    ...buildTokens({
+      primary: '#3b6fe0',
+      secondary: '#6b7280',
+      radius: 'large',
+      shadow: 'strong',
+      mode: 'light',
+      overrides: {
+        'font-family': "'Inter', system-ui, sans-serif",
+        'background-app': 'linear-gradient(#fff, #eee)',
+        'font-weight-bold': '500',
+      },
+    }),
+    'color-green': '#12b76a',
   }
-  const tokensFor = (mode, primary, secondary) =>
-    buildTokens({ primary, secondary, radius: 'large', shadow: 'strong', mode, overrides: shared })
-  const draft = {
-    mode: 'light',
-    light: { tokens: tokensFor('light', '#3b6fe0', '#6b7280') },
-    dark: { tokens: { ...tokensFor('dark', '#7c9cff', '#94a3b8'), 'color-green': '#12b76a' } },
-  }
-  const source = themeFileSource('acme', draft)
+  const source = themeFileSource('acme', { tokens })
   const module = await import(`data:text/javascript,${encodeURIComponent(source)}`)
+  const theme = module.default
 
-  check(module.default === module.light, 'the default export is the light theme')
-  check(colorSchemeOf(module.light.tokens) === 'light', 'the light theme has a light surface')
-  check(colorSchemeOf(module.dark.tokens) === 'dark', 'the dark theme has a dark surface')
-  check(module.light.name === 'acme-light', `unexpected theme name ${module.light.name}`)
-
-  for (const theme of [module.light, module.dark]) {
-    const missing = Object.keys(defaultTokens()).filter((name) => !(name in theme.tokens))
-    check(missing.length === 0, `the exported theme omits ${missing.join(', ')}`)
-  }
-
+  check(theme.name === 'acme', `unexpected theme name ${theme.name}`)
+  check(colorSchemeOf(theme.tokens) === 'light', 'the theme keeps its light surface')
+  const missing = Object.keys(defaultTokens()).filter((name) => !(name in theme.tokens))
+  check(missing.length === 0, `the exported theme omits ${missing.join(', ')}`)
   check(
-    module.light.tokens['color-primary'] === '#3b6fe0',
-    'the light theme carries the primary the editor was given',
+    theme.tokens['color-primary'] === '#3b6fe0',
+    'the theme carries the primary the editor was given',
+  )
+  check(theme.tokens['color-green'] === '#12b76a', 'a palette colour edited by hand is kept')
+  check(
+    theme.tokens['color-success'] === 'var(--imp-color-green)' &&
+      theme.tokens['color-danger'] === 'var(--imp-color-red)',
+    'a colour role points at the palette, so editing a hue moves the role',
   )
   check(
-    module.dark.tokens['color-primary'] === '#7c9cff',
-    'the dark theme carries its own primary',
+    theme.tokens['background-app'] === 'linear-gradient(#fff, #eee)' &&
+      theme.tokens['font-weight-bold'] === '500',
+    'the tokens the editor has no knob for reach the exported theme',
   )
   check(
-    module.light.tokens['color-blue'] === module.dark.tokens['color-blue'],
-    'both themes share one palette block',
-  )
-  check(
-    module.light.tokens['color-green'] !== '#12b76a' &&
-      module.dark.tokens['color-green'] === '#12b76a' &&
-      module.dark.tokens['color-success'] === module.light.tokens['color-green'],
-    'a palette colour edited in one mode stays in that theme only, and a role keeps its literal',
-  )
-  check(
-    module.light.tokens['color-success'] === module.light.tokens['color-green'],
-    'the semantic aliases point at the palette, so editing a hue moves the role',
-  )
-  check(
-    module.dark.tokens['background-app'] === 'linear-gradient(#fff, #eee)' &&
-      module.dark.tokens['font-weight-bold'] === '500',
-    'the tokens the editor has no knob for reach both exported themes',
-  )
-  check(
-    module.light.tokens['radius-item'] === '10px' && module.light.tokens['shadow-md'] !== 'none',
+    theme.tokens['radius-item'] === '10px' && theme.tokens['shadow-md'] !== 'none',
     'the radius and shadow steps reach the exported tokens',
   )
   check(
-    module.light.tokens['font-family'] === "'Inter', system-ui, sans-serif" &&
-      module.dark.tokens['font-family-mono'] === "'JetBrains Mono', ui-monospace, monospace",
-    'both themes carry the fonts of the draft',
-  )
-  check(
-    source.indexOf('const fonts = {') < source.indexOf('const palette = {'),
-    'the fonts sit in one shared block above the palette',
+    theme.tokens['font-family'] === "'Inter', system-ui, sans-serif",
+    'the theme carries the font of the draft',
   )
   check(
     !source.includes("from 'imp"),
@@ -3779,6 +3800,46 @@ Deno.test('nothing in the library runs work when it is imported', async () => {
   }
   if (problems.length) {
     throw new Error(`the library is not tree-shakeable:\n  ${problems.join('\n  ')}`)
+  }
+})
+
+Deno.test('a bundle of codeBlock alone carries no editor', async () => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('build'), dir)
+  const build = async (entry, source) => {
+    await Deno.writeTextFile(join(dir, entry), source)
+    const result = await runImp(['build', entry, '--output', 'code'], dir)
+    if (result.code !== 0) throw new Error(`imp build ${entry} failed:\n${result.stderr}`)
+    return Deno.readTextFile(join(dir, 'code', entry))
+  }
+  try {
+    const listing = await build(
+      'block-only.js',
+      "import { codeBlock } from 'imp/std/display'\n\nexport const show = codeBlock\n",
+    )
+    const editor = await build(
+      'editor-only.js',
+      "import { codeEditor } from 'imp/std/inputs'\n\nexport const edit = codeEditor\n",
+    )
+    const problems = []
+    const SHARED_VIEW = 'imp.code.copy'
+    const EDITOR_ONLY = {
+      insertText: 'the key handler of the textarea',
+      'imp.codeEditor.keys': 'the editor',
+    }
+    if (!listing.includes(SHARED_VIEW)) problems.push('block-only.js carries no code view')
+    for (const [marker, what] of Object.entries(EDITOR_ONLY)) {
+      if (listing.includes(marker)) problems.push(`block-only.js carries ${what}`)
+      if (!editor.includes(marker)) problems.push(`editor-only.js carries no ${what}`)
+    }
+    if (!editor.includes(SHARED_VIEW)) problems.push('editor-only.js carries no code view')
+    if (problems.length) {
+      throw new Error(
+        `the code components are not split at the import:\n  ${problems.join('\n  ')}`,
+      )
+    }
+  } finally {
+    await Deno.remove(dir, { recursive: true })
   }
 })
 

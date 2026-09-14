@@ -37,9 +37,8 @@ The shared module is three functions, and no UI:
 - `pickElement({ ignore, onHover, onPick, onCancel })` runs the interaction of the pick. It handles
   the crosshair cursor, the element under the pointer, `Enter` to take the outlined element, and
   `Escape` to cancel. It returns a `stop` function. It draws nothing. It calls `onHover`, and the
-  consumer places its own outline with `placeOverElement`. So the widget of the dev server can carry
-  the colour of the development tools, and the component can carry the colour of a theme token, and
-  the behaviour is identical.
+  consumer places its own outline with `placeOverElement`. So the widget of the dev server and the
+  component each carry the colour of a theme token, and the behaviour is identical.
 - `captureReport(element)` returns the whole context, described below, as **plain data that is safe
   as JSON**. It does not return pre-formatted lines. The formatting is the job of the consumer. The
   dev server renders the data into the text format below. The `onSubmit` of an app gets the object.
@@ -73,12 +72,18 @@ customer who reports a bug.
   chosen element stays outlined. `Escape` cancels. `Enter` takes the highlighted element. `Ctrl` or
   `Cmd` with `Enter` saves. Nothing else is configurable. A review is one element and one comment,
   because anything more is a bug tracker.
-- **Theme editor hosts the theme editor of the library in the panel of the widget**, on a card in
-  the surface colour of the theme, for the theme that the app applied. The widget reaches it the
-  same way it reaches the picker, by a dynamic import of the served module, `/@imp/theme-editor.js`.
-  So the editor renders with the same copy of imp as the app. The design of the editor and of its
-  draft is in `theme-editor.md`. The button is absent on a preview page, which runs its own bundle
-  of the library and already has _edit theme_.
+- **The widget takes its colours from the applied theme.** Its panel, its buttons, its log rows and
+  its picker outline read the `--imp-*` custom properties of the page, which inherit into its shadow
+  root. So the widget is light on a light theme, dark on a dark one, and its accent is the primary
+  of the app. A page with no theme gets a dark set of fallback colours. A widget with a fixed dark
+  palette was a dark island on every light page, and the theme editor inside it re-skinned the app
+  and never the panel around itself.
+- **Theme editor hosts the theme editor of the library in the panel of the widget**, as its JSON
+  view alone, for the theme that the app applied. The widget reaches it the same way it reaches the
+  picker, by a dynamic import of the served module, `/@imp/theme-editor.js`. So the editor renders
+  with the same copy of imp as the app. The design of the editor and of its draft is in
+  `theme-editor.md`. The button is absent on a preview page, which runs its own bundle of the
+  library and already has _edit theme_.
 - **Console logs and Network logs show the person the same entries that the terminal gets, and
   nothing more.** The injected client already captures every console call and every page error
   before it posts them to the server. It also keeps them in the page, in a buffer capped at 2000

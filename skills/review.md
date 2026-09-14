@@ -16,8 +16,9 @@ clicks an element and types a comment. imp writes the result to `.imp/reviews/`.
 half of the development loop. [start](start.md) is the outbound half, through `imp logs`. The mark
 also opens **Console logs** and **Network logs**, which show the person the same entries in the
 page, live, since the page loaded. They add nothing that `imp logs` does not print. On a page of
-`imp start` the mark also opens the **Theme editor**, see [theming](theming.md). It writes no
-review.
+`imp start` the mark also opens the **Theme editor**, which is the whole theme as JSON, see
+[theming](theming.md). It writes no review. The widget takes its colours from the theme the app
+applied, and it is dark on a page with no theme.
 
 The widget shares its element picker and its capture with `bugReport`, see
 `imp skill std/bugReport`. `bugReport` is the component that an app ships to its own users. So a

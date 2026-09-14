@@ -1,6 +1,11 @@
 import { browserGlobals, Linter } from './vendor/eslint.js'
 import { bindingNamesOf } from './dead-code.js'
-import { GROUP_EXPORT, GROUPS_EXPORT, isPreviewMetadataExport } from './preview-metadata.js'
+import {
+  DESCRIPTION_EXPORT,
+  GROUP_EXPORT,
+  GROUPS_EXPORT,
+  isPreviewMetadataExport,
+} from './preview-metadata.js'
 
 const IMPORT_LINE_WIDTH = 100
 const COMPONENT_KEY = 'component'
@@ -80,6 +85,22 @@ const scenariosOf = (program) => {
 const stringLiteralOf = (node) =>
   node?.type === 'Literal' && typeof node.value === 'string' ? node.value : null
 
+const textLiteralOf = (node) => {
+  const literal = stringLiteralOf(node)
+  if (literal !== null) return literal
+  const isPlainTemplate = node?.type === 'TemplateLiteral' && node.expressions.length === 0
+  return isPlainTemplate ? node.quasis[0].value.cooked : null
+}
+
+const indentOf = (line) => line.match(/^[ \t]*/)[0].length
+
+const dedent = (text) => {
+  const lines = text.replace(/^[ \t]*\n/, '').trimEnd().split('\n')
+  const indents = lines.filter((line) => line.trim() !== '').map(indentOf)
+  const shortest = indents.length === 0 ? 0 : Math.min(...indents)
+  return lines.map((line) => line.slice(shortest)).join('\n')
+}
+
 const importSpecifierOf = (variables, name) => {
   const definition = variables.find((variable) => variable.name === name)?.defs[0]
   return definition?.type === 'ImportBinding' ? stringLiteralOf(definition.parent.source) : null
@@ -100,11 +121,13 @@ const declaredOf = (program, variables) => {
     if (declarator.id.type !== 'Identifier' || declarator.init === null) continue
     const { name } = declarator.id
     if (!isPreviewMetadataExport(name)) continue
-    if (name === GROUP_EXPORT) declared[name] = groupReferenceOf(declarator.init, variables)
-    else {
-      const literal = stringLiteralOf(declarator.init)
-      if (literal !== null) declared[name] = literal
+    if (name === GROUP_EXPORT) {
+      declared[name] = groupReferenceOf(declarator.init, variables)
+      continue
     }
+    const text = textLiteralOf(declarator.init)
+    if (text === null) continue
+    declared[name] = name === DESCRIPTION_EXPORT ? dedent(text) : text
   }
   return declared
 }

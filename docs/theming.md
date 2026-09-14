@@ -251,60 +251,58 @@ edit to the file reloads the page with the new tokens. See **[`imp preview`](cli
 
 ## How to write a theme with the theme editor
 
-You do not have to write ninety tokens to get a theme. imp ships a **theme editor**. In
+You do not have to write every token by hand to get a theme. imp ships a **theme editor**. In
 `imp preview` it is beside the theme switcher. Open it with _edit theme_. In `imp start` it is
 behind the imp mark in the corner of your app. Press the mark, then **Theme editor**. Both open the
 same editor. The first shows the standard components under your theme. The second shows your own
-screens. It has six knobs, and under them the whole theme as JSON. It asks for six things:
+screens. It edits the theme that is applied. In `imp preview` that is the theme in the sidebar. In
+your app it is the theme that `init` applied. To write a dark theme, select a dark theme first. In
+`imp preview` the editor has two tabs. **Knobs** asks for seven things, and **Tokens** holds the
+whole theme as JSON. In your app the widget shows **Tokens** alone, because that is where you tune
+one token against your real screens:
 
 | Knob              | Choices                    | What it drives                                             |
 | ----------------- | -------------------------- | ---------------------------------------------------------- |
-| **Mode**          | light, dark                | Which of the two themes you are editing                    |
 | **Primary**       | any color                  | The accent: buttons, links, focus rings                    |
 | **Secondary**     | any color                  | The muted tone, and the hue of every surface, border, text |
 | **Font**          | any font stack             | `font-family`, the text of every component                 |
 | **Mono font**     | any font stack             | `font-family-mono`, code and monospaced text               |
 | **Border radius** | none, small, medium, large | `radius-item` and `radius-container`, as one step          |
 | **Shadow**        | none, soft, strong         | The three `shadow-*` steps                                 |
+| **Shadow colour** | any color                  | `color-shadow`, the colour every shadow step casts         |
 
-imp **derives** everything else. From the primary colour it builds the hover step and the active
-step, and it selects a readable `color-on-primary`. That is white when white reaches a contrast of
-3:1 against the primary, and a near-black tint of the same hue otherwise. So a saturated red or
-green gets white text, and a pale amber gets dark text. When the automatic choice is not what your
-brand wants, set `color-on-primary` by hand in the JSON. From the secondary colour imp builds the
-surface, sunken, hover, border and text colours. They then share one hue, and they land at a
-lightness that is safe for the contrast of the mode that you are in. The page re-skins while you
-type, on the real components, and your choices survive a reload.
+imp **derives** everything else. From the primary colour it selects a readable `color-on-primary`.
+That is white when white reaches a contrast of 3:1 against the primary, and a near-black tint of the
+same hue otherwise. So a saturated red or green gets white text, and a pale amber gets dark text.
+When the automatic choice is not what your brand wants, set `color-on-primary` by hand in the JSON.
+From the secondary colour imp builds the surface, sunken, hover, border and text colours. They then
+share one hue, and they land at a lightness that is safe for the contrast of a light theme or a dark
+one, as the theme is. The page re-skins while you type, on the real components, and your choices
+survive a reload.
 
-**Tokens** is the whole theme of the mode that you edit, as JSON, in a code editor. Every token that
-the knobs drive is there, and every token that they do not, such as `background-app`, a spacing step
-or a font weight. Edit any value. The page re-skins as soon as the JSON parses, and an edit that
-does not parse yet changes nothing. The two views show one state. An edit of `color-primary` in the
-JSON moves the **Primary** knob. A knob rewrites the tokens that it drives, in the mode that you
-edit, and it leaves every other token as you set it. So set the accent with the knob, then tune
-`color-primary-hover` by hand, and the hand edit holds until you move the knob again.
+**Tokens** is the second tab. It holds the whole theme as JSON, in a code editor that grows with the
+text. Every token that the knobs drive is there, and every token that they do not, such as
+`background-app`, a spacing step or a font weight. Edit any value. The page re-skins as soon as the
+JSON parses, and an edit that does not parse yet changes nothing. The two views show one state. An
+edit of `color-primary` in the JSON moves the **Primary** knob. A knob rewrites the tokens that it
+drives, and it leaves every other token as you set it. So set the accent with the knob, then tune
+`color-on-primary` by hand, and the hand edit holds until you move the knob again.
 
 The editor changes nothing about what a theme _is_. Press **copy**, or **download theme.js**, and
-you get an ordinary module. It is the same flat token map that this page describes, with a `light`
-export and a `dark` export. Save it into your app, and pass it to `init`:
+you get an ordinary module. It is the same flat token map that this page describes, as one theme
+object, with the name of the theme that you edited. Save it into your app, and pass it to `init`:
 
 ```js
 import { init } from 'imp'
-import light, { dark } from './theme.js'
+import theme from './theme.js'
 
-await init({ theme: light })
-
-// later, from a theme switcher:
-applyTheme(dark)
+await init({ theme })
 ```
 
-From that point the generated file is yours to edit by hand, and its layout suits that. The two
-fonts sit at the top, as a shared `fonts` object, and the 31 named palette colours follow, as a
-shared `palette` object. Both themes spread both objects in. So a change to `color-grass` changes it
-for light and dark at the same time, and so does a change of font. A font or a palette colour that
-you set in one mode only is listed in that theme alone. A web font that you name in the editor shows
-on the page only when it is loaded there. See **[Fonts](#fonts)**. The file is a starting point, not
-a format that the editor owns.
+For a light theme and a dark theme, edit each one in turn, and save two files. A theme switcher then
+passes the second one to `applyTheme`. From that point the generated file is yours to edit by hand.
+A web font that you name in the editor shows on the page only when it is loaded there. See
+**[Fonts](#fonts)**. The file is a starting point, not a format that the editor owns.
 
 ## Token names
 
@@ -326,17 +324,20 @@ are `space-page`, `shadow-sm`, `breakpoint-desktop` and the palette. This page n
 These are the tokens that the built-in themes ship today. A theme of your own must define all of
 them:
 
-| Group      | Tokens                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                                                |
-| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
-| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                            |
-| Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`                                                                                                                                                                                                                     |
+| Group      | Tokens                                                                                                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                   |
+| Color      | `color-primary`, `color-on-primary`, `color-secondary`, `color-danger`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                 |
+| Surface    | `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                     |
+| Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink` |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`       |
 
 `color-on-primary` and `color-on-danger` are the text colours that sit **on** those backgrounds. So
-a theme can select a readable pair, and it does not have to hope that white works. `color-secondary`
-is the muted tone, for secondary text and for a link with less emphasis. `color-surface` is a panel.
+a theme can select a readable pair, and it does not have to hope that white works. There is no hover
+token and no active token. A component mixes those two steps from the base colour and `color-text`
+with `color-mix()`. So the step goes darker in a light theme and lighter in a dark theme, and a
+theme sets one colour per role. A link and the focus ring take `color-primary`. `color-secondary` is
+the muted tone, for secondary text and for a link with less emphasis. `color-surface` is a panel.
 `color-surface-sunken` is the page behind the panel. `color-surface-hover` is the tint under the
 pointer. `background-app` is what the app frame paints under everything. It is the one token that is
 a CSS `background` and not a colour. So it takes a gradient or an image as readily as a flat value.
@@ -344,27 +345,29 @@ The built-in themes set it to their `color-surface`. See
 **[Standard components](std-components.md)** for how the library uses these tokens. See the
 [component gallery](/components) to watch one token change land on every component at the same time.
 
-The **palette** is 31 named colours, with one value each. Use them where an app needs a specific hue
+The **palette** is 16 named colours, with one value each. Use them where an app needs a specific hue
 in place of a role. Examples are a tag per project, a series in a chart, and the background of an
 avatar. No component paints with a palette colour on its own. `tag` and `icon` offer the palette
 names as their `color` options. So a hue that you select there is the same hue that your own CSS
-reads. `color-success`, `color-warning` and `color-info` are aliases of three palette colours, which
-are `color-green`, `color-amber` and `color-blue`. `color-danger` derives from `color-red`. So a
-change to a hue in one place moves the role with it. imp selects every palette value to carry white
-text, and to stay legible on a light surface and on a dark surface. So the same block of colours
-serves both themes.
+reads. The four colour roles point at the palette. `color-danger` is `var(--imp-color-red)`,
+`color-success` is `var(--imp-color-green)`, `color-warning` is `var(--imp-color-amber)` and
+`color-info` is `var(--imp-color-blue)`. So a change to a palette colour moves its role with it. Set
+a role to another reference, or to a literal colour, when a brand needs a different hue there. imp
+selects every palette value to read as a tint on a light surface and on a dark surface. So the same
+block of colours serves both themes.
 
 The three shadow steps and the radius scale set the depth and the softness of a theme. `shadow-sm`
 lifts a card off the page. The `card` component reads it, and so does a panel of your own.
 `shadow-md` lifts an element that floats near its trigger, such as the overflow menu of a button.
-`shadow-lg` lifts an overlay that sits above everything, such as a dialog or a drawer. There are two
-radius tokens, because a corner reads differently at two scales. `radius-item` rounds the small
-things that sit inside a page: a button, an input, a tag, a nav row, a tab. `radius-container`
-rounds the panels that hold them: a dialog, a drawer, a menu, the frame of a `shell`. It is always
-the larger of the two, so a panel and the button inside it never share one corner. `radius-full` is
-the pill, and it stays `9999px` in every theme. A theme that wants flat, square chrome sets every
-shadow to `none` and both radius tokens to `0`. Every component then follows, with no CSS in your
-app.
+`shadow-lg` lifts an overlay that sits above everything, such as a dialog or a drawer. Each step
+casts `color-shadow` at its own opacity. A light theme starts with a near-black shadow. A dark theme
+starts with a white one, because a black shadow is invisible on a dark surface. Set `color-shadow`
+to any colour, and every step follows. There are two radius tokens, because a corner reads
+differently at two scales. `radius-item` rounds the small things that sit inside a page: a button,
+an input, a tag, a nav row, a tab. `radius-container` rounds the panels that hold them: a dialog, a
+drawer, a menu, the frame of a `shell`. It is always the larger of the two, so a panel and the
+button inside it never share one corner. A theme that wants flat, square chrome sets every shadow to
+`none` and both radius tokens to `0`. Every component then follows, with no CSS in your app.
 
 The spacing scale is **fluid**. `space-3` and the larger steps are `clamp()` values that grow with
 the viewport. So a gap that you set once is tighter on a phone and wider on a monitor, and you write

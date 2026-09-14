@@ -47,7 +47,8 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`,
   `radioGroup`, `submitButton` and `resetButton`. They opened the `imp/std/inputs` subpath, and they
   settled the contract that binds a field, see `adr/state-driven-forms.md`. `codeEditor` has landed.
-  It is the tokens editor of the theme editor, see `adr/code-editor-textarea-mirror.md`. _Form
+  It is the tokens editor of the theme editor, see `adr/code-editor-textarea-mirror.md`.
+  `richTextEditor` has landed, see `adr/rich-text-editor-contenteditable-markdown.md`. _Form
   handling_, below, gives the details.
 - **Display** - `badge`, `avatar`, `popover`, `accordion`, `descriptionList`, `statistic`,
   `timeline` _(later)_, `image`, which previews and zooms, _(later)_, `calendar` _(later)_ and
@@ -324,9 +325,8 @@ extends `docs/std-components.md` with a section of its own, as it lands.
   markers of a tier are a first proposal, and not a commitment.
 - **The accessibility baseline.** That is the contract about ARIA, and about the keyboard, that
   every interactive component must meet. The General group set the first precedent. It renders the
-  native element wherever one exists. It draws a `:focus-visible` ring from
-  `--imp-color-focus-ring`. It mirrors a state into ARIA, such as `aria-busy` on a button that
-  loads. The full contract is still open. That covers the labelling, the roving focus, and the
-  dismissal with Escape.
+  native element wherever one exists. It draws a `:focus-visible` ring from `--imp-color-primary`.
+  It mirrors a state into ARIA, such as `aria-busy` on a button that loads. The full contract is
+  still open. That covers the labelling, the roving focus, and the dismissal with Escape.
 - **A path that calls `console.warn`** goes through the built-in logger, see
   `adr/built-in-logger.md`. A warning about a duplicate key, which `each` raises, is an example.

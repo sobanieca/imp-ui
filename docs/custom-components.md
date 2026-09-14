@@ -33,7 +33,7 @@ This is the map from what you draw to the token that draws it:
 | The page behind a panel      | `color-surface-sunken`                        |
 | The tint under a pointer     | `color-surface-hover`                         |
 | Body text, muted text        | `color-text`, `color-secondary`               |
-| A link                       | `color-link`, `color-link-hover`              |
+| A link                       | `color-primary`                               |
 | A rule or a border           | `border-width` with `color-border`            |
 | The corner of a small thing  | `radius-item`                                 |
 | The corner of a panel        | `radius-container`                            |
@@ -45,7 +45,7 @@ This is the map from what you draw to the token that draws it:
 | Type                         | `font-family`, `font-size-*`, `font-weight-*` |
 | Code                         | `font-family-mono`                            |
 | A transition                 | `duration-fast`, `duration-medium`            |
-| The focus ring               | `focus-ring-width` with `color-focus-ring`    |
+| The focus ring               | `focus-ring-width` with `color-primary`       |
 | A disabled control           | `disabled-opacity`                            |
 
 A panel of your own reads like this. It is the same CSS that the `card` component uses:
@@ -133,7 +133,7 @@ every app that renders your component clears the bar without work.
   refer to each other must be rendered by the same component. Settle this when you design the props.
   It cannot be fixed later without a change to the API.
 - **Draw the focus ring with `outline` on `:focus-visible`**, from `focus-ring-width` and
-  `color-focus-ring`. Never remove the outline without a replacement.
+  `color-primary`. Never remove the outline without a replacement.
 
 ## Follow the shared contract
 

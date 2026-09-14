@@ -20,6 +20,16 @@ that a person can link to, and text that stays selectable. GitHub sets the patte
 `code`, one `span` per line, and a `span` per coloured token. The text of the lines is the source,
 unchanged, so a selection and a copy give the source back.
 
+- **The line rendering is one internal code view, shared with `codeEditor`.** The view owns the
+  tokenized lines, the number rail, the copy button and the colour rules. It knows nothing about
+  editing or about forms. `codeBlock` puts it in a static `pre`. `codeEditor` puts it in the mirror
+  behind a `textarea`, see `code-editor-textarea-mirror.md`. So one rule set decides how a line
+  looks, and the read-only listing and the input cannot drift apart.
+- **They stay two exports, in two entry points.** A bundler drops an export, not a prop value. One
+  `code({ editable })` component would pull the textarea, the keys, the form shell and the field
+  binding into an app that only shows a listing, because esbuild cannot drop a branch that a value
+  can reach. Two exports split the bundle at the import, the same way `field.js` and `shell.js` sit
+  under every input, see `tree-shakeable-library.md`.
 - **imp ships its own scanner, with no highlighting dependency.** One generic scanner reads a
   language from a small table: comment markers, string quotes, keyword lists, and a few flags such
   as `$` variables, `@` decorators or case-insensitive keywords. The table covers the languages a
@@ -35,7 +45,7 @@ unchanged, so a selection and a copy give the source back.
   that darkens the colour, and on a dark theme it lightens it, so one rule reads on both, and a new
   theme recolours the code with the rest of the app. There is no theme prop, and no separate code
   theme. In forced-colours mode the tokens fall back to the system text colour.
-- **Line numbers are CSS counters on anchors, and the anchors are links.** A `::before` rule paints
+- **Line numbers are CSS counters, and in `codeBlock` they are anchors.** A `::before` rule paints
   the number, so the number is never part of the text, and a copy never includes it. Each anchor
   points at `#L<n>`, or `#<id>-L<n>` when the block has an `id`. A plain click writes the fragment
   into the address with `history.replaceState`, so it does not add a history entry and does not wake
@@ -43,11 +53,13 @@ unchanged, so a selection and a copy give the source back.
   `hashchange`, and once after mount, when the block scrolls the first selected line into view. The
   browser cannot do that scroll itself, because the line lives in a shadow root and fragment
   navigation does not cross one (`shadow-dom-isolation.md`). The number rail is sticky, so it stays
-  in view while long lines scroll sideways.
-- **The copy button is `button`, in a `tooltip`, and it copies the source prop.** It does not read
-  the DOM, so what it copies is exactly what was passed in, without numbers and without the trimming
-  of a selection. The label switches to "Copied" for a moment, in the `aria-label` and in a live
-  region, and every word goes through `t()` (`translatable-by-default.md`).
+  in view while long lines scroll sideways. The fragment stays in `codeBlock`. A line of a text that
+  somebody is editing has no stable address, so the editor renders a plain `span` in the rail.
+- **The copy button is `button`, in a `tooltip`, and it copies the text, not the DOM.** `codeBlock`
+  gives it the source prop and `codeEditor` gives it the value of the textarea. So what it copies
+  holds no line number and no trimming of a selection. The label switches to "Copied" for a moment,
+  in the `aria-label` and in a live region, and every word goes through `t()`
+  (`translatable-by-default.md`).
 - **The code is the `code` prop, a string or a state.** A child cannot be a state in imp, and a live
   source matters for a settings page that builds a snippet from the form beside it. imp drops one
   line break at each end of the string, so a template literal can open and close on its own line,
@@ -57,7 +69,8 @@ unchanged, so a selection and a copy give the source back.
 
 An app pays about 50 KB of unminified source for the component, the scanner and the language table,
 and only when it calls `codeBlock`. It pays nothing for languages it does not show, because the
-scanner is one function and the tables are strings.
+scanner is one function and the tables are strings. An app that calls both components pays for the
+view once.
 
 The highlighting is approximate. Nested template literals, heredocs, regular expressions in unusual
 positions and language extensions such as JSX are coloured as plain text or as the nearest simple
@@ -66,6 +79,9 @@ token. A person who needs exact grammar-driven highlighting has to bring a libra
 
 Two blocks on one page must not both be anonymous with line numbers, because `#L12` would select a
 line in each. The `id` prop exists for that, and the skill says so.
+
+A change to the code view lands in the listing and in the input at the same time, so every such
+change needs the tests of both.
 
 The preview page uses the component twice: for the call site of a scenario and for every fenced
 block of a skill (`component-preview.md`). So a regression in `codeBlock` shows up in the tool that

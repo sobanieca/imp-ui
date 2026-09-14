@@ -1,5 +1,5 @@
 scenarios: basic, lazy, plain, arrowWithBody, declared, labelled, labelledLazy, shadowed, reexported
-declared: {"name":"Select","group":{"literal":"Inputs"}}
+declared: {"name":"Select","group":{"literal":"Inputs"},"description":"Picks one plan.\n\n- the **free** plan is the default"}
 --- basic
 import { form, select } from 'imp/std/inputs'
 

@@ -325,7 +325,9 @@ the line in the terminal, and the worker request fails with the same message. Un
 Every page that the dev server serves carries a small **review widget**. It is the imp mark in the
 bottom corner. Drag it to any place on the page when it covers something, and imp remembers the
 place across reloads. Click it, and four round buttons appear: **Add review**, **Console logs**,
-**Network logs** and **Theme editor**.
+**Network logs** and **Theme editor**. The panel and the buttons take their colours from the theme
+that your app applied, so the widget is light on a light theme and dark on a dark one. A page with
+no theme gets a dark widget.
 
 **Add review** starts a selection. The next element that you click on the page is the element that
 you review. Move the pointer to see what imp is about to select, because imp outlines the element
@@ -346,11 +348,12 @@ a reload starts the list again. The terminal and `imp logs` keep the whole sessi
 glance, not a debugger. For a stack trace, a request body or a timing chart, open the developer
 tools of the browser.
 
-**Theme editor** opens the same editor that `imp preview` has, in the panel of the widget, for the
-theme that your app applied. Pick a primary and a secondary colour, a font, a mono font, a border
-radius step and a shadow step, or edit any token in the JSON under the knobs, and the app re-skins
-as you type, on its own screens. imp keeps the draft for that theme across reloads, so a save in
-your editor does not undo your picks. **copy** or **download theme.js** gives you the theme as an
+**Theme editor** opens the **Tokens** view of the editor that `imp preview` has, in the panel of the
+widget, for the theme that your app applied. It is the whole theme as JSON. Edit any token, and the
+app re-skins as soon as the JSON parses, on its own screens. The knobs that derive a theme from two
+colours are in `imp preview`, where you start a theme. The widget is where you tune one token
+against your real screens. imp keeps the draft for that theme across reloads, so a save in your
+editor does not undo your edits. **copy** or **download theme.js** gives you the theme as an
 ordinary module. Pass it to `init`, then press **reset** to drop the draft. See
 **[the theme editor](#the-theme-editor)** under `imp preview` for the knobs and the file.
 
@@ -988,19 +991,43 @@ declare. A component with no skill file says so in both places.
 
 ### Naming the component
 
-Two export names are reserved, and neither of them is a scenario. They are how the component
+Three export names are reserved, and none of them is a scenario. They are how the component
 introduces itself on the page:
 
 ```js
 export const name = 'Todo list'
 export const group = 'Widgets'
+export const description = 'A checkable list of todos, with an empty and a loading state.'
 ```
 
 `name` is the label in the catalog, in the search, in the page head and in the browser tab. `group`
-is the group that the component is listed under. Each one is optional, and each one is a plain
-string. Declare none of them, and imp falls back to the name of the file and the folder that the
-file sits in. So `src/inputs/text-field.preview.js` is `text_field` under `inputs`. That is
-readable, but it is not what you would say out loud.
+is the group that the component is listed under. `description` is a sentence for a person, under the
+title of the page. Each one is optional. Declare none of them, and imp falls back to the name of the
+file and the folder that the file sits in. So `src/inputs/text-field.preview.js` is `text_field`
+under `inputs`. That is readable, but it is not what you would say out loud.
+
+### The description
+
+The `description` is written for a person who opens the page. It is markdown, so it can carry a
+list, a link, a bold word and inline code. Write more than a sentence with a template literal. imp
+removes the indentation, so the text lines up with your code:
+
+```js
+export const description = `
+  A checkable list of todos.
+
+  - **empty** shows the placeholder
+  - **busy** shows the spinner while the request is open
+
+  The list keeps its scroll position across a reload.
+`
+```
+
+The text must be a literal. A template literal with a `${...}` substitution in it is not, so imp
+ignores it and the page shows no description.
+
+The description is for a person. The agent reads the `*.skill.md` file of the component, which the
+**Skill** tab of the same page shows.
 
 The grouping comes from `group`, not from the folder. So you can organize the catalog in the way
 that you talk about the components, and not in the way that the files happen to sit. Two files in
@@ -1159,26 +1186,26 @@ to work on a theme. See **[Theming](theming.md)**.
 
 ### The theme editor
 
-**edit theme**, beside the theme button, opens an editor. It is the same editor that the review
-widget of `imp start` opens on a page of your app. It is for writing a theme, not for selecting one.
-It asks for the mode that you edit, which is light or dark, a **primary** colour and a **secondary**
-colour, a **font** and a **mono font**, a **border radius** step and a **shadow** step. It derives
-every other colour token from those two colours. That is the hover step and the active step, a
-readable on-primary colour, and the surfaces, the borders and the text, which share the hue of the
-secondary colour. Under the knobs, **Tokens** holds the whole theme of that mode as JSON. Edit any
-value there, and the page re-skins as soon as the JSON parses. A token that has no knob, such as
-`background-app`, a font weight or a spacing step, starts as the selected theme sets it, and the
-exported file carries it too. A knob rewrites the tokens that it drives, and it leaves the rest as
-you set them.
+**edit theme**, beside the theme button, opens an editor. The review widget of `imp start` opens the
+**Tokens** view of the same editor on a page of your app. It edits the theme that the theme button
+selected, and it starts from the tokens of that theme. So select a dark theme to write a dark one.
+It asks for a **primary** colour and a **secondary** colour, a **font** and a **mono font**, a
+**border radius** step, a **shadow** step and a **shadow colour**. It derives every other colour
+token from the two base colours. That is a readable on-primary colour, and the surfaces, the borders
+and the text, which share the hue of the secondary colour. Those knobs sit on the **Knobs** tab. The
+**Tokens** tab holds the whole theme as JSON. Edit any value there, and the page re-skins as soon as
+the JSON parses. A token that has no knob, such as `background-app`, a font weight or a spacing
+step, starts as the selected theme sets it, and the exported file carries it too. A knob rewrites
+the tokens that it drives, and it leaves the rest as you set them.
 
 The page re-skins while you type, on real components. imp remembers your choices per theme, across a
 reload. The draft belongs to the name of the applied theme, so the same draft follows that theme
 into your app when you open the editor there. When the theme looks correct, **copy** or **download
-theme.js** gives you an ordinary theme module, with a `light` export and a `dark` export. You drop
-it into your app and pass it to `init`. The editor prints the two lines that do that, in the panel.
-The editor produces a plain file, with no imp import in it. So from that point the file is yours to
-edit by hand. The two fonts and the 31 named palette colours sit at the top of the file for exactly
-that. **reset** drops the draft, and returns to the selected theme. See **[Theming](theming.md)**.
+theme.js** gives you an ordinary theme module, with the theme as its default export. You drop it
+into your app and pass it to `init`. The editor prints the two lines that do that, in the panel. The
+editor produces a plain file, with no imp import in it. So from that point the file is yours to edit
+by hand. **reset** drops the draft, and returns to the selected theme. See
+**[Theming](theming.md)**.
 
 ### The page around a preview - `preview.entry`
 

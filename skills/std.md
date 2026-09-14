@@ -4,15 +4,15 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import               | Exports                                                                                                                                                                   | Per-component skill                                                                                                                                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                               | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                               |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                              | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                              |
-| `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `codeEditor`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/codeEditor`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `tag`, `tooltip`                                                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/tag`, `std/tooltip`                                                                                                                                                       |
-| `imp/std/navigation` | `tabs`                                                                                                                                                                    | `imp skill std/tabs`                                                                                                                                                                                                                    |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                                         | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                                         |
-| `imp/std/feedback`   | `bugReport`                                                                                                                                                               | `imp skill std/bugReport`                                                                                                                                                                                                               |
+| Import               | Exports                                                                                                                                                                                     | Per-component skill                                                                                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                     |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                    |
+| `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `codeEditor`, `richTextEditor`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/codeEditor`, `std/richTextEditor`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`                                                                                                                             | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`                                                                                                                                                             |
+| `imp/std/navigation` | `tabs`                                                                                                                                                                                      | `imp skill std/tabs`                                                                                                                                                                                                                                          |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                                                               |
+| `imp/std/feedback`   | `bugReport`                                                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                                                                     |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -447,7 +447,7 @@ tag({ color: 'green', size: 'sm' }, 'Shipped')
 | `size`  | `'sm'`, `'md'`, `'lg'`               | `'md'`      | The type scale |
 
 The label is the children, not a prop. To render a live label, use `count.text()`. `color` names one
-of the 31 palette colours of the theme, such as `'red'`, `'green'` or `'blue'`. It is never a CSS
+of the 16 palette colours of the theme, such as `'red'`, `'green'` or `'blue'`. It is never a CSS
 colour. The pill is a faint tint of that colour with a border and text in the same hue, so every
 pill stays readable in a light theme and in a dark theme. A nav row and a group of `shell` take the
 same value as plain data, in `tag: { text, color }`. imp draws it at the small size, to match the
@@ -503,6 +503,8 @@ codeBlock({ language: 'bash', lineNumbers: true, id: 'install', code: script })
   to `#L12-L20`. A page opened with that fragment highlights the lines and scrolls to them. Give
   every numbered block on a page an `id`.
 - **An unknown language is logged and shown as plain text.** Every colour comes from the theme.
+- **`codeEditor` renders a line the same way.** The two share one code view, and they are two
+  imports, so a listing does not ship the editor.
 
 Full manual: `imp skill std/codeBlock`.
 
@@ -624,28 +626,60 @@ Rules an agent gets wrong:
 import { codeEditor } from 'imp/std/inputs'
 
 codeEditor({ field: 'config', label: 'imp.json', language: 'json', rows: 8 })
-codeEditor({ value: source, label: 'Script', language: 'js' })
+codeEditor({ value: source, label: 'Script', language: 'js', lineNumbers: true })
 ```
 
-| Prop       | Values                         | Default  | Notes                                        |
-| ---------- | ------------------------------ | -------- | -------------------------------------------- |
-| `field`    | dot path                       | -        | Binds to that path of the surrounding form   |
-| `value`    | a state, or a plain string     | -        | Standalone use, when there is no form        |
-| `language` | string                         | `'text'` | Same names as `codeBlock`                    |
-| `rows`     | positive integer               | `10`     | The visible lines. The editor scrolls inside |
-| `label`    | string, or a state holding one | -        | Rendered as a real `<label>`                 |
-| `readonly` | boolean                        | `false`  | Selectable, not editable                     |
+| Prop          | Values                         | Default  | Notes                                        |
+| ------------- | ------------------------------ | -------- | -------------------------------------------- |
+| `field`       | dot path                       | -        | Binds to that path of the surrounding form   |
+| `value`       | a state, or a plain string     | -        | Standalone use, when there is no form        |
+| `language`    | string                         | `'text'` | Same names as `codeBlock`                    |
+| `rows`        | positive integer               | `10`     | The visible lines. The editor scrolls inside |
+| `lineNumbers` | boolean                        | `false`  | Numbers the lines in a rail beside the text  |
+| `label`       | string, or a state holding one | -        | Rendered as a real `<label>`                 |
+| `readonly`    | boolean                        | `false`  | Selectable, not editable                     |
 
-- **It is `textArea` with a highlighted mirror behind the text.** Every form prop and rule of
-  `textArea` holds: `help`, `placeholder`, `required`, `disabled`, the validation props.
+- **It is `textArea` with the code view of `codeBlock` behind the text.** Every form prop and rule
+  of `textArea` holds: `help`, `placeholder`, `required`, `disabled`, the validation props.
 - **The value is the whole text, on every keystroke.** Put a parse check in `validate`. The error
   shows after the person leaves the editor, not while they type.
 - **Tab indents two spaces, Shift-Tab outdents, Enter keeps the indentation.** Escape, then Tab,
-  leaves the editor. Escape also closes a `dialog` or `drawer` around it.
-- **No line numbers, no copy button, no wrapping, no growth.** Set `rows`. Use `codeBlock` for a
-  read-only listing.
+  reaches the copy button, and the next Tab leaves. Escape also closes a `dialog` or `drawer`.
+- **The copy button is built in, and a line number is a plain number, not a link.** Use `codeBlock`
+  for a read-only listing with linkable lines.
+- **No wrapping and no growth.** Set `rows`.
 
 Full manual: `imp skill std/codeEditor`.
+
+## richTextEditor - from `imp/std/inputs`
+
+```js
+import { richTextEditor } from 'imp/std/inputs'
+
+richTextEditor({ field: 'body', label: 'Post', rows: 8 })
+richTextEditor({ value: note, label: 'Note', imageSize: 800 })
+```
+
+| Prop          | Values                         | Default | Notes                                         |
+| ------------- | ------------------------------ | ------- | --------------------------------------------- |
+| `field`       | dot path                       | -       | Binds to that path of the surrounding form    |
+| `value`       | a state, or a plain string     | -       | Standalone use, when there is no form         |
+| `rows`        | positive integer               | `6`     | The minimum height, in lines. It grows        |
+| `imageSize`   | positive integer               | `1280`  | Longest edge, in pixels, of an embedded image |
+| `label`       | string, or a state holding one | -       | Names the text box                            |
+| `placeholder` | string                         | -       | Shown while the editor is empty               |
+| `readonly`    | boolean                        | `false` | No toolbar. Selectable, not editable          |
+
+- **The person sees rich text. The value is a markdown string.** Bold, italic, strikethrough, code,
+  headings 1 to 3, quote, code block, lists, link, image, emoji and alignment. Every form prop and
+  rule of `textArea` holds: `help`, `required`, `disabled`, the validation props.
+- **An image is a data URL in the markdown.** imp resizes it in the browser to `imageSize` and
+  embeds it. A placeholder holds the place while it runs. There is no upload.
+- **An aligned paragraph is an HTML block**, `<p align="center">...</p>`. Markdown has no alignment.
+- **Render the value with a markdown renderer.** Never put it in `innerHTML`.
+- **Tab indents a list item, and nothing else.** Escape, then Tab, leaves a list.
+
+Full manual: `imp skill std/richTextEditor`.
 
 ## Navigation - from `imp/std/navigation`
 

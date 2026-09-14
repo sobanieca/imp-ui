@@ -19,7 +19,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                  |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                 |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...       |
-| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `tag`, `tooltip`                          |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`              |
 | `imp/std/navigation` | `tabs`                                                                       |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`            |
 | `imp/std/feedback`   | `bugReport`                                                                  |

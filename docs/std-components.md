@@ -52,7 +52,7 @@ split by group:
 | `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                                              |
 | `imp/std/layout`     | The app frame, the two arrangement primitives and the two overlay frames - `shell`, `flex`, `stack`, `dialog`, `drawer` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...                                     |
-| `imp/std/display`    | Components that present content - `card`, `codeBlock`, `emptyState`, `tag`, `tooltip`, ...                              |
+| `imp/std/display`    | Components that present content - `card`, `codeBlock`, `markdown`, `emptyState`, `tag`, `tooltip`, ...                  |
 | `imp/std/navigation` | Getting around the app - `tabs`, ...                                                                                    |
 | `imp/std/shell`      | Ready-made contents for the frame's regions - `appLogo`, `breadcrumbs`, `userCard`, ...                                 |
 | `imp/std/feedback`   | Telling the user what is happening, and hearing back - `bugReport`, ...                                                 |
@@ -807,7 +807,8 @@ theme recolours the code together with the rest of the app. There is nothing to 
 A settings page with custom CSS, a rule that a person writes as JSON, and a theme that somebody
 tunes by hand all need a place to edit code. `codeEditor` is that place. It is a form control, from
 `imp/std/inputs`. It binds to a field of a `form`, or to a state through `value`, exactly like
-`textArea`. Behind the text sits the highlighter of `codeBlock`, so the code is coloured as you
+`textArea`. Behind the text sits the code view of `codeBlock`, so the two render a line the same
+way: the same colours, the same number rail and the same copy button. The code is coloured as you
 type, in the language that you name.
 
 ```js
@@ -820,6 +821,9 @@ form(
 )
 ```
 
+The two are separate imports on purpose. A page that only shows a listing pays for the view and the
+highlighter, and not for the textarea, the keys and the form binding that the editor adds.
+
 **The control is a real `<textarea>`.** The caret, the selection, the undo history, the input method
 of a script, and the screen reader all come from the platform. imp adds only what the platform
 lacks: the colours, and three keys. Tab inserts two spaces, or indents every line of a selection,
@@ -829,8 +833,84 @@ person presses Escape, then Tab, to move on, and the control tells assistive tec
 **The value is the text, on every keystroke.** A parse check belongs in `validate`. The error shows
 after the person leaves the editor, as in every other control, because the text goes invalid on most
 keystrokes while somebody types. The editor has a fixed height of `rows` lines, and it scrolls
-inside. Long lines scroll sideways. For a listing with line numbers and a copy button, use
-`codeBlock`.
+inside. Long lines scroll sideways.
+
+**Line numbers and the copy button work here too.** Set `lineNumbers: true`, and every line gets a
+number in the same rail that a `codeBlock` has. The numbers are plain numbers here, not links,
+because a line of a text that somebody is editing has no address worth sharing. The copy button
+takes the current text. It is a tab stop of its own: Escape, then Tab, moves the focus to it, and
+the next Tab leaves the editor.
+
+## A rich text editor writes markdown
+
+A comment, a post, a product description, or the notes of a ticket need bold, lists, a link and a
+picture, and the people who write them do not want to learn a syntax. `richTextEditor` is that
+control, from `imp/std/inputs`. The person sees rich text and a toolbar. The value that your form
+holds is a **markdown string**, so it fits any store, any diff, and any renderer. It binds to a
+field of a `form`, or to a state through `value`, exactly like `textArea`.
+
+```js
+import { form, richTextEditor, submitButton } from 'imp/std/inputs'
+
+form(
+  { initialValues: { body: '' }, onSubmit: publish },
+  richTextEditor({ field: 'body', label: 'Post', rows: 10, required: true }),
+  submitButton('Publish'),
+)
+```
+
+**The toolbar covers what markdown can say.** Bold, italic, strikethrough and code. Three levels of
+heading, a quote and a code block. Bulleted and numbered lists, nested with Tab and Shift-Tab. A
+link, an image, an emoji, and the alignment of a paragraph. Ctrl-B, Ctrl-I and Ctrl-Z work as in
+every editor. The toolbar is one tab stop, and the arrow keys move between its tools. Every tool
+shows its state, so a person sees that the caret sits in a heading or in a list. There is no
+underline, no table and no colour, because markdown has no such marks.
+
+**An image is embedded, not uploaded.** A person picks a file with the image tool, pastes a picture
+from the clipboard, or drops one on the editor. imp resizes it in the browser to `imageSize` pixels
+on its longest edge, encodes it, and writes it into the value as a data URL. While that runs, a
+placeholder with a spinner marks the place, and the person keeps typing. The result replaces the
+placeholder in place. Nothing leaves the browser, and nothing waits for a server. The value grows
+with every image, so raise `maxLength` when you set one.
+
+**Alignment is the one thing markdown lacks**, so an aligned paragraph is written as an HTML block,
+`<p align="center">...</p>`, with HTML for the marks inside it. Every renderer that passes HTML
+through shows it as intended, and the editor reads it back.
+
+**The value is the whole markdown, on every keystroke.** The error of a validation shows after the
+person leaves the editor, as in every other control. The editor starts at `rows` lines high, and it
+grows with the content. A link or an image with a script address is dropped on the way in, so a
+value from another person is safe to edit. Render the value with `markdown`, below. Do not put it
+into `innerHTML`.
+
+## Markdown is prose, and imp renders it
+
+The value of a `richTextEditor` is markdown, and so is a release note, a README, a help panel and
+the body of a post. `markdown` shows that text as prose, from `imp/std/display`.
+
+```js
+import { markdown } from 'imp/std/display'
+
+markdown({ text: notes })
+```
+
+The `text` prop is a string, or a state that holds one. A state is live, so the prose follows the
+text as it changes. That is the pair: `richTextEditor` writes the markdown, and `markdown` reads it
+back. Both use the same reader, so a draft and the published page break their lines, indent their
+lists and set their quotes in the same way.
+
+**The text is markdown, never HTML.** imp builds the nodes itself and never assigns `innerHTML`. A
+`<script>` in the text is text. A link or an image whose address carries a script scheme loses that
+address. So markdown that another person wrote is safe to show.
+
+The syntax is the common one: headings, paragraphs, bold, italic, strikethrough, inline code, fenced
+code blocks, links, images, bullet and numbered lists with nesting, block quotes, horizontal rules,
+hard line breaks, and the `<p align="center">` block that the editor writes. A table is not
+supported. A fenced block is a plain monospace panel, because highlighting is the job of
+`codeBlock`. Put one in the page yourself when the code deserves colour.
+
+Every space, colour and font comes from the theme, so the prose sits in a page without a stylesheet
+of its own.
 
 ## Custom elements next to yours
 

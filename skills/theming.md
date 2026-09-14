@@ -84,6 +84,9 @@ await init({
   yourself and apply it again on load. To follow `prefers-contrast` or `prefers-color-scheme`, watch
   the media query and call `applyTheme`.
 - **Reference a token with a fallback** in your own CSS: `var(--imp-color-primary, #2563eb)`.
+- **There is no `color-primary-hover`, `color-link` or `color-focus-ring`.** A link and the focus
+  ring take `color-primary`. Mix a hover step with `color-mix()` from the base colour and
+  `color-text`.
 - **Write logical properties**, such as `margin-inline-*`, `inset-inline-*` and `text-align: start`
   or `text-align: end`. A layout then mirrors under `dir="rtl"`. `flex` and `stack` align with
   `start` and `end`, and they already mirror. `init` and `setLang` write `dir` for you, see
@@ -91,33 +94,38 @@ await init({
 
 ## The tokens that the built-in themes ship
 
-| Group      | Tokens                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                                                                                                                                                                                                                                                |
-| Color      | `color-primary`, `color-primary-hover`, `color-primary-active`, `color-on-primary`, `color-secondary`, `color-danger`, `color-danger-hover`, `color-danger-active`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                                                                                                                                  |
-| Surface    | `color-text`, `color-link`, `color-link-hover`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-focus-ring`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                                                                                                                                                                                            |
-| Palette    | `color-gray`, `color-mauve`, `color-slate`, `color-sage`, `color-olive`, `color-sand`, `color-tomato`, `color-red`, `color-ruby`, `color-crimson`, `color-pink`, `color-plum`, `color-purple`, `color-violet`, `color-iris`, `color-indigo`, `color-blue`, `color-cyan`, `color-teal`, `color-jade`, `color-green`, `color-grass`, `color-bronze`, `color-gold`, `color-brown`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-mint`, `color-sky` |
-| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `radius-full`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`                                                                                                                                                                                                                     |
+| Group      | Tokens                                                                                                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography | `font-family`, `font-family-mono`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                                   |
+| Color      | `color-primary`, `color-on-primary`, `color-secondary`, `color-danger`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                 |
+| Surface    | `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                     |
+| Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink` |
+| Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop`       |
 
 `radius-item` rounds a button, an input, a tag, a nav row and a tab. `radius-container` rounds a
-dialog, a drawer, a menu and the frame of a `shell`. `radius-full` is the pill and is always
-`9999px`. Set `radius-item` and `radius-container` together. The container radius must be the larger
-one.
+dialog, a drawer, a menu and the frame of a `shell`. Set `radius-item` and `radius-container`
+together. The container radius must be the larger one.
 
 `color-on-primary` and `color-on-danger` are the text colours that sit **on** those backgrounds.
-`color-secondary` is the muted tone. `color-surface` is a panel, and `color-surface-sunken` is the
-page behind it. `background-app` is what `shell` paints under everything. It is a CSS `background`,
-not a colour, so a gradient or an image is valid. The built-in themes set it to `color-surface`. The
-**palette** is 31 named hues for a per-item colour, such as a tag, a chart series or an avatar.
-`tag` and `icon` take the palette names as a `color` option. Nothing else reads them.
-`color-success`, `color-warning` and `color-info` are aliases of `color-green`, `color-amber` and
-`color-blue`. `color-danger` derives from `color-red`.
+There is no hover token and no active token. Mix them from the base colour and `color-text`:
+`color-mix(in oklab, var(--imp-color-primary), var(--imp-color-text) 12%)` is the hover step, and
+`24%` is the active step. A link and the focus ring take `color-primary`. `color-secondary` is the
+muted tone. `color-surface` is a panel, and `color-surface-sunken` is the page behind it.
+`background-app` is what `shell` paints under everything. It is a CSS `background`, not a colour, so
+a gradient or an image is valid. The built-in themes set it to `color-surface`. The **palette** is
+16 named hues for a per-item colour, such as a tag, a chart series or an avatar. `tag` and `icon`
+take the palette names as a `color` option. Nothing else reads them. The four colour roles are
+`var()` references into the palette. `color-danger` is `var(--imp-color-red)`, `color-success` is
+`var(--imp-color-green)`, `color-warning` is `var(--imp-color-amber)` and `color-info` is
+`var(--imp-color-blue)`. A change to a palette colour moves its role with it.
 
 `space-3` and the larger spaces are **fluid** `clamp()` values that grow with the viewport. Each one
 keeps a `rem` term, so zoom still scales it. `space-page` is the gutter for the outside of a page
 that you lay out yourself. No component uses it for padding. `card` reads `shadow-sm`. Use it for a
 panel of your own. Use `shadow-md` for a menu that floats beside its trigger. Use `shadow-lg` for a
-dialog or a drawer. A theme can set a plain length instead.
+dialog or a drawer. Each step casts `color-shadow` at its own opacity. It is near-black in a light
+theme and white in a dark theme. Set `color-shadow` to change every step at once. A theme can set a
+plain length instead.
 
 `breakpoint-desktop` is `48rem`. It is the width where imp separates a phone from a desktop. Use it
 anywhere a length goes, and read it from JavaScript with `getComputedStyle`. **It cannot go inside a
@@ -137,43 +145,37 @@ them in your own styles:
 
 imp has one theme editor. In `imp preview`, open it with _edit theme_ in the top bar. In
 `imp start`, press the imp mark in the corner of the app, then **Theme editor**. It edits the theme
-the app applied, and it keeps a draft per theme name in `localStorage` across reloads, until the
-person presses _reset_. It exposes **mode**, which is light or dark, **primary**, **secondary**,
-**font**, **mono font**, **border radius**, which is `none`, `small`, `medium` or `large`, and
-**shadow**, which is `none`, `soft` or `strong`. It derives every other colour token from the two
-base colours. Under the knobs, **Tokens** is the whole theme of the mode as JSON, in a `codeEditor`.
-An edit there applies as soon as the JSON parses. A knob rewrites the tokens it drives, and it
-leaves every other token as edited. It copies or downloads a complete `theme.js`:
+the app applied, so a dark theme is edited with a dark theme selected. It keeps a draft per theme
+name in `localStorage` across reloads, until the person presses _reset_. It exposes **primary**,
+**secondary**, **font**, **mono font**, **border radius**, which is `none`, `small`, `medium` or
+`large`, **shadow**, which is `none`, `soft` or `strong`, and **shadow colour**, which is
+`color-shadow`. It derives every other colour token from the two base colours. The knobs sit on the
+**Knobs** tab. The **Tokens** tab is the whole theme as JSON, in a `codeEditor` that grows with the
+text. An edit there applies as soon as the JSON parses. A knob rewrites the tokens it drives, and it
+leaves every other token as edited. The widget of `imp start` shows the **Tokens** view alone, with
+no knobs. It copies or downloads a complete `theme.js`, one theme per file:
 
 ```js
 // theme.js - generated, then edited by hand
-const fonts = { 'font-family': "'Inter', system-ui, sans-serif", 'font-family-mono': '...' }
-const palette = { 'color-green': '#00884d' /* 30 more */ }
-
-export const light = {
-  name: 'app-light',
-  tokens: { ...fonts, ...palette /* ... */ },
+const theme = {
+  name: 'imp-light',
+  tokens: { 'font-family': "'Inter', system-ui, sans-serif", 'color-green': '#00884d' /* ... */ },
 }
-export const dark = {
-  name: 'app-dark',
-  tokens: { ...fonts, ...palette /* ... */ },
-}
-export default light
+export default theme
 ```
 
 ```js
 import { init } from 'imp'
-import light, { dark } from './theme.js'
+import theme from './theme.js'
 
-await init({ theme: light })
+await init({ theme })
 ```
 
 The editor follows these derivation rules. Follow them as well when you write a theme by hand.
-`color-primary-hover` and `color-primary-active` step the primary colour darker in light mode, and
-lighter in dark mode. `color-on-primary` is white when white reaches a contrast of 3:1 against the
-primary, and a near-black tint of the same hue otherwise. Set `color-on-primary` by hand when a
-brand needs another colour there. A surface, a border and the text take the hue of the secondary
-colour, at a fixed lightness step for each mode.
+`color-on-primary` is white when white reaches a contrast of 3:1 against the primary, and a
+near-black tint of the same hue otherwise. Set `color-on-primary` by hand when a brand needs another
+colour there. A surface, a border and the text take the hue of the secondary colour, at a fixed
+lightness step for each mode.
 
 ## Forced colours
 

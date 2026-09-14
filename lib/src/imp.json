@@ -30,7 +30,6 @@
       "theme-colors.js#paletteTokens",
       "theme-colors.js#radiusLevelOf",
       "theme-colors.js#radiusSteps",
-      "theme-colors.js#SEMANTIC_SOURCES",
       "theme-colors.js#shadowLevelOf",
       "theme-colors.js#shadowSteps",
       "theme-draft.js#followAppliedTheme",

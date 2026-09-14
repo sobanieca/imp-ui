@@ -3,6 +3,12 @@ import { groups } from '../preview-groups.js'
 
 export const name = 'Counter'
 export const group = groups.widgets
+export const description = `
+  A number with a **plus** button.
+
+  - starts at \`start\`
+  - counts up only
+`
 
 export const zero = counter()
 export const startsAtFive = { scenario: 'Starts at five', component: counter({ start: 5 }) }

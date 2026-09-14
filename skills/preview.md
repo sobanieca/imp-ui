@@ -25,6 +25,7 @@ import { todoList } from './todos.js'
 
 export const name = 'Todo list'
 export const group = 'Widgets'
+export const description = 'A checkable list of todos, with an empty and a loading state.'
 
 mockModule('./http.js', ({ spy }) => ({
   fetchTodos: spy(async () => [{ id: 1, title: 'Buy milk', done: false }]),
@@ -55,16 +56,29 @@ that need different data differ by the arguments you pass.
 
 ## Metadata exports
 
-`name` and `group` are **not scenarios**. They name the component on the page. Each is optional.
-Each must be a plain string literal, or imp ignores it.
+`name`, `group` and `description` are **not scenarios**. They introduce the component on the page.
+Each is optional. Each must be a literal, or imp ignores it.
 
-| export  | what it does                                                            |
-| ------- | ----------------------------------------------------------------------- |
-| `name`  | the label in the catalog, the search, the page head and the browser tab |
-| `group` | the group the component is listed under, replacing the folder name      |
+| export        | what it does                                                            |
+| ------------- | ----------------------------------------------------------------------- |
+| `name`        | the label in the catalog, the search, the page head and the browser tab |
+| `group`       | the group the component is listed under, replacing the folder name      |
+| `description` | markdown for a person, under the title of the page                      |
 
-Without them, the label falls back to the file name and the folder. `inputs/text-field.preview.js`
-is `text_field` under `inputs`.
+Without `name` and `group`, the label falls back to the file name and the folder.
+`inputs/text-field.preview.js` is `text_field` under `inputs`.
+
+`description` is rendered as markdown. Use a template literal for more than one line. imp removes
+the common indentation, so the text lines up with the code.
+
+```js
+export const description = `
+  A checkable list of todos.
+
+  - **empty** shows the placeholder
+  - **busy** shows the spinner while the request is open
+`
+```
 
 ## The code of a scenario
 
@@ -77,11 +91,14 @@ you want a person to copy. A helper is fine. It is shown above the call.
 
 - **A scenario is the component pre-filled. There is no story format**, no `args`, no `meta` export,
   no decorators. Write the call you would write at a real call site.
-- **`name` and `group` are reserved.** A scenario cannot have one of these names. A scenario named
-  `name` becomes the component's label and never renders.
-- **Do not describe the component in the preview file.** The `*.skill.md` next to the component is
-  the description, and the page shows it as the Skill tab. The `imp skill` command at the top of
-  that tab is derived from the path. There is nothing to declare.
+- **`name`, `group` and `description` are reserved.** A scenario cannot have one of these names. A
+  scenario named `name` becomes the component's label and never renders.
+- **A `description` with a `${...}` substitution in it is ignored.** imp reads the metadata from the
+  source, so the text must be a literal.
+- **`description` is for a person, not for an agent.** Keep it to what the component is and when to
+  reach for it. The API, the props and the rules go in the `*.skill.md` next to the component, which
+  the page shows as the Skill tab. The `imp skill` command at the top of that tab is derived from
+  the path. There is nothing to declare.
 - **Export an instance, or a function that returns one.** imp calls a function when the panel
   renders. Use a function when the fixture must be built fresh.
 - **Give a scenario a readable label with the object form.** `{ scenario, component }` labels the
@@ -136,8 +153,8 @@ you want a person to copy. A helper is fine. It is shown above the call.
   parses, and a knob rewrites the tokens it drives. A token with no knob, such as `background-app`
   or a font weight, starts as the selected theme sets it. Copy or download the result as a
   `theme.js` that exports `light` and `dark`, then pass it to `init({ theme })`. Drafts are kept per
-  theme name in `localStorage`. _reset_ clears one. The review widget of `imp start` opens the same
-  editor on a page of the app. See [theming](theming.md).
+  theme name in `localStorage`. _reset_ clears one. The review widget of `imp start` opens the
+  **Tokens** view of the same editor on a page of the app, with no knobs. See [theming](theming.md).
 - **Entry page.** imp generates the page around a preview, with no stylesheet of the app in it. So a
   web font that `index.html` links does not load there. Set `preview.entry` in `imp.json` to an HTML
   file of your own, such as `preview.html`, that holds the font links in its `<head>` and an empty

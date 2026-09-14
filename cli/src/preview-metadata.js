@@ -1,6 +1,8 @@
-export const PREVIEW_METADATA_EXPORTS = ['name', 'group']
+export const PREVIEW_METADATA_EXPORTS = ['name', 'group', 'description']
 
 export const GROUP_EXPORT = 'group'
+
+export const DESCRIPTION_EXPORT = 'description'
 
 export const GROUPS_EXPORT = 'groups'
 

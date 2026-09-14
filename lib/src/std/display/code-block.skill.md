@@ -46,7 +46,8 @@ Rules an agent gets wrong:
 - **The block does not wrap long lines.** It scrolls sideways, and the line numbers stay in view.
 - **Every colour comes from the theme.** The tokens read the palette of the theme, so a new theme
   recolours the code. There is no theme prop and no colour prop.
-- **The block is not an editor.** The text is selectable and copyable, and nothing else.
+- **The block is not an editor.** The text is selectable and copyable, and nothing else. For a code
+  input, use `codeEditor`. It renders a line with the same code view, so the two look alike.
 
 ```js
 import { codeBlock } from 'imp/std/display'
@@ -68,5 +69,6 @@ codeBlock({
 })
 ```
 
-Related: imp skill std/card - a panel to put a block in; imp skill theming - the tokens the colours
-come from; imp skill i18n - the wording of the copy button.
+Related: imp skill std/card - a panel to put a block in; imp skill std/codeEditor - the code input
+that shares the code view; imp skill theming - the tokens the colours come from; imp skill i18n -
+the wording of the copy button.

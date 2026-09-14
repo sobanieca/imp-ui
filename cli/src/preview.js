@@ -229,6 +229,9 @@ export function previewIdentity(file, declared = {}) {
     path: `${folder}/${component}`,
     name: declared.name ?? component,
     group: declared.group ?? folder,
+    description: declared.description === undefined
+      ? null
+      : renderDescription(declared.description),
   }
 }
 
@@ -263,6 +266,8 @@ export async function skillCommandOf(root, file) {
 
 export const renderSkill = (skillText) =>
   marked.parse(retargetLinks(skillText.trimEnd()).retargeted)
+
+export const renderDescription = (text) => marked.parse(text.trimEnd())
 
 const withSkill = async (previewFile, source) => {
   let skillText
@@ -339,7 +344,7 @@ export async function buildPreviewCatalog(root, files, groups = null) {
     const { scenarios, declared, code } = scanPreviewSource(await readPreviewSource(absolute))
     const group = await resolveGroupName(root, file, declared.group, groups, names)
     entries.push({
-      ...previewIdentity(file, { name: declared.name, group }),
+      ...previewIdentity(file, { name: declared.name, group, description: declared.description }),
       order: scenarios,
       code,
       skill: await skillCommandOf(root, file),

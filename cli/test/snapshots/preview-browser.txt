@@ -38,16 +38,17 @@ theme after one step from imp-dark: imp-light
 imp-dark surface token: #161719
 imp-dark font token, from the theme file that replaces it: Prompt, sans-serif
 brand surface token: #fdf7ff
-theme editor knobs: Mode, Primary, Secondary, Font, Mono font, Border radius, Shadow
-after picking a primary: #8821ac (hover #77009a)
+theme editor knobs: Primary, Secondary, Font, Mono font, Border radius, Shadow, Shadow colour
+after picking a primary: #8821ac (on-primary #ffffff)
 after picking radius none: 0px
-after switching the editor to dark: #161719
+after picking a shadow colour: #ff0000
 theme editor usage line: import { init } from 'imp'
 sidebar groups: Widgets 1, components 1
 sidebar group icons: 4 shapes, 3 shapes
 sidebar components: Counter, todos
 sidebar current: Counter
 page head: Counter
+page head description: <p>A number with a <strong>plus</strong> button.</p> <ul> <li>starts at <code>start</code></li> <li>counts up only</li> </ul>
 index headline: Components - 2 previews in 2 groups.
 index cards: Widgets 1 -> /widgets | components 1 -> /components
 group headline: Widgets

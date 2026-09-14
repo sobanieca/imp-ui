@@ -155,6 +155,7 @@ const STAGE_STYLES = `
   .bar {
     display: flex;
     justify-content: flex-end;
+    min-block-size: 1lh;
     margin-block-end: var(--imp-space-1, 4px);
     color: var(--imp-color-secondary, #64748b);
     font-size: var(--imp-font-size-sm, 0.875rem);
@@ -250,7 +251,7 @@ const EDITOR_STYLES = `
   .provider {
     color: var(--imp-color-secondary, #64748b);
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: var(--imp-font-size-xs, 0.75rem);
+    font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
   .message {
@@ -529,9 +530,14 @@ const stageDefinition = {
     }
     frame.append(...['right', 'bottom', 'corner'].map(dragHandle))
     const readout = span({ class: 'readout' })
+    let readoutFrame = 0
     const updateReadout = () => {
-      const rect = frame.getBoundingClientRect()
-      readout.textContent = `${Math.round(rect.width)} x ${Math.round(rect.height)}`
+      cancelAnimationFrame(readoutFrame)
+      readoutFrame = requestAnimationFrame(() => {
+        const rect = frame.getBoundingClientRect()
+        const text = `${Math.round(rect.width)} x ${Math.round(rect.height)}`
+        if (readout.textContent !== text) readout.textContent = text
+      })
     }
     new ResizeObserver(updateReadout).observe(frame)
     return div(div({ class: 'bar' }, readout), frame)
@@ -951,7 +957,9 @@ const pageDefinition = {
 
     const editor = drawer(
       { title: 'Theme editor', modal: false, open: editorOpen },
-      editorOpen.view((open) => open ? themeChoice.view((name) => themeEditor(name)) : null),
+      editorOpen.view((open) =>
+        open ? themeChoice.view((name) => themeEditor({ theme: name })) : null
+      ),
     )
 
     return previewShell({

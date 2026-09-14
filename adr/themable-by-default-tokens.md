@@ -116,30 +116,35 @@ is a CSS `background`, and not a colour. The app frame paints it under everythin
 set a gradient or an image there. The built-in themes derive it from `color-surface`. So a theme
 that names no background still has one.
 
-**Somebody writes a theme from four values, and not from ninety.** To write a full token map by hand
+**Somebody writes a theme from four values, and not from sixty.** To write a full token map by hand
 is not a thing that a person must do. So imp derives one. A **primary** colour, a **secondary**
 colour, a **radius** step, which is `none`, `small`, `medium` or `large`, and a **shadow** step,
 which is `none`, `soft` or `strong`, produce the whole surface of colour, radius and shadow for one
-mode, light or dark. The derivation belongs to imp, and imp computes it in OKLCH. The primary colour
-yields its hover step and its active step, which are darker in light mode and lighter in dark mode.
-It also yields a `color-on-primary`, which imp selects by WCAG contrast, between white and a
-near-black tint of the same hue. The secondary colour yields `color-text`, `color-surface`,
-`color-surface-sunken`, `color-surface-hover` and `color-border`, at a fixed lightness step per
-mode. imp keeps the hue of the secondary colour, at a capped chroma. So the neutrals of a theme
-carry a tint, and they are not grey. To derive, in place of to tabulate, is what stops the built-in
-themes, the live preview of the theme editor, and the file that the editor exports, from ever
-disagreeing. There is one function, and all three call it.
+mode, light or dark. A shadow step is the same value in both modes. It casts `color-shadow` at a
+fixed opacity, and that token is near-black in a light theme and white in a dark one. The derivation
+belongs to imp, and imp computes it in OKLCH. The primary colour yields a `color-on-primary`, which
+imp selects by WCAG contrast, between white and a near-black tint of the same hue. A hover step and
+an active step are not tokens. A component mixes them from the base colour and `color-text` with
+`color-mix()`. So the step goes darker in a light theme and lighter in a dark theme, and a theme
+sets one colour per role. A link and the focus ring take `color-primary`. The secondary colour
+yields `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover` and
+`color-border`, at a fixed lightness step per mode. imp keeps the hue of the secondary colour, at a
+capped chroma. So the neutrals of a theme carry a tint, and they are not grey. To derive, in place
+of to tabulate, is what stops the built-in themes, the live preview of the theme editor, and the
+file that the editor exports, from ever disagreeing. There is one function, and all three call it.
 
-**The palette is 31 named colours, and every theme carries it.** The names run from `color-gray` to
-`color-sky`, and each one has one solid value. imp generates them from a table of anchors, in OKLCH,
-for the hue, the chroma and the lightness. It is the one group with **no consumer inside imp**, and
-it is in the token surface anyway. An app that needs a hue per item, such as the colour of a tag, a
-series of a chart, or the background of an avatar, must use a themed name, and not a literal. A
-theme must also be able to tune those hues in one place. imp selects a value that is dark enough to
-carry white text, and light enough to read on a dark surface. So **one block of palette values
-serves both themes**, and each mode does not carry its own. `color-success`, `color-warning` and
-`color-info` are aliases of three of those colours. `color-danger` derives its ramp from
-`color-red`. So a semantic role, and the hue behind it, cannot drift apart.
+**The palette is 16 named colours, and every theme carries it.** The names run from `color-gray` to
+`color-pink`, and each one has one solid value. imp generates them from a table of anchors, in
+OKLCH, for the hue, the chroma and the lightness. It is the one group with **no consumer inside
+imp**, and it is in the token surface anyway. An app that needs a hue per item, such as the colour
+of a tag, a series of a chart, or the background of an avatar, must use a themed name, and not a
+literal. A theme must also be able to tune those hues in one place. imp selects each value to read
+as a tint on a light surface and on a dark surface. So **one block of palette values serves both
+themes**, and each mode does not carry its own. The four colour roles, `color-danger`,
+`color-success`, `color-warning` and `color-info`, are `var()` references to a palette colour. So a
+role and the hue behind it cannot drift apart, and a theme that changes `color-red` changes
+`color-danger` with it. The `token()` helper resolves such a reference when it writes a fallback. So
+a component still renders before imp applies a theme.
 
 imp accepts two costs deliberately. The palette values are **not** the values of Radix Colors. imp
 generates its own scales, in place of vendoring the scales of a third party. So they are close in

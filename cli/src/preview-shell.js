@@ -33,6 +33,107 @@ const INDEX_STYLES = `
   }
 `
 
+const MARKDOWN_STYLES = `
+  .md {
+    max-inline-size: 80ch;
+    color: var(--imp-color-text, #0f172a);
+    font-family: var(--imp-font-family, system-ui, sans-serif);
+    font-weight: var(--imp-font-weight-normal, 400);
+    font-size: var(--imp-font-size-md, 1rem);
+    line-height: var(--imp-line-height-normal, 1.6);
+  }
+
+  .md > :first-child {
+    margin-block-start: 0;
+  }
+
+  .md > :last-child {
+    margin-block-end: 0;
+  }
+
+  .md h1,
+  .md h2,
+  .md h3,
+  .md h4 {
+    margin-block: var(--imp-space-5, 24px) var(--imp-space-3, 12px);
+    font-weight: var(--imp-font-weight-bold, 600);
+    line-height: var(--imp-line-height-tight, 1.25);
+  }
+
+  .md h1 {
+    font-size: var(--imp-font-size-xl, 1.5rem);
+  }
+
+  .md h2 {
+    font-size: var(--imp-font-size-lg, 1.25rem);
+  }
+
+  .md h3,
+  .md h4 {
+    font-size: var(--imp-font-size-md, 1rem);
+  }
+
+  .md p,
+  .md ul,
+  .md ol,
+  .md table,
+  .md pre,
+  .md blockquote {
+    margin-block: 0 var(--imp-space-3, 12px);
+  }
+
+  .md ul,
+  .md ol {
+    padding-inline-start: var(--imp-space-5, 24px);
+  }
+
+  .md li {
+    margin-block-end: var(--imp-space-1, 4px);
+  }
+
+  .md a {
+    color: var(--imp-color-primary, #2563eb);
+  }
+
+  .md code {
+    padding-inline: 0.3em;
+    border-radius: var(--imp-radius-item, 6px);
+    background: var(--imp-color-surface-sunken, #f8fafc);
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+    font-size: 0.9em;
+  }
+
+  .md imp-code-block {
+    margin-block: var(--imp-space-3, 12px);
+  }
+
+  .md table {
+    display: block;
+    overflow: auto;
+    border-collapse: collapse;
+    font-size: var(--imp-font-size-sm, 0.875rem);
+  }
+
+  .md th,
+  .md td {
+    padding-block: var(--imp-space-1, 4px);
+    padding-inline: var(--imp-space-2, 8px);
+    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .md th {
+    font-weight: var(--imp-font-weight-bold, 600);
+  }
+
+  .md blockquote {
+    padding-inline-start: var(--imp-space-3, 12px);
+    border-inline-start: 3px solid var(--imp-color-border, #cbd5e1);
+    color: var(--imp-color-secondary, #64748b);
+  }
+`
+
 const HEAD_STYLES = `
   .head {
     display: flex;
@@ -57,6 +158,11 @@ const HEAD_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
+  ${MARKDOWN_STYLES}
+
+  .md.description {
+    color: var(--imp-color-secondary, #64748b);
+  }
 `
 
 export const groupsOf = (previews, groups = []) => {
@@ -210,7 +316,7 @@ const SKILL_STYLES = `
     padding-inline: var(--imp-space-3, 12px);
     background-color: var(--imp-color-surface-sunken, #f8fafc);
     border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-radius-md, 6px);
+    border-radius: var(--imp-radius-item, 6px);
   }
 
   .agent-label {
@@ -239,101 +345,18 @@ const SKILL_STYLES = `
     line-height: var(--imp-line-height-normal, 1.6);
   }
 
-  .skill {
-    max-inline-size: 80ch;
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-weight: var(--imp-font-weight-normal, 400);
-    font-size: var(--imp-font-size-md, 1rem);
-    line-height: var(--imp-line-height-normal, 1.6);
-  }
-
-  .skill > :first-child {
-    margin-block-start: 0;
-  }
-
-  .skill h1,
-  .skill h2,
-  .skill h3,
-  .skill h4 {
-    margin-block: var(--imp-space-5, 24px) var(--imp-space-3, 12px);
-    font-weight: var(--imp-font-weight-bold, 600);
-    line-height: var(--imp-line-height-tight, 1.25);
-  }
-
-  .skill h1 {
-    font-size: var(--imp-font-size-xl, 1.5rem);
-  }
-
-  .skill h2 {
-    font-size: var(--imp-font-size-lg, 1.25rem);
-  }
-
-  .skill h3,
-  .skill h4 {
-    font-size: var(--imp-font-size-md, 1rem);
-  }
-
-  .skill p,
-  .skill ul,
-  .skill ol,
-  .skill table,
-  .skill pre,
-  .skill blockquote {
-    margin-block: 0 var(--imp-space-3, 12px);
-  }
-
-  .skill ul,
-  .skill ol {
-    padding-inline-start: var(--imp-space-5, 24px);
-  }
-
-  .skill li {
-    margin-block-end: var(--imp-space-1, 4px);
-  }
-
-  .skill a {
-    color: var(--imp-color-primary, #2563eb);
-  }
-
-  .skill code {
-    padding-inline: 0.3em;
-    border-radius: var(--imp-radius-item, 6px);
-    background: var(--imp-color-surface-sunken, #f8fafc);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: 0.9em;
-  }
-
-  .skill imp-code-block {
-    margin-block: var(--imp-space-3, 12px);
-  }
-
-  .skill table {
-    display: block;
-    overflow: auto;
-    border-collapse: collapse;
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  .skill th,
-  .skill td {
-    padding-block: var(--imp-space-1, 4px);
-    padding-inline: var(--imp-space-2, 8px);
-    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    text-align: start;
-    vertical-align: top;
-  }
-
-  .skill th {
-    font-weight: var(--imp-font-weight-bold, 600);
-  }
-
-  .skill blockquote {
-    padding-inline-start: var(--imp-space-3, 12px);
-    border-inline-start: 3px solid var(--imp-color-border, #cbd5e1);
-    color: var(--imp-color-secondary, #64748b);
-  }
+  ${MARKDOWN_STYLES}
 `
+
+const markdownBody = (html, extraClass = null) => {
+  const body = div({ class: extraClass === null ? 'md' : `md ${extraClass}` })
+  body.innerHTML = html
+  for (const block of body.querySelectorAll('pre > code')) {
+    const language = block.className.match(/language-(\S+)/)?.[1]
+    block.parentElement.replaceWith(codeBlock({ language, code: block.textContent }))
+  }
+  return body
+}
 
 const skillBody = (html, entry) => {
   if (html === null) {
@@ -344,13 +367,7 @@ const skillBody = (html, entry) => {
       } next to the component. imp shows it here, and 'imp skill' prints it for an agent.`,
     })
   }
-  const body = div({ class: 'skill' })
-  body.innerHTML = html
-  for (const block of body.querySelectorAll('pre > code')) {
-    const language = block.className.match(/language-(\S+)/)?.[1]
-    block.parentElement.replaceWith(codeBlock({ language, code: block.textContent }))
-  }
-  return body
+  return markdownBody(html)
 }
 
 const skillDefinition = {
@@ -388,6 +405,7 @@ const headDefinition = {
         heading({ level: 1 }, entry.name),
         span({ class: 'file' }, entry.file),
       ),
+      entry.description === null ? null : markdownBody(entry.description, 'description'),
     ),
 }
 

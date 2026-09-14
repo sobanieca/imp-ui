@@ -21,11 +21,9 @@ scheme.
 | `label` | string, or a state - **live**             | -           | Names the icon; without it it is decorative         |
 
 `color` names a theme token, never a CSS colour. The names are `'primary'`, `'secondary'`, `'text'`,
-`'link'`, `'border'`, `'danger'`, `'success'`, `'warning'` and `'info'`, and every palette hue:
-`'gray'`, `'mauve'`, `'slate'`, `'sage'`, `'olive'`, `'sand'`, `'tomato'`, `'red'`, `'ruby'`,
-`'crimson'`, `'pink'`, `'plum'`, `'purple'`, `'violet'`, `'iris'`, `'indigo'`, `'blue'`, `'cyan'`,
-`'teal'`, `'jade'`, `'green'`, `'grass'`, `'bronze'`, `'gold'`, `'brown'`, `'orange'`, `'amber'`,
-`'yellow'`, `'lime'`, `'mint'` and `'sky'`.
+`'border'`, `'danger'`, `'success'`, `'warning'` and `'info'`, and every palette hue: `'gray'`,
+`'brown'`, `'red'`, `'orange'`, `'amber'`, `'yellow'`, `'lime'`, `'green'`, `'teal'`, `'cyan'`,
+`'sky'`, `'blue'`, `'indigo'`, `'violet'`, `'purple'` and `'pink'`.
 
 Rules an agent gets wrong:
 

@@ -17,7 +17,7 @@ fallback. The full list is in [theming](theming.md). Never write a literal where
 | Page behind a panel      | `color-surface-sunken`                                            |
 | Tint under a pointer     | `color-surface-hover`                                             |
 | Text, muted text         | `color-text`, `color-secondary`                                   |
-| Link                     | `color-link`, `color-link-hover`                                  |
+| Link                     | `color-primary`                                                   |
 | Rule or border           | `border-width` with `color-border`                                |
 | Corner of a small thing  | `radius-item`                                                     |
 | Corner of a panel        | `radius-container`                                                |
@@ -28,7 +28,7 @@ fallback. The full list is in [theming](theming.md). Never write a literal where
 | Page gutter              | `space-page`                                                      |
 | Type, code               | `font-family`, `font-size-*`, `font-weight-*`, `font-family-mono` |
 | Transition               | `duration-fast`, `duration-medium`                                |
-| Focus ring               | `focus-ring-width` with `color-focus-ring`                        |
+| Focus ring               | `focus-ring-width` with `color-primary`                           |
 | Disabled control         | `disabled-opacity`                                                |
 
 A panel of your own is this block. It is the CSS of `card`, so first check whether `card` already is
@@ -46,7 +46,7 @@ the panel you need, see [std](std.md):
 }
 
 .panel:focus-visible {
-  outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-focus-ring, #2563eb);
+  outline: var(--imp-focus-ring-width, 2px) solid var(--imp-color-primary, #2563eb);
   outline-offset: 2px;
 }
 
@@ -111,7 +111,7 @@ Rules an agent gets wrong:
   `aria-describedby` and `aria-activedescendant` cannot cross a shadow root. Two elements that refer
   to each other render in the same component. Decide this with the props. It cannot be retrofitted.
 - **The focus ring is an `outline` on `:focus-visible`**, from `focus-ring-width` and
-  `color-focus-ring`. Never remove an outline without a replacement.
+  `color-primary`. Never remove an outline without a replacement.
 - **Test it.** An interactive component ships a test for its role, its name and its keys, see
   [testing](testing.md).
 

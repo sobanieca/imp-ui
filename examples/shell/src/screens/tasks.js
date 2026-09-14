@@ -18,7 +18,7 @@ const todoRow = component('todo-row', {
       padding-block: var(--imp-space-2);
       padding-inline: var(--imp-space-3);
       border: var(--imp-border-width) solid var(--imp-color-border);
-      border-radius: var(--imp-radius-md);
+      border-radius: var(--imp-radius-item);
       background-color: var(--imp-color-surface);
     }
 

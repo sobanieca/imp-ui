@@ -273,10 +273,25 @@ const WIDGET_STYLES = `
     inline-size: ${WIDGET_SIZE}px;
     block-size: ${WIDGET_SIZE}px;
     z-index: 2147483647;
-    font-family: ui-sans-serif, system-ui, sans-serif;
+    --surface: var(--imp-color-surface, #0f172a);
+    --sunken: var(--imp-color-surface-sunken, #020617);
+    --hover: var(--imp-color-surface-hover, #1e293b);
+    --text: var(--imp-color-text, #e2e8f0);
+    --muted: var(--imp-color-secondary, #94a3b8);
+    --border: var(--imp-color-border, #334155);
+    --accent: var(--imp-color-primary, #38bdf8);
+    --on-accent: var(--imp-color-on-primary, #f8fafc);
+    --danger: var(--imp-color-danger, #f87171);
+    --warning: var(--imp-color-warning, #fbbf24);
+    --info: var(--imp-color-info, #22d3ee);
+    --success: var(--imp-color-success, #4ade80);
+    --radius: var(--imp-radius-container, 10px);
+    --radius-item: var(--imp-radius-item, 6px);
+    --shadow: var(--imp-shadow-lg, 0 12px 32px rgb(2 6 23 / 55%));
+    font-family: var(--imp-font-family, ui-sans-serif, system-ui, sans-serif);
     font-size: 13px;
     line-height: 1.5;
-    color: #e2e8f0;
+    color: var(--text);
   }
 
   [hidden] {
@@ -286,8 +301,8 @@ const WIDGET_STYLES = `
   .outline {
     position: fixed;
     pointer-events: none;
-    outline: 2px solid #38bdf8;
-    background: rgb(56 189 248 / 18%);
+    outline: 2px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .dock {
@@ -317,11 +332,11 @@ const WIDGET_STYLES = `
     inline-size: ${WIDGET_SIZE}px;
     block-size: ${WIDGET_SIZE}px;
     padding: 0;
-    border: 1px solid #334155;
+    border: 1px solid var(--border);
     border-radius: 50%;
     overflow: hidden;
     background: #0f3a5d;
-    box-shadow: 0 6px 20px rgb(2 6 23 / 45%);
+    box-shadow: var(--shadow);
     cursor: grab;
     touch-action: none;
     user-select: none;
@@ -340,7 +355,7 @@ const WIDGET_STYLES = `
   }
 
   .toggle[aria-expanded='true'] {
-    border-color: #38bdf8;
+    border-color: var(--accent);
   }
 
   .actions {
@@ -354,11 +369,11 @@ const WIDGET_STYLES = `
     inline-size: 36px;
     block-size: 36px;
     padding: 0;
-    border: 1px solid #334155;
+    border: 1px solid var(--border);
     border-radius: 50%;
-    background: #0f172a;
-    color: #7dd3fc;
-    box-shadow: 0 6px 20px rgb(2 6 23 / 45%);
+    background: var(--surface);
+    color: var(--accent);
+    box-shadow: var(--shadow);
     cursor: pointer;
     transition: opacity 160ms ease, scale 160ms ease, border-color 160ms ease;
   }
@@ -384,7 +399,7 @@ const WIDGET_STYLES = `
 
   .action:hover,
   .action[aria-pressed='true'] {
-    border-color: #38bdf8;
+    border-color: var(--accent);
   }
 
   .panel {
@@ -395,10 +410,10 @@ const WIDGET_STYLES = `
     inline-size: 340px;
     max-inline-size: calc(100dvi - ${WIDGET_MARGIN * 2}px);
     padding: 12px;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
-    box-shadow: 0 12px 32px rgb(2 6 23 / 55%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
   }
 
   .view {
@@ -409,7 +424,7 @@ const WIDGET_STYLES = `
 
   .title {
     margin: 0;
-    color: #f8fafc;
+    color: var(--text);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -419,7 +434,7 @@ const WIDGET_STYLES = `
   .hint,
   .status {
     margin: 0;
-    color: #94a3b8;
+    color: var(--muted);
   }
 
   .status:empty {
@@ -427,7 +442,7 @@ const WIDGET_STYLES = `
   }
 
   .label {
-    color: #cbd5e1;
+    color: var(--text);
     font-weight: 600;
   }
 
@@ -435,10 +450,10 @@ const WIDGET_STYLES = `
     box-sizing: border-box;
     inline-size: 100%;
     padding: 8px;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    background: #020617;
-    color: #e2e8f0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-item);
+    background: var(--sunken);
+    color: var(--text);
     font-family: inherit;
     font-size: 13px;
     resize: vertical;
@@ -449,10 +464,10 @@ const WIDGET_STYLES = `
     padding: 8px;
     max-block-size: min(240px, 40dvb);
     overflow: auto;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    background: #020617;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-item);
+    background: var(--sunken);
+    font-family: var(--imp-font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
     font-size: 12px;
     list-style: none;
     overflow-wrap: anywhere;
@@ -473,13 +488,13 @@ const WIDGET_STYLES = `
   }
 
   .entry:hover {
-    background: #0f172a;
+    background: var(--hover);
   }
 
   .entry .level {
     flex: none;
     min-inline-size: 3.5em;
-    color: #64748b;
+    color: var(--muted);
   }
 
   .entry .text {
@@ -497,19 +512,19 @@ const WIDGET_STYLES = `
 
   .error .level,
   .failed .level {
-    color: #f87171;
+    color: var(--danger);
   }
 
   .warn .level {
-    color: #fbbf24;
+    color: var(--warning);
   }
 
   .info .level {
-    color: #22d3ee;
+    color: var(--info);
   }
 
   .ok .level {
-    color: #4ade80;
+    color: var(--success);
   }
 
   .chips {
@@ -519,7 +534,7 @@ const WIDGET_STYLES = `
   }
 
   .chip {
-    --chip: #94a3b8;
+    --chip: var(--muted);
     padding: 2px 10px;
     border: 1px solid color-mix(in srgb, var(--chip) 45%, transparent);
     border-radius: 999px;
@@ -534,21 +549,18 @@ const WIDGET_STYLES = `
 
   .chip[aria-pressed='true'] {
     border-color: var(--chip);
-    background: color-mix(in srgb, var(--chip) 28%, #0f172a);
-    color: #f8fafc;
+    background: color-mix(in srgb, var(--chip) 28%, var(--surface));
+    color: var(--text);
   }
 
   .lines .empty {
-    color: #64748b;
+    color: var(--muted);
   }
 
   .card {
     max-block-size: min(520px, 60dvb);
     overflow: auto;
-    padding: 12px;
-    border-radius: 8px;
-    background: var(--imp-color-surface, #ffffff);
-    color: var(--imp-color-text, #0f172a);
+    padding: 0;
   }
 
   .card:empty {
@@ -567,29 +579,29 @@ const WIDGET_STYLES = `
   button {
     padding: 6px 10px;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: var(--radius-item);
     font-family: inherit;
     font-size: 13px;
     cursor: pointer;
   }
 
   .primary {
-    background: #0284c7;
-    color: #f8fafc;
+    background: var(--accent);
+    color: var(--on-accent);
   }
 
   .primary:hover {
-    background: #0369a1;
+    background: color-mix(in oklab, var(--accent) 88%, var(--text));
   }
 
   .ghost {
-    border-color: #334155;
+    border-color: var(--border);
     background: transparent;
-    color: #cbd5e1;
+    color: var(--text);
   }
 
   .ghost:hover {
-    border-color: #64748b;
+    background: var(--hover);
   }
 
   button:disabled {
@@ -598,7 +610,7 @@ const WIDGET_STYLES = `
   }
 
   :focus-visible {
-    outline: 2px solid #7dd3fc;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
@@ -669,7 +681,7 @@ const widgetMarkup = (mark, themeEditor) =>
       <p class="title">Theme editor</p>
       <p class="status" role="status" data-theme-status></p>
       <div class="card"></div>
-      <p class="hint">The page re-skins as you pick. imp keeps the draft for the applied theme
+      <p class="hint">The page re-skins as you type. imp keeps the draft for the applied theme
         across reloads, until you press reset. Copy or download theme.js and pass it to init().</p>
     </div>
   </div>
@@ -704,16 +716,16 @@ const LOG_VIEWS = {
 }
 
 const CHIP_COLORS = {
-  All: '#94a3b8',
-  Any: '#94a3b8',
-  Log: '#cbd5e1',
-  Info: '#22d3ee',
-  Warn: '#fbbf24',
-  Error: '#f87171',
-  OK: '#4ade80',
-  Failed: '#f87171',
-  Fetch: '#38bdf8',
-  Resource: '#c084fc',
+  All: 'var(--muted)',
+  Any: 'var(--muted)',
+  Log: 'var(--text)',
+  Info: 'var(--info)',
+  Warn: 'var(--warning)',
+  Error: 'var(--danger)',
+  OK: 'var(--success)',
+  Failed: 'var(--danger)',
+  Fetch: 'var(--accent)',
+  Resource: 'var(--imp-color-purple, #c084fc)',
 }
 
 export const reviewWidgetScript = ({ mark, themeEditor }) => `
@@ -1050,7 +1062,9 @@ export const reviewWidgetScript = ({ mark, themeEditor }) => `
       return
     }
     if (tool !== 'theme') return
-    card.replaceChildren(module.themeEditor(module.appliedThemeName()))
+    card.replaceChildren(
+      module.themeEditor({ theme: module.appliedThemeName(), tokensOnly: true }),
+    )
   }
 
   let drag = null
