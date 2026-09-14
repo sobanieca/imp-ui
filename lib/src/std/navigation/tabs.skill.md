@@ -61,6 +61,8 @@ Rules an agent gets wrong:
 - **The parent sets the height.** The strip is as tall as the host. Give the host a `block-size`,
   and the fold button sits at the foot, at the inline end of the strip, with the free space between
   the tabs and the button.
+- **A folded strip moves the button to the head.** A tall panel scrolls, and the button stays where
+  the reader starts to read, so the tabs come back with one tap.
 - imp warns about an unknown prop at mount. It warns about an `orientation` outside the list and
   falls back. It warns about an item with no `label` and skips it. It warns about a `selected` that
   matches no item, and ignores it.

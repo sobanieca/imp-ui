@@ -1979,8 +1979,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     const codeAndSkill = await page.evaluate(async () => {
       const scenario = globalThis.impScenarios()[0]
       const toggle = globalThis.impAll('imp-button', scenario)
-        .find((node) => node.shadowRoot.querySelector('[aria-label="Show code"]') !== null)
-        .shadowRoot.querySelector('button')
+        .map((node) => node.shadowRoot.querySelector('button'))
+        .find((node) => node?.textContent.includes('Code example'))
       const block = () => scenario.shadowRoot.querySelector('.code')
       const hidden = block().hidden
       const before = toggle.getAttribute('aria-pressed')

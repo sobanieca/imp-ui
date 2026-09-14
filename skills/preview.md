@@ -130,17 +130,20 @@ you want a person to copy. A helper is fine. It is shown above the call.
   its state across a change of tab. The button at the foot of the strip folds the tabs away, so the
   panel gets the width. The strip starts folded on a screen narrower than `40rem`, and imp remembers
   a fold in the browser.
-- **Stage.** Drag the right, bottom or corner handle to resize. A readout shows the size. The
-  component re-lays-out live, which is how you find the width where it breaks.
+- **Stage.** Drag the right, bottom or corner handle to resize. A readout shows the size. The pencil
+  button beside the readout opens two boxes for an exact width and height in pixels. An empty box
+  gives that axis back to the layout. The component re-lays-out live, which is how you find the
+  width where it breaks.
 - **State editor.** The sliders toggle in the panel head opens it in a movable window under the
   toggle, so the stage keeps the full width. A close of the window releases the toggle. A scenario
-  with no state gets no toggle. It shows the state the components in the scenario hold, as JSON.
-  Edit a value and apply it (or press `Ctrl`/`Cmd`+`Enter`). The component updates through imp's
-  normal fine-grained path, with no remount and no reload. Each panel is bound to its own instance,
-  and the list is read again each time the window opens.
-- **Code.** The code toggle in the panel head opens the call site under the stage, as a highlighted
-  `codeBlock` with a copy button. The choice is remembered, so every panel opens with the code shown
-  until you hide it.
+  with no state gets no toggle. It shows the state the components in the scenario hold, as JSON. The
+  state that imp's own standard components hold is left out. Edit a value and apply it (or press
+  `Ctrl`/`Cmd`+`Enter`). The component updates through imp's normal fine-grained path, with no
+  remount and no reload. Each panel is bound to its own instance, and the list is read again each
+  time the window opens.
+- **Code.** A rule under the stage carries a _Code example_ button. It opens the call site as a
+  highlighted `codeBlock` with a copy button. The choice is remembered, so every panel opens with
+  the code shown until you hide it.
 - **Skill.** The second tab of the page. It is the component's `*.skill.md`, rendered to HTML, the
   same text that `imp skill` prints. A component without one says so.
 - **Agent line.** The `imp skill` command of the component, ready to copy, at the top of the Skill

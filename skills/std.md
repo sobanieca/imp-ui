@@ -711,7 +711,7 @@ Rules an agent gets wrong:
 - The arrow keys, `Home`, `End` and the RTL mirroring are included. Write no key handling.
 - **`foldable: true` on a vertical strip adds a fold button at its foot.** `folded` takes a boolean
   or a state, and `events: { fold }` reports a tap. The host's `block-size` sets the height of the
-  strip, so the button sits at the foot.
+  strip, so the button sits at the foot. A folded strip moves the button to the head.
 - **A menu of destinations is the `shell` nav.** There is no separate menu component. Give the rows
   to the frame as `navbar` or `sidebar` data. Full manual: `imp skill std/tabs`.
 

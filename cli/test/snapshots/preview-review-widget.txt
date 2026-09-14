@@ -37,6 +37,9 @@ html: <span id="value">0</span>
 
 state:
   demo.count = 0
+  imp.preview.stage-inline = null
+  imp.preview.stage-block = null
+  imp.preview.stage-sizing = false
   imp.preview.state-editor = false
   imp.preview.states-found = true
   imp.preview.code = false
@@ -44,6 +47,7 @@ state:
   imp.preview.dir = "auto"
   imp.preview.lang = "en"
   imp.preview.editor = false
+  imp.preview.nav = false
 
 log:
   [INFO] imp preview serving 2 previews from <tmp>

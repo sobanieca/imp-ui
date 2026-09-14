@@ -10,11 +10,12 @@ import {
   luEclipse,
   luMoon,
   luPalette,
+  luPencil,
   luSlidersHorizontal,
   luSun,
 } from 'imp/icons'
 import { card, codeBlock, emptyState } from 'imp/std/display'
-import { select, textArea } from 'imp/std/inputs'
+import { numberField, select, textArea } from 'imp/std/inputs'
 import { dialog, drawer, stack } from 'imp/std/layout'
 import { tabs } from 'imp/std/navigation'
 import {
@@ -39,11 +40,15 @@ const DIRECTION_STORAGE_KEY = 'imp.preview.dir'
 const CODE_STORAGE_KEY = 'imp.preview.code'
 
 const EDITOR_STATE = 'imp.preview.editor'
+const NAV_STATE = 'imp.preview.nav'
 const THEME_STATE = 'imp.preview.theme'
 const LANGUAGE_STATE = 'imp.preview.lang'
 const DIRECTION_STATE = 'imp.preview.dir'
 const DRAFT_STATE = 'imp.preview.draft'
 const STATE_EDITOR_STATE = 'imp.preview.state-editor'
+const STAGE_SIZING_STATE = 'imp.preview.stage-sizing'
+const STAGE_INLINE_STATE = 'imp.preview.stage-inline'
+const STAGE_BLOCK_STATE = 'imp.preview.stage-block'
 const STATES_FOUND_STATE = 'imp.preview.states-found'
 const CODE_STATE = 'imp.preview.code'
 
@@ -74,6 +79,7 @@ const NARROW_SCREEN = '(width < 40rem)'
 const STATE_SCAN_ATTEMPTS = 30
 const STATE_SCAN_INTERVAL = 100
 const MAX_SCANNED_ELEMENTS = 500
+const LIBRARY_STATE_PREFIX = 'imp.'
 
 const DOCUMENT_STYLES = `
 body {
@@ -111,6 +117,8 @@ const SCENARIO_STYLES = `
     display: inline-flex;
   }
 
+  .state-toggle[hidden] { display: none }
+
   .scenario-head h2 {
     margin: 0;
     color: var(--imp-color-text, #0f172a);
@@ -131,20 +139,17 @@ const SCENARIO_STYLES = `
     white-space: pre-wrap;
   }
 
+  .code-bar {
+    display: flex;
+    justify-content: center;
+    margin-block-start: var(--imp-space-4, 16px);
+    padding-block-start: var(--imp-space-2, 8px);
+    border-block-start: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+  }
+
   .code {
     margin-block-start: var(--imp-space-3, 12px);
   }
-
-  .code-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--imp-space-2, 8px);
-    margin-block-end: var(--imp-space-1, 4px);
-    color: var(--imp-color-secondary, #64748b);
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
 `
 
 const STAGE_STYLES = `
@@ -154,7 +159,10 @@ const STAGE_STYLES = `
 
   .bar {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: var(--imp-space-2, 8px);
+    flex-wrap: wrap;
     min-block-size: 1lh;
     margin-block-end: var(--imp-space-1, 4px);
     color: var(--imp-color-secondary, #64748b);
@@ -166,6 +174,22 @@ const STAGE_STYLES = `
     inline-size: 11ch;
     text-align: end;
     font-variant-numeric: tabular-nums;
+    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
+  }
+
+  .sizes {
+    display: flex;
+    align-items: center;
+    gap: var(--imp-space-2, 8px);
+  }
+
+  .sizes[hidden] { display: none }
+
+  .sizes imp-number-field {
+    inline-size: 6rem;
+  }
+
+  .times {
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
   }
 
@@ -475,7 +499,9 @@ const elementsInTree = (nodes) => {
 
 const statesInTree = (nodes) =>
   elementsInTree(nodes).flatMap((provider) =>
-    statesProvidedBy(provider).map(({ name, state }) => ({ name, state, provider }))
+    statesProvidedBy(provider)
+      .filter(({ name }) => !name.startsWith(LIBRARY_STATE_PREFIX))
+      .map(({ name, state }) => ({ name, state, provider }))
   )
 
 const describeValue = (value) => {
@@ -495,12 +521,25 @@ const describeValue = (value) => {
   return { text, editable: true, note: '' }
 }
 
+const asStageSize = (value) => {
+  const size = Math.round(Number(value))
+  return Number.isFinite(size) ? Math.max(MIN_STAGE_SIZE, size) : null
+}
+
 const stageDefinition = {
   styles: STAGE_STYLES,
-  setup: (_self, nodes) => {
+  setup: (self, nodes) => {
     const stage = div({ class: 'stage', dir: stageDirection() }, nodes)
     stages.push(stage)
     const frame = div({ class: 'frame' }, stage)
+    const inlineSize = initState(self, STAGE_INLINE_STATE, null)
+    const blockSize = initState(self, STAGE_BLOCK_STATE, null)
+    const applySize = (property, value) => {
+      const size = value === undefined || value === null || value === '' ? null : asStageSize(value)
+      frame.style[property] = size === null ? '' : `${size}px`
+    }
+    inlineSize.watch((value) => applySize('inlineSize', value))
+    blockSize.watch((value) => applySize('blockSize', value))
     const dragHandle = (kind) => {
       const handle = div({ class: `handle handle--${kind}` })
       handle.addEventListener('pointerdown', (event) => {
@@ -513,13 +552,9 @@ const stageDefinition = {
         } catch { /* the pointer is already gone */ }
         const resize = (moveEvent) => {
           if (kind !== 'bottom') {
-            const width = rect.width + moveEvent.clientX - startX
-            frame.style.width = `${Math.round(Math.max(MIN_STAGE_SIZE, width))}px`
+            inlineSize.set(asStageSize(rect.width + moveEvent.clientX - startX))
           }
-          if (kind !== 'right') {
-            const height = rect.height + moveEvent.clientY - startY
-            frame.style.height = `${Math.round(Math.max(MIN_STAGE_SIZE, height))}px`
-          }
+          if (kind !== 'right') blockSize.set(asStageSize(rect.height + moveEvent.clientY - startY))
         }
         const stop = () => handle.removeEventListener('pointermove', resize)
         handle.addEventListener('pointermove', resize)
@@ -540,7 +575,23 @@ const stageDefinition = {
       })
     }
     new ResizeObserver(updateReadout).observe(frame)
-    return div(div({ class: 'bar' }, readout), frame)
+    const sizing = initState(self, STAGE_SIZING_STATE, false)
+    const sizeField = (label, value) =>
+      numberField({ ariaLabel: label, placeholder: 'auto', min: MIN_STAGE_SIZE, step: 1, value })
+    const sizeFields = div(
+      { class: 'sizes', hidden: true },
+      sizeField('Canvas width in pixels', inlineSize),
+      span({ class: 'times' }, 'x'),
+      sizeField('Canvas height in pixels', blockSize),
+    )
+    sizing.watch((open) => {
+      sizeFields.hidden = !open
+    })
+    const sizeToggle = button(
+      { size: 'sm', variant: 'ghost', label: 'Edit canvas size', pressed: sizing },
+      icon(luPencil),
+    )
+    return div(div({ class: 'bar' }, sizeFields, readout, sizeToggle), frame)
   },
 }
 
@@ -716,30 +767,30 @@ const scenarioSection = (self, name, exported, entry) => {
   const source = entry.code?.[name] ?? null
   const showingCode = initState(self, CODE_STATE, source !== null && readStoredCode())
   showingCode.watch((open) => remember(CODE_STORAGE_KEY, open ? 'shown' : 'hidden'))
-  const codeToggle = source === null ? null : button(
-    { size: 'sm', variant: 'ghost', label: 'Show code', pressed: showingCode },
-    icon(luCode),
-  )
   return el(
     'section',
     { class: 'scenario' },
-    div({ class: 'scenario-head' }, h2(label), stateToggle, codeToggle),
+    div({ class: 'scenario-head' }, h2(label), stateToggle),
     stagePanel(nodes),
-    source === null ? null : codePanel(source, showingCode),
+    ...(source === null ? [] : codePanel(source, showingCode)),
     editor,
   )
 }
 
 const codePanel = (source, showing) => {
-  const panel = div(
-    { class: 'code' },
-    div({ class: 'code-head' }, span('Call site')),
-    codeBlock({ language: 'js', code: source }),
+  const panel = div({ class: 'code' }, codeBlock({ language: 'js', code: source }))
+  const toggle = button(
+    { size: 'sm', variant: 'ghost', pressed: showing },
+    span(
+      { style: 'display: inline-flex; align-items: center; gap: var(--imp-space-2, 8px)' },
+      icon(luCode, { size: 'sm' }),
+      'Code example',
+    ),
   )
   showing.watch((open) => {
     panel.hidden = !open
   })
-  return panel
+  return [div({ class: 'code-bar' }, toggle), panel]
 }
 
 const groupCard = (entry, load) => {
@@ -945,6 +996,7 @@ const pageDefinition = {
     })
 
     const editorOpen = initState(self, EDITOR_STATE, false)
+    const navOpen = initState(self, NAV_STATE, false)
     const controls = [
       languageChoice ? picker('Language', languages, languageChoice) : null,
       picker('Text direction', DIRECTIONS, directionChoice),
@@ -961,10 +1013,17 @@ const pageDefinition = {
         open ? themeChoice.view((name) => themeEditor({ theme: name })) : null
       ),
     )
+    editorOpen.watch((open) => {
+      if (open) navOpen.set(false)
+    })
+    navOpen.watch((open) => {
+      if (open) editorOpen.set(false)
+    })
 
     return previewShell({
       mark: bound.mark,
       navbar: { map: bound.app, icons: bound.icons, tags: bound.tags },
+      navOpen,
       controls,
       editor,
       content: router({

@@ -915,10 +915,10 @@ files** in one app. The catalog is down the side, and a click opens a component 
 page load. The `imp skill` command that an AI agent must run before it writes code with the
 component sits below the page head. Every named export becomes a tab in a vertical strip, and the
 panel of a tab holds the component in a stage that you can drag to any size, with the code of the
-call site and a state editor behind two toggle buttons. A **Skill** tab shows the skill file of the
-component, rendered as a page. You start no app, you need no backend, and you navigate to no screen.
-You edit the component, the page reloads, and you see it. A preview file that fails to build shows
-its error in place of its panels, and the rest of the catalog stays up.
+call site under a rule and a state editor behind a toggle button. A **Skill** tab shows the skill
+file of the component, rendered as a page. You start no app, you need no backend, and you navigate
+to no screen. You edit the component, the page reloads, and you see it. A preview file that fails to
+build shows its error in place of its panels, and the rest of the catalog stays up.
 
 Underneath, this is the same dev server as `imp start`. So the console and the network activity of
 the browser still stream to your terminal, and a save of any file reloads the page. Your
@@ -965,8 +965,8 @@ scenario in the address, so a link to it reads `?scenario=overdue`.
 
 ### The code of a scenario
 
-Every panel has a code toggle in its head. It opens the call site of the scenario, highlighted and
-ready to copy:
+A rule under the stage of every panel carries a **Code example** button. It opens the call site of
+the scenario, highlighted and ready to copy:
 
 ```js
 import { todoList } from './todos.js'
@@ -1113,6 +1113,11 @@ bottom handle or its corner handle**, with a mouse or a finger. The component la
 at every width. That is the fastest way to find the width where it breaks, and you open no device
 emulation. A readout shows the current size.
 
+A handle is hard to hit on a phone. So the pencil button beside the readout opens two boxes, one for
+the width and one for the height, in pixels. Type a number, and the stage takes that size at once.
+Clear a box, and that axis goes back to the size that the layout gives it. A drag of a handle writes
+its new size into the boxes.
+
 On a phone, the scenario tabs leave little room beside them. So the strip of tabs folds. The button
 at its foot folds the tabs away, and the panel, with its head, its stage and its code panel, gets
 the width of the screen. The strip starts folded on a narrow screen and open on a wide one, and imp
@@ -1125,7 +1130,9 @@ that button, so it is where you look, on a phone as well. It lists every state t
 the scenario initialized, with the tag of the component that holds it. imp finds that state in the
 running scenario, not in your source. So a state with a computed name, or one declared behind a
 helper, is listed like any other. A state that a child reads with `useState` appears once, under the
-component that initialized it. A scenario with no state gets no button.
+component that initialized it. A scenario with no state gets no button. imp leaves out the state
+that its own standard components hold, because that state belongs to the component, not to your
+scenario.
 
 A component that reads a state with `useState` needs a provider above it, or it does not mount. So
 wrap it in a small component in the preview file, one that calls `initState` with that name and a

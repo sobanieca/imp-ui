@@ -452,11 +452,12 @@ export const previewSkill = (html, entry) => {
   return createSkill(html, entry)
 }
 
-export const previewShell = ({ mark, navbar, controls, editor, content }) => {
+export const previewShell = ({ mark, navbar, navOpen, controls, editor, content }) => {
   const host = shell(
     {
       logo: appLogo({ label: 'imp preview', src: mark, href: '/' }),
       navbar,
+      navOpen,
       sidebar: { label: 'Components', background: previewBackdrop() },
       extras: previewSettings(controls),
       gap: 3,
