@@ -6,7 +6,7 @@ include. Each component is a real imp component. It renders as its own element, 
 
 | Import               | Exports                                                                                                                                                                                     | Per-component skill                                                                                                                                                                                                                                           |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                                                                                                                                 | `imp skill std/button`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                     |
+| `imp/std`            | `button`, `buttonGroup`, `heading`, `text`, `link`, `icon`                                                                                                                                  | `imp skill std/button`, `std/buttonGroup`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                  |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                    |
 | `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `codeEditor`, `richTextEditor`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/codeEditor`, `std/richTextEditor`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
 | `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`                                                                                                                             | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`                                                                                                                                                             |
@@ -56,31 +56,67 @@ section(
 button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
 ```
 
-| Prop          | Values                                                    | Default     | Notes                                       |
-| ------------- | --------------------------------------------------------- | ----------- | ------------------------------------------- |
-| `variant`     | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                    |
-| `size`        | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                       |
-| `disabled`    | boolean - **live**                                        | `false`     | Blocks interaction                          |
-| `loading`     | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy` |
-| `block`       | boolean                                                   | `false`     | Fills its container's width                 |
-| `label`       | string - **live**                                         | -           | `aria-label`, for an icon-only button       |
-| `items`       | `{ id?, label, icon?, onClick?, disabled? }[]`            | -           | Adds a menu to the button                   |
-| `menuTrigger` | `'more'`, `'hover'`                                       | `'more'`    | What opens the `items` menu                 |
-| `events`      | event map                                                 | -           | Handlers, as on any element                 |
+| Prop            | Values                                                    | Default     | Notes                                       |
+| --------------- | --------------------------------------------------------- | ----------- | ------------------------------------------- |
+| `variant`       | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                    |
+| `size`          | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                       |
+| `disabled`      | boolean - **live**                                        | `false`     | Blocks interaction                          |
+| `loading`       | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy` |
+| `block`         | boolean                                                   | `false`     | Fills its container's width                 |
+| `square`        | boolean                                                   | `false`     | Equal padding both ways, for an icon        |
+| `label`         | string - **live**                                         | -           | `aria-label`, for an icon-only button       |
+| `pressed`       | boolean - **live**                                        | -           | A toggle button, `aria-pressed`             |
+| `expanded`      | boolean - **live**                                        | -           | Paints `aria-expanded`                      |
+| `haspopup`      | `'menu'`, `'listbox'`                                     | -           | Paints `aria-haspopup`                      |
+| `popoverTarget` | an element with `popover`                                 | -           | The button invokes that popover             |
+| `popoverAction` | `'toggle'`, `'show'`, `'hide'`                            | `'toggle'`  | What a click does to `popoverTarget`        |
+| `events`        | event map                                                 | -           | Handlers, as on any element                 |
 
 **There is no `type` prop and no submit button.** A button acts on its `click` handler. Submit from
 there. `variant: 'link'` is a button that looks like a link. Use `link` when the target is a place
 to go to.
 
-`items` gives the button a menu. When the person chooses an item, the host fires a `select` event
-that you can cancel, with `detail: { id, item }`. imp then calls the `onClick` of that item. The
-panel is a `popover`, and the browser places it. It flips above the trigger near the bottom of the
-screen. It closes on Escape, and on a click away from it. It has no `placement` prop.
+**A button has no menu.** A button with a menu, a dropdown, or a row of joined controls is
+`buttonGroup`, below.
 
-`menuTrigger` selects what opens that menu. `'more'` adds a second control next to the button, with
-a triple-dot label. `'hover'` adds no second control. The button itself opens the menu, when the
-pointer goes over it, and when it takes the focus. The focus stays on the button, and `ArrowDown` or
-`ArrowUp` walks into the menu. The button keeps its own `click` handler in both modes.
+## buttonGroup
+
+```js
+buttonGroup(
+  { items: SAVE_ACTIONS },
+  button({ variant: 'primary', events: { click: save } }, 'Save'),
+)
+buttonGroup({ label: 'Zoom' }, button({ label: 'Zoom out' }, icon(luMinus)), '100%', zoomIn)
+```
+
+The children are the visible controls, joined side by side with no gap. `items` adds a square
+trigger at the end of the row, and the trigger opens the items as a menu. Pass children only,
+`items` only, or both.
+
+| Prop       | Values                                                | Default     | Notes                                   |
+| ---------- | ----------------------------------------------------- | ----------- | --------------------------------------- |
+| `items`    | array of `{ id?, label, icon?, onClick?, disabled? }` | -           | Adds the trigger and the menu           |
+| `trigger`  | `'more'`, `'arrow'`                                   | `'more'`    | Triple-dot or chevron. Needs `items`    |
+| `variant`  | as on `button`                                        | `'default'` | Styles the trigger only                 |
+| `size`     | as on `button`                                        | `'md'`      | Styles the trigger and a text segment   |
+| `disabled` | boolean - **live**                                    | `false`     | Disables the trigger only               |
+| `label`    | string - **live**                                     | -           | `aria-label` on the `role="group"`      |
+| `events`   | event map                                             | -           | Handlers on the group, such as `select` |
+
+Every child carries its own props. The group sets no `variant`, `size` or `disabled` on a child, so
+write `button({ variant: 'primary' }, ...)` for each button that must be primary. Any node goes in
+as it is. Plain text, or a state text, becomes a read-only segment. A menu item is data, because its
+role and its place in the keyboard order must sit in one component. A child never goes into the
+menu.
+
+When the person chooses an item, the host fires a `select` event that you can cancel, with
+`detail: { id, item }`. imp then calls the `onClick` of that item. The menu is a `popover`, and the
+browser places it. It flips above the row near the bottom of the screen. It closes on Escape, and on
+a click away from it. It has no `placement` prop. `'more'` draws a triple-dot trigger, and `'arrow'`
+draws a chevron. A group with `items` and no children is a plain dropdown.
+
+Each control squares only the corners that face a neighbour, in logical properties, so LTR and RTL
+both read correctly. Every std button and std input fits the seam.
 
 ## heading
 

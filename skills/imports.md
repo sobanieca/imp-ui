@@ -16,7 +16,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                     |
 | `imp/service-worker` | `startDevMode`, called from a service worker of your own                     |
-| `imp/std`            | `button`, `heading`, `text`, `link`, `icon`                                  |
+| `imp/std`            | `button`, `buttonGroup`, `heading`, `text`, `link`, `icon`                   |
 | `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                 |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...       |
 | `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`              |

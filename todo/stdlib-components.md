@@ -30,7 +30,13 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
 
 - **General** - `button`, `heading`, `text`, `link` and `icon` have landed. They fixed the
   conventions of the library. `adr/standard-component-library.md` and `adr/bundled-icon-set.md`
-  record those conventions, and `docs/std-components.md` documents them.
+  record those conventions, and `docs/std-components.md` documents them. `buttonGroup` landed beside
+  them. Its children are a row of controls with no gap, and its `items` add a menu of more actions
+  behind a triple-dot or a chevron trigger. The row takes plain text as a read-only segment and any
+  component at all, so a zoom control and a pager need no new component.
+  `adr/joined-control-seam.md` records how a row squares the corners of a neighbour across a shadow
+  boundary. A group has no `switch` mode and no hover trigger. A button that shows the current
+  choice and swaps it from a list is a `dropdownMenu` question, below.
 - **Layout** - `flex` and `stack` have landed. They opened the `imp/std/layout` subpath, and they
   settled the shape of the group. That shape is two flex primitives, an alignment with a physical
   name, a space as a `gap` step, and nothing else, see `adr/layout-two-flex-primitives.md`. `shell`
@@ -41,15 +47,15 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   `virtualList` out of scope. A custom scrollbar builds the scrolling of the browser again, see
   `adr/browser-support-baseline.md`.
 - **Inputs** - `comboBox`, which completes an entry automatically, `slider`, `datePicker`,
-  `dateRangePicker`, `timePicker`, `fileUpload`, `segmented`, `toggleGroup`, `tagInput` _(later)_,
-  `colorPicker` _(later)_, `rating` _(later)_, `otpField` _(later)_, `cascader` _(later)_ and
-  `treeSelect` _(later)_. `form`, and the form layer, have landed. They landed with `textField`,
-  `passwordField`, `searchField`, `textArea`, `numberField`, `select`, `checkbox`, `toggle`,
-  `radioGroup`, `submitButton` and `resetButton`. They opened the `imp/std/inputs` subpath, and they
-  settled the contract that binds a field, see `adr/state-driven-forms.md`. `codeEditor` has landed.
-  It is the tokens editor of the theme editor, see `adr/code-editor-textarea-mirror.md`.
-  `richTextEditor` has landed, see `adr/rich-text-editor-contenteditable-markdown.md`. _Form
-  handling_, below, gives the details.
+  `dateRangePicker`, `timePicker`, `fileUpload`, `segmented` and `toggleGroup`, which both build on
+  the row of `buttonGroup`, `tagInput` _(later)_, `colorPicker` _(later)_, `rating` _(later)_,
+  `otpField` _(later)_, `cascader` _(later)_ and `treeSelect` _(later)_. `form`, and the form layer,
+  have landed. They landed with `textField`, `passwordField`, `searchField`, `textArea`,
+  `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton` and `resetButton`.
+  They opened the `imp/std/inputs` subpath, and they settled the contract that binds a field, see
+  `adr/state-driven-forms.md`. `codeEditor` has landed. It is the tokens editor of the theme editor,
+  see `adr/code-editor-textarea-mirror.md`. `richTextEditor` has landed, see
+  `adr/rich-text-editor-contenteditable-markdown.md`. _Form handling_, below, gives the details.
 - **Display** - `badge`, `avatar`, `popover`, `accordion`, `descriptionList`, `statistic`,
   `timeline` _(later)_, `image`, which previews and zooms, _(later)_, `calendar` _(later)_ and
   `qrCode` _(later)_. `card` and `tooltip` have landed. `card` is the panel of the index and the
@@ -82,11 +88,14 @@ component reaches a barrel with no skill file. So imp enforces this, and nobody 
   anchored panel from `todo/overlay-seam.md`. The second is a **bell for notifications**, which is
   `notifications`, see `todo/toast-notifications.md`.
 - **Navigation** - `pagination`, `dropdownMenu`, `steps`, `anchorNav` _(later)_ and `floatButton`
-  _(later)_. `tabs` has landed. It opened the `imp/std/navigation` subpath. It fixed the shape that
-  data drives, which every composite widget with an internal ARIA id reference follows.
-  `adr/component-preview.md` is its first consumer. The `menu` of the roadmap is **not a
-  component**. A list of destinations is the nav of `shell`. A set of actions with `role="menu"` is
-  `dropdownMenu`.
+  _(later)_. `dropdownMenu` must reuse the menu of `buttonGroup`, not grow a second one.
+  `buttonGroup({ trigger: 'arrow', items })` with no children already is a dropdown of actions.
+  Settle whether a `dropdownMenu` adds anything, such as a listbox whose choice becomes the label of
+  the trigger, or a menu that opens on hover and on focus. `tabs` has landed. It opened the
+  `imp/std/navigation` subpath. It fixed the shape that data drives, which every composite widget
+  with an internal ARIA id reference follows. `adr/component-preview.md` is its first consumer. The
+  `menu` of the roadmap is **not a component**. A list of destinations is the nav of `shell`. A set
+  of actions with `role="menu"` is `dropdownMenu`.
 - **Data** - `table`, which sorts, filters, paginates and selects a row, `list`, `tree` and
   `transferList` _(later)_. **`virtualList` is out of scope.** To window a list builds the
   scrolling, the measurement and the rendering of the browser again, and

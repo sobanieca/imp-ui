@@ -22,6 +22,9 @@ const INDEX_STYLES = `
     margin-block-end: var(--imp-space-4, 16px);
   }
 
+`
+
+const COMPONENT_LIST_STYLES = `
   .card-list {
     display: flex;
     flex-direction: column;
@@ -182,28 +185,129 @@ export const groupsOf = (previews, groups = []) => {
   }))
 }
 
-const componentList = (entries, label) =>
-  el(
-    'nav',
-    { 'aria-label': label },
+const componentListDefinition = {
+  styles: COMPONENT_LIST_STYLES,
+  setup: (_self, entries, label) =>
     el(
-      'ul',
-      { class: 'card-list' },
-      ...entries.map((entry) => el('li', link({ href: entry.href, size: 'sm' }, entry.name))),
+      'nav',
+      { 'aria-label': label },
+      el(
+        'ul',
+        { class: 'card-list' },
+        ...entries.map((entry) => el('li', link({ href: entry.href, size: 'sm' }, entry.name))),
+      ),
     ),
-  )
+}
 
-const BACKDROP_STYLES = `
+let createComponentList = null
+
+const componentList = (entries, label) => {
+  createComponentList ??= component('imp-preview-component-list', componentListDefinition)
+  return createComponentList(entries, label)
+}
+
+const primaryAt = (strength) =>
+  `color-mix(in oklch, var(--imp-color-primary, #2563eb) ${strength}%, transparent)`
+
+const accentAt = (strength, hueShift) =>
+  `color-mix(in oklch, oklch(from var(--imp-color-primary, #2563eb) l c calc(h + ${hueShift})) ` +
+  `${strength}%, transparent)`
+
+const CELL = '2rem'
+
+const GRID_CELLS = [
+  { column: 2, row: 0 },
+  { column: 7, row: 1 },
+  { column: 11, row: 0 },
+  { column: 16, row: 1 },
+  { column: 22, row: 0 },
+  { column: 27, row: 1 },
+  { column: 33, row: 0 },
+  { column: 38, row: 1 },
+  { column: 44, row: 0 },
+  { column: 49, row: 1 },
+  { column: 0, row: 6 },
+  { column: 0, row: 13 },
+  { column: 0, row: 21 },
+  { column: 0, row: 27 },
+]
+
+const CELL_HUES = [0, 80, 160, -50, 240]
+
+const CELL_PULSE_SECONDS = 48
+
+const gridLine = (angle) =>
+  `repeating-linear-gradient(${angle}, black 0 1px, transparent 1px ${CELL})`
+
+const PAGE_BACKDROP_STYLES = `
   :host {
     display: block;
     position: relative;
+    overflow: hidden;
+    pointer-events: none;
   }
 
-  .wash {
+  .grid {
     position: absolute;
     inset: 0;
+    background: linear-gradient(
+      115deg,
+      ${primaryAt(30)},
+      ${accentAt(30, 80)} 25%,
+      ${accentAt(30, 160)} 50%,
+      ${accentAt(30, -50)} 75%,
+      ${primaryAt(30)}
+    );
+    background-size: 160% 160%;
+    mask-image: ${gridLine('90deg')}, ${gridLine('180deg')};
+    animation: imp-preview-grid-drift 240s linear infinite alternate;
+  }
+
+  .cell {
+    position: absolute;
+    inline-size: ${CELL};
+    block-size: ${CELL};
+    inset-block-start: calc(var(--row) * ${CELL});
+    inset-inline-start: calc(var(--column) * ${CELL});
+    opacity: 0;
+    animation: imp-preview-cell-pulse ${CELL_PULSE_SECONDS}s ease-in-out infinite;
+    animation-delay: calc(var(--delay) * -1s);
+  }
+
+  @keyframes imp-preview-grid-drift {
+    from { background-position: 0% 0% }
+    to { background-position: 100% 100% }
+  }
+
+  @keyframes imp-preview-cell-pulse {
+    0%, 100% { opacity: 0 }
+    50% { opacity: 1 }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid { animation: none }
+
+    .cell {
+      opacity: 0.6;
+      animation: none;
+    }
+  }
+`
+
+const PANEL_TONE = 'color-mix(in oklch, var(--imp-color-primary, #2563eb) 5%, ' +
+  'color-mix(in oklch, black 5%, var(--imp-color-surface, #ffffff)))'
+
+const PANEL_BACKDROP_STYLES = `
+  :host {
+    display: block;
+    position: relative;
     pointer-events: none;
-    background: var(--imp-background-app, #ffffff);
+  }
+
+  .tone {
+    position: absolute;
+    inset: 0;
+    background: ${PANEL_TONE};
   }
 `
 
@@ -217,6 +321,7 @@ const CANVAS_STYLES = `
     margin-block-end: calc(-1 * var(--imp-space-4, 16px));
     padding: var(--imp-space-2, 8px);
     overflow: hidden;
+    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     border-radius: var(--imp-shell-frame-radius, 0);
     background: var(--imp-color-surface, #ffffff);
   }
@@ -236,9 +341,31 @@ const canvasDefinition = {
   setup: (_instance, content) => div({ class: 'scroll' }, content),
 }
 
-const backdropDefinition = {
-  styles: BACKDROP_STYLES,
-  setup: () => div({ class: 'wash' }),
+const pick = (list) => list[Math.floor(Math.random() * list.length)]
+
+const cellGradient = () => {
+  const from = pick(CELL_HUES)
+  const to = pick(CELL_HUES.filter((hue) => hue !== from))
+  const angle = Math.floor(Math.random() * 360)
+  return `linear-gradient(${angle}deg, ${accentAt(34, from)}, ${accentAt(34, to)})`
+}
+
+const gridCell = ({ column, row }) =>
+  div({
+    class: 'cell',
+    style: `--column: ${column}; --row: ${row}; --delay: ${
+      (Math.random() * CELL_PULSE_SECONDS).toFixed(1)
+    }; background: ${cellGradient()}`,
+  })
+
+const pageBackdropDefinition = {
+  styles: PAGE_BACKDROP_STYLES,
+  setup: () => [div({ class: 'grid' }), ...GRID_CELLS.map(gridCell)],
+}
+
+const panelBackdropDefinition = {
+  styles: PANEL_BACKDROP_STYLES,
+  setup: () => div({ class: 'tone' }),
 }
 
 const settingsDefinition = {
@@ -410,7 +537,8 @@ const headDefinition = {
 }
 
 let createCanvas = null
-let createBackdrop = null
+let createPageBackdrop = null
+let createPanelBackdrop = null
 let createSettings = null
 let createIndex = null
 let createHead = null
@@ -427,9 +555,14 @@ export const previewCanvas = (content) => {
   return createCanvas(content)
 }
 
-export const previewBackdrop = () => {
-  createBackdrop ??= component('imp-preview-backdrop', backdropDefinition)
-  return createBackdrop()
+const pageBackdrop = () => {
+  createPageBackdrop ??= component('imp-preview-page-backdrop', pageBackdropDefinition)
+  return createPageBackdrop()
+}
+
+const panelBackdrop = () => {
+  createPanelBackdrop ??= component('imp-preview-panel-backdrop', panelBackdropDefinition)
+  return createPanelBackdrop()
 }
 
 export const previewSettings = (controls) => {
@@ -456,10 +589,11 @@ export const previewShell = ({ mark, navbar, navOpen, controls, editor, content 
   const host = shell(
     {
       logo: appLogo({ label: 'imp preview', src: mark, href: '/' }),
-      navbar,
+      navbar: { ...navbar, background: panelBackdrop() },
       navOpen,
-      sidebar: { label: 'Components', background: previewBackdrop() },
+      sidebar: { label: 'Components', background: panelBackdrop() },
       extras: previewSettings(controls),
+      background: pageBackdrop(),
       gap: 3,
     },
     previewCanvas(stack({ gap: 4 }, content)),

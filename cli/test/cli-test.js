@@ -2088,11 +2088,12 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
 
     const themed = await page.evaluate(() => {
-      const switcher = globalThis.impAll('imp-button')
+      const switcher = globalThis.impAll('imp-button-group')
         .find((node) => node.shadowRoot.querySelector('[role="menuitem"]') !== null)
       const shadow = switcher.shadowRoot
       const items = () => [...shadow.querySelectorAll('[role="menuitem"]')]
-      const selected = () => shadow.querySelector('.label').textContent
+      const selected = () =>
+        shadow.querySelector('.row > imp-button').shadowRoot.querySelector('.label').textContent
       const surface = () =>
         getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
       const font = () =>
@@ -2105,7 +2106,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const initial = selected()
       const dark = apply('imp-dark')
       const darkFont = font()
-      shadow.querySelector('.button:not(.more)').click()
+      shadow.querySelector('.row > imp-button').shadowRoot.querySelector('.button').click()
       const stepped = selected()
       return {
         options: items().map((item) => item.textContent),
@@ -2226,12 +2227,14 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const cards = [...root.querySelectorAll('imp-card')]
         .map((host) => host.shadowRoot.querySelector('.card'))
       const card = cards[0]
-      const specimen = card.querySelector('.specimen')
+      const specimen = globalThis.impDeep('.specimen', card)
       const hero = root.querySelector('.hero')
       return {
         headline: globalThis.impOne('imp-heading', hero).shadowRoot.textContent.trim(),
         cards: cards.map((node) =>
-          `${node.getAttribute('aria-label')} (${node.querySelector('.card-scenario').textContent})`
+          `${node.getAttribute('aria-label')} (${
+            globalThis.impDeep('.card-scenario', node).textContent
+          })`
         ).join(', '),
         inert: specimen.hasAttribute('inert'),
         specimen: globalThis.impOne('demo-counter', specimen).shadowRoot.querySelector('#value')

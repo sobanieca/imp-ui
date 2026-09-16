@@ -58,6 +58,7 @@ These are the conventions:
 | ADR                                                                                       | Decision                                                                          |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md)                               | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props  |
+| [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box     |
 | [responsive-fluid-values-only](responsive-fluid-values-only.md)                           | Fluid theme values only; no per-screen props - an app writes its own media query  |
 | [layout-two-flex-primitives](layout-two-flex-primitives.md)                               | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale          |
 | [app-shell-component](app-shell-component.md)                                             | `shell`: one nav tree drives three surfaces; the library's one breakpoint         |

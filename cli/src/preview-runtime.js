@@ -3,7 +3,7 @@ import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme, colorSchemeOf } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { area, navigate, router, useRoute } from 'imp/router'
-import { button, heading, icon, text } from 'imp/std'
+import { button, buttonGroup, heading, icon, text } from 'imp/std'
 import {
   luCode,
   luContrast,
@@ -304,6 +304,9 @@ const GROUP_STYLES = `
     gap: var(--imp-space-4, 16px);
   }
 
+`
+
+const CARD_HEAD_STYLES = `
   .card-head {
     display: flex;
     align-items: baseline;
@@ -325,10 +328,17 @@ const GROUP_STYLES = `
     font-family: var(--imp-font-family-mono, ui-monospace, monospace);
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
+`
+
+const SPECIMEN_STYLES = `
+  :host {
+    display: block;
+    block-size: 100%;
+  }
 
   .specimen {
-    flex: 1;
     box-sizing: border-box;
+    block-size: 100%;
     min-block-size: 8rem;
     max-block-size: 16rem;
     overflow: hidden;
@@ -464,12 +474,10 @@ const themeSwitcher = (choice) =>
   stack(
     { gap: 1, horizontalAlign: 'start' },
     text({ tone: 'secondary', size: 'sm' }, 'Theme'),
-    button(
+    buttonGroup(
       {
         size: 'sm',
-        menuTrigger: 'hover',
-        label: choice.text((name) => `Theme: ${name} - next theme`),
-        events: { click: () => choice.set(nextThemeName(choice.get())) },
+        trigger: 'arrow',
         items: [...themes.keys()].map((name) => ({
           id: name,
           label: name,
@@ -477,10 +485,17 @@ const themeSwitcher = (choice) =>
           onClick: () => choice.set(name),
         })),
       },
-      span(
-        { style: 'display: inline-flex; align-items: center; gap: var(--imp-space-2, 8px)' },
-        choice.view((name) => themeIcon(name)),
-        choice.text((name) => name),
+      button(
+        {
+          size: 'sm',
+          label: choice.text((name) => `Theme: ${name} - next theme`),
+          events: { click: () => choice.set(nextThemeName(choice.get())) },
+        },
+        span(
+          { style: 'display: inline-flex; align-items: center; gap: var(--imp-space-2, 8px)' },
+          choice.view((name) => themeIcon(name)),
+          choice.text((name) => name),
+        ),
       ),
     ),
   )
@@ -793,6 +808,30 @@ const codePanel = (source, showing) => {
   return [div({ class: 'code-bar' }, toggle), panel]
 }
 
+const cardHeadDefinition = {
+  styles: CARD_HEAD_STYLES,
+  setup: (_self, name, scenarioName) =>
+    div({ class: 'card-head' }, span({ class: 'card-name' }, name), scenarioName),
+}
+
+const specimenDefinition = {
+  styles: SPECIMEN_STYLES,
+  setup: (_self, specimen) => specimen,
+}
+
+let createCardHead = null
+let createSpecimen = null
+
+const cardHead = (name, scenarioName) => {
+  createCardHead ??= component('imp-preview-card-head', cardHeadDefinition)
+  return createCardHead(name, scenarioName)
+}
+
+const specimenPanel = (specimen) => {
+  createSpecimen ??= component('imp-preview-specimen', specimenDefinition)
+  return createSpecimen(specimen)
+}
+
 const groupCard = (entry, load) => {
   const scenarioName = span({ class: 'card-scenario' })
   const specimen = div({ class: 'specimen', inert: true, dir: stageDirection() })
@@ -824,9 +863,9 @@ const groupCard = (entry, load) => {
       padding: 'sm',
       href: entry.href,
       label: entry.name,
-      header: div({ class: 'card-head' }, span({ class: 'card-name' }, entry.name), scenarioName),
+      header: cardHead(entry.name, scenarioName),
     },
-    specimen,
+    specimenPanel(specimen),
   )
 }
 

@@ -132,9 +132,13 @@ const installPopoverApi = (window) => {
     open.filter((element) => element.getAttribute('popover') === 'auto')
 
   const invokerTarget = (node) => {
+    if (node.popoverTargetElement instanceof window.Element) return node.popoverTargetElement
     const id = node.getAttribute?.('popovertarget')
     return id ? node.getRootNode().getElementById(id) : null
   }
+
+  const invokerAction = (node) =>
+    node.popoverTargetAction ?? node.getAttribute('popovertargetaction') ?? 'toggle'
 
   const invokedFrom = (path, element) => path.some((node) => invokerTarget(node) === element)
 
@@ -150,7 +154,8 @@ const installPopoverApi = (window) => {
     for (const node of event.composedPath()) {
       const target = invokerTarget(node)
       if (!target) continue
-      const action = node.getAttribute('popovertargetaction') ?? 'toggle'
+      if (node.disabled) return
+      const action = invokerAction(node)
       if (action === 'show') target.showPopover()
       else if (action === 'hide') target.hidePopover()
       else target.togglePopover()

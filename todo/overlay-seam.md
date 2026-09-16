@@ -68,11 +68,15 @@ with no work. It writes `position-try-fallbacks` for a collision. It writes
 while the panel is closed, with `:not(:popover-open) { display: none }`. The rule of the user agent
 that does that uses a selector of one class. So any `display` that a component sets on its own panel
 wins against it, and the panel would otherwise paint at all times. Every instance can use the same
-literal `--imp-anchor`, because a tree scope contains it. The `items` menu of `button` is its first
-consumer. That menu has a `popover="auto"` panel with `role="menu"`, a roving tabindex, and an
-`aria-expanded` attribute that imp writes from the `toggle` event of the panel. Its `menuTrigger`
-prop selects the trigger. That is a triple-dot control beside the button, or the button itself,
-which opens the menu on a pointer over it and on the focus.
+literal `--imp-anchor`, because a tree scope contains it. The menu of `buttonGroup` is its first
+consumer. That menu is a `popover="auto"` with `role="menu"`, a roving tabindex, and an
+`aria-expanded` attribute that imp writes from the `toggle` event of the panel. Its `trigger` prop
+selects the look of the square control that opens it, a triple-dot or a chevron.
+
+**A panel anchors to the row of its component, never to a nested control.** An `anchor-name` on a
+component host names no box, because a host is `display: contents`, and the name cannot cross a tree
+scope either. `adr/joined-control-seam.md` records that, and every anchored component that follows
+must place its `anchor-name` on an element of its own root.
 
 ## What is left
 

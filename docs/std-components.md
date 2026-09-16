@@ -49,7 +49,7 @@ split by group:
 
 | Import               | What it holds                                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | The base set - `button`, `heading`, `text`, `link`, `icon`                                                              |
+| `imp/std`            | The base set - `button`, `buttonGroup`, `heading`, `text`, `link`, `icon`                                               |
 | `imp/std/layout`     | The app frame, the two arrangement primitives and the two overlay frames - `shell`, `flex`, `stack`, `dialog`, `drawer` |
 | `imp/std/inputs`     | `form` and every control that binds to one - `textField`, `select`, `checkbox`, ...                                     |
 | `imp/std/display`    | Components that present content - `card`, `codeBlock`, `markdown`, `emptyState`, `tag`, `tooltip`, ...                  |
@@ -694,43 +694,89 @@ drawer(
 drawer({ title: 'Details', modal: false, open: inspecting }, details())
 ```
 
-A panel that hangs from a control works the same way. Give a button a list of `items`. It then grows
-a triple-dot control beside it, and that control opens the items as a menu:
+A menu that hangs from a control works the same way, and `buttonGroup` is the control that carries
+one. A `buttonGroup` joins controls side by side, with no gap between them. Its children are the
+controls you see. `items` is a list of more actions, and it grows a square triple-dot control at the
+end of the row. That control opens the items as a menu:
 
 ```js
-button({
-  events: { click: save },
-  items: [
-    { id: 'draft', label: 'Save as draft', onClick: saveDraft },
-    { id: 'template', label: 'Save as template', onClick: saveTemplate },
-  ],
-}, 'Save')
+import { button, buttonGroup } from 'imp/std'
+
+buttonGroup(
+  {
+    items: [
+      { id: 'draft', label: 'Save as draft', onClick: saveDraft },
+      { id: 'template', label: 'Save as template', onClick: saveTemplate },
+    ],
+  },
+  button({ variant: 'primary', events: { click: save } }, 'Save'),
+)
 ```
 
-`menuTrigger` selects what opens that menu. The default is `'more'`, which is the triple-dot control
-above. Pass `'hover'` when you want a dropdown instead. The button then carries no second control.
-It opens the menu itself, when the pointer goes over it, and when it takes the focus:
+Each child is a whole button, with its own variant, size, `loading` state and `click` handler. The
+group adds nothing to a child, so a primary action and a plain one can share one row. The `variant`
+and `size` of the group style the trigger, so give them the values of the button beside it. The
+trigger opens the menu. The button beside it keeps its own action, and the menu is never it.
+
+`trigger` selects the look of the control that opens the menu. The default is `'more'`, the
+triple-dot control above. Pass `'arrow'` for the same control with a chevron, when the group reads
+as a dropdown. A group with `items` and no children is only that trigger, and that is a plain
+dropdown of actions:
 
 ```js
-button({
-  menuTrigger: 'hover',
-  items: themes.map((name) => ({ id: name, label: name, onClick: () => use(name) })),
-}, 'Theme')
+buttonGroup({ trigger: 'arrow', items: exportFormats })
 ```
 
-A hover menu keeps the focus on the button when it opens. So the person can read the list, and still
-`Tab` past the button. `ArrowDown` and `ArrowUp` walk into the menu from the button.
+The menu is in the top layer, so nothing clips it. **The browser places it.** It opens under the
+row, and lines up with the trailing edge of the row. It flips above the row when there is no room
+below. It opens the other way when the row sits against the left or the right of the screen. So a
+menu is never half off the screen, wherever its control sits. A click away, or the Escape key,
+closes the menu and puts the focus back on the trigger. The arrow keys walk the items. None of that
+is imp code that follows the row. That is why there is no `placement` prop to get wrong, and nothing
+to keep in step while the page scrolls.
 
-The menu is in the top layer as well, so nothing clips it. **The browser places it.** It opens under
-the trigger, and lines up with the trailing edge of the trigger. It flips above the button when
-there is no room below. It opens the other way when the button sits against the left or the right of
-the screen. So a menu is never half off the screen, wherever its control sits. A click away, or the
-Escape key, closes the menu and puts the focus back on the trigger. The arrow keys walk the items.
-None of that is imp code that follows the button. That is why there is no `placement` prop to get
-wrong, and nothing to keep in step while the page scrolls.
+When the person picks an item, the group fires a `select` event with `detail: { id, item }`, and
+then runs the `onClick` of that item. The items are data, not children, because each option in a
+menu must carry a role and a place in the keyboard order. Both must sit in one component, so the
+group renders them. A child never goes into the menu.
 
-The browser can connect a trigger and its panel only when one component renders both. So a menu is
-always a prop of the control that it belongs to. It is never a wrapper that you put around one.
+### A row of controls that fit each other
+
+Every child of a group squares only the corners that face a neighbour, and the borders collapse into
+one line, so the row reads as a single control. Use it for a zoom control, a pager, a set of text
+styles, and anything else where the buttons belong together:
+
+```js
+const zoom = initState(self, 'canvas.zoom', 100)
+
+buttonGroup(
+  { label: 'Zoom' },
+  button({ label: 'Zoom out', square: true, events: { click: zoomOut } }, icon(luMinus)),
+  zoom.text((value) => `${value}%`),
+  button({ label: 'Zoom in', square: true, events: { click: zoomIn } }, icon(luPlus)),
+)
+```
+
+Two kinds of child go in a row. Any component goes in as it is, so a button, a text field, a select
+or a tag sits in the row and fits it. Plain text becomes a read-only segment, which is the `100%`
+above. A state text keeps the segment live:
+
+```js
+buttonGroup(
+  { label: 'Go to page' },
+  button({ label: 'Previous page', square: true, events: { click: back } }, icon(luChevronLeft)),
+  textField({ value: page, ariaLabel: 'Page number' }),
+  button({ label: 'Next page', square: true, events: { click: forward } }, icon(luChevronRight)),
+)
+```
+
+The row itself is a group, and `label` names it. The corners come from the theme through inherited
+custom properties, so every standard button and every standard input fits the seam with no prop. A
+component from somewhere else keeps its own rounded corners. The seam stops at a nested surface. A
+dialog, a drawer or a menu that a control in the row opens keeps its own corners inside.
+
+Because the corners are logical, the row reads correctly in both directions. Under `dir="rtl"` the
+first control rounds on the right and squares on the left, and imp writes no second rule for it.
 
 ## A card is the panel that a page is made of
 

@@ -129,15 +129,19 @@ the working surface for the development of a standard component. The task runs `
 holds the sidebar's groups, their order and their icons. The CLI holds none of them. The same
 `imp.json` points `preview.entry` at `preview.html`, which links the Prompt and Roboto Mono fonts
 from Google Fonts, and `preview.themes` at the two theme files in `std/`. Those themes take their
-tokens from `std/preview-look.js`: the two fonts, the lighter weights, and a flat `background-app`
-tint mixed from the primary colour, so it fits light and dark alike. The light theme also sets a
-brighter primary, and it tints the sunken, hover and border colours from it. The page itself adds
-two layers in `cli/src/preview-shell.js`: a backdrop that paints the app background under the
-sidebar, and a paper canvas in the surface colour that fills the main region and scrolls inside its
-own rounded box, so its scrollbar stays clear of the corners. The themes are named `imp-light` and
-`imp-dark`, so they replace those two built-in themes in the menu, and a remembered choice keeps the
-look. Prompt is licensed under the SIL Open Font License 1.1 and Roboto Mono under the Apache
-License 2.0, so this use is permitted.
+tokens from `std/preview-look.js`: the two fonts, and the lighter weights. The light theme also sets
+a brighter primary, and it tints the sunken, hover and border colours from it. Neither theme sets
+`background-app`, so the frame sits on the plain surface colour. The page itself adds three layers
+in `cli/src/preview-shell.js`. A page backdrop draws a grid of thin lines under the whole frame. The
+lines take their colour from a gradient of the primary colour and hue-shifted accents that drifts
+over minutes. A few grid cells pulse just as slowly, each with a random gradient of two accents.
+Both animations stop under `prefers-reduced-motion`. A panel backdrop paints the sidebar and the top
+bar in one flat tone, a little darker than the surface. Every colour is mixed from the theme tokens,
+so the layers fit light and dark alike. A paper canvas in the surface colour fills the main region
+and scrolls inside its own rounded box, so its scrollbar stays clear of the corners. The themes are
+named `imp-light` and `imp-dark`, so they replace those two built-in themes in the menu, and a
+remembered choice keeps the look. Prompt is licensed under the SIL Open Font License 1.1 and Roboto
+Mono under the Apache License 2.0, so this use is permitted.
 
 The task serves from `lib/src`, so the session log is `lib/src/.imp/dev.log`. `deno task logs`
 prints it. It runs `imp logs` from the same folder, and it takes the same `-n` and `-f` flags. An
