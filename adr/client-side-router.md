@@ -204,6 +204,16 @@ no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
   trade for routing. So an area avoids the load of code for a section that **nobody** visits. It
   does not remove code for a section that somebody already visited.
 
+- **An app that does not own the path sets `IMP_ROUTING` to `hash`.** The router then keeps the
+  route in the fragment of the address, as `#/todos/42?tab=notes`, and it leaves the path alone.
+  `navigate` pushes a history entry with the fragment, `handle.href()` and `url(path)` write a
+  fragment, and the router reads the route from it. The mode is an environment value, like the base
+  path, because where an app runs is a decision of its deployment and not of its code. The case that
+  needs it is an imp app inside a page that it does not own: a gallery that `imp preview --output`
+  exports, or a widget in a host page (`preview-export.md`). A host with no history fallback is the
+  other case. Under hash routing the base path does not apply, because the fragment is not a path
+  that the host serves.
+
 - **A deep link and a refresh are a concern of the host, and imp keeps them out of the build.** A
   URL that the client routes, such as `/todos/42`, reaches the host on a refresh, and on a cold
   visit. The host must answer with the entry HTML. In **development**, `imp start` falls back to the

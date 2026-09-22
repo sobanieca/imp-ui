@@ -1,9 +1,11 @@
-# textField - a single-line text input bound to a form field
+# textField - the one text input: text, email, password, search, number, or multi-line
 
 ```js
 import { textField } from 'imp/std/inputs'
 
 textField({ field: 'user.email', label: 'Email', type: 'email', required: true })
+textField({ field: 'age', label: 'Age', type: 'number', min: 0, step: 1 })
+textField({ field: 'note', label: 'Notes', rows: 5 })
 ```
 
 The call shape is `textField(props?)`. It takes no children.
@@ -18,8 +20,15 @@ The call shape is `textField(props?)`. It takes no children.
 | `required`  | boolean                                    | Marks it and validates that it is filled in  |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                           |
 
-The other props are `type`, which is `'text'`, `'email'`, `'tel'` or `'url'` and defaults to
-`'text'`, and `placeholder`, `readonly` and `autocomplete`.
+| Prop           | Values                                                                      | Default  | Notes                                           |
+| -------------- | --------------------------------------------------------------------------- | -------- | ----------------------------------------------- |
+| `type`         | `'text'`, `'email'`, `'tel'`, `'url'`, `'password'`, `'search'`, `'number'` | `'text'` | The `type` of the `<input>`                     |
+| `rows`         | number                                                                      | -        | Renders a `<textarea>` with that many lines     |
+| `step`         | number                                                                      | -        | Type `'number'` only. The step of the spinner   |
+| `stepper`      | boolean                                                                     | `false`  | Type `'number'` only. A minus and a plus button |
+| `placeholder`  | string                                                                      | -        | Shown while the control is empty                |
+| `readonly`     | boolean                                                                     | `false`  | The value shows, and the person cannot edit it  |
+| `autocomplete` | string                                                                      | -        | The autofill hint, such as `'new-password'`     |
 
 The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern`, which is a
 RegExp, and `validate`. `validate` is a function. It returns a message string, or `null` when the
@@ -41,8 +50,24 @@ Rules an agent gets wrong:
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
 - imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
   to the default.
+- **This is the only text input.** imp has no separate component for a password, a search, a number
+  or a multi-line text. Set `type`, or set `rows`.
+- **`rows` makes the field multi-line, and `type` makes it something else. Do not pass both.** imp
+  warns, ignores `type`, and renders the `<textarea>`.
+- **Type `'number'` commits a number, not a string.** An empty control commits `undefined`. Text
+  that is not a number fails with `imp.form.number`. `min` and `max` compare the number. `step`
+  applies to this type only.
+- **`stepper` joins a minus and a plus button to the number input.** Each click steps the native
+  input by `step` and stays inside `min` and `max`. The buttons read "Decrease" and "Increase"
+  through `t()`. A `readonly` or `disabled` field disables them. Use it for a count, a quantity or a
+  zoom level. Do not build the row from `button` and a text.
+- **Enter in a multi-line field inserts a newline. It does not submit the form.** Enter in a
+  single-line field submits.
+- **A multi-line field resizes vertically only.** So a long note never breaks the column width.
 - **`type` sets the keyboard and the autofill of the browser. It does not validate.**
   `type: 'email'` does not check the address. Add `pattern` or `validate` for that.
+- **Type `'password'` has no reveal button.** Set `autocomplete` to `'current-password'` or
+  `'new-password'`, so a password manager fills the right value.
 - **The control commits on every keystroke**, so the form state is always current. imp updates the
   input in place, so the caret never jumps.
 
@@ -50,4 +75,9 @@ Rules an agent gets wrong:
 textField({ field: 'name', label: 'Full name', required: true })
 textField({ field: 'user.email', label: 'Email', type: 'email', help: 'We never share it' })
 textField({ field: 'code', label: 'Code', minLength: 6, maxLength: 6 })
+textField({ field: 'password', label: 'Password', type: 'password', autocomplete: 'new-password' })
+textField({ value: query, ariaLabel: 'Search invoices', type: 'search', placeholder: 'Search' })
+textField({ field: 'seats', label: 'Seats', type: 'number', min: 1, max: 50, step: 1 })
+textField({ value: zoom, ariaLabel: 'Zoom', type: 'number', stepper: true, step: 25 })
+textField({ field: 'bio', label: 'Bio', rows: 4, maxLength: 500 })
 ```

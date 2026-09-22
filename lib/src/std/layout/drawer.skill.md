@@ -59,10 +59,11 @@ Rules an agent gets wrong:
   **writable** state, never a `computed`, and set it. The drawer writes `false` back when the person
   dismisses it, so the state stays correct.
 - **`pin` keeps a modal drawer open across a click outside it.** The bar carries a pin toggle with
-  `aria-pressed`. When the person changes it, the drawer writes back into a writable `pin` state and
-  reports `pinToggle`. While the drawer is pinned, only Escape and the close button close it, and
-  the page stays inert. A non-modal drawer never closes on an outside click, so it has no pin, and
-  imp warns when you pass one.
+  `aria-pressed`. Its icon is a tilted outline while loose, and upright and solid while pinned. When
+  the person changes it, the drawer writes back into a writable `pin` state and reports `pinToggle`.
+  While the drawer is pinned, only Escape and the close button close it, and the page stays inert. A
+  non-modal drawer never closes on an outside click, so it has no pin, and imp warns when you pass
+  one.
 - **imp reads `modal` once, at mount.** Render a different drawer instead of a change on a live one.
 - **The content is the children, and `title` is a prop.** The title bar belongs to the drawer, with
   the heading, the pin and the close button. Do not render your own title bar.

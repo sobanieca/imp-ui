@@ -3,14 +3,15 @@
 ## Context
 
 Every overlay that imp will ship must paint above the rest of the page, take the focus, and be
-dismissed. That covers `dialog`, `drawer`, `toast`, `tooltip` and `dropdownMenu`. The obvious answer
-of a library is a `portal` primitive, a registry of z-index values, and a shared focus trap. All
-three are wrong here. The top layer of the platform already stacks in the order of the calls. It
-closes the topmost overlay first on Escape. `showModal()` brings `::backdrop`, `inert` on the rest
-of the document, the entry of the focus, and the restore of the focus. All of that is inside the
-floor of imp, see `browser-support-baseline.md`. To move an overlay into a container near the root
-of the document would also cost the overlay the adopted stylesheet of its component. It would break
-the ARIA id references, which resolve inside one tree scope only, see `shadow-dom-isolation.md`.
+dismissed. That covers `dialog`, `drawer`, `toast`, `tooltip` and the menu of `menuButton`. The
+obvious answer of a library is a `portal` primitive, a registry of z-index values, and a shared
+focus trap. All three are wrong here. The top layer of the platform already stacks in the order of
+the calls. It closes the topmost overlay first on Escape. `showModal()` brings `::backdrop`, `inert`
+on the rest of the document, the entry of the focus, and the restore of the focus. All of that is
+inside the floor of imp, see `browser-support-baseline.md`. To move an overlay into a container near
+the root of the document would also cost the overlay the adopted stylesheet of its component. It
+would break the ARIA id references, which resolve inside one tree scope only, see
+`shadow-dom-isolation.md`.
 
 The platform ships two promotions, and not one, and an overlay needs both. `showModal()` gives the
 modal frame that owns the screen. `popover="manual"` gives the window that does not own the screen.
@@ -153,6 +154,6 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   with the focus and the scroll state to reconcile across the gap.
 - The anchored layer uses neither helper here. A panel that hangs from a trigger is a
   `popover="auto"` element, and CSS anchor positioning places it. imp builds it as the
-  `anchoredStyles` string builder, beside the two helpers. The `items` menu of `button` is its first
-  consumer. `tooltip`, `dropdownMenu` and `popconfirm` are not built yet, see
-  `todo/overlay-seam.md`.
+  `anchoredStyles` string builder, beside the two helpers. The `items` menu of `menuButton` is its
+  first consumer. `tooltip`, the panel of `datePicker`, the list of `comboBox` and the region of
+  `toast` sit on the same layer. What is still open is in `todo/overlay-seam.md`.

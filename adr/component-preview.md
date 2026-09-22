@@ -91,14 +91,17 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   leaves them out of the build.
 - **The app is one split build, and every preview shares one module graph.** A generated entry
   module holds the catalog, the themes, the translations, the groups module and one dynamic
-  `import()` per preview file. esbuild bundles that entry and every preview file as entry points,
-  with code splitting. The library and the chrome land in shared chunks, and each preview file is a
-  chunk of its own that the browser fetches on the first visit. So there is exactly one instance of
-  the library behind the chrome, every component and every mock, and a move between components loads
-  the chunk of the next one only. The build is cached until a file changes, and the watcher reports
-  that change as a reload. A preview file that fails to build is left out of the build and marked in
-  the catalog. Its address shows the error, and the rest of the catalog stays up. An error that no
-  preview file owns fails the whole build, and the page shows it.
+  `import()` per preview file. Each import points at a generated group module, which re-exports
+  every preview file of that group as a namespace. esbuild bundles the entry and every group module
+  as entry points, with code splitting. The library and the chrome land in shared chunks, and each
+  group is a bundle of its own that the browser fetches on the first visit. So there is exactly one
+  instance of the library behind the chrome, every component and every mock. A move to a component
+  of a group that is loaded costs no fetch, and a move to a new group loads that group only. A group
+  page renders every component of the group, so the group is the unit that pays off there, and the
+  export publishes the same split (`preview-export.md`). The build is cached until a file changes,
+  and the watcher reports that change as a reload. A preview file that fails to build is left out of
+  the build and marked in the catalog. Its address shows the error, and the rest of the catalog
+  stays up. An error that no preview file owns fails the whole build, and the page shows it.
 - **The scenarios of a file are vertical `tabs`, one tab per export.** The strip lists the export
   names in file order, and the panel of the selected tab shows the scenario. `tabs` mounts every
   panel at once and hides the rest, so a resized stage or an edited state survives a change of tab.
@@ -110,14 +113,16 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   vertical strip leaves little room, the strip starts folded, and the panel gets the width of the
   screen with its head, its stage and its code panel. On a screen of `40rem` or wider the strip
   starts open. A tap on the fold button is remembered in the browser, so the choice survives a
-  reload. Nothing overflows and the canvas does not scroll sideways. A width is a concern of the
-  parent, so `tabs` gets no prop for it. Two icon-only toggle buttons sit in the panel head, built
-  from `button` with `pressed`. The code toggle opens the call site under the stage. The state
-  toggle opens the editor in a non-modal `dialog`, anchored to the toggle so it opens where the
-  person looks, and the person drags it where it does not cover the specimen. The dialog and the
-  toggle share one `open` state, so a close of the dialog releases the toggle. The stage is resized
-  by dragging its right, bottom, or corner handle with pointer events (mouse and touch), and it has
-  a live size readout. There are no viewport presets. A handle and a readout are enough to find the
+  reload. The strip also follows the screen while the page is open. It folds when the screen gets
+  narrower than `40rem`. When the screen gets wider again, it goes back to the remembered choice.
+  Nothing overflows and the canvas does not scroll sideways. A width is a concern of the parent, so
+  `tabs` gets no prop for it. Two icon-only toggle buttons sit in the panel head, built from
+  `button` with `pressed`. The code toggle opens the call site under the stage. The state toggle
+  opens the editor in a non-modal `dialog`, anchored to the toggle so it opens where the person
+  looks, and the person drags it where it does not cover the specimen. The dialog and the toggle
+  share one `open` state, so a close of the dialog releases the toggle. The stage is resized by
+  dragging its right, bottom, or corner handle with pointer events (mouse and touch), and it has a
+  live size readout. There are no viewport presets. A handle and a readout are enough to find the
   width where a component breaks. A resize changes the parent box only, so the component re-lays-out
   through the real DOM path (`real-dom-no-virtual-dom.md`).
 - **The frame is `shell`, and an application map drives it.** The runtime builds an `appMap()` from
@@ -127,20 +132,20 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   binds the catalog view to the index node, a group screen to each group node, and an `area()` per
   component that imports its chunk on demand. The group screen is a card per component. A card
   renders the first scenario of the file, inert, and links to the component. The card imports the
-  chunk of its file, so a group page loads every component of the group. The sidebar lists the
-  groups with the components under them. The map has one section, so the shell draws the
-  sidebar-only layout on its own (`app-shell-component.md`). Group icons and counts bind at the
-  shell by handle. The brand block is its `logo`, with the imp mark as the image. The mark has a
-  light and a dark variant, and `appLogo` shows the one that matches the colour scheme of the active
-  theme. The server embeds both in the bundle as base64 data URIs. The icon of the page is a
-  separate `.ico` file with the navy mark, embedded the same way. It does not follow the theme,
-  because the tab strip of a browser is painted by the browser, not by the page. So the page
-  requests no asset for its own look, and a copy of it stands alone. The theme, language and
-  direction pickers are its `extras`. The theme editor is in a non-modal `drawer` opened from a
-  button beside them. So navigation between components is one click from anywhere, with no page
-  load. The workbench uses imp's own map, router and frame on purpose: a regression in any of them
-  shows up while you work on anything. The frame is pinned `dir="ltr"` on its host, so the direction
-  control still applies to the stage alone.
+  bundle of its group, so a group page loads with one fetch. The sidebar lists the groups with the
+  components under them. The map has one section, so the shell draws the sidebar-only layout on its
+  own (`app-shell-component.md`). Group icons and counts bind at the shell by handle. The brand
+  block is its `logo`, with the imp mark as the image. The mark has a light and a dark variant, and
+  `appLogo` shows the one that matches the colour scheme of the active theme. The server embeds both
+  in the bundle as base64 data URIs. The icon of the page is a separate `.ico` file with the inverse
+  mark on an ink tile, embedded the same way. It does not follow the theme, because the tab strip of
+  a browser is painted by the browser, not by the page. So the page requests no asset for its own
+  look, and a copy of it stands alone. The theme, language and direction pickers are its `extras`.
+  The theme editor is in a non-modal `drawer` opened from a button beside them. So navigation
+  between components is one click from anywhere, with no page load. The workbench uses imp's own
+  map, router and frame on purpose: a regression in any of them shows up while you work on anything.
+  The frame is pinned `dir="ltr"` on its host, so the direction control still applies to the stage
+  alone.
 - **The theme editor is part of the page, and `theme-editor.md` records its design.** The pickers
   choose which theme is applied. The editor is a library component that the review widget of
   `imp start` also hosts. It derives a whole theme from a few knobs, writes each change straight
@@ -182,8 +187,8 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   knows every component, and draws the whole sidebar, before one chunk of a component loads.
 - **One page serves every address.** The server answers `/` and every GET without a file extension
   with the same HTML, and the router reads the address. `/@imp/preview/app.js` is the entry,
-  `/@imp/preview/<file>.js` is the chunk of one preview file, and `/@imp/preview/chunks/` holds the
-  shared code. A project frames that page through `preview.entry`.
+  `/@imp/preview/groups/<group>.js` is the bundle of one group, and `/@imp/preview/chunks/` holds
+  the shared code. A project frames that page through `preview.entry`.
 - **The preview page is an imp app built from `imp/std`.** Its bars, stage and state editor are
   `component()`s that read the same `--imp-*` tokens as the library
   (`themable-by-default-tokens.md`). So the theme switcher re-skins the page together with the
@@ -259,7 +264,7 @@ are reviewed in the same diff as the component. Because the page is real HTML se
 server, cross-cutting concerns such as theming and i18n are exercised, not approximated.
 
 Because the page is built from `imp/std`, the workbench is a consumer of the library it exists to
-develop. So a regression in `shell`, `button`, `select` or `textArea` shows up while you work on
+develop. So a regression in `shell`, `button`, `select` or `textField` shows up while you work on
 anything. The cost is the circularity: a broken standard component can break the page used to
 diagnose it. So the build-failure path stays raw DOM, and an error always renders.
 

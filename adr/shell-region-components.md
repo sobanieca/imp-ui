@@ -17,7 +17,8 @@ same component as the one in the bar.
 ## Decision
 
 **`imp/std/shell` is a component group like any other.** It holds the pieces that usually fill the
-frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSelect`.
+frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect` and
+`notifications`.
 
 - **`shell` gains no prop for a piece.** Each piece is DOM that the app passes into a region. So the
   frame does not change, and you can replace any piece with your own, and you ask the frame for no
@@ -50,6 +51,11 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect` and `langSe
 - **An action that is asynchronous, and that can fail, is a function prop.** `onSignIn` and
   `onSignOut` of `userCard` are examples, and they follow the `onSubmit` of `bugReport`. You cannot
   await a `CustomEvent`. imp holds no session, and it talks to no identity provider.
+- **`notifications` is the bell, and it renders its own drawer.** It composes `button`, a `tag` with
+  the unread count, and a modal `drawer` with the list. So an app gives the drawer no mount point.
+  The bell takes no data. It reads the app-wide store that `notify` writes, see
+  `app-wide-notification-store.md`. The list inside the drawer is a component of its own, because
+  the CSS of the bell does not reach the content of the drawer, see `shadow-dom-isolation.md`.
 - **`userCard` owns the whole authentication story of the frame.** Its `signedIn` prop picks the
   sign-in button or the card with its sign-out action. An app puts it in the `extras` of `shell`,
   and the frame moves it with the rest of the chrome. The frame knows nothing about a session.

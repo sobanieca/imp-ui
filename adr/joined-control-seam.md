@@ -2,10 +2,11 @@
 
 ## Context
 
-`buttonGroup` joins controls so that they read as one control. Its children are a row of buttons,
-read-only segments, and any component at all, such as a text field in a pager. Its `items` add a
-menu trigger to the end of that row. In every case two neighbours must square the corners that face
-each other, and their two borders must collapse into one line.
+A joined `flex` row makes its children read as one control. The children are buttons, inputs, and
+any component at all, such as a text field in a pager or a `menuButton` at the end of a split
+button. The stepper of `textField` and the row of `segmented` are joined rows of their own. In every
+case two neighbours must square the corners that face each other, and their two borders must
+collapse into one line.
 
 A component composes `button` rather than restyling a native one, which
 `adr/in-page-review-capture.md` settled. So the neighbours in a row are separate custom elements,
@@ -58,17 +59,17 @@ Three further points follow from the boxless host:
 - **A control lifts itself.** `seamLift()` gives the control `z-index: 1` on hover and on focus, in
   its own stylesheet. The negative shift puts the next neighbour's border over the focus ring of the
   one before it, and a `z-index` on the host could not fix that.
-- **A panel anchors to the row, never to a trigger.** `anchor-name` goes on the `.row` element,
-  which buttonGroup owns and which has a box. The row and its last child share the block-end edge
-  and the inline-end edge, so the geometry is the same as anchoring to the trigger, and the anchor
-  name never has to cross a tree.
-- **A row member that is not a control renders inside the row's own shadow root.** That is the text
-  segment of a buttonGroup. Same root means the borders match exactly with no property involved.
+- **A panel anchors to a box of its own root, never to a host.** `anchor-name` goes on the `.box`
+  element that `menuButton` owns and which has a box. The box and the trigger share every edge, so
+  the geometry is the same as anchoring to the trigger, and the anchor name never has to cross a
+  tree.
+- **A row member that is not a component renders inside the row's own shadow root.** That is a
+  segment of `segmented`. Same root means the borders match exactly with no property involved.
 
 A `popovertarget` attribute cannot cross a shadow root either, because it resolves an id. The
 `popoverTargetElement` property can. It accepts any element under a shadow-including ancestor of the
-button, and the panel of buttonGroup is one. So `button` takes a `popoverTarget` element prop and
-sets that property, and buttonGroup hands its panel to the trigger. The platform then owns the
+button, and the panel of `menuButton` is one. So `button` takes a `popoverTarget` element prop and
+sets that property, and `menuButton` hands its panel to the trigger. The platform then owns the
 toggle, the light dismiss, Escape and the top layer. imp still writes `aria-expanded` from the
 `toggle` event of the panel, so a test can read the state from the DOM.
 
@@ -80,8 +81,9 @@ control outside a row keeps `z-index: auto` on hover.
 
 ## Consequences
 
-- One mechanism serves the trigger of a menu and every child of a row, and it serves a foreign
-  component in a row. Nothing in imp measures a box or follows a neighbour.
+- One mechanism serves the trigger of a menu, the step buttons of a text field and every child of a
+  joined row, and it serves a foreign component in a row. Nothing in imp measures a box or follows a
+  neighbour.
 - The direction is correct with no second code path, because all four corner properties and the
   shift are logical. A row is tested in LTR and in RTL.
 - A component that does not adopt `groupableSeam()` keeps its own rounded corners in a row. It looks

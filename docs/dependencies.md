@@ -18,7 +18,7 @@ imp install mitt
 ```
 
 This command resolves the latest release of the `mitt` package from npm. It bundles the package,
-writes the bundle to `dependencies/mitt/mitt.js`, and records the exact version that it resolved in
+writes the bundle to `dependencies/mitt/mitt.js`, and records the exact version it resolved in
 `imp.json`:
 
 ```json
@@ -55,12 +55,12 @@ imp install mitt 3.0.1
 ```
 
 A version is always exact, such as `3.0.1`. It is never `^3` or `3`. When you leave the version out,
-imp resolves the latest release and pins the exact version that it found. `imp.json` always records
+imp resolves the latest release and pins the exact version it found. `imp.json` always records
 exactly what is in the bundle.
 
 ## npm and jsr
 
-A package name refers to npm by default. So `imp install mitt` means `npm:mitt`. To install from the
+A package name refers to npm by default. `imp install mitt` means `npm:mitt`. To install from the
 jsr registry, add the `jsr:` prefix:
 
 ```
@@ -73,7 +73,7 @@ A specifier can also name a module inside the package. The bundle then contains 
 imp install jsr:@std/encoding@1.0.10/base64
 ```
 
-This installs under the alias `base64`, which is the last path segment. So you write:
+This installs under the alias `base64`, the last path segment. So you write:
 
 ```js
 import { encodeBase64 } from 'base64'
@@ -82,13 +82,13 @@ import { encodeBase64 } from 'base64'
 ## How to update
 
 To update a declared dependency, install it again with no version. imp moves the package, and
-everything that it depends on internally, to the latest release:
+everything it depends on internally, to the latest release:
 
 ```
 imp install mitt
 ```
 
-`imp install` with no argument updates **every** declared dependency in the same way:
+`imp install` with no argument updates **every** declared dependency the same way:
 
 ```
 imp install
@@ -108,8 +108,8 @@ from `imp.json`.
 
 ## What `imp install` prints
 
-Every install prints the files that imp wrote, and the exact version of every package that went into
-the bundle. That means the package that you asked for, and everything that it brought in:
+Every install prints the files imp wrote, and the exact version of every package that went into the
+bundle. That includes the package you asked for, and everything it brought in:
 
 ```
 installed micromark (npm:micromark@4.0.2)
@@ -122,15 +122,14 @@ installed micromark (npm:micromark@4.0.2)
     ...
 ```
 
-Read the listing to see what you ship. imp also writes the same listing to disk, so it is still
-there long after the terminal has scrolled. See
-**[The dependency manifest](#the-dependency-manifest)**.
+Read the listing to see what you ship. imp also writes the same listing to disk, so it stays there
+long after the terminal scrolls away. See **[The dependency manifest](#the-dependency-manifest)**.
 
 ## Large dependencies
 
-You commit a vendored bundle to your repository. So imp warns you when a package is heavy. When a
-dependency bundles to more than **200 kB**, `imp install` prints its size in a form that is easy to
-read. So you see what goes into git:
+You commit a vendored bundle to your repository, so imp warns you when a package is heavy. When a
+dependency bundles to more than **200 kB**, `imp install` prints its size in a readable form. You
+see what goes into git:
 
 ```
 warning: npm:some-heavy-package@2.1.0 bundles to 1.4 MB, which will be committed into your git repository
@@ -146,11 +145,11 @@ A component that another imp project publishes for an imp host contains a bare
 author leaves the import unresolved on purpose, so the component shares the copy of imp of the
 application, instead of carrying its own copy.
 
-`imp install` keeps that contract. A bare `imp` or `imp/...` import is the one specifier that imp
-never resolves against a registry. It always means the imp library that your toolchain ships. It
-never means an npm package that has the name `imp`. imp keeps the import bare in the vendored
-bundle. Your app provides the library in the same way that it provides it to your own code: through
-the import map in development, and through your own `imp build` in production.
+`imp install` keeps that contract. A bare `imp` or `imp/...` import is the one specifier imp never
+resolves against a registry. It always means the imp library your toolchain ships. It never means an
+npm package named `imp`. imp keeps the import bare in the vendored bundle. Your app provides the
+library the same way it provides it to your own code: through the import map in development, and
+through your own `imp build` in production.
 
 imp bundles in everything else that a package imports, at install time, from the dependency graph of
 the package, exactly as its author declared it. The aliases in your `imp.json` play no part in how
@@ -168,47 +167,47 @@ installed counter (npm:some-imp-counter@1.0.0)
 ```
 
 Take that note seriously. The component runs against your imp version, which can be newer or older
-than the version that its author developed against. After you update imp, exercise the installed
-components that expect it.
+than the version its author developed against. After you update imp, test the installed components
+that expect it.
 
 ## The `dependencies/` folder
 
 `dependencies/` holds one subfolder per dependency, named after its alias. Each subfolder contains
-the self-contained bundle of that dependency, and every asset that the package needs. An asset can
-be a `.wasm` binary, CSS, an image or a font. imp emits each asset as a sibling file. So when you
-remove the folder, you remove the dependency completely.
+the self-contained bundle of that dependency, and every asset the package needs. An asset can be a
+`.wasm` binary, CSS, an image or a font. imp emits each asset as a sibling file. When you remove the
+folder, you remove the dependency completely.
 
 imp carries an asset that a package **imports** into the production build automatically, with a
 content hash, under `assets/`. The build cannot see an asset that a package instead loads by URL at
-runtime. Copy that asset into your `public/` folder, so that it ships. See
+runtime. Copy that asset into your `public/` folder, so it ships. See
 **[The `public/` folder](cli.md#the-public-folder)**.
 
-**Commit this folder.** It is deliberately cheap to keep in git. A `node_modules` tree stores
+**Commit this folder.** It is cheap to keep in git on purpose. A `node_modules` tree stores
 thousands of files. This folder stores only the code that your imports reach, already bundled and
-minified. That is one small file per dependency. In exchange you get these benefits:
+minified: one small file per dependency. In exchange you get these benefits:
 
 - **Everything works offline.** The dev server and CI never talk to a package registry. A fresh
   clone is the whole app, and it runs.
-- **Reproducibility from the bytes.** There is no lock file. The committed bundle _is_ the frozen
+- **Reproducibility from the bytes.** There is no lock file. The committed bundle is the frozen
   state of the dependency. What you tested is what every machine runs, because it is the same bytes.
 - **Updates that you can review.** A change to a dependency appears in code review as a change to
   its pin in `imp.json`, and a change to its bundle.
 
-Committed does not mean that you maintain it. `imp lint` and `imp fmt` skip the folder. So the
-minified bundle of a package never reports a finding against your code, and imp never reformats it.
-The one check that still reads it is the file-size limit, because the bundle goes into git.
+Committed does not mean that you maintain it. `imp lint` and `imp fmt` skip the folder. The minified
+bundle of a package never reports a finding against your code, and imp never reformats it. The one
+check that still reads it is the file-size limit, because the bundle goes into git.
 
 **The license notice of a package stays in its bundle.** Minification normally removes such a
 comment. `imp install` keeps it, because the notice must survive to what your users download.
-`imp build` takes it from there, and collects it into the `LICENSES.txt` of your app. See
+`imp build` collects it from there into the `LICENSES.txt` of your app. See
 **[License notices](cli.md#license-notices)**. Leave the notice where it is.
 
 ## The dependency manifest
 
 Beside every bundle sits a `manifest.json` that describes the bundle. The bundle is minified and
-self-contained, so you cannot read it. You cannot tell from it what went in. A new `imp install`
+self-contained, so you cannot read it, and you cannot tell from it what went in. A new `imp install`
 does not tell you either, because it resolves the latest transitive versions again, not the versions
-that you shipped. The manifest answers the question instead.
+you shipped. The manifest answers the question instead.
 
 ```json
 {
@@ -243,14 +242,14 @@ clone, with no network:
 - **Can I ship this?** Every license identifier and its text. `imp build` folds the same data into
   the `LICENSES.txt` of your app.
 
-When a package declares no license, `imp install` says so and names the package. It does not pass
-over the package in silence. Settle that question with the author of the package before you ship.
+When a package declares no license, `imp install` says so and names the package. It does not skip
+past the package in silence. Settle that question with the author of the package before you ship.
 
 ## The license policy
 
-A bundled SPA that you ship distributes every package inside it. So a copyleft dependency can oblige
-you to publish your own source. imp checks for that before it becomes your problem. The `licenses`
-key in `imp.json` says what you accept:
+A bundled SPA that you ship distributes every package inside it. A copyleft dependency can then
+oblige you to publish your own source. imp checks for that before it becomes your problem. The
+`licenses` key in `imp.json` says what you accept:
 
 ```json
 { "licenses": "permissive" }
@@ -265,15 +264,15 @@ tiers, and each one includes the tiers before it:
 | `"weak-copyleft"` | the above plus MPL, LGPL, EPL, CDDL                               |
 | `"any"`           | everything, including GPL, AGPL and SSPL - no check               |
 
-When a tier is not the line that you want to draw, give your own list of SPDX identifiers instead.
-imp then refuses anything that is not on the list:
+When a tier is not the line you want to draw, give your own list of SPDX identifiers instead. imp
+then refuses anything that is not on the list:
 
 ```json
 { "licenses": ["MIT", "ISC", "Apache-2.0"] }
 ```
 
 `imp install` and `imp build` both enforce the policy. An install fails before imp writes the
-bundle. So a package that you must not ship never arrives in your repository:
+bundle, so a package you must not ship never arrives in your repository:
 
 ```
 imp install axe-core
@@ -283,46 +282,45 @@ imp install axe-core
   set 'licenses' in imp.json to 'weak-copyleft' to allow it
 ```
 
-The build runs the same check against every dependency that it bundles. That check catches a
-dependency that somebody else added, and a policy that you made stricter later.
+The build runs the same check against every dependency it bundles. That check catches a dependency
+somebody else added, and a policy you made stricter later.
 
 Two details are worth knowing:
 
-- **A choice of licenses counts as the most permissive licence that you can take.** A package
-  published as `(BSD-3-Clause OR GPL-2.0)` passes the permissive tier, because you can take the BSD
-  terms. A package licensed under several licences at the same time must satisfy all of them.
-- **imp reports a license that it cannot identify. It never allows or refuses it in silence.**
+- **A choice of licenses counts as the most permissive license you can take.** A package published
+  as `(BSD-3-Clause OR GPL-2.0)` passes the permissive tier, because you can take the BSD terms. A
+  package licensed under several licenses at the same time must satisfy all of them.
+- **imp reports a license it cannot identify. It never allows or refuses it in silence.**
   `imp install` warns and names the package. The build does not fail. This covers every JSR package,
-  because JSR publishes no license identifier. imp does not block you over something that it only
-  failed to read, and it does not pretend that it checked.
+  because JSR publishes no license identifier. imp does not block you over something it only failed
+  to read, and it does not pretend that it checked.
 
 ## How to choose a dependency well
 
-imp bundles each dependency on its own, and each bundle is self-contained. So two packages that
-share an internal dependency each carry their own copy of it. This also holds in production.
+imp bundles each dependency on its own, and each bundle is self-contained. Two packages that share
+an internal dependency each carry their own copy of it, and this also holds in production.
 `imp build` ships the bundle of each dependency as it is. It never merges shared internals across
-two dependencies. That is a deliberate choice, not a missing feature. A merge would mean that imp
-resolves the packages again at build time, and that gives up the offline build that is reproducible
-from your repository. The choice also matches how imp expects you to build an app: with few
-dependencies, so there is little overlap to merge. When the shipped weight of overlapping
-dependencies becomes visible, treat it as a reason to remove or consolidate dependencies. No build
-option solves it.
+two dependencies. This choice is deliberate, not a missing feature. A merge would mean imp resolves
+the packages again at build time, and that gives up the offline build that is reproducible from your
+repository. The choice also matches how imp expects you to build an app: with few dependencies, so
+there is little overlap to merge. When the shipped weight of overlapping dependencies becomes
+visible, treat it as a reason to remove or consolidate dependencies. No build option solves it.
 
 For a stateless utility library, the duplication is harmless. A library built around a
-**singleton**, which is one shared instance that several packages must see, can break in ways that
-are hard to find. State written through one copy is invisible through the other, and an `instanceof`
-check fails across the two copies. When you need a shared library, install it once yourself and pass
-the instances to the code that needs them. You can also select a package that does not use shared
-module state.
+**singleton**, one shared instance that several packages must see, can break in ways that are hard
+to find. State written through one copy is invisible through the other, and an `instanceof` check
+fails across the two copies. When you need a shared library, install it once yourself and pass the
+instances to the code that needs them. You can also select a package that does not use shared module
+state.
 
 Two more points are worth knowing:
 
 - A package that fetches its assets from a CDN at runtime, instead of importing them, is not fully
-  vendored. It still uses the network. That suits the offline guarantee poorly.
+  vendored. It still uses the network, which does not suit the offline guarantee.
 - imp expects you to use as few dependencies as possible. In the AI era, an agent can write and
-  maintain a small module for your app, for one purpose, faster than you can vet a package. So
-  before you go to a registry, consider that your agent can write the code instead. Fewer
-  dependencies mean less code in the browser, and a codebase that your agent understands completely.
+  maintain a small module for your app, for one purpose, faster than you can vet a package. Before
+  you go to a registry, consider that your agent can write the code instead. Fewer dependencies mean
+  less code in the browser, and a codebase that your agent understands completely.
 
 ## Lint enforcement
 

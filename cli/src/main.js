@@ -29,6 +29,9 @@ USAGE
                      [--list] [--json]  stages with a live state editor (no path: every preview,
                      [--mock]           listed on an index page | --list prints what was found |
                      [--no-mock]        --mock serves the "mocks" folder to previewed components)
+                     [--output <dir>]   --output writes the same page as static files, with one
+                                        bundle per group and a script that defines <imp-preview>,
+                                        the element that embeds the catalog in any web page
   imp review [clear]                    list what was written from the browser by the review
                                         widget the dev server puts on every page - the page,
                                         the element picked and the comment left on it
@@ -166,6 +169,7 @@ try {
         list: rest.includes('--list'),
         json: rest.includes('--json'),
         mocks: mockFlag(rest),
+        output: flag(rest, 'output', null),
       })
       break
     }

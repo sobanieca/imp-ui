@@ -37,6 +37,8 @@ Rules an agent gets wrong:
   colour the box around the icon and leave the icon on `'current'`.
 - **Every icon is a 24x24 square** stroked in the current colour. So `size` sets both axes, and a
   drawing is never squashed. Do not set `inline-size` yourself.
+- **The stroke width is the theme token `icon-stroke-width`**, `2` by default, in units of the 24
+  grid. A theme sets it once for every icon. There is no prop for it.
 - **Every icon prop in the library accepts any DOM node.** So an icon that Lucide does not draw is
   your own inline `<svg>`. `icon()` is a convenience, not a requirement.
 

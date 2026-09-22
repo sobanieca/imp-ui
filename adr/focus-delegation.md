@@ -11,9 +11,9 @@ the worst failure mode.
 That made composition work in one direction only. A component could nest another component and drive
 it through props. But it could never put the focus back on that component, and a focus restore is
 the defining behaviour of any component that opens an overlay. `bugReport` must return the focus to
-the trigger that started the flow. `modal`, `drawer`, `popconfirm` and a toast action all need the
-same restore. See `todo/overlay-seam.md`. There were two ways out, and neither one was acceptable.
-The first was to reach through the shadow root of the nested component. That is exactly what
+the trigger that started the flow. `dialog`, `drawer` and a toast action all need the same restore.
+See `todo/overlay-seam.md`. There were two ways out, and neither one was acceptable. The first was
+to reach through the shadow root of the nested component. That is exactly what
 `shadow-dom-isolation.md` exists to prevent, and it is not possible at mount time in any case,
 because the nested host has not rendered its control yet. The second was to stop composing, and to
 render the markup and the CSS of the control again, locally. That is what `bugReport` did first.

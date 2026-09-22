@@ -1,8 +1,18 @@
-import { dirname, extname, fromFileUrl, relative, resolve, toFileUrl } from '@std/path'
+import {
+  dirname,
+  extname,
+  fromFileUrl,
+  join,
+  normalize,
+  relative,
+  resolve,
+  SEPARATOR,
+  toFileUrl,
+} from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
-import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
+import { DATAURL_ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { dataUri } from './image.js'
 import {
   collectMocks,
@@ -27,6 +37,16 @@ import { addLogSink, logger } from './logger.js'
 import { dim } from './colors.js'
 import { isPreviewFile } from './project-files.js'
 import { previewHref, previewSlugs } from './preview-map.js'
+import {
+  PREVIEW_APP_MARK,
+  PREVIEW_ELEMENT,
+  PREVIEW_ELEMENT_FILE,
+  PREVIEW_ENV,
+  PREVIEW_ROUTE_EVENT,
+  previewElementScript,
+} from './preview-export.js'
+import { envInjectionScript, resolveEnvironment } from './environments.js'
+import { formatSize } from './file-size.js'
 
 const PREVIEW_RUNTIME_URL = import.meta.resolve('./preview-runtime.js')
 
@@ -36,6 +56,9 @@ const PREVIEW_EXTENSIONS = new Set(['js', 'mjs'])
 
 const ENTRY_NAMESPACE = 'imp-preview-entry'
 const RUNTIME_SPECIFIER = 'imp-preview-runtime'
+const GROUP_NAMESPACE = 'imp-preview-group'
+const GROUP_SCHEME = `${GROUP_NAMESPACE}:`
+const GROUPS_FOLDER = 'groups'
 
 const BUNDLE_PREFIX = '/@imp/preview/'
 const APP_BUNDLE_NAME = 'app'
@@ -43,7 +66,7 @@ const APP_BUNDLE_PATH = `${BUNDLE_PREFIX}${APP_BUNDLE_NAME}.js`
 
 const IMP_MARK_URLS = {
   light: new URL('./templates/mark-light.svg', import.meta.url),
-  dark: new URL('./templates/favicon.svg', import.meta.url),
+  dark: new URL('./templates/mark-dark.svg', import.meta.url),
 }
 
 const IMP_FAVICON_URL = new URL('./templates/favicon.ico', import.meta.url)
@@ -151,16 +174,49 @@ const GROUPS_BINDING = 'previewGroups'
 
 const PREVIEW_SUFFIX = /\.preview\.(js|mjs)$/
 
+const ROUTE_BRIDGE = [
+  `started.then(() => {`,
+  `  useRoute().watch((route) => {`,
+  `    globalThis.frameElement?.dispatchEvent(`,
+  `      new CustomEvent(${JSON.stringify(PREVIEW_ROUTE_EVENT)}, { detail: route }),`,
+  `    )`,
+  `  })`,
+  `})`,
+]
+
+const groupModulesOf = (root, catalog, entries) => {
+  const slugs = previewSlugs(catalog)
+  const groups = new Map()
+  const bindings = new Map()
+  for (const entry of entries) {
+    const segment = slugs.get(entry.file).groupSegment
+    if (!groups.has(segment)) groups.set(segment, [])
+    const exports = groups.get(segment)
+    const binding = `preview${exports.length}`
+    exports.push(
+      `export * as ${binding} from ${JSON.stringify(toFileUrl(resolve(root, entry.file)).href)}`,
+    )
+    bindings.set(entry.file, { segment, binding })
+  }
+  return { groups, bindings }
+}
+
+const groupSpecifier = (segment) => `${GROUP_SCHEME}${segment}`
+
+const groupOutput = (segment) => `${GROUPS_FOLDER}/${segment}`
+
 function previewEntryPlugin(
-  { root, catalog, entries, themes, translations, groups, mark, favicon },
+  { root, catalog, entries, themes, translations, groups, mark, favicon, embedded },
 ) {
   const themeBinding = (index) => `customTheme${index}`
   const translationBinding = (index) => `previewTranslations${index}`
-  const loaders = entries.map((entry) =>
-    `  ${JSON.stringify(entry.file)}: () => import(${
-      JSON.stringify(toFileUrl(resolve(root, entry.file)).href)
-    }),`
-  )
+  const modules = groupModulesOf(root, catalog, entries)
+  const loaders = entries.map((entry) => {
+    const { segment, binding } = modules.bindings.get(entry.file)
+    return `  ${JSON.stringify(entry.file)}: () => import(${
+      JSON.stringify(groupSpecifier(segment))
+    }).then((group) => group.${binding}),`
+  })
   const contents = [
     ...themes.map((theme, index) =>
       `import * as ${themeBinding(index)} from ${JSON.stringify(toFileUrl(theme.file).href)}`
@@ -172,7 +228,9 @@ function previewEntryPlugin(
       ? []
       : [`import * as ${GROUPS_BINDING} from ${JSON.stringify(toFileUrl(groups.file).href)}`]),
     `import { startPreview } from '${RUNTIME_SPECIFIER}'`,
-    `startPreview({`,
+    ...(embedded ? [`import { useRoute } from 'imp/router'`] : []),
+    `const started = startPreview({`,
+    `  embedded: ${embedded},`,
     `  mark: ${JSON.stringify(mark)},`,
     `  favicon: ${JSON.stringify(favicon)},`,
     `  catalog: ${JSON.stringify(catalog)},`,
@@ -195,8 +253,13 @@ function previewEntryPlugin(
         : `{ source: ${JSON.stringify(groups.source)}, module: ${GROUPS_BINDING} }`
     },`,
     `})`,
+    ...(embedded ? ROUTE_BRIDGE : []),
   ].join('\n') + '\n'
-  return {
+  const groupEntryPoints = [...modules.groups.keys()].map((segment) => ({
+    in: groupSpecifier(segment),
+    out: groupOutput(segment),
+  }))
+  const plugin = {
     name: 'imp-preview-entry',
     setup(build) {
       build.onResolve({ filter: new RegExp(`^${ENTRY_NAMESPACE}$`) }, () => ({
@@ -205,6 +268,15 @@ function previewEntryPlugin(
       }))
       build.onLoad({ filter: /.*/, namespace: ENTRY_NAMESPACE }, () => ({
         contents,
+        loader: 'js',
+        resolveDir: root,
+      }))
+      build.onResolve({ filter: new RegExp(`^${GROUP_SCHEME}`) }, (args) => ({
+        path: args.path.slice(GROUP_SCHEME.length),
+        namespace: GROUP_NAMESPACE,
+      }))
+      build.onLoad({ filter: /.*/, namespace: GROUP_NAMESPACE }, (args) => ({
+        contents: modules.groups.get(args.path).join('\n') + '\n',
         loader: 'js',
         resolveDir: root,
       }))
@@ -218,6 +290,7 @@ function previewEntryPlugin(
       }))
     },
   }
+  return { plugin, groupEntryPoints }
 }
 
 export function previewIdentity(file, declared = {}) {
@@ -400,46 +473,39 @@ async function collectAppMocks(entries, { root, dependencies }) {
 }
 
 export async function bundlePreviewApp(
-  { root, dependencies, catalog, themes = [], translations = [], groups = null },
+  { root, dependencies, catalog, themes = [], translations = [], groups = null, embedded = false },
 ) {
   const { mocks, failed } = await collectAppMocks(catalog, { root, dependencies })
   const mark = await readImpMark()
   const favicon = await readImpFavicon()
   let entries = catalog.filter((entry) => !failed.some((failure) => failure.file === entry.file))
   for (let round = 0; round < BUILD_ROUNDS_LIMIT; round++) {
-    const embedded = catalog.map((entry) => {
+    const marked = catalog.map((entry) => {
       const failure = failed.find((candidate) => candidate.file === entry.file)
       return failure === undefined ? entry : { ...entry, error: failure.error }
     })
     try {
+      const { plugin, groupEntryPoints } = previewEntryPlugin({
+        root,
+        catalog: marked,
+        entries,
+        themes,
+        translations,
+        groups,
+        mark,
+        favicon,
+        embedded,
+      })
       const result = await runEsbuild({
-        plugins: [
-          previewEntryPlugin({
-            root,
-            catalog: embedded,
-            entries,
-            themes,
-            translations,
-            groups,
-            mark,
-            favicon,
-          }),
-          impResolverPlugin({ root, dependencies, mocks }),
-          denoPlugin(),
-        ],
-        entryPoints: [
-          { in: ENTRY_NAMESPACE, out: APP_BUNDLE_NAME },
-          ...entries.map((entry) => ({
-            in: resolve(root, entry.file),
-            out: entry.file.replace(/\.(js|mjs)$/, ''),
-          })),
-        ],
+        plugins: [plugin, impResolverPlugin({ root, dependencies, mocks }), denoPlugin()],
+        entryPoints: [{ in: ENTRY_NAMESPACE, out: APP_BUNDLE_NAME }, ...groupEntryPoints],
         bundle: true,
         splitting: true,
+        minify: embedded,
         format: 'esm',
         platform: 'browser',
         target: 'es2022',
-        legalComments: 'none',
+        legalComments: embedded ? 'inline' : 'none',
         write: false,
         outdir: BUNDLE_PREFIX,
         chunkNames: 'chunks/[name]-[hash]',
@@ -482,7 +548,7 @@ const TITLE_ELEMENT = /<title\b[^>]*>[\s\S]*?<\/title>/i
 
 const withTitle = (html, title) => {
   const titleTag = `<title>${escapeHtml(title)}</title>`
-  if (TITLE_ELEMENT.test(html)) return html.replace(TITLE_ELEMENT, titleTag)
+  if (TITLE_ELEMENT.test(html)) return html.replace(TITLE_ELEMENT, () => titleTag)
   if (/<head[^>]*>/i.test(html)) {
     return html.replace(/<head[^>]*>/i, (open) => `${open}\n${titleTag}`)
   }
@@ -490,7 +556,7 @@ const withTitle = (html, title) => {
 }
 
 const withBody = (html, body) => {
-  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `\n${body}\n</body>`)
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, () => `\n${body}\n</body>`)
   return `${html}\n${body}\n`
 }
 
@@ -604,8 +670,95 @@ export function createPreviewHandler(
   }
 }
 
+const previewCount = (previews) => `${previews.length} preview${previews.length === 1 ? '' : 's'}`
+
+const resolvePreviewSettings = async (root, imp) => ({
+  themes: await resolvePreviewThemes(root, imp.preview?.themes ?? []),
+  translations: await resolvePreviewTranslations(root, imp.preview?.translations ?? {}),
+  groups: await resolvePreviewGroups(root, imp.preview?.groups ?? null),
+  entry: await resolvePreviewEntry(root, imp.preview?.entry ?? null),
+})
+
+const embeddedPage = async (entry, env) => {
+  const body = `${
+    envInjectionScript({ ...env, ...PREVIEW_ENV })
+  }\n<script type="module" src="${PREVIEW_APP_MARK}"></script>`
+  if (entry === null) return generatedShell(PAGE_TITLE, body, await readImpFavicon())
+  return entryShell(await Deno.readTextFile(entry.file), PAGE_TITLE, body)
+}
+
+const insideOf = (folder, path) =>
+  normalize(path) === normalize(folder) || normalize(path).startsWith(normalize(folder) + SEPARATOR)
+
+async function exportPreview({ root, imp, previews, dependencies, output, env }) {
+  const outdir = resolve(root, output)
+  if (insideOf(outdir, root)) {
+    throw new Error(`the output folder must not contain the project: ${output}`)
+  }
+  const { themes, translations, groups, entry } = await resolvePreviewSettings(root, imp)
+  const resolvedEnv = await resolveEnvironment({ root, config: imp, requestedAlias: env })
+  const catalog = await buildPreviewCatalog(root, previews, groups)
+  let built
+  try {
+    built = await bundlePreviewApp({
+      root,
+      dependencies,
+      catalog,
+      themes,
+      translations,
+      groups,
+      embedded: true,
+    })
+  } finally {
+    await shutdownBundler()
+  }
+  if (built.failed.length) {
+    throw new Error(
+      `the export needs every preview file to build:\n${
+        built.failed.map(({ file, error }) => `${file} failed to build - ${error}`).join('\n')
+      }`,
+    )
+  }
+  const page = await embeddedPage(entry, resolvedEnv)
+  await Deno.remove(outdir, { recursive: true }).catch(() => {})
+  await Deno.mkdir(outdir, { recursive: true })
+  const written = []
+  const write = async (name, text) => {
+    const path = join(outdir, name)
+    await Deno.mkdir(dirname(path), { recursive: true })
+    await Deno.writeTextFile(path, text)
+    written.push(name)
+  }
+  await write(PREVIEW_ELEMENT_FILE, previewElementScript(page))
+  for (const [path, code] of built.files) await write(path.slice(BUNDLE_PREFIX.length), code)
+  const shown = relative(Deno.cwd(), outdir).replaceAll('\\', '/') || '.'
+  logger.info(`imp preview exported ${previewCount(previews)} -> ${shown}/`)
+  console.log(
+    dim(
+      `  <script type="module" src="/${PREVIEW_ELEMENT_FILE}"></script> loads it, ` +
+        `<${PREVIEW_ELEMENT}></${PREVIEW_ELEMENT}> shows it`,
+    ),
+  )
+  console.log(dim(`  #/<group>/<name> in the address of the page opens a component`))
+  if (entry !== null) console.log(dim(`  entry -> ${entry.source}`))
+  written.sort()
+  for (const name of written) {
+    const { size } = await Deno.stat(join(outdir, name))
+    console.log(`  ${name} (${formatSize(size)})`)
+  }
+}
+
 export async function preview(
-  { root, paths = [], port = null, env = null, list = false, json = false, mocks = null } = {},
+  {
+    root,
+    paths = [],
+    port = null,
+    env = null,
+    list = false,
+    json = false,
+    mocks = null,
+    output = null,
+  } = {},
 ) {
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
@@ -627,10 +780,12 @@ export async function preview(
     return
   }
 
-  const themes = await resolvePreviewThemes(root, imp.preview?.themes ?? [])
-  const translations = await resolvePreviewTranslations(root, imp.preview?.translations ?? {})
-  const groups = await resolvePreviewGroups(root, imp.preview?.groups ?? null)
-  const entry = await resolvePreviewEntry(root, imp.preview?.entry ?? null)
+  if (output !== null) {
+    await exportPreview({ root, imp, previews, dependencies, output, env })
+    return
+  }
+
+  const { themes, translations, groups, entry } = await resolvePreviewSettings(root, imp)
   const app = await loadApp(resolve(root, 'index.html'), {
     envAlias: env,
     mocks,
@@ -664,13 +819,12 @@ export async function preview(
   const openPath = paths.length === 1 && previews.length === 1
     ? previewHref(previewSlugs(catalog).get(previews[0]))
     : '/'
-  const count = `${previews.length} preview${previews.length === 1 ? '' : 's'}`
 
   const server = Deno.serve(
     {
       port: listenPort,
       onListen: ({ port }) => {
-        logger.info(`imp preview serving ${count} from ${root}`)
+        logger.info(`imp preview serving ${previewCount(previews)} from ${root}`)
         console.log(`  -> http://localhost:${port}${openPath}`)
         console.log(dim('  logs -> imp logs (-f follows the session)'))
         if (themes.length) {

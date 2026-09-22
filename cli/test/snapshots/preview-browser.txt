@@ -2,8 +2,9 @@ scenarios: zero, Starts at five, Built at render time
 rendered values: 0, 5, 9
 state rows: demo.count <demo-counter>=0, demo.count <demo-counter>=5, demo.count <demo-counter>=9
 resize handles per stage: 3
-scenario tabs on a wide screen: folded false ('Fold the tabs', tabs inert false), panel is 73% of the canvas, head and stage fill it true, canvas scrolls sideways false
-scenario tabs on a phone: folded true ('Unfold the tabs', tabs inert true), panel is 82% of the canvas, head and stage fill it true, canvas scrolls sideways false
+scenario tabs on a wide screen: folded false ('Fold the tabs', tabs inert false), panel is 69% of the canvas, head and stage fill it true, canvas scrolls sideways false
+scenario tabs after the screen shrinks to a phone: folded true ('Unfold the tabs', tabs inert true)
+scenario tabs on a phone: folded true ('Unfold the tabs', tabs inert true), panel is 77% of the canvas, head and stage fill it true, canvas scrolls sideways false
 after a tap on the fold button: aria-expanded true, tabs inert false, a tab is visible true, remembered as 'unfolded'
 state editor on a phone: anchored true, 8px under its toggle, inside the viewport true
 agent instruction strips on the page: 1 (region 'Agent instruction')
@@ -61,3 +62,4 @@ mocked todos: Buy milk, Ship imp
 mocked todos state row: demo.todos <demo-todos>
 agent strip without a sidecar: no skill - write todos.skill.md next to the component. imp shows it here, and 'imp skill' prints it for an agent.
 skill tab without a sidecar: No skill for this component
+a draft of a theme that changed since: applied false, drafts left: 0

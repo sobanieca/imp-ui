@@ -1,4 +1,4 @@
-GET /@imp/preview/components/todos.preview.js
+GET /@imp/preview/groups/components.js
 status: 200
 content-type: text/javascript; charset=utf-8
 cache-control: no-store

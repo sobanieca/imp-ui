@@ -68,43 +68,29 @@ with no work. It writes `position-try-fallbacks` for a collision. It writes
 while the panel is closed, with `:not(:popover-open) { display: none }`. The rule of the user agent
 that does that uses a selector of one class. So any `display` that a component sets on its own panel
 wins against it, and the panel would otherwise paint at all times. Every instance can use the same
-literal `--imp-anchor`, because a tree scope contains it. The menu of `buttonGroup` is its first
+literal `--imp-anchor`, because a tree scope contains it. The menu of `menuButton` is its first
 consumer. That menu is a `popover="auto"` with `role="menu"`, a roving tabindex, and an
 `aria-expanded` attribute that imp writes from the `toggle` event of the panel. Its `trigger` prop
 selects the look of the square control that opens it, a triple-dot or a chevron.
 
-**A panel anchors to the row of its component, never to a nested control.** An `anchor-name` on a
+**A panel anchors to a box of its own root, never to a nested control.** An `anchor-name` on a
 component host names no box, because a host is `display: contents`, and the name cannot cross a tree
 scope either. `adr/joined-control-seam.md` records that, and every anchored component that follows
 must place its `anchor-name` on an element of its own root.
 
 ## What is left
 
-### 1. `dropdownMenu`, the menu on its own
+The overlays of the catalog are built on the seam: `dialog`, `drawer`, the menu of `menuButton` and
+of `breadcrumbs` through `shared/menu.js`, `tooltip`, the panel of `datePicker`, the list of
+`comboBox`, and the region of `toast`. There is no `dropdownMenu`, see
+`adr/short-component-catalog.md`. One case is still open. A menu that is taller than the space on
+either side of its trigger is capped to the viewport and scrolls, but it is not capped to the room
+on the side that it chose. `position-try-order: most-block-size` is the property to use. Check it
+against the four browsers first.
 
-`button({ items })` covers the case of a split button, with `anchoredStyles`. `dropdownMenu` is the
-same panel, behind a trigger of its own. It adds what the menu of the button deliberately leaves
-out. That is a submenu, typeahead, and a group of items. Lift the markup of the menu, and the
-handling of the keyboard, out of `button` when `dropdownMenu` lands. Do not grow a second copy.
-
-There is a case that neither one settles. That is a menu that is taller than the space on either
-side of its trigger. imp caps the panel to the viewport, and the panel scrolls, so nothing runs off
-the screen. But imp does not cap the panel to the room on the side that it chose.
-`position-try-order: most-block-size` is the property to use. Check it against the four browsers
-first.
-
-The placement is exempt from a unit test, because happy-dom has no layout engine. So a unit test can
-check that a component declares the rules. Where a panel lands is a question for an e2e test, and
-for a visual check. `std.spec.js` does that for the menu of the button. It pins the trigger to each
-edge and each corner of the viewport. It then asserts which side the panel took, and that the panel
-stayed on the screen.
-
-### 2. `toast`, the one region
-
-Several toasts share one region, for the order of reading, and for the stacking. That region is a
-component that the app mounts once. It builds each toast from plain data, out of one app-wide store.
-It is still not a container that another component renders into. The full shape, with the
-`notifications` bell of the shell, is in `todo/toast-notifications.md`.
+The placement is exempt from a unit test, because happy-dom has no layout engine. `std.spec.js` pins
+the trigger of the menu to each edge and each corner of the viewport, and asserts which side the
+panel took. The panels of `datePicker`, `comboBox` and `toast` owe the same spec.
 
 ## Where the component boundary falls
 
@@ -112,19 +98,15 @@ This does not change, and it is still the decision that nobody can add later. An
 does not cross a shadow root. `anchor-name` and `position-anchor` resolve inside one tree scope.
 Both force a trigger and its panel into the same shadow root. That is why the seam is a module, and
 not an `overlay()` wrapper. It is also why a panel is a prop of the component that renders its
-trigger, as in `button({ items })`, and never `menu(button(...))`.
+trigger, as in `menuButton({ items })`, and never `menu(button(...))`.
 
-The consequence is that **nobody can make `tooltip({ text }, button(...))` correct**. The child is
-an `imp-button` host. A browser ignores `aria-describedby` on a host with no role. The real
-`<button>` is one root deeper. So a tooltip is a prop of the component that owns the trigger, as in
-`button({ tooltip: 'Copy' })`. `dropdownMenu({ label, items })` is unaffected, because it renders
-its own trigger.
+The consequence is that **a tooltip cannot name its control**. The child of
+`tooltip({ text }, button(...))` is an `imp-button` host, and `aria-describedby` on a host with no
+role names nothing. So `tooltip` is visual only. It wraps the control in a box of its own root, and
+anchors the panel to that box. The control carries its own accessible name.
 
 ## Open questions
 
-- **How to spell a tooltip.** `button({ tooltip: 'Copy' })` follows from the constraint about a tree
-  scope. But it grows a prop on every component that can carry one. Compare that against shipping no
-  `tooltip` at all, and using `title`.
 - **A veto on a dismissal.** The seam prevents `cancel` itself. So an app cannot refuse to close. A
   form with unsaved changes is the case that would want a veto. Decide whether that is a hook of the
   seam, or a prop of a component, when a component asks for it.

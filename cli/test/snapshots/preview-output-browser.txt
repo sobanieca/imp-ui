@@ -1,0 +1,15 @@
+host page keeps its own document: Host page
+frame url is a blob of the host origin: true
+root-relative link of the entry resolves on the host: true
+index shown first: true, route "", title imp preview
+after a click: Counter, route #/widgets/counter, title imp preview - Widgets / Counter
+host address after the click: /gallery#/widgets/counter
+host hash change followed: index true, route "#/"
+host address after the follow: /gallery
+deep link: Counter, route #/widgets/counter?scenario=startsAtFive, tab Starts at five
+sidebar without the imp brand: true
+theme before the host offers one: light
+theme after the host offers imp-dark: dark
+theme after a pick in the gallery: host imp-light, frame light
+theme events on the element: imp-dark, imp-light
+page errors: none

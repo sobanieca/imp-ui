@@ -8,7 +8,7 @@ richTextEditor({ value: note, label: 'Note', placeholder: 'Write here', imageSiz
 ```
 
 The call shape is `richTextEditor(props?)`. It takes no children. It is a form control, so every
-form rule of `textArea` holds here. The person sees rich text. The value is a markdown string.
+form rule of `textField` holds here. The person sees rich text. The value is a markdown string.
 
 | Prop          | Values                                     | Default | Notes                                             |
 | ------------- | ------------------------------------------ | ------- | ------------------------------------------------- |
@@ -25,7 +25,7 @@ form rule of `textArea` holds here. The person sees rich text. The value is a ma
 | `disabled`    | boolean, or a state holding one - **live** | `false` | Blocks interaction                                |
 
 The validation props are `required`, `minLength`, `maxLength`, `pattern`, `validate` and
-`validateAsync`, with the same rules as `textArea`. They see the markdown string.
+`validateAsync`, with the same rules as `textField`. They see the markdown string.
 
 The toolbar has these tools, in this order: bold, italic, strikethrough, code, heading 1 to 3,
 quote, code block, bulleted list, numbered list, link, image, emoji, and align start, center and
@@ -82,7 +82,7 @@ form(
 )
 ```
 
-Related: imp skill std/markdown - the renderer for this value; imp skill std/textArea - the plain
+Related: imp skill std/markdown - the renderer for this value; imp skill std/textField - the plain
 multi-line input; imp skill std/codeEditor - the code input with syntax highlighting; imp skill
 std/form - the form that a `field` binds to; imp skill i18n - the wording of the tools and of
 `imp.richTextEditor.keys`.

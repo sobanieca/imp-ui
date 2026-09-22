@@ -17,8 +17,8 @@ Those two things are what a code editor adds.
 ## Decision
 
 **`codeEditor` is a standard component in `imp/std/inputs`, and it is a `<textarea>`.** It binds to
-a form field or to a state through the same contract as `textArea`, see `state-driven-forms.md`. The
-value is the text, on every keystroke. A parse check belongs in `validate`, and the error shows
+a form field or to a state through the same contract as `textField`, see `state-driven-forms.md`.
+The value is the text, on every keystroke. A parse check belongs in `validate`, and the error shows
 after the person leaves the control, as in every other control.
 
 - **The colours come from a mirror behind the text.** The component renders a `pre` under the
@@ -34,6 +34,12 @@ after the person leaves the control, as in every other control.
   the size, the line height, the tab size and both insets, and it names the `textarea` in the same
   rule as the mirror. A style that reached only one of the two would misplace every coloured token
   under the caret.
+- **The line height and the block padding sit on a grid of 4px.** The rule rounds
+  `1em * line-height-normal` and `space-3` with the CSS `round()` function. A theme can give a line
+  height such as 20.41px. A textarea and a block of inline boxes place such lines on different
+  device pixels, most of all on a screen scaled to 125% or 150%. The rows of the mirror then leave
+  the rows of the caret. A multiple of 4px is a whole number of device pixels at each of those
+  scales, so both layers put each row in the same place.
 - **Three keys are handled, and nothing else.** Tab inserts two spaces, or indents every line of a
   selection, and Shift-Tab outdents. Enter keeps the indentation of the line. The edits go through
   `document.execCommand('insertText')`, so they sit on the undo stack of the control like a

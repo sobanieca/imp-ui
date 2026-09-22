@@ -98,14 +98,16 @@ through a `token('color-primary')` helper, which expands to `var(--imp-color-pri
 the fallback taken from the built-in light theme. So a component renders on its own, before imp
 applies a theme, and no component can state a default that the themes disagree with.
 
-**The fonts are two tokens, and the page loads them.** `font-family` and `font-family-mono` hold a
-font stack each, and the built-in themes set system stacks. imp loads no font, injects no `<link>`,
-and reads no font from a config. A `<link>` or an `@font-face` rule in `index.html` is what the
-browser needs, and a font face that the document declares reaches every shadow root. So the platform
-owns the loading, and the theme owns the name. The standard components use two weights,
-`font-weight-normal` at 400 and `font-weight-bold` at 600. There is no medium weight. Two weights
-keep a web font to two files, and a label at 600 reads as a control without the heaviness of 700. A
-weight token that no component uses would ask an app to load a file for nothing.
+**The fonts are three tokens, and the page loads them.** `font-family` and `font-family-mono` hold a
+font stack each, and the built-in themes set system stacks. `font-family-heading` is the font of
+`heading` and of the name in `appLogo`. Its default is `var(--imp-font-family)`, so a theme that
+does not set it has one text font. A design with a display face sets this one token. imp loads no
+font, injects no `<link>`, and reads no font from a config. A `<link>` or an `@font-face` rule in
+`index.html` is what the browser needs, and a font face that the document declares reaches every
+shadow root. So the platform owns the loading, and the theme owns the name. The standard components
+use two weights, `font-weight-normal` at 400 and `font-weight-bold` at 600. There is no medium
+weight. Two weights keep a web font to two files, and a label at 600 reads as a control without the
+heaviness of 700. A weight token that no component uses would ask an app to load a file for nothing.
 
 The **scheme for a token name is fixed.** It holds semantic colour roles, numeric scales such as
 `space-*`, `radius-*`, `shadow-*` and `font-size-*`, and font families. The **exact list is not

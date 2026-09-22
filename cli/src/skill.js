@@ -78,6 +78,7 @@ export const SKILLS = [
       'imp/std/inputs',
       'imp/std/navigation',
       'imp/std/feedback',
+      'imp/std/data',
       'imp/std/shell',
     ],
     summary: 'the built-in component library: text, layout, forms, navigation and empty states',

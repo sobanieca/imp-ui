@@ -27,6 +27,7 @@ import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
 import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
 import * as stdShellModule from '../../lib/src/std/shell/index.js'
 import * as stdFeedbackModule from '../../lib/src/std/feedback/index.js'
+import * as stdDataModule from '../../lib/src/std/data/index.js'
 
 export const IMP_MODULE_EXPORTS = {
   'imp': impModule,
@@ -46,6 +47,7 @@ export const IMP_MODULE_EXPORTS = {
   'imp/std/navigation': stdNavigationModule,
   'imp/std/shell': stdShellModule,
   'imp/std/feedback': stdFeedbackModule,
+  'imp/std/data': stdDataModule,
 }
 
 const STD_SPECIFIERS = Object.keys(IMP_MODULE_EXPORTS).filter(isImpStdSpecifier)
@@ -64,8 +66,12 @@ const ELEMENT_FACTORIES = new Set(
   Object.keys(htmlModule).filter((name) => name !== 'el' && name !== 'html'),
 )
 
+const STD_PLAIN_FUNCTIONS = new Set(['notify', 'dismiss'])
+
 const STD_COMPONENTS = new Set(
-  STD_SPECIFIERS.flatMap((specifier) => Object.keys(IMP_MODULE_EXPORTS[specifier])),
+  STD_SPECIFIERS
+    .flatMap((specifier) => Object.keys(IMP_MODULE_EXPORTS[specifier]))
+    .filter((name) => !STD_PLAIN_FUNCTIONS.has(name)),
 )
 
 const PROPS_DISPATCHING_SPECIFIERS = ['imp/html', ...STD_SPECIFIERS]

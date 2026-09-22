@@ -1,11 +1,13 @@
 import { component } from 'imp'
+import { url, useRoute } from 'imp/router'
 import { div, el, pre, span } from 'imp/html'
 import { heading, link, text } from 'imp/std'
-import { card, codeBlock, emptyState, tag } from 'imp/std/display'
+import { card, emptyState, tag } from 'imp/std/display'
 import { flex, shell, stack } from 'imp/std/layout'
 import { appLogo } from 'imp/std/shell'
 import { luFolder } from 'imp/icons'
 import { copyButton } from '../../lib/src/std/shared/copy-button.js'
+import { brandBars, geometry, MAIN_1, markdownBody, markdownStyles } from './design-chrome.js'
 
 const INDEX_STYLES = `
   .hero {
@@ -36,107 +38,6 @@ const COMPONENT_LIST_STYLES = `
   }
 `
 
-const MARKDOWN_STYLES = `
-  .md {
-    max-inline-size: 80ch;
-    color: var(--imp-color-text, #0f172a);
-    font-family: var(--imp-font-family, system-ui, sans-serif);
-    font-weight: var(--imp-font-weight-normal, 400);
-    font-size: var(--imp-font-size-md, 1rem);
-    line-height: var(--imp-line-height-normal, 1.6);
-  }
-
-  .md > :first-child {
-    margin-block-start: 0;
-  }
-
-  .md > :last-child {
-    margin-block-end: 0;
-  }
-
-  .md h1,
-  .md h2,
-  .md h3,
-  .md h4 {
-    margin-block: var(--imp-space-5, 24px) var(--imp-space-3, 12px);
-    font-weight: var(--imp-font-weight-bold, 600);
-    line-height: var(--imp-line-height-tight, 1.25);
-  }
-
-  .md h1 {
-    font-size: var(--imp-font-size-xl, 1.5rem);
-  }
-
-  .md h2 {
-    font-size: var(--imp-font-size-lg, 1.25rem);
-  }
-
-  .md h3,
-  .md h4 {
-    font-size: var(--imp-font-size-md, 1rem);
-  }
-
-  .md p,
-  .md ul,
-  .md ol,
-  .md table,
-  .md pre,
-  .md blockquote {
-    margin-block: 0 var(--imp-space-3, 12px);
-  }
-
-  .md ul,
-  .md ol {
-    padding-inline-start: var(--imp-space-5, 24px);
-  }
-
-  .md li {
-    margin-block-end: var(--imp-space-1, 4px);
-  }
-
-  .md a {
-    color: var(--imp-color-primary, #2563eb);
-  }
-
-  .md code {
-    padding-inline: 0.3em;
-    border-radius: var(--imp-radius-item, 6px);
-    background: var(--imp-color-surface-sunken, #f8fafc);
-    font-family: var(--imp-font-family-mono, ui-monospace, monospace);
-    font-size: 0.9em;
-  }
-
-  .md imp-code-block {
-    margin-block: var(--imp-space-3, 12px);
-  }
-
-  .md table {
-    display: block;
-    overflow: auto;
-    border-collapse: collapse;
-    font-size: var(--imp-font-size-sm, 0.875rem);
-  }
-
-  .md th,
-  .md td {
-    padding-block: var(--imp-space-1, 4px);
-    padding-inline: var(--imp-space-2, 8px);
-    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    text-align: start;
-    vertical-align: top;
-  }
-
-  .md th {
-    font-weight: var(--imp-font-weight-bold, 600);
-  }
-
-  .md blockquote {
-    padding-inline-start: var(--imp-space-3, 12px);
-    border-inline-start: 3px solid var(--imp-color-border, #cbd5e1);
-    color: var(--imp-color-secondary, #64748b);
-  }
-`
-
 const HEAD_STYLES = `
   .head {
     display: flex;
@@ -161,7 +62,7 @@ const HEAD_STYLES = `
     font-size: var(--imp-font-size-sm, 0.875rem);
   }
 
-  ${MARKDOWN_STYLES}
+  ${markdownStyles}
 
   .md.description {
     color: var(--imp-color-secondary, #64748b);
@@ -206,108 +107,41 @@ const componentList = (entries, label) => {
   return createComponentList(entries, label)
 }
 
-const primaryAt = (strength) =>
-  `color-mix(in oklch, var(--imp-color-primary, #2563eb) ${strength}%, transparent)`
-
-const accentAt = (strength, hueShift) =>
-  `color-mix(in oklch, oklch(from var(--imp-color-primary, #2563eb) l c calc(h + ${hueShift})) ` +
-  `${strength}%, transparent)`
-
-const CELL = '2rem'
-
-const GRID_CELLS = [
-  { column: 2, row: 0 },
-  { column: 7, row: 1 },
-  { column: 11, row: 0 },
-  { column: 16, row: 1 },
-  { column: 22, row: 0 },
-  { column: 27, row: 1 },
-  { column: 33, row: 0 },
-  { column: 38, row: 1 },
-  { column: 44, row: 0 },
-  { column: 49, row: 1 },
-  { column: 0, row: 6 },
-  { column: 0, row: 13 },
-  { column: 0, row: 21 },
-  { column: 0, row: 27 },
-]
-
-const CELL_HUES = [0, 80, 160, -50, 240]
-
-const CELL_PULSE_SECONDS = 48
-
-const gridLine = (angle) =>
-  `repeating-linear-gradient(${angle}, black 0 1px, transparent 1px ${CELL})`
-
-const PAGE_BACKDROP_STYLES = `
+const PANEL_STYLES = `
   :host {
     display: block;
     position: relative;
-    overflow: hidden;
     pointer-events: none;
   }
 
-  .grid {
+  .paper {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      115deg,
-      ${primaryAt(30)},
-      ${accentAt(30, 80)} 25%,
-      ${accentAt(30, 160)} 50%,
-      ${accentAt(30, -50)} 75%,
-      ${primaryAt(30)}
-    );
-    background-size: 160% 160%;
-    mask-image: ${gridLine('90deg')}, ${gridLine('180deg')};
-    animation: imp-preview-grid-drift 240s linear infinite alternate;
-  }
-
-  .cell {
-    position: absolute;
-    inline-size: ${CELL};
-    block-size: ${CELL};
-    inset-block-start: calc(var(--row) * ${CELL});
-    inset-inline-start: calc(var(--column) * ${CELL});
-    opacity: 0;
-    animation: imp-preview-cell-pulse ${CELL_PULSE_SECONDS}s ease-in-out infinite;
-    animation-delay: calc(var(--delay) * -1s);
-  }
-
-  @keyframes imp-preview-grid-drift {
-    from { background-position: 0% 0% }
-    to { background-position: 100% 100% }
-  }
-
-  @keyframes imp-preview-cell-pulse {
-    0%, 100% { opacity: 0 }
-    50% { opacity: 1 }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .grid { animation: none }
-
-    .cell {
-      opacity: 0.6;
-      animation: none;
-    }
+    background: var(--imp-color-surface, #ffffff);
   }
 `
 
-const PANEL_TONE = 'color-mix(in oklch, var(--imp-color-primary, #2563eb) 5%, ' +
-  'color-mix(in oklch, black 5%, var(--imp-color-surface, #ffffff)))'
-
-const PANEL_BACKDROP_STYLES = `
+const MARKER_STYLES = `
   :host {
-    display: block;
-    position: relative;
-    pointer-events: none;
+    display: inline-flex;
   }
 
-  .tone {
-    position: absolute;
-    inset: 0;
-    background: ${PANEL_TONE};
+  .marker {
+    inline-size: 8px;
+    block-size: 8px;
+    background: var(--imp-color-border, #cbd5e1);
+    transition: background-color var(--imp-duration-fast, 120ms) ease-out;
+  }
+
+  .marker.current { background: ${MAIN_1} }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marker { transition: none }
+  }
+
+  @media (forced-colors: active) {
+    .marker { background: GrayText }
+    .marker.current { background: Highlight }
   }
 `
 
@@ -319,53 +153,44 @@ const CANVAS_STYLES = `
     min-block-size: 0;
     margin-inline: calc(-1 * var(--imp-space-4, 16px));
     margin-block-end: calc(-1 * var(--imp-space-4, 16px));
-    padding: var(--imp-space-2, 8px);
+    position: relative;
     overflow: hidden;
-    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
-    border-radius: var(--imp-shell-frame-radius, 0);
-    background: var(--imp-color-surface, #ffffff);
   }
 
   .scroll {
+    position: relative;
     box-sizing: border-box;
     block-size: 100%;
     overflow: auto;
-    padding: var(--imp-space-2, 8px);
+    padding-block: var(--imp-space-2, 8px) var(--imp-space-6, 32px);
+    padding-inline: var(--imp-space-6, 32px);
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklch, var(--imp-color-text, #0f172a) 28%, transparent) transparent;
   }
+
+  .column { max-inline-size: 1040px }
 `
 
 const canvasDefinition = {
   styles: CANVAS_STYLES,
-  setup: (_instance, content) => div({ class: 'scroll' }, content),
+  setup: (_instance, content) => [
+    geometry(),
+    div({ class: 'scroll' }, div({ class: 'column' }, content)),
+  ],
 }
 
-const pick = (list) => list[Math.floor(Math.random() * list.length)]
-
-const cellGradient = () => {
-  const from = pick(CELL_HUES)
-  const to = pick(CELL_HUES.filter((hue) => hue !== from))
-  const angle = Math.floor(Math.random() * 360)
-  return `linear-gradient(${angle}deg, ${accentAt(34, from)}, ${accentAt(34, to)})`
+const panelDefinition = {
+  styles: PANEL_STYLES,
+  setup: () => div({ class: 'paper' }),
 }
 
-const gridCell = ({ column, row }) =>
-  div({
-    class: 'cell',
-    style: `--column: ${column}; --row: ${row}; --delay: ${
-      (Math.random() * CELL_PULSE_SECONDS).toFixed(1)
-    }; background: ${cellGradient()}`,
-  })
-
-const pageBackdropDefinition = {
-  styles: PAGE_BACKDROP_STYLES,
-  setup: () => [div({ class: 'grid' }), ...GRID_CELLS.map(gridCell)],
-}
-
-const panelBackdropDefinition = {
-  styles: PANEL_BACKDROP_STYLES,
-  setup: () => div({ class: 'tone' }),
+const markerDefinition = {
+  styles: MARKER_STYLES,
+  setup: (self, href) => {
+    const marker = span({ class: 'marker' })
+    useRoute().watch(self, ({ path }) => marker.classList.toggle('current', url(path) === href))
+    return marker
+  },
 }
 
 const settingsDefinition = {
@@ -433,6 +258,13 @@ const agentStrip = (self, entry) =>
   )
 
 const SKILL_STYLES = `
+  .paper {
+    padding: var(--imp-space-4, 16px);
+    border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
+    border-radius: var(--imp-radius-container, 10px);
+    background: var(--imp-color-surface, #ffffff);
+  }
+
   .agent {
     margin-block-end: var(--imp-space-4, 16px);
     display: flex;
@@ -472,18 +304,8 @@ const SKILL_STYLES = `
     line-height: var(--imp-line-height-normal, 1.6);
   }
 
-  ${MARKDOWN_STYLES}
+  ${markdownStyles}
 `
-
-const markdownBody = (html, extraClass = null) => {
-  const body = div({ class: extraClass === null ? 'md' : `md ${extraClass}` })
-  body.innerHTML = html
-  for (const block of body.querySelectorAll('pre > code')) {
-    const language = block.className.match(/language-(\S+)/)?.[1]
-    block.parentElement.replaceWith(codeBlock({ language, code: block.textContent }))
-  }
-  return body
-}
 
 const skillBody = (html, entry) => {
   if (html === null) {
@@ -499,7 +321,8 @@ const skillBody = (html, entry) => {
 
 const skillDefinition = {
   styles: SKILL_STYLES,
-  setup: (self, html, entry) => div(agentStrip(self, entry), skillBody(html, entry)),
+  setup: (self, html, entry) =>
+    div({ class: 'paper' }, agentStrip(self, entry), skillBody(html, entry)),
 }
 
 const FAILURE_STYLES = `
@@ -537,8 +360,8 @@ const headDefinition = {
 }
 
 let createCanvas = null
-let createPageBackdrop = null
-let createPanelBackdrop = null
+let createPanel = null
+let createMarker = null
 let createSettings = null
 let createIndex = null
 let createHead = null
@@ -555,14 +378,14 @@ export const previewCanvas = (content) => {
   return createCanvas(content)
 }
 
-const pageBackdrop = () => {
-  createPageBackdrop ??= component('imp-preview-page-backdrop', pageBackdropDefinition)
-  return createPageBackdrop()
+const panel = () => {
+  createPanel ??= component('imp-preview-panel', panelDefinition)
+  return createPanel()
 }
 
-const panelBackdrop = () => {
-  createPanelBackdrop ??= component('imp-preview-panel-backdrop', panelBackdropDefinition)
-  return createPanelBackdrop()
+export const previewMarker = (href) => {
+  createMarker ??= component('imp-preview-marker', markerDefinition)
+  return createMarker(href)
 }
 
 export const previewSettings = (controls) => {
@@ -585,21 +408,22 @@ export const previewSkill = (html, entry) => {
   return createSkill(html, entry)
 }
 
-export const previewShell = ({ mark, navbar, navOpen, controls, editor, content }) => {
+export const previewShell = (
+  { embedded, mark, navbar, navOpen, controls, editor, content },
+) => {
   const host = shell(
     {
-      logo: appLogo({ label: 'imp preview', src: mark, href: '/' }),
-      navbar: { ...navbar, background: panelBackdrop() },
+      ...(embedded ? {} : { logo: appLogo({ label: 'imp preview', src: mark, href: '/' }) }),
+      navbar: { ...navbar, background: brandBars() },
       navOpen,
-      sidebar: { label: 'Components', background: panelBackdrop() },
+      sidebar: { label: 'Components', background: panel() },
       extras: previewSettings(controls),
-      background: pageBackdrop(),
-      gap: 3,
+      maxWidth: 'none',
     },
     previewCanvas(stack({ gap: 4 }, content)),
     editor,
   )
   host.setAttribute('dir', 'ltr')
-  host.style.setProperty('--imp-shell-sidebar-inline-size', '15rem')
+  host.style.setProperty('--imp-shell-sidebar-inline-size', '248px')
   return host
 }

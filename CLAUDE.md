@@ -127,21 +127,25 @@ and a green test run is never about stale code. An unchanged tree costs one `git
 the working surface for the development of a standard component. The task runs `imp preview` from
 `lib/src`. The `imp.json` there points `preview.groups` at `std/preview-groups.js`. That module
 holds the sidebar's groups, their order and their icons. The CLI holds none of them. The same
-`imp.json` points `preview.entry` at `preview.html`, which links the Prompt and Roboto Mono fonts
-from Google Fonts, and `preview.themes` at the two theme files in `std/`. Those themes take their
-tokens from `std/preview-look.js`: the two fonts, and the lighter weights. The light theme also sets
-a brighter primary, and it tints the sunken, hover and border colours from it. Neither theme sets
-`background-app`, so the frame sits on the plain surface colour. The page itself adds three layers
-in `cli/src/preview-shell.js`. A page backdrop draws a grid of thin lines under the whole frame. The
-lines take their colour from a gradient of the primary colour and hue-shifted accents that drifts
-over minutes. A few grid cells pulse just as slowly, each with a random gradient of two accents.
-Both animations stop under `prefers-reduced-motion`. A panel backdrop paints the sidebar and the top
-bar in one flat tone, a little darker than the surface. Every colour is mixed from the theme tokens,
-so the layers fit light and dark alike. A paper canvas in the surface colour fills the main region
-and scrolls inside its own rounded box, so its scrollbar stays clear of the corners. The themes are
-named `imp-light` and `imp-dark`, so they replace those two built-in themes in the menu, and a
-remembered choice keeps the look. Prompt is licensed under the SIL Open Font License 1.1 and Roboto
-Mono under the Apache License 2.0, so this use is permitted.
+`imp.json` points `preview.entry` at `preview.html`, which links the Sora, IBM Plex Sans and IBM
+Plex Mono fonts from `lib/src/public/fonts/`, and `preview.themes` at the two theme files in `std/`.
+Those themes take their tokens from `std/preview-look.js`. That module maps the imp design system
+(`adr/imp-design-system.md`) to theme tokens: the colours, the three fonts, the type scale, the
+radii and the shadows. The ground of the page is `background-app`, and a raised surface is
+`color-surface`.
+
+The page itself adds four layers in `cli/src/preview-shell.js`. The geometry, the brand bars and the
+prose styles come from `cli/src/design-chrome.js`, which the home page shares. The geometry is the
+corner mark of the design system, in the lower end corner of the canvas, under the content. It has a
+fading line grid and six squares, and it is smaller on a phone. Its ink follows `color-text`, and
+its three brand colours are constants. A panel paints the sidebar in the surface colour. A square of
+8px starts every component row, and the square of the current row takes the first brand colour. On a
+phone, the three brand bars stand at the end edge of the top bar. The main region is a transparent
+scroll box, so the content sits on the ground. The page has no navbar. The themes are named
+`imp-light` and `imp-dark`, so they replace those two built-in themes in the menu, and a remembered
+choice keeps the look. All three fonts are licensed under the SIL Open Font License 1.1, so this use
+is permitted. The font files are not changed. A changed IBM Plex file must not use the name "Plex".
+The compiled binary does not contain `lib/src/public/`.
 
 The task serves from `lib/src`, so the session log is `lib/src/.imp/dev.log`. `deno task logs`
 prints it. It runs `imp logs` from the same folder, and it takes the same `-n` and `-f` flags. An
@@ -152,6 +156,30 @@ server reloads on save and rebuilds the preview page. But a preview imports `but
 and that import resolves to the library embedded in the running binary. So the page comes back
 byte-identical. Preview files are read from disk, so an edit to a `*.preview.js` does live-reload.
 The loop for a component edit is Ctrl-C, then `deno task preview` again. The task recompiles first.
+
+## The home page of imp
+
+`site/` is the home page: static HTML pages, Overview, Components and Docs, under one navbar.
+`tools/build-site.js` writes the whole site into `site/dist/`. It renders `docs/*.md` and
+`site/content/overview.md` with the vendored `marked`, highlights every code block at build time
+with the tokenizer of `codeBlock`, and writes one `index.html` per page with its content, its title
+and its description. There is no imp app on the site and no client-side router. A navbar link is a
+plain link, and a click loads the next page. The only JavaScript is a small script for the theme
+toggle, and the `imp-preview` element on the Components page, which is the export of `imp preview`.
+
+The site takes its look from the same source as the preview page. `site.css` holds the tokens of
+`std/preview-look.js` over the built-in themes as `--imp-*` custom properties, one set per colour
+scheme, and the styles of `cli/src/design-styles.js`: the corner geometry and the Markdown prose. So
+the site matches the imp theme without an imp runtime. An inline script reads the remembered scheme
+before the first paint, so a dark page never flashes light. The build copies `lib/src/public/fonts/`
+to `/fonts/`, so the pages and the gallery load the same font files from the site. The site sends no
+request to another origin.
+
+`deno task site:build` writes `site/dist/`. It runs the build tool, then `imp preview --output` from
+`lib/src` into `site/dist/gallery/`. Set `IMP_SITE_URL` to the public origin to get canonical links,
+`sitemap.xml` and `robots.txt`. Upload `site/dist/` as it is. `deno task site` builds it and serves
+it on <http://localhost:4507/>. The site draws its own navbar, because the navbar of the design
+system is ink with white text, and the `shell` bar takes the surface colour of the theme.
 
 ## After making changes
 

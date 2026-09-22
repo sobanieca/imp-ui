@@ -153,9 +153,10 @@ comments, an optional `export` and a quoted value. **Every value in a `.env` fil
 - A key that you name in `flags` is a **feature flag**, not an env value. imp removes it from `env`.
   Read it with `flag('CHECKOUT_V2')`, which `imp build` folds to a literal. See
   [feature-flags](feature-flags.md).
-- Two names configure imp itself, not your code. `IMP_LOG_LEVEL` takes `debug`, `info`, `warn` or
+- Three names configure imp itself, not your code. `IMP_LOG_LEVEL` takes `debug`, `info`, `warn` or
   `error`, see [logging](logging.md). `IMP_BASEPATH` is the sub-path that the app is served under,
-  see [routing](routing.md). A flag name must not start with `IMP_`.
+  and `IMP_ROUTING: "hash"` keeps the route in the fragment for an app inside a page it does not
+  own, see [routing](routing.md). A flag name must not start with `IMP_`.
 
 imp reads these shell variables directly, outside any environment file: `IMP_ENV` selects an
 environment, `IMP_VERSION=system` bypasses the version pin, `IMP_HOME` sets where imp caches a

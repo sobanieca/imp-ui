@@ -43,7 +43,7 @@ export const REVIEW_LOG_LINES = 20
 
 export const TELEMETRY_ENTRIES = 2000
 
-const WIDGET_MARK_URL = new URL('./templates/favicon.svg', import.meta.url)
+const WIDGET_MARK_URL = new URL('./templates/mark-dark.svg', import.meta.url)
 
 export const readWidgetMark = async () =>
   (await Deno.readTextFile(WIDGET_MARK_URL))
@@ -331,11 +331,12 @@ const WIDGET_STYLES = `
     display: block;
     inline-size: ${WIDGET_SIZE}px;
     block-size: ${WIDGET_SIZE}px;
-    padding: 0;
+    box-sizing: border-box;
+    padding: 9px;
     border: 1px solid var(--border);
     border-radius: 50%;
     overflow: hidden;
-    background: #0f3a5d;
+    background: #101010;
     box-shadow: var(--shadow);
     cursor: grab;
     touch-action: none;

@@ -876,7 +876,7 @@ Deno.test('imp build', async (t) => {
       const code = await Deno.readTextFile(join(dir, 'std', 'std-entry.js'))
       await Deno.writeTextFile(
         entry,
-        "import { table } from 'imp/std/data'\n\nexport const shell = table\n",
+        "import { barChart } from 'imp/std/charts'\n\nexport const shell = barChart\n",
       )
       const unknown = await runImp(['build', 'std-entry.js', '--output', 'std'], dir)
       await Deno.writeTextFile(
@@ -891,7 +891,9 @@ Deno.test('imp build', async (t) => {
         mask(
           `${
             commandTranscript('imp build std-entry.js --output std  (cwd: <tmp>)', resolved)
-          }\n[bundle defines the element: ${code.includes('imp-button')}]\n\n${
+          }\n[bundle defines the element: ${
+            code.includes('imp-${') && code.includes('variant-')
+          }]\n\n${
             commandTranscript(
               'imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)',
               unknown,
@@ -1839,13 +1841,11 @@ Deno.test('imp preview', async (t) => {
         [
           `starts the preview chrome: ${body.includes('startPreview(')}`,
           `catalog embedded: ${body.includes('"components/counter.preview.js"')}`,
-          `loads a preview on demand: ${
-            /import\(["']\.\/components\/counter\.preview\.js["']\)/.test(body)
-          }`,
+          `loads a group on demand: ${/import\(["']\.\/groups\/widgets\.js["']\)/.test(body)}`,
           `library shared through a chunk: ${/from\s*["'](\.\.?\/)+chunks\//.test(body)}`,
         ].join('\n'),
     })
-    await get('preview-bundle', '/@imp/preview/components/todos.preview.js', {
+    await get('preview-bundle', '/@imp/preview/groups/components.js', {
       maskBody: (body) =>
         [
           `defines the component: ${/component\(["']demo-todos["']/.test(body)}`,
@@ -1930,7 +1930,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       globalThis.impPicker = (label) =>
         globalThis.impLabelled('imp-select').find((entry) => entry.label === label)?.control
       globalThis.impTextareas = (editor) =>
-        [...editor.shadowRoot.querySelectorAll('imp-text-area')]
+        [...editor.shadowRoot.querySelectorAll('imp-text-field')]
           .map((host) => host.shadowRoot.querySelector('textarea'))
     })
     await page.goto(`${base}/widgets/counter`, { waitUntil: 'load' })
@@ -2088,12 +2088,13 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
 
     const themed = await page.evaluate(() => {
-      const switcher = globalThis.impAll('imp-button-group')
+      const menu = globalThis.impAll('imp-menu-button')
         .find((node) => node.shadowRoot.querySelector('[role="menuitem"]') !== null)
-      const shadow = switcher.shadowRoot
+      const shadow = menu.shadowRoot
+      const row = menu.parentNode
       const items = () => [...shadow.querySelectorAll('[role="menuitem"]')]
       const selected = () =>
-        shadow.querySelector('.row > imp-button').shadowRoot.querySelector('.label').textContent
+        row.querySelector('imp-button').shadowRoot.querySelector('.label').textContent
       const surface = () =>
         getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
       const font = () =>
@@ -2106,7 +2107,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const initial = selected()
       const dark = apply('imp-dark')
       const darkFont = font()
-      shadow.querySelector('.row > imp-button').shadowRoot.querySelector('.button').click()
+      row.querySelector('imp-button').shadowRoot.querySelector('.button').click()
       const stepped = selected()
       return {
         options: items().map((item) => item.textContent),
@@ -2309,6 +2310,11 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     }
     const wide = await page.evaluate(panelWidths)
     await page.setViewport({ width: 390, height: 844 })
+    await page.waitForFunction(() =>
+      globalThis.impAll('imp-tabs')[1].shadowRoot.querySelector('.fold')
+        .getAttribute('aria-expanded') === 'false'
+    )
+    const shrunk = await page.evaluate(panelWidths)
     await page.reload({ waitUntil: 'load' })
     await page.waitForFunction(() =>
       globalThis.impScenarios().length > 0 &&
@@ -2381,12 +2387,31 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         'width must not depend on it or measuring the stage changes the stage',
     )
 
+    await page.evaluate(() => {
+      const applied = localStorage.getItem('imp.preview.theme') ?? 'brand'
+      localStorage.setItem(
+        `imp.theme-draft.${applied}`,
+        JSON.stringify({
+          tokens: { 'color-primary': '#ff00ff' },
+          base: { 'color-primary': '#00ff00' },
+        }),
+      )
+    })
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForFunction(() => globalThis.impOne?.('imp-shell'))
+    const staleDraft = await page.evaluate(() => ({
+      applied:
+        document.documentElement.style.getPropertyValue('--imp-color-primary').trim() === '#ff00ff',
+      left: Object.keys(localStorage).filter((key) => key.startsWith('imp.theme-draft.')).length,
+    }))
+
     const report = [
       `scenarios: ${counter.names.join(', ')}`,
       `rendered values: ${counter.rendered.join(', ')}`,
       `state rows: ${counter.states.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
       `scenario tabs on a wide screen: folded ${wide.folded} ('${wide.foldLabel}', tabs inert ${wide.tabsInert}), panel is ${wide.share}% of the canvas, head and stage fill it ${wide.filled}, canvas scrolls sideways ${wide.scrolls}`,
+      `scenario tabs after the screen shrinks to a phone: folded ${shrunk.folded} ('${shrunk.foldLabel}', tabs inert ${shrunk.tabsInert})`,
       `scenario tabs on a phone: folded ${phone.folded} ('${phone.foldLabel}', tabs inert ${phone.tabsInert}), panel is ${phone.share}% of the canvas, head and stage fill it ${phone.filled}, canvas scrolls sideways ${phone.scrolls}`,
       `after a tap on the fold button: aria-expanded ${unfolded.expanded}, tabs inert ${unfolded.tabsInert}, a tab is visible ${unfolded.tabVisible}, remembered as '${unfolded.remembered}'`,
       `state editor on a phone: anchored ${anchored.anchored}, ${anchored.below}px under its toggle, inside the viewport ${anchored.inside}`,
@@ -2444,11 +2469,257 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `mocked todos state row: ${todos.state}`,
       `agent strip without a sidecar: ${todos.agent}`,
       `skill tab without a sidecar: ${todos.skill}`,
+      `a draft of a theme that changed since: applied ${staleDraft.applied}, drafts left: ${staleDraft.left}`,
     ].join('\n')
     await assertSnapshot('preview-browser', `${report}\n`)
   } finally {
     await browser.close().catch(() => {})
     await server.stop()
+  }
+})
+
+const SIZE = /\(\d+(\.\d+)? [kM]?B\)/g
+
+Deno.test('imp preview --output writes the element script and the group bundles', async () => {
+  const outdir = await Deno.makeTempDir()
+  const output = join(outdir, 'gallery')
+  const result = await runImp(['preview', '--output', output], fixture('preview'))
+  const files = await listFiles(output).catch(() => [])
+  const script = await Deno.readTextFile(join(output, 'imp-preview.js')).catch(() => '')
+  const app = await Deno.readTextFile(join(output, 'app.js')).catch(() => '')
+  const chunk = files.find((name) => name.startsWith('chunks/')) ?? null
+  const widgets = await Deno.readTextFile(join(output, 'groups', 'widgets.js')).catch(() => '')
+  await Deno.remove(outdir, { recursive: true })
+  const page = script.match(/^const PAGE = (".*")$/m)
+  const html = page ? JSON.parse(page[1]) : ''
+  const report = [
+    commandTranscript('imp preview --output <out>/gallery  (cwd: /test/fixtures/preview)', {
+      ...result,
+      stdout: result.stdout.replaceAll(relative(fixture('preview'), outdir), '<out>')
+        .replace(SIZE, '(<size>)')
+        .replace(/chunks\/[\w-]+\.js/g, 'chunks/<name>-<hash>.js'),
+    }),
+    section(
+      'files',
+      files.map((name) => name.replace(/^chunks\/.*$/, 'chunks/<name>-<hash>.js')).sort().join(
+        '\n',
+      ),
+    ),
+    section(
+      'imp-preview.js',
+      [
+        `defines the element: ${script.includes('customElements.define(ELEMENT, ImpPreview)')}`,
+        `element name: ${script.match(/const ELEMENT = '([^']+)'/)?.[1]}`,
+        `finds the app next to itself: ${
+          script.includes("const APP = new URL('./app.js', import.meta.url).href")
+        }`,
+        `shows the page in a blob url frame: ${
+          script.includes('URL.createObjectURL(new Blob([pageSource()]')
+        }`,
+        `mirrors the route to the address of the page: ${script.includes('history.replaceState(')}`,
+        `follows the address of the page: ${script.includes("addEventListener('hashchange'")}`,
+        `entry page kept: ${html.includes("font-family: 'Fixture Sans'")}`,
+        `title: ${html.match(/<title>([^<]*)<\/title>/)?.[1]}`,
+        `hash routing: ${html.includes('globalThis.__IMP_ENV__ = {"IMP_ROUTING":"hash"}')}`,
+        `loads the app by its address: ${
+          html.includes('<script type="module" src="imp-preview:app">')
+        }`,
+        `no dev server client: ${!html.includes('/@imp/client')}`,
+      ].join('\n'),
+    ),
+    section(
+      'app.js',
+      [
+        `starts the chrome embedded: ${app.includes('embedded:!0')}`,
+        `catalog embedded: ${app.includes('components/counter.preview.js')}`,
+        `loads a group on demand: ${/import\(["']\.\/groups\/widgets\.js["']\)/.test(app)}`,
+        `library shared through a chunk: ${chunk !== null && app.includes(`./${chunk}`)}`,
+        `route bridge: ${app.includes('imp-preview-route')}`,
+        `no dev server address: ${!app.includes('/@imp/preview/')}`,
+      ].join('\n'),
+    ),
+    section(
+      'groups/widgets.js',
+      [
+        `holds the counter: ${widgets.includes('demo-counter')}`,
+        `not the todos: ${!widgets.includes('demo-todos')}`,
+      ].join('\n'),
+    ),
+  ].join('\n\n')
+  await assertSnapshot('preview-output', `${report}\n`)
+})
+
+Deno.test('the exported preview embeds in a page and shares its address', async () => {
+  const site = await Deno.makeTempDir()
+  const exported = await runImp(
+    ['preview', '--output', join(site, 'components')],
+    fixture('preview'),
+  )
+  check(exported.code === 0, `export failed: ${exported.stderr}`)
+  const host = `<!doctype html><html><head><meta charset="utf-8"></head><body>
+<h1>Host page</h1>
+<script type="module" src="/components/imp-preview.js"></script>
+<imp-preview style="block-size: 600px"></imp-preview>
+</body></html>`
+  const server = Deno.serve({ port: 0, onListen: () => {} }, async (request) => {
+    const path = new URL(request.url).pathname
+    if (path.endsWith('.js')) {
+      return new Response(await Deno.readFile(join(site, path)), {
+        headers: { 'content-type': 'text/javascript' },
+      })
+    }
+    return new Response(host, { headers: { 'content-type': 'text/html' } })
+  })
+  const base = `http://127.0.0.1:${server.addr.port}`
+  const { resolveBrowser } = await import('../src/test-browser.js')
+  const { default: puppeteer } = await import('../src/vendor/puppeteer-core.js')
+  const args = ['--disable-dev-shm-usage']
+  try {
+    if (Deno.uid() === 0) args.push('--no-sandbox')
+  } catch { /* not available on this platform */ }
+  const browser = await puppeteer.launch({
+    executablePath: await resolveBrowser(),
+    headless: true,
+    args,
+  })
+  const helpers = () => {
+    globalThis.impAll = (name, from = document) => {
+      const found = []
+      const walk = (root) => {
+        for (const element of root.querySelectorAll('*')) {
+          if (element.localName === name) found.push(element)
+          if (element.shadowRoot) walk(element.shadowRoot)
+        }
+      }
+      walk(from)
+      if (from.shadowRoot) walk(from.shadowRoot)
+      return found
+    }
+    globalThis.impOne = (name, from) => globalThis.impAll(name, from)[0] ?? null
+    globalThis.impHeadShown = () => {
+      const head = globalThis.impOne('imp-preview-head')
+      return head !== null && globalThis.impOne('imp-heading', head) !== null
+    }
+    globalThis.impText = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) return node.data
+      const scope = node.shadowRoot ?? node
+      return [...scope.childNodes].map(globalThis.impText).join('')
+    }
+  }
+  const frameOf = async (page) => {
+    await page.waitForFunction(() =>
+      document.querySelector('imp-preview')?.shadowRoot?.querySelector('iframe')?.contentDocument
+        ?.querySelector('imp-preview-page')?.shadowRoot
+    )
+    const frame = page.frames().find((candidate) => candidate.url().startsWith('blob:'))
+    await frame.evaluate(helpers)
+    return frame
+  }
+  const shown = (frame) =>
+    frame.evaluate(() => {
+      const head = globalThis.impOne('imp-preview-head')
+      const heading = head === null ? null : globalThis.impOne('imp-heading', head)
+      return {
+        index: globalThis.impOne('imp-preview-index') !== null,
+        head: heading === null ? 'none' : globalThis.impText(heading).trim(),
+        route: location.hash,
+        title: document.title,
+      }
+    })
+  try {
+    const page = await browser.newPage()
+    const errors = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.goto(`${base}/gallery`, { waitUntil: 'load' })
+    const frame = await frameOf(page)
+    const index = await shown(frame)
+    const frameUrl = frame.url()
+    const frameIcon = await frame.evaluate(() => document.querySelector('link[rel="icon"]').href)
+    await frame.evaluate(() => {
+      const shell = globalThis.impOne('imp-shell')
+      const link = [...shell.shadowRoot.querySelectorAll('a')]
+        .find((anchor) => anchor.textContent.includes('Counter'))
+      link.click()
+    })
+    await frame.waitForFunction(() => globalThis.impHeadShown())
+    const component = await shown(frame)
+    const hostAfterClick = new URL(page.url())
+    await page.evaluate(() => {
+      location.hash = '#/'
+    })
+    await frame.waitForFunction(() => globalThis.impOne('imp-preview-index'))
+    const followed = await shown(frame)
+    const hostAfterFollow = new URL(page.url())
+
+    const deep = await browser.newPage()
+    await deep.setViewport({ width: 1400, height: 900 })
+    await deep.goto(`${base}/gallery#/widgets/counter?scenario=startsAtFive`, {
+      waitUntil: 'load',
+    })
+    const deepFrame = await frameOf(deep)
+    await deepFrame.waitForFunction(() => globalThis.impHeadShown())
+    const deepLink = await shown(deepFrame)
+    const selectedTab = await deepFrame.evaluate(() =>
+      globalThis.impOne('imp-tabs', globalThis.impOne('imp-preview-scenario-tabs')).shadowRoot
+        .querySelector('[aria-selected="true"]')?.textContent.trim()
+    )
+    const themeShown = () =>
+      deepFrame.evaluate(() => document.documentElement.style.getPropertyValue('color-scheme'))
+    const hostTheme = () =>
+      deep.evaluate(() => document.querySelector('imp-preview').getAttribute('theme'))
+    const themeBeforeOffer = await themeShown()
+    await deep.evaluate(() => {
+      globalThis.impThemeEvents = []
+      const preview = document.querySelector('imp-preview')
+      preview.addEventListener('imp-preview-theme', (event) => {
+        globalThis.impThemeEvents.push(event.detail)
+      })
+      preview.theme = 'imp-dark'
+    })
+    await deepFrame.waitForFunction(() =>
+      document.documentElement.style.getPropertyValue('color-scheme') === 'dark'
+    )
+    const themeAfterOffer = await themeShown()
+    await deepFrame.evaluate(() => {
+      globalThis.impAll('button')
+        .find((candidate) => candidate.getAttribute('aria-label')?.includes('next theme'))
+        .click()
+    })
+    await deep.waitForFunction(() =>
+      document.querySelector('imp-preview').getAttribute('theme') !== 'imp-dark'
+    )
+    const themeAfterPick = { host: await hostTheme(), frame: await themeShown() }
+    const themeEvents = await deep.evaluate(() => globalThis.impThemeEvents)
+    const report = [
+      `host page keeps its own document: ${await page.evaluate(() =>
+        document.querySelector('h1').textContent
+      )}`,
+      `frame url is a blob of the host origin: ${frameUrl.startsWith(`blob:${base}/`)}`,
+      `root-relative link of the entry resolves on the host: ${
+        frameIcon === `${base}/favicon.svg`
+      }`,
+      `index shown first: ${index.index}, route ${
+        JSON.stringify(index.route)
+      }, title ${index.title}`,
+      `after a click: ${component.head}, route ${component.route}, title ${component.title}`,
+      `host address after the click: ${hostAfterClick.pathname}${hostAfterClick.hash}`,
+      `host hash change followed: index ${followed.index}, route ${JSON.stringify(followed.route)}`,
+      `host address after the follow: ${hostAfterFollow.pathname}${hostAfterFollow.hash}`,
+      `deep link: ${deepLink.head}, route ${deepLink.route}, tab ${selectedTab}`,
+      `sidebar without the imp brand: ${await deepFrame.evaluate(() =>
+        globalThis.impOne('imp-app-logo') === null
+      )}`,
+      `theme before the host offers one: ${themeBeforeOffer}`,
+      `theme after the host offers imp-dark: ${themeAfterOffer}`,
+      `theme after a pick in the gallery: host ${themeAfterPick.host}, frame ${themeAfterPick.frame}`,
+      `theme events on the element: ${themeEvents.join(', ')}`,
+      `page errors: ${errors.length ? errors.join(' | ') : 'none'}`,
+    ].join('\n')
+    await assertSnapshot('preview-output-browser', `${report}\n`)
+  } finally {
+    await browser.close().catch(() => {})
+    await server.shutdown()
+    await Deno.remove(site, { recursive: true })
   }
 })
 
@@ -2612,7 +2883,7 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       const steps = {
         hiddenAtFirst: shadow.querySelector('.panel').hidden &&
           shadow.querySelector('.actions').hidden,
-        markShown: Boolean(shadow.querySelector('.toggle svg ellipse')),
+        markShown: Boolean(shadow.querySelector('.toggle svg circle')),
       }
       shadow.querySelector('.toggle').click()
       steps.actionsShown = !shadow.querySelector('.actions').hidden
@@ -3615,7 +3886,6 @@ Deno.test('the prose export tables match what imp really exports', async () => {
     'skills/imports.md',
     'skills/std.md',
     'docs/imports.md',
-    'docs/std-components.md',
   ]
   const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
   const problems = []
@@ -3645,7 +3915,7 @@ Deno.test('the prose export tables match what imp really exports', async () => {
       for (const name of new Set([...listed, ...skillSubjects])) {
         if (!exported.includes(name)) report(`does not export '${name}'`)
       }
-      if (body.includes('...') || body.includes('...')) continue
+      if (body.includes('...')) continue
       for (const name of exported) {
         if (!listed.includes(name)) {
           report(`exports '${name}', which the table omits - list it, or mark the list with '...'`)
@@ -3658,11 +3928,9 @@ Deno.test('the prose export tables match what imp really exports', async () => {
   }
 
   const stdGroups = Object.keys(IMP_MODULE_EXPORTS).filter((name) => name.startsWith('imp/std'))
-  for (const page of ['skills/std.md', 'docs/std-components.md']) {
-    for (const group of stdGroups) {
-      if (!tabulated.get(page).includes(group)) {
-        problems.push(`${page}: '${group}' has no row - every std group is listed on this page`)
-      }
+  for (const group of stdGroups) {
+    if (!tabulated.get('skills/std.md').includes(group)) {
+      problems.push(`skills/std.md: '${group}' has no row - every std group is listed on this page`)
     }
   }
 

@@ -75,7 +75,8 @@ an element they marked, run `imp review` before you ask which element they mean.
 session, so what they saw there is also in the log you read. The mark also opens a **Theme editor**
 for the theme the app applied. The person picks colours, fonts, a radius and a shadow, or edits any
 token as JSON, and copies or downloads a `theme.js`. imp keeps their draft in `localStorage` across
-reloads, under `imp.theme-draft.<theme name>`, until they press _reset_. See [theming](theming.md).
+reloads, under `imp.theme-draft.<theme name>`, until they press _reset_ or the theme of that name
+changes. See [theming](theming.md).
 
 ## Rules an agent gets wrong
 

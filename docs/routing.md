@@ -59,31 +59,30 @@ changes the URL with no full page reload.
 
 ## The mental model
 
-- **The map is the feature list of the app.** It is a plain object that you read top to bottom, and
-  that you write before a line of screen code exists. It says what a feature is: its name, a
-  sentence about it, and who it is for. It holds no component, no icon, no state name and no
-  function. So it runs before one screen exists, a tool can print it, and a test can walk it.
+- **The map is the feature list of the app.** It is a plain object. You read it top to bottom, and
+  you write it before a line of screen code exists. It says what a feature is: its name, a sentence
+  about it, and who it is for. It holds no component, no icon, no state name and no function. A tool
+  can print it, and a test can walk it.
 - **Everything else is a binding, keyed by a handle.** `screens` and `options` at the router, and
-  `icons` and `tags` at the shell, say how a node is served and shown. The binding lives where the
+  `icons` and `tags` at the shell, say how a node is served and shown. Each binding lives where its
   code lives, in the composition root or in the file of a section. Nothing writes into the map.
 - **The router changes the screen on a navigation.** `router()` watches the current URL. When you
   navigate to a different node, it puts the DOM of the matched screen in, and takes the old screen
-  out. imp unmounts the screen that you leave. So its state, its subscriptions and its timers are
+  out. imp unmounts the screen that you leave. Its state, its subscriptions and its timers are
   released automatically.
 - **A screen is what its factory returns.** It is usually a component, so it gets the full
-  lifecycle: loading content, its own scoped state, an error boundary and clear cleanup. A screen
-  renders **immediately**. The one thing that loads on demand is an **area**, which is a whole
-  section of the app.
+  lifecycle: loading content, its own scoped state, an error boundary and clean cleanup. A screen
+  renders **immediately**. Only an **area**, a whole section of the app, loads on demand.
 - **You navigate with `navigate()`.** Call `navigate(app.todos.$id.href({ id }))` from any event
-  handler. For a real anchor, use the `link` component from `imp/std` with the same `href`. It calls
-  `navigate` on a plain left-click, and it leaves a middle-click, a modifier key and an off-site URL
-  to the browser.
+  handler. For a real anchor, use the `link` component from `imp/std` with the same `href`. `link`
+  calls `navigate` on a plain left-click. It leaves a middle-click, a modifier key and an off-site
+  URL to the browser.
 
 ## The application map
 
 `appMap(nodes)` takes one object. Every key of that object is a node, and every node can hold nodes
-of its own. The value of a node is a sentence that describes it, or an object with its props and its
-children, or another map, see _A map in parts_ below.
+of its own. A node's value is a sentence that describes it, an object with its props and its
+children, or another map. See _A map in parts_ below.
 
 ```js
 export const app = appMap({
@@ -108,10 +107,10 @@ export const app = appMap({
 The rules are few:
 
 - **The name is the path.** `createApiKey` serves `/admin/create-api-key`. Every path is relative to
-  its parent. `path` overrides the segment. `path: '/'` marks the index of the app, and only one
-  top-level node can carry it. The children of the index node hang from the root, so `home.reports`
-  serves `/reports`. That is how an app with one section writes its map: every page under the index
-  node. The nav then has one section, and the shell draws the column with no top bar.
+  its parent. `path` overrides the segment. `path: '/'` marks the index of the app. Only one
+  top-level node can carry it. The children of the index node hang from the root. So `home.reports`
+  serves `/reports`. An app with one section writes its map this way, with every page under the
+  index node. Then the nav has one section, and the shell draws the column with no top bar.
 - **The name is the label.** `createApiKey` shows as "Create api key" in the nav and in the trail.
   `label` overrides it.
 - **A `$name` key is a param.** `$projectId` is the segment `:projectId`. Its value reaches the
@@ -123,34 +122,33 @@ The rules are few:
   mistyped prop with a string value, such as `lable: 'Admin'`, becomes a child at `/lable`, and
   `imp map` shows it.
 - **The order of the keys is the order of the nav.** The router matches a static path before a param
-  path on its own, so you never order for priority.
+  path on its own. You never order the keys for priority.
 
 ### Node props
 
 | Prop          | Values                                      | Meaning                                                           |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------- |
 | `description` | string                                      | Shown by the placeholder of an unbound node, printed by `imp map` |
-| `access`      | any value                                   | Who may see the node; the `access` guard of the router decides    |
+| `access`      | any value                                   | Who can see the node. The `access` guard of the router decides.   |
 | `path`        | one segment, or `'/'`                       | Overrides the segment derived from the name                       |
 | `label`       | string, or `({ params, option }) => string` | Overrides the label derived from the name                         |
 | `nav`         | `false`                                     | Hides a static node from the nav; the route stays                 |
 | `group`       | string                                      | The sidebar groups consecutive rows under this title              |
 
 That is the whole set. A prop describes what a feature is. How a feature is served, and how the nav
-shows it, is a binding elsewhere: a screen or a redirect in `screens`, the choices of a param in
-`options`, and an icon or a pill in the `navbar` of the shell. Each is keyed by the handle of the
-node.
+shows it, is a binding elsewhere. Examples are a screen or a redirect in `screens`, the choices of a
+param in `options`, and an icon or a pill in the `navbar` of the shell. Each binding is keyed by the
+handle of the node.
 
-A `label` function receives the current `params` and, on a param node, the matching `option`. So a
-crumb inside a repository reads `({ params }) => params.repo`.
+A `label` function receives the current `params`. On a param node, it also receives the matching
+`option`. So a crumb inside a repository reads `({ params }) => params.repo`.
 
 A translation is not a prop of the map. Your translation files name a node by its id, under
 `appMap`. `appMap.admin.users.label` translates the label of `app.admin.users`,
 `appMap.admin.users.group` its group title, and `appMap.admin.users.description` its description. A
 message wins over the prop and over the name. The nav, the trail, the document title and the
 placeholder of an unbound node follow the language. Put these keys in the translations of the app,
-not in the translations of an area, because a section row shows before the code of its area loads.
-See **[i18n](i18n.md)**.
+not of an area. A section row shows before the code of its area loads. See **[i18n](i18n.md)**.
 
 ### A map in parts
 
@@ -220,16 +218,17 @@ necessary:
   the URL_.
 - **`title`** is a function of `{ crumbs, node, params }` that returns the title of the document.
   imp calls it on every navigation. Without it, imp leaves `document.title` alone.
-- **`loading`** is what the router shows while the code of an **area** downloads, see _Areas_, or
-  while a guard waits for the state that it reads, see _Access_. imp calls it with the
+- **`loading`** is what the router shows while the code of an **area** downloads (see _Areas_), or
+  while a guard waits for the state that it reads (see _Access_). imp calls it with the
   `{ params, query, node }` of the route.
 - **`error`** is an **error boundary** at route level. It renders in place of the matched screen
   when that screen, or any component that it renders, throws during the mount and does not handle
   the error itself. That includes an area whose `import()` does not download. A screen, or any
-  nested component, that defines its own `error` catches first. Anything that it does not handle
-  goes up to the router. imp calls the router `error` with `(self, error, { params, query, node })`,
-  where `self` belongs to the host that wraps the screen, and it logs the failure in both cases.
-- **`notFound`** is the one screen that imp shows for a URL that is off the map.
+  nested component, that defines its own `error` catches the failure first. Anything that it does
+  not handle goes up to the router. imp calls the router `error` with
+  `(self, error, { params, query, node })`. `self` belongs to the host that wraps the screen. imp
+  logs the failure in both cases.
+- **`notFound`** is the one screen that imp shows for a URL that matches no node of the map.
 
 A screen factory receives one argument, `{ params, query, node }`:
 
@@ -266,9 +265,9 @@ still render a placeholder.
 
 A navigation to a **different screen**, which is a different node or a different param, mounts that
 screen from the start, and unmounts the screen that you left. A navigation that changes **only the
-query string** keeps the current screen mounted. So a search page or a filter page that lives at
-`/search?q=...` does not lose the focus of its input, its scroll position, or its state in progress,
-every time when a query param changes. Such a screen reads the live query from `useRoute()`:
+query string** keeps the current screen mounted. So a search page or a filter page at
+`/search?q=...` keeps its input focus, its scroll position and its state in progress, even when a
+query param changes. Such a screen reads the live query from `useRoute()`:
 
 ```js
 const results = component('app-results', {
@@ -304,11 +303,10 @@ router({
 })
 ```
 
-Inside the scope, the sections of the nav are the static children of `$org`, and the trail starts
-with the organization, with a picker when `options` binds it. Outside the scope, on
-`/user-settings/me` or `/login`, the sections are the top-level nodes. A link inside the
-organization writes `app.organizations.$org.admin.href()`, and `href()` takes the current slug from
-the route.
+Inside the scope, the sections of the nav are the static children of `$org`. The trail starts with
+the organization, with a picker when `options` binds it. Outside the scope, on `/user-settings/me`
+or `/login`, the sections are the top-level nodes. A link inside the organization writes
+`app.organizations.$org.admin.href()`. `href()` takes the current slug from the route.
 
 ### Not found (404)
 
@@ -319,7 +317,7 @@ router({ map: app, screens, notFound: () => notFoundPage() })
 ```
 
 It renders whenever the current URL matches no node of the map. It is a factory. It has no node,
-because it is not a page. It is the one page for everything that is off the map.
+because it is not a page. It is the one page for every URL that matches nothing in the map.
 
 ## Areas: how to load a section on demand
 
@@ -409,21 +407,21 @@ bindings of the area. It inherits the `loading`, the `error` and the `notFound` 
 router. You can override each one for the section alone, as in
 `router({ notFound: () => adminNotFound() })`.
 
-What a root gives you, against wrapping each screen by hand as `() => frame(usersList())`, is the
-**lifetime**. The root stays mounted while the user moves between the screens of the section, and it
-unmounts when they leave the section. So it is the place for whatever the whole section shares, and
-nothing outside it must see. Examples are a state scoped to the section, an [HTTP client](http.md)
-for its backend, and a layout that keeps its scroll position. imp does not rebuild any of that on a
+A root, against wrapping each screen by hand as `() => frame(usersList())`, gives you a
+**lifetime**. The root stays mounted while the user moves between the screens of the section. It
+unmounts when they leave the section. Use it for whatever the whole section shares, and nothing
+outside it needs to see. Examples are a state scoped to the section, an [HTTP client](http.md) for
+its backend, and a layout that keeps its scroll position. imp does not rebuild any of that on a
 navigation inside the section.
 
 The root receives the same `{ params, query, node }` as a screen factory. So a prefix param is there
 for the frame too, as in `root: ({ params }) => orgFrame(params.orgId)`. A prefix param that changes
 remounts the area, and the root with it.
 
-A `router()` with no map finds its area when it mounts, from its own position in the DOM. So it does
+A `router()` with no map finds its area when it mounts, from its own position in the DOM. It does
 not care where in `setup` you call it. An **async** root can build the slot after its `await`. A
-`router()` with no map outside an area fails at mount. imp logs the error, and the message says to
-pass a map.
+`router()` with no map outside an area fails at mount. imp logs the error, and the message tells you
+to pass a map.
 
 When you do not want to split the code, bind the screens of the section in the top-level `screens`,
 like any other screen. Use an area exactly when you want the code of that section to load on demand.
@@ -437,32 +435,31 @@ imp has **no opinion about where any of this lives.** It only ever sees the modu
 and no file whose name means something to the framework. The paths above are examples. Point each
 `import()` at the real location of the module.
 
-So an area is a routing concept, not a directory. Group your code by feature, by domain, or by
-architectural layer, as your project prefers. A **Feature-Sliced Design** codebase works as it is.
-An imp area maps naturally onto an FSD page, or view. The composition root binds the node of each
-page with `area(() => import(...))`. The widgets, features and entities that the page uses stay in
-their own layers, and its screens import them as usual. A flat `screens/` folder works as well. The
-map is the contract, and the file layout is yours.
+An area is a routing concept, not a directory. Group your code by feature, by domain, or by
+architectural layer, as your project prefers. A **Feature-Sliced Design** codebase works as it is,
+with an imp area mapping naturally onto an FSD page or view. The composition root binds the node of
+each page with `area(() => import(...))`. The widgets, features and entities that the page uses stay
+in their own layers, and its screens import them as usual. A flat `screens/` folder also works. The
+map is the contract. The file layout is yours.
 
-A navigation **inside** an area keeps the section mounted, and only changes its inner screen. That
-is the same content-keyed behaviour that keeps a screen mounted across a change of the query only. A
-prefix param that changes, such as `/org/1` to `/org/2`, remounts the section. An area nests to any
-depth. The screens of an area can bind a deeper node to another `area()`.
+A navigation **inside** an area keeps the section mounted, and only changes its inner screen. The
+same rule keeps a screen mounted across a change of the query only. A prefix param that changes,
+such as `/org/1` to `/org/2`, remounts the section. An area nests to any depth. The screens of an
+area can bind a deeper node to another `area()`.
 
-> **A note on memory.** When you leave an area, imp releases the DOM, the state, the subscriptions
-> and the timers of its screens, as usual. It does **not** unload the JavaScript of the area that
-> the browser already downloaded. After the browser loads a module, it keeps it for the life of the
-> page, and the platform has no API to remove one. This is true of the code splitting of every
-> framework, not only of imp. A lazy area saves you from loading the code of a section that nobody
-> visits. It does not reclaim the code of a section that somebody already visited. An area is about
-> **code organization and code splitting**, not about freeing loaded code. The same is true of the
-> `translations` of an area. When you leave, imp unregisters them, so its keys stop resolving. The
-> module that holds them stays loaded, like any other module. See **[Translations](i18n.md)**.
+> **A note on memory.** Leaving an area releases its DOM, state, subscriptions and timers, as usual.
+> It does **not** unload the JavaScript that the browser already downloaded for it. No browser
+> offers an API to unload a loaded module, so this is true for every framework, not only for imp. A
+> lazy area saves you from loading code that nobody visits. It does not free the code of a section
+> that somebody already visited. Think of an area as code organization and code splitting, not as a
+> way to free loaded code. The same holds for the `translations` of an area: leaving it unregisters
+> the translation keys, but the module that holds them stays loaded. See
+> **[Translations](i18n.md)**.
 
 ## Access: how to keep a screen behind a condition
 
-A node says who may see it, with `access`. One guard on the router decides what each value means.
-The guard is a plain function of the state that it reads, and it runs before imp builds the screen:
+A node says who can see it, with `access`. One guard on the router decides what each value means.
+The guard is a plain function of the state that it reads. It runs before imp builds the screen:
 
 ```js
 import { guard, wait } from 'imp/router'
@@ -515,9 +512,9 @@ lets a guard say **`wait`**.
 
 When a guard returns `wait`, the router subscribes to the states that the guard declared, and
 pauses. Every time when one of them changes, the guard runs again. It is the same function with the
-same inputs, only later and with more data. imp acts on the first answer that is not `wait`. So the
-guard stays a simple synchronous function that you can call in a unit test with plain values, and
-the waiting is the job of the router.
+same inputs, only later and with more data. imp acts on the first answer that is not `wait`. The
+guard itself stays a simple synchronous function that you can call in a unit test with plain values.
+The waiting is the job of the router.
 
 **A state that has not loaded yet is `undefined`.** `initState(self, 'myapp.session')` with no
 initial value starts there. imp has no separate loading concept. So `undefined` means whatever your
@@ -561,9 +558,9 @@ button('Sign out', {
 
 Set `null`. Do not clear the value back to `undefined`. `null` is an answer that a guard can act on.
 `undefined` only makes the guard wait, and imp ignores a `wait` for a screen that is already on the
-page. After you are in, only a redirect takes you out. Otherwise a background refresh of the session
-would tear down the screen that you work in, and you would lose the scroll position, the focus and
-anything that you typed.
+page. After you are in, only a redirect takes you out. A background refresh of the session must not
+tear down the screen you work in. That would lose your scroll position, your focus, and anything you
+typed.
 
 ### A guard and a lazily loaded section
 
@@ -659,10 +656,10 @@ const todoDetail = component('app-todo-detail', {
   shows until the promise resolves. There is no separate loader, and no data-fetching API to learn.
 - **A wait on a guard uses the same `loading`**, see _Access_. The visitor sees one loader, whether
   the wait is a download, a guard, or the data of the screen.
-- **Errors.** A screen that defines an `error` entry handles its own failures first. A failure that
-  it does not handle goes up to the **`error` of the router**, which is an error boundary for the
-  whole matched subtree. Examples are an `import()` of an area that does not download, and a throw
-  during the mount of the screen, or of any component that it renders.
+- **Errors.** A screen that defines an `error` entry handles its own failures first. A failure it
+  does not handle goes up to the **`error` of the router**, an error boundary for the whole matched
+  subtree. Examples are an `import()` of an area that does not download, and a throw during the
+  mount of the screen or of any component it renders.
 
 With no `error` at either level, a failed screen renders nothing, and imp still logs the failure. It
 does not stay on the loading content forever.
@@ -673,9 +670,9 @@ A navigation away from a screen unmounts it, and an unmount releases everything 
 URL bounds the lifetime of a screen:
 
 - **State** that you create with `initState` inside the screen, or inside any component under it, is
-  released. Put the state of a screen in the root component of that screen. Only state that is truly
-  app-wide, such as the session, the theme and the cart, belongs in the root component of your app,
-  above the router, which never unmounts.
+  released. Put the state of a screen in the root component of that screen. Put only state that is
+  truly app-wide, such as the session, the theme and the cart, in the root component of your app.
+  That root component sits above the router and never unmounts.
 - **Bindings** end. That covers every `text`, `view`, `each` and bound prop that you set up while
   the screen was mounted.
 - **A timer, an interval, a socket, a `watch` and a global** that you used are undone in the
@@ -709,8 +706,8 @@ person, or an agent, sees the whole app on one screen before a line of screen co
 **`imp init`** writes an `app-map.js` with two nodes, names it in `imp.json`, and writes a frame
 that binds the one screen it ships. The second node renders a placeholder until you bind it.
 
-**A test can walk the map.** `app.home.spec.children` lists the handles under a node, so a smoke
-test that visits every node and asserts that something mounts is a loop over the tree.
+**A test can walk the map.** `app.home.spec.children` lists the handles under a node. A smoke test
+can loop over the tree, visit every node, and assert that something mounts.
 
 ## Base path: how to serve under a sub-directory
 
@@ -740,6 +737,29 @@ call adds the base, so a middle-click and a "copy link address" stay correct. It
 ```js
 a({ href: url('/todos') }, 'All todos')
 ```
+
+## Hash routing: when the app does not own the path
+
+Some apps run inside a page that they do not own. Examples are a widget in a host page, and a
+gallery that `imp preview --output` exports. Such an app cannot push a path, because a reload of
+that path reaches a host that does not serve it. For a deployment like this, set the
+**`IMP_ROUTING`** environment value to `hash`:
+
+```json
+{
+  "IMP_ROUTING": "hash"
+}
+```
+
+The router then keeps the route in the fragment of the address, as `#/todos/42?tab=notes`, and it
+leaves the path alone. `navigate`, `handle.href()` and `url(path)` write a fragment. The router
+reads the route from it, and the back and forward buttons work as before. You write nothing
+differently in your code. A route pattern, a `navigate` target and an `href` stay the same paths.
+
+A host with no history fallback is the other case for this value. Prefer the fallback of the host,
+see **[Deployment](#deployment-a-deep-link-and-a-refresh)**, and use `hash` only where no such
+setting exists. Under hash routing the base path does not apply, because the fragment is not a path
+that the host serves.
 
 ## Accessibility: scroll and focus
 

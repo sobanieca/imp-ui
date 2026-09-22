@@ -125,9 +125,9 @@ The `imp/no-self-in-loading` lint rule reports a resolution and a binding inside
 
 ### `error(self, error, ...args)` - optional
 
-`error` makes the component an **error boundary**. When its own mount fails, or a component anywhere
-in its subtree fails to mount, `error` runs with `self`, the error, and the arguments of the factory
-call. Its output replaces the content of the component. See _Error boundaries_ below.
+`error` makes the component an **error boundary**. It runs when its own mount fails, or when a
+component anywhere in its subtree fails to mount. It receives `self`, the error, and the arguments
+of the factory call. Its output replaces the content of the component. See _Error boundaries_ below.
 
 ### `onMount(self, ...args)` - optional
 
@@ -144,11 +144,11 @@ factory call. So anything that `setup` stored on `self`, such as a timer handle,
 up. `onRemove` can be `async`. imp awaits it, and logs a rejection without a break in the rest of
 the unmount.
 
-There is one edge case, and it applies only when the same host can **mount again**. An async
-`onRemove` that tears down a **shared** resource, such as a socket, a listener at document level or
-a global timer, must check `self.abortSignal.aborted` after each `await`, before it touches the
-resource. A remount can already have taken the resource again. See _self_ below. A resource stored
-on `self` itself never needs this check, because each mount gets its own.
+There is one edge case, and it applies only when the same host can **mount again**. Sometimes
+`onRemove` tears down a **shared** resource, such as a socket, a document-level listener or a global
+timer. When that cleanup is async, check `self.abortSignal.aborted` after each `await`, before you
+touch the resource. A remount can already have taken the resource again. See _self_ below. A
+resource stored on `self` itself never needs this check, because each mount gets its own.
 
 ### `styles` - optional
 
@@ -202,7 +202,7 @@ const card = component('my-app-card', {
   setup: async (self) => {
     const box = div(span({ class: 'label' }, 'hi'))
     await loadData()
-    // ✗ the content is not placed yet - this finds the loading content (or null), not your span
+    // wrong: the content is not placed yet - this finds the loading content (or null), not your span
     self.host.shadowRoot.querySelector('.label').textContent = 'ready'
     return box
   },
@@ -218,7 +218,7 @@ const card = component('my-app-card', {
   setup: async () => {
     const label = span('hi')
     await loadData()
-    label.textContent = 'ready' // ✓ it is the real node
+    label.textContent = 'ready' // right: it is the real node
     return div(label)
   },
 })
@@ -374,15 +374,15 @@ Keep a control, its label and its form together, inside one component.
 
 ## The lifecycle
 
-1. **Call.** `profile({ id: 42 })` creates the `<my-app-profile>` element, which contains the
-   loading content when there is one. Nothing else runs. The host is a cheap, inert node, and you
-   can compose it freely while you build a detached tree.
-2. **Mount.** The moment when the host arrives in the document, through `mount(...)` or through any
-   DOM insertion, `setup` runs, and its output replaces the loading content. A parent mounts before
-   its children, from the top down. `onMount` runs on the next frame.
-3. **Unmount.** When the host leaves the document, and nothing inserts it again immediately, imp
-   releases every state binding that the mount created, calls `onRemove`, aborts `self.abortSignal`,
-   and then empties the shadow root.
+1. **Call.** `profile({ id: 42 })` creates the `<my-app-profile>` element, which holds the loading
+   content when there is one. Nothing else runs yet. The host is a cheap, inert node, so you can
+   compose it freely while you build a detached tree.
+2. **Mount.** `setup` runs the moment the host arrives in the document, through `mount(...)` or any
+   DOM insertion. Its output replaces the loading content. A parent mounts before its children, from
+   the top down. `onMount` runs on the next frame.
+3. **Unmount.** The host leaves the document, and nothing inserts it again right away. imp releases
+   every state binding that the mount created, calls `onRemove`, aborts `self.abortSignal`, then
+   empties the shadow root.
 4. **Remount.** A removed component that you insert again later starts a new cycle: the loading
    content, `setup` with a new `self`, and new bindings. Each mounted period is one clean pair of a
    mount and a cleanup.
@@ -391,9 +391,9 @@ Keep a control, its label and its form together, inside one component.
 
 The lifecycle draws one line. **A component that leaves the document and comes back in the same
 synchronous task has _moved_. A component that stays out of the document longer has unmounted.** A
-move keeps the component alive. `setup` does not run again. The DOM of the component, including
-anything that the person typed into it, its internal variables, and the states that it initialized
-itself, all travel with the element:
+move keeps the component alive. `setup` does not run again. The DOM of the component travels with
+the element, including anything the person typed into it, its internal variables, and the states it
+initialized itself:
 
 ```js
 events: {
@@ -403,10 +403,10 @@ events: {
 
 What a move _does_ restart is the **subscription layer**. imp resolves every state that the
 component obtained with `useState`, and every client from `useHttpClient`, again, against the
-ancestors at its new position. Its bindings update in place when the value there differs. A card
-that you drag to another column keeps the text that is half written in its input, and it changes to
-the sorting state of the new column, in the same gesture. The continuity comes from the element, and
-the scope comes from the position.
+ancestors at its new position. Its bindings update in place when the value there differs. Drag a
+card to another column, and in the same gesture it keeps the half-written text in its input, and
+switches to the sorting state of the new column. The continuity comes from the element, and the
+scope comes from the position.
 
 These details are worth knowing:
 
@@ -417,14 +417,14 @@ These details are worth knowing:
   position. imp compares by content for a plain object, an array, and a value type such as a date
   and a URL. So two providers that hold equal data cost no rebuild. When the value did change, the
   region rebuilds exactly as it does on any `set`.
-- **A state that is missing at the new position is an error.** When the component uses a state that
-  nothing above its new position provides, imp logs an error and keeps the previous binding.
-  Initialize that name in an ancestor that covers every place where the component can land.
-- **An insertion in a later task is a remount.** When you detach on the start of a drag, and append
-  again on the drop in a different task, that is a real unmount and then a new mount. It is also the
-  deliberate way to make a component run `setup` again. An item that a keyed `each` keeps holds its
-  `self` across a change and a reorder. An item that an unkeyed `each` rebuilds is a new mount from
-  the start, as always. See **[State](state.md)**.
+- **A state that is missing at the new position is an error.** This happens when the component uses
+  a state that nothing above its new position provides. imp logs an error and keeps the previous
+  binding. Initialize that name in an ancestor that covers every place where the component can land.
+- **An insertion in a later task is a remount.** Detach the host at the start of a drag, then append
+  it again on the drop in a different task. That is a real unmount and a new mount, not a move. It
+  is also the deliberate way to make a component run `setup` again. An item that a keyed `each`
+  keeps holds its `self` across a change and a reorder. An item that an unkeyed `each` rebuilds is
+  always a new mount. See **[State](state.md)**.
 
 ## Loading states
 
@@ -640,14 +640,14 @@ shipping a component that somebody else can use.
 ## Practical notes
 
 - **The internals of a component are private.** `document.querySelector`, like page CSS, stops at
-  the boundary of the component. When a parent needs a live handle on something that a child shows,
-  such as a container that it appends into, or a field that it reads, create that node yourself,
+  the boundary of the component. Sometimes a parent needs a live handle on something a child shows,
+  such as a container it appends into, or a field it reads. In that case, create the node yourself,
   keep the reference, and pass it as a factory argument. The child then renders it in the correct
   place.
 - **Focus a component from outside with `host.focus()`.** The element that a factory returns
-  forwards the focus to the first focusable element that the component renders. So a parent that
-  opened a dialog can put the focus back on the trigger that it holds, and it does not know what
-  that trigger contains.
+  forwards the focus to the first focusable element the component renders. A parent that opened a
+  dialog can put the focus back on its trigger this way, with no need to know what the trigger
+  contains.
 - **A component can find its own host** with `event.target.getRootNode().host`. That replaces
   `closest('my-app-card')` in shadow DOM, in a handler that needs the element of the component.
 - **A strict content model needs one component.** `<table>` and `<select>` are examples. Let one

@@ -2,20 +2,20 @@
 
 The `imp` CLI is a complete toolkit for an imp app. One binary holds a static dev server, a
 dependency manager, a linter and a formatter. imp is built for the AI era. Every part of the
-workflow works together with an AI coding agent. You can develop an app from start to end, and write
-no line of code by hand.
+workflow works with an AI coding agent. You can develop an app from start to end and write no line
+of code by hand.
 
 **Development is buildless.** There is no build step, no bundling and no transform while you work.
 `imp start` serves your files exactly as you wrote them. You edit a file, the browser reloads, and
-what runs is the source that you typed. You add a dependency once, with `imp install`, and it lives
-inside your repository from then on. See **[Managing dependencies](dependencies.md)**. So the server
-needs no network and no package installation. A fresh clone is the whole app, and it runs.
+the source you typed is what runs. You add a dependency once, with `imp install`. It then lives
+inside your repository. See **[Managing dependencies](dependencies.md)**. The server needs no
+network and no package installation. A fresh clone is the whole app, and it runs.
 
 **Production has a build.** When you are ready to ship, imp packs the app into one self-contained,
 minified bundle. You upload it to any static host or CDN. The server needs no imp runtime, only the
-static files. imp also builds a module that loads lazily. It puts each one in a separate chunk that
-loads on demand, instead of inlining it into the main bundle. The build resolves imports exactly as
-development does. So what you tested is what you ship.
+static files. imp also builds each module that loads lazily into its own chunk, instead of inlining
+it into the main bundle. That chunk loads on demand. The build resolves imports exactly as
+development does, so what you tested is what you ship.
 
 ## Installation
 
@@ -28,7 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/sobanieca/imp-ui/main/install.sh | 
 
 The script installs to `/usr/local/bin` by default. To choose another location, set `INSTALL_DIR`.
 To install by hand, download the binary for your platform from the
-[releases page](https://github.com/sobanieca/imp-ui/releases/latest). Make it executable, and put it
+[releases page](https://github.com/sobanieca/imp-ui/releases/latest). Make it executable and put it
 anywhere on your `PATH`:
 
 ```sh
@@ -49,6 +49,7 @@ imp build [file.html] [--output dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
 imp preview [path] [--port 4517]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
+            [--output <dir>]          export the gallery as static files that any page embeds
             [--mock | --no-mock]
 imp review [clear]                    list the reviews written from the browser
                                       (clear: delete every saved review)
@@ -87,10 +88,10 @@ exactly that reader.
 
 ## Configuration - `imp.json`
 
-The only config file that you write is `imp.json`, at your project root, and it is optional. Every
+The only config file that you write is `imp.json`, at your project root. It is optional, and every
 command works without it. It holds your imp version pin, your vendored dependencies, the options of
-each command, which are `fmt`, `lint`, `test`, `preview` and `pwa`, and the named environments that
-you select with `--env`:
+each command (`fmt`, `lint`, `test`, `preview` and `pwa`), and the named environments that you
+select with `--env`:
 
 ```json
 {
@@ -130,14 +131,14 @@ What you get is deliberately small. It is a working app, not a template to study
 | `.gitignore`         | ignores `dist/`, `.imp/`, every `.env` file, and the usual OS noise    |
 
 There is no `README`, no `src/components/` tree and no second example. The counter shows the shape
-of an imp app, which is a component, a namespaced state, and a live text node bound to that state.
-The map shows the shape of a routed app. It has two nodes. `home` binds the counter, and `about`
-renders a placeholder until you bind a screen to it. So the nav of the frame works from the first
-run. See **[Routing](routing.md)**. Delete the counter when you start to write your own app.
+of an imp app: a component, a namespaced state, and a live text node bound to that state. The map
+shows the shape of a routed app. It has two nodes. `home` binds the counter, and `about` renders a
+placeholder until you bind a screen to it. The nav of the frame works from the first run. See
+**[Routing](routing.md)**. Delete the counter when you start to write your own app.
 
 The scaffold is a working project when it arrives. `imp lint`, `imp fmt --check`, `imp test --unit`
-and `imp test --e2e` all pass against it before you change a line. So a failure after your first
-edit is about your edit.
+and `imp test --e2e` all pass against it before you change a line. A failure after your first edit
+is about your edit.
 
 **imp does not overwrite your work.** When one file that it would write is already present,
 `imp init` writes nothing, names the conflicts, and exits with code 1. Run it in an empty directory
@@ -157,11 +158,11 @@ imp init my-app --pwa
 ```
 
 `--pwa` adds two things to the same scaffold. The first is a complete `pwa` block in `imp.json`,
-with the name, the short name, the theme and background colours, the display mode and the icon. So
-the block is also a list of what you can tune. The second is an `icon.svg` at the project root. imp
-renders the whole icon set from that one source image, at build time. So there is no other icon file
+with the name, the short name, the theme and background colours, the display mode and the icon. This
+block is also a list of what you can tune. The second is an `icon.svg` at the project root. imp
+renders the whole icon set from that one source image, at build time, so there is no other icon file
 to manage. Replace the image with your own artwork, and every generated size follows. The image
-lives at the project root, not in `public/`, because it is a build input and not a published file.
+lives at the project root, not in `public/`, because it is a build input, not a published file.
 
 The project is then ready for `imp build --pwa`, and you connect nothing else. The **Progressive Web
 App** section under `imp build`, below, describes what that build emits.
@@ -191,10 +192,10 @@ app
 `imp map src/admin/map.js` prints a part of the map on its own, with the props of the node that it
 hangs from on the first line, and its paths relative to that node.
 
-The command runs the file the same way `imp test --unit` runs a test, in process. So the file can
-import `t` for a translated `label`, and nothing else has to be mocked. A file that exports no map,
-or a path that does not exist, exits with code 1 and says what it expected. See
-**[Routing](routing.md)** for the map itself.
+The command runs the file the same way `imp test --unit` runs a test, in process. The file can
+import `t` for a translated `label`. Nothing else needs a mock. A file that exports no map, or a
+path that does not exist, exits with code 1 and says what it expected. See **[Routing](routing.md)**
+for the map itself.
 
 ## `imp start`
 
@@ -215,7 +216,7 @@ the default `4507`. Set a fixed port for a project, so you do not repeat the fla
 }
 ```
 
-imp injects three things into every served HTML document. So you never reference the imp library by
+imp injects three things into every served HTML document, so you never reference the imp library by
 path. imp skips the injection for a document that already contains the item:
 
 - **Import map.** `imp` and its subpaths resolve to the served library, so pages import by bare
@@ -228,13 +229,13 @@ path. imp skips the injection for a document that already contains the item:
   ```
 
   imp serves the library source under `/@imp/`, as `/@imp/imp.js`, `/@imp/api/html.js` and so on.
-  imp uses a bare specifier instead of a global, because the tag factories hold names such as `a`,
-  `b`, `i`, `p`, `time` and `menu`. Those names would collide on `window`.
+  imp uses a bare specifier instead of a global. The tag factories hold names such as `a`, `b`, `i`,
+  `p`, `time` and `menu`. Those names would collide on `window`.
 
 - **Console and error telemetry.** A small inline script forwards `console.*`, an uncaught error and
-  an unhandled rejection to the terminal, with the prefix `[browser:*]`. So you read the runtime
-  behaviour in the terminal, and you need no developer tools. An LLM coding assistant that drives
-  the session reads it the same way.
+  an unhandled rejection to the terminal, with the prefix `[browser:*]`. You read the runtime
+  behaviour in the terminal, with no developer tools open. An AI coding agent that drives the
+  session reads it the same way.
 
 - **Network telemetry.** A service worker, registered at root scope, intercepts _every_ kind of
   request. That covers `fetch`, `XMLHttpRequest`, an image, a script and a navigation. It reports
@@ -243,14 +244,14 @@ path. imp skips the injection for a document that already contains the item:
 
 imp **also keeps everything that `imp start` prints as a log of the session**, one entry per line.
 That covers the browser console, the error telemetry, the network telemetry and the status lines of
-imp. **[`imp logs`](#imp-logs)** prints that log. So you do not have to watch the terminal to see
+imp. **[`imp logs`](#imp-logs)** prints that log, so you do not have to watch the terminal to see
 what happened. This is what makes the development session readable for an AI coding agent. While you
-click through the app, the agent can run `imp logs | grep '\[browser:error\]'` for an error, for a
-failed request, or for any message that it expects. It does not have to watch the terminal. imp
-starts the log again each time when you start the server, so the log always holds the current
-session. imp also caps the log. It keeps the most recent entries, 4000 by default, and removes an
-older entry as a new one arrives. So a long session never grows the log without a limit. To raise or
-lower the cap, set **`maxLogEntries`** in `imp.json`:
+click through the app, the agent can run `imp logs | grep '\[browser:error\]'` for an error, a
+failed request, or any message it expects. It does not have to watch the terminal. imp starts the
+log again each time you start the server, so the log always holds the current session. imp also caps
+the log. It keeps the most recent entries, 4000 by default, and removes an older entry as a new one
+arrives. A long session never grows the log without a limit. To raise or lower the cap, set
+**`maxLogEntries`** in `imp.json`:
 
 ```json
 {
@@ -266,7 +267,7 @@ Live reload is included. A file change under the served directory reloads the br
 change inside `.git/`, `node_modules/`, `dist/` and its own `.imp/` working directory.
 
 imp serves a static file with the correct content type for a common web asset. imp serves your
-`public/` folder at the site root. So `public/styles.css` answers `/styles.css`, exactly as it does
+`public/` folder at the site root, so `public/styles.css` answers `/styles.css`, exactly as it does
 in the built site. See [The `public/` folder](#the-public-folder). imp serves the rest of the
 project behind that folder, so your module sources load as written during development. A request for
 a directory redirects to the URL with a trailing slash, and serves the `index.html` inside the
@@ -279,9 +280,9 @@ reload stream, `/@imp/log` is the telemetry sink, which the widget below also re
 
 ### Your own service worker
 
-A browser runs one service worker per scope. So when your app registers a worker of its own, for a
-push notification or for a background sync, that worker and the dev service worker of imp would
-replace each other at root scope. Name your worker in `imp.json`, and imp steps aside:
+A browser runs one service worker per scope. When your app registers a worker of its own, for a push
+notification or a background sync, that worker and the dev service worker of imp would replace each
+other at root scope. Name your worker in `imp.json`, and imp steps aside:
 
 ```json
 {
@@ -312,8 +313,8 @@ if (env.DEV_TOOLS === 'on') startDevMode()
 
 Call `startDevMode` at the top level of the worker, not inside an event. A browser only honours a
 listener that a worker adds while the script first runs. A production build with the call still in
-it would report every request to a dev server that does not exist. So gate the call on a value that
-the production environment does not set.
+it would report every request to a dev server that does not exist. Gate the call on a value that the
+production environment does not set.
 
 An edit to the worker, or to a file that it imports, reloads the browser like any other change. The
 new bundle installs on that navigation. When the bundle cannot be built, imp reports the file and
@@ -330,43 +331,44 @@ that your app applied, so the widget is light on a light theme and dark on a dar
 no theme gets a dark widget.
 
 **Add review** starts a selection. The next element that you click on the page is the element that
-you review. Move the pointer to see what imp is about to select, because imp outlines the element
-under the pointer. Then click the element, type a comment, and press **Save review**, or `Ctrl` or
-`Cmd` with `Enter`. The element that you selected stays outlined while you type. So you never have
-to check a DOM path to know what you describe. `Escape` cancels the selection. `Enter` takes the
-highlighted element, when you prefer the keyboard to the mouse.
+you review. Move the pointer to see what imp is about to select. imp outlines the element under the
+pointer. Click the element, type a comment, and press **Save review**, or `Ctrl` or `Cmd` with
+`Enter`. The selected element stays outlined while you type, so you never have to check a DOM path
+to know what you describe. `Escape` cancels the selection. `Enter` takes the highlighted element,
+when you prefer the keyboard to the mouse.
 
 **Console logs** and **Network logs** show what the page sent to your terminal since it loaded: what
 it logged, what failed, and each request with its status and its time. A new line appears as it
 happens, so press a button in the app and watch what it logged. Each line is one row, cut with an
 ellipsis. Click a row to read all of it. The console view filters by level. The network view filters
-by kind and by outcome. It starts on **Fetch**, which is a request that your code made, with `fetch`
-or `XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
+by kind and by outcome. It starts on **Fetch**, a request that your code made with `fetch` or
+`XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
 font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and
 the level or the status of a row carries the same colour. The page keeps the last 2000 entries, and
-a reload starts the list again. The terminal and `imp logs` keep the whole session. The views are a
+a reload starts the list again. The terminal and `imp logs` keep the whole session. The views give a
 glance, not a debugger. For a stack trace, a request body or a timing chart, open the developer
 tools of the browser.
 
 **Theme editor** opens the **Tokens** view of the editor that `imp preview` has, in the panel of the
-widget, for the theme that your app applied. It is the whole theme as JSON. Edit any token, and the
-app re-skins as soon as the JSON parses, on its own screens. The knobs that derive a theme from two
-colours are in `imp preview`, where you start a theme. The widget is where you tune one token
+widget, for the theme that your app applied. It shows the whole theme as JSON. Edit any token, and
+the app re-skins as soon as the JSON parses, on its own screens. The knobs that derive a theme from
+two colours are in `imp preview`, where you start a theme. The widget is where you tune one token
 against your real screens. imp keeps the draft for that theme across reloads, so a save in your
 editor does not undo your edits. **copy** or **download theme.js** gives you the theme as an
-ordinary module. Pass it to `init`, then press **reset** to drop the draft. See
-**[the theme editor](#the-theme-editor)** under `imp preview` for the knobs and the file.
+ordinary module. Pass it to `init`. imp drops the draft by itself when the theme of that name
+changes, and **reset** drops it at once. See **[the theme editor](#the-theme-editor)** under
+`imp preview` for the knobs and the file.
 
 That is the whole interaction. You click through the app, and you describe what is wrong in the
-words that you would say out loud. imp records which page you were on, and which element you meant.
-So your AI coding agent does not have to guess either. Each review becomes a plain-text file, and
-you read it back with **[`imp review`](#imp-review)**, described there.
+words that you would say out loud. imp records which page you were on and which element you meant,
+so your AI coding agent does not have to guess either. Each review becomes a plain-text file. You
+read it back with **[`imp review`](#imp-review)**, described there.
 
-The widget is part of the dev server, and of nothing else. `imp start` and `imp preview` inject it,
-and `imp build` never injects it. So no review code reaches your production bundle. The widget
-appears only when you look at the server over a loopback address. The server accepts a review only
-from the machine that runs it. Open the dev server from another device on your network, and the
-widget is not there.
+The widget is part of the dev server, and of nothing else. `imp start` and `imp preview` inject it.
+`imp build` never injects it, so no review code reaches your production bundle. The widget appears
+only when you look at the server over a loopback address. The server accepts a review only from the
+machine that runs it. Open the dev server from another device on your network, and the widget is not
+there.
 
 For the same feature for the people who use your finished app, use the `bugReport` component. See
 the [component gallery](/components). It has the same picker and captures the same context. It ships
@@ -385,8 +387,7 @@ before its backend exists, or with no backend at all:
 ```
 
 Both keys are necessary. `folder` says where the files are. `enabled` says whether they answer by
-default. So you cannot declare the mocks in an unclear way. Every project states which backend it
-develops against, and every run can override that.
+default. Every project states which backend it develops against, and every run can override that.
 
 Every `*.mock.js` file under that folder exports a `mocks` array. imp also reads a nested folder.
 Each entry decides what it answers, with `match`, and answers, with `handler`:
@@ -419,13 +420,13 @@ components keep their real calls. `imp build` leaves the folder out of productio
 - **`handler(request)`** receives the same object, and returns `{ status, headers, body }`. The
   default `status` is `200`. imp sends a `body` that is not a string as JSON. To take full control,
   return a `Response` of your own. A handler can be async.
-- **`delay`** is the simulated latency in milliseconds. So you can watch your spinners work.
+- **`delay`** is the simulated latency in milliseconds, so you can watch your spinners work.
 - **imp sends an unmatched request to the real network.** That is how you mock the half of an API
   that does not exist yet, while the rest goes to your backend.
 - **A thrown error simulates a failed connection.** The request fails in the page exactly as it does
   when the server is unreachable. It is a real network error, not a `500`.
 - **A mock file is an ordinary module.** It can import a shared fixture, and any dependency that you
-  installed. imp evaluates each file once. So a closure is how a mock keeps state between two
+  installed. imp evaluates each file once, so a closure is how a mock keeps state between two
   requests:
 
   ```js
@@ -455,9 +456,8 @@ imp start --no-mock    # this run goes to the real API
 ```
 
 Use `"enabled": true` while the backend does not exist. A plain `imp start` then develops against
-the fixtures. When there is a backend to work with, keep the files and change the default.
-`imp
-start` is then a real run, and you ask for mocking when you want it:
+the fixtures. When there is a backend to work with, keep the files and change the default. A plain
+`imp start` is then a real run, and you ask for mocking when you want it:
 
 ```json
 {
@@ -475,7 +475,7 @@ it starts:
 ```
 
 A mocked answer is a real response, and it arrives over the network layer of the browser. So
-everything after it behaves normally. An [HTTP client](http.md) retries a mocked `503`, a `delay`
+everything after it behaves normally. An [HTTP client](http.md) retries a mocked `503`. A `delay`
 keeps `pending` above zero, and your interceptors run. imp reports a mocked request in the terminal
 like any other request, with the file and the entry that answered it:
 
@@ -487,11 +487,10 @@ An edit to a mock file reloads the browser, like any other change. imp reports a
 build, with its line, in the terminal, and the rest of the app continues to run.
 
 Mocking works through a service worker that `imp start` registers for you. So it covers _every_
-request that the page makes. That includes `fetch`, `XMLHttpRequest` and a third-party SDK, not only
-the requests that imp issues. It also means that the mock code runs outside the page. In a
-`*.mock.js` file there is no `document`, and there is no access to the state of your app.
-`imp preview` and the e2e server of `imp test` are the same dev server. So your mocks apply there as
-well.
+request that the page makes: `fetch`, `XMLHttpRequest` and a third-party SDK, not only the requests
+that imp issues. It also means the mock code runs outside the page. In a `*.mock.js` file there is
+no `document`, and there is no access to the state of your app. `imp preview` and the e2e server of
+`imp test` are the same dev server, so your mocks apply there as well.
 
 ### Dependencies
 
@@ -528,8 +527,8 @@ the module scripts of the page. It bundles each one into minified, self-containe
   resolves to the built-in library, and each alias resolves to the bundle in your `dependencies/`
   folder. The build runs offline. What you tested in development is what you ship.
 - **imp keeps the paths.** Each `<script type="module" src="...">` keeps its URL. imp writes the
-  bundled file to the same relative path as the source file. So the HTML works without a change. imp
-  also bundles an inline `<script type="module">` block, and inlines it again, minified and with its
+  bundled file to the same relative path as the source file, so the HTML works without a change. imp
+  also bundles an inline `<script type="module">` block. It inlines it again, minified and with its
   imports resolved.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
@@ -551,22 +550,22 @@ the module scripts of the page. It bundles each one into minified, self-containe
 - **Your `public/` folder becomes the site root.** imp copies anything that you put in `public/`
   without a change, and removes `public/` from the path. That covers a stylesheet, an image, a font,
   `favicon.ico` and `robots.txt`. So `public/logo.png` ships as `logo.png`, and it answers at
-  `/logo.png`. That folder is the only thing that imp copies. So nothing else can reach the output
+  `/logo.png`. That folder is the only thing that imp copies, so nothing else can reach the output
   by accident. Your module sources are already compiled into the bundles. `imp.json`, your
   environment files, your mocks and everything else in the project are never part of the site. See
   [The `public/` folder](#the-public-folder) below.
 
 With a JavaScript module in place of a page, `imp build` emits that module as one self-contained
-file. imp compiles in imp itself and every dependency. So you can drop the result into any
-application, on any framework, and it needs no imp runtime and no other runtime. A web component
-that you wrote with imp is an example.
+file. imp compiles in imp itself and every dependency. You can drop the result into any application,
+on any framework. It needs no imp runtime and no other runtime. A web component that you wrote with
+imp is an example.
 
 **A JS build carries its skill. A page build removes it.** A module entry is something that other
 developers program against. So when a `counter.skill.md` file sits beside it, imp folds that text
-into the output as an `impSkill` export, and the text travels with the component to whoever installs
-it. An HTML entry is a finished app, and nobody writes code against it. So imp adds no skill text,
-copies no skill file into the output, and removes any `impSkill` that it finds on the way in. It
-removes the skill of a pre-built component that you installed, and of your own modules. It removes
+into the output as an `impSkill` export. The text travels with the component to whoever installs it.
+An HTML entry is a finished app, and nobody writes code against it. So imp adds no skill text and
+copies no skill file into the output. It removes any `impSkill` that it finds on the way in,
+including the skill of a pre-built component that you installed, and of your own modules. It removes
 it from a chunk that loads lazily as well as from the main bundle. See
 **[Components](components.md)**.
 
@@ -580,7 +579,7 @@ notices by default. So the build that you deploy is not compliant, and nothing t
 directory. It uses two sources, because neither one alone is complete:
 
 - **The licence that imp recorded for every package that you vendored.** `imp install` reads the
-  licence identifier and the full licence text of each package when it resolves the package. It
+  licence identifier and the full licence text of each package when it resolves the package, and
   records them beside the bundle. This half catches the common case: a small package whose licence
   lives in a `LICENSE` file, and nowhere in its code.
 - **The legal comments in the bundled code.** Those are the `/*! ... */`, `//!`, `@license` and
@@ -629,7 +628,7 @@ again into your page:
 
 So a reader who arrives at a minified bundle can find the notices from there. Under a
 [deployment on a sub-path](#deploying-under-a-sub-path), imp puts the base in front of that
-reference, like every other root-absolute URL. So it still points at the correct place.
+reference, like every other root-absolute URL, so it still points at the correct place.
 
 `LICENSES.txt` is part of the output. Upload it with the rest of the directory, and keep it there.
 The notices ask you not to remove it.
@@ -693,14 +692,14 @@ domain root, set the `IMP_BASEPATH` environment value for that deployment. See
 }
 ```
 
-`imp build` then puts the base in front of every root-absolute URL that it emits. So the whole site
+`imp build` then puts the base in front of every root-absolute URL that it emits, so the whole site
 keeps working one level down. A `href="/styles.css"` in your page becomes
 `href="/my-imp-app/styles.css"`. The PWA manifest, the icons, the service worker and its precache
-list all move with it. imp leaves an external URL, such as `https://...`, a protocol-relative URL,
-such as `//...`, and a path that is already relative exactly as you wrote it.
+list all move with it. imp leaves an external URL (such as `https://...`), a protocol-relative URL
+(such as `//...`), and a path that is already relative exactly as you wrote it.
 
 The router reads the same value. It removes and adds the prefix when it matches a route and when it
-builds a link. So one setting covers your assets and your navigation. Inside a stylesheet, write an
+builds a link, so one setting covers your assets and your navigation. Inside a stylesheet, write an
 asset URL relative to the stylesheet, as in `url(assets/logo.png)`. Such a URL resolves against the
 location of the stylesheet, and it stays correct under any prefix.
 
@@ -732,24 +731,24 @@ Know two things:
 
 - **The host must really provide imp.** Outside an imp application, that means an import map entry,
   or a bundler alias, that maps `imp`. The bundle fails at load time in a page that maps nothing.
-  When you are not sure, leave `targetImpHost` off, and ship a self-contained file.
+  When you are not sure, leave `targetImpHost` off and ship a self-contained file.
 - **The imp versions can differ.** A self-contained bundle fixes the imp version that you built it
-  with. A bundle for an imp host runs against the imp version that the host provides, and that
-  version can be newer or older than the version that you developed against. When a host updates
-  imp, the behaviour of your component can change, and your bundle does not change at all. So test
-  your component against the imp versions that your host applications run.
+  with. A bundle for an imp host runs against the imp version that the host provides. That version
+  can be newer or older than the version that you developed against. When a host updates imp, the
+  behaviour of your component can change, and your bundle does not change at all. Test your
+  component against the imp versions that your host applications run.
 
-`targetImpHost` affects a JS entry only. An HTML build has no import map in its production output.
-So nothing could resolve a bare import that it left there. A bundle of an HTML page compiles imp in
+`targetImpHost` affects a JS entry only. An HTML build has no import map in its production output,
+so nothing could resolve a bare import that it left there. A bundle of an HTML page compiles imp in
 as usual, because the page is its own host.
 
 ### Progressive Web App - `imp build --pwa`
 
 Add `--pwa` to a page build, and imp emits everything that an app needs to install to a home screen
-and to continue to work offline. That is a web app manifest, a full icon set scaled from one source
-image, and an offline service worker. imp emits those beside the normal production output. Without
-the flag, `imp build` produces a plain build. So a PWA project can still make a quick, plain build
-with a bare `imp build`.
+and to keep working offline: a web app manifest, a full icon set scaled from one source image, and
+an offline service worker. imp emits those beside the normal production output. Without the flag,
+`imp build` produces a plain build. A PWA project can still make a quick, plain build with a bare
+`imp build`.
 
 Describe the app once, in a `pwa` block in `imp.json`:
 
@@ -768,31 +767,31 @@ Describe the app once, in a `pwa` block in `imp.json`:
 
 Only `name` and `icon` are necessary. `icon` points at a **single** source image of high resolution.
 Prefer an SVG, because it scales to any size cleanly. A large PNG or JPEG also works. imp scales
-that image to every icon that the manifest and the platforms need. So there is no icon set to
+that image to every icon that the manifest and the platforms need, so there is no icon set to
 maintain by hand. A raster source must be 512px or more on its longest edge. The largest generated
-icon is 512x512, and imp must upscale a smaller source to reach that size, which costs sharpness.
-The build prints a warning when that happens. The build then does the following, in one step:
+icon is 512x512. imp must upscale a smaller source to reach that size, which costs sharpness, and
+the build prints a warning when that happens. The build then does the following, in one step:
 
 - **imp generates the icon set.** That is a 192px app icon, a 512px app icon, a 512px maskable icon
   with padding that survives the mask of a platform, and a 180px apple-touch-icon. imp generates
   them from the source on every build.
 - **imp writes `manifest.webmanifest`**, with the name, the colours and the display mode of your
-  app. It also guarantees the fields that a browser needs before it offers an installation. Those
-  are a name, a 192px icon and a 512px icon, a display mode, and a start URL.
+  app. It also guarantees the fields that a browser needs before it offers an installation: a name,
+  a 192px icon and a 512px icon, a display mode, and a start URL.
 - **imp writes an offline service worker**, `sw.js`. It injects the manifest link, the theme-color
   meta tag, the apple-touch-icon link and the registration of the service worker into the `<head>`
-  of your page. So the built HTML is ready to install, and you edit no source.
+  of your page. The built HTML is ready to install, and you edit no source.
 
-**The service worker is the part that matters.** Anything can make a manifest from a template, and
+**The service worker is the part that matters.** Anything can make a manifest from a template and
 resize an icon. What really breaks for a user is a lost connection, an unreliable network, or an app
-that they open the day after you deploy. imp gets this correct, because it builds your app and so it
-knows the exact set of files that the app is made of:
+that they open the day after you deploy. imp gets this right, because it builds your app and so it
+knows the exact set of files the app is made of:
 
 - **The precache list is exact.** The service worker precaches exactly the files that this build
-  produced. That is every hashed script and chunk, every asset, and the manifest and the icons. imp
-  derives the list from the build itself. It does not scan a folder and guess afterwards. So imp
-  misses nothing that the app needs to run offline, and it caches nothing stale.
-- **A deploy is never stuck.** The cache key comes from the content of the build. So a new deploy is
+  produced: every hashed script and chunk, every asset, and the manifest and the icons. imp derives
+  the list from the build itself. It does not scan a folder and guess afterwards. imp misses nothing
+  that the app needs to run offline, and it caches nothing stale.
+- **A deploy is never stuck.** The cache key comes from the content of the build, so a new deploy is
   a new cache. On activation the worker fetches what changed, and deletes what is gone. A user moves
   to the new version automatically. Their own cache does not hold them on an old version.
 - **The defaults are safe, and there is no configuration.** imp serves your page and its deep links
@@ -803,27 +802,27 @@ knows the exact set of files that the app is made of:
 
 **A project with its own service worker keeps it.** When `imp.json` names a `serviceWorker`, see
 [Your own service worker](#your-own-service-worker), `imp build --pwa` still writes the manifest and
-the icons, and it registers your worker in the built HTML. It writes no offline worker, because the
-two would claim the same file and the same scope. Offline behaviour is then the job of your worker.
+the icons, and registers your worker in the built HTML. It writes no offline worker, because the two
+would claim the same file and the same scope. Offline behaviour is then the job of your worker.
 
 **In development, with `imp start`, installability is automatic.** You need no `--pwa` flag and no
 edit to the HTML. When your `imp.json` has a `pwa` block, the dev server injects the manifest link
-and the icon links. It generates and serves the manifest and the icons while it runs. So you can
-install the app, and check its icons and its colours, while you work. But only `imp build --pwa`
+and the icon links. It generates and serves the manifest and the icons while it runs, so you can
+install the app and check its icons and its colours while you work. But only `imp build --pwa`
 generates the **offline** service worker. In development the app keeps live reload and the network
 telemetry in the terminal, because the development service worker reports a request and caches
 nothing. You get the offline behaviour in the production build, where it belongs. That split is
-deliberate. A caching worker must never fight live reload while you edit.
+deliberate: a caching worker must never fight live reload while you edit.
 
 **There is one problem when you preview a production build.** A service worker controls a whole
 origin, and the development telemetry worker and the offline PWA worker both claim root scope. So
 when you serve the output of `imp build --pwa`, and then run `imp start` on the _same host and
-port_, the offline worker from the production preview can stay registered and continue to serve its
-cache. In the dev server that looks like stale content, or like a broken live reload. The problem
-resolves itself when the development worker takes over, and the production caches remain until then.
-When you meet this problem, open the developer tools of your browser, go to Application, then to
-Service Workers, unregister the worker, and clear the site data. You can also preview a production
-build on a port that differs from the port of `imp start`.
+port_, the offline worker from the production preview can stay registered and keep serving its
+cache. In the dev server that looks like stale content, or a broken live reload. The problem clears
+when the development worker takes over. The production caches remain until then. To fix it now, open
+the developer tools of your browser, go to Application, then Service Workers, unregister the worker,
+and clear the site data. You can also preview a production build on a port that differs from the
+port of `imp start`.
 
 ## `imp install` and `imp uninstall`
 
@@ -835,13 +834,13 @@ imp uninstall <package>
 `imp install` adds a dependency to your project. It resolves the package, from npm by default and
 from the jsr registry with the `jsr:` prefix. It bundles the package into one minified module that
 the browser can run. It writes the bundle into the committed `dependencies/` folder, and pins the
-exact version in `imp.json`. With no version, it resolves the latest release, and that also makes a
-second run the update path. With no argument at all, it updates every declared dependency.
+exact version in `imp.json`. With no version, it resolves the latest release. A second run then
+updates that dependency. With no argument at all, it updates every declared dependency.
 `imp uninstall` removes the folder of a dependency, and its pin. Your code imports a dependency by
 its bare alias, as in `import mitt from 'mitt'`. A package that imports `imp` itself keeps that
-import bare. Your app provides the imp library, so imp never treats `imp` as a registry package. The
-bundle keeps the licence notice of the package where the package put it. So the notice is there for
-`imp build` to collect into the [`LICENSES.txt`](#license-notices) of your app.
+import bare, because your app provides the imp library. imp never treats `imp` as a registry
+package. The bundle keeps the licence notice of the package where the package put it, so the notice
+is there for `imp build` to collect into the [`LICENSES.txt`](#license-notices) of your app.
 
 **[Managing dependencies](dependencies.md)** gives the full story: how to pin a version, how to
 update, aliases, a jsr package and a subpath, what imp prints, and why you commit the vendored
@@ -849,10 +848,10 @@ folder.
 
 ### File-size warning
 
-You commit a vendored bundle to your repository. So `imp install` warns when a package bundles to
-more than `maxFileSize`, which is 200 kB by default. A heavy dependency then does not arrive without
-a message. The warning names the total that would land in `dependencies/`, and reminds you of the
-two settings. To stop the warning for a dependency that you know is large and want anyway, raise
+You commit a vendored bundle to your repository. `imp install` warns when a package bundles to more
+than `maxFileSize`, which is 200 kB by default, so a heavy dependency never arrives without a
+message. The warning names the total that would land in `dependencies/`, and reminds you of the two
+settings. To stop the warning for a dependency that you know is large and want anyway, raise
 `maxFileSize`, or add the dependency to `maxFileSizeIgnore` in `imp.json`. Add its folder, such as
 `dependencies/charts`, or one file. A later update then gives no warning:
 
@@ -878,10 +877,10 @@ simulated browser environment. There is no real browser, and it is very fast. A 
 `.spec.js` is an end-to-end test. imp serves your app exactly as `imp start` does, launches a
 headless Chrome, and gives each spec a Puppeteer page that points at the running app. The console
 and the network activity of the browser stream to the terminal. You write a test with `test` and
-`expect` from `imp/test`. The runner and the assertions are part of the binary, and there is nothing
+`expect` from `imp/test`. The runner and the assertions are part of the binary, so there is nothing
 to install.
 
-imp runs **one test file per process**. That is the unit of isolation. So no two files share the
+imp runs **one test file per process**. That is the unit of isolation, so no two files share the
 globals, the timers, the server or the browser of a process. `imp test <file>` runs exactly that one
 file, and exits with its result. To run a whole level, name it. `imp test --unit` covers every
 `*.test.js` file, and `imp test --e2e` covers every `*.spec.js` file. Each command discovers its
@@ -889,16 +888,16 @@ files, and runs each one in its own process, in parallel. `--jobs <n>` caps the 
 default is your CPU count. imp summarizes a passing file in one line. A failing file prints its full
 output. The run exits `1` when a file failed. A bare `imp test` with more than one candidate file
 does not guess. It asks you to select `--unit`, `--e2e` or a single file. It runs nothing, and exits
-with a non-zero code. So a stray `imp test` fails CI instead of passing green. To spread the files
+with a non-zero code, so a stray `imp test` fails CI instead of passing green. To spread the files
 across **machines**, in a CI matrix that imp cannot schedule, run `imp test --list`. It prints the
 selected files as JSON, and the matrix hands out one file per job.
 
 Add `--video <dir>` to an e2e run, and imp records the browser session of each spec as an animated
-GIF. It writes one file per spec into `<dir>`. A GIF plays inline in a GitHub pull request. So this
-is how an agent, or a person, attaches a clip of a new feature at work. A human reviewer can then
-check its behaviour, and its look and feel. Recording is off by default. A `test.video` block in
-`imp.json` tunes the frame rate, the duration, the width and the quality. It can also turn recording
-on without the flag.
+GIF. It writes one file per spec into `<dir>`. A GIF plays inline in a GitHub pull request. This is
+how an agent, or a person, attaches a clip of a new feature at work, so a human reviewer can check
+its behaviour and its look and feel. Recording is off by default. A `test.video` block in `imp.json`
+tunes the frame rate, the duration, the width and the quality. It can also turn recording on without
+the flag.
 
 **[Testing](testing.md)** gives the full runner API, the assertion reference, the browser
 resolution, the recording, and the pattern for parallel runs in CI.
@@ -908,20 +907,21 @@ resolution, the recording, and the pattern for parallel runs in CI.
 ```
 imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
+imp preview --output <dir> [--env <name>]
 ```
 
 `imp preview` builds one component at a time, in isolation. It serves every one of your **preview
 files** in one app. The catalog is down the side, and a click opens a component in place, with no
 page load. The `imp skill` command that an AI agent must run before it writes code with the
-component sits below the page head. Every named export becomes a tab in a vertical strip, and the
-panel of a tab holds the component in a stage that you can drag to any size, with the code of the
-call site under a rule and a state editor behind a toggle button. A **Skill** tab shows the skill
-file of the component, rendered as a page. You start no app, you need no backend, and you navigate
-to no screen. You edit the component, the page reloads, and you see it. A preview file that fails to
-build shows its error in place of its panels, and the rest of the catalog stays up.
+component sits below the page head. Every named export becomes a tab in a vertical strip. The panel
+of a tab holds the component in a stage that you can drag to any size, with the code of the call
+site under a rule and a state editor behind a toggle button. A **Skill** tab shows the skill file of
+the component, rendered as a page. You start no app, you need no backend, and you navigate to no
+screen. You edit the component, the page reloads, and you see it. A preview file that fails to build
+shows its error in place of its panels, and the rest of the catalog stays up.
 
-Underneath, this is the same dev server as `imp start`. So the console and the network activity of
-the browser still stream to your terminal, and a save of any file reloads the page. Your
+Underneath, this is the same dev server as `imp start`. The console and the network activity of the
+browser still stream to your terminal, and a save of any file reloads the page. Your
 `public/favicon.svg` marks the tab, as it does in your running app. When the project has none, the
 mark of imp stands in. The imp mark in the corner is the review widget. Select a part of the
 component that you preview, comment on it, and the note arrives in `.imp/reviews/`, with the preview
@@ -943,13 +943,13 @@ export const busy = todoList({ loading: true })
 Each **named export is a scenario**, and the name of the export is the label of the panel. The code
 is the only place where you name a scenario, so there is nothing to keep in step. The panels appear
 in the order in which you wrote them. A scenario is the component with its values already filled in.
-You build it with the same call that you would write at a real call site. So there is no story
-format to learn, and imp dispatches an argument by type exactly as it does in your app. When a
-scenario needs a setup at render time, export a function in place of an instance, as in
+You build it with the same call that you would write at a real call site, so there is no story
+format to learn. imp dispatches an argument by type exactly as it does in your app. When a scenario
+needs a setup at render time, export a function in place of an instance, as in
 `export const lazy = () => todoList(buildFixture())`. imp calls the function when it renders the
 panel.
 
-An export name is an identifier, and an identifier reads badly as a label. So a scenario can carry a
+An export name is an identifier, and an identifier reads badly as a label. A scenario can carry a
 label of its own. Export an object with a `scenario` string and a `component`:
 
 ```js
@@ -977,9 +977,9 @@ todoList({ todos: [] })
 imp does not ask you to write that snippet. It reads the preview file and cuts the snippet out of
 it. The snippet is the expression of the export, with every import that the expression uses, and
 every helper of the file that it reaches. So a scenario that wraps a field in a shared `form(...)`
-helper shows that helper above the call. Nothing is hidden, and the code that you see is the code
-that rendered the panel. A scenario that is a function shows the call inside it. Once you open the
-code of one panel, every panel opens with its code shown, until you hide it again.
+helper shows that helper above the call. Nothing is hidden. The code that you see is the code that
+rendered the panel. A scenario that is a function shows the call inside it. Once you open the code
+of one panel, every panel opens with its code shown, until you hide it again.
 
 ### The skill of a component
 
@@ -1004,7 +1004,7 @@ export const description = 'A checkable list of todos, with an empty and a loadi
 is the group that the component is listed under. `description` is a sentence for a person, under the
 title of the page. Each one is optional. Declare none of them, and imp falls back to the name of the
 file and the folder that the file sits in. So `src/inputs/text-field.preview.js` is `text_field`
-under `inputs`. That is readable, but it is not what you would say out loud.
+under `inputs`. That is readable, but not what you would say out loud.
 
 ### The description
 
@@ -1029,14 +1029,14 @@ ignores it and the page shows no description.
 The description is for a person. The agent reads the `*.skill.md` file of the component, which the
 **Skill** tab of the same page shows.
 
-The grouping comes from `group`, not from the folder. So you can organize the catalog in the way
-that you talk about the components, and not in the way that the files happen to sit. Two files in
-different folders that declare the same `group` are listed together.
+The grouping comes from `group`, not from the folder. You can organize the catalog in the way that
+you talk about the components, not in the way that the files happen to sit. Two files in different
+folders that declare the same `group` are listed together.
 
 ### Groups and their icons
 
 The catalog at the side lists one row per group, with the components under it. By default a
-component belongs to the folder that holds its preview file, every group has a folder icon, and the
+component belongs to the folder that holds its preview file. Every group has a folder icon, and the
 groups are in alphabetical order. To name the groups yourself, with their own icons and their own
 order, point `preview.groups` in `imp.json` at a module of yours:
 
@@ -1059,7 +1059,7 @@ The module exports an object named `groups`, with one key per group. `name` is t
 group in the catalog. `icon` is an icon from `imp/icons`, the same value that you give to the `icon`
 component. `priority` is an optional number. A group with a priority comes before every group
 without one, and a lower number comes first. So `priority: 1` puts a group at the top, whatever its
-place in the object. A preview file then imports the object and exports one of its entries as
+place in the object. A preview file then imports the object, and exports one of its entries as
 `group`:
 
 ```js
@@ -1068,11 +1068,11 @@ import { groups } from '../preview-groups.js'
 export const group = groups.widgets
 ```
 
-So a group is a value that your editor completes and that a rename refactors, not a string that must
+A group is a value that your editor completes and that a rename refactors, not a string that must
 match another string. The groups appear in the order in which you list them, after the ones with a
 priority. A component with no `group` export falls back to its folder, and such a folder comes after
 the listed groups, with the folder icon. The module is ordinary imp code, and imp bundles it into
-the preview app. So an edit to it reloads the catalog, like any other change. A path that resolves
+the preview app, so an edit to it reloads the catalog, like any other change. A path that resolves
 to no file stops `imp preview` at startup. A `group` that is not an entry of that module, or that is
 imported from another file, is reported in the terminal, and the component falls back to its folder.
 
@@ -1098,7 +1098,7 @@ of the module, and it receives `{ spy, orig }`. Every import of that module reso
 returned. That covers an import from the component, and from anything that the component imports, at
 any depth. `orig()` keeps the rest of the module real. See
 **[Mocking modules](testing.md#mocking-modules--mockmodule)** for the full behaviour. A mock is a
-plain object that you write, and it lives next to the component. So a reviewer sees the fixture and
+plain object that you write, and it lives next to the component, so a reviewer sees the fixture and
 the component in one diff.
 
 A mock applies to the whole preview app. Every preview shares one module graph, so a module that one
@@ -1110,15 +1110,15 @@ they agree. Two scenarios that need different data differ in the arguments that 
 
 Each panel holds its component in a stage. Resize the stage by **dragging its right handle, its
 bottom handle or its corner handle**, with a mouse or a finger. The component lays itself out again
-at every width. That is the fastest way to find the width where it breaks, and you open no device
-emulation. A readout shows the current size.
+at every width. That is the fastest way to find the width where it breaks, with no device emulation.
+A readout shows the current size.
 
-A handle is hard to hit on a phone. So the pencil button beside the readout opens two boxes, one for
+A handle is hard to hit on a phone, so the pencil button beside the readout opens two boxes, one for
 the width and one for the height, in pixels. Type a number, and the stage takes that size at once.
 Clear a box, and that axis goes back to the size that the layout gives it. A drag of a handle writes
 its new size into the boxes.
 
-On a phone, the scenario tabs leave little room beside them. So the strip of tabs folds. The button
+On a phone, the scenario tabs leave little room beside them, so the strip of tabs folds. The button
 at its foot folds the tabs away, and the panel, with its head, its stage and its code panel, gets
 the width of the screen. The strip starts folded on a narrow screen and open on a wide one, and imp
 remembers your choice in the browser. Unfold the strip to pick another scenario.
@@ -1128,24 +1128,24 @@ remembers your choice in the browser. Unfold the strip to pick another scenario.
 The sliders button in the head of a panel opens a movable window with a form. The window opens under
 that button, so it is where you look, on a phone as well. It lists every state that a component in
 the scenario initialized, with the tag of the component that holds it. imp finds that state in the
-running scenario, not in your source. So a state with a computed name, or one declared behind a
+running scenario, not in your source, so a state with a computed name, or one declared behind a
 helper, is listed like any other. A state that a child reads with `useState` appears once, under the
 component that initialized it. A scenario with no state gets no button. imp leaves out the state
 that its own standard components hold, because that state belongs to the component, not to your
 scenario.
 
-A component that reads a state with `useState` needs a provider above it, or it does not mount. So
-wrap it in a small component in the preview file, one that calls `initState` with that name and a
-fixture value, and pass the wrapper as the scenario. The editor then lists the state under the
-wrapper, and an edit there drives the component.
+A component that reads a state with `useState` needs a provider above it, or it does not mount. Wrap
+it in a small component in the preview file, one that calls `initState` with that name and a fixture
+value, and pass the wrapper as the scenario. The editor then lists the state under the wrapper, and
+an edit there drives the component.
 
 The form shows a value as JSON. Edit one value, and apply it, or press `Ctrl` or `Cmd` with `Enter`.
 The component then updates through the normal fine-grained path of imp. There is no remount and no
-reload. The form also follows the state. So a click inside the component shows the new value. It
+reload. The form also follows the state, so a click inside the component shows the new value. It
 shows a value that is not JSON data as read-only.
 
-Each panel gets its own form, bound to its own instance. So you can change `empty` and `populated`
-independently, on the same page. imp reads the scenario again each time you open the window. So a
+Each panel gets its own form, bound to its own instance, so you can change `empty` and `populated`
+independently, on the same page. imp reads the scenario again each time you open the window, so a
 state that a component initialized after the first paint is listed when you open it.
 
 ### The instruction for an agent
@@ -1155,14 +1155,14 @@ exists because the two readers of a component need different things from the sam
 looks at the stage. An agent that is about to write a call site must learn the component first, and
 that command prints the whole skill file. imp derives the command from the path of the file. A
 standard component gets `imp skill std/button`, and a component of yours gets
-`imp skill ./components/todos.js`. So there is nothing to write, and the command cannot point at the
+`imp skill ./components/todos.js`. There is nothing to write, and the command cannot point at the
 wrong file. A component without a skill file gets a line that names the file to write.
 
 ### Themes
 
-A theme button in the settings panel applies a theme to the whole page. So you can check the
-component under each of your themes, and you change no code. The button shows the current theme with
-an icon. A sun means `imp-light`, a moon means `imp-dark`, a contrast circle and an eclipse mean the
+A theme button in the settings panel applies a theme to the whole page, so you can check the
+component under each of your themes and change no code. The button shows the current theme with an
+icon. A sun means `imp-light`, a moon means `imp-dark`, a contrast circle and an eclipse mean the
 two high-contrast themes, and a palette means a theme of your own. Click the button to move to the
 next theme. Put the pointer over the button, or give it the focus, to open a menu of every theme.
 Select any theme from that list. imp remembers your choice across a reload. imp always offers the
@@ -1170,7 +1170,7 @@ built-in `imp-light` and `imp-dark`, unless a theme of yours takes one of those 
 
 The whole page changes, and the toolbar with it. The preview page is itself an imp app, built from
 `imp/std`. It uses the same buttons, tabs, selects and text fields as your app, and it reads the
-same tokens. So a theme that looks wrong here looks wrong in your app, for the same reason. The
+same tokens, so a theme that looks wrong here looks wrong in your app, for the same reason. The
 preview page is one more place where the library must work.
 
 To add your own theme files to the menu, list them in `preview.themes`:
@@ -1184,40 +1184,41 @@ To add your own theme files to the menu, list them in `preview.themes`:
 Each path is a module that default-exports a theme. It is the same file that your app passes to
 `applyTheme`, and there is nothing about it that is only for a preview. The label in the menu is the
 `name` of the theme. When the theme has no name, or when two themes share a name, imp uses the file
-path. imp lists your themes first, and selects the first one by default. So a preview opens with the
-look of your app, and not with the look of the starter theme. A theme of yours that carries the name
-of a built-in theme replaces that built-in theme in the menu. Use this to keep the four names, and
-the remembered choice of a person, while you change a token such as `font-family`. An edit to a
-theme file reloads the page with the new tokens applied. So a preview page is also the fastest way
-to work on a theme. See **[Theming](theming.md)**.
+path. imp lists your themes first, and selects the first one by default, so a preview opens with the
+look of your app, not the look of the starter theme. A theme of yours that carries the name of a
+built-in theme replaces that built-in theme in the menu. Use this to keep the four names, and the
+remembered choice of a person, while you change a token such as `font-family`. An edit to a theme
+file reloads the page with the new tokens applied, so a preview page is also the fastest way to work
+on a theme. See **[Theming](theming.md)**.
 
 ### The theme editor
 
 **edit theme**, beside the theme button, opens an editor. The review widget of `imp start` opens the
 **Tokens** view of the same editor on a page of your app. It edits the theme that the theme button
-selected, and it starts from the tokens of that theme. So select a dark theme to write a dark one.
-It asks for a **primary** colour and a **secondary** colour, a **font** and a **mono font**, a
-**border radius** step, a **shadow** step and a **shadow colour**. It derives every other colour
-token from the two base colours. That is a readable on-primary colour, and the surfaces, the borders
-and the text, which share the hue of the secondary colour. Those knobs sit on the **Knobs** tab. The
-**Tokens** tab holds the whole theme as JSON. Edit any value there, and the page re-skins as soon as
-the JSON parses. A token that has no knob, such as `background-app`, a font weight or a spacing
-step, starts as the selected theme sets it, and the exported file carries it too. A knob rewrites
-the tokens that it drives, and it leaves the rest as you set them.
+selected, and starts from the tokens of that theme. Select a dark theme to write a dark one. It asks
+for a **primary** colour and a **secondary** colour, a **font** and a **mono font**, a **border
+radius** step, a **shadow** step and a **shadow colour**. It derives every other colour token from
+the two base colours: a readable on-primary colour, and the surfaces, the borders and the text,
+which share the hue of the secondary colour. Those knobs sit on the **Knobs** tab. The **Tokens**
+tab holds the whole theme as JSON. Edit any value there, and the page re-skins as soon as the JSON
+parses. A token that has no knob, such as `background-app`, a font weight or a spacing step, starts
+as the selected theme sets it, and the exported file carries it too. A knob rewrites the tokens that
+it drives, and leaves the rest as you set them.
 
 The page re-skins while you type, on real components. imp remembers your choices per theme, across a
 reload. The draft belongs to the name of the applied theme, so the same draft follows that theme
 into your app when you open the editor there. When the theme looks correct, **copy** or **download
 theme.js** gives you an ordinary theme module, with the theme as its default export. You drop it
 into your app and pass it to `init`. The editor prints the two lines that do that, in the panel. The
-editor produces a plain file, with no imp import in it. So from that point the file is yours to edit
-by hand. **reset** drops the draft, and returns to the selected theme. See
+editor produces a plain file, with no imp import in it, so from that point the file is yours to edit
+by hand. **reset** drops the draft, and returns to the selected theme. imp also drops a draft when
+the theme that it started from changes, so an old draft never hides a new theme. See
 **[Theming](theming.md)**.
 
 ### The page around a preview - `preview.entry`
 
-imp generates the HTML page that frames every preview. That page has no stylesheet of yours in it.
-So a web font that your app loads through a `<link>` in `index.html` does not load in a preview, and
+imp generates the HTML page that frames every preview. That page has no stylesheet of yours in it,
+so a web font that your app loads through a `<link>` in `index.html` does not load in a preview, and
 the theme editor cannot show it. To frame every preview with a page of your own, point
 `preview.entry` at an HTML file:
 
@@ -1253,16 +1254,21 @@ Write a file for the preview. Do not point `preview.entry` at the `index.html` o
 keeps every script in the entry file, so the app would start inside the preview page. A path that
 resolves to no file fails the command at startup. An edit to the file reloads the page.
 
+`imp preview` serves the `public/` folder at the site root, as `imp start` does. So a font that you
+host yourself goes under `public/fonts/`, and the entry page links it as `/fonts/fonts.css`. Write
+every link of the entry page as a root-relative path or as a full URL. A path such as
+`fonts/fonts.css` breaks on a component page, because that page has an address of its own.
+
 ### Language and text direction
 
-Beside the theme button are a **language** picker and a **direction** picker. So you can see a
-component as a reader of another language sees it, and you change no line of code. imp remembers
-both choices across a reload.
+Beside the theme button are a **language** picker and a **direction** picker, so you can see a
+component as a reader of another language sees it, and change no line of code. imp remembers both
+choices across a reload.
 
 The language picker sets the language of the page. That localizes again everything that is bound
 through `lang`. It covers your own messages, and the reserved `imp.` messages that the standard
-components ask for. The picker lists the languages that you point it at. So say where your
-translation files are, under `preview.translations`:
+components ask for. The picker lists the languages that you point it at. Say where your translation
+files are, under `preview.translations`:
 
 ```json
 {
@@ -1271,17 +1277,17 @@ translation files are, under `preview.translations`:
 ```
 
 Each path is a module that default-exports your messages. It is the same file that your app passes
-to `init`. imp selects the first one by default. So a preview opens with the wording of your app. An
+to `init`. imp selects the first one by default, so a preview opens with the wording of your app. An
 edit to a translation file reloads the page with the new wording. Declare none, and imp leaves the
 picker out. The direction picker still works.
 
 The direction picker has three settings. **auto** takes the direction from the language, which is
 what your app does. Select Arabic or Hebrew, and the component lays out from right to left. **ltr**
-and **rtl** pin the direction. So you can check a right-to-left layout while you read English text.
+and **rtl** pin the direction, so you can check a right-to-left layout while you read English text.
 That is the fastest way to find a fixed `margin-left`.
 
 The setting affects the component only. The toolbar and the panels of the preview stay left to
-right, whatever you select. So the controls do not move under you. The direction is the one thing
+right, whatever you select, so the controls do not move under you. The direction is the one thing
 that the page does not share with the component that it shows. A mirrored toolbar moves every
 control to the other side in the middle of a session, and the theme button never does that. See
 **[Translations](i18n.md)**.
@@ -1307,6 +1313,62 @@ discovery, use a `preview.exclude` array in `imp.json`:
 ```
 
 A preview file is never part of your app. Nothing imports it, so `imp build` never sees it.
+
+### Exporting the gallery - `imp preview --output`
+
+```
+imp preview --output site/public/components
+```
+
+The same gallery publishes as static files, with no imp process behind it. `--output` writes a
+folder. One script in it, `imp-preview.js`, defines a custom element, `<imp-preview>`. A page loads
+the script and places the element, and the element shows the gallery:
+
+```html
+<script type="module" src="/components/imp-preview.js"></script>
+<imp-preview></imp-preview>
+```
+
+The element is a block that fills the height of the screen. Give it another height with CSS, as you
+would size any element. The gallery inside it is the page that `imp preview` serves, in a frame of
+its own, so it keeps its own theme, language and direction pickers, and never touches the styles or
+the elements of your page. The sidebar has no imp logo. Your page owns the brand and the navigation
+above the gallery.
+
+The folder holds the app of the gallery and one bundle per group. A click on a group in the sidebar
+loads that group, so a visitor downloads the components that they look at. Upload the folder as it
+is, next to the page that embeds it. Every host that serves static files serves it, because nothing
+in it needs a server.
+
+The gallery keeps its place in the address of your page. A component is `#/<group>/<name>`, and a
+scenario adds `?scenario=<name>`. So `https://example.com/components#/inputs/button` opens the
+button. A reload keeps it, and a link shares it. The element writes the fragment as the visitor
+moves, and it follows a fragment that your page sets.
+
+The gallery follows the theme of your page. Set the `theme` attribute to the name of a theme in the
+menu of the gallery, and the gallery applies it:
+
+```html
+<imp-preview theme="imp-dark"></imp-preview>
+```
+
+The attribute is live. Change it when a visitor switches the theme of your page, and the gallery
+switches with it. The same works in the other direction. When a visitor picks a theme inside the
+gallery, the element writes the name into its `theme` attribute, and dispatches an
+`imp-preview-theme` event with the name as `detail`. Listen to that event to keep the theme of your
+page in step. A name that the menu does not hold is ignored. Without the attribute the gallery opens
+with the theme that the visitor last picked.
+
+Three things differ from the served page. There is no dev server, so there is no reload, no
+telemetry and no review widget. The element resolves every link of the entry page against the
+address of the host page. So a root-relative link such as `/fonts/fonts.css` loads from the site
+that embeds the gallery, and that site must serve the file at the same path. A preview file that
+fails to build fails the export, in place of a marked card in the catalog. `--env` selects an
+environment for the components, as it does for the served page.
+
+The output folder belongs to the export. imp empties it before it writes, as `imp build` does with
+its output folder. Point `--output` at a folder inside `public/` of the app that embeds the gallery,
+and `imp build` ships it with the app.
 
 ## `imp review`
 
@@ -1334,7 +1396,7 @@ is saved yet, it says so. It does not print an empty list.
 ### What a review records
 
 Each review is a file of its own, under `.imp/reviews/`. imp names it after the moment when it saved
-the review, as in `2026-08-25T12-10-36-682Z.txt`. So nothing that you write can overwrite what you
+the review, as in `2026-08-25T12-10-36-682Z.txt`, so nothing that you write can overwrite what you
 wrote before. The file is plain text. It has a header that describes where you were, then blocks
 that describe the state that you were in, then your comment.
 
@@ -1373,27 +1435,27 @@ The save button is disabled until a field is touched, but nothing says so.
 moment when you select the element:
 
 - **`state`** holds every imp state in scope at the selected element, by name, as JSON. It is the
-  real answer to the question "what state was the app in?". imp state is named and holds plain data.
-  So the block is readable, and you can reproduce it. An agent can set the same values in a test, or
+  real answer to the question "what state was the app in?". imp state is named and holds plain data,
+  so the block is readable, and you can reproduce it. An agent can set the same values in a test, or
   in a preview scenario, and see the same screen. imp lists only the state that reaches the selected
-  element, with the nearest provider first. So you get the state that the component could see. On a
-  preview page, imp also writes its own `imp.preview.*` entries. Those are the theme, the language
-  and the direction of the preview.
-- **`controls`** holds what every form control really held. That is the typed text, the checked
-  boxes, the selected options, and whether a control was disabled or read-only. **The HTML does not
-  carry this.** A typed-in value lives on the element, not in the markup. So the `html` line above
-  would show an empty field where you typed a name. When you select an element inside a form, imp
-  records the whole form. When you select an element outside a form, imp records the controls inside
-  what you selected. imp **never records** a password field. It records only the number of
-  characters in it.
-- **`log`** holds the last 20 lines of the development log at that moment. That is the console error
-  that fired, and the request that failed. It answers the question "how did it get here?", which a
+  element, with the nearest provider first, so you get the state that the component could see. On a
+  preview page, imp also writes its own `imp.preview.*` entries: the theme, the language and the
+  direction of the preview.
+- **`controls`** holds what every form control really held: the typed text, the checked boxes, the
+  selected options, and whether a control was disabled or read-only. **The HTML does not carry
+  this.** A typed-in value lives on the element, not in the markup, so the `html` line above would
+  show an empty field where you typed a name. When you select an element inside a form, imp records
+  the whole form. When you select an element outside a form, imp records the controls inside what
+  you selected. imp **never records** a password field. It records only the number of characters in
+  it.
+- **`log`** holds the last 20 lines of the development log at that moment: the console error that
+  fired, and the request that failed. It answers the question "how did it get here?", which a
   screenshot does not answer.
 - **The environment** covers `viewport`, with the device pixel ratio when it is not 1, `scroll` when
   the page was scrolled, `scheme` for light or dark, `motion` when reduced motion is on, and `lang`
   and `dir`. Half of the reports that people write say "only when the window is narrow" or "only in
   dark mode". Now nobody has to type either one. `rect` is the size and the position of the selected
-  element. So "it is 8px wide" is no longer a guess.
+  element, so "it is 8px wide" is no longer a guess.
 
 `element` is the path from `<body>` down to what you selected. `>>` marks a crossing into the shadow
 tree of a component. So `acme-settings >> form.panel` is the form that `acme-settings` **renders**,
@@ -1402,7 +1464,7 @@ which is usually the file to open. imp cuts a deeply nested path at twelve steps
 
 You parse nothing to use any of this. Give the folder to your agent, and ask it to work through the
 list. `imp review` and `cat .imp/reviews/*.txt` are equally good ways in. Each review carries enough
-to find the code, and to return to the screen, and the agent asks no follow-up question.
+to find the code and to return to the screen, so the agent asks no follow-up question.
 
 ```
 imp review clear
@@ -1410,11 +1472,11 @@ imp review clear
 
 `imp review clear` deletes every saved review, and removes the folder. imp never clears a review on
 its own. It does not clear one when the server restarts, and it does not clear one when a build
-runs. So the list is a backlog. You empty it when you decide that the comments on it are settled,
-and a restart never loses one.
+runs. The list is a backlog. You empty it when you decide that the comments on it are settled, and a
+restart never loses one.
 
-A review lives in `.imp/`, and a fresh `imp init` project already tells git to ignore that folder.
-So a review stays on the machine that wrote it. To share one, paste it. There is nothing to
+A review lives in `.imp/`, and a fresh `imp init` project already tells git to ignore that folder,
+so a review stays on the machine that wrote it. To share one, paste it. There is nothing to
 synchronize.
 
 ## `imp logs`
@@ -1427,7 +1489,7 @@ imp logs [-n <count>] [-f]
 that `imp start` or `imp preview` printed since it started: the browser console, the errors, each
 request with its status, and the status lines of imp. See
 **[Console and error telemetry](#imp-start)** for what each prefix means. The output is the log as
-it is, with no colour and no header. So the command composes with the tools that you already use:
+it is, with no colour and no header, so the command composes with the tools that you already use:
 
 ```sh
 imp logs | grep '\[browser:error\]'
@@ -1454,7 +1516,7 @@ imp resize <image> [-w <px>] [-h <px>] [--output <path>] [--stretch]
 
 `imp resize` is a small utility for the common case that makes a repository large: a committed image
 that is much larger than the page shows it. `imp resize` downscales the image in place. It is not an
-image editor, and any operation other than a resize is out of scope, on purpose.
+image editor. Any operation other than a resize is out of scope, on purpose.
 
 imp always keeps the aspect ratio, until you ask it not to. The width flag and the height flag
 combine in this way:
@@ -1464,26 +1526,25 @@ combine in this way:
 - **With both `-w` and `-h`**, imp scales the image to the largest size that fits inside that width
   by height box, and keeps the aspect ratio.
 - **With both flags and `--stretch`**, imp resizes to exactly that width and height, also when the
-  picture is distorted. You asked for a specific size, and you accept the distortion.
-- **With neither flag**, imp uses inspect mode, and writes nothing. It reports the current
-  dimensions and the byte size of the image. When the asset is oversized, it also prints an
-  `imp resize` command that you can copy, and that brings the asset down to a sensible size. This is
-  the natural first step. Check what you have, and then decide what to resize to. You can also use
-  inspect mode to read the dimensions of any PNG or JPEG from the terminal.
+  picture is distorted. You asked for a specific size, and accept the distortion.
+- **With neither flag**, imp uses inspect mode and writes nothing. It reports the current dimensions
+  and the byte size of the image. When the asset is oversized, it also prints an `imp resize`
+  command that you can copy, and that brings the asset down to a sensible size. This is the natural
+  first step: check what you have, then decide what to resize to. You can also use inspect mode to
+  read the dimensions of any PNG or JPEG from the terminal.
 
 By default imp overwrites the file. That suits the purpose, which is to shrink a committed asset. To
-write the result to a new file, and keep the original, pass `--output <path>`. In both cases imp
+write the result to a new file and keep the original, pass `--output <path>`. In both cases imp
 reports the dimensions and the byte size before and after.
 
 A resize **only downscales the pixels, with minimal compression**. imp puts the quality above the
-last byte. imp clamps a request that is larger than the source to the source. So the command never
+last byte. imp clamps a request that is larger than the source to the source, so the command never
 upscales. When you need close control of the compression, or of the quality, use a dedicated image
 tool. imp keeps this surface deliberately small.
 
 **Scope.** imp supports static **PNG** and **JPEG** today. It does not yet handle WebP, GIF and an
-animated image, and that includes an animated PNG. imp detects such a file and stops with a clear
-message. It does not remove frames or change the format in silence. imp can support more formats
-later.
+animated image, including an animated PNG. imp detects such a file and stops with a clear message.
+It does not remove frames or change the format in silence. imp can support more formats later.
 
 ## `imp lint`
 
@@ -1495,9 +1556,9 @@ imp lint --fix [...paths]
 `imp lint` lints the paths that you give, and by default the whole project. It uses a standard
 recommended rule set, and the rules of imp, which imp always applies. Two of those rules are
 `no-capital-component`, because an imp component is a lowercase function, and
-`exact-dependency-versions`, because a dependency pin in `imp.json` must be exact, and an import
-must go through a declared, vendored dependency. See **[Managing dependencies](dependencies.md)**.
-imp also covers an `.html` file. It lints an inline `<script>` block like any other code.
+`exact-dependency-versions`, because a dependency pin in `imp.json` must be exact and an import must
+go through a declared, vendored dependency. See **[Managing dependencies](dependencies.md)**. imp
+also covers an `.html` file. It lints an inline `<script>` block like any other code.
 
 `--fix` rewrites a file in place. It applies every autofix that the rule set offers, and it fixes an
 inline `<script>` block in an `.html` file as well. It leaves only the problems that need a person.
@@ -1508,7 +1569,7 @@ You configure the severity of each rule, and the excluded paths, under `lint` in
 
 **The file-size check.** `imp lint` also scans every file that your git repository tracks. It
 reports an error when a single file is larger than `maxFileSize`, which is 200 kB by default. It
-names each oversized file with its size, and exits with a non-zero code. So an oversized commit
+names each oversized file with its size, and exits with a non-zero code, so an oversized commit
 fails CI. The limit is the same one that `imp install` uses. To change it, set `maxFileSize` in
 `imp.json`. To exempt a file that must be large, such as a committed asset, list its repo-relative
 path in `maxFileSizeIgnore`:
@@ -1556,7 +1617,7 @@ imp skill ./components/counter.js   one of your own components' skills
 
 imp expects an AI coding agent to write much of the app code, and an agent cannot browse a
 documentation site while it works. `imp skill` prints a manual out of the binary. It works offline,
-it makes no network call, and it prints at the exact imp version that the project runs. So what the
+it makes no network call, and it prints at the exact imp version that the project runs. What the
 agent reads is what the project executes.
 
 These manuals are written **for an agent**, not for you. They cover the same subjects as these
@@ -1565,32 +1626,32 @@ invites. They leave out the narrative that a person reads a guide for. So `imp s
 this documentation reformatted for a terminal. It is the short, mechanical version of it, and imp
 writes and updates the two together.
 
-With no argument, the command prints an **index**. That is one line per subject, with a short
-summary. imp groups the subjects. The first group is what you need to write an app: imports,
-rendering, components, state, routing, theming, translations and logging. The second group is what
-you need to work in the project: the CLI, testing, dependencies, linting and formatting. Then comes
-one line per standard component. Last comes every component **in your project** that has a skill
-file beside it. An index is cheap to read. So an agent spends one call to learn what exists, and one
-more call to learn the part that it needs.
+With no argument, the command prints an **index**: one line per subject, with a short summary. imp
+groups the subjects. The first group is what you need to write an app: imports, rendering,
+components, state, routing, theming, translations and logging. The second group is what you need to
+work in the project: the CLI, testing, dependencies, linting and formatting. Then comes one line per
+standard component. Last comes every component **in your project** that has a skill file beside it.
+An index is cheap to read, so an agent spends one call to learn what exists, and one more call to
+learn the part it needs.
 
 With one or more subjects, the command prints those manuals in full. Skill text is the only thing on
 standard output, and every diagnostic goes to standard error. So `imp skill state > state.md`
 captures the manual and nothing else. There are no flags. The whole interface is to run the command
-and to read the output.
+and read the output.
 
 A subject answers to the name that you already have. The import specifier works, as in
 `imp skill imp/state` and `imp skill imp/std/button`. The plain subject works, as in `state`,
 `rendering` and `button`. A page name works, as in `state.md`. Every form ignores case. For an
 unknown subject, imp prints the list of real subjects to standard error, and exits with code 1. imp
 prints a cross-reference between two manuals as the command that fetches it, such as "Rendering (imp
-skill rendering)". It also adds a `Related:` line at the foot of the page. So an agent can always go
-from one manual to the next, and it guesses no file path and no URL.
+skill rendering)". It also adds a `Related:` line at the foot of the page, so an agent can always go
+from one manual to the next, and guesses no file path and no URL.
 
 **Ask for a component by file.** `imp skill ./components/counter.js` prints the skill file that sits
 beside that module, which is `counter.skill.md`. A direct name of that file also works. It is the
 same convention that the components of imp follow. So `imp skill std/button` and
 `imp skill ./components/counter.js` are one operation on two different components. A component with
-no skill file exits with code 1, and imp names the file to write. So a tool can tell "no skill yet"
+no skill file exits with code 1, and imp names the file to write, so a tool can tell "no skill yet"
 from a real failure. See **[Components](components.md)** to learn how to write a skill file, and
 what happens to it at build time.
 
@@ -1605,7 +1666,7 @@ A project can pin the exact imp version that it is built against, with a `"versi
 startup, imp compares the pin against itself. When the two differ, imp fetches the pinned version
 and hands the run to it. imp fetches the version once, and caches it per user. There is nothing to
 install per project, and there is no version manager to configure. Whoever runs `imp start`,
-`imp test` or any other command gets the version that the project pins. So a colleague on a newer or
+`imp test` or any other command gets the version that the project pins, so a colleague on a newer or
 older imp still builds and tests against the same version. A pin is exact, such as `"1.2.3"`, and
 never a range. That is what makes it reproducible.
 
@@ -1613,8 +1674,8 @@ never a range. That is what makes it reproducible.
 
 - **`imp update`** resolves the latest published release, downloads it, and writes it into the
   `"version"` field of `imp.json`. It searches upward from the current directory for the project, so
-  it works from any subdirectory, and it prefers the `imp.json` at your repository root. It prints
-  what changed, for example `imp updated 1.2.3 -> 1.3.0`. The next command that you run uses the new
+  it works from any subdirectory, and prefers the `imp.json` at your repository root. It prints what
+  changed, for example `imp updated 1.2.3 -> 1.3.0`. The next command that you run uses the new
   version. When the project has no `imp.json`, imp still downloads and caches the release, and
   writes no pin.
 - **`imp update <version>`** pins a specific version, in place of the latest one.
@@ -1623,7 +1684,7 @@ never a range. That is what makes it reproducible.
 When you run imp interactively in a project that has **not** pinned a `"version"` in its `imp.json`,
 and a newer release exists, imp also prints a hint of one line that suggests `imp update`. imp
 checks for a newer release at most once a day, and the check never blocks the command. When your
-`imp.json` pins a version, imp assumes that you chose that version on purpose, and it stays silent.
+`imp.json` pins a version, imp assumes that you chose that version on purpose, and stays silent.
 Move the pin yourself, with `imp update`, when you want a newer release. To stop the hint in a
 project with no pin, use the `--no-update-check` flag, or set `IMP_NO_UPDATE_CHECK`.
 
@@ -1643,7 +1704,7 @@ directory is not writable. It also keeps the binaries off your home volume.
 imp prune
 ```
 
-imp keeps every version that it downloads in the cache. So a move between two pinned projects
+imp keeps every version that it downloads in the cache, so a move between two pinned projects
 downloads nothing again. But a binary is large, and the cache only grows. imp records when each
 cached version last ran. Whenever it downloads a new version, it reports any version that has not
 run for more than 30 days:
@@ -1652,9 +1713,9 @@ run for more than 30 days:
 2 unused imp versions (1.1.0, 1.2.3) have not run in over 30 days - run 'imp prune' to reclaim disk space
 ```
 
-`imp prune` deletes exactly those old versions, which are the versions that have not run in the last
-30 days. It reports how much space it freed. imp never removes the version that runs now. When you
-pin a deleted version again later, imp downloads it on demand. So a prune is always safe.
+`imp prune` deletes exactly those old versions: the versions that have not run in the last 30 days.
+It reports how much space it freed. imp never removes the version that runs now. When you pin a
+deleted version again later, imp downloads it on demand. A prune is always safe.
 
 ## `imp licenses`
 
@@ -1662,11 +1723,11 @@ pin a deleted version again later, imp downloads it on demand. So a prune is alw
 imp licenses
 ```
 
-imp is one binary, and it contains several open-source tools. Those are the browser automation, the
-formatter engine, the linter engine, the image encoder, the video encoder and more. `imp licenses`
-prints the third-party licence notices for everything that the binary ships. For each component it
-prints the name, the version and the full text of its licence. So the attribution that those
-licences require comes straight out of the binary. The command takes no argument.
+imp is one binary, and it contains several open-source tools: the browser automation, the formatter
+engine, the linter engine, the image encoder, the video encoder and more. `imp licenses` prints the
+third-party licence notices for everything that the binary ships. For each component it prints the
+name, the version and the full text of its licence, so the attribution that those licences require
+comes straight out of the binary. The command takes no argument.
 
 This covers the tools that you _develop_ with, not the code that you _ship_. None of it reaches your
 app. `imp build` collects the notices for what your users download, into

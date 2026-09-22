@@ -19,7 +19,7 @@ elsewhere.
 
 **`richTextEditor` is a standard component in `imp/std/inputs`. It is a `contenteditable` box under
 a toolbar, and its value is a markdown string.** It binds to a form field or to a state through the
-same contract as `textArea`, see `state-driven-forms.md`. On every `input` the component serializes
+same contract as `textField`, see `state-driven-forms.md`. On every `input` the component serializes
 the box to markdown and commits it. When the value changes from outside, the component parses the
 markdown into DOM nodes and replaces the content. A value equal to the last commit does not touch
 the box, so the caret stays where it is while somebody types.

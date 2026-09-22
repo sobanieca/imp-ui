@@ -33,8 +33,8 @@ which many people know. So a rule from that ecosystem has the same name here.
 
 imp adds its own rules on top of the base set, and it always applies them as errors. A rule that
 speaks of a hook, such as `setup`, `loading`, `error`, `onMount` or `onRemove`, looks only at the
-definition object that you pass to `component()` or to `router()`. A `setup` key in any other
-object, for example a plugin for a bundler, is not a hook, and these rules leave it alone.
+definition object you pass to `component()` or to `router()`. A `setup` key in any other object, for
+example a plugin for a bundler, is not a hook. These rules leave it alone.
 
 ### `imp/no-capital-component`
 
@@ -57,8 +57,8 @@ error[imp/no-capital-component]: 'Widget' starts with a capital letter - imp com
 An element takes at most one props object. Everything else that you pass is a child. A second object
 literal is nearly always a mistake. At runtime imp merges the objects, and a later key wins with no
 message. The rule reports a call that receives more than one object literal. That covers a call to a
-built-in element factory, such as `div`, `span` and the generic `el`, and a call to a standard
-component, such as `button` and `emptyState`:
+built-in element factory, such as `div`, `span` or the generic `el`. It also covers a call to a
+standard component, such as `button` or `emptyState`:
 
 ```js
 div({ class: 'card' }, { onclick: open }, 'Open')
@@ -110,9 +110,9 @@ error[imp/http-client-name-namespace]: http client name 'api' must include a nam
 `watch(fn)` subscribes at once and registers no cleanup. So a `watch` in the `setup` of a component
 that neither passes `self` nor keeps the stop function outlives the component. The subscriber keeps
 running after the unmount, and it holds the DOM of the component alive. See **[State](state.md)**.
-The rule reports a `.watch(fn)` call in `setup`, `error` or `onMount` whose result is discarded, on
-a handle that the file created with `initState`, `useState`, `computed` or `useRoute`, and on
-`lang`, `dir` and `theme`. imp tracks the handle, so an unrelated third-party `.watch()` method
+The rule reports a `.watch(fn)` call in `setup`, `error` or `onMount` whose result is discarded. It
+checks a handle that the file created with `initState`, `useState`, `computed` or `useRoute`, and
+also `lang`, `dir` and `theme`. imp tracks the handle, so an unrelated third-party `.watch()` method
 stays out of the report:
 
 ```js
@@ -191,8 +191,8 @@ in `setup`.
 
 A synchronous `setup` replaces the loading content before the paint, so nobody sees it. See
 **[Components](components.md)**. imp warns about this at runtime. This rule reports it while you
-write it. It reports a `loading` next to a `setup` that is not `async` and returns only DOM, which
-is an element, a standard component, a bound `text`, `view` or `each`, a literal, or `null`:
+write it. It reports a `loading` next to a `setup` that is not `async` and returns only DOM. Such
+DOM is an element, a standard component, a bound `text`, `view` or `each`, a literal, or `null`:
 
 ```js
 const badge = component('my-app-badge', {
@@ -216,8 +216,8 @@ can be a promise.
 point, `useState` and `useHttpClient` return only a handle that `setup` or `error` resolved through
 `self`, and any other name throws. `initState`, `initHttpClient` and `watch(self, fn)` throw there
 always. The rule reports these cases in `onRemove`. To know what `setup` resolved, imp reads the
-literal names in `setup` and `error`. When `setup` passes `self` to a function that imp cannot see
-into, or resolves a name that is not a literal, the rule reports no name mismatch:
+literal names in `setup` and `error`. The rule reports no name mismatch when `setup` passes `self`
+to a function that imp cannot see into, or resolves a name that is not a literal:
 
 ```js
 const visitor = component('my-app-visitor', {
@@ -242,10 +242,10 @@ Resolve the name in `setup`, and reach it again in `onRemove` with the same name
 
 A module lives across every mount. A `self`, a `self.host` or a handle resolved through `self` that
 you store at module scope belongs to one mount. The next mount overwrites it, and an unmounted
-component stays reachable, together with its DOM. See **[Components](components.md)**. The rule
-reports, inside `setup`, `error`, `onMount` or `onRemove`, an assignment of `self`, of a property of
-`self`, or of an `initState`, `useState`, `initHttpClient` or `useHttpClient` result, to a variable
-or an object that the module declares:
+component stays reachable, together with its DOM. See **[Components](components.md)**. Inside
+`setup`, `error`, `onMount` or `onRemove`, the rule reports an assignment to a variable or object
+that the module declares. It catches an assignment of `self`, of a property of `self`, or of an
+`initState`, `useState`, `initHttpClient` or `useHttpClient` result:
 
 ```js
 let current = null
@@ -347,7 +347,7 @@ after `setup` returns, and after the promise resolves for an async `setup`. See
 **[Components](components.md)**. A query on `self.host.shadowRoot` there finds the loading content,
 not your own. This rule reports `querySelector`, `querySelectorAll` and `getElementById`, called
 directly on `self.host.shadowRoot` in the body of `setup`. It does not report a later access inside
-an event handler, and it does not report a query in `onMount` or `onRemove`, where the mounted DOM
+an event handler. It also does not report a query in `onMount` or `onRemove`, where the mounted DOM
 is present:
 
 ```js
@@ -484,7 +484,7 @@ where a dependency can appear:
   specifiers that exist:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/data' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/navigation', 'imp/std/shell', 'imp/std/feedback', 'imp/test', 'imp/preview'
+  error[imp/exact-dependency-versions]: 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/navigation', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 
@@ -499,13 +499,13 @@ reports the one import shape that it cannot follow.
 
 imp finds the starting points for you:
 
-- every `<script>` in an HTML page. That is the file that a `src` points at, module or classic, and
-  the imports of an inline module block;
+- every `<script>` in an HTML page. This includes the file that a `src` attribute points at, module
+  or classic, and the imports of an inline module block;
 - every `*.test.js` and `*.spec.js` test, every `*.preview.js` preview, and every `*.mock.js` mock;
-- every module that `imp.json` gives to `imp preview`. Those are the `preview.themes`,
-  `preview.translations` and `preview.groups` files;
-- every script under `public/`, which ships without a change and which anything can load;
-- anything that you list in `publicExports`, described below.
+- every module that `imp.json` gives to `imp preview`: the `preview.themes`, `preview.translations`
+  and `preview.groups` files;
+- every script under `public/`. This ships without a change, and anything can load it;
+- anything you list in `publicExports`, described below.
 
 When a project has none of these, there is nothing to start from, and imp skips the project checks.
 That is a project with no page, no test and nothing declared public.
@@ -599,10 +599,10 @@ imp follows a dynamic `import()` when it can read the path:
   `imp/computed-import` error above.
 
 imp follows `export * from './x.js'` name by name. An import of `format` from a barrel that
-re-exports `./format.js` counts `format` as used there, and nothing else. So imp still reports an
-export that nothing takes off the barrel. A `publicExports` entry follows `export *` in the same
-way. A bare path on a barrel makes every name public that the barrel takes from a star target, and a
-`#name` entry makes that one name public wherever the barrel finds it.
+re-exports `./format.js` counts only `format` as used there. imp still reports an export that
+nothing takes from the barrel. A `publicExports` entry follows `export *` the same way. A bare path
+on a barrel makes every name public that the barrel takes from a star target. A `#name` entry makes
+that one name public wherever the barrel finds it.
 
 Only an import that imp can reach counts. A module that nothing loads can import as much as it
 wants. Its imports keep no export of another module alive. So one dead file cannot hide a second

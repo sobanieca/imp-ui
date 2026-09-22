@@ -4,27 +4,28 @@ imp resolves these specifiers itself. In development it uses the import map that
 injects. In production `imp build` resolves them. There is nothing to install and nothing to
 configure. Never import imp by a relative path, by a URL, or with a version.
 
-| Specifier            | Exports                                                                      |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                        |
-| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)        |
-| `imp/state`          | `initState`, `useState`, `computed`                                          |
-| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
-| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`           |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                       |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`          |
-| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          |
-| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                     |
-| `imp/service-worker` | `startDevMode`, called from a service worker of your own                     |
-| `imp/std`            | `button`, `buttonGroup`, `heading`, `text`, `link`, `icon`                   |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                 |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, ...       |
-| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`              |
-| `imp/std/navigation` | `tabs`                                                                       |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`            |
-| `imp/std/feedback`   | `bugReport`                                                                  |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...          |
-| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                      |
+| Specifier            | Exports                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                              |
+| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)              |
+| `imp/state`          | `initState`, `useState`, `computed`                                                |
+| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `useRoute`, `url`       |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                 |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                             |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                |
+| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                           |
+| `imp/service-worker` | `startDevMode`, called from a service worker of your own                           |
+| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                          |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                       |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...          |
+| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `emptyState`, ...         |
+| `imp/std/navigation` | `tabs`, `steps`                                                                    |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications` |
+| `imp/std/feedback`   | `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, `bugReport`        |
+| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`                              |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                |
+| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                            |
 
 ```js
 import { component } from 'imp'
@@ -48,7 +49,7 @@ Rules an agent gets wrong:
 - **`button` exists twice on purpose.** `imp/html` gives the plain `<button>`, and `imp/std` gives
   the styled component. The two never collide, because the specifiers differ. When a file needs
   both, give one an alias: `import { button as styledButton } from 'imp/std'`.
-- **No other `imp/...` subpath exists.** A specifier such as `imp/std/data` or `imp/utils` fails
+- **No other `imp/...` subpath exists.** A specifier such as `imp/std/charts` or `imp/utils` fails
   lint, and the error lists the real specifiers.
 - **Never write `import mitt from 'npm:mitt@3.0.1'`.** Vendor a third-party package first with
   `imp install`, then import it by its bare alias. See [dependencies](dependencies.md).

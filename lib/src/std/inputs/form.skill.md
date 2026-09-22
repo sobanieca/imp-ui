@@ -44,7 +44,7 @@ with each other.
 - **`submitButton()` is the submit action.** It can sit anywhere inside the form. It shows a spinner
   itself while an async `onSubmit` runs.
 - **Enter in any single-line field submits the form**, because imp implements the implicit submit
-  itself. Enter in a `textArea` does not submit.
+  itself. Enter in a multi-line `textField` does not submit.
 - On a submit, imp validates every field again. If one field fails, `onSubmit` does not run, and
   each bad field starts to show its message.
 - **When a field has an async check through `validateAsync`, the submit waits for it.** The button

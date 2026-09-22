@@ -27,7 +27,7 @@ question about an accessibility baseline, which `todo/stdlib-components.md` leav
 - **Operability from a keyboard.** Every interaction that a pointer can reach, a keyboard can reach.
   That covers the order of Tab and Shift-Tab, the activation with Enter and Space, navigation with
   an arrow key in a composite widget, and Escape to dismiss an overlay. The composite widgets are
-  `tabs`, `radioGroup`, `menuList`, `tree` and `pagination`.
+  `tabs`, `radioGroup`, `menuList` and `tree`.
 - **Management of the focus.** A modal overlay traps the focus while it is open. It restores the
   focus to the element that invoked it, on close. It opens with the focus moved into it. That covers
   `dialog({ modal: true })` and `drawer`. Nobody writes any of that per component, and imp shares

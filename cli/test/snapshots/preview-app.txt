@@ -5,5 +5,5 @@ cache-control: no-store
 
 starts the preview chrome: true
 catalog embedded: true
-loads a preview on demand: true
+loads a group on demand: true
 library shared through a chunk: true

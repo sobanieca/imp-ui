@@ -45,7 +45,9 @@ if (!Deno.args.includes('--force') && await binaryIsFresh()) {
 
 await run('run', '-A', 'tools/download-fmt-plugins.js')
 await run('run', '-A', 'tools/prebundle-npm-deps.js')
-const librarySources = (await gitVisibleFiles()).filter((file) => file.startsWith('lib/src/'))
+const librarySources = (await gitVisibleFiles()).filter((file) =>
+  file.startsWith('lib/src/') && !file.startsWith('lib/src/public/')
+)
 
 await run(
   'compile',

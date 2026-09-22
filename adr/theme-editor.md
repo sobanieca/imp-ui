@@ -102,6 +102,13 @@ on top, and it ignores the applies that it makes itself. The preview page instal
 before it applies the selected theme. In an app, the injected client installs it at load, and only
 when `localStorage` holds a draft. So a page with no draft fetches nothing for it.
 
+**A draft records the theme that it started from, and it ends when that theme changes.** A draft
+holds two token maps: `tokens`, which is the edit, and `base`, which is the applied theme at the
+moment of the seed. At each load, `theme-draft.js` compares `base` with the tokens that the app just
+applied. When they differ, somebody changed the theme of that name, so imp removes the draft and
+applies nothing. A draft that outlived its theme painted the old look over the new one, with no sign
+on the page of where the colours came from.
+
 **The derivation belongs to the library, and not to the editor.** A knob calls the same functions
 that the built-in themes call, see `themable-by-default-tokens.md`. So what a knob writes and what
 `applyTheme('imp-light')` produces can never differ. The editor holds no colour mathematics.
@@ -121,9 +128,8 @@ that the built-in themes call, see `themable-by-default-tokens.md`. So what a kn
   above, and the JSON shows the new value at once.
 - A draft is keyed by the theme name, and imp never writes it back to a file. So a session in the
   editor cannot change the real theme module of an app with no message. A draft that a person saves
-  as `theme.js` and passes to `init` is applied twice after the next reload, once by the file and
-  once by the draft, until they press _reset_. The two agree, so nothing looks wrong, and the hint
-  in the panel says to reset.
+  as `theme.js` and passes to `init` changes the applied theme. So the next load removes the draft,
+  and the file alone paints the page.
 - The widget edits the theme that is applied when the panel opens. An app that switches its theme
   while the panel is open keeps the editor on the first name. Close and open the panel to edit the
   new one.

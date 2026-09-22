@@ -2,6 +2,7 @@ import { component } from 'imp'
 import { div, input } from 'imp/html'
 import { useState } from 'imp/state'
 import { button } from 'imp/std'
+import { notify } from 'imp/std/feedback'
 import { theme } from 'imp/theme'
 
 export const form = component('demo-form', {
@@ -14,3 +15,5 @@ export const form = component('demo-form', {
     )
   },
 })
+
+export const announceTheme = () => notify({ title: 'Theme changed', description: theme.get() })

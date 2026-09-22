@@ -3,6 +3,7 @@
 ```
 imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
 imp preview --list [--json]
+imp preview --output <dir> [--env <name>]
 ```
 
 `imp preview` serves every **preview file** of the project in one app. The catalog is down the side,
@@ -113,6 +114,10 @@ you want a person to copy. A helper is fine. It is shown above the call.
   read-only. A component that calls `useState` does not mount without a provider. Wrap it in a
   component that calls `initState` with that name and a fixture value, and pass the wrapper as the
   scenario. The editor lists the state under the wrapper.
+- **A component that an app mounts once needs a stage in a preview.** The page mounts every scenario
+  of a file at once, and it hides all panels but one. A `popover` inside a hidden panel shows
+  nothing. So the preview of `toast` puts its one region on the document body, from a small stage
+  component, and each scenario only calls `notify`. Do the same for a component of that kind.
 - Write a `*.preview.js` **and** a `*.skill.md` for a component you ship. The preview is for a
   person. The skill is for an agent. See [components](components.md).
 
@@ -164,6 +169,8 @@ you want a person to copy. A helper is fine. It is shown above the call.
   `<body>`. imp replaces the `<title>` and appends its scripts to the body. It adds the imp icon
   when the head has no icon link. It keeps every other tag, so never point it at the app's
   `index.html`, whose scripts would start the app. A path that resolves to no file fails at startup.
+  `imp preview` serves `public/` at the site root. Link a self-hosted font as `/fonts/fonts.css`,
+  never as a relative path.
 - **Review widget.** The same widget that `imp start` injects, as the imp mark in the bottom corner,
   without its **Theme editor** button, because the page has _edit theme_. The person picks a part of
   the previewed component and comments on it. imp writes the note to `.imp/reviews/` with the
@@ -237,3 +244,29 @@ export const group = groups.widgets
 
 `imp preview --list` prints the discovered files, one per line. `--list --json` prints them as a
 JSON array. Keep folders out with `preview.exclude`.
+
+## Exporting the gallery
+
+`imp preview --output <dir>` writes the gallery as static files, with no server behind it. The
+folder holds `imp-preview.js`, which defines the element `<imp-preview>`, the app of the gallery,
+and one bundle per group, loaded when a visitor opens the group. A page embeds it with two lines:
+
+```html
+<script type="module" src="/components/imp-preview.js"></script>
+<imp-preview></imp-preview>
+```
+
+- The element is a block, `100dvb` tall by default. Size it with CSS.
+- The gallery runs in a frame of its own. It keeps its pickers, and it never touches the page. The
+  sidebar has no imp logo. The host page owns the brand and the navigation.
+- The route lives in the fragment of the host address: `#/<group>/<name>?scenario=<name>`. The
+  element writes it as the visitor moves, and follows a fragment that the page sets.
+- `theme="<name>"` applies a theme from the menu of the gallery, and follows a change of the
+  attribute. A pick inside the gallery writes the attribute back and dispatches `imp-preview-theme`
+  with the name as `detail`. Bind the attribute to the theme of the host page, and listen to the
+  event, to keep both in step.
+- imp empties the output folder before it writes. Point it at a folder inside `public/`, and
+  `imp build` ships it with the app.
+- The element resolves each link of the entry page against the host page. A root-relative link, such
+  as `/fonts/fonts.css`, loads from the host site, so the host must serve that path. A preview file
+  that fails to build fails the export. There is no reload, no telemetry and no review widget.

@@ -40,6 +40,7 @@ export const IMP_MODULES = {
   'imp/std/navigation': 'std/navigation/index.js',
   'imp/std/shell': 'std/shell/index.js',
   'imp/std/feedback': 'std/feedback/index.js',
+  'imp/std/data': 'std/data/index.js',
 }
 
 export const isImpStdSpecifier = (specifier) =>

@@ -3,7 +3,7 @@ import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme, colorSchemeOf } from 'imp/theme'
 import { lang, setLang } from 'imp/i18n'
 import { area, navigate, router, useRoute } from 'imp/router'
-import { button, buttonGroup, heading, icon, text } from 'imp/std'
+import { button, heading, icon, menuButton, text } from 'imp/std'
 import {
   luCode,
   luContrast,
@@ -15,20 +15,22 @@ import {
   luSun,
 } from 'imp/icons'
 import { card, codeBlock, emptyState } from 'imp/std/display'
-import { numberField, select, textArea } from 'imp/std/inputs'
-import { dialog, drawer, stack } from 'imp/std/layout'
+import { select, textField } from 'imp/std/inputs'
+import { dialog, drawer, flex, stack } from 'imp/std/layout'
 import { tabs } from 'imp/std/navigation'
 import {
   buildFailure,
   groupsOf,
   previewHead,
   previewIndex,
+  previewMarker,
   previewShell,
   previewSkill,
 } from './preview-shell.js'
 import { themeEditor } from '../../lib/src/theme-editor.js'
 import { followAppliedTheme } from '../../lib/src/theme-draft.js'
 import { PREVIEW_METADATA_EXPORTS, PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
+import { PREVIEW_THEME_EVENT } from './preview-export.js'
 import { previewSlugs } from './preview-map.js'
 import { asNodes } from '../../lib/src/nodes.js'
 import { statesProvidedBy } from '../../lib/src/state.js'
@@ -51,6 +53,7 @@ const STAGE_INLINE_STATE = 'imp.preview.stage-inline'
 const STAGE_BLOCK_STATE = 'imp.preview.stage-block'
 const STATES_FOUND_STATE = 'imp.preview.states-found'
 const CODE_STATE = 'imp.preview.code'
+const TABS_STATE = 'imp.preview.tabs'
 
 const BUILT_IN_THEMES = [
   'imp-light',
@@ -84,14 +87,16 @@ const LIBRARY_STATE_PREFIX = 'imp.'
 const DOCUMENT_STYLES = `
 body {
   margin: 0;
-  background: var(--imp-color-surface-hover, #f1f5f9);
+  background: var(--imp-background-app, #ffffff);
   font-family: var(--imp-font-family, system-ui, sans-serif);
   font-weight: var(--imp-font-weight-normal, 400);
 }
 `
 
 const surface = `
-  background: var(--imp-color-surface-sunken, #f8fafc);
+  background-color: var(--imp-color-surface, #ffffff);
+  background-image: radial-gradient(var(--imp-color-border, #cbd5e1) 1px, transparent 1px);
+  background-size: 16px 16px;
   border: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
   border-radius: var(--imp-radius-container, 10px);
 `
@@ -185,7 +190,7 @@ const STAGE_STYLES = `
 
   .sizes[hidden] { display: none }
 
-  .sizes imp-number-field {
+  .sizes imp-text-field {
     inline-size: 6rem;
   }
 
@@ -413,6 +418,26 @@ const remember = (key, value) => {
 const readStoredTheme = () =>
   readStored(THEME_STORAGE_KEY, (name) => themes.has(name), defaultThemeName())
 
+const hostThemeName = () => {
+  const name = globalThis.frameElement?.dataset.theme
+  return name !== undefined && themes.has(name) ? name : null
+}
+
+const initialThemeName = () => hostThemeName() ?? readStoredTheme()
+
+const bridgeHostTheme = (themeChoice) => {
+  const frame = globalThis.frameElement
+  if (!frame) return
+  const observer = new MutationObserver(() => {
+    const name = hostThemeName()
+    if (name !== null) themeChoice.set(name)
+  })
+  observer.observe(frame, { attributes: true, attributeFilter: ['data-theme'] })
+  themeChoice.watch((name) => {
+    frame.dispatchEvent(new CustomEvent(PREVIEW_THEME_EVENT, { detail: name }))
+  })
+}
+
 const readStoredLanguage = () =>
   readStored(LANGUAGE_STORAGE_KEY, (code) => languages.includes(code), languages[0])
 
@@ -474,21 +499,12 @@ const themeSwitcher = (choice) =>
   stack(
     { gap: 1, horizontalAlign: 'start' },
     text({ tone: 'secondary', size: 'sm' }, 'Theme'),
-    buttonGroup(
-      {
-        size: 'sm',
-        trigger: 'arrow',
-        items: [...themes.keys()].map((name) => ({
-          id: name,
-          label: name,
-          icon: themeIcon(name),
-          onClick: () => choice.set(name),
-        })),
-      },
+    flex(
+      { joined: true },
       button(
         {
           size: 'sm',
-          label: choice.text((name) => `Theme: ${name} - next theme`),
+          label: computed([choice], (name) => `Theme: ${name} - next theme`),
           events: { click: () => choice.set(nextThemeName(choice.get())) },
         },
         span(
@@ -497,6 +513,17 @@ const themeSwitcher = (choice) =>
           choice.text((name) => name),
         ),
       ),
+      menuButton({
+        size: 'sm',
+        trigger: 'arrow',
+        label: 'Choose a theme',
+        items: [...themes.keys()].map((name) => ({
+          id: name,
+          label: name,
+          icon: themeIcon(name),
+          onClick: () => choice.set(name),
+        })),
+      }),
     ),
   )
 
@@ -592,7 +619,14 @@ const stageDefinition = {
     new ResizeObserver(updateReadout).observe(frame)
     const sizing = initState(self, STAGE_SIZING_STATE, false)
     const sizeField = (label, value) =>
-      numberField({ ariaLabel: label, placeholder: 'auto', min: MIN_STAGE_SIZE, step: 1, value })
+      textField({
+        type: 'number',
+        ariaLabel: label,
+        placeholder: 'auto',
+        min: MIN_STAGE_SIZE,
+        step: 1,
+        value,
+      })
     const sizeFields = div(
       { class: 'sizes', hidden: true },
       sizeField('Canvas width in pixels', inlineSize),
@@ -631,7 +665,7 @@ const stateRow = (self, { name, state, provider }, index) => {
   const editable = initState(self, `${DRAFT_STATE}.${index}.editable`, false)
   const messageText = document.createTextNode('')
   const message = span({ class: 'message' }, messageText)
-  const field = textArea({
+  const field = textField({
     ariaLabel: `${name} value as JSON`,
     value: draft,
     rows: 2,
@@ -905,7 +939,7 @@ const scenarioOrder = (scenarios, order) => {
   return [...written, ...exported.filter((name) => !written.includes(name))]
 }
 
-const scenarioTabs = (scenarios, entry) => {
+const scenarioTabsSetup = (self, scenarios, entry) => {
   const names = scenarioOrder(scenarios, entry.order)
   if (!names.length) {
     return emptyState({
@@ -914,6 +948,12 @@ const scenarioTabs = (scenarios, entry) => {
         'like export const empty = myComponent()',
     })
   }
+  const folded = initState(self, TABS_STATE, readStoredTabs())
+  matchMedia(NARROW_SCREEN).addEventListener(
+    'change',
+    (event) => folded.set(event.matches || readStoredTabs()),
+    { signal: self.abortSignal },
+  )
   const selected = computed(
     [useRoute()],
     ({ query }) => names.includes(query.scenario) ? query.scenario : names[0],
@@ -921,7 +961,7 @@ const scenarioTabs = (scenarios, entry) => {
   return tabs({
     orientation: 'vertical',
     foldable: true,
-    folded: readStoredTabs(),
+    folded,
     label: `${entry.name} scenarios`,
     selected,
     items: names.map((name) => ({
@@ -937,6 +977,19 @@ const scenarioTabs = (scenarios, entry) => {
       fold: (event) => remember(TABS_STORAGE_KEY, event.detail.folded ? 'folded' : 'unfolded'),
     },
   })
+}
+
+const SCENARIO_TABS_STYLES = `
+  :host { display: block }
+`
+
+const scenarioTabsDefinition = { styles: SCENARIO_TABS_STYLES, setup: scenarioTabsSetup }
+
+let createScenarioTabs = null
+
+const scenarioTabs = (scenarios, entry) => {
+  createScenarioTabs ??= component('imp-preview-scenario-tabs', scenarioTabsDefinition)
+  return createScenarioTabs(scenarios, entry)
 }
 
 const scenarioScreen = (scenarios, entry) =>
@@ -997,6 +1050,7 @@ const bindCatalog = (catalog, load, listed) => {
     for (const entry of group.entries) {
       const handle = groupHandle[slugs.get(entry.file).key]
       entry.href = handle.href()
+      icons[handle] = previewMarker(entry.href)
       entries.set(String(handle), entry)
       screens[handle] = entry.error === undefined
         ? previewArea(entry, handle, load[entry.file])
@@ -1014,7 +1068,7 @@ const bindCatalog = (catalog, load, listed) => {
 
 const pageDefinition = {
   setup: (self, bound) => {
-    const themeChoice = initState(self, THEME_STATE, readStoredTheme())
+    const themeChoice = initState(self, THEME_STATE, initialThemeName())
     const directionChoice = initState(self, DIRECTION_STATE, readStoredDirection())
     const languageChoice = languages.length
       ? initState(self, LANGUAGE_STATE, readStoredLanguage())
@@ -1025,6 +1079,7 @@ const pageDefinition = {
       remember(THEME_STORAGE_KEY, name)
       applySelectedTheme(name)
     })
+    if (bound.embedded) bridgeHostTheme(themeChoice)
     languageChoice?.watch((codeName) => {
       remember(LANGUAGE_STORAGE_KEY, codeName)
       switchTo(codeName)
@@ -1060,6 +1115,7 @@ const pageDefinition = {
     })
 
     return previewShell({
+      embedded: bound.embedded,
       mark: bound.mark,
       navbar: { map: bound.app, icons: bound.icons, tags: bound.tags },
       navOpen,
@@ -1148,6 +1204,7 @@ const ensureFavicon = (favicon) => {
 
 export async function startPreview(
   {
+    embedded = false,
     mark,
     favicon,
     catalog,
@@ -1164,7 +1221,7 @@ export async function startPreview(
   document.head.append(styles)
   registerThemes(customThemes)
   followAppliedTheme()
-  applySelectedTheme(readStoredTheme())
+  applySelectedTheme(initialThemeName())
   registerLanguages(translations)
 
   await init(
@@ -1178,6 +1235,6 @@ export async function startPreview(
   )
   await applyLanguage(readStoredLanguage())
 
-  mount(document.body, previewPage({ ...bindCatalog(catalog, load, listed), mark }))
+  mount(document.body, previewPage({ ...bindCatalog(catalog, load, listed), mark, embedded }))
   applyStageDirection()
 }

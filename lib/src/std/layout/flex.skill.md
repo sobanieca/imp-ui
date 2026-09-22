@@ -15,6 +15,7 @@ The call shape is `flex(props?, ...children)`. When a props object is present, i
 | `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'stretch'` | `'stretch'` | Across the row                           |
 | `wrap`            | boolean                                      | `false`     | Lets the row break onto more lines       |
 | `gap`             | spacing step `0`-`6`                         | `3`         | Space between children, from the theme   |
+| `joined`          | boolean                                      | `false`     | No gap, and the children share a seam    |
 
 Rules an agent gets wrong:
 
@@ -30,6 +31,13 @@ Rules an agent gets wrong:
   `'left'` or `'right'` and falls back. `verticalAlign` keeps `top` and `bottom`, because direction
   never mirrors the vertical axis.
 - **`'justify'` only spreads the children apart**, with `space-between`. It does not stretch them.
+- **`joined` makes the row read as one control.** Every child squares only the corners that face a
+  neighbour, and two borders collapse into one line. Every std button and std input reads the seam,
+  so a split button is `flex({ joined: true }, button('Save'), menuButton({ items }))`. A component
+  from elsewhere keeps its own corners. A joined row ignores `gap`, and imp warns about one.
+- **A joined row is layout, not a control.** It has no name and no value. A choice drawn as a row is
+  segmented (imp skill std/segmented). A number with a minus and a plus is
+  `textField({ type: 'number', stepper: true })`.
 - **Nothing else is a prop.** There is no padding, background, width, direction or grow prop, and
   there is no `grid` component. A box that needs those is a `div` that your own component styles.
 - **The spacing lives here, not on the children.** No standard component has an outer margin. So a
@@ -41,6 +49,9 @@ Rules an agent gets wrong:
 flex({ horizontalAlign: 'justify', verticalAlign: 'center' }, heading('Invoices'), button('New'))
 flex({ wrap: true, gap: 2 }, ...labels.map((label) => text(label)))
 flex(stack({ gap: 1 }, heading('Title'), text('Subtitle')), button('Edit'))
+flex({ joined: true }, button({ variant: 'primary' }, 'Approve'), button('Comment'))
 ```
 
-Related: imp skill std/stack - the same primitive stacking its children vertically.
+Related: imp skill std/stack - the same primitive stacking its children vertically; imp skill
+std/menuButton - the menu at the end of a joined row; imp skill std/segmented - a choice drawn as a
+joined row.

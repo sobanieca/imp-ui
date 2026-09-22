@@ -7,6 +7,8 @@
     "preview": "deno task compile && cd lib/src && ../../imp preview",
     "logs": "deno task compile && cd lib/src && ../../imp logs",
     "lint:lib": "deno task compile && cd lib/src && ../../imp lint",
+    "site:build": "deno run -A tools/build-site.js && deno task compile && cd lib/src && ../../imp preview --output ../../site/dist/gallery",
+    "site": "deno task site:build && deno run -A tools/serve-site.js",
     "start": "deno task compile && cd examples/shell && ../../imp start",
     "size": "deno run -A tools/check-binary-size.js",
     "lucide": "deno run -A --no-lock tools/vendor-lucide.js",
@@ -30,6 +32,7 @@
       "cli/test/fixtures/",
       "lib/src/icons/lucide-icons.js",
       "cli/src/vendor/",
+      "site/dist/",
       ".claude/worktrees/"
     ]
   },
@@ -42,6 +45,7 @@
       "cli/test/snapshots/",
       "lib/src/icons/lucide-icons.js",
       "cli/src/vendor/",
+      "site/dist/",
       ".claude/worktrees/"
     ]
   }

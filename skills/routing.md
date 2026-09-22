@@ -265,6 +265,10 @@ To serve the app under a sub-path, set the `IMP_BASEPATH` environment value of [
 `navigate` and `handle.href()` add the prefix. Only an `href` that you write as a string needs
 `url('/todos')`.
 
+For an app inside a page that it does not own, set the `IMP_ROUTING` environment value to `hash`.
+The route then lives in the fragment, `#/todos/42?tab=notes`, and the path stays. Code changes
+nothing. The base path does not apply under hash routing.
+
 A deep link needs the host to serve your entry HTML for an unknown path. Use `try_files` in nginx, a
 `_redirects` file, a copy named `404.html`, or the equivalent on your host. `imp start` already does
 this in development.

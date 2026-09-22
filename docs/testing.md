@@ -129,11 +129,11 @@ expect(items.length).toEqual(3) // was toHaveLength
 
 `toEqual` is the one equality matcher, and it does the obvious thing for each kind of value:
 
-- **Data** compares **by structure**. That covers a number, a string, a boolean, a plain object, an
-  array, a `Map`, a `Set`, a `Date` and a `RegExp`, nested to any depth. So
+- **Data** compares **by structure**. This covers a number, a string, a boolean, a plain object, an
+  array, a `Map`, a `Set`, a `Date` and a `RegExp`. It works at any depth of nesting. So
   `expect(user).toEqual({ name: 'imp' })` passes when the shapes match.
 - **Everything else** compares **by identity**. That covers a DOM node, a class instance and a
-  function. So two different `<button>` elements are never equal, although they look alike.
+  function. Two different `<button>` elements are never equal, even when they look alike.
   `expect(node).toEqual(node)` passes only for the same node.
 
 So there is no decision to make between `toBe` and `toEqual`. Use `toEqual`. For a truthiness check
@@ -149,9 +149,10 @@ const { firstName, lastName } = user
 expect({ firstName, lastName }).toEqual({ firstName: 'Adam', lastName: 'Smith' })
 ```
 
-**Fuzzy matching.** When you do not know an exact value, or do not care about it, put an `expect.*`
-placeholder anywhere inside the value that you pass to `toEqual` or `toContain`. A placeholder
-matches a _shape_, not a literal. Placeholders nest, and they help most with `spy.calls`:
+**Fuzzy matching.** Use this when you do not know an exact value, or do not care about it. Put an
+`expect.*` placeholder anywhere inside the value that you pass to `toEqual` or `toContain`. A
+placeholder matches a _shape_, not a literal. Placeholders nest, and they help most with
+`spy.calls`:
 
 ```js
 expect(user).toEqual({ id: expect.any(Number), name: expect.stringContaining('mp') })
@@ -180,8 +181,8 @@ A failed assertion reports what imp expected and what it received:
 ## Mocking
 
 Mocking in imp is two ideas. **`spy`** replaces a function, or a method. **`mockModule`** replaces a
-whole module. There is nothing else to learn. The behaviour of a spy is a function that you write,
-and what the spy recorded is a plain array that you assert with the matchers that you already have.
+whole module. There is nothing else to learn. You write the behaviour of a spy as a plain function.
+What the spy recorded is a plain array, and you assert it with the matchers you already have.
 
 ### Spies - `spy`
 
@@ -495,12 +496,10 @@ captures the session from the moment when the page loads, to the last test in th
 nothing to the spec. imp records the session automatically when the flag, or the configuration, is
 on. imp always writes what it captured, also when a test throws part way through.
 
-**Why a GIF?** A GIF embeds inline in the markdown of a GitHub pull request. So a reviewer sees the
-clip play, and downloads nothing. That is the purpose of the feature. An AI agent, or anybody, who
-builds a frontend change can record the new behaviour and put the GIF straight into the pull
-request. A human reviewer can then check that the feature works, and that its look and feel are
-correct. A moving picture shows what the written description cannot. Drag the file into the comment
-box of the pull request, or commit it and reference it, and it plays in the thread.
+**Why a GIF?** A GIF embeds inline in the markdown of a GitHub pull request. A reviewer sees the
+clip play there, and downloads nothing. Record the new behaviour of a frontend change, and drag the
+GIF into the pull request comment box, or commit it and link to it. A reviewer can then check that
+the feature works, and that it looks right, without running the branch.
 
 A clip is a lightweight aid for a review. So imp keeps it short, downscaled, and at a modest frame
 rate by default. Tune any of that under `test.video` in `imp.json`:
@@ -639,9 +638,9 @@ imp test: running 12 files in parallel
 imp test: 11 passed, 1 failed (12 files)
 ```
 
-The exit code is `0` when everything passed, and `1` otherwise. That is all that a CI step needs to
-go red or green. So the output stays easy to read directly, for a person who scans the log and for
-an AI agent that drives `imp test` and reads its stdout.
+The exit code is `0` when everything passed, and `1` otherwise. That is all a CI step needs to go
+red or green. The output stays easy to scan for a person, and easy to parse for an AI agent that
+reads the stdout of `imp test`.
 
 The one machine-readable surface is `--list`. It prints, as a JSON array, the files that _would_
 run. It describes the selection to spread across a CI matrix. It does not describe how a run went.

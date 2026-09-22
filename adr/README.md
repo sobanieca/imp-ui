@@ -45,6 +45,7 @@ These are the conventions:
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` - `--imp-*` vars on :root |
 | [theme-editor](theme-editor.md)                             | One theme editor, in imp preview and in the dev widget, exports a plain theme file |
+| [imp-design-system](imp-design-system.md)                   | One design system for the surfaces that imp owns: imp preview and the home page    |
 
 ## Internationalization
 
@@ -58,11 +59,13 @@ These are the conventions:
 | ADR                                                                                       | Decision                                                                          |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md)                               | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props  |
+| [short-component-catalog](short-component-catalog.md)                                     | One component per job; a prop covers a variant; paging is an infinite scroll      |
 | [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box     |
 | [responsive-fluid-values-only](responsive-fluid-values-only.md)                           | Fluid theme values only; no per-screen props - an app writes its own media query  |
 | [layout-two-flex-primitives](layout-two-flex-primitives.md)                               | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale          |
 | [app-shell-component](app-shell-component.md)                                             | `shell`: one nav tree drives three surfaces; the library's one breakpoint         |
 | [shell-region-components](shell-region-components.md)                                     | `imp/std/shell`: the frame's usual contents as their own group                    |
+| [app-wide-notification-store](app-wide-notification-store.md)                             | One app-wide store of plain notifications; `notify` feeds the popups and the bell |
 | [overlay-top-layer](overlay-top-layer.md)                                                 | Overlays promoted in place; shared seam of plain functions, no portal             |
 | [state-driven-forms](state-driven-forms.md)                                               | Form values are named state; controls bind one field by dot path                  |
 | [bundled-icon-set](bundled-icon-set.md)                                                   | Lucide in the binary; one export per icon, drawn by `icon`                        |
@@ -102,6 +105,7 @@ These are the conventions:
 | [fake-timers](fake-timers.md)                                         | fakeTimers option: virtual clock for unit tests                         |
 | [test-video-recording](test-video-recording.md)                       | E2E GIF recording via CDP screencast, in-process, no ffmpeg             |
 | [component-preview](component-preview.md)                             | imp preview: *.preview.js scenarios, their code and manual, on one page |
+| [preview-export](preview-export.md)                                   | imp preview --output: the gallery as one element that any page embeds   |
 | [in-page-review-capture](in-page-review-capture.md)                   | One capture engine: dev review files and the bugReport component        |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                              |
 | [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD-PARTY-LICENSES                 |

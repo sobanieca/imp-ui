@@ -47,11 +47,11 @@ Rules an agent gets wrong:
   A disabled button does not flip. Give an icon-only toggle a `label`.
 - **`variant: 'link'` is a button that looks like a link.** Use it for an action inside running
   text. For a place that a person can go to, use link (imp skill std/link), which needs an `href`.
-- **There is no menu.** A button with a menu, a dropdown or a joined row is buttonGroup (imp skill
-  std/buttonGroup).
+- **There is no menu.** A button that opens a menu is menuButton (imp skill std/menuButton). A
+  joined row of controls is `flex({ joined: true })`, see flex (imp skill std/flex).
 - **`square` is for an icon-only control.** It makes the inline padding match the block padding, so
   the button is as wide as it is tall. Give it a `label` as well.
-- **A button squares only the corners that face a neighbour** when it sits in a buttonGroup. It
+- **A button squares only the corners that face a neighbour** when it sits in a joined `flex`. It
   reads that from the theme, so the seam needs no prop.
 - **`popoverTarget` takes an element, not an id.** An id cannot cross a shadow root, but an element
   can. So a component that composes `button` hands it the panel it renders itself, and the platform
@@ -73,7 +73,7 @@ const showingCode = initState(self, 'panel.code', false)
 button({ variant: 'ghost', square: true, label: 'Show code', pressed: showingCode }, icon(luCode))
 ```
 
-Related: buttonGroup (imp skill std/buttonGroup), link (imp skill std/link)
+Related: menuButton (imp skill std/menuButton), flex (imp skill std/flex), link (imp skill std/link)
 
 --- stderr ---
 (empty)

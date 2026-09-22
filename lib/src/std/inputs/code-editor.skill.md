@@ -7,10 +7,10 @@ codeEditor({ field: 'config', label: 'imp.json', language: 'json', rows: 8 })
 codeEditor({ value: source, label: 'Script', language: 'js', lineNumbers: true })
 ```
 
-The call shape is `codeEditor(props?)`. It takes no children. It is `textArea` with a highlighted
-mirror behind the text, so every form rule of `textArea` holds here. The mirror is the code view of
-`codeBlock`, so both render a line the same way, with the same colours, the same number rail and the
-same copy button.
+The call shape is `codeEditor(props?)`. It takes no children. It is a multi-line `textField` with a
+highlighted mirror behind the text, so every form rule of `textField` holds here. The mirror is the
+code view of `codeBlock`, so both render a line the same way, with the same colours, the same number
+rail and the same copy button.
 
 | Prop          | Values                                     | Default  | Notes                                             |
 | ------------- | ------------------------------------------ | -------- | ------------------------------------------------- |
@@ -28,7 +28,7 @@ same copy button.
 | `disabled`    | boolean, or a state holding one - **live** | `false`  | Blocks interaction                                |
 
 The validation props are `required`, `minLength`, `maxLength`, `pattern`, `validate` and
-`validateAsync`, with the same rules as `textArea`. `validate` returns a message string, or `null`.
+`validateAsync`, with the same rules as `textField`. `validate` returns a message string, or `null`.
 The value is always the whole text, so a parse check goes in `validate`:
 
 ```js
@@ -80,6 +80,6 @@ form(
 )
 ```
 
-Related: imp skill std/textArea - the plain multi-line input; imp skill std/codeBlock - the
+Related: imp skill std/textField - the plain multi-line input; imp skill std/codeBlock - the
 read-only listing that shares the code view; imp skill std/form - the form that a `field` binds to;
 imp skill i18n - the wording of `imp.codeEditor.keys` and `imp.code.copy`.

@@ -4,15 +4,16 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import               | Exports                                                                                                                                                                                     | Per-component skill                                                                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `buttonGroup`, `heading`, `text`, `link`, `icon`                                                                                                                                  | `imp skill std/button`, `std/buttonGroup`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                  |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                    |
-| `imp/std/inputs`     | `form`, `textField`, `passwordField`, `searchField`, `textArea`, `codeEditor`, `richTextEditor`, `numberField`, `select`, `checkbox`, `toggle`, `radioGroup`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/passwordField`, `std/searchField`, `std/textArea`, `std/codeEditor`, `std/richTextEditor`, `std/numberField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`                                                                                                                             | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`                                                                                                                                                             |
-| `imp/std/navigation` | `tabs`                                                                                                                                                                                      | `imp skill std/tabs`                                                                                                                                                                                                                                          |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`                                                                                                                           | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`                                                                                                                                                               |
-| `imp/std/feedback`   | `bugReport`                                                                                                                                                                                 | `imp skill std/bugReport`                                                                                                                                                                                                                                     |
+| Import               | Exports                                                                                                                                                                                         | Per-component skill                                                                                                                                                                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                       | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                           |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                    | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                            |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `datePicker`, `fileUpload`, `codeEditor`, `richTextEditor`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/datePicker`, `std/fileUpload`, `std/codeEditor`, `std/richTextEditor`, `std/submitButton`, `std/resetButton` |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`                                                                                                               |
+| `imp/std/navigation` | `tabs`, `steps`                                                                                                                                                                                 | `imp skill std/tabs`, `std/steps`                                                                                                                                                                                                                                     |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications`                                                                                                              | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                  |
+| `imp/std/feedback`   | `bugReport`, `notice`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                     | `imp skill std/bugReport`, `std/notice`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                     |
+| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`                                                                                                                                           | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`                                                                                                                                                                               |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -76,47 +77,44 @@ button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save change
 there. `variant: 'link'` is a button that looks like a link. Use `link` when the target is a place
 to go to.
 
-**A button has no menu.** A button with a menu, a dropdown, or a row of joined controls is
-`buttonGroup`, below.
+**A button has no menu.** A button that opens a menu is `menuButton`, below. A row of joined
+controls is `flex({ joined: true })`, see Layout below.
 
-## buttonGroup
+## menuButton
 
 ```js
-buttonGroup(
-  { items: SAVE_ACTIONS },
+menuButton({ items: SAVE_ACTIONS })
+menuButton({ trigger: 'arrow', items: exportFormats }, 'Export')
+flex(
+  { joined: true },
   button({ variant: 'primary', events: { click: save } }, 'Save'),
+  menuButton({ variant: 'primary', items: SAVE_ACTIONS }),
 )
-buttonGroup({ label: 'Zoom' }, button({ label: 'Zoom out' }, icon(luMinus)), '100%', zoomIn)
 ```
 
-The children are the visible controls, joined side by side with no gap. `items` adds a square
-trigger at the end of the row, and the trigger opens the items as a menu. Pass children only,
-`items` only, or both.
+The children are the text of the trigger. With no children the trigger is a square icon. `items` are
+the options of the menu.
 
 | Prop       | Values                                                | Default     | Notes                                   |
 | ---------- | ----------------------------------------------------- | ----------- | --------------------------------------- |
-| `items`    | array of `{ id?, label, icon?, onClick?, disabled? }` | -           | Adds the trigger and the menu           |
-| `trigger`  | `'more'`, `'arrow'`                                   | `'more'`    | Triple-dot or chevron. Needs `items`    |
-| `variant`  | as on `button`                                        | `'default'` | Styles the trigger only                 |
-| `size`     | as on `button`                                        | `'md'`      | Styles the trigger and a text segment   |
-| `disabled` | boolean - **live**                                    | `false`     | Disables the trigger only               |
-| `label`    | string - **live**                                     | -           | `aria-label` on the `role="group"`      |
-| `events`   | event map                                             | -           | Handlers on the group, such as `select` |
+| `items`    | array of `{ id?, label, icon?, onClick?, disabled? }` | -           | The options of the menu                 |
+| `trigger`  | `'more'`, `'arrow'`                                   | `'more'`    | Triple-dot or chevron                   |
+| `variant`  | as on `button`                                        | `'default'` | The look of the trigger                 |
+| `size`     | as on `button`                                        | `'md'`      | The size of the trigger                 |
+| `disabled` | boolean - **live**                                    | `false`     | Disables the trigger and shuts the menu |
+| `label`    | string - **live**                                     | -           | `aria-label` of the trigger             |
+| `events`   | event map                                             | -           | Handlers on the host, such as `select`  |
 
-Every child carries its own props. The group sets no `variant`, `size` or `disabled` on a child, so
-write `button({ variant: 'primary' }, ...)` for each button that must be primary. Any node goes in
-as it is. Plain text, or a state text, becomes a read-only segment. A menu item is data, because its
-role and its place in the keyboard order must sit in one component. A child never goes into the
-menu.
+A menu item is data, because its role and its place in the keyboard order must sit in one component.
+A child is the text of the trigger, never an option. A split button is a joined `flex` with the
+action button first and the menu button last. Give both the same `variant` and `size`.
 
 When the person chooses an item, the host fires a `select` event that you can cancel, with
 `detail: { id, item }`. imp then calls the `onClick` of that item. The menu is a `popover`, and the
-browser places it. It flips above the row near the bottom of the screen. It closes on Escape, and on
-a click away from it. It has no `placement` prop. `'more'` draws a triple-dot trigger, and `'arrow'`
-draws a chevron. A group with `items` and no children is a plain dropdown.
-
-Each control squares only the corners that face a neighbour, in logical properties, so LTR and RTL
-both read correctly. Every std button and std input fits the seam.
+browser places it. It flips above the trigger near the bottom of the screen. It closes on Escape,
+and on a click away from it. It has no `placement` prop. `'more'` draws a triple-dot trigger, and
+`'arrow'` draws a chevron. An icon-only trigger reads "More actions" or "Choose an action" through
+`t()`, and `label` replaces that name.
 
 ## heading
 
@@ -341,6 +339,7 @@ stack(
 | `verticalAlign`   | `'top'`, `'bottom'`, `'center'`, `'stretch'` | `'stretch'` | Across the row                           |
 | `wrap`            | boolean                                      | `false`     | Lets the row break onto more lines       |
 | `gap`             | spacing step `0`-`6`                         | `3`         | Space between children                   |
+| `joined`          | boolean                                      | `false`     | No gap, and the children share a seam    |
 
 ### stack
 
@@ -361,6 +360,10 @@ stack(
   both directions. `verticalAlign` keeps `'top'` and `'bottom'`, because direction never mirrors the
   vertical axis.
 - **Space two components apart with a `gap`**, because no standard component has an outer margin.
+- **`joined` makes a row read as one control.** Each child squares only the corners that face a
+  neighbour, in logical properties, so LTR and RTL both read correctly. Every std button and std
+  input fits the seam. A split button is `flex({ joined: true }, button(...), menuButton(...))`. A
+  joined row ignores `gap`.
 - A layout that must change shape below some width needs a media query in the `styles` of your own
   component. No prop varies with the size of the screen.
 
@@ -448,6 +451,74 @@ not text. The grid around a set of cards is CSS grid in your own component.
 
 Full manual: `imp skill std/card`.
 
+## avatar - from `imp/std/display`
+
+```js
+import { avatar } from 'imp/std/display'
+
+avatar({ name: 'Ada Lovelace' })
+avatar({ name: 'Ada Lovelace', picture: '/ada.jpg', size: 'lg' })
+avatar({ name: 'Platform Team', color: 'violet', decorative: true })
+```
+
+| Prop         | Values                               | Default     | Notes                                 |
+| ------------ | ------------------------------------ | ----------- | ------------------------------------- |
+| `name`       | string - **live**                    | required    | The initials and the accessible name  |
+| `picture`    | URL - **live**                       | -           | The initials show when it is unset    |
+| `size`       | `'sm'`, `'md'`, `'lg'`               | `'md'`      | 1.5rem, 2rem, 3rem                    |
+| `color`      | `'primary'`, or a theme palette name | `'primary'` | The colour behind the initials        |
+| `decorative` | boolean                              | `false`     | Hides the avatar from a screen reader |
+
+The avatar is `role="img"`, and `name` is its `aria-label`. A picture that fails to load shows the
+initials. Set `decorative: true` when the name is printed next to the avatar. There is no avatar
+group. A row of people is `flex({ gap: 1 }, ...)`. Full manual: `imp skill std/avatar`.
+
+## accordion - from `imp/std/display`
+
+```js
+import { accordion } from 'imp/std/display'
+
+accordion({
+  items: [
+    { id: 'shipping', title: 'Shipping', content: shippingPanel(), open: true },
+    { id: 'returns', title: 'Returns', content: 'Send it back within 30 days.' },
+  ],
+})
+```
+
+| Prop       | Values                                  | Default | Notes                                  |
+| ---------- | --------------------------------------- | ------- | -------------------------------------- |
+| `items`    | array of `{ id, title, content, open }` | `[]`    | `title` is live. imp reads `open` once |
+| `multiple` | boolean                                 | `false` | `false`: one section is open at a time |
+| `events`   | `{ toggle }`                            | -       | On the host, `detail: { id, open }`    |
+
+Each item is a native `<details>` with a `<summary>`. So the browser owns the toggle and the
+keyboard. A section goes in `items`, never in the children. Full manual: `imp skill std/accordion`.
+
+## descriptionList - from `imp/std/display`
+
+```js
+import { descriptionList, tag } from 'imp/std/display'
+
+descriptionList({
+  items: [
+    { term: 'Customer', details: 'Acme Inc.' },
+    { term: 'Status', details: tag({ color: 'green' }, 'Paid') },
+    { term: 'Notes', details: notes },
+  ],
+})
+```
+
+| Prop      | Values                       | Default        | Notes                                        |
+| --------- | ---------------------------- | -------------- | -------------------------------------------- |
+| `items`   | array of `{ term, details }` | `[]`           | Both keys are live. `details` is any content |
+| `layout`  | `'horizontal'`, `'vertical'` | `'horizontal'` | The term beside the details, or above them   |
+| `columns` | `1`, `2`, `3`                | `1`            | Pairs side by side, when they fit            |
+
+imp renders a real `<dl>`. In the horizontal layout all terms share one column. The list adapts to
+its own width through a container query, so write no media query. It has no frame. Put it in a
+`card`. Full manual: `imp skill std/descriptionList`.
+
 ## emptyState - from `imp/std/display`
 
 ```js
@@ -455,18 +526,22 @@ import { emptyState } from 'imp/std/display'
 
 emptyState({ variant: 'noResults' })
 emptyState({ title: 'No invoices', description: 'They appear here once you send one.' }, action)
+emptyState({ icon: luCircleCheck, kind: 'success', title: 'Payment received' }, action)
 ```
 
-| Prop          | Values                   | Default   | Notes                            |
-| ------------- | ------------------------ | --------- | -------------------------------- |
-| `variant`     | `'empty'`, `'noResults'` | `'empty'` | Which situation this is          |
-| `title`       | string - **live**        | see below | The line saying there is nothing |
-| `description` | string - **live**        | -         | One sentence; omitted if unset   |
+| Prop          | Values                                                     | Default     | Notes                            |
+| ------------- | ---------------------------------------------------------- | ----------- | -------------------------------- |
+| `variant`     | `'empty'`, `'noResults'`                                   | `'empty'`   | Which situation this is          |
+| `title`       | string - **live**                                          | see below   | The line saying there is nothing |
+| `description` | string - **live**                                          | -           | One sentence; omitted if unset   |
+| `icon`        | an icon from `imp/icons`                                   | -           | Large and muted, above the title |
+| `kind`        | `'neutral'`, `'success'`, `'error'`, `'warning'`, `'info'` | `'neutral'` | Tints the icon only              |
 
 The children are the actions. imp puts them in a centered row under the text. With no `title`, the
 component reads its own key. `imp.state.empty` gives "Nothing here yet", and `imp.state.noResults`
 gives "No results". imp does not translate a `title` that you pass. To make it follow the language,
-use `computed([lang], () => t('invoices.empty'))`.
+use `computed([lang], () => t('invoices.empty'))`. A result page is this component with an `icon`
+and a `kind`. imp has no `result` component.
 
 ## tag - from `imp/std/display`
 
@@ -475,19 +550,25 @@ import { tag } from 'imp/std/display'
 
 tag('Draft')
 tag({ color: 'green', size: 'sm' }, 'Shipped')
+tag({ color: 'green', dot: true }, 'Online')
+tag({ color: 'red', dot: true, label: 'Offline' })
 ```
 
-| Prop    | Values                               | Default     | Notes          |
-| ------- | ------------------------------------ | ----------- | -------------- |
-| `color` | `'neutral'`, or a theme palette name | `'neutral'` | Tints the pill |
-| `size`  | `'sm'`, `'md'`, `'lg'`               | `'md'`      | The type scale |
+| Prop    | Values                               | Default     | Notes                              |
+| ------- | ------------------------------------ | ----------- | ---------------------------------- |
+| `color` | `'neutral'`, or a theme palette name | `'neutral'` | Tints the pill                     |
+| `size`  | `'sm'`, `'md'`, `'lg'`               | `'md'`      | The type scale                     |
+| `dot`   | boolean                              | `false`     | A filled circle before the label   |
+| `label` | string - **live**                    | -           | The name of a dot that has no text |
 
 The label is the children, not a prop. To render a live label, use `count.text()`. `color` names one
 of the 16 palette colours of the theme, such as `'red'`, `'green'` or `'blue'`. It is never a CSS
 colour. The pill is a faint tint of that colour with a border and text in the same hue, so every
-pill stays readable in a light theme and in a dark theme. A nav row and a group of `shell` take the
-same value as plain data, in `tag: { text, color }`. imp draws it at the small size, to match the
-row.
+pill stays readable in a light theme and in a dark theme. `dot: true` with no children draws a bare
+status dot with no pill. Name it with `label`. A count bubble is a small red tag,
+`tag({ color: 'red', size: 'sm' }, 12)`, next to the thing that it counts. imp has no `badge`
+component and no badge that overlaps a corner. A nav row and a group of `shell` take the same value
+as plain data, in `tag: { text, color }`. imp draws it at the small size, to match the row.
 
 ## tooltip - from `imp/std/display`
 
@@ -619,33 +700,49 @@ live under `imp.form.*`. `validateAsync` returns a **promise** of a message or o
 blur and on submit only. A submit waits for it. A synchronous failure skips it. A rejected promise
 blocks the submit with `imp.form.checkFailed`.
 
-| Component       | What it binds                | Its own props                                     |
-| --------------- | ---------------------------- | ------------------------------------------------- |
-| `form`          | Owns `imp.form`              | `initialValues`, `onSubmit`, `layout`, `gap`      |
-| `textField`     | A string                     | `type`, `placeholder`, `readonly`, `autocomplete` |
-| `passwordField` | A string, masked             | `placeholder`, `autocomplete`                     |
-| `searchField`   | A string                     | `placeholder`, `autocomplete`                     |
-| `textArea`      | A multi-line string          | `rows`, `placeholder`, `readonly`                 |
-| `numberField`   | A **number**                 | `step`, `placeholder`, `readonly`                 |
-| `select`        | One value from `options`     | `options`, `placeholder`                          |
-| `checkbox`      | A boolean                    | -                                                 |
-| `toggle`        | A boolean, drawn as a switch | -                                                 |
-| `radioGroup`    | One value from `options`     | `options`, `orientation`                          |
-| `submitButton`  | -                            | `variant`, `size`, `disabled`                     |
-| `resetButton`   | -                            | `variant`, `size`, `disabled`                     |
+| Component      | What it binds                                    | Its own props                                                |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| `form`         | Owns `imp.form`                                  | `initialValues`, `onSubmit`, `layout`, `gap`                 |
+| `textField`    | A string, or a **number**                        | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly` |
+| `select`       | One value from `options`                         | `options`, `placeholder`                                     |
+| `segmented`    | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                       |
+| `comboBox`     | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `placeholder`   |
+| `slider`       | A **number** in a range                          | `min`, `max`, `step`, `showValue`, `format`                  |
+| `fileUpload`   | An array of `{ id, name, size, type }`           | `multiple`, `accept`, `maxSize`, `onFiles`                   |
+| `datePicker`   | A date, a date range, or a date with a time      | `range`, `time`, `min`, `max`, `placeholder`                 |
+| `checkbox`     | A boolean                                        | -                                                            |
+| `toggle`       | A boolean, drawn as a switch                     | -                                                            |
+| `radioGroup`   | One value from `options`                         | `options`, `orientation`                                     |
+| `submitButton` | -                                                | `variant`, `size`, `disabled`                                |
+| `resetButton`  | -                                                | `variant`, `size`, `disabled`                                |
 
 Rules an agent gets wrong:
 
 - **There is no native form submit.** There is no `type: 'submit'` button and no
   `events: { submit }`. Put the handler in the `onSubmit` of the form, and render `submitButton()`.
-  Enter in a single-line field also submits. Enter in a `textArea` does not.
+  Enter in a single-line field also submits. Enter in a multi-line `textField` does not.
 - **A `field` with no `form` around it is an error.** A path that is not dot-separated is also an
   error.
 - **`field` and `value` are alternatives.** With both, imp warns and `field` wins.
 - **A label belongs to the control, not around it.** `label[for]` cannot cross a shadow root. So
   pass `label` as a prop. Your own `<label>` around a control names nothing.
 - **`select` and `radioGroup` take their choices in `options`, never as children.**
-- **`numberField` commits a number.** An empty field commits `undefined`.
+- **`segmented` and `comboBox` take their choices in `options`, never as children.** With
+  `multiple: true`, the value is an array. Seed it with `[]`.
+- **There is no `toggleGroup` and no `tagInput`.** Use `segmented({ multiple: true })`, and
+  `comboBox({ multiple: true, custom: true })`. Run `imp skill std/segmented` and
+  `imp skill std/comboBox`.
+- **On a `slider`, `min` and `max` set the range. They are not validation rules.** The value is a
+  number. Run `imp skill std/slider`.
+- **`fileUpload` never puts a `File` in the form.** The field holds `{ id, name, size, type }`
+  entries. `onFiles` receives the complete list of `File` objects at each change. Keep it, and send
+  it in `onSubmit`. Run `imp skill std/fileUpload`.
+- **`datePicker` holds ISO text, never a `Date`.** The value is `'2026-09-21'`, or `{ start, end }`
+  with `range: true`, or `'2026-09-21T14:30'` with `time: true`. The empty value is `undefined`. See
+  `imp skill std/datePicker`.
+- **`textField` is the only text input.** `type` is `'text'`, `'email'`, `'tel'`, `'url'`,
+  `'password'`, `'search'` or `'number'`. `rows` renders a `<textarea>`. Do not pass both.
+- **Type `'number'` commits a number.** An empty field commits `undefined`.
 - **imp hides an error until the person leaves the field, or tries to submit.** Do not add your own
   "show errors" flag.
 - **Return the promise from an async `onSubmit`.** The spinner of the submit button and the guard
@@ -675,8 +772,9 @@ codeEditor({ value: source, label: 'Script', language: 'js', lineNumbers: true }
 | `label`       | string, or a state holding one | -        | Rendered as a real `<label>`                 |
 | `readonly`    | boolean                        | `false`  | Selectable, not editable                     |
 
-- **It is `textArea` with the code view of `codeBlock` behind the text.** Every form prop and rule
-  of `textArea` holds: `help`, `placeholder`, `required`, `disabled`, the validation props.
+- **It is a multi-line `textField` with the code view of `codeBlock` behind the text.** Every form
+  prop and rule of `textField` holds: `help`, `placeholder`, `required`, `disabled`, the validation
+  props.
 - **The value is the whole text, on every keystroke.** Put a parse check in `validate`. The error
   shows after the person leaves the editor, not while they type.
 - **Tab indents two spaces, Shift-Tab outdents, Enter keeps the indentation.** Escape, then Tab,
@@ -708,7 +806,7 @@ richTextEditor({ value: note, label: 'Note', imageSize: 800 })
 
 - **The person sees rich text. The value is a markdown string.** Bold, italic, strikethrough, code,
   headings 1 to 3, quote, code block, lists, link, image, emoji and alignment. Every form prop and
-  rule of `textArea` holds: `help`, `required`, `disabled`, the validation props.
+  rule of `textField` holds: `help`, `required`, `disabled`, the validation props.
 - **An image is a data URL in the markdown.** imp resizes it in the browser to `imageSize` and
   embeds it. A placeholder holds the place while it runs. There is no upload.
 - **An aligned paragraph is an HTML block**, `<p align="center">...</p>`. Markdown has no alignment.
@@ -720,7 +818,7 @@ Full manual: `imp skill std/richTextEditor`.
 ## Navigation - from `imp/std/navigation`
 
 ```js
-import { tabs } from 'imp/std/navigation'
+import { steps, tabs } from 'imp/std/navigation'
 
 tabs({
   label: 'Account sections',
@@ -729,11 +827,23 @@ tabs({
     { id: 'billing', label: 'Billing', content: billingPanel(), disabled: false },
   ],
 })
+
+steps({
+  label: 'Checkout',
+  current,
+  items: [
+    { id: 'cart', label: 'Cart' },
+    { id: 'address', label: 'Address', description: 'Where we ship to' },
+    { id: 'payment', label: 'Payment' },
+  ],
+  events: { select: (event) => current.set(event.detail.id) },
+})
 ```
 
 | Component | Props                                                                                     |
 | --------- | ----------------------------------------------------------------------------------------- |
 | `tabs`    | `items`, `selected` (live), `orientation`, `foldable`, `folded` (live), `label`, `events` |
+| `steps`   | `items`, `current` (live), `orientation`, `label`, `events`                               |
 
 Rules an agent gets wrong:
 
@@ -750,6 +860,141 @@ Rules an agent gets wrong:
   strip, so the button sits at the foot. A folded strip moves the button to the head.
 - **A menu of destinations is the `shell` nav.** There is no separate menu component. Give the rows
   to the frame as `navbar` or `sidebar` data. Full manual: `imp skill std/tabs`.
+- **`steps` shows the progress of a flow, and no panel.** Items before `current` are done. `steps`
+  never changes `current` itself. Pass a state and set it from your flow.
+- **`events: { select }` makes each done step a real button**, with `detail: { id, index }`. The
+  current step and the upcoming steps are never buttons. An item with `status: 'error'` is a failed
+  step. Full manual: `imp skill std/steps`.
+
+## Data - from `imp/std/data`
+
+```js
+import { chart, gantt } from 'imp/std/data'
+
+chart({
+  type: 'column',
+  label: 'Revenue per quarter',
+  labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+  series: [{ name: 'Product', values: [12, 18, 9, 22], color: 'blue' }],
+})
+
+gantt({
+  label: 'Release plan',
+  tasks: [{ id: 'build', label: 'Build', start: '2026-09-10', end: '2026-10-02', progress: 40 }],
+  events: { select: (event) => open(event.detail.id) },
+})
+```
+
+| Component | Props                                                                                   |
+| --------- | --------------------------------------------------------------------------------------- |
+| `chart`   | `type`, `label` (live), `labels` (live), `series` (live), `stacked`, `legend`, `format` |
+| `gantt`   | `label` (live), `tasks` (live), `scale`, `events`                                       |
+
+Rules an agent gets wrong:
+
+- **`chart` has one data shape.** Pass `labels` and `series: [{ name, values, color }]`, also for
+  one series. `type` is `'column'`, `'bar'` or `'line'`. `stacked` works for `column` and `bar`.
+- **A `color` is a theme palette name**, such as `'teal'`. It is never a CSS colour.
+- **imp computes the axis.** There are no axis props. A column or bar axis starts at zero.
+- **A gantt date is an ISO string**, `'2026-09-21'`, and `end` is inclusive. A task with `start`
+  equal to `end` is a milestone.
+- **`gantt` is read-only.** It has no dependency arrows, no drag and no resize. `events: { select }`
+  makes each task a button and reports `detail: { id }`.
+- **Always pass `label`.** It is the accessible name of the chart, or of the timeline. Full manuals:
+  `imp skill std/chart`, `imp skill std/gantt`.
+
+For `skills/imports.md`, the new specifier is `imp/std/data`, with the exports `chart` and `gantt`.
+
+## table - from `imp/std/data`
+
+```js
+import { table } from 'imp/std/data'
+
+table({
+  label: 'Invoices',
+  columns: [
+    { key: 'number', label: 'Number', sortable: true },
+    { key: 'total', label: 'Total', align: 'end', render: (row) => money(row.total) },
+  ],
+  rows,
+  filter: query,
+  selection: 'multiple',
+  selected,
+  hasMore,
+  onLoadMore,
+})
+```
+
+`rows`, `filter`, `selected` and `hasMore` are **live**. A row is plain data with a unique `id`, or
+the property that `rowKey` names. A column is `{ key, label, align, sortable, sortValue, render }`.
+Sorting is client-side. Call `preventDefault()` on the `sort` event to sort on the server.
+`selection` is `'none'`, `'single'` or `'multiple'`, and `selected` is an array of row keys that the
+table writes back. **There is no pagination.** imp calls `onLoadMore` when the end of the rows comes
+into view, while `hasMore` is true. Append the page to the `rows` state. A narrow container shows
+each row as a card.
+
+Full manual: `imp skill std/table`.
+
+## list - from `imp/std/data`
+
+```js
+import { list } from 'imp/std/data'
+
+list({
+  label: 'Team members',
+  items: people,
+  actions: (person) => editButton(person),
+  hasMore,
+  onLoadMore,
+})
+```
+
+An item is plain data:
+`{ id, title, description, picture, name, icon, tag: { text, color }, href }`. The title is a link
+with `href`, and a button when you pass `events.select`. `select` is cancelable, with
+`detail: { id, item }`. `actions` is a function that returns the trailing controls of a row.
+Infinite scroll works as in `table`.
+
+Full manual: `imp skill std/list`.
+
+## tree - from `imp/std/data`
+
+```js
+import { tree } from 'imp/std/data'
+
+tree({ label: 'Folders', items, selected: current, expanded: open, events: { select } })
+```
+
+An item is `{ id, label, icon, children }`. `selected` is an id and `expanded` is an array of ids.
+Both take a writable state, and the tree writes it back. `expanded: 'all'` opens every parent at
+mount. `select` has `detail: { id, item }`. The arrow keys, `Home`, `End`, `Enter`, `Space` and a
+typed letter all work, and `Left` and `Right` mirror under `dir="rtl"`.
+
+Full manual: `imp skill std/tree`.
+
+## calendar - from `imp/std/data`
+
+```js
+import { calendar } from 'imp/std/data'
+
+calendar({
+  label: 'Team calendar',
+  items: [{ id: 1, title: 'Standup', start: '2026-09-21T09:00', end: '2026-09-21T09:15' }],
+  events: { select, slotSelect },
+})
+```
+
+| Prop     | Values                                                  | Default   | Notes                                     |
+| -------- | ------------------------------------------------------- | --------- | ----------------------------------------- |
+| `label`  | string, or a state                                      | -         | Names the calendar                        |
+| `items`  | array of `{ id, title, start, end, color }`, or a state | `[]`      | The entries - **live**                    |
+| `view`   | `'month'`, `'week'`, `'day'`, or a state                | `'month'` | The toolbar writes a writable state       |
+| `date`   | `'YYYY-MM-DD'`, or a state                              | today     | The toolbar writes a writable state       |
+| `events` | `{ select, slotSelect }`                                | -         | `{ id, item }`; `{ start, end?, allDay }` |
+
+The entries go in `items`, never in `events`. A `start` with no time makes an all-day entry, and its
+`end` is inclusive. The calendar is read-only: handle `slotSelect`, open a `dialog` with a `form`,
+and update the `items` state. The full manual is `imp skill std/calendar`.
 
 ## Shell parts - from `imp/std/shell`
 
@@ -757,7 +1002,14 @@ These are ready-made contents for the regions of `shell`. Each one is optional. 
 take DOM, so you can replace a piece that does not fit with your own.
 
 ```js
-import { appLogo, breadcrumbs, langSelect, themeSelect, userCard } from 'imp/std/shell'
+import {
+  appLogo,
+  breadcrumbs,
+  langSelect,
+  notifications,
+  themeSelect,
+  userCard,
+} from 'imp/std/shell'
 import { icon } from 'imp/std'
 import { luBox } from 'imp/icons'
 
@@ -768,13 +1020,14 @@ themeSelect()
 langSelect({ languages: ['en', 'pl'] })
 ```
 
-| Component     | Props                                                                                                                                     |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `appLogo`     | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `compact`, `events`                                    |
-| `breadcrumbs` | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                                                        |
-| `userCard`    | `signedIn`, `name`, `description`, `picture` (all live), `href`, `compact`, `onSignIn`, `onSignOut`, `variant`, `size`, `block`, `events` |
-| `themeSelect` | `themes`, `remember`, `label` (live), `events`                                                                                            |
-| `langSelect`  | `languages`, `remember`, `label` (live), `events`                                                                                         |
+| Component       | Props                                                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `appLogo`       | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `compact`, `events`                                    |
+| `breadcrumbs`   | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                                                        |
+| `userCard`      | `signedIn`, `name`, `description`, `picture` (all live), `href`, `compact`, `onSignIn`, `onSignOut`, `variant`, `size`, `block`, `events` |
+| `themeSelect`   | `themes`, `remember`, `label` (live), `events`                                                                                            |
+| `langSelect`    | `languages`, `remember`, `label` (live), `events`                                                                                         |
+| `notifications` | `label` (live), `variant`, `size`, `events`                                                                                               |
 
 Rules an agent gets wrong:
 
@@ -798,6 +1051,9 @@ Rules an agent gets wrong:
   technology.** That is how a brand block with a mark only keeps its name.
 - **Inside `shell`, `userCard` goes in `extras`.** The frame has no account prop. It places the
   extras in the bar on a wide screen and in the drawer on a phone.
+
+- **`notifications` is the bell, and it takes no data.** It lists what `notify` from
+  `imp/std/feedback` raised. It renders its own modal drawer. Put it in `extras`, beside `userCard`.
 
 Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/themeSelect` |
 `std/langSelect`.
@@ -837,3 +1093,77 @@ Rules an agent gets wrong:
   same shape in both.
 
 Full manual: `imp skill std/bugReport`.
+
+```js
+import { notice, progress, skeleton } from 'imp/std/feedback'
+
+progress({ label: 'Uploading', value: 40, showValue: true })
+progress({ label: 'Loading', shape: 'ring' })
+progress({ label: 'CPU', shape: 'gauge', value: load, color: 'amber' })
+progress({ label: 'Saving', client: 'myapp.api' })
+skeleton({ lines: 3 })
+notice({ kind: 'warning', title: 'Your trial ends in 3 days' }, 'Add a payment method.')
+notice({ client: 'myapp.api' })
+```
+
+| Component  | Props                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| `progress` | `label` (live), `value` (live), `max`, `shape`, `size`, `color`, `showValue`, `format`, `client` |
+| `skeleton` | `shape`, `lines`                                                                                 |
+| `notice`   | `kind`, `title` (live), `icon`, `dismissible`, `open` (live), `client`, `events`                 |
+
+Rules an agent gets wrong:
+
+- **There is no `spinner`, no `statistic` and no `alert`.** A `progress` ring with no `value` is the
+  spinner. A `progress` gauge shows one number of a dashboard. The inline banner is `notice`,
+  because an `alert` import shadows the `alert()` of the browser.
+- **`progress` with no `value` has no known value.** The bar slides and the ring spins. `shape` is
+  `'bar'`, `'ring'` or `'gauge'`. `value` counts from `0` to `max`, which is `100` by default.
+- **Always pass `label` to `progress`.** It is the accessible name. A bar and a gauge also show it.
+- **`skeleton` is decorative.** Put `aria-busy` on the region that loads. Size a circle or a block
+  with `--imp-skeleton-inline-size` and `--imp-skeleton-block-size` on a wrapper.
+- **The description of a `notice` is its children.** `kind` is `'info'`, `'success'`, `'warning'` or
+  `'error'`. A warning and an error are `role="alert"`. The other two are `role="status"`.
+- **Show a `notice` later through a state in `open`.** The live region stays mounted, so a screen
+  reader announces the words. A dismiss writes `false` into that state and fires `dismiss`.
+- **`client` binds both to an HTTP client**, by name or as the client object. `progress` shows
+  itself only while `pending` is above zero. `notice` shows `lastError` as an error that a person
+  can dismiss. See `imp skill http`.
+
+Full manuals: `imp skill std/progress`, `imp skill std/skeleton`, `imp skill std/notice`.
+
+```js
+import { dismiss, notify, toast } from 'imp/std/feedback'
+
+shell({ extras: [notifications()] }, toast({ client: 'acme.api' }), router(routes))
+
+notify({ kind: 'success', title: 'Report sent' })
+const choice = await notify({
+  id: 'invoice-1042',
+  kind: 'warning',
+  title: 'Invoice 1042 is overdue',
+  actions: [{ id: 'remind', label: 'Send a reminder' }, { id: 'ignore', label: 'Ignore' }],
+  duration: 0,
+})
+dismiss('invoice-1042')
+```
+
+| Export    | Shape                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| `toast`   | `duration`, `ttl`, `visible`, `limit`, `client`                                                  |
+| `notify`  | `notify({ title, id, kind, description, icon, image, link, actions, duration, ttl })`, a promise |
+| `dismiss` | `dismiss(id)`                                                                                    |
+
+Rules an agent gets wrong:
+
+- **`notify` and `dismiss` are functions, not components.** They take no `self`. Call them from a
+  handler or a module. Never put them in a tree.
+- **Mount `toast()` once**, as the first child of the content of `shell`. A second region warns and
+  renders nothing.
+- **Every key of `notify` is plain data.** `icon` is an export of `imp/icons`, never `icon(...)`.
+  `description` is text with no markup.
+- **Pass an `id` to update or to dismiss an entry later.** A call with a listed `id` replaces the
+  entry.
+- **The promise resolves with the `id` of the chosen action, or with `null`.**
+
+Full manual: `imp skill std/toast`. It covers `notify` and `dismiss`.

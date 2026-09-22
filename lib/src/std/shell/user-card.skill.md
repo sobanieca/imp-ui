@@ -55,11 +55,11 @@ Rules an agent gets wrong:
 - **The card displays. It does not act.** There is no menu and no drop-down inside it. `href` sends
   the person to an account page, and the sign-out is the button beside the card.
 - **The avatar falls back to initials.** imp takes them from the first and the last word of `name`,
-  and draws them on the primary colour. A `picture` that fails to load shows the broken-image mark
-  of the browser, not the initials.
+  and draws them on the primary colour. A `picture` that fails to load shows the initials too. The
+  same avatar is a component of its own, see `imp skill std/avatar`.
 - **The avatar is `aria-hidden`**, and the name is the accessible text. So a screen reader reads the
   person once.
 - **`name` is app data, and imp does not translate it.** Do not pass it through `t()`.
 
 Related: imp skill std/button - the control it composes; imp skill std/shell - the frame whose
-`extras` usually hold one.
+`extras` usually hold one; imp skill std/avatar - the same avatar, as a component of its own.

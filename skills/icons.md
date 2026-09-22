@@ -69,7 +69,8 @@ colour, set `color` on the box around it and leave the icon on `'current'`.
 
 Every Lucide icon is square, so `size` sets both axes. The three steps are `1rem`, `1.5rem` and
 `2rem`. Lucide draws on a 24-unit grid, so `md` at the default root font size is 24px and its
-strokes land on whole pixels. For any other size, pass a CSS length.
+strokes land on whole pixels. For any other size, pass a CSS length. The stroke width is the theme
+token `icon-stroke-width`, `2` by default, in units of that grid. See [theming](theming.md).
 
 ```js
 import { flex } from 'imp/std/layout'
