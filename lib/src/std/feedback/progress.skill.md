@@ -39,6 +39,9 @@ Rules an agent gets wrong:
 - **Import the component from `imp/std/feedback`**, not from `imp/std`.
 - **There is no `spinner` component.** A ring with no `value` is the spinner. Write
   `progress({ label: 'Loading', shape: 'ring' })`. A `button` has its own `loading` prop.
+- **The theme decides the shape of the spinner.** The `loader` token of the theme is `spinner`,
+  `dots`, `bar` or `pulse`, see imp skill theming. A ring with no `value` draws that shape, at the
+  size of the ring. There is no prop for it.
 - **There is no `statistic` component.** A gauge shows one number of a dashboard. It is a
   `role="meter"`, because it is a measurement and not a task that ends.
 - **Always pass `label`.** A ring shows no text, so the label is its only name. imp warns when it is
@@ -80,6 +83,7 @@ export const saveBar = component('myapp-save-bar', {
 })
 ```
 
-Related: imp skill http - `pending`, `tracked()` and where a client lives; imp skill std/notice -
-the last error of the same client; imp skill std/skeleton - a placeholder for content that loads;
-imp skill theming - the colours behind the `color` names.
+Related: imp skill http - `pending`, `tracked()` and where a client lives; imp skill theming - the
+`loader` token that selects the shape of the spinner; imp skill std/notice - the last error of the
+same client; imp skill std/skeleton - a placeholder for content that loads; imp skill theming - the
+colours behind the `color` names.

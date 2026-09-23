@@ -84,6 +84,8 @@ await init({
 - **imp does not store the theme, and it has no light or dark mode axis.** Save `theme.get().name`
   yourself and apply it again on load. To follow `prefers-contrast` or `prefers-color-scheme`, watch
   the media query and call `applyTheme`.
+- **`loader` is a keyword, not CSS.** Write `loader: 'dots'`. There is no `spinner` component and no
+  `shape` for the loader on `button`. The theme decides the shape for the whole app.
 - **Reference a token with a fallback** in your own CSS: `var(--imp-color-primary, #2563eb)`.
 - **There is no `color-primary-hover`, `color-link` or `color-focus-ring`.** A link and the focus
   ring take `color-primary`. Mix a hover step with `color-mix()` from the base colour and
@@ -102,6 +104,14 @@ await init({
 | Surface    | `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                    |
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
+| Loader     | `loader`                                                                                                                                                                                                                                                 |
+
+`loader` is the shape of every loading state: the `loading` of a `button`, a `progress` ring with no
+value, the row of a `table` or a `list` that loads more, and the image upload of `richTextEditor`.
+The values are `spinner`, `dots`, `bar` and `pulse`. The built-in themes set `spinner`. Any other
+value logs a warning and draws the spinner. The loader takes `currentColor` and the size of its
+place. To show the loader of the theme on its own, write `progress({ label, shape: 'ring' })` with
+no `value`.
 
 `radius-item` rounds a button, an input, a tag, a nav row and a tab. `radius-container` rounds a
 dialog, a drawer, a menu and the frame of a `shell`. Set `radius-item` and `radius-container`
@@ -149,8 +159,9 @@ imp has one theme editor. In `imp preview`, open it with _edit theme_ in the top
 the app applied, so a dark theme is edited with a dark theme selected. It keeps a draft per theme
 name in `localStorage` across reloads, until the person presses _reset_. It exposes **primary**,
 **secondary**, **font**, **mono font**, **border radius**, which is `none`, `small`, `medium` or
-`large`, **shadow**, which is `none`, `soft` or `strong`, and **shadow colour**, which is
-`color-shadow`. It derives every other colour token from the two base colours. The knobs sit on the
+`large`, **shadow**, which is `none`, `soft` or `strong`, **shadow colour**, which is
+`color-shadow`, and **loader**, which is `spinner`, `dots`, `bar` or `pulse`, with a live sample
+beside it. It derives every other colour token from the two base colours. The knobs sit on the
 **Knobs** tab. The **Tokens** tab is the whole theme as JSON, in a `codeEditor` that grows with the
 text. An edit there applies as soon as the JSON parses. A knob rewrites the tokens it drives, and it
 leaves every other token as edited. The widget of `imp start` shows the **Tokens** view alone, with

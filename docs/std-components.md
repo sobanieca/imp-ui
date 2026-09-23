@@ -288,8 +288,9 @@ and flips when there is no room.
 ## Tell the person what is happening
 
 `imp/std/feedback` holds the components that report on the app. `progress` is a bar, a ring or a
-gauge, with a value or with none. A ring with no value is the spinner. `skeleton` holds the place of
-content that loads. `notice` is a message banner inside the page.
+gauge, with a value or with none. A ring with no value is the spinner, in the shape that the theme
+selects with its `loader` token. `skeleton` holds the place of content that loads. `notice` is a
+message banner inside the page.
 
 `toast()` draws popups in the corner, and `notify()` sends one from anywhere in your code. imp keeps
 every notification. The `notifications` bell in the frame opens a list of them, so a person who

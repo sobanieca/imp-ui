@@ -54,14 +54,36 @@ echo ""
 TMP_DIR="$(mktemp -d)"
 trap "rm -rf ${TMP_DIR}" EXIT
 
+download() {
+  if command -v curl &> /dev/null; then
+    curl -fsSL -o "$2" "$1"
+  elif command -v wget &> /dev/null; then
+    wget -q -O "$2" "$1"
+  else
+    echo -e "${RED}Error: Neither curl nor wget is available${NC}"
+    echo "Please install curl or wget and try again"
+    exit 1
+  fi
+}
+
 echo "Downloading imp..."
-if command -v curl &> /dev/null; then
-  curl -fsSL -o "${TMP_DIR}/${BINARY_NAME}" "${DOWNLOAD_URL}"
-elif command -v wget &> /dev/null; then
-  wget -q -O "${TMP_DIR}/${BINARY_NAME}" "${DOWNLOAD_URL}"
+download "${DOWNLOAD_URL}" "${TMP_DIR}/${BINARY_NAME}"
+download "${DOWNLOAD_URL}.sha256" "${TMP_DIR}/${BINARY_NAME}.sha256"
+
+echo "Verifying the checksum..."
+EXPECTED="$(awk '{print $1}' "${TMP_DIR}/${BINARY_NAME}.sha256")"
+if command -v sha256sum &> /dev/null; then
+  ACTUAL="$(sha256sum "${TMP_DIR}/${BINARY_NAME}" | awk '{print $1}')"
+elif command -v shasum &> /dev/null; then
+  ACTUAL="$(shasum -a 256 "${TMP_DIR}/${BINARY_NAME}" | awk '{print $1}')"
 else
-  echo -e "${RED}Error: Neither curl nor wget is available${NC}"
-  echo "Please install curl or wget and try again"
+  echo -e "${RED}Error: Neither sha256sum nor shasum is available${NC}"
+  exit 1
+fi
+if [ "${EXPECTED}" != "${ACTUAL}" ]; then
+  echo -e "${RED}Error: The checksum of the download does not match the published one${NC}"
+  echo "Expected: ${EXPECTED}"
+  echo "Actual:   ${ACTUAL}"
   exit 1
 fi
 
@@ -78,7 +100,7 @@ echo "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
 $SUDO mv "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
 
 echo ""
-echo -e "${GREEN}✓ imp has been installed successfully!${NC}"
+echo -e "${GREEN}imp has been installed successfully${NC}"
 echo ""
 echo "Run 'imp help' to get started"
 echo ""

@@ -205,7 +205,8 @@ With no key, as above, imp rebuilds the whole list on every change. This is the 
 it suits a short list that only displays data. Add a **key function**, and `each` becomes precise.
 An item whose value did not change keeps its exact DOM elements. imp renders a changed item again,
 cleans up a removed item, and, when the order changes, moves the existing elements instead of
-building them again:
+building them again. It moves only the elements that are out of order, so a swap of two items moves
+two elements, and the rest of the list stays untouched:
 
 ```js
 ul(todos.each(

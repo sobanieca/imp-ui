@@ -257,7 +257,7 @@ behind the imp mark in the corner of your app. Press the mark, then **Theme edit
 same editor. The first shows the standard components under your theme. The second shows your own
 screens. It edits the theme that is applied: in `imp preview` that is the theme in the sidebar, and
 in your app it is the theme that `init` applied. To write a dark theme, select a dark theme first.
-In `imp preview` the editor has two tabs. **Knobs** asks for seven things. **Tokens** holds the
+In `imp preview` the editor has two tabs. **Knobs** asks for eight things. **Tokens** holds the
 whole theme as JSON. In your app the widget shows **Tokens** alone, because that is where you tune
 one token against your real screens:
 
@@ -270,6 +270,7 @@ one token against your real screens:
 | **Border radius** | none, small, medium, large | `radius-item` and `radius-container`, as one step          |
 | **Shadow**        | none, soft, strong         | The three `shadow-*` steps                                 |
 | **Shadow color**  | any color                  | `color-shadow`, the color every shadow step casts          |
+| **Loader**        | spinner, dots, bar, pulse  | `loader`, the shape of every loading state, with a sample  |
 
 imp **derives** everything else. From the primary color, it picks a readable `color-on-primary`.
 That is white when white reaches a contrast of 3:1 against the primary, and a near-black tint of the
@@ -330,6 +331,7 @@ them:
 | Surface    | `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                    |
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
+| Loader     | `loader`                                                                                                                                                                                                                                                 |
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds. A
 theme can pick a readable pair, instead of hoping that white works. There is no hover token and no
@@ -367,6 +369,26 @@ an input, a tag, a nav row, a tab. `radius-container` rounds the panels that hol
 drawer, a menu, the frame of a `shell`. It is always the larger of the two, so a panel and the
 button inside it never share one corner. A theme that wants flat, square chrome sets every shadow to
 `none` and both radius tokens to `0`. Every component then follows, with no CSS in your app.
+
+## The loader
+
+Every loading state in imp draws one loader. A `button` with `loading` shows it before its label. A
+`progress` ring with no value is that loader alone. A table or a list shows it while the next rows
+load, and the rich text editor shows it while an image uploads. The `loader` token selects its
+shape, for the whole app at once:
+
+| Value     | Draws                                    |
+| --------- | ---------------------------------------- |
+| `spinner` | a ring with a gap that turns             |
+| `dots`    | three dots that bounce one after another |
+| `bar`     | a short track with a segment that slides |
+| `pulse`   | a disc that grows and fades              |
+
+The built-in themes set `spinner`. The loader takes the colour of its text, so a loader in a primary
+button is white and a loader in a table row is muted. It takes the size of its place, so it is one
+line of text high in a button and as large as the ring in `progress`. Any other value logs a
+warning, and every loading state draws the spinner. To show a loader in a place of your own, write
+`progress({ label: 'Loading', shape: 'ring' })`. It draws the shape of the theme.
 
 The spacing scale is **fluid**. `space-3` and the larger steps are `clamp()` values that grow with
 the viewport. A gap that you set once is tighter on a phone and wider on a monitor, and you write no

@@ -33,9 +33,9 @@ question about an accessibility baseline, which `todo/stdlib-components.md` leav
   `dialog({ modal: true })` and `drawer`. Nobody writes any of that per component, and imp shares
   none of it as its own code. It comes from the top layer of the platform, through the seam that
   `todo/overlay-seam.md` settled. A non-modal `dialog` traps nothing, by design, because the page
-  behind it stays operable. But it owes the one thing that the platform does not give it. **A person
-  must be able to drag it from the keyboard.** Otherwise the drag is an interaction for a pointer
-  only, and the rule about operability, above, forbids that.
+  behind it stays operable. It adds the one thing that the platform does not give it. **A person can
+  drag it from the keyboard**, with the arrow keys on its handle. Otherwise the drag is an
+  interaction for a pointer only, and the rule about operability, above, forbids that.
 - **The wiring of a state.** `aria-expanded`, `aria-selected`, `aria-checked`, `aria-current`,
   `aria-invalid`, `aria-busy`, and `aria-live` for feedback, all reflect the reactive state of the
   component automatically. `alert`, `toast` and `spinner` use `aria-live`. Those attributes bind to
@@ -96,13 +96,6 @@ from the item about the standard library, because this ADR answers it.
 
 ## Open questions
 
-- **What a unit test can really assert.** The baseline is a hard guarantee. So every interactive
-  component ships a test about accessibility. But the test DOM of imp implements almost none of the
-  behaviour that the guarantee covers. `showModal()` is a stub that sets `open`. There is no
-  `showPopover`. The focus, `inert` and the handling of Escape are absent. Decide how much of that
-  to fill in `cli/src/test-dom.js`. `todo/overlay-seam.md` scopes the part about the top layer.
-  Decide how much stays in an e2e test only. Make that decision per behaviour, and not per
-  component.
 - **An automated audit in `imp test`.** Does imp run a check in the style of axe-core, over a
   rendered component, in the e2e path? Does an auditor in pure JavaScript, or a vendored auditor,
   exist that fits the constraints about running in process, see `adr/in-process-toolchain.md`?

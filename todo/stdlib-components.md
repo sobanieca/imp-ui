@@ -11,8 +11,6 @@ skill file, a preview and a unit test. This file lists the work that is still ow
   implemented. `touched` is.
 - **An error at the level of the form** has no home yet. That is a failure of a submit that belongs
   to no single field.
-- **A named action for the submit.** `form` needs a spelling for "this is the button that submits",
-  so it can drive the loading state and the disabled state of that button.
 
 ## Responsive
 
@@ -25,10 +23,6 @@ skill file, a preview and a unit test. This file lists the work that is still ow
 - **A check about a complete theme.** After somebody settles the full list of `--imp-*` tokens,
   freeze that list. Then make `applyTheme` warn, through the shared `impLogger`, when an applied
   theme has no value for a known token key. The warning must not be fatal.
-- **A loader shape as a theme step.** Every loading state draws the one ring of `shared/spinner.js`.
-  A theme cannot select a different shape. Add a `loader` step to the theme, with the shapes
-  `spinner`, `dots`, `bar` and `pulse`, when an app asks for it. The drawing stays in the one shared
-  module, and the step selects a block.
 
 ## Components that wait
 

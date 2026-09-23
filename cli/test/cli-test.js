@@ -2156,12 +2156,15 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const flat = token('radius-item')
       change(field('Shadow colour'), '#ff0000')
       const shadow = token('color-shadow')
+      change(field('Loader'), 'dots')
+      const loader = token('loader')
       return {
         knobs: knobs.join(', '),
         primary,
         derived,
         flat,
         shadow,
+        loader,
         usage: globalThis.impDeep('pre', globalThis.impDeep('.usage', editorHost)).textContent
           .split('\n')[0],
       }
@@ -2450,6 +2453,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `after picking a primary: ${themeEdits.primary} (on-primary ${themeEdits.derived})`,
       `after picking radius none: ${themeEdits.flat}`,
       `after picking a shadow colour: ${themeEdits.shadow}`,
+      `after picking the dots loader: ${themeEdits.loader}`,
       `theme editor usage line: ${themeEdits.usage}`,
       `sidebar groups: ${shell.groups}`,
       `sidebar group icons: ${shell.groupIcons}`,

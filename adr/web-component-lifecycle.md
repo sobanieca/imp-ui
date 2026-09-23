@@ -170,6 +170,13 @@ mount, the loading, the state and the cleanup.
   browser lays it out. Nobody schedules a `requestAnimationFrame` by hand, and nobody checks again
   for an unmount in the middle of a frame. The order of a mount is top down. So the `initState` of
   an ancestor always runs before the `useState` of a descendant.
+- The depth of a tree of components is not limited by the stack of the browser. An insertion runs
+  the `connectedCallback` of a child inside the DOM call of its parent, so a chain of nested mounts
+  is a chain of re-entries into the browser, and Chrome ran out of stack at about 40 levels. imp
+  therefore mounts a tree from one loop. The first host that connects mounts, and every host that
+  connects while it mounts joins a list. The loop then mounts those hosts in document order, and
+  their children after them, depth first, so the order stays parent before child, and sibling
+  subtree before the next sibling. A mount of thousands of levels costs no more stack than one.
 - A loading state costs nothing extra. It is `loading` with an async `setup`.
 - A resolution has no position rule. `useState(self, name)` works before and after an `await`, and
   in `onRemove`. There is no rule about the first `await`, no lint rule for it, and no handle to

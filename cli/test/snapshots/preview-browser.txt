@@ -39,10 +39,11 @@ theme after one step from imp-dark: imp-light
 imp-dark surface token: #161719
 imp-dark font token, from the theme file that replaces it: Prompt, sans-serif
 brand surface token: #fdf7ff
-theme editor knobs: Primary, Secondary, Font, Mono font, Border radius, Shadow, Shadow colour
+theme editor knobs: Primary, Secondary, Font, Mono font, Border radius, Shadow, Shadow colour, Loader
 after picking a primary: #8821ac (on-primary #ffffff)
 after picking radius none: 0px
 after picking a shadow colour: #ff0000
+after picking the dots loader: dots
 theme editor usage line: import { init } from 'imp'
 sidebar groups: Widgets 1, components 1
 sidebar group icons: 4 shapes, 3 shapes

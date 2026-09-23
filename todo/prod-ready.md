@@ -16,7 +16,7 @@ grouped by tier, roughly in the order in which somebody must close them. When so
 item, delete it from this file, and record any architectural decision that it introduces, as an ADR.
 When the last item goes, delete the file.
 
-Somebody verified this against the code again on 2026-09-01. Every item below was still open at that
+Somebody verified this against the code again on 2026-09-23. Every item below was still open at that
 date.
 
 ## Tier 1 - the supply chain, and compliance
@@ -30,12 +30,6 @@ block a procurement, in place of being a preference.
   `imp update` already verifies the binary that it downloads, against its published SHA-256, see
   `cli/src/version-manager.js`. So the standard exists inside imp. The install of a dependency does
   not meet it.
-- **`install.sh` verifies nothing.** It downloads the asset of a release, and moves it into
-  `INSTALL_DIR`, with no check of a checksum. The release publishes `imp-{os}-{arch}.sha256`, and
-  every other download path in imp verifies against that file, see `adr/binary-distribution.md`. The
-  first command that a new user runs is the only one that nobody verifies. The fix is one line, and
-  the value is large. The script also prints a check mark that is not ASCII, against the ASCII rule
-  of the repository.
 - **Nothing consumes the recorded graph.** The manifest per dependency answers the question "which
   versions of what do I ship?", and only for a reader who opens it. There is no `imp audit`. There
   is no export of a software bill of materials, in a standard format for interchange, such as
@@ -91,12 +85,11 @@ block a procurement, in place of being a preference.
 - **Logging in the browser goes to the console only.** `lib/src/logger.js` has no registration of a
   sink. The CLI has `addLogSink`, in `cli/src/logger.js`, and the library has no counterpart. So
   nobody can ship a log from production anywhere. The default level is also `info`.
-- **There is no story about SEO, and none about metadata.** The router never touches
-  `document.title`, and it never touches a meta tag. `document.title` appears only in
-  `lib/src/report.js`. There is also no prerender, and no static export, for an application.
-  `todo/preview-static-export.md` covers a preview only. Any app that faces the public needs at
-  least a title and a description per route, which imp sets as part of a navigation, in place of a
-  person setting it by hand in a screen.
+- **There is no story about metadata, and none about a prerender.** The router sets `document.title`
+  per navigation, and nothing else. It never touches a meta tag. There is no prerender, and no
+  static export, for an application. Any app that faces the public needs at least a description per
+  route, which imp sets as part of a navigation, in place of a person setting it by hand in a
+  screen.
 - **The absence of SSR is a boundary of the scope that nobody states.** Real DOM, with a component
   in a shadow root, means that a built app is an empty HTML shell until the JavaScript runs. That is
   a defensible choice for the 80% that is an internal tool, or a dashboard. But no ADR, and no
@@ -112,28 +105,12 @@ block a procurement, in place of being a preference.
 
 ## Tier 4 - can somebody build the app at all, and does it hold up at scale
 
-- **The performance of a state has no test for a ceiling.** Every `set` walks the whole value
-  deeply, twice. That is the structural comparison in `inspectValue`, and then `deepFreeze`. A keyed
-  `each` also runs `valuesEqual` again, per item that it keeps, on every notification, see
-  `lib/src/state.js`. There is no batching of an update. So N synchronous `set` calls produce N full
-  passes of a notification and a render. For the stated target, which is a dashboard, CRUD and a
-  data grid, a large list in a state makes every keystroke O(the size of all the data). Nothing
-  proves that this is acceptable. There is no benchmark anywhere, and there is no test with a large
-  fixture. Land one before the `table` component, or the data grid, lands. This is the architectural
-  risk that is most likely to force a redesign.
 - **A malformed URL breaks the match of a route. It does not render `notFound`.**
   `decodeURIComponent(segment)`, in `matchMap` in `lib/src/app-map.js`, throws a `URIError` on bad
   percent encoding. An example is `/user/%zz`, which arrives from any external link. That surfaces
   as an error during the mount of a component, in place of the not-found page. There is a related
   problem. `Object.fromEntries(location.searchParams)` drops a repeated key of a query, and says
   nothing.
-- **The standard library is still short of the target catalog.** The layout has landed, with `flex`,
-  `stack`, `shell` and `dialog`. The `imp/std/shell` group of regions has landed. The form layer has
-  landed. `tag` and `breadcrumbs` have landed. But there is still no table, and no data grid. There
-  is no toast, no tooltip, no popover, no card, no comboBox and no datePicker. The stated target is
-  a dashboard, CRUD and an internal tool. Nobody can assemble those from the catalog yet.
-  `todo/stdlib-components.md` tracks that in detail. It is listed here because it is the practical
-  blocker that a team meets first.
 - **imp enforces the accessibility baseline per component, and not automatically.** A test of a
   component asserts the role, the name and the operability from a keyboard. But neither `imp lint`
   nor `imp test` runs an automated audit of accessibility, over a rendered app. So a regression at
@@ -150,18 +127,17 @@ block a procurement, in place of being a preference.
   `adr/binary-distribution.md`, and CI builds no binary for Windows. That excludes many teams
   completely.
 - **A sealed CI system has no documented path.** imp downloads the e2e browser on first use, and
-  verifies its checksum, see `cli/src/test-browser.js`. That is correct. But there is no documented
-  mirror, and no override of the cache, for a CI environment that has no network, or that restricts
-  its outbound traffic.
+  verifies its checksum, see `cli/src/test-browser.js`. `test.browser` and `IMP_BROWSER` point at a
+  browser that is already there. But there is no documented mirror, and no override of the cache
+  folder, for a CI environment that has no network, or that restricts its outbound traffic.
 
 ## The suggested order
 
 Do the source maps, and the global seam for an error and for a log, first. Together they make a live
-app possible to debug. Then do the CSP, the hash on an entry file, and the two changes of one line,
-which are the checksum in `install.sh`, and the escaping in `envInjectionScript`. Then do the
-benchmark for the state, before `table` lands. Then harden the URLs in the router. Then write the
-ADR about the scope with no SSR, and the metadata per route. The policy about stability at 1.0, and
-a Windows target, are the items that decide whether a team can adopt imp at all. The rest decide
+app possible to debug. Then do the CSP, the hash on an entry file, and the change of one line, which
+is the escaping in `envInjectionScript`. Then harden the URLs in the router. Then write the ADR
+about the scope with no SSR, and the metadata per route. The policy about stability at 1.0, and a
+Windows target, are the items that decide whether a team can adopt imp at all. The rest decide
 whether the app holds up after they adopt it.
 
 ## ADR impact

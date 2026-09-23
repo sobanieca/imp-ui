@@ -32,6 +32,10 @@ cannot drift in colour or type, only in layout.
 ## Open questions
 
 - **Versioned documentation.** Does imp publish the documentation per version, or the latest only?
-- **Where the site is hosted, and what builds it.** `deno task site:build` writes `site/dist/`, and
-  `IMP_SITE_URL` names the public origin for the canonical links and the sitemap. Nothing publishes
-  it yet.
+- **Where the site is hosted, and what builds it.** The site assumes GitHub Pages. The install
+  command on the overview page, and in `docs/cli.md`, fetches `install.sh` from
+  `https://sobanieca.github.io/imp-ui`, and the build copies the script into `site/dist/`. Set
+  `IMP_SITE_URL` to another origin, and the command follows it. Nothing publishes the site yet. A
+  workflow must run `deno task site:build` and upload `site/dist/`. The pages link their assets from
+  the root, as `/site.css`, so the site needs its own origin: a custom domain, or the root site of
+  the account. A project site under `/imp-ui/` breaks those links.

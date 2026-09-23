@@ -4,7 +4,7 @@ view after Theme editor: theme (aria-pressed true)
 panel background: the surface of the theme, #fcfdff
 editor mounted in the panel: imp-theme-editor
 knobs in the panel: none
-tokens editor shows: 62 tokens, primary #2563eb
+tokens editor shows: 63 tokens, primary #2563eb
 after editing the JSON: surface #fff7ed, primary #0f766e
 surface while the JSON is broken: #fff7ed
 draft stored under: imp.theme-draft.imp-light

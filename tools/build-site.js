@@ -7,6 +7,16 @@ import { languageNameOf } from '../lib/src/std/display/code-languages.js'
 import { tokenizeLines } from '../lib/src/std/display/code-tokens.js'
 import { tokenNodes, tokenStyles } from '../lib/src/std/display/code-css.js'
 import { luMoon, luSun } from '../lib/src/icons/lucide-icons.js'
+import {
+  overviewScript,
+  overviewStyles,
+  renderInstall,
+  renderNotice,
+  renderTour,
+  renderWorkflow,
+} from './build-overview.js'
+import { slides } from '../site/content/slides.js'
+import { steps, stepsNote } from '../site/content/steps.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
 const DOCS = join(ROOT, 'docs')
@@ -15,6 +25,8 @@ const DIST = join(SITE, 'dist')
 const OVERVIEW = join(SITE, 'content', 'overview.md')
 const FONTS = join(ROOT, 'lib', 'src', 'public', 'fonts')
 const ORIGIN = Deno.env.get('IMP_SITE_URL')?.replace(/\/$/, '') ?? null
+const INSTALL_ORIGIN = ORIGIN ?? 'https://sobanieca.github.io/imp-ui'
+const INSTALL_SCRIPT = join(ROOT, 'install.sh')
 
 const SCHEME_STORAGE_KEY = 'imp.site.scheme'
 const SCHEMES = ['light', 'dark']
@@ -65,6 +77,13 @@ const DOC_LINK = /^([\w-]+)\.md(#.*)?$/
 const DESCRIPTION_LIMIT = 160
 const FLAGS_GLOBAL = /__IMP_FLAGS__/g
 const SECTION_START = /(?=<h2 )/
+const INSTALL_SLOT = '<!-- install -->'
+const NOTICE_SLOT = '<!-- notice -->'
+const OVERVIEW_SLOT = /^<!-- (tour|workflow) -->$/m
+const OVERVIEW_BLOCKS = {
+  tour: () => renderTour(slides, highlight),
+  workflow: () => renderWorkflow(steps, stepsNote),
+}
 
 const escape = (text) =>
   String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;')
@@ -146,18 +165,29 @@ const renderDocs = async () => {
   return pages
 }
 
-const wrapOverview = (html) => {
-  const [hero, ...sections] = html.split(SECTION_START)
-  return [
-    `<div class="hero">${hero}</div>`,
-    ...sections.map((section) => `<section class="section">${section}</section>`),
-  ].join('')
+const wrapOverview = (html, withHero) => {
+  const chunks = html.split(SECTION_START)
+  return chunks.map((chunk, index) =>
+    withHero && index === 0
+      ? `<div class="hero">${
+        chunk.replace(NOTICE_SLOT, renderNotice()).replace(
+          INSTALL_SLOT,
+          renderInstall(INSTALL_ORIGIN),
+        )
+      }</div>`
+      : `<section class="section">${chunk}</section>`
+  ).join('')
 }
 
 const renderOverview = async () => {
   const markdown = await Deno.readTextFile(OVERVIEW)
-  const html = marked.parse(markdown)
-  return { description: readDescription(html), html: wrapOverview(html) }
+  const parts = markdown.split(OVERVIEW_SLOT)
+  const html = parts.map((part, index) => {
+    if (index % 2 === 1) return OVERVIEW_BLOCKS[part]()
+    if (part.trim() === '') return ''
+    return wrapOverview(marked.parse(part), index === 0)
+  }).join('')
+  return { description: readDescription(marked.parse(parts[0])), html }
 }
 
 const readVersion = async () => JSON.parse(await Deno.readTextFile(join(ROOT, 'deno.json'))).version
@@ -357,6 +387,7 @@ ${markdownStyles}
   font-size: inherit;
 }
 ${tokenStyles()}
+${overviewStyles}
 .overview {
   box-sizing: border-box;
   max-inline-size: 1040px;
@@ -628,6 +659,7 @@ const pagesOf = ({ docs, overview }) => [
     title: 'imp - the complete UI toolkit',
     description: overview.description,
     main: `<article class="overview md">${overview.html}</article>`,
+    scripts: ['/overview.js'],
   },
   {
     route: 'components',
@@ -714,6 +746,8 @@ for (const page of pages) {
 }
 await Deno.writeTextFile(join(DIST, 'site.css'), stylesheet())
 await Deno.writeTextFile(join(DIST, 'site.js'), clientScript())
+await Deno.writeTextFile(join(DIST, 'overview.js'), overviewScript())
+await Deno.copyFile(INSTALL_SCRIPT, join(DIST, 'install.sh'))
 for (const [from, to] of COPIES) await Deno.copyFile(join(ROOT, from), join(DIST, to))
 await Deno.mkdir(join(DIST, 'fonts'))
 for await (const { name } of Deno.readDir(FONTS)) {

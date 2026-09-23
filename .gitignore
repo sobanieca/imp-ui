@@ -153,3 +153,6 @@ cli/src/vendor/
 # imp working directory (dev server logs, test failure screenshots, recorded videos)
 .imp/
 
+
+# performance results (deno task perf)
+perf/results/

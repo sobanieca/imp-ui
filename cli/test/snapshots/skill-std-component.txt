@@ -18,7 +18,7 @@ The call shape is `button(props?, ...children)`. When a props object is present,
 | `variant`       | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                                  |
 | `size`          | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                                     |
 | `disabled`      | boolean, or a state holding one - **live**                | `false`     | Blocks interaction                                        |
-| `loading`       | boolean, or a state holding one - **live**                | `false`     | Shows a spinner, disables the button, sets `aria-busy`    |
+| `loading`       | boolean, or a state holding one - **live**                | `false`     | Shows the loader, disables the button, sets `aria-busy`   |
 | `block`         | boolean                                                   | `false`     | Fills the width of its container                          |
 | `square`        | boolean                                                   | `false`     | Equal padding on both axes - for an icon-only control     |
 | `label`         | string, or a state holding one - **live**                 | -           | `aria-label` on the button - names an icon-only one       |

@@ -112,10 +112,10 @@ div({ class: theme }) // live prop
 Call `each` on a state that holds an array. **With no key**, imp rebuilds the list on every set.
 That is acceptable for a short list that only displays data. **With a key**, an unchanged item keeps
 its exact DOM, which includes typed text, focus, scroll position and the state of a mounted
-component. imp renders a changed item again, and moves an element when the order changes. A key must
-be unique and stable. Use an `id` from your data, never the array index. Derive the DOM of an item
-from the item, not from `index`. For a value that is not an array, imp logs an error and renders
-nothing. A `null` or `undefined` value renders an empty list.
+component. imp renders a changed item again, and moves only the elements that are out of order. A
+key must be unique and stable. Use an `id` from your data, never the array index. Derive the DOM of
+an item from the item, not from `index`. For a value that is not an array, imp logs an error and
+renders nothing. A `null` or `undefined` value renders an empty list.
 
 A `view` or `each` render function can nest more bindings. Each rebuild releases the previous
 bindings. A `watch` inside a render function is not a binding. `watch(self, fn)` there ends with the

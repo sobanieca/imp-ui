@@ -57,21 +57,21 @@ section(
 button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save changes')
 ```
 
-| Prop            | Values                                                    | Default     | Notes                                       |
-| --------------- | --------------------------------------------------------- | ----------- | ------------------------------------------- |
-| `variant`       | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                    |
-| `size`          | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                       |
-| `disabled`      | boolean - **live**                                        | `false`     | Blocks interaction                          |
-| `loading`       | boolean - **live**                                        | `false`     | Spinner, implies disabled, sets `aria-busy` |
-| `block`         | boolean                                                   | `false`     | Fills its container's width                 |
-| `square`        | boolean                                                   | `false`     | Equal padding both ways, for an icon        |
-| `label`         | string - **live**                                         | -           | `aria-label`, for an icon-only button       |
-| `pressed`       | boolean - **live**                                        | -           | A toggle button, `aria-pressed`             |
-| `expanded`      | boolean - **live**                                        | -           | Paints `aria-expanded`                      |
-| `haspopup`      | `'menu'`, `'listbox'`                                     | -           | Paints `aria-haspopup`                      |
-| `popoverTarget` | an element with `popover`                                 | -           | The button invokes that popover             |
-| `popoverAction` | `'toggle'`, `'show'`, `'hide'`                            | `'toggle'`  | What a click does to `popoverTarget`        |
-| `events`        | event map                                                 | -           | Handlers, as on any element                 |
+| Prop            | Values                                                    | Default     | Notes                                      |
+| --------------- | --------------------------------------------------------- | ----------- | ------------------------------------------ |
+| `variant`       | `'default'`, `'primary'`, `'ghost'`, `'danger'`, `'link'` | `'default'` | Visual weight and intent                   |
+| `size`          | `'sm'`, `'md'`, `'lg'`                                    | `'md'`      | Padding and type size                      |
+| `disabled`      | boolean - **live**                                        | `false`     | Blocks interaction                         |
+| `loading`       | boolean - **live**                                        | `false`     | Loader, implies disabled, sets `aria-busy` |
+| `block`         | boolean                                                   | `false`     | Fills its container's width                |
+| `square`        | boolean                                                   | `false`     | Equal padding both ways, for an icon       |
+| `label`         | string - **live**                                         | -           | `aria-label`, for an icon-only button      |
+| `pressed`       | boolean - **live**                                        | -           | A toggle button, `aria-pressed`            |
+| `expanded`      | boolean - **live**                                        | -           | Paints `aria-expanded`                     |
+| `haspopup`      | `'menu'`, `'listbox'`                                     | -           | Paints `aria-haspopup`                     |
+| `popoverTarget` | an element with `popover`                                 | -           | The button invokes that popover            |
+| `popoverAction` | `'toggle'`, `'show'`, `'hide'`                            | `'toggle'`  | What a click does to `popoverTarget`       |
+| `events`        | event map                                                 | -           | Handlers, as on any element                |
 
 **There is no `type` prop and no submit button.** A button acts on its `click` handler. Submit from
 there. `variant: 'link'` is a button that looks like a link. Use `link` when the target is a place
@@ -1115,8 +1115,9 @@ notice({ client: 'myapp.api' })
 Rules an agent gets wrong:
 
 - **There is no `spinner`, no `statistic` and no `alert`.** A `progress` ring with no `value` is the
-  spinner. A `progress` gauge shows one number of a dashboard. The inline banner is `notice`,
-  because an `alert` import shadows the `alert()` of the browser.
+  spinner, in the shape that the `loader` token of the theme selects. A `progress` gauge shows one
+  number of a dashboard. The inline banner is `notice`, because an `alert` import shadows the
+  `alert()` of the browser.
 - **`progress` with no `value` has no known value.** The bar slides and the ring spins. `shape` is
   `'bar'`, `'ring'` or `'gauge'`. `value` counts from `0` to `max`, which is `100` by default.
 - **Always pass `label` to `progress`.** It is the accessible name. A bar and a gauge also show it.

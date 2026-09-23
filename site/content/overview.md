@@ -1,48 +1,46 @@
 # One tool. The whole frontend.
 
-imp is a complete UI toolkit. It is the one tool that you learn to ship a valuable frontend
-application. It is not a stack that you assemble from a router, a state library, a bundler, a test
-runner and a formatter. It is one tool that already is all of those.
+imp is a complete UI toolkit in one binary. It is the dev server, the component library, the state,
+the router, the test runner, the linter, the formatter and the bundler. You install one file, and
+you build the app. You assemble nothing, and you connect nothing.
+
+<!-- notice -->
+
+<!-- install -->
 
 [Browse the components](/components) [Read the docs](/docs)
 
-## The workflow that imp is built around
+<!-- tour -->
 
-Every step uses the same tool. You connect nothing.
+<!-- workflow -->
 
-1. **Install the CLI.**
-2. **Run `imp init`.** You get a real app, and it runs.
-3. **Teach the agent about imp.** Point it at `imp skill`. It reads the manual for whatever it is
-   about to use.
-4. **Model the app against a mock.** Build the whole frontend with a false backend, and see it
-   working before one endpoint exists. Review a component in isolation with `imp preview`. Leave
-   feedback on a page with the review widget of the dev server.
-5. **Get the design approved. Then remove the mocks** and implement the backend against a frontend
-   that already works.
-6. **Write the unit tests and the e2e tests with imp.** There is one runner, and it is already
-   there.
-7. **Run `imp build`.** You get a static bundle for any CDN.
+## imp is a boring project, on purpose
 
-The app with the mocked backend is not a prototype that you throw away. It is the app. The loop from
-step 3 to step 5 is also the loop that an AI agent is good at, and that is why imp has this shape.
+imp does not chase the best performance for every edge case. It does not chase the smallest bundle,
+and nobody tuned it to win a benchmark. imp aims to be the correct fit for most applications, and
+good enough where it is not perfect. A boring tool is a tool that you stop thinking about.
 
-## Build your SPA, put it on any CDN, and focus on the backend
+The equation is simple: a backend plus a frontend is an app. imp solves the frontend half of that
+equation, and it stays out of the other half. Work locally. Iterate quickly with mocks and an agent.
+Build a package. Deploy it to any CDN. That is the whole loop, and imp keeps it that short.
 
-The split between a frontend and a backend is the best thing that happened to the industry. A
-frontend stands on its own. A backend serves data. The app reaches the user before the first request
-reaches the backend. The UI is already there, and a person can use it while the data arrives behind
-it.
+## The SPA is the best thing that happened to the industry
 
-The split unlocks real advantages:
+A single-page application stands on its own. It reaches the user before the first request reaches
+the backend. The UI is already there, and a person can use it while the data arrives behind it.
+
+Some companies push a render server into every app, at every request. That is the wrong direction.
+You rent their servers and pay per request to render a page that a browser renders for nothing. imp
+takes the opposite position. Keep the state on the client. Keep the backend stateless, so it scales
+when you add a machine. Serve the frontend from a CDN, with no render server to run and no vendor
+that decides where you host.
+
+The split pays back every day:
 
 - The app works offline.
 - An error is handled on the client, where the person sees it.
 - The state lives on the client, so navigation is instant.
 - An unreliable network slows the data, not the app.
-
-Other companies push the industry back to a render server. You rent their servers and pay per
-request to render a page that a browser renders for nothing. imp takes the opposite position. There
-is no render server to run, no bill per request for HTML, and no vendor that decides where you host.
 
 ## AI changes what "best practice" means
 
@@ -58,17 +56,10 @@ longer exists.
 
 ## What imp is not
 
-imp does not try for the smallest bundle, or for the best raw numbers in a benchmark. Nobody tuned
-it to win those charts.
-
 imp can be the wrong fit for an app. Some products have a constraint that imp deliberately does not
-optimize for. imp aims to be good enough for about 80% of applications, and not perfect for all of
-them.
-
-After you accept the constraints of imp, development with imp and an AI agent is genuinely good. The
-north star of imp is the experience of the developer. You do not fight the tooling, and you do not
-keep a bundler, a router, a state library, a test runner and a formatter in agreement. You build the
-app.
+optimize for. After you accept the constraints of imp, development with imp and an AI agent is
+genuinely good. You do not fight the tooling, and you do not keep a bundler, a router, a state
+library, a test runner and a formatter in agreement. You build the app.
 
 **One constraint as an example.** The layout library is two components. `flex` is a row, `stack` is
 a column, and that is all. There is no grid, no box, and no wrapper with a prop for padding. A
@@ -78,7 +69,7 @@ can read it.
 ```js
 import { component } from 'imp'
 import { div } from 'imp/html'
-import { flex } from 'imp/std/layout'
+import { flex, stack } from 'imp/std/layout'
 
 export const dashboard = component('app-dashboard', {
   styles: `

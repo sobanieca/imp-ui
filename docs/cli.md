@@ -23,7 +23,7 @@ development does, so what you tested is what you ship.
 script detects your platform, downloads the latest binary, and puts it on your `PATH`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sobanieca/imp-ui/main/install.sh | bash
+curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
 ```
 
 The script installs to `/usr/local/bin` by default. To choose another location, set `INSTALL_DIR`.

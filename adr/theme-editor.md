@@ -39,7 +39,7 @@ imports either module. `imp build` never bundles them.
   editor**. It renders the same component in the panel of the widget, with `tokensOnly` set, so the
   panel holds the JSON view and no knobs. A theme starts in the preview, where the knobs derive it
   from two colours against the components in isolation. The app is where a person tunes one token
-  against the real screens, and a JSON edit is that tune. Seven knobs in a panel 340px wide would
+  against the real screens, and a JSON edit is that tune. Eight knobs in a panel 340px wide would
   only push the JSON out of view. The widget reaches the component by a dynamic import of
   `/@imp/theme-editor.js`, the served library module. So the editor runs on the same copy of imp as
   the app, with the same custom elements and the same theme state. The page fetches the module only
@@ -56,15 +56,17 @@ exported files. imp reads light or dark from the surface colour of the map, the 
 every theme, and the derivation uses that. The knobs are a projection of the map. The JSON is the
 map itself.
 
-- **The knobs expose the decision.** There are seven. **primary**, **secondary** and **shadow
+- **The knobs expose the decision.** There are eight. **primary**, **secondary** and **shadow
   colour** are colours. **font** and **mono font** are font stacks, and they are `font-family` and
   `font-family-mono` as written. **border radius** is `none`, `small`, `medium` or `large`.
-  **shadow** is `none`, `soft` or `strong`. Each knob reads its value off the map. The primary is
-  `color-primary`, the radius is the step whose `radius-item` matches, and so on. A knob writes the
-  tokens that it drives, and no other. The primary writes `color-primary` and `color-on-primary`.
-  The secondary writes `color-secondary`, the text, the surfaces and the border. A font writes its
-  one token. The radius and the shadow write their scale. The shadow colour writes `color-shadow`,
-  and every shadow step reads it, so a step never changes with the colour.
+  **shadow** is `none`, `soft` or `strong`. **loader** is `spinner`, `dots`, `bar` or `pulse`, see
+  `loader-shape-theme-token.md`, and a live sample of the loader stands beside it, in the primary
+  colour. Each knob reads its value off the map. The primary is `color-primary`, the radius is the
+  step whose `radius-item` matches, and so on. A knob writes the tokens that it drives, and no
+  other. The primary writes `color-primary` and `color-on-primary`. The secondary writes
+  `color-secondary`, the text, the surfaces and the border. A font writes its one token. The radius
+  and the shadow write their scale. The loader writes `loader`. The shadow colour writes
+  `color-shadow`, and every shadow step reads it, so a step never changes with the colour.
 - **The JSON exposes the data.** On the second tab, a `codeEditor` holds the map as JSON, see
   `code-editor-textarea-mirror.md`. Its `rows` follow the line count, so it grows with the text. The
   drawer around it is then the only thing that scrolls. A fixed-height editor inside a scrolling
@@ -115,9 +117,9 @@ that the built-in themes call, see `themable-by-default-tokens.md`. So what a kn
 
 ## Consequences
 
-- To write a theme, a person selects two colours, two fonts and two steps, tunes any token by hand,
-  and presses copy. The result is source in the repository of the app, and a reviewer can read it.
-  It is not state in a browser.
+- To write a theme, a person selects two colours, two fonts and three steps, tunes any token by
+  hand, and presses copy. The result is source in the repository of the app, and a reviewer can read
+  it. It is not state in a browser.
 - There is one editor and one draft model. A change to the JSON view or to the export appears in the
   preview and in the widget at once. A knob appears in the preview alone. There is one live preview
   of the standard components, and the site gets it by an embed of `imp preview`. The app is the

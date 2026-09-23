@@ -7,6 +7,7 @@
     "preview": "deno task compile && cd lib/src && ../../imp preview",
     "logs": "deno task compile && cd lib/src && ../../imp logs",
     "lint:lib": "deno task compile && cd lib/src && ../../imp lint",
+    "perf": "deno task compile && deno run -A perf/run.js",
     "site:build": "deno run -A tools/build-site.js && deno task compile && cd lib/src && ../../imp preview --output ../../site/dist/gallery",
     "site": "deno task site:build && deno run -A tools/serve-site.js",
     "start": "deno task compile && cd examples/shell && ../../imp start",

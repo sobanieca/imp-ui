@@ -28,8 +28,12 @@ after the person leaves the control, as in every other control.
   and selection keep their colour. So the person types into the real control, and they see the
   mirror through it. On every `input` the mirror is rendered again, and on every `scroll` it takes
   the scroll offsets of the textarea. The textarea is the scroll container, so the browser reveals
-  the caret by itself, and the mirror clips to the same box. This is the one thing that imp writes
-  in JavaScript here, and it paints. It handles no input.
+  the caret by itself. The mirror is a scroll container too, with the same `overflow: auto` and the
+  same content, and it takes no pointer event. A classic scrollbar then takes the same gutter in
+  both boxes, and the two scroll ranges are equal. A mirror that only clipped would be 15px taller
+  than the textarea as soon as a long line put a horizontal scrollbar there, and the last rows would
+  sit one row under the caret. This is the one thing that imp writes in JavaScript here, and it
+  paints. It handles no input.
 - **One rule set gives the mirror and the textarea their metrics.** The code view holds the font,
   the size, the line height, the tab size and both insets, and it names the `textarea` in the same
   rule as the mirror. A style that reached only one of the two would misplace every coloured token

@@ -43,10 +43,15 @@ obtains that state with `useState(self, name)`. `self` is the per-mount handle o
   `view`. With a key function, an item that did not change structurally keeps its DOM. That is the
   comparison of `component-moves-rebind.md`. imp renders a changed item again, on its own. It
   disposes of the nested bindings of an item that somebody removed. On a reorder it moves the
-  existing nodes with `moveBefore`, so the platform keeps the focus and the state of an animation. A
-  new node arrives through `insertBefore`. imp reports a duplicate key, and a value that is not an
-  array, and renders defensively. A duplicate key becomes an independent item, and a value that is
-  not an array becomes an empty region. `null` and `undefined` count as an empty array.
+  existing nodes with `moveBefore`, so the platform keeps the focus and the state of an animation.
+  It moves only the items that are out of order. The items that already stand in a rising sequence
+  of their previous positions, the longest such sequence, stay where they are. So a swap of two
+  items moves two nodes, and not the whole list. Each move of a component host makes it resolve its
+  states again, and the browser lays out every moved node again, so the count of moves is the cost
+  of a reorder. A new node arrives through `insertBefore`. imp reports a duplicate key, and a value
+  that is not an array, and renders defensively. A duplicate key becomes an independent item, and a
+  value that is not an array becomes an empty region. `null` and `undefined` count as an empty
+  array.
 
 **A prop value with the shape of a state is a live binding.** An element factory extends the
 dispatch by type, see `type-based-argument-dispatch.md`, to a prop value. A value with a `get`

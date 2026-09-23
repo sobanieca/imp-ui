@@ -45,6 +45,7 @@ These are the conventions:
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [themable-by-default-tokens](themable-by-default-tokens.md) | Themes are plain token modules applied with `applyTheme` - `--imp-*` vars on :root |
 | [theme-editor](theme-editor.md)                             | One theme editor, in imp preview and in the dev widget, exports a plain theme file |
+| [loader-shape-theme-token](loader-shape-theme-token.md)     | One shared loader, drawn in CSS; the `loader` token selects its shape              |
 | [imp-design-system](imp-design-system.md)                   | One design system for the surfaces that imp owns: imp preview and the home page    |
 
 ## Internationalization
