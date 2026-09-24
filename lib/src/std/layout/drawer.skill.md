@@ -76,8 +76,10 @@ Rules an agent gets wrong:
   region for it, because a panel that comes and goes is an overlay, not a column.
 - **Do not animate the drawer yourself.** It slides in from its edge and slides back out. It obeys
   `prefers-reduced-motion`. Every imp overlay shares this animation.
-- **The platform owns the focus.** The pin button is the first element in the drawer, so the focus
-  lands there. On close, the focus returns to the element that had it before the drawer opened.
+- **The platform owns the focus.** In a modal drawer, the pin button is the first element, so the
+  focus lands there. A non-modal drawer takes the focus on its panel, so a screen reader announces
+  the title, and Tab reaches the close button next. On close, the focus returns to the element that
+  had it before the drawer opened.
 - **`background` is one DOM node under the panel.** imp stretches it to the panel, clips it to the
   corners of the panel, and hides it from assistive technology. Use it for an image or an animation
   that CSS cannot draw. Put nothing interactive in it. The panel still paints `color-surface`, so a

@@ -11,7 +11,7 @@ imp owns the accessibility contract of that library.
 
 A correct ARIA role, the management of the focus, and the interaction with a keyboard, are exactly
 the cross-cutting plumbing that is easy to get wrong, and that imp exists to absorb. imp assumes
-that an AI agent writes the app code. An agent that composes `modal`, `tabs` and `menuList` must
+that an AI agent writes the app code. An agent that composes `dialog`, `tabs` and `menuButton` must
 inherit a story about accessibility that works, from the components. Nobody must expect that agent
 to remember every detail of the ARIA authoring practices, at each call site. To put the baseline
 into the standard library means that every app gets it, with no work, and in a consistent way.
@@ -23,11 +23,11 @@ question about an accessibility baseline, which `todo/stdlib-components.md` leav
 
 - **Semantic roles.** Prefer a native element, such as `button`, `a[href]`, `input` and `<dialog>`.
   Then the roles and the states come from the platform. Add an ARIA role only where no native
-  element fits, as in `tabs`, `tree` and `menuList`.
+  element fits, as in `tabs`, `tree` and `menuButton`.
 - **Operability from a keyboard.** Every interaction that a pointer can reach, a keyboard can reach.
   That covers the order of Tab and Shift-Tab, the activation with Enter and Space, navigation with
   an arrow key in a composite widget, and Escape to dismiss an overlay. The composite widgets are
-  `tabs`, `radioGroup`, `menuList` and `tree`.
+  `tabs`, `radioGroup`, `menuButton`, `comboBox` and `tree`.
 - **Management of the focus.** A modal overlay traps the focus while it is open. It restores the
   focus to the element that invoked it, on close. It opens with the focus moved into it. That covers
   `dialog({ modal: true })` and `drawer`. Nobody writes any of that per component, and imp shares
@@ -53,13 +53,37 @@ question about an accessibility baseline, which `todo/stdlib-components.md` leav
 Some concerns about accessibility live below the layer of the components, and they pair with another
 item:
 
-- **The focus and the scroll on a route change.** The router already sets the scroll to the top on a
-  forward navigation, see `adr/client-side-router.md`. The remaining gap in accessibility is to move
-  the focus to the new view, on a navigation. A change of route with no move of the focus leaves a
-  user of a keyboard, and a user of a screen reader, on the old page.
-- **An announcement through a live region**, for a change of route, and for the feedback of a toast
-  or an alert. So assistive technology learns what changed, and it does not need the cue of a full
-  page reload.
+- **The focus and the announcement on a route change belong to the app.** The router sets the scroll
+  to the top on a forward navigation, and leaves the focus alone, see `adr/client-side-router.md`.
+  Only a screen knows whether a navigation must take the focus. The routing docs and the routing
+  skill show the one component that does it for every screen: a wrapper with `tabindex="-1"` around
+  the router slot, focused on a change of the path, and a visually hidden `role="status"` node that
+  reads the new `document.title`. imp ships no such component, so an app that wants the behaviour
+  writes those twenty lines.
+- **A toast and a notice announce themselves.** `toast` keeps a `status` and an `alert` live region,
+  and `notice` is one, so assistive technology learns about feedback with no work in the app.
+
+## What the e2e suite verifies today
+
+Two spec files in `lib/test` hold the accessibility baseline of the standard library.
+`accessibility.spec.js` reads the accessibility tree of the browser, through
+`page.accessibility.snapshot`, and asserts what a screen reader gets: the name of every control in a
+showcase, the roles and the states of `tabs`, `radioGroup`, `toggle`, `slider`, `progress`,
+`notice`, `toast`, `table`, `chart`, `menuButton` and `shell`, the description of an invalid field,
+the focus ring under keyboard focus only, the overlay with no transition under reduced motion, and
+the border of a control under forced colours. `keyboard.spec.js` drives the composite widgets and
+the overlays from the keyboard alone: `tabs` in both directions, `radioGroup`, `comboBox`, `tree`,
+`accordion`, `menuButton`, the modal `dialog`, `drawer`, the movable window, the skip link of
+`shell` and the focus after a failed submit of `form`. Add a case to those files when a component
+gains a role, a state or a key.
+
+## Known gaps
+
+- A click on an empty column of `calendar` creates a slot at that time. From the keyboard, the day
+  button creates an all-day slot, and the person sets the time in the editor of the app. A slot at a
+  chosen time has no keyboard path.
+- `tooltip` is hidden from assistive technology and is not linked to its control. So its text never
+  reaches a screen reader, which is fine only while the control carries its own name.
 
 ## Lint and verification, later
 
@@ -77,8 +101,9 @@ is an open question.
   library, and do not add it afterwards. So every component ships accessible, from its first
   version.
 - The wiring of a state binds to the state layer that landed, see `adr/event-propagated-state.md`.
-  An indicator of the focus uses a theme token, see `adr/themable-by-default-tokens.md`. The
-  management of the focus on a route change builds on the router, see `adr/client-side-router.md`.
+  An indicator of the focus uses a theme token, see `adr/themable-by-default-tokens.md`. The routing
+  docs describe the management of the focus on a route change, and it builds on `useRoute()`, see
+  `adr/client-side-router.md`.
 - A label, and an announcement, route a user-facing string through `t()`, see
   `adr/translatable-by-default.md`, like the rest of the standard library.
 
@@ -88,17 +113,18 @@ Record an ADR named `accessible-by-default-stdlib.md`. It states the accessibili
 every standard component meets. That covers native elements first for a role, operability from a
 keyboard, management of the focus through the top layer, an ARIA state bound to a signal, the rules
 about a label, a visible focus from a token, and reduced motion. It also states the deliberate
-boundary of the scope. imp guarantees a baseline for its own components, and it guarantees the focus
-on a route change at app level. imp does not audit arbitrary markup of an app, beyond a few lint
-checks. Update the table of ADRs in `adr/README.md`. Document the guarantees about accessibility in
-`docs/`. When somebody accepts the ADR, remove the open question about an accessibility baseline
-from the item about the standard library, because this ADR answers it.
+boundary of the scope. imp guarantees a baseline for its own components. The focus on a route change
+belongs to the app, and the routing docs show how. imp does not audit arbitrary markup of an app,
+beyond a few lint checks. Update the table of ADRs in `adr/README.md`. Document the guarantees about
+accessibility in `docs/`. When somebody accepts the ADR, remove the open question about an
+accessibility baseline from the item about the standard library, because this ADR answers it.
 
 ## Open questions
 
-- **An automated audit in `imp test`.** Does imp run a check in the style of axe-core, over a
-  rendered component, in the e2e path? Does an auditor in pure JavaScript, or a vendored auditor,
-  exist that fits the constraints about running in process, see `adr/in-process-toolchain.md`?
+- **An automated audit in `imp test`.** The e2e suite walks the accessibility tree of the browser
+  and reports every control with no name. Does imp ship that walk as a matcher of `imp/test`, so an
+  app can run it over its own pages? Does a wider check in the style of axe-core, in pure
+  JavaScript, fit the constraints about running in process, see `adr/in-process-toolchain.md`?
 - **How much is configurable.** Is the behaviour of the focus trap, and of an announcement, a fixed
   default? Or can an app tune it with a prop?
 - **The coverage of a screen reader.** Which combinations of assistive technology and browser define

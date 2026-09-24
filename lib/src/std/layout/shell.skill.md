@@ -179,9 +179,10 @@ Rules an agent gets wrong:
 - **`navOpen` is optional.** Without it, the shell owns the drawer state. Pass a **writable** state,
   never a `computed`, when the app must drive the drawer.
 - **The shell renders the `<nav>` landmarks itself**, named from the `label` of each level. It also
-  renders `<header>` and `<main>`. It is `100dvb` tall, and it scrolls each region on its own. The
-  main region is a column flex box. A child with `flex: 1` and `min-block-size: 0` takes the height
-  that the trail leaves, and can scroll on its own inside the region.
+  renders `<header>` and `<main>`, and a skip link as the first tab stop, hidden until it takes the
+  focus. Its text is `imp.shell.skip`. It is `100dvb` tall, and it scrolls each region on its own.
+  The main region is a column flex box. A child with `flex: 1` and `min-block-size: 0` takes the
+  height that the trail leaves, and can scroll on its own inside the region.
 
 ```js
 shell(

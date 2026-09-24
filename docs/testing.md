@@ -462,6 +462,34 @@ component boundary:
 await page.click('imp-submit-button >>> imp-button >>> button')
 ```
 
+### How to check what a screen reader gets
+
+A test of accessibility reads the accessibility tree of the browser, not the DOM. The browser
+computes that tree from every shadow root at once, with the name, the role and the state of each
+element, in the same way that a screen reader reads it. Ask the page for a snapshot below one
+element:
+
+```js
+test('the checkout form names every field', async ({ page }) => {
+  const root = await page.$('#checkout')
+  const tree = await page.accessibility.snapshot({ root, interestingOnly: false })
+  const controls = []
+  const walk = (node) => {
+    if (['textbox', 'combobox', 'checkbox'].includes(node.role)) controls.push(node)
+    for (const child of node.children ?? []) walk(child)
+  }
+  walk(tree)
+  expect(controls.map((node) => node.name)).toEqual(['Email', 'Country', 'I accept the terms'])
+})
+```
+
+A node carries `role`, `name`, and a state such as `checked`, `selected`, `expanded`, `disabled`,
+`invalid`, `description` or `value`. So one snapshot tells you that a tab is selected, that a switch
+is on, or that an invalid field describes its error. Pass `interestingOnly: false`, because the
+default prunes a container such as a `tablist`, a `group`, an `alert` or a `status`. The standard
+components ship with such tests, so a name, a role and a keyboard path are a guarantee of imp, and
+not a habit of each app.
+
 While a spec runs, the browser stays connected to your terminal, as it does with `imp start`.
 `console.*`, an uncaught error, and every network request arrive as a `[browser:*]` line and a
 `[net]` line. So a failing spec comes with the context that explains it. When a test fails, imp also

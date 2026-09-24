@@ -25,21 +25,22 @@ skill link retargeted: The count lives in the demo.count state, see state (imp s
 after setting demo.count to 42: 42
 invalid JSON rejected: true
 language options: en, pl, ar
-direction options: auto, ltr, rtl
+direction options: auto, ltr, rtl (every item has an icon: true)
 app + imp words in en: Total/Cancel
 app + imp words in pl: Razem/Anuluj
 app + imp words in ar: الإجمالي/إلغاء
 lang/dir/stage after picking ar: ar/rtl/rtl
 chrome direction while previewing ar: ltr
 lang/dir/stage after pinning ltr: ar/ltr/ltr
-lang/dir/stage back on auto: ar/rtl/rtl
+direction, lang/dir/stage after one step: rtl ar/rtl/rtl
+direction, lang/dir/stage after one more step: auto ar/rtl/rtl
 lang/dir/stage back on en: en/ltr/ltr
 theme options: brand, imp-dark, imp-light, imp-high-contrast-light, imp-high-contrast-dark (selected brand, every item has an icon: true)
 theme after one step from imp-dark: imp-light
 imp-dark surface token: #161719
 imp-dark font token, from the theme file that replaces it: Prompt, sans-serif
 brand surface token: #fdf7ff
-theme editor knobs: Primary, Secondary, Font, Mono font, Border radius, Shadow, Shadow colour, Loader
+theme editor knobs: Primary (imp-color-picker), Secondary (imp-color-picker), Font (imp-combo-box), Mono font (imp-combo-box), Border radius (imp-segmented), Shadow (imp-segmented), Shadow colour (imp-color-picker), Loader (imp-segmented)
 after picking a primary: #8821ac (on-primary #ffffff)
 after picking radius none: 0px
 after picking a shadow colour: #ff0000
@@ -54,6 +55,7 @@ page head description: <p>A number with a <strong>plus</strong> button.</p> <ul>
 index headline: Components - 2 previews in 2 groups.
 index cards: Widgets 1 -> /widgets | components 1 -> /components
 group headline: Widgets
+group description: Small <strong>stateful</strong> widgets. Each one keeps its count in a state.
 group cards: Counter (zero)
 group card specimen is inert: true, shows 0, links to /widgets/counter
 group title: imp preview - Widgets

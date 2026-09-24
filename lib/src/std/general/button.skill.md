@@ -34,6 +34,8 @@ Rules an agent gets wrong:
 - **A live prop takes the state itself, not its value.** Write `disabled: saving`, never
   `disabled: saving.get()`. The second form freezes at the value read during mount.
 - **The button has no outer margin.** Spacing between buttons belongs to whatever lays them out.
+- **An icon next to text needs no wrapper.** Pass the icon and the text as children. The button
+  centres them on one line and puts the standard gap between them.
 - The accessible name is the content of the button. An icon-only button needs `label`. There is no
   `aria-label` prop, and imp warns that it is unknown.
 - **`pressed` makes a toggle button, and the same `<button>` stays.** With `pressed`, a click flips
@@ -64,6 +66,7 @@ button({ variant: 'primary', loading: sending, events: { click: send } }, 'Send'
 button({ variant: 'danger', size: 'sm', events: { click: remove } }, 'Delete')
 button({ block: true, events: { click: next } }, 'Continue')
 button({ variant: 'link', events: { click: showDetails } }, 'What is this?')
+button({ variant: 'ghost', size: 'sm' }, icon(luCode, { size: 'sm' }), 'Code example')
 
 const showingCode = initState(self, 'panel.code', false)
 button({ variant: 'ghost', square: true, label: 'Show code', pressed: showingCode }, icon(luCode))

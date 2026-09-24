@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-styles-child)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/styles-stop-at-child]: '.hint' is a class of the styles of this component, on an element passed as a child of 'stack', and the styles of a component reach only its own shadow root - give the element its own component, use a standard component, or set an inline style
+ --> app.js:14:29
+
+error[imp/styles-stop-at-child]: '.usage' is a class of the styles of this component, on an element passed as a child of 'stack', and the styles of a component reach only its own shadow root - give the element its own component, use a standard component, or set an inline style
+ --> app.js:17:38
+
+error[imp/styles-stop-at-child]: '.usage' is a class of the styles of this component, on an element passed as a child of 'card', and the styles of a component reach only its own shadow root - give the element its own component, use a standard component, or set an inline style
+ --> app.js:18:44
+
+Found 3 problems
+Checked 1 file

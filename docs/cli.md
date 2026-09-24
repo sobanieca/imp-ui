@@ -345,9 +345,10 @@ by kind and by outcome. It starts on **Fetch**, a request that your code made wi
 `XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
 font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and
 the level or the status of a row carries the same colour. The page keeps the last 2000 entries, and
-a reload starts the list again. The terminal and `imp logs` keep the whole session. The views give a
-glance, not a debugger. For a stack trace, a request body or a timing chart, open the developer
-tools of the browser.
+a reload starts the list again. The bin button beside the title empties the view, so the next line
+stands alone. It clears the page only. The terminal and `imp logs` keep the whole session. The views
+give a glance, not a debugger. For a stack trace, a request body or a timing chart, open the
+developer tools of the browser.
 
 **Theme editor** opens the **Tokens** view of the editor that `imp preview` has, in the panel of the
 widget, for the theme that your app applied. It shows the whole theme as JSON. Edit any token, and
@@ -1008,9 +1009,10 @@ under `inputs`. That is readable, but not what you would say out loud.
 
 ### The description
 
-The `description` is written for a person who opens the page. It is markdown, so it can carry a
-list, a link, a bold word and inline code. Write more than a sentence with a template literal. imp
-removes the indentation, so the text lines up with your code:
+The `description` is written for a person who opens the page. imp shows it under the title of the
+component, above the scenario tabs. It is markdown, so it can carry a list, a link, a bold word and
+inline code. Write more than a sentence with a template literal. imp removes the indentation, so the
+text lines up with your code:
 
 ```js
 export const description = `
@@ -1033,7 +1035,7 @@ The grouping comes from `group`, not from the folder. You can organize the catal
 you talk about the components, not in the way that the files happen to sit. Two files in different
 folders that declare the same `group` are listed together.
 
-### Groups and their icons
+### Groups, their icons and their descriptions
 
 The catalog at the side lists one row per group, with the components under it. By default a
 component belongs to the folder that holds its preview file. Every group has a folder icon, and the
@@ -1050,17 +1052,23 @@ order, point `preview.groups` in `imp.json` at a module of yours:
 import { luLayoutGrid, luTextCursorInput } from 'imp/icons'
 
 export const groups = {
-  widgets: { name: 'Widgets', icon: luLayoutGrid },
+  widgets: {
+    name: 'Widgets',
+    icon: luLayoutGrid,
+    description: 'Small **stateful** widgets. Each one keeps its count in a state.',
+  },
   inputs: { name: 'Inputs', icon: luTextCursorInput },
 }
 ```
 
 The module exports an object named `groups`, with one key per group. `name` is the label of the
 group in the catalog. `icon` is an icon from `imp/icons`, the same value that you give to the `icon`
-component. `priority` is an optional number. A group with a priority comes before every group
-without one, and a lower number comes first. So `priority: 1` puts a group at the top, whatever its
-place in the object. A preview file then imports the object, and exports one of its entries as
-`group`:
+component. `description` is optional markdown for a person. A click on the group name in the catalog
+opens the page of the group, with a card per component. The description is under the title of that
+page, so it says what the group holds and when to reach for it. `priority` is an optional number. A
+group with a priority comes before every group without one, and a lower number comes first. So
+`priority: 1` puts a group at the top, whatever its place in the object. A preview file then imports
+the object, and exports one of its entries as `group`:
 
 ```js
 import { groups } from '../preview-groups.js'
@@ -1197,13 +1205,14 @@ on a theme. See **[Theming](theming.md)**.
 **Tokens** view of the same editor on a page of your app. It edits the theme that the theme button
 selected, and starts from the tokens of that theme. Select a dark theme to write a dark one. It asks
 for a **primary** colour and a **secondary** colour, a **font** and a **mono font**, a **border
-radius** step, a **shadow** step and a **shadow colour**. It derives every other colour token from
-the two base colours: a readable on-primary colour, and the surfaces, the borders and the text,
-which share the hue of the secondary colour. Those knobs sit on the **Knobs** tab. The **Tokens**
-tab holds the whole theme as JSON. Edit any value there, and the page re-skins as soon as the JSON
-parses. A token that has no knob, such as `background-app`, a font weight or a spacing step, starts
-as the selected theme sets it, and the exported file carries it too. A knob rewrites the tokens that
-it drives, and leaves the rest as you set them.
+radius** step, a **shadow** step and a **shadow colour**. A colour has a picker beside its hex
+value. A font is a list of suggestions that accepts any font stack. A step is a row of buttons. It
+derives every other colour token from the two base colours: a readable on-primary colour, and the
+surfaces, the borders and the text, which share the hue of the secondary colour. Those knobs sit on
+the **Knobs** tab. The **Tokens** tab holds the whole theme as JSON. Edit any value there, and the
+page re-skins as soon as the JSON parses. A token that has no knob, such as `background-app`, a font
+weight or a spacing step, starts as the selected theme sets it, and the exported file carries it
+too. A knob rewrites the tokens that it drives, and leaves the rest as you set them.
 
 The page re-skins while you type, on real components. imp remembers your choices per theme, across a
 reload. The draft belongs to the name of the applied theme, so the same draft follows that theme
@@ -1261,7 +1270,7 @@ every link of the entry page as a root-relative path or as a full URL. A path su
 
 ### Language and text direction
 
-Beside the theme button are a **language** picker and a **direction** picker, so you can see a
+Beside the theme button are a **language** picker and a **direction** button, so you can see a
 component as a reader of another language sees it, and change no line of code. imp remembers both
 choices across a reload.
 
@@ -1279,12 +1288,14 @@ files are, under `preview.translations`:
 Each path is a module that default-exports your messages. It is the same file that your app passes
 to `init`. imp selects the first one by default, so a preview opens with the wording of your app. An
 edit to a translation file reloads the page with the new wording. Declare none, and imp leaves the
-picker out. The direction picker still works.
+picker out. The direction button still works.
 
-The direction picker has three settings. **auto** takes the direction from the language, which is
-what your app does. Select Arabic or Hebrew, and the component lays out from right to left. **ltr**
-and **rtl** pin the direction, so you can check a right-to-left layout while you read English text.
-That is the fastest way to find a fixed `margin-left`.
+The direction button works like the theme button. It shows the current setting with an icon, a click
+moves to the next setting, and the pointer over it opens a menu of the three settings. **auto**
+takes the direction from the language, which is what your app does. Select Arabic or Hebrew, and the
+component lays out from right to left. **ltr** and **rtl** pin the direction, so you can check a
+right-to-left layout while you read English text. That is the fastest way to find a fixed
+`margin-left`.
 
 The setting affects the component only. The toolbar and the panels of the preview stay left to
 right, whatever you select, so the controls do not move under you. The direction is the one thing

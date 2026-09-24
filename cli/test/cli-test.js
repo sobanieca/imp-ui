@@ -127,6 +127,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-abort-check-after-await', ['lint', 'app.js'], fixture('lint-abort-check'))
   await test('lint-no-state-as-child', ['lint', 'app.js'], fixture('lint-state-child'))
   await test('lint-no-get-in-binding', ['lint', 'app.js'], fixture('lint-get-binding'))
+  await test('lint-styles-stop-at-child', ['lint', 'app.js'], fixture('lint-styles-child'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
   await test('lint-icons-by-name', ['lint', 'app.js'], fixture('lint-icons'))
@@ -1929,6 +1930,24 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         }))
       globalThis.impPicker = (label) =>
         globalThis.impLabelled('imp-select').find((entry) => entry.label === label)?.control
+      globalThis.impSwitcher = (label) => {
+        const menu = globalThis.impAll('imp-menu-button').find((host) =>
+          host.shadowRoot.querySelector('imp-button')?.shadowRoot
+            .querySelector(`[aria-label="Choose a ${label}"]`) !== null
+        )
+        const step = menu.parentNode.querySelector('imp-button')
+        return {
+          items: () => [...menu.shadowRoot.querySelectorAll('[role="menuitem"]')],
+          options: () =>
+            [...menu.shadowRoot.querySelectorAll('[role="menuitem"]')]
+              .map((item) => item.textContent),
+          selected: () => step.shadowRoot.querySelector('.label').textContent,
+          pick: (value) =>
+            [...menu.shadowRoot.querySelectorAll('[role="menuitem"]')]
+              .find((item) => item.textContent === value).click(),
+          step: () => step.shadowRoot.querySelector('.button').click(),
+        }
+      }
       globalThis.impTextareas = (editor) =>
         [...editor.shadowRoot.querySelectorAll('imp-text-field')]
           .map((host) => host.shadowRoot.querySelector('textarea'))
@@ -2057,14 +2076,26 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
     })
     const localized = await page.evaluate(async () => {
       const languages = globalThis.impPicker('Language')
-      const directions = globalThis.impPicker('Text direction')
+      const directions = globalThis.impSwitcher('direction')
       const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
       const stage = () => globalThis.impOne('imp-preview-stage').shadowRoot.querySelector('.stage')
+      const state = () =>
+        `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
       const pick = async (picker, value) => {
         picker.value = value
         picker.dispatchEvent(new Event('change'))
         await settle()
-        return `${document.documentElement.lang}/${document.documentElement.dir}/${stage().dir}`
+        return state()
+      }
+      const pin = async (value) => {
+        directions.pick(value)
+        await settle()
+        return state()
+      }
+      const step = async () => {
+        directions.step()
+        await settle()
+        return `${directions.selected()} ${state()}`
       }
       const chrome = () => globalThis.impOne('imp-shell').getAttribute('dir')
       const words = () => {
@@ -2075,43 +2106,39 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       }
       return {
         languages: [...languages.options].map((option) => option.value),
-        directions: [...directions.options].map((option) => option.value),
+        directions: directions.options(),
+        directionIcons: directions.items().every((item) => item.querySelector('imp-icon') !== null),
         english: words(),
         polish: await pick(languages, 'pl') && words(),
         arabic: await pick(languages, 'ar'),
         arabicWords: words(),
         arabicChrome: chrome(),
-        pinnedLtr: await pick(directions, 'ltr'),
-        backToAuto: await pick(directions, 'auto'),
+        pinnedLtr: await pin('ltr'),
+        steppedToRtl: await step(),
+        steppedToAuto: await step(),
         backToEnglish: await pick(languages, 'en'),
       }
     })
 
     const themed = await page.evaluate(() => {
-      const menu = globalThis.impAll('imp-menu-button')
-        .find((node) => node.shadowRoot.querySelector('[role="menuitem"]') !== null)
-      const shadow = menu.shadowRoot
-      const row = menu.parentNode
-      const items = () => [...shadow.querySelectorAll('[role="menuitem"]')]
-      const selected = () =>
-        row.querySelector('imp-button').shadowRoot.querySelector('.label').textContent
+      const themes = globalThis.impSwitcher('theme')
       const surface = () =>
         getComputedStyle(document.documentElement).getPropertyValue('--imp-color-surface')
       const font = () =>
         getComputedStyle(document.documentElement).getPropertyValue('--imp-font-family')
       const apply = (value) => {
-        items().find((item) => item.textContent === value).click()
+        themes.pick(value)
         return surface()
       }
       const iconOf = (item) => item.querySelector('imp-icon') !== null
-      const initial = selected()
+      const initial = themes.selected()
       const dark = apply('imp-dark')
       const darkFont = font()
-      row.querySelector('imp-button').shadowRoot.querySelector('.button').click()
-      const stepped = selected()
+      themes.step()
+      const stepped = themes.selected()
       return {
-        options: items().map((item) => item.textContent),
-        icons: items().every(iconOf),
+        options: themes.options(),
+        icons: themes.items().every(iconOf),
         selected: initial,
         dark,
         darkFont,
@@ -2127,36 +2154,37 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
       const editorHost = globalThis.impOne('imp-theme-editor')
       const panel = editorHost.shadowRoot
-      const labelled = () => [
-        ...globalThis.impLabelled('imp-select', editorHost),
-        ...globalThis.impLabelled('imp-text-field', editorHost),
-      ]
-      const field = (label) => labelled().find((entry) => entry.label === label).control
-      const token = (name) =>
-        getComputedStyle(document.documentElement).getPropertyValue(`--imp-${name}`).trim()
-      const change = (node, value) => {
-        node.value = value
-        node.dispatchEvent(new Event(node.localName === 'select' ? 'change' : 'input'))
-      }
+      const KNOB_HOSTS = ['imp-color-picker', 'imp-combo-box', 'imp-segmented']
       const knobHosts = []
       const walkKnobs = (root) => {
         for (const element of root.querySelectorAll('*')) {
-          if (['imp-select', 'imp-text-field'].includes(element.localName)) knobHosts.push(element)
+          if (KNOB_HOSTS.includes(element.localName)) knobHosts.push(element)
           if (element.shadowRoot) walkKnobs(element.shadowRoot)
         }
       }
       walkKnobs(panel)
-      const knobs = knobHosts.map((host) =>
-        host.shadowRoot.querySelector('label')?.textContent.trim() ?? '(no label)'
-      )
-      change(field('Primary'), '#8821ac')
+      const labelOf = (host) =>
+        host.shadowRoot.querySelector('.label')?.textContent.trim() ?? '(no label)'
+      const knobs = knobHosts.map((host) => `${labelOf(host)} (${host.localName})`)
+      const host = (label) => knobHosts.find((candidate) => labelOf(candidate) === label)
+      const token = (name) =>
+        getComputedStyle(document.documentElement).getPropertyValue(`--imp-${name}`).trim()
+      const type = (label, value) => {
+        const node = host(label).shadowRoot.querySelector('#control')
+        node.value = value
+        node.dispatchEvent(new Event('input'))
+      }
+      const pick = (label, choice) =>
+        [...host(label).shadowRoot.querySelectorAll('.segment')]
+          .find((segment) => segment.textContent.trim() === choice).click()
+      type('Primary', '#8821ac')
       const primary = token('color-primary')
       const derived = token('color-on-primary')
-      change(field('Border radius'), 'none')
+      pick('Border radius', 'none')
       const flat = token('radius-item')
-      change(field('Shadow colour'), '#ff0000')
+      type('Shadow colour', '#ff0000')
       const shadow = token('color-shadow')
-      change(field('Loader'), 'dots')
+      pick('Loader', 'dots')
       const loader = token('loader')
       return {
         knobs: knobs.join(', '),
@@ -2235,6 +2263,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const hero = root.querySelector('.hero')
       return {
         headline: globalThis.impOne('imp-heading', hero).shadowRoot.textContent.trim(),
+        description: globalThis.impOne('imp-markdown', hero).shadowRoot.querySelector('p')
+          .innerHTML.trim(),
         cards: cards.map((node) =>
           `${node.getAttribute('aria-label')} (${
             globalThis.impDeep('.card-scenario', node).textContent
@@ -2433,14 +2463,17 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `after setting demo.count to 42: ${edited}`,
       `invalid JSON rejected: ${rejected}`,
       `language options: ${localized.languages.join(', ')}`,
-      `direction options: ${localized.directions.join(', ')}`,
+      `direction options: ${
+        localized.directions.join(', ')
+      } (every item has an icon: ${localized.directionIcons})`,
       `app + imp words in en: ${localized.english}`,
       `app + imp words in pl: ${localized.polish}`,
       `app + imp words in ar: ${localized.arabicWords}`,
       `lang/dir/stage after picking ar: ${localized.arabic}`,
       `chrome direction while previewing ar: ${localized.arabicChrome}`,
       `lang/dir/stage after pinning ltr: ${localized.pinnedLtr}`,
-      `lang/dir/stage back on auto: ${localized.backToAuto}`,
+      `direction, lang/dir/stage after one step: ${localized.steppedToRtl}`,
+      `direction, lang/dir/stage after one more step: ${localized.steppedToAuto}`,
       `lang/dir/stage back on en: ${localized.backToEnglish}`,
       `theme options: ${
         themed.options.join(', ')
@@ -2464,6 +2497,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `index headline: ${index.headline}`,
       `index cards: ${index.cards}`,
       `group headline: ${group.headline}`,
+      `group description: ${group.description}`,
       `group cards: ${group.cards}`,
       `group card specimen is inert: ${group.inert}, shows ${group.specimen}, links to ${group.href}`,
       `group title: ${group.title}`,
@@ -2887,7 +2921,7 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       const steps = {
         hiddenAtFirst: shadow.querySelector('.panel').hidden &&
           shadow.querySelector('.actions').hidden,
-        markShown: Boolean(shadow.querySelector('.toggle svg circle')),
+        markShown: Boolean(shadow.querySelector('.toggle svg use')),
       }
       shadow.querySelector('.toggle').click()
       steps.actionsShown = !shadow.querySelector('.actions').hidden
@@ -2955,6 +2989,24 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       chip('Info').click()
       steps.noMatch = shadow.querySelector('.lines').textContent.trim()
       chip('All').click()
+      const clear = shadow.querySelector('[data-action="clear"]')
+      const inPage = () => globalThis.__impTelemetry.entries()
+      const netCount = () => inPage().filter((item) => item.type === 'net').length
+      const netBefore = netCount()
+      steps.clearLabel = `${clear.getAttribute('aria-label')} (disabled ${clear.disabled})`
+      clear.click()
+      steps.afterClear = shadow.querySelector('.lines').textContent.trim()
+      steps.clearedInPage = inPage().filter((item) => item.type === 'console').length
+      steps.clearDisabled = clear.disabled
+      steps.networkUntouched = netCount() === netBefore
+      console.log('after clear')
+      await waitFor(
+        'the line after the clear',
+        () => shadow.querySelector('.lines').textContent.includes('after clear'),
+      )
+      steps.linesAfterClear = [...shadow.querySelectorAll('.entry .text')]
+        .map((text) => text.textContent).join(' | ')
+      steps.clearEnabledAgain = !clear.disabled
       shadow.querySelector('[data-action="network"]').click()
       await waitFor(
         'the network title',
@@ -3016,6 +3068,10 @@ Deno.test('the review widget picks an element in the preview page', async () => 
       `console filters: ${flow.consoleChips}`,
       `filtered to Error (aria-pressed ${flow.pressedChip}): ${flow.filtered}`,
       `filter with no match: ${flow.noMatch}`,
+      `clear button: ${flow.clearLabel}`,
+      `after clear: ${flow.afterClear}, console entries left in the page: ${flow.clearedInPage}, ` +
+      `button disabled: ${flow.clearDisabled}, network entries untouched: ${flow.networkUntouched}`,
+      `lines after clear: ${flow.linesAfterClear}, button enabled again: ${flow.clearEnabledAgain}`,
       `network view: ${flow.networkView}, filters: ${flow.networkChips}`,
       `moved by a drag: ${flow.moved}, collapsed: ${flow.collapsedByDrag}`,
       `position remembered: ${flow.remembered !== null}`,
@@ -3120,9 +3176,8 @@ Deno.test('the review widget edits the applied theme of an app, and the draft su
       const knobHosts = []
       const walkKnobs = (root) => {
         for (const element of root.querySelectorAll('*')) {
-          if (['imp-tabs', 'imp-select', 'imp-text-field'].includes(element.localName)) {
-            knobHosts.push(element.localName)
-          }
+          const knobNames = ['imp-tabs', 'imp-color-picker', 'imp-combo-box', 'imp-segmented']
+          if (knobNames.includes(element.localName)) knobHosts.push(element.localName)
           if (element.shadowRoot) walkKnobs(element.shadowRoot)
         }
       }

@@ -161,11 +161,13 @@ name in `localStorage` across reloads, until the person presses _reset_. It expo
 **secondary**, **font**, **mono font**, **border radius**, which is `none`, `small`, `medium` or
 `large`, **shadow**, which is `none`, `soft` or `strong`, **shadow colour**, which is
 `color-shadow`, and **loader**, which is `spinner`, `dots`, `bar` or `pulse`, with a live sample
-beside it. It derives every other colour token from the two base colours. The knobs sit on the
-**Knobs** tab. The **Tokens** tab is the whole theme as JSON, in a `codeEditor` that grows with the
-text. An edit there applies as soon as the JSON parses. A knob rewrites the tokens it drives, and it
-leaves every other token as edited. The widget of `imp start` shows the **Tokens** view alone, with
-no knobs. It copies or downloads a complete `theme.js`, one theme per file:
+beside it. A colour is a `colorPicker`, a font is a `comboBox` with suggestions that accepts any
+stack, and a step is a `segmented` row. It derives every other colour token from the two base
+colours. The knobs sit on the **Knobs** tab. The **Tokens** tab is the whole theme as JSON, in a
+`codeEditor` that grows with the text. An edit there applies as soon as the JSON parses. A knob
+rewrites the tokens it drives, and it leaves every other token as edited. The widget of `imp start`
+shows the **Tokens** view alone, with no knobs. It copies or downloads a complete `theme.js`, one
+theme per file:
 
 ```js
 // theme.js - generated, then edited by hand

@@ -19,7 +19,7 @@ no children the trigger is a square icon: a triple-dot, or a chevron with `trigg
 | `variant`  | as on button                                          | `'default'` | The look of the trigger                 |
 | `size`     | as on button                                          | `'md'`      | The size of the trigger                 |
 | `disabled` | boolean, or a state - **live**                        | `false`     | Disables the trigger and shuts the menu |
-| `label`    | string, or a state - **live**                         | -           | `aria-label` of the trigger             |
+| `label`    | string, or a state - **live**                         | -           | Replaces the name of the trigger        |
 | `events`   | event map                                             | -           | Handlers on the host, such as `select`  |
 
 Rules an agent gets wrong:
@@ -30,9 +30,10 @@ Rules an agent gets wrong:
 - **A split button is a joined row.** Write `flex({ joined: true }, button(...), menuButton(...))`.
   The action is the button. The menu button opens the menu and does nothing else. Give both the same
   `variant` and `size`. See flex (imp skill std/flex).
-- **An icon-only trigger has a name already.** `'more'` reads "More actions" and `'arrow'` reads
-  "Choose an action", through `t()`. Pass `label` when the row needs a more precise name, such as
-  `Actions for Ada`.
+- **The trigger is named by its text, or by a built-in name when it has none.** A trigger with a
+  child reads that child. An icon-only `'more'` reads "More actions" and `'arrow'` reads "Choose an
+  action", through `t()`. Pass `label` when the row needs a more precise name, such as
+  `Actions for Ada`. It replaces the name in both cases.
 - **A choice fires a `select` event on the host** that you can cancel, with `detail: { id, item }`.
   imp then calls the `onClick({ id, item })` of that item. A call to `preventDefault()` on `select`
   stops the `onClick`.

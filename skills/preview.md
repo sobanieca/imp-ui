@@ -125,11 +125,11 @@ you want a person to copy. A helper is fine. It is shown above the call.
 
 - **The shell.** One frame, one app. The catalog of components is down the side, one row per group
   with the components under it, and the component you look at is marked. A click opens a component
-  in place, with no page load. The theme button and the language and direction pickers are in a
-  settings panel beside the page. `/` opens the catalog as a card per group. A group name opens
-  `/<group>`, a card per component with its first scenario rendered. A click on a card opens the
-  component. A preview file that fails to build shows its error in place of its panels, and the rest
-  of the catalog stays up.
+  in place, with no page load. The theme button, the direction button and the language picker are in
+  a settings panel beside the page. `/` opens the catalog as a card per group. A group name opens
+  `/<group>`: the description of the group, then a card per component with its first scenario
+  rendered. A click on a card opens the component. A preview file that fails to build shows its
+  error in place of its panels, and the rest of the catalog stays up.
 - **Scenario tabs.** One vertical tab per export, in file order. The selected tab is in the address
   as `?scenario=<name>`, so a link opens a scenario. Every panel mounts at once, so a stage keeps
   its state across a change of tab. The button at the foot of the strip folds the tabs away, so the
@@ -154,15 +154,17 @@ you want a person to copy. A helper is fine. It is shown above the call.
 - **Agent line.** The `imp skill` command of the component, ready to copy, at the top of the Skill
   tab. A standard component gets `imp skill std/<name>`, a project component gets
   `imp skill ./<path>.js`. A component without a skill file says so there.
-- **Theme editor.** _edit theme_ is beside the theme button. Knobs: mode (light/dark), primary,
-  secondary, font, mono font, border radius (`none` | `small` | `medium` | `large`), shadow (`none`
-  | `soft` | `strong`). Every other colour token is derived from the two base colours. Under the
-  knobs, **Tokens** is the whole theme of the mode as JSON. An edit there applies as soon as it
+- **Theme editor.** _edit theme_ is beside the theme button. Knobs: primary, secondary, font, mono
+  font, border radius (`none` | `small` | `medium` | `large`), shadow (`none` | `soft` | `strong`),
+  shadow colour, loader. A colour is a `colorPicker`, a font is a `comboBox` with suggestions, and a
+  step is a `segmented` row. Every other colour token is derived from the two base colours. Under
+  the knobs, **Tokens** is the whole theme of the mode as JSON. An edit there applies as soon as it
   parses, and a knob rewrites the tokens it drives. A token with no knob, such as `background-app`
   or a font weight, starts as the selected theme sets it. Copy or download the result as a
-  `theme.js` that exports `light` and `dark`, then pass it to `init({ theme })`. Drafts are kept per
-  theme name in `localStorage`. _reset_ clears one. The review widget of `imp start` opens the
-  **Tokens** view of the same editor on a page of the app, with no knobs. See [theming](theming.md).
+  `theme.js` with the theme as its default export, then pass it to `init({ theme })`. Drafts are
+  kept per theme name in `localStorage`. _reset_ clears one. The review widget of `imp start` opens
+  the **Tokens** view of the same editor on a page of the app, with no knobs. See
+  [theming](theming.md).
 - **Entry page.** imp generates the page around a preview, with no stylesheet of the app in it. So a
   web font that `index.html` links does not load there. Set `preview.entry` in `imp.json` to an HTML
   file of your own, such as `preview.html`, that holds the font links in its `<head>` and an empty
@@ -176,15 +178,16 @@ you want a person to copy. A helper is fine. It is shown above the call.
   the previewed component and comments on it. imp writes the note to `.imp/reviews/` with the
   preview page it came from. Read the folder before you rework a component on a vague report. See
   [start](start.md).
-- **Theme button, language and direction pickers.** `preview.themes` and `preview.translations` in
-  `imp.json` feed them (see [config](config.md)). Choices survive reloads. imp lists your themes
-  first, then the built-in ones. A theme of yours named like a built-in theme replaces it. The theme
-  button shows the current theme with an icon. A click steps to the next theme. A pointer over the
-  button, or the focus on it, opens a menu that lists every theme with an icon. So one click picks
-  any of them. Direction has **auto** (follows the language), **ltr** and **rtl**. Pin it while you
-  read English to catch a hardcoded `margin-left`. Direction applies to the component only, never to
-  the toolbar, so the controls stay in place. The theme applies to the whole page, because the page
-  is itself built from `imp/std`. See [theming](theming.md) and [i18n](i18n.md).
+- **Theme button, direction button and language picker.** `preview.themes` and
+  `preview.translations` in `imp.json` feed them (see [config](config.md)). Choices survive reloads.
+  imp lists your themes first, then the built-in ones. A theme of yours named like a built-in theme
+  replaces it. The theme button shows the current theme with an icon. A click steps to the next
+  theme. A pointer over the button, or the focus on it, opens a menu that lists every theme with an
+  icon. So one click picks any of them. The direction button works the same way over **auto**
+  (follows the language), **ltr** and **rtl**. Pin it while you read English to catch a hardcoded
+  `margin-left`. Direction applies to the component only, never to the toolbar, so the controls stay
+  in place. The theme applies to the whole page, because the page is itself built from `imp/std`.
+  See [theming](theming.md) and [i18n](i18n.md).
 
 ## Finding previews
 
@@ -202,7 +205,7 @@ the search. Put your components in folders and the catalog groups itself. Declar
 them your own way. Two files that declare the same `group` land in one group, whatever folders they
 are in.
 
-## Groups, their icons and their order
+## Groups, their icons, their descriptions and their order
 
 A component belongs to the folder of its preview file, with a folder icon, until `preview.groups` in
 `imp.json` names a module:
@@ -215,7 +218,11 @@ A component belongs to the folder of its preview file, with a folder icon, until
 import { luLayoutGrid, luTextCursorInput } from 'imp/icons'
 
 export const groups = {
-  widgets: { name: 'Widgets', icon: luLayoutGrid },
+  widgets: {
+    name: 'Widgets',
+    icon: luLayoutGrid,
+    description: 'Small **stateful** widgets. Each one keeps its count in a state.',
+  },
   inputs: { name: 'Inputs', icon: luTextCursorInput },
 }
 ```
@@ -229,7 +236,10 @@ export const group = groups.widgets
 ```
 
 - The export must be an object named `groups`. Each key is a group, with a `name` for the catalog,
-  an `icon` from `imp/icons`, and an optional `priority` number.
+  an `icon` from `imp/icons`, an optional `description` and an optional `priority` number.
+- **`description` is markdown for a person.** It is shown under the title of the page of the group,
+  above its cards. Say what the group holds and when to use it. It is a runtime value, so any string
+  works, and a `${...}` substitution is fine here.
 - **`priority` puts a group ahead of the rest.** A group with a priority comes before every group
   without one. A lower number comes first. Groups without one keep the key order.
 - **`group` is `groups.<key>`, imported from the module that `preview.groups` names.** Not a string.

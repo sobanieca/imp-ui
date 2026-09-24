@@ -18,6 +18,9 @@ entry collapsed at first: aria-expanded false, after a click: true
 console filters: All, Log, Info, Warn, Error
 filtered to Error (aria-pressed true): arrived live
 filter with no match: No line matches.
+clear button: Clear console logs (disabled false)
+after clear: Cleared. The next line appears as it happens., console entries left in the page: 0, button disabled: true, network entries untouched: true
+lines after clear: after clear, button enabled again: true
 network view: log, filters: [Fetch], Resource, Any / [All], OK, Failed
 moved by a drag: 320,220, collapsed: true
 position remembered: true

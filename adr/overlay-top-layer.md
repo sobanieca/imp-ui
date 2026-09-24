@@ -41,9 +41,10 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   lands on the element. It adds a **hold on the page scroll, with a reference count**, while any
   modal is open. That is the boundary case that `browser-support-baseline.md` already approved. It
   also adds the closing slide, described below. `panelOverlay(panel)` calls `showPopover()` on an
-  element with `popover="manual"`. It adds the **restore of the focus**, which is the one thing that
-  `showModal()` gives for free, and that the popover path does not. It gives the focus back to
-  whatever had it, and the platform would leave it on `<body>`. Both helpers return
+  element with `popover="manual"`. It adds the **entry and the restore of the focus**, which
+  `showModal()` gives for free, and which the popover path does not. On open it focuses the panel,
+  which carries `tabindex="-1"`, so a screen reader announces the title. On close it gives the focus
+  back to whatever had it, and the platform would leave it on `<body>`. Both helpers return
   `{ open, close }`. Neither one knows about the other.
 - **A non-modal overlay holds nothing.** There is no scroll lock, no `inert`, no dismissal from a
   backdrop, and no Escape. A manual popover ignores Escape, and raises no `cancel`. imp adds none. A

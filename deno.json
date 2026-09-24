@@ -13,6 +13,7 @@
     "start": "deno task compile && cd examples/shell && ../../imp start",
     "size": "deno run -A tools/check-binary-size.js",
     "lucide": "deno run -A --no-lock tools/vendor-lucide.js",
+    "natural-earth": "deno run -A --no-lock tools/vendor-natural-earth.js",
     "test": "deno task test:lib && deno task test:lib:e2e && deno task test:cli",
     "test:cli": "deno task compile && deno test -A cli/test/cli-test.js",
     "test:cli:update": "deno task compile && deno test -A cli/test/cli-test.js -- --update",
@@ -32,6 +33,9 @@
     "exclude": [
       "cli/test/fixtures/",
       "lib/src/icons/lucide-icons.js",
+      "lib/src/std/data/map-world-110m.js",
+      "lib/src/std/data/map-world-50m.js",
+      "lib/src/std/data/map-roads-10m.js",
       "cli/src/vendor/",
       "site/dist/",
       ".claude/worktrees/"
@@ -44,7 +48,11 @@
     "exclude": [
       "cli/test/fixtures/",
       "cli/test/snapshots/",
+      "cli/src/templates/",
       "lib/src/icons/lucide-icons.js",
+      "lib/src/std/data/map-world-110m.js",
+      "lib/src/std/data/map-world-50m.js",
+      "lib/src/std/data/map-roads-10m.js",
       "cli/src/vendor/",
       "site/dist/",
       ".claude/worktrees/"

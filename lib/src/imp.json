@@ -43,7 +43,11 @@
       "std/shared/copy-button.js#copyButton"
     ]
   },
-  "maxFileSizeIgnore": ["icons/lucide-icons.js"],
+  "maxFileSizeIgnore": [
+    "icons/lucide-icons.js",
+    "std/data/map-world-50m.js",
+    "std/data/map-roads-10m.js"
+  ],
   "preview": {
     "entry": "preview.html",
     "themes": ["std/preview-theme-light.js", "std/preview-theme-dark.js"],

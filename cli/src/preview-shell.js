@@ -78,10 +78,11 @@ export const groupsOf = (previews, groups = []) => {
   const declared = groups.filter(({ name }) => byName.has(name))
   const undeclared = [...byName.keys()]
     .filter((name) => !groups.some((group) => group.name === name))
-    .map((name) => ({ name, icon: null }))
-  return [...declared, ...undeclared].map(({ name, icon }) => ({
+    .map((name) => ({ name, icon: null, description: null }))
+  return [...declared, ...undeclared].map(({ name, icon, description }) => ({
     name,
     icon: icon ?? luFolder,
+    description,
     entries: byName.get(name),
   }))
 }

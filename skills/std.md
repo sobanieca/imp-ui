@@ -4,16 +4,16 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import               | Exports                                                                                                                                                                                         | Per-component skill                                                                                                                                                                                                                                                   |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                       | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                           |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                    | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                            |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `datePicker`, `fileUpload`, `codeEditor`, `richTextEditor`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/datePicker`, `std/fileUpload`, `std/codeEditor`, `std/richTextEditor`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`                                                                                                               |
-| `imp/std/navigation` | `tabs`, `steps`                                                                                                                                                                                 | `imp skill std/tabs`, `std/steps`                                                                                                                                                                                                                                     |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications`                                                                                                              | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                  |
-| `imp/std/feedback`   | `bugReport`, `notice`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                     | `imp skill std/bugReport`, `std/notice`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                     |
-| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`                                                                                                                                           | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`                                                                                                                                                                               |
+| Import               | Exports                                                                                                                                                                                                        | Per-component skill                                                                                                                                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                      | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                              |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                                   | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                                               |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `fileUpload`, `codeEditor`, `richTextEditor`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/fileUpload`, `std/codeEditor`, `std/richTextEditor`, `std/submitButton`, `std/resetButton` |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`                                                                                                      | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`                                                                                                                                  |
+| `imp/std/navigation` | `tabs`, `steps`                                                                                                                                                                                                | `imp skill std/tabs`, `std/steps`                                                                                                                                                                                                                                                        |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications`                                                                                                                             | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                     |
+| `imp/std/feedback`   | `bugReport`, `notice`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                                    | `imp skill std/bugReport`, `std/notice`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                                        |
+| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                   | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                       |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -113,8 +113,8 @@ When the person chooses an item, the host fires a `select` event that you can ca
 `detail: { id, item }`. imp then calls the `onClick` of that item. The menu is a `popover`, and the
 browser places it. It flips above the trigger near the bottom of the screen. It closes on Escape,
 and on a click away from it. It has no `placement` prop. `'more'` draws a triple-dot trigger, and
-`'arrow'` draws a chevron. An icon-only trigger reads "More actions" or "Choose an action" through
-`t()`, and `label` replaces that name.
+`'arrow'` draws a chevron. A trigger with text is named by that text. An icon-only trigger reads
+"More actions" or "Choose an action" through `t()`. `label` replaces the name in both cases.
 
 ## heading
 
@@ -708,6 +708,7 @@ blocks the submit with `imp.form.checkFailed`.
 | `segmented`    | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                       |
 | `comboBox`     | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `placeholder`   |
 | `slider`       | A **number** in a range                          | `min`, `max`, `step`, `showValue`, `format`                  |
+| `colorPicker`  | A hex colour, `'#rrggbb'`                        | -                                                            |
 | `fileUpload`   | An array of `{ id, name, size, type }`           | `multiple`, `accept`, `maxSize`, `onFiles`                   |
 | `datePicker`   | A date, a date range, or a date with a time      | `range`, `time`, `min`, `max`, `placeholder`                 |
 | `checkbox`     | A boolean                                        | -                                                            |
@@ -734,6 +735,8 @@ Rules an agent gets wrong:
   `imp skill std/comboBox`.
 - **On a `slider`, `min` and `max` set the range. They are not validation rules.** The value is a
   number. Run `imp skill std/slider`.
+- **`colorPicker` holds a hex string, never an `rgb()` value.** A text that is not a hex colour
+  fails with `imp.form.color`. Run `imp skill std/colorPicker`.
 - **`fileUpload` never puts a `File` in the form.** The field holds `{ id, name, size, type }`
   entries. `onFiles` receives the complete list of `File` objects at each change. Keep it, and send
   it in `onSubmit`. Run `imp skill std/fileUpload`.
@@ -869,7 +872,7 @@ Rules an agent gets wrong:
 ## Data - from `imp/std/data`
 
 ```js
-import { chart, gantt } from 'imp/std/data'
+import { chart, gantt, map } from 'imp/std/data'
 
 chart({
   type: 'column',
@@ -883,12 +886,20 @@ gantt({
   tasks: [{ id: 'build', label: 'Build', start: '2026-09-10', end: '2026-10-02', progress: 40 }],
   events: { select: (event) => open(event.detail.id) },
 })
+
+map({
+  label: 'Offices',
+  center: [52.23, 21.01],
+  zoom: 2,
+  pins: [{ id: 'warsaw', lat: 52.23, lng: 21.01, label: 'Warsaw office' }],
+})
 ```
 
 | Component | Props                                                                                   |
 | --------- | --------------------------------------------------------------------------------------- |
 | `chart`   | `type`, `label` (live), `labels` (live), `series` (live), `stacked`, `legend`, `format` |
 | `gantt`   | `label` (live), `tasks` (live), `scale`, `events`                                       |
+| `map`     | `label` (live), `center` (live), `zoom` (live), `maxZoom`, `pins` (live), `events`      |
 
 Rules an agent gets wrong:
 
@@ -900,10 +911,15 @@ Rules an agent gets wrong:
   equal to `end` is a milestone.
 - **`gantt` is read-only.** It has no dependency arrows, no drag and no resize. `events: { select }`
   makes each task a button and reports `detail: { id }`.
-- **Always pass `label`.** It is the accessible name of the chart, or of the timeline. Full manuals:
-  `imp skill std/chart`, `imp skill std/gantt`.
+- **`map` makes no request.** The world, its lakes and its largest cities are bundled with the
+  component. There is no tile server and no street level. `zoom: 0` fits the world to the box.
+- **A pin is `{ id, lat, lng }`.** Without `content` it is a marker button named by `label`, and a
+  click reports `select` with `{ id, pin }`. With `content`, any node, the map only positions it.
+- **Always pass `label`.** It is the accessible name of the chart, of the timeline, or of the map.
+  Full manuals: `imp skill std/chart`, `imp skill std/gantt`, `imp skill std/map`.
 
-For `skills/imports.md`, the new specifier is `imp/std/data`, with the exports `chart` and `gantt`.
+For `skills/imports.md`, the specifier is `imp/std/data`, with the exports `chart`, `gantt` and
+`map`.
 
 ## table - from `imp/std/data`
 

@@ -56,6 +56,10 @@ all render into the shadow root. The light DOM of the host stays empty, and imp 
   light-DOM content outside a component. imp injects nothing into `document.head`.
 - Theming crosses the boundary through an inherited custom property only. So a component that must
   be themable consumes a variable. It must not expect a page rule to restyle its internals.
+- A node passed as an argument ends up in the shadow root of the callee. So the `styles` of the
+  caller do not reach it, and a layout component is a boundary like any other. A box that needs CSS
+  must carry it: its own component, a standard component, or an inline style. The
+  `imp/styles-stop-at-child` lint rule reports the direct form.
 - The native couplings of the platform that cannot cross a shadow boundary are contained. A form
   control inside a component does not join a `<form>` outside it. A `label[for]` reference, and an
   ARIA id reference, cannot point across the boundary. So a component must keep such a pair inside

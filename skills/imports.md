@@ -23,7 +23,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/std/navigation` | `tabs`, `steps`                                                                    |
 | `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications` |
 | `imp/std/feedback`   | `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, `bugReport`        |
-| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`                              |
+| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                       |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                |
 | `imp/preview`        | `mockModule` (for `*.preview.js` files)                                            |
 

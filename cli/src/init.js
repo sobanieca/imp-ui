@@ -258,7 +258,7 @@ async function templateFiles({ title, pwa }) {
   if (pwa) {
     files.push({
       path: PWA_ICON,
-      contents: await readTemplate('icon.svg'),
+      contents: await readTemplate('mark-light.svg'),
       note: 'the source image imp renders the whole PWA icon set from',
     })
   }

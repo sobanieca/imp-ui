@@ -196,6 +196,18 @@ test. The browser console and the network stream to the terminal. A failing test
 under `.imp/screenshots/`. To use a different entry page, set `test.entry` in `imp.json`, see
 [config](config.md).
 
+**To assert what a screen reader gets, read the accessibility tree, not the DOM.** The tree is flat
+across every shadow root, and the browser computes the names, the roles and the states in it:
+
+```js
+const root = await page.$('#checkout')
+const tree = await page.accessibility.snapshot({ root, interestingOnly: false })
+```
+
+A node has `role`, `name`, and a state such as `checked`, `selected`, `expanded`, `disabled`,
+`invalid`, `description` or `value`. Text shows as `StaticText`. Keep `interestingOnly: false`,
+because the default prunes a container such as a `tablist`, a `group`, an `alert` or a `status`.
+
 imp resolves the browser in this order: `test.browser` in `imp.json`, then `IMP_BROWSER`, then an
 installed Chrome or Chromium, then a pinned download into `~/.imp/browser/` that imp verifies
 against its checksum.

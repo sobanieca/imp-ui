@@ -252,9 +252,32 @@ A screen is a component. Its loading is `loading` and an async `setup`, its erro
 and then to the `error` of the router, and its cleanup is `onRemove`. Put the state of a screen in
 the root component of that screen. Put only app-wide state above the router.
 
-imp manages the scroll. **The focus is yours to manage.** Focus a heading in `onMount`, or give the
-element around the router slot `tabindex: -1` and focus it from `useRoute().watch(self, ...)` when
-the **path** changes, skipping the first call, with `:focus { outline: none }`.
+imp manages the scroll. **The focus is yours to manage.** Focus a heading in `onMount`, or wrap the
+router slot once, for every screen: a `div` with `tabindex: '-1'` and `:focus { outline: none }`,
+focused from `useRoute().watch(self, ...)` when the **path** changes, never on a query change, and
+not on the first call. Announce the new screen from the same watch, through a visually hidden
+`role="status"` node that reads `document.title` one microtask later. Pass `title` to `router` so
+that there is a title to read.
+
+```js
+const screenFrame = component('screen-frame', {
+  styles: '.frame:focus { outline: none } .announcer { position: absolute; clip-path: inset(50%) }',
+  setup: (self, slot) => {
+    const frame = div({ class: 'frame', tabindex: '-1' }, slot)
+    const announcer = div({ class: 'announcer', role: 'status' })
+    let lastPath = useRoute().get().path
+    useRoute().watch(self, ({ path }) => {
+      if (path === lastPath) return
+      lastPath = path
+      frame.focus({ preventScroll: true })
+      queueMicrotask(() => announcer.textContent = document.title)
+    })
+    return div(frame, announcer)
+  },
+})
+
+screenFrame(router({ map: app, screens, title: ({ crumbs }) => `${crumbs.at(-1)} - Acme` }))
+```
 
 `imp map` prints every node with its path, label, access and description, from the `map` file of
 `imp.json`; `imp map src/admin/map.js` prints a part, see [cli](cli.md). `imp init` writes

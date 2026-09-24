@@ -51,16 +51,15 @@ Rules an agent gets wrong:
 - **imp renders every panel at mount** and hides it with `hidden`. So state inside a panel survives
   a change of tab. Do not pass content that is expensive to build for every tab at once.
 - **`label` names the strip, not a tab.** Each tab names itself from its own `label` text.
-- **`foldable` needs `orientation: 'vertical'`.** It adds a button at the foot of the strip that
-  folds the tabs away, so the panel gets the width. The button carries `aria-expanded` and a
-  translated label. A folded strip is `inert`, so unfold it to switch tabs. imp warns about
-  `foldable` on a horizontal strip, and about `folded` without `foldable`, and ignores both.
+- **`foldable` needs `orientation: 'vertical'`.** It adds a button below the last tab that folds the
+  tabs away, so the panel gets the width. The button carries `aria-expanded` and a translated label.
+  A folded strip is `inert`, so unfold it to switch tabs. imp warns about `foldable` on a horizontal
+  strip, and about `folded` without `foldable`, and ignores both.
 - **`folded` works like `selected`.** A plain boolean sets the start. A writable state keeps control
   after mount, and a tap on the button writes it back. `fold` fires on the host with
   `detail: { folded }`, for a tap only, never for a change that the state drives.
-- **The parent sets the height.** The strip is as tall as the host. Give the host a `block-size`,
-  and the fold button sits at the foot, at the inline end of the strip, with the free space between
-  the tabs and the button.
+- **The parent sets the height.** The strip is as tall as the host. The fold button sits just below
+  the last tab, at the inline end of the strip, so a long page does not push it out of reach.
 - **A folded strip moves the button to the head.** A tall panel scrolls, and the button stays where
   the reader starts to read, so the tabs come back with one tap.
 - imp warns about an unknown prop at mount. It warns about an `orientation` outside the list and

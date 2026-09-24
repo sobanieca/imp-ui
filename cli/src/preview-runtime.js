@@ -11,10 +11,13 @@ import {
   luMoon,
   luPalette,
   luPencil,
+  luPilcrow,
+  luPilcrowLeft,
+  luPilcrowRight,
   luSlidersHorizontal,
   luSun,
 } from 'imp/icons'
-import { card, codeBlock, emptyState } from 'imp/std/display'
+import { card, codeBlock, emptyState, markdown } from 'imp/std/display'
 import { select, textField } from 'imp/std/inputs'
 import { dialog, drawer, flex, stack } from 'imp/std/layout'
 import { tabs } from 'imp/std/navigation'
@@ -69,6 +72,7 @@ const BUILT_IN_THEME_ICONS = {
   'imp-high-contrast-dark': luEclipse,
 }
 const DIRECTIONS = ['auto', 'ltr', 'rtl']
+const DIRECTION_ICONS = { auto: luPilcrow, ltr: luPilcrowRight, rtl: luPilcrowLeft }
 
 const themes = new Map()
 
@@ -106,7 +110,6 @@ const SCENARIO_STYLES = `
     display: block;
     --imp-dialog-inline-size: 26rem;
     padding-block-end: var(--imp-space-5, 24px);
-    border-block-end: var(--imp-border-width, 1px) solid var(--imp-color-border, #cbd5e1);
     font-family: var(--imp-font-family, system-ui, sans-serif);
     font-weight: var(--imp-font-weight-normal, 400);
   }
@@ -303,6 +306,11 @@ const GROUP_STYLES = `
     margin-block-end: var(--imp-space-6, 32px);
   }
 
+  .description {
+    max-inline-size: 64ch;
+    color: var(--imp-color-secondary, #64748b);
+  }
+
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
@@ -490,42 +498,44 @@ const picker = (label, values, choice) => select({ label, value: choice, options
 
 const themeIcon = (name) => icon(BUILT_IN_THEME_ICONS[name] ?? luPalette, { size: 'sm' })
 
-const nextThemeName = (current) => {
-  const names = [...themes.keys()]
-  return names[(names.indexOf(current) + 1) % names.length]
-}
+const directionIcon = (value) => icon(DIRECTION_ICONS[value], { size: 'sm' })
 
-const themeSwitcher = (choice) =>
+const nextOf = (values, current) => values[(values.indexOf(current) + 1) % values.length]
+
+const cycleSwitcher = ({ label, values, choice, iconOf }) =>
   stack(
     { gap: 1, horizontalAlign: 'start' },
-    text({ tone: 'secondary', size: 'sm' }, 'Theme'),
+    text({ tone: 'secondary', size: 'sm' }, label),
     flex(
       { joined: true },
       button(
         {
           size: 'sm',
-          label: computed([choice], (name) => `Theme: ${name} - next theme`),
-          events: { click: () => choice.set(nextThemeName(choice.get())) },
+          label: computed([choice], (value) => `${label}: ${value} - next ${label.toLowerCase()}`),
+          events: { click: () => choice.set(nextOf(values, choice.get())) },
         },
-        span(
-          { style: 'display: inline-flex; align-items: center; gap: var(--imp-space-2, 8px)' },
-          choice.view((name) => themeIcon(name)),
-          choice.text((name) => name),
-        ),
+        choice.view((value) => iconOf(value)),
+        choice.text((value) => value),
       ),
       menuButton({
         size: 'sm',
         trigger: 'arrow',
-        label: 'Choose a theme',
-        items: [...themes.keys()].map((name) => ({
-          id: name,
-          label: name,
-          icon: themeIcon(name),
-          onClick: () => choice.set(name),
+        label: `Choose a ${label.toLowerCase()}`,
+        items: values.map((value) => ({
+          id: value,
+          label: value,
+          icon: iconOf(value),
+          onClick: () => choice.set(value),
         })),
       }),
     ),
   )
+
+const themeSwitcher = (choice) =>
+  cycleSwitcher({ label: 'Theme', values: [...themes.keys()], choice, iconOf: themeIcon })
+
+const directionSwitcher = (choice) =>
+  cycleSwitcher({ label: 'Direction', values: DIRECTIONS, choice, iconOf: directionIcon })
 
 const elementsInTree = (nodes) => {
   const elements = []
@@ -830,11 +840,8 @@ const codePanel = (source, showing) => {
   const panel = div({ class: 'code' }, codeBlock({ language: 'js', code: source }))
   const toggle = button(
     { size: 'sm', variant: 'ghost', pressed: showing },
-    span(
-      { style: 'display: inline-flex; align-items: center; gap: var(--imp-space-2, 8px)' },
-      icon(luCode, { size: 'sm' }),
-      'Code example',
-    ),
+    icon(luCode, { size: 'sm' }),
+    'Code example',
   )
   showing.watch((open) => {
     panel.hidden = !open
@@ -912,6 +919,7 @@ const groupDefinition = {
         stack(
           { gap: 2 },
           heading({ level: 1 }, group.name),
+          group.description === null ? null : groupDescription(group.description),
           text(
             { tone: 'secondary' },
             `${group.entries.length} component${group.entries.length === 1 ? '' : 's'}. ` +
@@ -922,6 +930,8 @@ const groupDefinition = {
       div({ class: 'cards' }, ...group.entries.map((entry) => groupCard(entry, load[entry.file]))),
     ),
 }
+
+const groupDescription = (text) => div({ class: 'description' }, markdown({ text }))
 
 let createGroup = null
 
@@ -1093,7 +1103,7 @@ const pageDefinition = {
     const navOpen = initState(self, NAV_STATE, false)
     const controls = [
       languageChoice ? picker('Language', languages, languageChoice) : null,
-      picker('Text direction', DIRECTIONS, directionChoice),
+      directionSwitcher(directionChoice),
       themeSwitcher(themeChoice),
       button(
         { size: 'sm', events: { click: () => editorOpen.set(!editorOpen.get()) } },
@@ -1144,7 +1154,7 @@ const previewPage = (bound) => {
 }
 
 const GROUPS_SHAPE =
-  "export const groups = { widgets: { name: 'Widgets', icon: luBox } } - a key per group, with a name and an icon from 'imp/icons'"
+  "export const groups = { widgets: { name: 'Widgets', icon: luBox } } - a key per group, with a name, an icon from 'imp/icons' and an optional description"
 
 const isPlainObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -1171,6 +1181,11 @@ const readGroups = (declared) => {
         `imp preview: ${source} (preview.groups) group '${key}' has an icon that is not one from 'imp/icons' - it is drawn with the folder icon`,
       )
     }
+    if (entry.description !== undefined && typeof entry.description !== 'string') {
+      console.error(
+        `imp preview: ${source} (preview.groups) group '${key}' has a description that is not a string - it is ignored`,
+      )
+    }
     if (entry.priority !== undefined && !Number.isFinite(entry.priority)) {
       console.error(
         `imp preview: ${source} (preview.groups) group '${key}' has a priority that is not a number - it is ignored`,
@@ -1179,6 +1194,9 @@ const readGroups = (declared) => {
     groups.push({
       name: entry.name,
       icon: Array.isArray(entry.icon) ? entry.icon : null,
+      description: typeof entry.description === 'string' && entry.description.trim()
+        ? entry.description
+        : null,
       priority: Number.isFinite(entry.priority) ? entry.priority : null,
     })
   }

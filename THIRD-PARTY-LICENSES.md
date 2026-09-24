@@ -13,31 +13,32 @@ Run `imp licenses` to print this notice from the binary.
 
 ## Bundled components
 
-| Component                     | Version | License      | Source                                                 |
-| ----------------------------- | ------- | ------------ | ------------------------------------------------------ |
-| happy-dom                     | 20.10.6 | MIT          | https://github.com/capricorn86/happy-dom               |
-| puppeteer-core                | 24.43.1 | Apache-2.0   | https://github.com/puppeteer/puppeteer                 |
-| eslint                        | 10.6.0  | MIT          | https://eslint.org                                     |
-| @eslint/js                    | 10.0.1  | MIT          | https://eslint.org                                     |
-| globals                       | 17.7.0  | MIT          | https://github.com/sindresorhus/globals                |
-| jpeg-js                       | 0.4.4   | BSD-3-Clause | https://github.com/eugeneware/jpeg-js                  |
-| gifenc                        | 1.0.3   | MIT          | https://github.com/mattdesl/gifenc                     |
-| esbuild-wasm                  | 0.28.1  | MIT          | https://github.com/evanw/esbuild                       |
-| @dprint/formatter             | 0.5.1   | MIT          | https://github.com/dprint/js-formatter                 |
-| dprint-plugin-typescript      | 0.96.1  | MIT          | https://github.com/dprint/dprint-plugin-typescript     |
-| dprint-plugin-json            | 0.22.0  | MIT          | https://github.com/dprint/dprint-plugin-json           |
-| dprint-plugin-markdown        | 0.22.1  | MIT          | https://github.com/dprint/dprint-plugin-markdown       |
-| malva (CSS)                   | 0.16.0  | MIT          | https://github.com/g-plane/malva                       |
-| marked                        | 18.0.12 | MIT          | https://github.com/markedjs/marked                     |
-| markup_fmt (HTML)             | 0.27.3  | MIT          | https://github.com/g-plane/markup_fmt                  |
-| pretty_yaml (YAML)            | 0.6.0   | MIT          | https://github.com/g-plane/pretty_yaml                 |
-| lax-sql (SQL)                 | 0.3.0   | MIT          | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
-| @zip-js/zip-js                | 2.8.7   | BSD-3-Clause | https://github.com/gildas-lormeau/zip.js               |
-| @resvg/resvg-wasm             | 2.6.2   | MPL-2.0      | https://github.com/yisibl/resvg-js                     |
-| Lucide (icons)                | 1.38.0  | ISC, MIT     | https://lucide.dev                                     |
-| @std (Deno standard library)  | -       | MIT          | https://github.com/denoland/std                        |
-| @deno/esbuild-plugin          | -       | MIT          | https://github.com/denoland/deno_esbuild               |
-| Chrome for Testing (download) | pinned  | BSD-3-Clause | https://github.com/GoogleChromeLabs/chrome-for-testing |
+| Component                     | Version | License       | Source                                                 |
+| ----------------------------- | ------- | ------------- | ------------------------------------------------------ |
+| happy-dom                     | 20.10.6 | MIT           | https://github.com/capricorn86/happy-dom               |
+| puppeteer-core                | 24.43.1 | Apache-2.0    | https://github.com/puppeteer/puppeteer                 |
+| eslint                        | 10.6.0  | MIT           | https://eslint.org                                     |
+| @eslint/js                    | 10.0.1  | MIT           | https://eslint.org                                     |
+| globals                       | 17.7.0  | MIT           | https://github.com/sindresorhus/globals                |
+| jpeg-js                       | 0.4.4   | BSD-3-Clause  | https://github.com/eugeneware/jpeg-js                  |
+| gifenc                        | 1.0.3   | MIT           | https://github.com/mattdesl/gifenc                     |
+| esbuild-wasm                  | 0.28.1  | MIT           | https://github.com/evanw/esbuild                       |
+| @dprint/formatter             | 0.5.1   | MIT           | https://github.com/dprint/js-formatter                 |
+| dprint-plugin-typescript      | 0.96.1  | MIT           | https://github.com/dprint/dprint-plugin-typescript     |
+| dprint-plugin-json            | 0.22.0  | MIT           | https://github.com/dprint/dprint-plugin-json           |
+| dprint-plugin-markdown        | 0.22.1  | MIT           | https://github.com/dprint/dprint-plugin-markdown       |
+| malva (CSS)                   | 0.16.0  | MIT           | https://github.com/g-plane/malva                       |
+| marked                        | 18.0.12 | MIT           | https://github.com/markedjs/marked                     |
+| markup_fmt (HTML)             | 0.27.3  | MIT           | https://github.com/g-plane/markup_fmt                  |
+| pretty_yaml (YAML)            | 0.6.0   | MIT           | https://github.com/g-plane/pretty_yaml                 |
+| lax-sql (SQL)                 | 0.3.0   | MIT           | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
+| @zip-js/zip-js                | 2.8.7   | BSD-3-Clause  | https://github.com/gildas-lormeau/zip.js               |
+| @resvg/resvg-wasm             | 2.6.2   | MPL-2.0       | https://github.com/yisibl/resvg-js                     |
+| Lucide (icons)                | 1.38.0  | ISC, MIT      | https://lucide.dev                                     |
+| Natural Earth (map data)      | 5.1.2   | Public domain | https://www.naturalearthdata.com                       |
+| @std (Deno standard library)  | -       | MIT           | https://github.com/denoland/std                        |
+| @deno/esbuild-plugin          | -       | MIT           | https://github.com/denoland/deno_esbuild               |
+| Chrome for Testing (download) | pinned  | BSD-3-Clause  | https://github.com/GoogleChromeLabs/chrome-for-testing |
 
 The Chrome for Testing build is not embedded in the binary; imp downloads a pinned,
 checksum-verified build once into `~/.imp/browser/` when an e2e spec needs a browser and no system
@@ -54,6 +55,13 @@ below and both travel with the artwork. The drawings themselves are unchanged; i
 into a list of `[element, attributes]` pairs and renames it from `user` to `luUser`. Every app built
 with `imp build` carries the notice into its own `LICENSES.txt`, so the attribution reaches whoever
 the app is served to.
+
+imp bundles the **1:110m and 1:50m countries, lakes and populated places of Natural Earth, and its
+1:10m major and secondary highways**, as the world of the `map` component. Natural Earth is in the
+public domain. No permission is needed and no credit is required. imp projects the shapes to Web
+Mercator and quantizes them to a grid, which are the generated modules `map-world-110m.js`,
+`map-world-50m.js` and `map-roads-10m.js`. The data carries no notice obligation, and none is
+reproduced below.
 
 ---
 

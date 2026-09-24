@@ -92,11 +92,13 @@ customer who reports a bug.
   fetch event, beside the batch it posts to the server. So the widget reads one buffer in the page,
   a new line appears as it happens, and no request goes to the server for it. The buffer starts
   again on a reload, and the terminal and `.imp/dev.log` keep the whole session. Each line is one
-  row with the level or the status in colour, cut with an ellipsis, and a click expands it. The
-  filters are fixed: a level for the console, and OK or Failed for the network. There is no text
-  search, because a person who searches a log wants the developer tools. It is a glance, not a
-  debugger. A stack trace, a request body and a timing chart are the developer tools of the browser,
-  and imp does not rebuild them.
+  row with the level or the status in colour, cut with an ellipsis, and a click expands it. A bin
+  button beside the title drops the entries of that view from the buffer in the page, so a person
+  can watch one action from a clean list. The server keeps every entry. The filters are fixed: a
+  level for the console, and OK or Failed for the network. There is no text search, because a person
+  who searches a log wants the developer tools. It is a glance, not a debugger. A stack trace, a
+  request body and a timing chart are the developer tools of the browser, and imp does not rebuild
+  them.
 - **The widget lives in its own shadow root**, on a host that imp appends to `<body>`. imp styles it
   from a reset, with `all: initial`. A `MutationObserver` appends the host again when the app
   replaces the children of the body. So the widget cannot inherit the styles of the app, and to

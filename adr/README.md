@@ -70,6 +70,7 @@ These are the conventions:
 | [overlay-top-layer](overlay-top-layer.md)                                                 | Overlays promoted in place; shared seam of plain functions, no portal             |
 | [state-driven-forms](state-driven-forms.md)                                               | Form values are named state; controls bind one field by dot path                  |
 | [bundled-icon-set](bundled-icon-set.md)                                                   | Lucide in the binary; one export per icon, drawn by `icon`                        |
+| [map-bundled-world](map-bundled-world.md)                                                 | `map`: Natural Earth in the bundle, drawn as SVG, no tile server                  |
 | [code-block-syntax-highlighting](code-block-syntax-highlighting.md)                       | `codeBlock`: imp's own scanner, theme-mixed colours, line links in the fragment   |
 | [code-editor-textarea-mirror](code-editor-textarea-mirror.md)                             | `codeEditor`: a native textarea over a highlighted mirror, and three keys         |
 | [rich-text-editor-contenteditable-markdown](rich-text-editor-contenteditable-markdown.md) | `richTextEditor`: a contenteditable box with a toolbar, whose value is markdown   |

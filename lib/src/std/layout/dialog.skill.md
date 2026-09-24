@@ -67,8 +67,10 @@ Rules an agent gets wrong:
   is out of reach, and the window opens centred.
 - **Do not animate the dialog yourself.** It fades and rises in, and it slides out. It obeys
   `prefers-reduced-motion`. Every imp overlay shares this animation.
-- **The platform owns the focus.** The close button is the first element in the dialog, so the focus
-  lands there. On close, the focus returns to the element that had it before the dialog opened.
+- **The platform owns the focus.** In a modal, the close button is the first element, so the focus
+  lands there. A non-modal window takes the focus on its panel, so a screen reader announces the
+  title, and Tab reaches the title bar next. On close, the focus returns to the element that had it
+  before the dialog opened.
 
 Related: imp skill std/form - the usual content of a modal dialog; imp skill std/bugReport - a
 worked example of a panel that floats above the page.

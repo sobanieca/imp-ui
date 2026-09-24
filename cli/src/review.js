@@ -432,6 +432,41 @@ const WIDGET_STYLES = `
     text-transform: uppercase;
   }
 
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .clear {
+    display: grid;
+    place-items: center;
+    inline-size: 28px;
+    block-size: 28px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-item);
+    background: transparent;
+    color: var(--muted);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  }
+
+  .clear svg {
+    inline-size: 15px;
+    block-size: 15px;
+  }
+
+  .clear:not(:disabled):hover {
+    border-color: var(--danger);
+    background: var(--hover);
+    color: var(--danger);
+  }
+
+  .clear:disabled {
+    opacity: 0.45;
+  }
+
   .hint,
   .status {
     margin: 0;
@@ -632,6 +667,11 @@ const ICONS = {
   network: ICON(
     '<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>',
   ),
+  clear: ICON(
+    '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>' +
+      '<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+      '<line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  ),
   theme: ICON(
     '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/>' +
       '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>' +
@@ -672,7 +712,10 @@ const widgetMarkup = (mark, themeEditor) =>
       </div>
     </div>
     <div class="view" data-view="log" hidden>
-      <p class="title" data-log-title></p>
+      <div class="head">
+        <p class="title" data-log-title></p>
+        <button type="button" class="clear" data-action="clear" disabled>${ICONS.clear}</button>
+      </div>
       <div class="chips" role="group" aria-label="Filter the lines" style="flex-direction: column"></div>
       <ol class="lines"></ol>
       <p class="hint">What the page did since it loaded, as it happens. Click a line to see all of
@@ -703,12 +746,16 @@ const widgetMarkup = (mark, themeEditor) =>
 const LOG_VIEWS = {
   console: {
     title: 'Console logs',
+    clear: 'Clear console logs',
     empty: 'Nothing logged since the page loaded.',
+    cleared: 'Cleared. The next line appears as it happens.',
     filters: [{ key: 'level', options: ['All', 'Log', 'Info', 'Warn', 'Error'], initial: 'All' }],
   },
   network: {
     title: 'Network logs',
+    clear: 'Clear network logs',
     empty: 'No requests since the page loaded.',
+    cleared: 'Cleared. The next request appears as it happens.',
     filters: [
       { key: 'kind', options: ['Fetch', 'Resource', 'Any'], initial: 'Fetch' },
       { key: 'outcome', options: ['All', 'OK', 'Failed'], initial: 'All' },
@@ -757,6 +804,7 @@ export const reviewWidgetScript = ({ mark, themeEditor }) => `
   const comment = find('textarea')
   const saveButton = find('[data-action="save"]')
   const logTitle = find('[data-log-title]')
+  const clearButton = find('[data-action="clear"]')
   const chips = find('.chips')
   const lines = find('.lines')
   const views = {
@@ -776,6 +824,7 @@ export const reviewWidgetScript = ({ mark, themeEditor }) => `
   let tool = null
   let unwatch = null
   let active = {}
+  const cleared = new Set()
   const CHIP_COLORS = ${JSON.stringify(CHIP_COLORS)}
 
   const load = () => (engine ??= import('${REPORT_MODULE}'))
@@ -1005,16 +1054,28 @@ export const reviewWidgetScript = ({ mark, themeEditor }) => `
   }
 
   const render = () => {
-    const { empty } = LOG_VIEWS[tool]
+    const { empty, cleared: emptied } = LOG_VIEWS[tool]
     const all = (globalThis.__impTelemetry?.entries() ?? []).filter(belongs)
     const shown = all.filter(matchesFilter)
+    clearButton.disabled = !all.length
     lines.replaceChildren(...shown.map(entryFor))
-    if (!shown.length) lines.append(emptyItem(all.length ? 'No line matches.' : empty))
+    if (!shown.length) {
+      const reason = all.length ? 'No line matches.' : cleared.has(tool) ? emptied : empty
+      lines.append(emptyItem(reason))
+    }
     lines.scrollTop = lines.scrollHeight
   }
 
+  const clear = () => {
+    globalThis.__impTelemetry?.clear(belongs)
+    cleared.add(tool)
+    render()
+  }
+
   const append = (entry) => {
-    if (!belongs(entry) || !matchesFilter(entry)) return
+    if (!belongs(entry)) return
+    clearButton.disabled = false
+    if (!matchesFilter(entry)) return
     const atEnd = lines.scrollTop + lines.clientHeight >= lines.scrollHeight - 4
     lines.querySelector('.empty')?.remove()
     lines.append(entryFor(entry))
@@ -1032,6 +1093,8 @@ export const reviewWidgetScript = ({ mark, themeEditor }) => `
     tool = name
     pressToolButtons()
     logTitle.textContent = LOG_VIEWS[name].title
+    clearButton.setAttribute('aria-label', LOG_VIEWS[name].clear)
+    clearButton.title = LOG_VIEWS[name].clear
     active = Object.fromEntries(LOG_VIEWS[name].filters.map((group) => [group.key, group.initial]))
     renderChips()
     showView('log')
@@ -1130,6 +1193,7 @@ export const reviewWidgetScript = ({ mark, themeEditor }) => `
     const action = event.target.closest('[data-action]')?.dataset.action
     if (action === 'save') save()
     else if (action === 'cancel') reset()
+    else if (action === 'clear') clear()
   })
 
   chips.addEventListener('click', (event) => {

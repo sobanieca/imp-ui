@@ -263,14 +263,18 @@ one token against your real screens:
 
 | Knob              | Choices                    | What it drives                                             |
 | ----------------- | -------------------------- | ---------------------------------------------------------- |
-| **Primary**       | any color                  | The accent: buttons, links, focus rings                    |
-| **Secondary**     | any color                  | The muted tone, and the hue of every surface, border, text |
-| **Font**          | any font stack             | `font-family`, the text of every component                 |
-| **Mono font**     | any font stack             | `font-family-mono`, code and monospaced text               |
+| **Primary**       | any color, with a picker   | The accent: buttons, links, focus rings                    |
+| **Secondary**     | any color, with a picker   | The muted tone, and the hue of every surface, border, text |
+| **Font**          | a suggestion, or any stack | `font-family`, the text of every component                 |
+| **Mono font**     | a suggestion, or any stack | `font-family-mono`, code and monospaced text               |
 | **Border radius** | none, small, medium, large | `radius-item` and `radius-container`, as one step          |
 | **Shadow**        | none, soft, strong         | The three `shadow-*` steps                                 |
-| **Shadow color**  | any color                  | `color-shadow`, the color every shadow step casts          |
+| **Shadow color**  | any color, with a picker   | `color-shadow`, the color every shadow step casts          |
 | **Loader**        | spinner, dots, bar, pulse  | `loader`, the shape of every loading state, with a sample  |
+
+Every knob is a standard component. A color is a `colorPicker`: type a hex value, or press the
+swatch to open the picker of the browser. A font is a `comboBox`: pick a suggested font, or type any
+font stack. A step is a `segmented` row of buttons.
 
 imp **derives** everything else. From the primary color, it picks a readable `color-on-primary`.
 That is white when white reaches a contrast of 3:1 against the primary, and a near-black tint of the

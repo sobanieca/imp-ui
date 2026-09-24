@@ -777,6 +777,53 @@ that the host serves.
   the `:focus` of that element with `outline: none`. The focus is programmatic, so the browser would
   otherwise draw a ring around the whole screen on arrival.
 
+One component does both jobs for the whole app. It wraps the router slot, moves the focus, and
+announces the new title through a live region. A screen reader then reads the title, and the next
+Tab lands on the first control of the new screen:
+
+```js
+import { component } from 'imp'
+import { div } from 'imp/html'
+import { router, useRoute } from 'imp/router'
+import { shell } from 'imp/std/layout'
+
+const screenFrame = component('screen-frame', {
+  styles: `
+    .frame:focus { outline: none }
+    .announcer {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  `,
+  setup: (self, slot) => {
+    const frame = div({ class: 'frame', tabindex: '-1' }, slot)
+    const announcer = div({ class: 'announcer', role: 'status' })
+    let lastPath = useRoute().get().path
+    useRoute().watch(self, ({ path }) => {
+      if (path === lastPath) return
+      lastPath = path
+      frame.focus({ preventScroll: true })
+      queueMicrotask(() => announcer.textContent = document.title)
+    })
+    return div(frame, announcer)
+  },
+})
+
+shell(
+  { navbar: { label: 'Sections', map: app } },
+  screenFrame(router({ map: app, screens, title: ({ crumbs }) => `${crumbs.at(-1)} - Acme` })),
+)
+```
+
+The `title` option of the router writes `document.title` on every navigation. The announcer reads it
+one microtask later, after the router has written it. `preventScroll` leaves the scroll to the
+router, which has already put the new screen at the top. A change of the query string keeps the
+path, so the frame does nothing, and a search box keeps its focus while the reader types.
+
 ## Deployment: a deep link and a refresh
 
 A client router owns a URL such as `/todos/42` in the browser. But a visit to that URL, or a refresh

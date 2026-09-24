@@ -44,16 +44,16 @@ prints it. Your own components publish a skill the same way. See **[Components](
 `imp` and its subpaths are the framework: the element factories, `component`, the state, the routing
 and the theming. See **[Imports](imports.md)**. `imp/std` is the component library, split by group:
 
-| Import               | What it holds                                                              |
-| -------------------- | -------------------------------------------------------------------------- |
-| `imp/std`            | The base set: `button`, `menuButton`, `heading`, `text`, `link`, `icon`    |
-| `imp/std/layout`     | The app frame, the two arrangement primitives and the overlay frames       |
-| `imp/std/inputs`     | `form` and every control that binds to one                                 |
-| `imp/std/display`    | Components that present content, such as `card`, `tag` and `markdown`      |
-| `imp/std/navigation` | Getting around the app: `tabs`, `steps`                                    |
-| `imp/std/shell`      | Ready-made contents for the regions of the frame                           |
-| `imp/std/feedback`   | Telling the person what happens, and hearing back                          |
-| `imp/std/data`       | Records and numbers: `table`, `list`, `tree`, `chart`, `gantt`, `calendar` |
+| Import               | What it holds                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `imp/std`            | The base set: `button`, `menuButton`, `heading`, `text`, `link`, `icon`                   |
+| `imp/std/layout`     | The app frame, the two arrangement primitives and the overlay frames                      |
+| `imp/std/inputs`     | `form` and every control that binds to one                                                |
+| `imp/std/display`    | Components that present content, such as `card`, `tag` and `markdown`                     |
+| `imp/std/navigation` | Getting around the app: `tabs`, `steps`                                                   |
+| `imp/std/shell`      | Ready-made contents for the regions of the frame                                          |
+| `imp/std/feedback`   | Telling the person what happens, and hearing back                                         |
+| `imp/std/data`       | Records, numbers and places: `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map` |
 
 An import line names the part of the library that a file uses. An import of a group that does not
 exist is an error, and the message lists the groups that exist.
@@ -158,6 +158,10 @@ comes and goes, such as filters or an inspector, is a `drawer` that you mount in
 Content that must stand beside the page is your own layout inside the content, where you decide what
 a phone does with it.
 
+**The frame is ready for a keyboard and a screen reader.** Each navigation level is a named `<nav>`
+landmark, the content is `<main>`, and a "Skip to the content" link is the first tab stop of the
+page. The link is hidden until it takes the focus, and it moves the focus into the content.
+
 `imp/std/shell` ships the pieces that usually fill the regions of the frame: `appLogo`, `userCard`,
 `themeSelect`, `langSelect` and the `notifications` bell. Each region takes plain DOM, so you
 replace a piece that does not fit with a component of your own. The gallery shows every prop of the
@@ -256,11 +260,12 @@ component boundary. Validation runs on blur and on submit, not on every keystrok
 always plain data: a string, a number, an array, or an ISO date. Never a `Date` or a `File`.
 
 **A submit is a button.** A click on `submitButton()` checks every field again. When one field
-fails, `onSubmit` does not run, and the bad fields show their messages. Return a promise from
-`onSubmit`, and the button spins until it settles.
+fails, `onSubmit` does not run, the bad fields show their messages, and the focus moves to the first
+of them. Return a promise from `onSubmit`, and the button spins until it settles.
 
 The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
-`fileUpload`, `codeEditor` and `richTextEditor`. The gallery shows each one with its props.
+`colorPicker`, `fileUpload`, `codeEditor` and `richTextEditor`. The gallery shows each one with its
+props.
 
 ## Overlays use the platform, not a z-index war
 
@@ -311,6 +316,52 @@ const choice = await notify({
 
 `progress`, `notice` and `toast` take a `client` prop, the name of an HTTP client. They then show a
 request in flight and the last error on their own. See **[HTTP](http.md)**.
+
+## Put things on a map, with no map server
+
+`map` from `imp/std/data` shows the world with your markers on it, and it sends no request. The
+countries, the lakes and the cities come with the component, from the public domain Natural Earth
+data set. So a map needs no key, no account and no tile server. It works offline, and it costs your
+app about 50 kB, only when a page draws one.
+
+```js
+import { userCard } from 'imp/std/shell'
+import { map } from 'imp/std/data'
+
+map({
+  label: 'Offices',
+  center: [50, 10],
+  zoom: 2,
+  pins: [
+    { id: 'warsaw', lat: 52.23, lng: 21.01, label: 'Warsaw office' },
+    { id: 'lisbon', lat: 38.72, lng: -9.14, content: userCard({ name: 'Ana' }), anchor: 'bottom' },
+  ],
+  events: { select: (event) => showOffice(event.detail.id) },
+})
+```
+
+A person drags the map, turns the wheel, pinches on a phone, or uses the arrow keys and `+` and `-`.
+`zoom: 0` fits the whole world to the box, and each step doubles it. `center` and `zoom` can be
+states. Then the map moves when your app sets them, and it writes them back when the person moves
+the map, so a list next to the map can follow the view.
+
+A pin is any coordinate. Without `content` it is a marker button, named by its `label`, and a click
+reports `select`. With `content` it is your own element or component, placed on the coordinate and
+left alone. So a pin can be a button, a card, or anything with its own clicks and keys.
+
+**`detail` decides how much of the world ships.** The default, `'low'`, draws 177 countries, the 24
+largest lakes and 243 cities, for 50 kB. `'medium'` draws the finer 1:50m world, with every small
+island, 412 lakes and 1251 cities, for 360 kB. `'high'` adds the major and secondary highways of the
+world on top of that, for 1.1 MB, or 640 kB compressed. Each level is a separate chunk of your app,
+and a page loads only the chunk of the level it draws. Pick `'low'` for a card that shows a few
+offices, and `'high'` for a full-page map that a person zooms into.
+
+```js
+map({ label: 'Europe', detail: 'high', center: [50, 10], zoom: 3, pins })
+```
+
+The detail stops there. The map has no streets and no towns, because that needs a map server, and
+imp does not ship one. For a street map, use a tile provider of your own in a custom component.
 
 ## The name that you look for
 

@@ -60,7 +60,8 @@ Rules an agent gets wrong:
   same data for a screen reader. imp warns when `label` is missing.
 - **Write no hover or key handling.** A pointer over a category shows a readout of every series. The
   plot is one tab stop. The arrow keys, `Home`, `End` and `Escape` move the readout. `bar` uses the
-  vertical arrows. The horizontal arrows mirror in RTL.
+  vertical arrows. The horizontal arrows mirror in RTL. A status region outside the plot speaks the
+  readout, because the plot is an image and a screen reader reads nothing inside it.
 - **The chart is not interactive beyond the readout.** There is no click event, no selection and no
   zoom. Put a control next to the chart when the person must pick something.
 - **More than eight series repeat the colours.** imp warns. Show fewer series, or draw two charts.

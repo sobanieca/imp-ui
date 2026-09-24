@@ -44,6 +44,10 @@ export const clientScript = (
   }
   globalThis.__impTelemetry = {
     entries: () => kept.slice(),
+    clear: (belongs) => {
+      const rest = kept.filter((entry) => !belongs(entry))
+      kept.splice(0, kept.length, ...rest)
+    },
     watch: (watcher) => {
       watchers.add(watcher)
       return () => watchers.delete(watcher)
