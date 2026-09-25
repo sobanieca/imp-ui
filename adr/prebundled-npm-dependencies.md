@@ -17,7 +17,7 @@ binary**. Each one becomes a single minified ESM file under `cli/src/vendor/`. T
 imports that file, and not the npm specifier. This is the same vendoring pattern as for the dprint
 wasm plugins.
 
-- `tools/prebundle-npm-deps.js`, which the `compile` task runs, bundles each entry with the
+- `tools/prebundle-npm-deps.js`, which `tools/compile.js` runs, bundles each entry with the
   in-process esbuild engine. `happy-dom` becomes `vendor/happy_dom.js`. `puppeteer-core` becomes
   `vendor/puppeteer_core.js`. eslint, which is `eslint/universal` with the recommended rules of
   `@eslint/js` and the browser `globals`, becomes `vendor/eslint.js`.
@@ -49,7 +49,7 @@ wasm plugins.
   directly from source that ships in the binary. A direct npm import adds a whole package tree
   again, and nothing reports that.
 - A vendor bundle must exist before imp can compile the binary. That is the same requirement that
-  `imp fmt` already has for the vendored wasm plugins. `deno task compile` runs the prebundle tool
+  `imp fmt` already has for the vendored wasm plugins. `tools/compile.js` runs the prebundle tool
   first, and every task that invokes imp compiles through that task. So this is never a manual step.
 - A version change is manual. Edit the version pin in `tools/prebundle-npm-deps.js`. `deno outdated`
   does not see these packages. The next compile finds that the version banner differs, and bundles

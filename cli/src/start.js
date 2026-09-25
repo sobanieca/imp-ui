@@ -21,6 +21,7 @@ import {
   SERVICE_WORKER_PATH,
 } from './service-worker.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
+import { developmentChecksScript } from './development-checks.js'
 import { flagsInjectionScript, splitEnvAndFlags } from './flags.js'
 import { dim, green, red } from './colors.js'
 import { addLogSink, logger } from './logger.js'
@@ -107,7 +108,11 @@ function buildHeadInjection(dependencies, pwa, env, flags, mocks, ownWorker, wid
       appleTouchHref: DEV_ICON_PREFIX + APPLE_TOUCH_ICON,
     })
     : ''
-  const valueTags = [envInjectionScript(env), flagsInjectionScript(flags)]
+  const valueTags = [
+    developmentChecksScript(),
+    envInjectionScript(env),
+    flagsInjectionScript(flags),
+  ]
     .filter(Boolean)
     .map((tag) => tag + '\n')
     .join('')

@@ -12,11 +12,14 @@ import {
   overviewStyles,
   renderInstall,
   renderNotice,
+  renderPositions,
   renderTour,
   renderWorkflow,
 } from './build-overview.js'
 import { slides } from '../site/content/slides.js'
 import { steps, stepsNote } from '../site/content/steps.js'
+import { positions } from '../site/content/positions.js'
+import { runImp } from './imp.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
 const DOCS = join(ROOT, 'docs')
@@ -79,10 +82,11 @@ const FLAGS_GLOBAL = /__IMP_FLAGS__/g
 const SECTION_START = /(?=<h2 )/
 const INSTALL_SLOT = '<!-- install -->'
 const NOTICE_SLOT = '<!-- notice -->'
-const OVERVIEW_SLOT = /^<!-- (tour|workflow) -->$/m
+const OVERVIEW_SLOT = /^<!-- (tour|workflow|positions) -->$/m
 const OVERVIEW_BLOCKS = {
   tour: () => renderTour(slides, highlight),
   workflow: () => renderWorkflow(steps, stepsNote),
+  positions: () => renderPositions(positions),
 }
 
 const escape = (text) =>
@@ -457,6 +461,22 @@ ${overviewStyles}
 
 .section > :last-child { margin-block-end: 0 }
 
+.imp-name {
+  font-family: var(--imp-font-family-mono);
+  font-size: 0.95em;
+  white-space: nowrap;
+}
+
+.imp-name img {
+  inline-size: 1.3em;
+  block-size: 1.3em;
+  margin-inline-end: 0.15em;
+  vertical-align: -0.3em;
+}
+
+:root[data-scheme='dark'] .imp-name .imp-mark-light,
+:root:not([data-scheme='dark']) .imp-name .imp-mark-dark { display: none }
+
 .section ol li::marker {
   font-family: var(--imp-font-family-mono);
   color: var(--imp-color-secondary);
@@ -754,6 +774,11 @@ for await (const { name } of Deno.readDir(FONTS)) {
   await Deno.copyFile(join(FONTS, name), join(DIST, 'fonts', name))
 }
 if (ORIGIN !== null) await writeSitemap(pages)
+const galleryCode = await runImp(
+  ['preview', '--output', join(DIST, 'gallery')],
+  join(ROOT, 'lib', 'src'),
+)
+if (galleryCode !== 0) Deno.exit(galleryCode)
 console.log(
   `site: ${pages.length} pages written into site/dist/` +
     (ORIGIN === null

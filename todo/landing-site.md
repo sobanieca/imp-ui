@@ -36,6 +36,6 @@ cannot drift in colour or type, only in layout.
   command on the overview page, and in `docs/cli.md`, fetches `install.sh` from
   `https://sobanieca.github.io/imp-ui`, and the build copies the script into `site/dist/`. Set
   `IMP_SITE_URL` to another origin, and the command follows it. Nothing publishes the site yet. A
-  workflow must run `deno task site:build` and upload `site/dist/`. The pages link their assets from
-  the root, as `/site.css`, so the site needs its own origin: a custom domain, or the root site of
-  the account. A project site under `/imp-ui/` breaks those links.
+  workflow must run `deno run -A tools/build-site.js` and upload `site/dist/`. The pages link their
+  assets from the root, as `/site.css`, so the site needs its own origin: a custom domain, or the
+  root site of the account. A project site under `/imp-ui/` breaks those links.

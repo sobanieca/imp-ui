@@ -540,6 +540,10 @@ the module scripts of the page. It bundles each one into minified, self-containe
   components of its group. A page that mounts one element builds less than 4 kB of imp. A page that
   uses every part of imp pays for every part. There is nothing to configure. Import what you need,
   and imp emits nothing else.
+- **imp drops its development checks.** While `imp start` serves your app, imp checks the page as it
+  renders, and warns in the console about a mistake that the browser hides. One such check finds a
+  styled element that moved into the shadow root of another component. `imp build` folds every such
+  check away. The production bundle holds no check, no message and no cost.
 - **imp collects a third-party license notice. It does not remove it.** imp gathers every license
   notice that the code in the bundle carries, into one `LICENSES.txt` at the root of the output.
   Each emitted script starts with a comment of one line that points at that file. See

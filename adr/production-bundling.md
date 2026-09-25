@@ -63,6 +63,9 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
 - The dead-code elimination reaches the library itself, and not only the app. No library module does
   work when somebody imports it. So an app carries only the subjects and the components that it
   uses, see `tree-shakeable-library.md`.
+- A development check in the library reads `globalThis.__IMP_DEV__`, and the build defines that
+  expression as `false`. So the minifier drops the check, and the module that holds it leaves the
+  bundle, see `development-checks.md`.
 - An entry file keeps a stable name that comes from the source. So nobody has to rewrite the HTML.
   An entry therefore gets no content hash to break a cache. imp hashes a chunk and an emitted asset
   only.

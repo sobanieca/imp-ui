@@ -21,15 +21,15 @@ run.
 ## How to run
 
 ```
-deno task perf                                  build the three apps and run every scenario
-deno task perf --frameworks imp                 one framework only (imp, react, vue)
-deno task perf --filter "1k rows"               scenarios whose name contains the text
-deno task perf --samples 20                     samples per scenario, default 10
-deno task perf --skip-build                     reuse perf/dist/ from the previous run
-deno task perf --profile                        readable bundles, and a CPU profile per scenario
+deno run -A perf/run.js                                  build the three apps and run every scenario
+deno run -A perf/run.js --frameworks imp                 one framework only (imp, react, vue)
+deno run -A perf/run.js --filter "1k rows"               scenarios whose name contains the text
+deno run -A perf/run.js --samples 20                     samples per scenario, default 10
+deno run -A perf/run.js --skip-build                     reuse perf/dist/ from the previous run
+deno run -A perf/run.js --profile                        readable bundles, and a CPU profile per scenario
 ```
 
-The task compiles the imp binary first, so the numbers always describe the current source. A run
+The runner compiles the imp binary first, so the numbers always describe the current source. A run
 prints one line per scenario and writes two files:
 
 - `perf/results/<date>.json` holds every sample, every memory probe and every DOM snapshot.
@@ -198,8 +198,8 @@ microtasks, and the emptying of 1000 shadow roots is most of its time.
 
 ## Reference run
 
-The tables below are the output of `deno task perf` on the reference machine, a Linux x86_64 cloud
-container with a noisy CPU. Read the ratios, not the absolute numbers.
+The tables below are the output of `deno run -A perf/run.js` on the reference machine, a Linux
+x86_64 cloud container with a noisy CPU. Read the ratios, not the absolute numbers.
 
 Date: 2026-09-23T12:17:59.533Z. Browser: Chrome/150.0.7871.46. Platform: linux x86_64. Versions: imp
 0.1.0, react 19.3.0, vue 3.5.43. Samples per scenario: 10.

@@ -109,17 +109,45 @@ this, because a page can be present and stale. The person who makes the change i
 
 ## Everything runs the compiled binary
 
-**Every `deno task` that invokes imp runs the compiled `./imp`, never `cli/src/main.js`.** There is
-one imp, the same one users get. There is no second "from source" mode that could behave
-differently.
+**Every command that invokes imp runs the compiled `./imp`, never `cli/src/main.js`.** There is one
+imp, the same one users get. There is no second "from source" mode that could behave differently.
 
-Each task is `deno task compile && ./imp ...`. `compile` rebuilds only when the binary is older than
-a git-visible file. So an edit to `cli/src` or `lib/src` forces a rebuild before the command runs,
-and a green test run is never about stale code. An unchanged tree costs one `git ls-files`, and
-`compile` prints that it skipped.
+`tools/imp.js` is the only way to run it. `deno run -A tools/imp.js <args>` runs `tools/compile.js`
+at the repo root, then `./imp <args>` in the current folder. `compile.js` rebuilds only when the
+binary is older than a git-visible file. So an edit to `cli/src` or `lib/src` forces a rebuild
+before the command runs, and a green test run is never about stale code. An unchanged tree costs one
+`git ls-files`, and the script prints that it skipped. Pass `--force` to `compile.js` to rebuild
+anyway.
 
-**Always go through the tasks. Never invoke `./imp` by hand** (for example `../../imp test` from
-`lib/test`). A bare `./imp` skips the freshness check and runs whatever was compiled last.
+**Never invoke `./imp` by hand** (for example `../../imp test` from `lib/test`). A bare `./imp`
+skips the freshness check and runs whatever was compiled last.
+
+## Tasks and tools
+
+`deno.json` holds four tasks. Each one is the daily command for one job:
+
+| Task                | What it does                                                             |
+| ------------------- | ------------------------------------------------------------------------ |
+| `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/> |
+| `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm` |
+| `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests   |
+| `deno task check`   | runs `deno lint`, `deno fmt`, then `imp lint` on `lib/src`               |
+
+`deno task test --update` rewrites the CLI snapshots. `rfm` is a static file server installed on the
+machine, not part of the repo.
+
+Every other maintainer job is a script, run directly with `deno run -A`:
+
+| Script                                             | What it does                                            |
+| -------------------------------------------------- | ------------------------------------------------------- |
+| `tools/imp.js <args>`                              | compiles if needed, then runs `./imp <args>` here       |
+| `tools/compile.js`                                 | compiles `./imp` when a git-visible file is newer       |
+| `tools/build-site.js`                              | writes `site/dist/`, gallery included; CI runs this     |
+| `tools/check-binary-size.js`                       | fails when `./imp` is over `binary-size-limit.json`     |
+| `tools/update-dependencies.js`                     | updates the Deno dependencies and the formatter plugins |
+| `tools/vendor-lucide.js` (with `--no-lock`)        | regenerates `lib/src/icons/lucide-icons.js`             |
+| `tools/vendor-natural-earth.js` (with `--no-lock`) | regenerates the world data of `map`                     |
+| `perf/run.js`                                      | builds the perf apps and runs the scenarios             |
 
 ## Previewing the standard components
 
@@ -147,9 +175,9 @@ choice keeps the look. All three fonts are licensed under the SIL Open Font Lice
 is permitted. The font files are not changed. A changed IBM Plex file must not use the name "Plex".
 The compiled binary does not contain `lib/src/public/`.
 
-The task serves from `lib/src`, so the session log is `lib/src/.imp/dev.log`. `deno task logs`
-prints it. It runs `imp logs` from the same folder, and it takes the same `-n` and `-f` flags. An
-`imp logs` at the repo root finds no log there, and its message points at `lib/src`.
+The task serves from `lib/src`, so the session log is `lib/src/.imp/dev.log`. To print it, run
+`deno run -A ../../tools/imp.js logs` from `lib/src`, with `-n` or `-f` as needed. An `imp logs` at
+the repo root finds no log there, and its message points at `lib/src`.
 
 **An edit to a component during a session does not reach the page. Restart the task.** The dev
 server reloads on save and rebuilds the preview page. But a preview imports `button` from `imp/std`,
@@ -175,17 +203,19 @@ before the first paint, so a dark page never flashes light. The build copies `li
 to `/fonts/`, so the pages and the gallery load the same font files from the site. The site sends no
 request to another origin.
 
-`deno task site:build` writes `site/dist/`. It runs the build tool, then `imp preview --output` from
-`lib/src` into `site/dist/gallery/`. Set `IMP_SITE_URL` to the public origin to get canonical links,
-`sitemap.xml` and `robots.txt`. Upload `site/dist/` as it is. `deno task site` builds it and serves
-it on <http://localhost:4507/>. The site draws its own navbar, because the navbar of the design
-system is ink with white text, and the `shell` bar takes the surface colour of the theme.
+`deno run -A tools/build-site.js` writes `site/dist/`. It renders the pages, then runs
+`imp preview --output` from `lib/src` into `site/dist/gallery/`. Set `IMP_SITE_URL` to the public
+origin to get canonical links, `sitemap.xml` and `robots.txt`. Upload `site/dist/` as it is.
+`deno task site` builds it, then serves `site/dist/` with `rfm`. The site draws its own navbar,
+because the navbar of the design system is ink with white text, and the `shell` bar takes the
+surface colour of the theme.
 
 ## After making changes
 
-After you complete a batch of code changes, run `deno lint` and `deno fmt`. Fix every issue they
-report before you consider the work done. These tools operate on imp's own repo source, so it is
-fine to invoke Deno directly here. This is internal maintainer tooling, not a user-facing surface.
+After you complete a batch of code changes, run `deno task check`. It runs `deno lint`, `deno fmt`
+and `imp lint` on `lib/src`. Fix every issue it reports before you consider the work done. These
+tools operate on imp's own repo source, so it is fine to invoke Deno directly here. This is internal
+maintainer tooling, not a user-facing surface.
 
 **Keep every change that `deno fmt` makes, also in files outside your scope.** `deno fmt` runs
 repo-wide and can reformat files unrelated to your change, for example formatting drift in other
@@ -196,8 +226,8 @@ state is the canonical state of the repo. Leave every change in place and includ
 This holds for code you just wrote and for anything else it reports. Do not ignore, suppress, or
 leave lint errors behind.
 
-**`deno task lint:lib` must pass clean too.** It runs `imp lint` on `lib/src`, with the rule set
-that users get. That set is stricter than `deno lint`, and it includes the dead code checks. The
+**The `imp lint` step of `deno task check` must pass clean too.** It lints `lib/src` with the rule
+set that users get. That set is stricter than `deno lint`, and it includes the dead code checks. The
 `imp.json` in `lib/src` lists the library entry points in `publicExports`, together with each export
 that the CLI imports from `lib/src` by path. When you add such an import, list it there. Do not add
 an `imp-lint-ignore` directive to library code.
@@ -263,10 +293,10 @@ item. That class of bug shows up only when the page is rendered.
 **Name a file with a hyphen between words, never an underscore.** `app-map.js`, `theme-colors.js`,
 `user-card.skill.md`. An underscore needs one more key on most keyboards. The rule covers every file
 in this repo: the library, the CLI, the tools, the tests, the scaffold of `imp init`, every path in
-`docs/`, `skills/` and a `*.skill.md`, and the examples. Two things keep an underscore because the
-name is not imp's to choose: an environment value such as `IMP_BASEPATH`, since a shell does not
-accept a hyphen in a name, and a vendored third-party asset that keeps its upstream name, such as
-the `.wasm` files under `cli/src/vendor/`.
+`docs/`, `skills/` and a `*.skill.md`. Two things keep an underscore because the name is not imp's
+to choose: an environment value such as `IMP_BASEPATH`, since a shell does not accept a hyphen in a
+name, and a vendored third-party asset that keeps its upstream name, such as the `.wasm` files under
+`cli/src/vendor/`.
 
 **Do not add comments to code.** Write self-explanatory code instead. Use clear, descriptive names
 for functions, variables, and constants, so the intent is obvious without comments. Put prose

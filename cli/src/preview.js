@@ -46,6 +46,7 @@ import {
   previewElementScript,
 } from './preview-export.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
+import { productionDefines } from './development-checks.js'
 import { formatSize } from './file-size.js'
 
 const PREVIEW_RUNTIME_URL = import.meta.resolve('./preview-runtime.js')
@@ -499,6 +500,7 @@ export async function bundlePreviewApp(
       const result = await runEsbuild({
         plugins: [plugin, impResolverPlugin({ root, dependencies, mocks }), denoPlugin()],
         entryPoints: [{ in: ENTRY_NAMESPACE, out: APP_BUNDLE_NAME }, ...groupEntryPoints],
+        ...(embedded ? { define: productionDefines() } : {}),
         bundle: true,
         splitting: true,
         minify: embedded,

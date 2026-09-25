@@ -48,11 +48,11 @@ draws it, and takes the value, not a name.**
   and a standing question about which one to use. That would save an app that draws one glyph a few
   hundred bytes. `icon` is the one icon component, and Lucide is the one set.
 - **There is one generated file, and not one file per icon.** `lib/src/icons/lucide-icons.js` is 434
-  kB, and it holds 1791 declarations. `deno task lucide` writes it, from the pinned `lucide-static`
-  package, and you commit it. A module per icon would shake in the same way, and it would add 1791
-  files to the repository for no gain. esbuild shakes per declaration inside a module. The generator
-  runs with `--no-lock`, because that package in `deno.lock` adds its npm tarball to the compiled
-  binary, and nothing imports it.
+  kB, and it holds 1791 declarations. `deno run -A --no-lock tools/vendor-lucide.js` writes it, from
+  the pinned `lucide-static` package, and you commit it. A module per icon would shake in the same
+  way, and it would add 1791 files to the repository for no gain. esbuild shakes per declaration
+  inside a module. The generator runs with `--no-lock`, because that package in `deno.lock` adds its
+  npm tarball to the compiled binary, and nothing imports it.
 - **Lucide uses the ISC licence, and the icons that it inherited from Feather use MIT.** Both are
   already in the permissive tier of `license-policy-gate.md`. So nothing about the policy changes.
 - **The attribution ships with the app, automatically.** The generated module starts with a `/*! */`

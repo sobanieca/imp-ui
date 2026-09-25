@@ -23,11 +23,12 @@ a marker, so the marker must be real DOM, not a picture drawn on a canvas.
   one layer of them is about 1 MB and 538 thousand points, which the platform does not rasterize
   well. The other road types are out, because they double the bytes for local roads and 25 thousand
   segments of an unknown type. Natural Earth is in the public domain, so no notice travels with it.
-  `deno task natural-earth` writes the three modules `map-world-110m.js`, `map-world-50m.js` and
-  `map-roads-10m.js` into `lib/src/std/data/`, from a pinned release of the upstream repository, and
-  the files are committed. The tool projects every point to Web Mercator, quantizes it to a grid of
-  65535 by 65535, and delta-encodes each ring and each line as a string. The modules hold plain
-  literals only. `map` decodes a level on first use and caches it.
+  `deno run -A --no-lock tools/vendor-natural-earth.js` writes the three modules
+  `map-world-110m.js`, `map-world-50m.js` and `map-roads-10m.js` into `lib/src/std/data/`, from a
+  pinned release of the upstream repository, and the files are committed. The tool projects every
+  point to Web Mercator, quantizes it to a grid of 65535 by 65535, and delta-encodes each ring and
+  each line as a string. The modules hold plain literals only. `map` decodes a level on first use
+  and caches it.
 - **Each level is a lazy chunk, and only `map` loads it.** `map` reaches the data through
   `import()`, so `imp build` writes each data module as its own chunk, and a page fetches the one
   chunk of the level it draws, from the app itself. An app that draws no map ships none of the data,

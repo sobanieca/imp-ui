@@ -40,6 +40,10 @@ Rules an agent gets wrong:
   `textField({ type: 'number', stepper: true })`.
 - **Nothing else is a prop.** There is no padding, background, width, direction or grow prop, and
   there is no `grid` component. A box that needs those is a `div` that your own component styles.
+- **A child moves into the shadow root of the row, where your `styles` do not reach.** So
+  `flex({}, div({ class: 'box' }))` renders the div without your `.box` rule, and imp warns in
+  development. Give the box its own component, use a standard component, or set an inline `style`. A
+  wrapper in your own tree, `div({ class: 'box' }, flex(...))`, keeps the rule.
 - **The spacing lives here, not on the children.** No standard component has an outer margin. So a
   gap is the only way to separate two of them.
 - A layout that must change shape below some width needs a media query in the `styles` of your own

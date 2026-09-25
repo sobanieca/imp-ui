@@ -29,6 +29,7 @@ import {
 import { readDependencyManifest, recordedNotices } from './dependency-manifest.js'
 import { licenseViolationProblem, reviewLicenses } from './license-policy.js'
 import { logger } from './logger.js'
+import { productionDefines } from './development-checks.js'
 import { assertServiceWorkerSource, runtimeValues } from './service-worker.js'
 import {
   APPLE_TOUCH_ICON,
@@ -178,6 +179,7 @@ function buildEntryPoints(
     ],
     entryPoints,
     external: impProvidedByHost ? ['imp', 'imp/*'] : [],
+    define: productionDefines(),
     bundle: true,
     splitting: true,
     minify: true,
@@ -210,6 +212,7 @@ function buildServiceWorkerEntry({ root, entry, dependencies, outdir, flags }) {
       denoPlugin(),
     ],
     entryPoints: [{ in: toFileUrl(entry).href, out: withoutExtension(SERVICE_WORKER_FILE) }],
+    define: productionDefines(),
     bundle: true,
     minify: true,
     format: 'iife',

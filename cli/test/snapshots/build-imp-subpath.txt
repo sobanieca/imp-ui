@@ -9,6 +9,7 @@ built std-entry.js -> std/
 (empty)
 
 [bundle defines the element: true]
+[bundle carries a development check: false]
 
 $ imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)
 exit code: 1

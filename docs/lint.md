@@ -340,31 +340,6 @@ error[imp/no-get-in-binding]: 'busy.get()' as the 'disabled' prop of 'button' co
 Pass the handle, as in `{ disabled: busy }`. Use `get()` in an event handler, where a snapshot is
 what you want.
 
-### `imp/styles-stop-at-child`
-
-The `styles` of a component reach only its own shadow root. A node that you pass to another
-component moves into the shadow root of that component, and your class rules no longer match it. A
-layout such as `stack` or `flex` is a component too. Nothing warns at runtime, so the box renders
-without its CSS. The rule reports a class from your `styles` on an element that you pass as a child
-of a standard component, or of a component that the same file defines:
-
-```js
-const editor = component('my-app-editor', {
-  styles: `.usage { padding: 8px; border: 1px solid var(--imp-color-border) }`,
-  setup: () => stack({ gap: 2 }, div({ class: 'usage' }, 'Save the file as theme.js')),
-})
-```
-
-```
-error[imp/styles-stop-at-child]: '.usage' is a class of the styles of this component, on an element passed as a child of 'stack', and the styles of a component reach only its own shadow root - give the element its own component, use a standard component, or set an inline style
- --> src/editor.js:3:39
-```
-
-Give the box a component of its own, so its CSS travels with it. Or render it with a standard
-component that carries its look, such as `card` or `text`. Or set the few declarations as an inline
-`style`. A wrapper that you keep in your own tree is fine: `div({ class: 'usage' }, stack(...))`
-matches your rule, because the div stays in your shadow root.
-
 ### `imp/no-root-query-in-setup`
 
 While `setup` runs, the DOM that it returns is **not yet in the shadow root**. imp inserts the DOM

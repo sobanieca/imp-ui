@@ -186,6 +186,8 @@ imp start             # serve it, with mocks
 imp preview           # every component, in isolation
 imp test --unit       # unit tests
 imp test --e2e        # end-to-end tests
+imp lint              # check the code
+imp fmt               # format the code
 imp build             # static files, for any CDN
 imp install marked    # vendor a dependency`,
     },

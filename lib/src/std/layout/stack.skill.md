@@ -31,6 +31,10 @@ Rules an agent gets wrong:
   them.
 - **Nothing else is a prop.** There is no padding, background, width or grow prop, and there is no
   `grid` component. A box that needs those is a `div` that your own component styles.
+- **A child moves into the shadow root of the stack, where your `styles` do not reach.** So
+  `stack({}, div({ class: 'box' }))` renders the div without your `.box` rule, and imp warns in
+  development. Give the box its own component, use a standard component, or set an inline `style`. A
+  wrapper in your own tree, `div({ class: 'box' }, stack(...))`, keeps the rule.
 - A layout that must change shape below some width needs a media query in the `styles` of your own
   component. No prop varies with the size of the screen.
 

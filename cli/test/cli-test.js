@@ -127,7 +127,6 @@ Deno.test('imp commands', async (t) => {
   await test('lint-abort-check-after-await', ['lint', 'app.js'], fixture('lint-abort-check'))
   await test('lint-no-state-as-child', ['lint', 'app.js'], fixture('lint-state-child'))
   await test('lint-no-get-in-binding', ['lint', 'app.js'], fixture('lint-get-binding'))
-  await test('lint-styles-stop-at-child', ['lint', 'app.js'], fixture('lint-styles-child'))
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
   await test('lint-icons-by-name', ['lint', 'app.js'], fixture('lint-icons'))
@@ -894,7 +893,7 @@ Deno.test('imp build', async (t) => {
             commandTranscript('imp build std-entry.js --output std  (cwd: <tmp>)', resolved)
           }\n[bundle defines the element: ${
             code.includes('imp-${') && code.includes('variant-')
-          }]\n\n${
+          }]\n[bundle carries a development check: ${code.includes('__IMP_DEV__')}]\n\n${
             commandTranscript(
               'imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)',
               unknown,

@@ -9,7 +9,7 @@ const { target, maxBytes } = JSON.parse(await Deno.readTextFile(LIMIT_FILE))
 
 const info = await Deno.stat(new URL(`../${BINARY}`, import.meta.url)).catch(() => null)
 if (!info) {
-  console.error(`error: ${BINARY} not found - run "deno task compile" first`)
+  console.error(`error: ${BINARY} not found - run "deno run -A tools/compile.js" first`)
   Deno.exit(1)
 }
 

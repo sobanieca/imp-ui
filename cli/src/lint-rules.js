@@ -122,13 +122,6 @@ const createDefinitionTracker = () => {
     const name = namespaceCalleeName(callee, namespaceLocals)
     return name !== null && [...DEFINITION_CALLS.values()].some((names) => names.has(name))
   }
-  const definitionName = (callee) => {
-    if (callee.type === 'Identifier') return locals.get(callee.name) ?? null
-    const name = namespaceCalleeName(callee, namespaceLocals)
-    return name !== null && [...DEFINITION_CALLS.values()].some((names) => names.has(name))
-      ? name
-      : null
-  }
   return {
     visitImport(node) {
       const names = DEFINITION_CALLS.get(node.source.value)
@@ -140,13 +133,6 @@ const createDefinitionTracker = () => {
         locals,
         namespaceLocals,
       )
-    },
-    definitionOf(node) {
-      if (node.type !== 'CallExpression' || definitionName(node.callee) === null) return null
-      return node.arguments.find((argument) => argument.type === 'ObjectExpression') ?? null
-    },
-    definesComponent(node) {
-      return node.type === 'CallExpression' && definitionName(node.callee) === 'component'
     },
     isHook(node, hooks) {
       const property = node.parent
@@ -385,20 +371,13 @@ const createHandleTracker = () => {
   }
 }
 
-const classifyStdComponent = (importedName) =>
-  STD_COMPONENTS.has(importedName) ? importedName : null
-
 const createFactoryTracker = () => {
   const locals = new Map()
-  const stdLocals = new Map()
   const namespaceLocals = new Set()
   return {
     visitImport(node) {
       for (const specifier of PROPS_DISPATCHING_SPECIFIERS) {
         collectImpImports(node, specifier, classifyFactory, locals, namespaceLocals)
-      }
-      for (const specifier of STD_SPECIFIERS) {
-        collectImpImports(node, specifier, classifyStdComponent, stdLocals, new Set())
       }
     },
     factoryKind(callee) {
@@ -409,103 +388,12 @@ const createFactoryTracker = () => {
     factoryName(callee) {
       return callee.type === 'Identifier' ? callee.name : callee.property.name
     },
-    isStdComponent(callee) {
-      if (callee.type === 'Identifier') return stdLocals.has(callee.name)
-      const name = namespaceCalleeName(callee, namespaceLocals)
-      return name !== null && STD_COMPONENTS.has(name)
-    },
-    isElementFactory(callee) {
-      const kind = this.factoryKind(callee)
-      return kind === 'el' || (kind === 'tag' && !this.isStdComponent(callee))
-    },
     childArguments(node) {
       const kind = this.factoryKind(node.callee)
       if (kind === null) return null
       return node.arguments.slice(kind === 'el' ? 1 : 0)
     },
   }
-}
-
-const CLASS_SELECTOR = /\.(-?[_a-zA-Z][\w-]*)/g
-
-const literalText = (node) => {
-  if (node.type === 'Literal' && typeof node.value === 'string') return node.value
-  if (node.type === 'TemplateLiteral') {
-    return node.quasis.map((quasi) => quasi.value.cooked ?? '').join(' ')
-  }
-  return null
-}
-
-const returnedExpression = (node) => {
-  if (node.type !== 'ArrowFunctionExpression' && node.type !== 'FunctionExpression') return null
-  if (node.expression) return node.body
-  const returned = node.body.body.find((statement) => statement.type === 'ReturnStatement')
-  return returned?.argument ?? null
-}
-
-const isProgramLevel = (declarator) => {
-  const parent = declarator.parent?.parent
-  return parent?.type === 'Program' || parent?.type === 'ExportNamedDeclaration'
-}
-
-const createStylesTracker = () => {
-  const moduleValues = new Map()
-  const classes = new Set()
-  const textOf = (node, depth = 0) => {
-    if (depth > 3) return null
-    const literal = literalText(node)
-    if (literal !== null) return literal
-    if (node.type === 'Identifier') {
-      const value = moduleValues.get(node.name)
-      return value ? textOf(value, depth + 1) : null
-    }
-    if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
-      const declared = moduleValues.get(node.callee.name)
-      const returned = declared ? returnedExpression(declared) : null
-      return returned ? textOf(returned, depth + 1) : null
-    }
-    return null
-  }
-  return {
-    visitDeclarator(node) {
-      if (node.id.type === 'Identifier' && node.init && isProgramLevel(node)) {
-        moduleValues.set(node.id.name, node.init)
-      }
-    },
-    collect(definition) {
-      for (const property of definition.properties) {
-        if (property.type !== 'Property' || propertyKeyName(property) !== 'styles') continue
-        const text = textOf(property.value)
-        if (text === null) continue
-        for (const match of text.matchAll(CLASS_SELECTOR)) classes.add(match[1])
-      }
-    },
-    has(name) {
-      return classes.has(name)
-    },
-  }
-}
-
-const classNamesOf = (value) => {
-  if (value.type === 'ArrayExpression') {
-    return value.elements.flatMap((element) => element ? classNamesOf(element) : [])
-  }
-  if (value.type === 'LogicalExpression') return classNamesOf(value.right)
-  if (value.type === 'ConditionalExpression') {
-    return [...classNamesOf(value.consequent), ...classNamesOf(value.alternate)]
-  }
-  const text = literalText(value)
-  return text === null ? [] : text.split(/\s+/).filter(Boolean)
-}
-
-const classPropertyOf = (node) => {
-  for (const argument of node.arguments) {
-    if (argument.type !== 'ObjectExpression') continue
-    for (const property of argument.properties) {
-      if (property.type === 'Property' && propertyKeyName(property) === 'class') return property
-    }
-  }
-  return null
 }
 
 const createHookFrames = ({ hooks, inherit = true, describe }) => {
@@ -1134,74 +1022,6 @@ export default {
                     }' copies the value once, and the prop never follows the state - pass the state itself: { ${key}: ${call.handle} }`,
                   })
                 }
-              }
-            }
-          },
-        }
-      },
-    },
-    'styles-stop-at-child': {
-      create(context) {
-        const definitions = createDefinitionTracker()
-        const factories = createFactoryTracker()
-        const styles = createStylesTracker()
-        const elementLocals = new Map()
-        const ownComponents = new Set()
-        const calls = []
-        const reported = new Set()
-        const isComponentCall = (node) =>
-          factories.isStdComponent(node.callee) ||
-          (node.callee.type === 'Identifier' && ownComponents.has(node.callee.name))
-        const report = (property, className, holder) => {
-          if (reported.has(property)) return
-          reported.add(property)
-          context.report({
-            node: property.value,
-            message:
-              `'.${className}' is a class of the styles of this component, on an element passed as a child of '${holder}', and the styles of a component reach only its own shadow root - give the element its own component, use a standard component, or set an inline style`,
-          })
-        }
-        const visitChild = (child, holder, seen) => {
-          if (child.type === 'Identifier') {
-            const built = elementLocals.get(child.name)
-            if (built && !seen.has(built)) visitChild(built, holder, new Set([...seen, built]))
-            return
-          }
-          if (child.type !== 'CallExpression' || !factories.isElementFactory(child.callee)) return
-          const property = classPropertyOf(child)
-          if (property) {
-            for (const className of classNamesOf(property.value)) {
-              if (styles.has(className)) report(property, className, holder)
-            }
-          }
-          for (const argument of child.arguments) {
-            if (argument.type !== 'ObjectExpression') visitChild(argument, holder, seen)
-          }
-        }
-        return {
-          ImportDeclaration(node) {
-            definitions.visitImport(node)
-            factories.visitImport(node)
-          },
-          VariableDeclarator(node) {
-            styles.visitDeclarator(node)
-            if (node.id.type !== 'Identifier' || !node.init) return
-            if (definitions.definesComponent(node.init)) ownComponents.add(node.id.name)
-            if (
-              node.init.type === 'CallExpression' && factories.isElementFactory(node.init.callee)
-            ) elementLocals.set(node.id.name, node.init)
-          },
-          CallExpression(node) {
-            const definition = definitions.definitionOf(node)
-            if (definition) styles.collect(definition)
-            calls.push(node)
-          },
-          'Program:exit'() {
-            for (const node of calls) {
-              if (!isComponentCall(node)) continue
-              const holder = factories.factoryName(node.callee)
-              for (const argument of node.arguments) {
-                if (argument.type !== 'ObjectExpression') visitChild(argument, holder, new Set())
               }
             }
           },

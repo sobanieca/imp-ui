@@ -193,6 +193,12 @@ component('invoice-grid', {
 })
 ```
 
+The `div` with the `.grid` class stays in the tree of `invoice-grid`, so the rule reaches it. A node
+that you pass into `stack`, `flex` or `card` moves into the shadow root of that component, and your
+rules stop at that boundary. So `stack({ gap: 2 }, div({ class: 'box' }))` renders the div without
+your `.box` rule. In development, imp warns about it in the console when the page renders. Give such
+a box its own component, or set an inline `style`.
+
 Two rules follow, and they hold across the library:
 
 - **Spacing is a `gap`, and it is a step, not a length.** `gap` is a step on the spacing scale of
@@ -264,8 +270,30 @@ fails, `onSubmit` does not run, the bad fields show their messages, and the focu
 of them. Return a promise from `onSubmit`, and the button spins until it settles.
 
 The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
-`colorPicker`, `fileUpload`, `codeEditor` and `richTextEditor`. The gallery shows each one with its
-props.
+`colorPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The gallery shows
+each one with its props.
+
+**A picture is cropped and resized before it leaves the browser.** `imageUpload` takes one picture
+and opens it in a frame with the ratio that you set, round or rectangular. The person drags the
+picture, zooms it, and clicks Done. imp then cuts the frame out of the original and shrinks it to
+the size you set. A photo of 12 megapixels becomes a 256 by 256 avatar of about 20 kB, and the
+server never receives the original. The value is a data URL, so it sits in the form and travels in
+JSON. The output `File` is handed to `onImage` for a `FormData` upload. The control keeps one box of
+`previewSize` for the placeholder and for the preview, so the page does not move when a picture
+arrives.
+
+```js
+imageUpload({
+  field: 'avatar',
+  label: 'Profile picture',
+  shape: 'circle',
+  maxWidth: 256,
+  maxHeight: 256,
+  onImage: (file) => {
+    picture = file
+  },
+})
+```
 
 ## Overlays use the platform, not a z-index war
 

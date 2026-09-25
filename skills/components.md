@@ -110,10 +110,11 @@ This is also how you force a remount.
   and pass it in.
 - **Your `styles` do not reach a node you pass to another component.** The component appends it into
   its own shadow root, and a layout such as `stack` or `flex` is a component too. So
-  `stack({}, div({ class: 'usage' }))` renders the div without your `.usage` rule, silently. The
-  lint rule is `imp/styles-stop-at-child`. Give the box its own component, use a standard component
-  such as `card` or `text`, or set an inline `style`. `div({ class: 'usage' }, stack(...))` is fine,
-  because the div stays in your tree.
+  `stack({}, div({ class: 'usage' }))` renders the div without your `.usage` rule. In development,
+  imp logs a warning that names your component, the rule and the component that holds the element.
+  `imp build` drops the check. Give the box its own component, use a standard component such as
+  `card` or `text`, or set an inline `style`. `div({ class: 'usage' }, stack(...))` is fine, because
+  the div stays in your tree.
 - **`host.focus()` works from outside.** The host of a component forwards the focus to the first
   focusable element that it renders. Keep the return value of the factory and focus that value.
   Never reach into the `shadowRoot` of another component to focus its control.

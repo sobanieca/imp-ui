@@ -143,10 +143,10 @@ vite.config.ts.timestamp-*
 .vite/
 
 
-# vendored formatter wasm plugins (fetched by 'deno task vendor')
+# vendored formatter wasm plugins (fetched by tools/download-fmt-plugins.js)
 cli/src/vendor/
 
-# compiled binary (deno task compile)
+# compiled binary (tools/compile.js)
 /imp
 /imp.exe
 
@@ -154,5 +154,5 @@ cli/src/vendor/
 .imp/
 
 
-# performance results (deno task perf)
+# performance results (perf/run.js)
 perf/results/

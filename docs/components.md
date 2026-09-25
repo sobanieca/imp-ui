@@ -355,10 +355,11 @@ This is what crosses the style boundary, and how:
 - **A node that you pass to another component leaves your tree.** The component appends it into its
   own shadow root, and your class rules no longer match it. A layout such as `stack` or `flex` is a
   component too, so `stack({ gap: 2 }, div({ class: 'usage' }, ...))` renders the div without your
-  `.usage` rule, and nothing warns at runtime. `imp lint` reports the direct form as
-  `imp/styles-stop-at-child`. Give such a box a component of its own, render it with a standard
-  component that carries its look, or set an inline `style`. A wrapper that stays in your tree,
-  `div({ class: 'usage' }, stack(...))`, keeps your rule.
+  `.usage` rule. In development, imp warns in the console when the component renders. The warning
+  names your component, the rule, and the component that now holds the element. `imp build` drops
+  the check, so a production bundle carries none of it. Give such a box a component of its own,
+  render it with a standard component that carries its look, or set an inline `style`. A wrapper
+  that stays in your tree, `div({ class: 'usage' }, stack(...))`, keeps your rule.
 
 To share CSS between components, share a string. Use a plain JavaScript constant, and compose it
 into `styles`:

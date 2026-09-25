@@ -5,13 +5,13 @@ import { impResolverPlugin } from '../cli/src/bundling.js'
 import { resolveBrowser } from '../cli/src/test-browser.js'
 import { scenarios } from './scenarios.js'
 import { writeReport } from './report.js'
+import { compileImp, IMP_BINARY } from '../tools/imp.js'
 
 const PERF_DIR = fromFileUrl(new URL('.', import.meta.url))
 const REPO_DIR = dirname(PERF_DIR.replace(/[/\\]$/, ''))
 const APPS_DIR = join(PERF_DIR, 'apps')
 const DIST_DIR = join(PERF_DIR, 'dist')
 const RESULTS_DIR = join(PERF_DIR, 'results')
-const IMP_BINARY = join(REPO_DIR, Deno.build.os === 'windows' ? 'imp.exe' : 'imp')
 
 const DEFAULT_SAMPLES = 10
 const WARMUP_SAMPLES = 2
@@ -78,6 +78,7 @@ function parseArguments(args) {
 }
 
 async function buildImpApp() {
+  await compileImp()
   const outdir = join(DIST_DIR, 'imp')
   const { success, stderr } = await new Deno.Command(IMP_BINARY, {
     args: ['build', '--output', outdir],

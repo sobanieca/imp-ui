@@ -4,16 +4,16 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import               | Exports                                                                                                                                                                                                        | Per-component skill                                                                                                                                                                                                                                                                      |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                      | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                              |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                                   | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                                               |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `fileUpload`, `codeEditor`, `richTextEditor`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/fileUpload`, `std/codeEditor`, `std/richTextEditor`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`                                                                                                      | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`                                                                                                                                  |
-| `imp/std/navigation` | `tabs`, `steps`                                                                                                                                                                                                | `imp skill std/tabs`, `std/steps`                                                                                                                                                                                                                                                        |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications`                                                                                                                             | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                     |
-| `imp/std/feedback`   | `bugReport`, `notice`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                                    | `imp skill std/bugReport`, `std/notice`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                                        |
-| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                   | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                       |
+| Import               | Exports                                                                                                                                                                                                                       | Per-component skill                                                                                                                                                                                                                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                     | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                                 |
+| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                                                                                                                                                                  | `imp skill std/shell`, `std/flex`, `std/stack`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                  |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor`, `std/submitButton`, `std/resetButton` |
+| `imp/std/display`    | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`                                                                                                                     | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`                                                                                                                                                     |
+| `imp/std/navigation` | `tabs`, `steps`                                                                                                                                                                                                               | `imp skill std/tabs`, `std/steps`                                                                                                                                                                                                                                                                           |
+| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                            | `imp skill std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                                        |
+| `imp/std/feedback`   | `bugReport`, `notice`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                                                   | `imp skill std/bugReport`, `std/notice`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                                                           |
+| `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                  | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                          |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -49,6 +49,10 @@ section(
 - **The content lives in a shadow root.** `host.textContent` is empty by design. A unit test walks
   the `shadowRoot`. An e2e selector goes through a shadow root on its own. See
   [testing](testing.md).
+- **A child that you pass in moves into that shadow root, where your `styles` do not reach.** So
+  `stack({}, div({ class: 'box' }))` renders the div without your `.box` rule, and imp warns in
+  development. Give the box its own component, use a standard component, or set an inline `style`. A
+  wrapper in your own tree, `div({ class: 'box' }, stack(...))`, keeps the rule.
 - A component that you never call defines no element and compiles no styles.
 
 ## button
@@ -319,7 +323,9 @@ Full manual: `imp skill std/shell`.
 
 There are two flex primitives and nothing else. `flex` is a row, and `stack` is a column. There is
 no `grid` and no `box`. There is no padding, width or background prop. A box that needs those is a
-`div` that your own component styles.
+`div` that your own component styles. Keep that `div` in your own tree, around the layout. A `div`
+passed as a child of `flex` or `stack` moves into the shadow root of the layout, where your `styles`
+do not reach it, and imp warns in development.
 
 ```js
 import { flex, stack } from 'imp/std/layout'
@@ -360,6 +366,9 @@ stack(
   both directions. `verticalAlign` keeps `'top'` and `'bottom'`, because direction never mirrors the
   vertical axis.
 - **Space two components apart with a `gap`**, because no standard component has an outer margin.
+- **A styled `div` goes around a layout, never inside one.** A child of `flex` or `stack` is in the
+  shadow root of the layout, and your `.box` rule does not reach it. imp warns in development. Give
+  the box its own component, or set an inline `style`.
 - **`joined` makes a row read as one control.** Each child squares only the corners that face a
   neighbour, in logical properties, so LTR and RTL both read correctly. Every std button and std
   input fits the seam. A split button is `flex({ joined: true }, button(...), menuButton(...))`. A
@@ -700,22 +709,23 @@ live under `imp.form.*`. `validateAsync` returns a **promise** of a message or o
 blur and on submit only. A submit waits for it. A synchronous failure skips it. A rejected promise
 blocks the submit with `imp.form.checkFailed`.
 
-| Component      | What it binds                                    | Its own props                                                |
-| -------------- | ------------------------------------------------ | ------------------------------------------------------------ |
-| `form`         | Owns `imp.form`                                  | `initialValues`, `onSubmit`, `layout`, `gap`                 |
-| `textField`    | A string, or a **number**                        | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly` |
-| `select`       | One value from `options`                         | `options`, `placeholder`                                     |
-| `segmented`    | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                       |
-| `comboBox`     | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `placeholder`   |
-| `slider`       | A **number** in a range                          | `min`, `max`, `step`, `showValue`, `format`                  |
-| `colorPicker`  | A hex colour, `'#rrggbb'`                        | -                                                            |
-| `fileUpload`   | An array of `{ id, name, size, type }`           | `multiple`, `accept`, `maxSize`, `onFiles`                   |
-| `datePicker`   | A date, a date range, or a date with a time      | `range`, `time`, `min`, `max`, `placeholder`                 |
-| `checkbox`     | A boolean                                        | -                                                            |
-| `toggle`       | A boolean, drawn as a switch                     | -                                                            |
-| `radioGroup`   | One value from `options`                         | `options`, `orientation`                                     |
-| `submitButton` | -                                                | `variant`, `size`, `disabled`                                |
-| `resetButton`  | -                                                | `variant`, `size`, `disabled`                                |
+| Component      | What it binds                                    | Its own props                                                        |
+| -------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
+| `form`         | Owns `imp.form`                                  | `initialValues`, `onSubmit`, `layout`, `gap`                         |
+| `textField`    | A string, or a **number**                        | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly`         |
+| `select`       | One value from `options`                         | `options`, `placeholder`                                             |
+| `segmented`    | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                               |
+| `comboBox`     | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `placeholder`           |
+| `slider`       | A **number** in a range                          | `min`, `max`, `step`, `showValue`, `format`                          |
+| `colorPicker`  | A hex colour, `'#rrggbb'`                        | -                                                                    |
+| `fileUpload`   | An array of `{ id, name, size, type }`           | `multiple`, `accept`, `maxSize`, `onFiles`                           |
+| `imageUpload`  | A data URL of the cropped, resized picture       | `shape`, `aspect`, `maxWidth`, `maxHeight`, `previewSize`, `onImage` |
+| `datePicker`   | A date, a date range, or a date with a time      | `range`, `time`, `min`, `max`, `placeholder`                         |
+| `checkbox`     | A boolean                                        | -                                                                    |
+| `toggle`       | A boolean, drawn as a switch                     | -                                                                    |
+| `radioGroup`   | One value from `options`                         | `options`, `orientation`                                             |
+| `submitButton` | -                                                | `variant`, `size`, `disabled`                                        |
+| `resetButton`  | -                                                | `variant`, `size`, `disabled`                                        |
 
 Rules an agent gets wrong:
 
@@ -740,6 +750,9 @@ Rules an agent gets wrong:
 - **`fileUpload` never puts a `File` in the form.** The field holds `{ id, name, size, type }`
   entries. `onFiles` receives the complete list of `File` objects at each change. Keep it, and send
   it in `onSubmit`. Run `imp skill std/fileUpload`.
+- **`imageUpload` holds a data URL, and it crops and resizes on the client.** The person picks one
+  picture, moves it in a frame of `aspect` or of `shape: 'circle'`, and clicks Done. The output fits
+  `maxWidth` by `maxHeight`. `onImage` receives the output `File`. Run `imp skill std/imageUpload`.
 - **`datePicker` holds ISO text, never a `Date`.** The value is `'2026-09-21'`, or `{ start, end }`
   with `range: true`, or `'2026-09-21T14:30'` with `time: true`. The empty value is `undefined`. See
   `imp skill std/datePicker`.

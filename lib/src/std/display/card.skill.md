@@ -34,6 +34,10 @@ Rules an agent gets wrong:
   grid itself is yours, in the `styles` of your component, see `imp skill std/flex`.
 - **The card has no outer margin.** Space between two cards comes from the `gap` of a `stack`, a
   `flex` or your grid.
+- **The body, the `header` and the `footer` move into the shadow root of the card, where your
+  `styles` do not reach.** So `card(div({ class: 'note' }))` renders the div without your `.note`
+  rule, and imp warns in development. Give the box its own component, use `text` or `stack`, or set
+  an inline `style`.
 - **Every value comes from the theme.** The surface is `color-surface`, the rule is `border-width`
   with `color-border`, the corner is `radius-container` and the lift is `shadow-sm`. A theme with
   `shadow-sm: 'none'` and `radius-container: '0'` gives a flat, square card. Do not restyle the card

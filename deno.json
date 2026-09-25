@@ -1,24 +1,10 @@
 {
   "version": "0.1.0",
   "tasks": {
-    "imp": "deno task compile && ./imp",
-    "update": "deno outdated --update --latest && deno run -A tools/update-dprint.js",
-    "compile": "deno run -A tools/compile.js",
-    "preview": "deno task compile && cd lib/src && ../../imp preview",
-    "logs": "deno task compile && cd lib/src && ../../imp logs",
-    "lint:lib": "deno task compile && cd lib/src && ../../imp lint",
-    "perf": "deno task compile && deno run -A perf/run.js",
-    "site:build": "deno run -A tools/build-site.js && deno task compile && cd lib/src && ../../imp preview --output ../../site/dist/gallery",
-    "site": "deno task site:build && deno run -A tools/serve-site.js",
-    "start": "deno task compile && cd examples/shell && ../../imp start",
-    "size": "deno run -A tools/check-binary-size.js",
-    "lucide": "deno run -A --no-lock tools/vendor-lucide.js",
-    "natural-earth": "deno run -A --no-lock tools/vendor-natural-earth.js",
-    "test": "deno task test:lib && deno task test:lib:e2e && deno task test:cli",
-    "test:cli": "deno task compile && deno test -A cli/test/cli-test.js",
-    "test:cli:update": "deno task compile && deno test -A cli/test/cli-test.js -- --update",
-    "test:lib": "deno task compile && cd lib/test && ../../imp test --unit",
-    "test:lib:e2e": "deno task compile && cd lib/test && ../../imp test --e2e"
+    "preview": "cd lib/src && deno run -A ../../tools/imp.js preview",
+    "site": "deno run -A tools/build-site.js && cd site/dist && rfm",
+    "test": "cd lib/test && deno run -A ../../tools/imp.js test --unit && deno run -A ../../tools/imp.js test --e2e && cd ../.. && deno test -A cli/test/cli-test.js --",
+    "check": "deno lint && deno fmt && cd lib/src && deno run -A ../../tools/imp.js lint"
   },
   "imports": {
     "@deno/esbuild-plugin": "jsr:@deno/esbuild-plugin@^1.2.1",

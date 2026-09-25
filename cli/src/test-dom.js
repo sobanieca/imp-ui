@@ -272,7 +272,10 @@ export function installDomEnvironment() {
     }
   }
 
+  globalThis.__IMP_DEV__ = true
+
   return async () => {
+    delete globalThis.__IMP_DEV__
     for (const [name, previous] of replaced) {
       if (previous) Object.defineProperty(globalThis, name, previous)
       else delete globalThis[name]

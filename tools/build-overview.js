@@ -1,12 +1,46 @@
 import { MAIN_1, MAIN_2, MAIN_3 } from '../lib/src/std/preview-look.js'
-import { luCheck, luChevronLeft, luChevronRight, luCopy } from '../lib/src/icons/lucide-icons.js'
+import {
+  luAppWindow,
+  luBug,
+  luCheck,
+  luChevronLeft,
+  luChevronRight,
+  luCopy,
+  luRocket,
+  luServer,
+  luSplit,
+  luWifiOff,
+  luZap,
+} from '../lib/src/icons/lucide-icons.js'
 
 const NARROW = '(width < 56.25rem)'
 const INK = '#101010'
 const STEP_TONES = [MAIN_1, MAIN_2, MAIN_3, INK]
+const CARD_TONES = [MAIN_1, MAIN_2, MAIN_3]
+const CARD_ICONS = {
+  appWindow: luAppWindow,
+  bug: luBug,
+  rocket: luRocket,
+  server: luServer,
+  split: luSplit,
+  wifiOff: luWifiOff,
+  zap: luZap,
+}
+const EQUATION_OPERATORS = [['+', 'plus'], ['=', 'equals']]
 
 const escape = (text) =>
   String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;')
+
+const IMP_NAME = `<span class="imp-name">` +
+  `<img class="imp-mark-light" src="/mark-light.svg" alt="">` +
+  `<img class="imp-mark-dark" src="/mark-dark.svg" alt="">imp</span>`
+
+const brandName = (html) =>
+  html.split(/(<code>[^<]*<\/code>)/).map((part) =>
+    part.startsWith('<code>') ? part : part.replace(/\bimp\b/g, IMP_NAME)
+  ).join('')
+
+const cardText = (text) => brandName(escape(text).replace(/`([^`]+)`/g, '<code>$1</code>'))
 
 const svgIcon = (className, elements) =>
   `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
@@ -19,8 +53,9 @@ const svgIcon = (className, elements) =>
   `</svg>`
 
 export const renderNotice = () =>
-  `<p class="notice" role="note"><strong>Experimental.</strong> imp has no stable release yet. ` +
-  `Every API, config key and command can change. Use it at your own risk.</p>`
+  `<p class="notice" role="note"><strong>Experimental.</strong> imp is in an early phase and has ` +
+  `no stable release yet. Some things can work in a way that is not intended. Every API, ` +
+  `config key and command can change. Use it at your own risk.</p>`
 
 export const installCommand = (origin) => `curl -fsSL ${origin}/install.sh | bash`
 
@@ -121,6 +156,58 @@ export const renderWorkflow = (steps, note) =>
   ).join('') +
   `</ol>` +
   `<p class="steps-note">${escape(note)}</p>` +
+  `</section>`
+
+const renderEquation = (terms) =>
+  `<p class="equation" aria-label="${
+    escape(
+      terms.map((term, index) =>
+        index === 0 ? term.label : `${EQUATION_OPERATORS[index - 1][1]} ${term.label}`
+      ).join(' '),
+    )
+  }">` +
+  terms.map((term, index) =>
+    `<span class="equation-group">` +
+    (index === 0
+      ? ''
+      : `<span class="equation-operator" aria-hidden="true">${
+        EQUATION_OPERATORS[index - 1][0]
+      }</span>`) +
+    `<span class="equation-term" style="--term-tone: ${CARD_TONES[index % CARD_TONES.length]}">` +
+    `${svgIcon('equation-icon', CARD_ICONS[term.icon])}${escape(term.label)}</span>` +
+    `</span>`
+  ).join('') +
+  `</p>`
+
+const renderTags = (tags) =>
+  `<ul class="tags">` +
+  tags.map((tag, index) =>
+    `<li class="equation-term" style="--term-tone: ${CARD_TONES[index % CARD_TONES.length]}">` +
+    `${svgIcon('equation-icon', CARD_ICONS[tag.icon])}${escape(tag.label)}</li>`
+  ).join('') +
+  `</ul>`
+
+export const renderPositions = (positions) =>
+  `<section class="section positions"><h2>Why imp</h2>` +
+  `<ul class="cards">` +
+  positions.map((position, index) =>
+    `<li class="card" style="--card-tone: ${CARD_TONES[index % CARD_TONES.length]}">` +
+    `<h3>${cardText(position.title)}</h3>` +
+    `<p class="card-lead">${cardText(position.lead)}</p>` +
+    `<p>${cardText(position.text)}</p>` +
+    (position.points === undefined
+      ? ''
+      : `<ul>${position.points.map((point) => `<li>${cardText(point)}</li>`).join('')}</ul>`) +
+    (position.equation === undefined ? '' : renderEquation(position.equation)) +
+    (position.tags === undefined ? '' : renderTags(position.tags)) +
+    (position.link === undefined
+      ? ''
+      : `<a class="card-link" href="${escape(position.link.href)}">${
+        escape(position.link.label)
+      }</a>`) +
+    `</li>`
+  ).join('') +
+  `</ul>` +
   `</section>`
 
 export const overviewStyles = `
@@ -677,7 +764,111 @@ export const overviewStyles = `
   color: var(--imp-color-secondary);
 }
 
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--imp-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--imp-space-3);
+  box-sizing: border-box;
+  max-inline-size: none;
+  padding: var(--imp-space-5);
+  border: var(--imp-border-width) solid var(--imp-color-border);
+  border-block-start: 3px solid var(--card-tone);
+  border-radius: var(--imp-radius-item);
+  background: var(--imp-color-surface-sunken);
+}
+
+.card h3 {
+  margin: 0;
+  font-family: var(--imp-font-family-heading);
+  font-size: var(--imp-font-size-lg);
+  text-wrap: balance;
+}
+
+.card p {
+  margin: 0;
+  max-inline-size: none;
+}
+
+.card-lead { font-weight: var(--imp-font-weight-bold) }
+
+.card p:not(.card-lead),
+.card ul { color: var(--imp-color-secondary) }
+
+.card ul {
+  margin: 0;
+  padding-inline-start: var(--imp-space-4);
+}
+
+.card li { max-inline-size: none }
+
+.card-link { margin-block-start: auto }
+
+.equation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2);
+  margin-block-start: auto;
+  padding-block-start: var(--imp-space-2);
+  font-family: var(--imp-font-family-heading);
+  font-size: var(--imp-font-size-md);
+  font-weight: var(--imp-font-weight-bold);
+}
+
+.card .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  margin: auto 0 0;
+  padding: var(--imp-space-2) 0 0;
+  list-style: none;
+  font-family: var(--imp-font-family-heading);
+  font-size: var(--imp-font-size-sm);
+  font-weight: var(--imp-font-weight-bold);
+}
+
+.card .tags li { color: var(--term-tone) }
+
+.equation-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+}
+
+.equation-term {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+  padding-block: var(--imp-space-1);
+  padding-inline: var(--imp-space-2);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--term-tone) 12%, transparent);
+  color: var(--term-tone);
+}
+
+.equation-icon {
+  inline-size: 1.25em;
+  block-size: 1.25em;
+}
+
+.equation-operator {
+  font-family: var(--imp-font-family-mono);
+  color: var(--imp-color-secondary);
+}
+
 @media ${NARROW} {
+  .cards { grid-template-columns: minmax(0, 1fr) }
+
   .tour-slide {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--imp-space-4);

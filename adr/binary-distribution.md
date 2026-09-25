@@ -27,8 +27,8 @@ mirrors the release mechanism of jsonr.
 - **There are four targets, and no Windows.** That matches jsonr. The targets are `x86_64` and
   `aarch64`, across `linux` and `macos`. imp compiles them with the same
   `--include cli/src --include lib/src`, and with the same preparation of the prebundled fmt plugins
-  and npm dependencies, as `deno task compile`. imp names an asset `imp-{os}-{arch}`. `{os}` is
-  `linux` or `macos`. `{arch}` is `x64` or `arm64`.
+  and npm dependencies, as `deno run -A tools/compile.js`. imp names an asset `imp-{os}-{arch}`.
+  `{os}` is `linux` or `macos`. `{arch}` is `x64` or `arm64`.
 - **The download URLs follow from that.** For a pinned version, it is
   `https://github.com/sobanieca/imp-ui/releases/download/v{version}/imp-{os}-{arch}`. For the newest
   version, it is `.../releases/latest/download/imp-{os}-{arch}`. imp resolves the latest version
