@@ -785,7 +785,7 @@ Tab lands on the first control of the new screen:
 import { component } from 'imp'
 import { div } from 'imp/html'
 import { router, useRoute } from 'imp/router'
-import { shell } from 'imp/std/layout'
+import { shell } from 'imp/std/shell'
 
 const screenFrame = component('screen-frame', {
   styles: `

@@ -1,7 +1,7 @@
 # tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
 
 ```js
-import { tabs } from 'imp/std/navigation'
+import { tabs } from 'imp/std/layout'
 
 tabs({
   label: 'Account sections',
@@ -36,7 +36,7 @@ Each entry in `items` has these keys:
 
 Rules an agent gets wrong:
 
-- **Import the component from `imp/std/navigation`**, not from `imp/std`.
+- **Import the component from `imp/std/layout`**, not from `imp/std`.
 - **Pass a panel in `items`, not as a child.** A tab and its panel connect by id, through
   `aria-controls` and `aria-labelledby`, and an id cannot cross a shadow root. So `tabs` must render
   both halves. That is why the API is one `items` array, and not composed children.
@@ -73,7 +73,7 @@ disabled item.
 
 ```js
 import { initState } from 'imp/state'
-import { tabs } from 'imp/std/navigation'
+import { tabs } from 'imp/std/layout'
 
 const openTab = initState(self, 'settings.tab', 'profile')
 

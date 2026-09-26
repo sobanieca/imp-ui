@@ -35,14 +35,13 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelec
   app imports, see `bundled-icon-set.md`. Every icon prop in the library accepts **any DOM**. So
   `icon` is a convenience, and never a requirement. A component that needs a mark internally still
   draws its own mark, and it imports none.
-- **`breadcrumbs` is the trail, and a crumb can carry a picker.** It sits in this group, and not in
-  `imp/std/navigation`. A crumb with `options` renders two controls: the crumb itself, which is a
-  link to that level, and a disclosure button beside it, named "Change {label}" through `t()`. The
-  button opens a `popover="auto"` panel of links that CSS anchor positioning places, on the shared
-  anchored seam, see `overlay-top-layer.md`. To fold both into one control would remove the way to
-  navigate to the level the picker belongs to. The component does not derive a trail from the route.
-  The router derives it, and the shell hands it over. So an app with a literal trail carries no
-  router.
+- **`breadcrumbs` is the trail, and a crumb can carry a picker.** It sits in this group, beside
+  `shell`. A crumb with `options` renders two controls: the crumb itself, which is a link to that
+  level, and a disclosure button beside it, named "Change {label}" through `t()`. The button opens a
+  `popover="auto"` panel of links that CSS anchor positioning places, on the shared anchored seam,
+  see `overlay-top-layer.md`. To fold both into one control would remove the way to navigate to the
+  level the picker belongs to. The component does not derive a trail from the route. The router
+  derives it, and the shell hands it over. So an app with a literal trail carries no router.
 - **`themeSelect` and `langSelect` own their setting completely.** They apply it, remember it in
   `localStorage`, and apply the remembered choice again on the next mount. `remember: false` turns
   that off. A remembered choice deliberately wins against the `applyTheme` of the app at startup.
@@ -65,12 +64,13 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelec
 - The frame is a quick win, and not an empty grid. `shell` with this group stands an app up, and
   nobody writes markup for a region by hand.
 - This is the first group named after a **place**, and not after a kind of thing. imp accepts that.
-  The alternative was to spread six components across General, Display and Navigation. Then the
-  pieces that belong together would no longer sit together.
+  The alternative was to spread six components across General, Display and Layout. Then the pieces
+  that belong together would no longer sit together. `shell` itself lives here too, so the frame and
+  its parts share one import.
 - `icon` costs only the icons that an app names, because each one is its own export, see
   `bundled-icon-set.md`. The props that accept DOM keep even that cost optional.
 - Two components write to `localStorage`. Both keys carry a namespace, which is `imp.theme` and
   `imp.lang`. imp wraps each read and each write. A browser with no storage falls back to behaviour
   for the session, and it does not fail.
-- `breadcrumbs` lives here, so the navigation group holds no trail. The picker is part of this
-  component, and not a second one. The panel has no filter field.
+- `breadcrumbs` lives here, beside the frame that renders it. The picker is part of this component,
+  and not a second one. The panel has no filter field.

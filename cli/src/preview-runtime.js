@@ -19,8 +19,7 @@ import {
 } from 'imp/icons'
 import { card, codeBlock, emptyState, markdown } from 'imp/std/display'
 import { select, textField } from 'imp/std/inputs'
-import { dialog, drawer, flex, stack } from 'imp/std/layout'
-import { tabs } from 'imp/std/navigation'
+import { dialog, drawer, flex, stack, tabs } from 'imp/std/layout'
 import {
   buildFailure,
   groupsOf,

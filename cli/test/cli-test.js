@@ -4349,6 +4349,45 @@ Deno.test('imp skill', async (t) => {
     }
   })
 
+  await t.step(
+    'a std folder is one group: its import, its preview group and its previews',
+    async () => {
+      const stdRoot = new URL('../../lib/src/std/', import.meta.url)
+      const groupKeys = scanGroupsModule(
+        await Deno.readTextFile(new URL('preview-groups.js', stdRoot)),
+      )
+      const folders = []
+      for await (const entry of Deno.readDir(stdRoot)) {
+        if (entry.isDirectory && entry.name !== 'shared' && !entry.name.startsWith('.')) {
+          folders.push(entry.name)
+        }
+      }
+      for (const key of groupKeys.keys()) {
+        check(folders.includes(key), `preview group '${key}' has no lib/src/std/${key} folder`)
+      }
+      for (const folder of folders) {
+        check(groupKeys.has(folder), `lib/src/std/${folder} has no preview group named '${folder}'`)
+        const specifier = folder === 'general' ? 'imp/std' : `imp/std/${folder}`
+        const barrel = IMP_MODULES[specifier]
+        check(barrel !== undefined, `${specifier} is not a registered barrel`)
+        const barrelSource = await Deno.readTextFile(new URL(`../${barrel}`, stdRoot))
+        check(
+          barrel === `std/${folder}/index.js` || barrelSource.includes(`'./${folder}/index.js'`),
+          `${specifier} does not export lib/src/std/${folder}`,
+        )
+        for await (const file of Deno.readDir(new URL(`${folder}/`, stdRoot))) {
+          if (!file.name.endsWith('.preview.js')) continue
+          const source = await Deno.readTextFile(new URL(`${folder}/${file.name}`, stdRoot))
+          const declared = source.match(/export const group = groups\.(\w+)/)?.[1]
+          check(
+            declared === folder,
+            `lib/src/std/${folder}/${file.name} names group '${declared}', not '${folder}'`,
+          )
+        }
+      }
+    },
+  )
+
   await t.step('a std component prints its skill file verbatim', async () => {
     for (const component of await standardComponentSubjects()) {
       const source = (await Deno.readTextFile(component.url)).trimEnd()

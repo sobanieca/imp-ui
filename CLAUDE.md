@@ -107,6 +107,24 @@ is written.
 reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check
 this, because a page can be present and stale. The person who makes the change is responsible.
 
+## Standard component groups - one folder, one name
+
+**The folder of a standard component is its group, and that one name is used everywhere.** A
+component in `lib/src/std/<group>/` is exported from the barrel `imp/std/<group>`, its preview
+declares `groups.<group>`, and `std/preview-groups.js` has a key `<group>`. The one root barrel is
+`imp/std`, which exports the `general` folder. A CLI test checks all three against the folders, so a
+component in one folder that shows in another group fails the tests.
+
+- **Never register a group that has no folder, and never make a folder that has no group.** A group
+  needs enough components to earn a sidebar entry. Do not add a group for two components. Put them
+  in the group that fits.
+- **To move a component, move its files.** The component, its `*.preview.js`, its `*.skill.md` and
+  its test move together into the new folder. Then update the barrel, the preview group, every
+  import site, `docs/`, `skills/` and the ADRs in the same change.
+- A shell part belongs in `shell`, a box that places children in `layout`, a read-only surface in
+  `display`, a form control in `inputs`, a message to the reader in `feedback`, and a component that
+  shows many records in `data`.
+
 ## Everything runs the compiled binary
 
 **Every command that invokes imp runs the compiled `./imp`, never `cli/src/main.js`.** There is one

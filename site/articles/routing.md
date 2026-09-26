@@ -30,7 +30,7 @@ export const app = appMap({
 import { mount } from 'imp'
 import { div, h1 } from 'imp/html'
 import { router } from 'imp/router'
-import { shell } from 'imp/std/layout'
+import { shell } from 'imp/std/shell'
 import { app } from './app-map.js'
 
 mount(

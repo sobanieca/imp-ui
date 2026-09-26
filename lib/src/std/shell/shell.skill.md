@@ -6,7 +6,7 @@ it draw the nav and the trail. An app whose shape it truly does not fit writes i
 component. That is a supported result, not a failure.
 
 ```js
-import { shell } from 'imp/std/layout'
+import { shell } from 'imp/std/shell'
 import { appLogo, themeSelect, userCard } from 'imp/std/shell'
 import { router } from 'imp/router'
 import { luChartColumn, luUsers } from 'imp/icons'

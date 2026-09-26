@@ -17,11 +17,10 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                           |
 | `imp/service-worker` | `startDevMode`, called from a service worker of your own                           |
 | `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                          |
-| `imp/std/layout`     | `shell`, `flex`, `stack`, `dialog`, `drawer`                                       |
+| `imp/std/layout`     | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                        |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...          |
-| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `emptyState`, ...         |
-| `imp/std/navigation` | `tabs`, `steps`                                                                    |
-| `imp/std/shell`      | `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications` |
+| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...              |
+| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `notifications`, ... |
 | `imp/std/feedback`   | `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, `bugReport`        |
 | `imp/std/data`       | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                       |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                |

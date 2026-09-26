@@ -76,7 +76,6 @@ export const SKILLS = [
       'imp/std/layout',
       'imp/std/display',
       'imp/std/inputs',
-      'imp/std/navigation',
       'imp/std/feedback',
       'imp/std/data',
       'imp/std/shell',

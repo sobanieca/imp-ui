@@ -92,8 +92,7 @@ import { div, p } from 'imp/html'
 import { initState } from 'imp/state'
 import { router } from 'imp/router'
 import { button, heading, text } from 'imp/std'
-import { shell } from 'imp/std/layout'
-import { appLogo } from 'imp/std/shell'
+import { appLogo, shell } from 'imp/std/shell'
 import { app } from './app-map.js'
 
 const counter = component('app-counter', {

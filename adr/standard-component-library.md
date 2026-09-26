@@ -17,19 +17,21 @@ first components, and not after somebody writes the catalog.
 A standard component is an **ordinary imp component, built on the public API of the kernel only**,
 and imp ships it. Those components live under `lib/src/std/<group>/`, with one file per component.
 imp groups them by the taxonomy of the catalog. The groups that exist are `general`, `layout`,
-`inputs`, `display`, `navigation`, `shell` and `feedback`, and `todo/stdlib-components.md` names the
-ones to come. So a folder, a section of the documentation and an entry of the catalog map one to
-one. Nothing in `std/` is privileged. It imports the same surface as an app.
+`inputs`, `display`, `shell`, `feedback` and `data`, and `todo/stdlib-components.md` names the ones
+to come. The folder of a component is its group. The same name is the subpath of its import, the key
+of its preview group, and its section of the documentation. A test checks that every preview names
+the group of its folder, and that every group has a folder. Nothing in `std/` is privileged. It
+imports the same surface as an app.
 
 - **The library is a separate import namespace, split by group.** The kernel is `imp`, with its
   specifiers per subject, which are `imp/html`, `imp/state`, `imp/router`, `imp/theme` and
   `imp/log`, see `library-import-namespaces.md`. The base group is **`imp/std`**. Every other group
-  is **`imp/std/<group>`**, such as `imp/std/inputs` and `imp/std/navigation`. imp registers a group
-  as a subpath when the group lands. An unknown subpath fails with an error that carries the imp
-  brand, and that lists the subpaths that exist. That happens in the bundler, in the import map of
-  the dev server, and in the specifier check of `imp lint`, from one shared table. The split by
-  group keeps a catalog that grows from filling one namespace. It also makes an import line say
-  which part of the library a file uses.
+  is **`imp/std/<group>`**, such as `imp/std/inputs` and `imp/std/display`. imp registers a group as
+  a subpath when the group lands. An unknown subpath fails with an error that carries the imp brand,
+  and that lists the subpaths that exist. That happens in the bundler, in the import map of the dev
+  server, and in the specifier check of `imp lint`, from one shared table. The split by group keeps
+  a catalog that grows from filling one namespace. It also makes an import line say which part of
+  the library a file uses.
 - **The names are the natural ones**, such as `button`, `text`, `link`, `form` and `select`. That is
   possible exactly because the namespace is separate. A std component can shadow a bare element
   factory from `imp/html`, because the two never arrive through the same specifier. A file that

@@ -15,7 +15,6 @@
       "std/layout/index.js",
       "std/display/index.js",
       "std/inputs/index.js",
-      "std/navigation/index.js",
       "std/shell/index.js",
       "std/feedback/index.js",
       "std/data/index.js",

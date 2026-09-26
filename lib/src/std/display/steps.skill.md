@@ -1,7 +1,7 @@
 # steps - the numbered progress of a flow with several steps, such as a checkout
 
 ```js
-import { steps } from 'imp/std/navigation'
+import { steps } from 'imp/std/display'
 
 steps({
   label: 'Checkout',
@@ -36,7 +36,7 @@ Each entry in `items` has these keys:
 
 Rules an agent gets wrong:
 
-- **Import the component from `imp/std/navigation`**, not from `imp/std`.
+- **Import the component from `imp/std/display`**, not from `imp/std`.
 - **`current` is the only position that you set.** Items before it are done and show a check. Items
   after it are upcoming. Do not pass a `done` flag per item.
 - **`steps` never changes `current` itself.** Pass a **state** and set it from your flow. imp reads
@@ -61,7 +61,7 @@ Rules an agent gets wrong:
 
 ```js
 import { initState } from 'imp/state'
-import { steps } from 'imp/std/navigation'
+import { steps } from 'imp/std/display'
 
 const current = initState(self, 'checkout.step', 'cart')
 const paymentStatus = initState(self, 'checkout.paymentStatus', null)

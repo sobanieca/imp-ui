@@ -24,7 +24,6 @@ import * as stdModule from '../../lib/src/std/index.js'
 import * as stdLayoutModule from '../../lib/src/std/layout/index.js'
 import * as stdDisplayModule from '../../lib/src/std/display/index.js'
 import * as stdInputsModule from '../../lib/src/std/inputs/index.js'
-import * as stdNavigationModule from '../../lib/src/std/navigation/index.js'
 import * as stdShellModule from '../../lib/src/std/shell/index.js'
 import * as stdFeedbackModule from '../../lib/src/std/feedback/index.js'
 import * as stdDataModule from '../../lib/src/std/data/index.js'
@@ -44,7 +43,6 @@ export const IMP_MODULE_EXPORTS = {
   'imp/std/layout': stdLayoutModule,
   'imp/std/display': stdDisplayModule,
   'imp/std/inputs': stdInputsModule,
-  'imp/std/navigation': stdNavigationModule,
   'imp/std/shell': stdShellModule,
   'imp/std/feedback': stdFeedbackModule,
   'imp/std/data': stdDataModule,

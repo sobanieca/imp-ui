@@ -44,16 +44,15 @@ prints it. Your own components publish a skill the same way. See **[Components](
 `imp` and its subpaths are the framework: the element factories, `component`, the state, the routing
 and the theming. See **[Imports](imports.md)**. `imp/std` is the component library, split by group:
 
-| Import               | What it holds                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------- |
-| `imp/std`            | The base set: `button`, `menuButton`, `heading`, `text`, `link`, `icon`                   |
-| `imp/std/layout`     | The app frame, the two arrangement primitives and the overlay frames                      |
-| `imp/std/inputs`     | `form` and every control that binds to one                                                |
-| `imp/std/display`    | Components that present content, such as `card`, `tag` and `markdown`                     |
-| `imp/std/navigation` | Getting around the app: `tabs`, `steps`                                                   |
-| `imp/std/shell`      | Ready-made contents for the regions of the frame                                          |
-| `imp/std/feedback`   | Telling the person what happens, and hearing back                                         |
-| `imp/std/data`       | Records, numbers and places: `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map` |
+| Import             | What it holds                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `imp/std`          | The base set: `button`, `menuButton`, `heading`, `text`, `link`, `icon`                   |
+| `imp/std/layout`   | The two arrangement primitives, `tabs` and the overlay frames                             |
+| `imp/std/inputs`   | `form` and every control that binds to one                                                |
+| `imp/std/display`  | Components that present content, such as `card`, `tag`, `markdown` and `steps`            |
+| `imp/std/shell`    | The app frame, and ready-made contents for its regions                                    |
+| `imp/std/feedback` | Telling the person what happens, and hearing back                                         |
+| `imp/std/data`     | Records, numbers and places: `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map` |
 
 An import line names the part of the library that a file uses. An import of a group that does not
 exist is an error, and the message lists the groups that exist.
@@ -128,8 +127,7 @@ pickers. imp lays all of that out, scrolls each region on its own, and makes it 
 ```js
 import { luChartColumn, luUsers } from 'imp/icons'
 import { router } from 'imp/router'
-import { shell } from 'imp/std/layout'
-import { appLogo, themeSelect, userCard } from 'imp/std/shell'
+import { appLogo, shell, themeSelect, userCard } from 'imp/std/shell'
 import { app } from './app-map.js'
 
 shell(

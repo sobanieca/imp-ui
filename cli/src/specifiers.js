@@ -37,7 +37,6 @@ export const IMP_MODULES = {
   'imp/std/layout': 'std/layout/index.js',
   'imp/std/display': 'std/display/index.js',
   'imp/std/inputs': 'std/inputs/index.js',
-  'imp/std/navigation': 'std/navigation/index.js',
   'imp/std/shell': 'std/shell/index.js',
   'imp/std/feedback': 'std/feedback/index.js',
   'imp/std/data': 'std/data/index.js',

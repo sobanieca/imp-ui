@@ -40,7 +40,7 @@ export const admin = appMap({ access: 'admin' }, {
 // src/main.js - the bindings
 import { mount } from 'imp'
 import { area, guard, redirect, router, wait } from 'imp/router'
-import { shell } from 'imp/std/layout'
+import { shell } from 'imp/std/shell'
 import { luFolder, luShield } from 'imp/icons'
 import { app } from './app-map.js'
 

@@ -127,7 +127,7 @@ const docsRenderer = {
     const attributes = [
       `href="${target}"`,
       title ? `title="${title}"` : '',
-      external ? 'target="_blank" rel="noreferrer noopener"' : '',
+      external ? 'target="_blank" rel="noopener"' : '',
     ].filter(Boolean).join(' ')
     return `<a ${attributes}>${html}</a>`
   },

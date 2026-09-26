@@ -2,8 +2,8 @@
 
 The catalog is built, and `adr/short-component-catalog.md` records its shape: one component per job,
 a prop for a variant, and an infinite scroll in place of a pager. The groups are `imp/std`,
-`layout`, `inputs`, `display`, `navigation`, `shell`, `feedback` and `data`. Each component ships a
-skill file, a preview and a unit test. This file lists the work that is still owed.
+`layout`, `inputs`, `display`, `shell`, `feedback` and `data`. Each component ships a skill file, a
+preview and a unit test. This file lists the work that is still owed.
 
 ## Form layer
 
