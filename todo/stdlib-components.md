@@ -27,8 +27,6 @@ preview and a unit test. This file lists the work that is still owed.
 ## Components that wait
 
 - **`splitPane`**, a set of panes that a user can resize, is still wanted.
-- **A switcher for a tenant, or for a workspace**, in `imp/std/shell`. It is a `menuButton` with
-  `items` and a trigger that shows the current choice.
 - **`carousel` waits** until `::scroll-button()` and `::scroll-marker()` work in every browser. To
   write JavaScript for a scroll button in the meantime is what `adr/browser-support-baseline.md`
   forbids.

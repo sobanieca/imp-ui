@@ -1,7 +1,8 @@
 # richTextEditor - a WYSIWYG editor with a formatting toolbar, whose value is markdown
 
 ```js
-import { richTextEditor } from 'imp/std/inputs'
+import { richTextEditor, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 richTextEditor({ field: 'body', label: 'Body', rows: 8 })
 richTextEditor({ value: note, label: 'Note', placeholder: 'Write here', imageSize: 800 })
@@ -73,12 +74,12 @@ Rules an agent gets wrong:
   the state itself to `disabled`, not `disabled.get()`.
 
 ```js
-import { form, richTextEditor, submitButton } from 'imp/std/inputs'
+import { form, richTextEditor, submitForm } from 'imp/std/inputs'
 
 form(
   { initialValues: { body: '' }, onSubmit: publish },
   richTextEditor({ field: 'body', label: 'Post', rows: 10, required: true, imageSize: 1024 }),
-  submitButton('Publish'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Publish'),
 )
 ```
 

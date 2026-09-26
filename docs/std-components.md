@@ -135,11 +135,25 @@ shell(
     logo: appLogo({ label: 'Acme' }),
     navbar: { label: 'Sections', map: app, icons: { [app.reports]: luChartColumn } },
     sidebar: { label: 'Pages' },
-    extras: [themeSelect(), userCard({ signedIn: session, name: user.name, onSignOut })],
+    extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
+    signedIn: session,
+    signIn: () => signInPage(),
   },
   router({ map: app, access, screens }),
 )
 ```
+
+**The frame gates the app behind a session.** `signedIn` is a boolean or a state. While it is
+`undefined`, the app does not know yet, and the frame shows a loader. While it is `null` or `false`,
+the frame shows your `signIn` content and the logo in the middle of the screen, and nothing else.
+The main content is not mounted, so no screen loads and no router runs. When it becomes truthy, the
+frame mounts the app. The sign-in page is yours, because it differs with every app: a form with a
+password, buttons for social providers, a magic link, or a passkey. imp renders no form and talks to
+no identity provider. Sign-out is a plain `button` or a `menuButton` that you put beside `userCard`.
+
+**A multi-tenant app gets a switcher.** `orgSelect` lists the organizations that a person belongs
+to, shows the current one on its trigger, and reports a choice. Put it beside the logo, or in
+`extras`. What a switch means is yours: a navigation to the URL of the tenant, or a new token.
 
 **The application map drives the whole nav.** You describe the app once, as a map. See
 **[Routing](routing.md)**. The top-level nodes are the sections in the bar. The children of the
@@ -161,9 +175,10 @@ landmark, the content is `<main>`, and a "Skip to the content" link is the first
 page. The link is hidden until it takes the focus, and it moves the focus into the content.
 
 `imp/std/shell` ships the pieces that usually fill the regions of the frame: `appLogo`, `userCard`,
-`themeSelect`, `langSelect` and the `notifications` bell. Each region takes plain DOM, so you
-replace a piece that does not fit with a component of your own. The gallery shows every prop of the
-frame, its floating panels, its backdrops and its maximum width.
+`orgSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,
+with the current choice on the trigger. Each region takes plain DOM, so you replace a piece that
+does not fit with a component of your own. The gallery shows every prop of the frame, its floating
+panels, its backdrops and its maximum width.
 
 ## Lay a page out with two components
 
@@ -239,7 +254,8 @@ into `LICENSES.txt`. Deploy that file with the rest of the build.
 owns:
 
 ```js
-import { form, select, submitButton, textField } from 'imp/std/inputs'
+import { button } from 'imp/std'
+import { form, select, submitForm, textField } from 'imp/std/inputs'
 
 form(
   {
@@ -249,7 +265,7 @@ form(
   textField({ field: 'user.firstName', label: 'First name', required: true }),
   textField({ field: 'user.email', label: 'Email', type: 'email', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro', 'team'] }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 
@@ -263,9 +279,12 @@ label, its hint and its error, because a `<label>` finds its input by id, and an
 component boundary. Validation runs on blur and on submit, not on every keystroke. The value is
 always plain data: a string, a number, an array, or an ISO date. Never a `Date` or a `File`.
 
-**A submit is a button.** A click on `submitButton()` checks every field again. When one field
-fails, `onSubmit` does not run, the bad fields show their messages, and the focus moves to the first
-of them. Return a promise from `onSubmit`, and the button spins until it settles.
+**A submit is an ordinary button.** `submitForm` and `resetForm` are functions. Pass one as the
+click handler of any `button`, at any depth inside the form, and the function finds the form. A
+submit checks every field again. When one field fails, `onSubmit` does not run, the bad fields show
+their messages, and the focus moves to the first of them. Return a promise from `onSubmit`, and the
+form ignores a second submit until it settles. The state `imp.form.submitting` is `true` meanwhile,
+so a button of yours can spin.
 
 The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
 `colorPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The gallery shows
@@ -276,15 +295,16 @@ and opens it in a frame with the ratio that you set, round or rectangular. The p
 picture, zooms it, and clicks Done. imp then cuts the frame out of the original and shrinks it to
 the size you set. A photo of 12 megapixels becomes a 256 by 256 avatar of about 20 kB, and the
 server never receives the original. The value is a data URL, so it sits in the form and travels in
-JSON. The output `File` is handed to `onImage` for a `FormData` upload. The control keeps one box of
-`previewSize` for the placeholder and for the preview, so the page does not move when a picture
-arrives.
+JSON. The output `File` is handed to `onImage` for a `FormData` upload. The control keeps one box
+for the placeholder and for the preview, so the page does not move when a picture arrives. The box
+fills the field by default, and `compact` makes it a small box beside the prompt.
 
 ```js
 imageUpload({
   field: 'avatar',
   label: 'Profile picture',
   shape: 'circle',
+  compact: true,
   maxWidth: 256,
   maxHeight: 256,
   onImage: (file) => {
@@ -292,6 +312,11 @@ imageUpload({
   },
 })
 ```
+
+**A search box that asks the server is `comboBox` with `onSearch`.** imp waits until the person
+stops typing, calls your function once with the text, and shows what it returns. The function gets
+an abort signal, so a request that a newer text replaces is cancelled. `minSearch` holds the search
+until enough letters are typed.
 
 ## Overlays use the platform, not a z-index war
 
@@ -318,10 +343,10 @@ and flips when there is no room.
 
 ## Tell the person what is happening
 
-`imp/std/feedback` holds the components that report on the app. `progress` is a bar, a ring or a
-gauge, with a value or with none. A ring with no value is the spinner, in the shape that the theme
-selects with its `loader` token. `skeleton` holds the place of content that loads. `notice` is a
-message banner inside the page.
+`imp/std/feedback` holds the components that report on the app. `loader` is the spinner, in the
+shape that the theme selects with its `loader` token, for a wait with no known end. `progress` is a
+bar, a ring or a gauge for a measured amount of work. `skeleton` holds the place of content that
+loads. `notice` is a message banner inside the page.
 
 `toast()` draws popups in the corner, and `notify()` sends one from anywhere in your code. imp keeps
 every notification. The `notifications` bell in the frame opens a list of them, so a person who
@@ -340,7 +365,7 @@ const choice = await notify({
 })
 ```
 
-`progress`, `notice` and `toast` take a `client` prop, the name of an HTTP client. They then show a
+`loader`, `notice` and `toast` take a `client` prop, the name of an HTTP client. They then show a
 request in flight and the last error on their own. See **[HTTP](http.md)**.
 
 ## Put things on a map, with no map server
@@ -396,10 +421,13 @@ The library has one component per job. A name from another library often maps to
 | You look for       | Use                                                                      |
 | ------------------ | ------------------------------------------------------------------------ |
 | badge              | `tag`, in the reading order next to the thing that it counts             |
-| spinner            | `progress({ shape: 'ring' })` with no value                              |
+| spinner            | `loader`                                                                 |
 | statistic          | `progress({ shape: 'gauge' })`                                           |
 | alert              | `notice`, because an import named `alert` hides `alert()` of the browser |
 | result page        | `emptyState` with a `kind`                                               |
+| illustration       | `emptyState` with an `image`                                             |
+| submit button      | a `button` whose click is `submitForm`                                   |
+| workspace switcher | `orgSelect`                                                              |
 | avatar group       | a `flex` of avatars, with a `tag` for "+4"                               |
 | button group       | `flex({ joined: true })`                                                 |
 | split button       | a joined `flex` of a `button` and a `menuButton`                         |

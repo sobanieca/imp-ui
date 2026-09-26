@@ -1,7 +1,8 @@
 # codeEditor - a multi-line code input with syntax highlighting, bound to a form field or a state
 
 ```js
-import { codeEditor } from 'imp/std/inputs'
+import { codeEditor, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 codeEditor({ field: 'config', label: 'imp.json', language: 'json', rows: 8 })
 codeEditor({ value: source, label: 'Script', language: 'js', lineNumbers: true })
@@ -71,12 +72,12 @@ Rules an agent gets wrong:
   control. Pass the state itself to `disabled`, not `disabled.get()`.
 
 ```js
-import { codeEditor, form, submitButton } from 'imp/std/inputs'
+import { codeEditor, form, submitForm } from 'imp/std/inputs'
 
 form(
   { initialValues: { css: '.card { padding: 1rem }' }, onSubmit: save },
   codeEditor({ field: 'css', label: 'Custom CSS', language: 'css', rows: 12 }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 

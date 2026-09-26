@@ -2,6 +2,7 @@ import { basename, dirname, join, relative, resolve } from '@std/path'
 import { VERSION } from './version.js'
 import { bold, dim, green } from './colors.js'
 import { logger } from './logger.js'
+import { impMarkSvg } from '../../lib/src/std/shared/imp-mark.js'
 
 const PWA_THEME_COLOR = '#0f3a5d'
 const PWA_BACKGROUND_COLOR = '#ffffff'
@@ -257,7 +258,7 @@ async function templateFiles({ title, pwa }) {
   if (pwa) {
     files.push({
       path: PWA_ICON,
-      contents: await readTemplate('mark-light.svg'),
+      contents: impMarkSvg('light'),
       note: 'the source image imp renders the whole PWA icon set from',
     })
   }

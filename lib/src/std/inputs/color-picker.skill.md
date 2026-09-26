@@ -1,7 +1,8 @@
 # colorPicker - a hex colour input with a native picker beside it
 
 ```js
-import { colorPicker } from 'imp/std/inputs'
+import { colorPicker, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 colorPicker({ field: 'brand', label: 'Brand colour' })
 ```
@@ -43,7 +44,7 @@ Rules an agent gets wrong:
 form(
   { initialValues: { brand: '#3b6fe0' }, onSubmit: save },
   colorPicker({ field: 'brand', label: 'Brand colour', required: true }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 

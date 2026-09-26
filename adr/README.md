@@ -57,25 +57,25 @@ These are the conventions:
 
 ## Components
 
-| ADR                                                                                       | Decision                                                                          |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [standard-component-library](standard-component-library.md)                               | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props  |
-| [short-component-catalog](short-component-catalog.md)                                     | One component per job; a prop covers a variant; paging is an infinite scroll      |
-| [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box     |
-| [image-upload-client-side-crop](image-upload-client-side-crop.md)                         | `imageUpload` crops and resizes in the browser; the value is a data URL           |
-| [responsive-fluid-values-only](responsive-fluid-values-only.md)                           | Fluid theme values only; no per-screen props - an app writes its own media query  |
-| [layout-two-flex-primitives](layout-two-flex-primitives.md)                               | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale          |
-| [app-shell-component](app-shell-component.md)                                             | `shell`: one nav tree drives three surfaces; the library's one breakpoint         |
-| [shell-region-components](shell-region-components.md)                                     | `imp/std/shell`: the frame's usual contents as their own group                    |
-| [app-wide-notification-store](app-wide-notification-store.md)                             | One app-wide store of plain notifications; `notify` feeds the popups and the bell |
-| [overlay-top-layer](overlay-top-layer.md)                                                 | Overlays promoted in place; shared seam of plain functions, no portal             |
-| [state-driven-forms](state-driven-forms.md)                                               | Form values are named state; controls bind one field by dot path                  |
-| [bundled-icon-set](bundled-icon-set.md)                                                   | Lucide in the binary; one export per icon, drawn by `icon`                        |
-| [map-bundled-world](map-bundled-world.md)                                                 | `map`: Natural Earth in the bundle, drawn as SVG, no tile server                  |
-| [code-block-syntax-highlighting](code-block-syntax-highlighting.md)                       | `codeBlock`: imp's own scanner, theme-mixed colours, line links in the fragment   |
-| [code-editor-textarea-mirror](code-editor-textarea-mirror.md)                             | `codeEditor`: a native textarea over a highlighted mirror, and three keys         |
-| [rich-text-editor-contenteditable-markdown](rich-text-editor-contenteditable-markdown.md) | `richTextEditor`: a contenteditable box with a toolbar, whose value is markdown   |
-| [markdown-renderer-one-reader](markdown-renderer-one-reader.md)                           | `markdown`: one parser and one prose stylesheet under the renderer and the editor |
+| ADR                                                                                       | Decision                                                                            |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [standard-component-library](standard-component-library.md)                               | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props    |
+| [short-component-catalog](short-component-catalog.md)                                     | One component per job; a prop covers a variant; paging is an infinite scroll        |
+| [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box       |
+| [image-upload-client-side-crop](image-upload-client-side-crop.md)                         | `imageUpload` crops and resizes in the browser; the value is a data URL             |
+| [responsive-fluid-values-only](responsive-fluid-values-only.md)                           | Fluid theme values only; no per-screen props - an app writes its own media query    |
+| [layout-two-flex-primitives](layout-two-flex-primitives.md)                               | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale            |
+| [app-shell-component](app-shell-component.md)                                             | `shell`: one nav tree drives three surfaces, a signed-in gate; the one breakpoint   |
+| [shell-region-components](shell-region-components.md)                                     | `imp/std/shell`: the frame's usual contents as their own group, every picker a menu |
+| [app-wide-notification-store](app-wide-notification-store.md)                             | One app-wide store of plain notifications; `notify` feeds the popups and the bell   |
+| [overlay-top-layer](overlay-top-layer.md)                                                 | Overlays promoted in place; shared seam of plain functions, no portal               |
+| [state-driven-forms](state-driven-forms.md)                                               | Form values are named state; controls bind one field by dot path                    |
+| [bundled-icon-set](bundled-icon-set.md)                                                   | Lucide in the binary; one export per icon, drawn by `icon`                          |
+| [map-bundled-world](map-bundled-world.md)                                                 | `map`: Natural Earth in the bundle, drawn as SVG, no tile server                    |
+| [code-block-syntax-highlighting](code-block-syntax-highlighting.md)                       | `codeBlock`: imp's own scanner, theme-mixed colours, line links in the fragment     |
+| [code-editor-textarea-mirror](code-editor-textarea-mirror.md)                             | `codeEditor`: a native textarea over a highlighted mirror, and three keys           |
+| [rich-text-editor-contenteditable-markdown](rich-text-editor-contenteditable-markdown.md) | `richTextEditor`: a contenteditable box with a toolbar, whose value is markdown     |
+| [markdown-renderer-one-reader](markdown-renderer-one-reader.md)                           | `markdown`: one parser and one prose stylesheet under the renderer and the editor   |
 
 ## Library
 

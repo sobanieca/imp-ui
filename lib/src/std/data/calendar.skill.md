@@ -98,7 +98,7 @@ const planner = component('app-planner', {
             },
           },
           textField({ field: 'title', label: 'Title', required: true }),
-          submitButton('Save'),
+          button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
         ),
       ),
     )

@@ -532,7 +532,7 @@ router({
   map: app,
   access,
   screens,
-  loading: () => div(spinner(), 'Loading...'),
+  loading: () => div(loader({ label: 'Loading' }), 'Loading...'),
 })
 ```
 

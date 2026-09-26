@@ -4,15 +4,15 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import             | Exports                                                                                                                                                                                                                       | Per-component skill                                                                                                                                                                                                                                                                                         |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imp/std`          | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                     | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                                 |
-| `imp/std/layout`   | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                   | `imp skill std/flex`, `std/stack`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                   |
-| `imp/std/inputs`   | `form`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor`, `submitButton`, `resetButton` | `imp skill std/form`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor`, `std/submitButton`, `std/resetButton` |
-| `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`                                                                                                            | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`                                                                                                                                        |
-| `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                   | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                           |
-| `imp/std/feedback` | `bugReport`, `notice`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                                                   | `imp skill std/bugReport`, `std/notice`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                                                           |
-| `imp/std/data`     | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                  | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                          |
+| Import             | Exports                                                                                                                                                                                                                   | Per-component skill                                                                                                                                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`          | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                 | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                             |
+| `imp/std/layout`   | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                                                                                                                                                               | `imp skill std/flex`, `std/stack`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                               |
+| `imp/std/inputs`   | `form`, `submitForm`, `resetForm`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor` | `imp skill std/form`, `std/submitForm`, `std/resetForm`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor` |
+| `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`                                                                                                        | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`                                                                                                                                    |
+| `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                  | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                      |
+| `imp/std/feedback` | `bugReport`, `notice`, `loader`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`                                                                                                                                     | `imp skill std/bugReport`, `std/notice`, `std/loader`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`                                                                                                                                                                         |
+| `imp/std/data`     | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                              | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                      |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -216,7 +216,9 @@ shell(
       tags: { [app.reports.revenue]: revenueCount },
     },
     sidebar: { label: 'Pages' },
-    extras: [themeSelect(), userCard({ signedIn, name: 'Ada Lovelace', onSignOut })],
+    extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
+    signedIn: session,
+    signIn: () => signInPage(),
   },
   router({ map: app, access, screens, options }),
 )
@@ -228,6 +230,8 @@ shell(
 | `navbar`      | **data** `{ map, icons, tags }` | -        | The map; or plain `items` for a frame with no router |
 | `sidebar`     | **data** `{ label, ... }`       | -        | Names and foots the second level                     |
 | `extras`      | DOM, or an array of it          | -        | Theme/language pickers, `userCard`, anything         |
+| `signedIn`    | boolean, or a state - **live**  | -        | The gate: `undefined` waits, falsy shows `signIn`    |
+| `signIn`      | DOM, or `() => DOM`             | -        | The sign-in page of the app, shown while signed out  |
 | `breadcrumbs` | `false`                         | shown    | Drops the trail the frame renders from the map       |
 | `navOpen`     | boolean, or a state - **live**  | `false`  | Drawer state; shell-owned when omitted               |
 | `gap`         | spacing step `0`-`6`            | `0`      | Floats the chrome apart as rounded, bordered panels  |
@@ -269,8 +273,16 @@ Rules an agent gets wrong:
   shell draws the rows, because it draws each level more than once. The main content is the
   children, as in `shell({ navbar }, page())`. There is no `header`, `footer` or `layout` prop. Put
   a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
-- **Who is signed in is `userCard` in `extras`.** The frame has no account prop and no signed-in
-  flag. Whether a visitor sees a section is the `access` of the map.
+- **`signedIn` gates the whole app, and `signIn` is your page.** While `signedIn` is `undefined`,
+  the frame shows a `loader`. While it is `null` or `false`, it shows the `signIn` content and the
+  logo, centred, and nothing else: the main content is not mounted, so no router runs. When it is
+  truthy, the frame mounts the app. Pass the session state, with `null` for nobody. Write the
+  sign-in page yourself, as a `form` or as buttons of the providers; imp renders no form and holds
+  no session. `signIn` as a function is called once, the first time the gate shows. Without
+  `signedIn`, everybody sees the app.
+- **The frame has no account prop.** `userCard` in `extras` displays the person, and the sign-out
+  action is a `button` or a `menuButton` of yours beside it. Whether a person sees a section is the
+  `access` of the map.
 - **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
   of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
   there inline, or do not style it.
@@ -407,25 +419,23 @@ Full manual: `imp skill std/dialog`.
 import { drawer } from 'imp/std/layout'
 
 drawer({ title: 'Filters', open: filtering }, form({ initialValues }, ...fields))
-drawer({ title: 'Filters', open: filtering, pin: true }, form({ initialValues }, ...fields))
 drawer({ title: 'Details', modal: false, open: inspecting }, details())
 ```
 
-| Prop         | Values                            | Default | Notes                                              |
-| ------------ | --------------------------------- | ------- | -------------------------------------------------- |
-| `title`      | string - **live**                 | -       | Names the drawer for a screen reader; give one     |
-| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
-| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                           |
-| `pin`        | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
-| `background` | DOM                               | -       | Decorative node under the panel; not interactive   |
-| `events`     | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
+| Prop         | Values                            | Default | Notes                                            |
+| ------------ | --------------------------------- | ------- | ------------------------------------------------ |
+| `title`      | string - **live**                 | -       | Names the drawer for a screen reader; give one   |
+| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                |
+| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                         |
+| `background` | DOM                               | -       | Decorative node under the panel; not interactive |
+| `events`     | `{ openToggle }`                  | -       | `{ open }`, on changes the drawer makes itself   |
 
 - **A drawer is a dialog docked to the end of the line.** That is the right edge under `dir="ltr"`,
   and the left edge under `dir="rtl"`. There is no side prop. The modes and the `open` contract are
   the same as for `dialog`.
-- **`pin` keeps a modal drawer open across a click outside it.** The toggle is in the bar of the
-  drawer. The drawer writes back into a writable `pin` state. Escape and the close button still
-  close the drawer.
+- **A panel that stays open while the person works on the page is `modal: false`.** A modal drawer
+  closes on a click outside it, and there is no pin. The non-modal panel never closes on an outside
+  click, and the page behind it stays live.
 - **One panel serves every width**, at `min(--imp-drawer-inline-size, 85dvi)`. There is no
   bottom-sheet mode.
 - **The drawer is the contextual panel of a `shell` app.** Mount it in the main content, and open it
@@ -534,6 +544,7 @@ import { emptyState } from 'imp/std/display'
 emptyState({ variant: 'noResults' })
 emptyState({ title: 'No invoices', description: 'They appear here once you send one.' }, action)
 emptyState({ icon: luCircleCheck, kind: 'success', title: 'Payment received' }, action)
+emptyState({ image: '/art/no-photos.svg', title: 'No photos yet' })
 ```
 
 | Prop          | Values                                                     | Default     | Notes                            |
@@ -542,13 +553,15 @@ emptyState({ icon: luCircleCheck, kind: 'success', title: 'Payment received' }, 
 | `title`       | string - **live**                                          | see below   | The line saying there is nothing |
 | `description` | string - **live**                                          | -           | One sentence; omitted if unset   |
 | `icon`        | an icon from `imp/icons`                                   | -           | Large and muted, above the title |
+| `image`       | a DOM node, or an image URL                                | -           | A drawing above the title, 6rem  |
 | `kind`        | `'neutral'`, `'success'`, `'error'`, `'warning'`, `'info'` | `'neutral'` | Tints the icon only              |
 
 The children are the actions. imp puts them in a centered row under the text. With no `title`, the
 component reads its own key. `imp.state.empty` gives "Nothing here yet", and `imp.state.noResults`
 gives "No results". imp does not translate a `title` that you pass. To make it follow the language,
 use `computed([lang], () => t('invoices.empty'))`. A result page is this component with an `icon`
-and a `kind`. imp has no `result` component.
+and a `kind`. imp has no `result` component. With no `icon` and no `image`, imp draws its own mark.
+`image` is an inline SVG node, any DOM, or a URL that renders as an `<img>`; it wins over `icon`.
 
 ## tag - from `imp/std/display`
 
@@ -679,13 +692,14 @@ owns with a **dot path**. It resolves the form from its own position, and it rea
 one path. This works at any depth, so a layout component in between changes nothing.
 
 ```js
-import { form, select, submitButton, textField } from 'imp/std/inputs'
+import { button } from 'imp/std'
+import { form, select, submitForm, textField } from 'imp/std/inputs'
 
 form(
   { initialValues: { user: { firstName: 'Ada' }, plan: 'pro' }, onSubmit: save },
   textField({ field: 'user.firstName', label: 'First name', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro'] }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 
@@ -707,29 +721,32 @@ live under `imp.form.*`. `validateAsync` returns a **promise** of a message or o
 blur and on submit only. A submit waits for it. A synchronous failure skips it. A rejected promise
 blocks the submit with `imp.form.checkFailed`.
 
-| Component      | What it binds                                    | Its own props                                                        |
-| -------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
-| `form`         | Owns `imp.form`                                  | `initialValues`, `onSubmit`, `layout`, `gap`                         |
-| `textField`    | A string, or a **number**                        | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly`         |
-| `select`       | One value from `options`                         | `options`, `placeholder`                                             |
-| `segmented`    | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                               |
-| `comboBox`     | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `placeholder`           |
-| `slider`       | A **number** in a range                          | `min`, `max`, `step`, `showValue`, `format`                          |
-| `colorPicker`  | A hex colour, `'#rrggbb'`                        | -                                                                    |
-| `fileUpload`   | An array of `{ id, name, size, type }`           | `multiple`, `accept`, `maxSize`, `onFiles`                           |
-| `imageUpload`  | A data URL of the cropped, resized picture       | `shape`, `aspect`, `maxWidth`, `maxHeight`, `previewSize`, `onImage` |
-| `datePicker`   | A date, a date range, or a date with a time      | `range`, `time`, `min`, `max`, `placeholder`                         |
-| `checkbox`     | A boolean                                        | -                                                                    |
-| `toggle`       | A boolean, drawn as a switch                     | -                                                                    |
-| `radioGroup`   | One value from `options`                         | `options`, `orientation`                                             |
-| `submitButton` | -                                                | `variant`, `size`, `disabled`                                        |
-| `resetButton`  | -                                                | `variant`, `size`, `disabled`                                        |
+| Component     | What it binds                                    | Its own props                                                           |
+| ------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| `form`        | Owns `imp.form`                                  | `initialValues`, `onSubmit`, `layout`, `gap`                            |
+| `textField`   | A string, or a **number**                        | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly`            |
+| `select`      | One value from `options`                         | `options`, `placeholder`                                                |
+| `segmented`   | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                                  |
+| `comboBox`    | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `minSearch`, `placeholder` |
+| `slider`      | A **number** in a range                          | `min`, `max`, `step`, `showValue`, `format`                             |
+| `colorPicker` | A hex colour, `'#rrggbb'`                        | -                                                                       |
+| `fileUpload`  | An array of `{ id, name, size, type }`           | `multiple`, `accept`, `maxSize`, `onFiles`                              |
+| `imageUpload` | A data URL of the cropped, resized picture       | `shape`, `aspect`, `maxWidth`, `maxHeight`, `compact`, `onImage`        |
+| `datePicker`  | A date, a date range, or a date with a time      | `range`, `time`, `min`, `max`, `placeholder`                            |
+| `checkbox`    | A boolean                                        | -                                                                       |
+| `toggle`      | A boolean, drawn as a switch                     | -                                                                       |
+| `radioGroup`  | One value from `options`                         | `options`, `orientation`                                                |
+
+`submitForm(source)` and `resetForm(source)` are functions, not components. `source` is the click
+event or any node inside the form. So `button({ events: { click: submitForm } }, 'Save')` is the
+submit button, and `button({ events: { click: resetForm } }, 'Start over')` the reset button.
 
 Rules an agent gets wrong:
 
 - **There is no native form submit.** There is no `type: 'submit'` button and no
-  `events: { submit }`. Put the handler in the `onSubmit` of the form, and render `submitButton()`.
-  Enter in a single-line field also submits. Enter in a multi-line `textField` does not.
+  `events: { submit }`. Put the handler in the `onSubmit` of the form, and give a `button` the
+  `submitForm` function as its click handler. There is no `submitButton` and no `resetButton`
+  component. Enter in a single-line field also submits. Enter in a multi-line `textField` does not.
 - **A `field` with no `form` around it is an error.** A path that is not dot-separated is also an
   error.
 - **`field` and `value` are alternatives.** With both, imp warns and `field` wins.
@@ -750,7 +767,12 @@ Rules an agent gets wrong:
   it in `onSubmit`. Run `imp skill std/fileUpload`.
 - **`imageUpload` holds a data URL, and it crops and resizes on the client.** The person picks one
   picture, moves it in a frame of `aspect` or of `shape: 'circle'`, and clicks Done. The output fits
-  `maxWidth` by `maxHeight`. `onImage` receives the output `File`. Run `imp skill std/imageUpload`.
+  `maxWidth` by `maxHeight`. `onImage` receives the output `File`. There is no size prop: the box
+  fills the field, and `compact` makes it a small box beside the prompt. Run
+  `imp skill std/imageUpload`.
+- **`comboBox` with `onSearch` is the server-backed autocomplete.** imp debounces the text, calls
+  `onSearch(text, { signal })` once, and aborts the signal when a newer text replaces it. Pass the
+  signal to the HTTP client. `minSearch` holds the call until enough is typed.
 - **`datePicker` holds ISO text, never a `Date`.** The value is `'2026-09-21'`, or `{ start, end }`
   with `range: true`, or `'2026-09-21T14:30'` with `time: true`. The empty value is `undefined`. See
   `imp skill std/datePicker`.
@@ -759,8 +781,9 @@ Rules an agent gets wrong:
 - **Type `'number'` commits a number.** An empty field commits `undefined`.
 - **imp hides an error until the person leaves the field, or tries to submit.** Do not add your own
   "show errors" flag.
-- **Return the promise from an async `onSubmit`.** The spinner of the submit button and the guard
-  against a double submit both need it.
+- **Return the promise from an async `onSubmit`.** The guard against a double submit needs it, and
+  `imp.form.submitting` is `true` meanwhile. A button that must spin reads that state and passes it
+  as `loading`, in a small component of yours.
 - **`validate` is synchronous, and `validateAsync` is the promise form.** A promise returned from
   `validate` does not work, because a promise is truthy and every value then looks invalid. An async
   check runs on blur and on submit only, never on a keystroke. Debounce it yourself if you need
@@ -1035,6 +1058,7 @@ import {
   breadcrumbs,
   langSelect,
   notifications,
+  orgSelect,
   themeSelect,
   userCard,
 } from 'imp/std/shell'
@@ -1042,20 +1066,23 @@ import { icon } from 'imp/std'
 import { luBox } from 'imp/icons'
 
 appLogo({ label: 'Acme', icon: icon(luBox, { size: 'lg' }) })
+appLogo({ label: 'Acme', image: '/acme-wordmark.svg' })
 breadcrumbs({ items: [{ id: 'home', label: 'Home', href: '/' }, { id: 'order', label: 'Order' }] })
-userCard({ signedIn: session, name: 'Ada Lovelace', description: user.email, onSignOut: signOut })
+userCard({ name: 'Ada Lovelace', description: user.email })
+orgSelect({ orgs: memberships, selected: currentOrg, events: { select: switchOrg } })
 themeSelect()
 langSelect({ languages: ['en', 'pl'] })
 ```
 
-| Component       | Props                                                                                                                                     |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `appLogo`       | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `compact`, `events`                                    |
-| `breadcrumbs`   | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                                                        |
-| `userCard`      | `signedIn`, `name`, `description`, `picture` (all live), `href`, `compact`, `onSignIn`, `onSignOut`, `variant`, `size`, `block`, `events` |
-| `themeSelect`   | `themes`, `remember`, `label` (live), `events`                                                                                            |
-| `langSelect`    | `languages`, `remember`, `label` (live), `events`                                                                                         |
-| `notifications` | `label` (live), `variant`, `size`, `events`                                                                                               |
+| Component       | Props                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| `appLogo`       | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `image`, `compact`, `events` |
+| `breadcrumbs`   | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                              |
+| `userCard`      | `name`, `description`, `picture` (all live), `href`, `compact`, `events`                                        |
+| `orgSelect`     | `orgs` (live), `selected` (live, writable), `label` (live), `variant`, `size`, `compact`, `events`              |
+| `themeSelect`   | `themes`, `remember`, `label` (live), `variant`, `size`, `events`                                               |
+| `langSelect`    | `languages`, `remember`, `label` (live), `variant`, `size`, `events`                                            |
+| `notifications` | `label` (live), `variant`, `size`, `events`                                                                     |
 
 Rules an agent gets wrong:
 
@@ -1064,17 +1091,23 @@ Rules an agent gets wrong:
 - **The last crumb is the current page.** `breadcrumbs` renders it as text with
   `aria-current="page"`, never as a link. A crumb with `options` gets a picker of its siblings. The
   frame renders the trail from the map; call `breadcrumbs` yourself only outside `shell`.
-- **`onSignIn` and `onSignOut` are function props, not `events`.** Return the promise, and the
-  button spins until the promise settles. imp holds no session, and it talks to no identity
-  provider.
+- **`userCard` displays. It does not act.** It has no sign-in button, no sign-out button and no
+  menu. Render a `button` or a `menuButton` of your own beside it for the account actions, and
+  decide there how a sign-out works. imp holds no session, and it talks to no identity provider.
+  Whether anybody is signed in is the `signedIn` gate of `shell`.
+- **`themeSelect`, `langSelect` and `orgSelect` are menus.** Each renders a `menuButton` with the
+  current choice on the trigger and a `menuitemradio` per option. There is no `<select>` in the
+  frame.
 - **`themeSelect` and `langSelect` own their setting.** They apply it, remember it in
   `localStorage`, and apply the remembered choice again on the next mount. Set `remember: false`
   when the app owns the setting. A remembered theme wins against the `applyTheme` of the app at
   startup. That is the purpose of remembering it.
-- **`userCard` is one component with two states.** Signed out, it is a single sign-in button. Signed
-  in, it is the person, and a sign-out button stands beside them only when you pass `onSignOut`.
-  Leave that prop out for a card that only displays. `signedIn` defaults to `false`, so a card with
-  a `name` only shows the sign-in button. There is no menu inside the card.
+- **`orgSelect` remembers nothing and navigates nowhere.** It marks `selected`, reports a cancelable
+  `select` with `{ id, org }`, and writes the `id` into a writable `selected` state. The app
+  navigates to the tenant, see `imp skill routing`. Put it in the `logo` slot beside `appLogo`, in a
+  `flex`, or in `extras`.
+- **`appLogo` with `image` is the whole logo as one picture.** No words render, and `label` is the
+  `alt`. Use it for a brand that sets its name in a font of its own.
 - **`compact` on `appLogo` and on `userCard` hides the words visually, not from assistive
   technology.** That is how a brand block with a mark only keeps its name.
 - **Inside `shell`, `userCard` goes in `extras`.** The frame has no account prop. It places the
@@ -1083,8 +1116,8 @@ Rules an agent gets wrong:
 - **`notifications` is the bell, and it takes no data.** It lists what `notify` from
   `imp/std/feedback` raised. It renders its own modal drawer. Put it in `extras`, beside `userCard`.
 
-Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/themeSelect` |
-`std/langSelect`.
+Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/orgSelect` |
+`std/themeSelect` | `std/langSelect`.
 
 ## Feedback - from `imp/std/feedback`
 
@@ -1123,43 +1156,47 @@ Rules an agent gets wrong:
 Full manual: `imp skill std/bugReport`.
 
 ```js
-import { notice, progress, skeleton } from 'imp/std/feedback'
+import { loader, notice, progress, skeleton } from 'imp/std/feedback'
 
+loader({ label: 'Loading' })
+loader({ label: 'Saving', size: 'sm', client: 'myapp.api' })
 progress({ label: 'Uploading', value: 40, showValue: true })
-progress({ label: 'Loading', shape: 'ring' })
 progress({ label: 'CPU', shape: 'gauge', value: load, color: 'amber' })
-progress({ label: 'Saving', client: 'myapp.api' })
 skeleton({ lines: 3 })
 notice({ kind: 'warning', title: 'Your trial ends in 3 days' }, 'Add a payment method.')
 notice({ client: 'myapp.api' })
 ```
 
-| Component  | Props                                                                                            |
-| ---------- | ------------------------------------------------------------------------------------------------ |
-| `progress` | `label` (live), `value` (live), `max`, `shape`, `size`, `color`, `showValue`, `format`, `client` |
-| `skeleton` | `shape`, `lines`                                                                                 |
-| `notice`   | `kind`, `title` (live), `icon`, `dismissible`, `open` (live), `client`, `events`                 |
+| Component  | Props                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------- |
+| `loader`   | `label` (live), `size`, `color`, `client`                                              |
+| `progress` | `label` (live), `value` (live), `max`, `shape`, `size`, `color`, `showValue`, `format` |
+| `skeleton` | `shape`, `lines`                                                                       |
+| `notice`   | `kind`, `title` (live), `icon`, `dismissible`, `open` (live), `client`, `events`       |
 
 Rules an agent gets wrong:
 
-- **There is no `spinner`, no `statistic` and no `alert`.** A `progress` ring with no `value` is the
-  spinner, in the shape that the `loader` token of the theme selects. A `progress` gauge shows one
-  number of a dashboard. The inline banner is `notice`, because an `alert` import shadows the
-  `alert()` of the browser.
-- **`progress` with no `value` has no known value.** The bar slides and the ring spins. `shape` is
-  `'bar'`, `'ring'` or `'gauge'`. `value` counts from `0` to `max`, which is `100` by default.
-- **Always pass `label` to `progress`.** It is the accessible name. A bar and a gauge also show it.
+- **`loader` is the spinner, and `progress` never spins.** `loader` is for a wait with no measure,
+  in the shape that the `loader` token of the theme selects. `progress` is for a measured amount of
+  work, and it warns without a `value`. There is no `statistic` and no `alert`. A `progress` gauge
+  shows one number of a dashboard. The inline banner is `notice`, because an `alert` import shadows
+  the `alert()` of the browser.
+- **`progress` takes `shape`** `'bar'`, `'ring'` or `'gauge'`. `value` counts from `0` to `max`,
+  which is `100` by default.
+- **Always pass `label` to `loader` and to `progress`.** It is the accessible name. A bar and a
+  gauge also show it. A `loader` announces it as a status.
 - **`skeleton` is decorative.** Put `aria-busy` on the region that loads. Size a circle or a block
   with `--imp-skeleton-inline-size` and `--imp-skeleton-block-size` on a wrapper.
 - **The description of a `notice` is its children.** `kind` is `'info'`, `'success'`, `'warning'` or
   `'error'`. A warning and an error are `role="alert"`. The other two are `role="status"`.
 - **Show a `notice` later through a state in `open`.** The live region stays mounted, so a screen
   reader announces the words. A dismiss writes `false` into that state and fires `dismiss`.
-- **`client` binds both to an HTTP client**, by name or as the client object. `progress` shows
-  itself only while `pending` is above zero. `notice` shows `lastError` as an error that a person
-  can dismiss. See `imp skill http`.
+- **`client` binds both to an HTTP client**, by name or as the client object. `loader` shows itself
+  only while `pending` is above zero. `notice` shows `lastError` as an error that a person can
+  dismiss. See `imp skill http`.
 
-Full manuals: `imp skill std/progress`, `imp skill std/skeleton`, `imp skill std/notice`.
+Full manuals: `imp skill std/loader`, `imp skill std/progress`, `imp skill std/skeleton`,
+`imp skill std/notice`.
 
 ```js
 import { dismiss, notify, toast } from 'imp/std/feedback'

@@ -14,6 +14,7 @@ import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
 import { DATAURL_ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { dataUri } from './image.js'
+import { impMarkSvg } from '../../lib/src/std/shared/imp-mark.js'
 import {
   collectMocks,
   IMP_LIBRARY_ROOT,
@@ -65,23 +66,16 @@ const BUNDLE_PREFIX = '/@imp/preview/'
 const APP_BUNDLE_NAME = 'app'
 const APP_BUNDLE_PATH = `${BUNDLE_PREFIX}${APP_BUNDLE_NAME}.js`
 
-const IMP_MARK_URLS = {
-  light: new URL('./templates/mark-light.svg', import.meta.url),
-  dark: new URL('./templates/mark-dark.svg', import.meta.url),
-}
-
 const IMP_FAVICON_URL = new URL('./templates/favicon.ico', import.meta.url)
 
 let impMark = null
 
 let impFavicon = null
 
-const readMarkFile = async (url) => dataUri('image/svg+xml', await Deno.readFile(url))
-
-const readImpMark = async () =>
+const readImpMark = () =>
   impMark ??= {
-    light: await readMarkFile(IMP_MARK_URLS.light),
-    dark: await readMarkFile(IMP_MARK_URLS.dark),
+    light: dataUri('image/svg+xml', new TextEncoder().encode(impMarkSvg('light'))),
+    dark: dataUri('image/svg+xml', new TextEncoder().encode(impMarkSvg('dark'))),
   }
 
 const readImpFavicon = async () =>
@@ -477,7 +471,7 @@ export async function bundlePreviewApp(
   { root, dependencies, catalog, themes = [], translations = [], groups = null, embedded = false },
 ) {
   const { mocks, failed } = await collectAppMocks(catalog, { root, dependencies })
-  const mark = await readImpMark()
+  const mark = readImpMark()
   const favicon = await readImpFavicon()
   let entries = catalog.filter((entry) => !failed.some((failure) => failure.file === entry.file))
   for (let round = 0; round < BUILD_ROUNDS_LIMIT; round++) {

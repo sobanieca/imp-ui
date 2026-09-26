@@ -120,11 +120,18 @@ approves.**
   is a strip of icons, or it is not a rail. **imp deliberately does not build a drag to resize.** A
   width is a custom property. A splitter that a pointer drives is a component of its own, if
   somebody ever wants one.
-- **The frame does not know who is signed in.** There is no account prop and no signed-in flag. An
-  app puts `userCard` in `extras`, and that component owns the sign-in button and the sign-out
-  action through its own `signedIn` prop. Whether a signed-out visitor sees a section is the
-  decision of the `access` of the map, see `route-guards.md`. A frame with only a logo and a sign-in
-  card is the same component with fewer props, and not a second layout.
+- **The frame knows one thing about the session: whether there is one.** `signedIn` is a flag or a
+  state, and `signIn` is the content of the app for a visitor with no session, as DOM or as a
+  function that builds it once. While `signedIn` is `undefined`, the frame shows a `loader` on the
+  ground of the app, because the app does not know yet. While it is `null` or `false`, the frame
+  shows the `signIn` content and the `logo` in the middle of the screen, and nothing else: no bar,
+  no column, no drawer, no `extras`, and the main content is not mounted. So no router runs and no
+  screen loads for a visitor who has not signed in. When it becomes truthy, the frame mounts the
+  app. The frame knows nothing else. It holds no account prop, it renders no form, and it talks to
+  no identity provider. The sign-in page is the app's, because it differs with every app: a password
+  form, social buttons, a magic link, a passkey. `userCard` in `extras` displays the person, and the
+  sign-out action is a button or a `menuButton` of the app beside it. Whether a signed-in person
+  sees a section is still the `access` of the map, see `route-guards.md`.
 - **The shell owns the drawer, and the drawer is a `<dialog>`.** The top layer, `inert` on the rest
   of the page, the entry of the focus, the restore of the focus, and Escape, all belong to the
   platform. The shell adds a dismissal from the backdrop. It closes itself when the viewport crosses

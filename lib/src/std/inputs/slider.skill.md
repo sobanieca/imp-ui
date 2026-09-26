@@ -1,7 +1,8 @@
 # slider - a native range input bound to a number
 
 ```js
-import { slider } from 'imp/std/inputs'
+import { slider, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 slider({ field: 'volume', label: 'Volume', min: 0, max: 100, step: 5 })
 ```
@@ -56,7 +57,7 @@ form(
     format: (value) => `${value}%`,
     validate: (value) => (value > 80 ? 'Keep the volume at 80% or less' : null),
   }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 

@@ -376,10 +376,10 @@ button inside it never share one corner. A theme that wants flat, square chrome 
 
 ## The loader
 
-Every loading state in imp draws one loader. A `button` with `loading` shows it before its label. A
-`progress` ring with no value is that loader alone. A table or a list shows it while the next rows
-load, and the rich text editor shows it while an image uploads. The `loader` token selects its
-shape, for the whole app at once:
+Every loading state in imp draws one loader. A `button` with `loading` shows it before its label.
+The `loader` component is that loader alone. A table or a list shows it while the next rows load,
+and the rich text editor shows it while an image uploads. The `loader` token selects its shape, for
+the whole app at once:
 
 | Value     | Draws                                    |
 | --------- | ---------------------------------------- |
@@ -390,9 +390,9 @@ shape, for the whole app at once:
 
 The built-in themes set `spinner`. The loader takes the colour of its text, so a loader in a primary
 button is white and a loader in a table row is muted. It takes the size of its place, so it is one
-line of text high in a button and as large as the ring in `progress`. Any other value logs a
+line of text high in a button and as large as the `size` of a `loader`. Any other value logs a
 warning, and every loading state draws the spinner. To show a loader in a place of your own, write
-`progress({ label: 'Loading', shape: 'ring' })`. It draws the shape of the theme.
+`loader({ label: 'Loading' })`. It draws the shape of the theme.
 
 The spacing scale is **fluid**. `space-3` and the larger steps are `clamp()` values that grow with
 the viewport. A gap that you set once is tighter on a phone and wider on a monitor, and you write no

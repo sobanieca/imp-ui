@@ -84,8 +84,8 @@ await init({
 - **imp does not store the theme, and it has no light or dark mode axis.** Save `theme.get().name`
   yourself and apply it again on load. To follow `prefers-contrast` or `prefers-color-scheme`, watch
   the media query and call `applyTheme`.
-- **`loader` is a keyword, not CSS.** Write `loader: 'dots'`. There is no `spinner` component and no
-  `shape` for the loader on `button`. The theme decides the shape for the whole app.
+- **`loader` is a keyword, not CSS.** Write `loader: 'dots'`. The `loader` component and the
+  `loading` of a `button` have no shape prop. The theme decides the shape for the whole app.
 - **Reference a token with a fallback** in your own CSS: `var(--imp-color-primary, #2563eb)`.
 - **There is no `color-primary-hover`, `color-link` or `color-focus-ring`.** A link and the focus
   ring take `color-primary`. Mix a hover step with `color-mix()` from the base colour and
@@ -106,12 +106,11 @@ await init({
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
 
-`loader` is the shape of every loading state: the `loading` of a `button`, a `progress` ring with no
-value, the row of a `table` or a `list` that loads more, and the image upload of `richTextEditor`.
-The values are `spinner`, `dots`, `bar` and `pulse`. The built-in themes set `spinner`. Any other
-value logs a warning and draws the spinner. The loader takes `currentColor` and the size of its
-place. To show the loader of the theme on its own, write `progress({ label, shape: 'ring' })` with
-no `value`.
+`loader` is the shape of every loading state: the `loading` of a `button`, the `loader` component,
+the row of a `table` or a `list` that loads more, and the image upload of `richTextEditor`. The
+values are `spinner`, `dots`, `bar` and `pulse`. The built-in themes set `spinner`. Any other value
+logs a warning and draws the spinner. The loader takes `currentColor` and the size of its place. To
+show the loader of the theme on its own, write `loader({ label: 'Loading' })`.
 
 `radius-item` rounds a button, an input, a tag, a nav row and a tab. `radius-container` rounds a
 dialog, a drawer, a menu and the frame of a `shell`. Set `radius-item` and `radius-container`

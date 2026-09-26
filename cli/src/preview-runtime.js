@@ -503,13 +503,14 @@ const nextOf = (values, current) => values[(values.indexOf(current) + 1) % value
 
 const cycleSwitcher = ({ label, values, choice, iconOf }) =>
   stack(
-    { gap: 1, horizontalAlign: 'start' },
+    { gap: 1 },
     text({ tone: 'secondary', size: 'sm' }, label),
     flex(
       { joined: true },
       button(
         {
           size: 'sm',
+          block: true,
           label: computed([choice], (value) => `${label}: ${value} - next ${label.toLowerCase()}`),
           events: { click: () => choice.set(nextOf(values, choice.get())) },
         },

@@ -1,7 +1,8 @@
 # imageUpload - pick one picture, crop it in a frame, and resize it on the client
 
 ```js
-import { imageUpload } from 'imp/std/inputs'
+import { imageUpload, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 imageUpload({
   field: 'avatar',
@@ -16,10 +17,10 @@ imageUpload({
 ```
 
 The call shape is `imageUpload(props?)`. It renders a native `<input type="file">` behind a drop
-zone: a placeholder box of `previewSize` with the prompt beside it. A picked picture opens an
-editor: a frame with the ratio of the crop, a zoom slider, and the buttons Done and Cancel. Done
-writes the cropped and resized picture to the value, as a data URL. The value then shows as a
-preview in the same box, with the buttons Change, Adjust and Remove beside it.
+zone: a dashed box with the prompt inside it. A picked picture opens an editor: a frame with the
+ratio of the crop, a zoom slider, and the buttons Done and Cancel. Done writes the cropped and
+resized picture to the value, as a data URL. The value then shows as a preview in the same box, with
+the buttons Change, Adjust and Remove under it.
 
 | Prop        | Values                                     | Notes                                       |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
@@ -31,17 +32,17 @@ preview in the same box, with the buttons Change, Adjust and Remove beside it.
 | `required`  | boolean                                    | Fails while there is no picture             |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks the pick, the editor and the buttons |
 
-| Prop          | Values                            | Default       | Notes                                           |
-| ------------- | --------------------------------- | ------------- | ----------------------------------------------- |
-| `shape`       | `'rectangle'`, `'circle'`         | `'rectangle'` | The frame and the preview. Circle is 1:1        |
-| `aspect`      | number, width over height         | -             | `1`, `16 / 9`. Absent: the ratio of the picture |
-| `maxWidth`    | pixels                            | `1920`        | The output is never wider                       |
-| `maxHeight`   | pixels                            | `1920`        | The output is never taller                      |
-| `maxSize`     | bytes                             | -             | The limit for the picked file                   |
-| `accept`      | string, e.g. `'image/png,.jpg'`   | `'image/*'`   | MIME types, `type/*` and `.extension`           |
-| `previewSize` | CSS length, or a number of pixels | `'8rem'`      | The inline size of the placeholder and preview  |
-| `onImage`     | `(file: File \| null) => void`    | -             | The output `File`, or `null` on removal         |
-| `validate`    | `(value) => message \| null`      | -             | `validateAsync` is the promise form             |
+| Prop        | Values                          | Default       | Notes                                           |
+| ----------- | ------------------------------- | ------------- | ----------------------------------------------- |
+| `shape`     | `'rectangle'`, `'circle'`       | `'rectangle'` | The frame and the preview. Circle is 1:1        |
+| `aspect`    | number, width over height       | -             | `1`, `16 / 9`. Absent: the ratio of the picture |
+| `maxWidth`  | pixels                          | `1920`        | The output is never wider                       |
+| `maxHeight` | pixels                          | `1920`        | The output is never taller                      |
+| `maxSize`   | bytes                           | -             | The limit for the picked file                   |
+| `accept`    | string, e.g. `'image/png,.jpg'` | `'image/*'`   | MIME types, `type/*` and `.extension`           |
+| `compact`   | boolean                         | `false`       | A small box beside the prompt, for a form row   |
+| `onImage`   | `(file: File \| null) => void`  | -             | The output `File`, or `null` on removal         |
+| `validate`  | `(value) => message \| null`    | -             | `validateAsync` is the promise form             |
 
 ## The contract
 
@@ -60,9 +61,11 @@ preview in the same box, with the buttons Change, Adjust and Remove beside it.
   wheel, and `+` or `-` zoom up to four times.
 - **A circle changes the frame and the preview, not the pixels.** The output is a square file. Draw
   it round where you show it, for example with `avatar`.
-- **The placeholder and the preview share one box.** It is `previewSize` wide, with the ratio of
-  `aspect`, or square. So the page does not move when a picture arrives. The preview never grows
-  past its own pixels inside the box. The editor is wider, up to `24rem`, because a crop needs room.
+- **The placeholder and the preview share one box, and there is no size prop.** By default the box
+  fills the width of the field, up to `24rem`, which is the width of the editor. Its ratio is
+  `aspect`, or `16 / 9` without one. A circle is `12rem` wide. With `compact`, the box is `6rem`
+  wide, square unless `aspect` says otherwise, and the prompt stands beside it. So the page does not
+  move when a picture arrives. The preview never grows past its own pixels inside the box.
 
 Rules an agent gets wrong:
 
@@ -73,8 +76,9 @@ Rules an agent gets wrong:
   to what was there.
 - **A data URL can be large.** For a photo, set `maxWidth` and `maxHeight` to what the page needs. A
   256 by 256 avatar is about 20 kB.
-- **`previewSize` does not change the output.** `maxWidth` and `maxHeight` do. A preview larger than
-  the output shows the output at its own size, not stretched.
+- **`compact` does not change the output.** `maxWidth` and `maxHeight` do. A box larger than the
+  output shows the output at its own size, not stretched. Use `compact` for an avatar in a row of
+  fields, and the default for a cover picture or a photo.
 - **Adjust works only on a picture picked in this session.** It reopens the editor with the same
   crop. A stored URL has no source to adjust, so the button is hidden.
 - **imp refuses a file outside `accept`, above `maxSize`, or one it cannot decode.** The field shows
@@ -84,7 +88,7 @@ Rules an agent gets wrong:
 - **imp logs a rejected `onImage` promise.** Show your own message for a failed upload.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
 - imp warns about `aspect` with a circle, a `maxWidth`, `maxHeight`, `maxSize` or `aspect` that is
-  not above 0, a `previewSize` that is not a length or a number, and about an unknown prop.
+  not above 0, and about an unknown prop.
 
 The keyboard support on the focused frame:
 
@@ -119,13 +123,14 @@ const profileForm = () => {
       field: 'avatar',
       label: 'Profile picture',
       shape: 'circle',
+      compact: true,
       maxWidth: 256,
       maxHeight: 256,
       onImage: (file) => {
         picture = file
       },
     }),
-    submitButton('Save'),
+    button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
   )
 }
 ```

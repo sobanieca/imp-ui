@@ -17,7 +17,7 @@ same component as the one in the bar.
 ## Decision
 
 **`imp/std/shell` is a component group like any other.** It holds the pieces that usually fill the
-frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelect` and
+frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect` and
 `notifications`.
 
 - **`shell` gains no prop for a piece.** Each piece is DOM that the app passes into a region. So the
@@ -47,17 +47,29 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `themeSelect`, `langSelec
   that off. A remembered choice deliberately wins against the `applyTheme` of the app at startup.
   With no remembered choice, the component applies its first option only when the app has applied no
   theme. So imp never overwrites the theme of an app on a first visit.
-- **An action that is asynchronous, and that can fail, is a function prop.** `onSignIn` and
-  `onSignOut` of `userCard` are examples, and they follow the `onSubmit` of `bugReport`. You cannot
-  await a `CustomEvent`. imp holds no session, and it talks to no identity provider.
+- **Every picker of the group is a `menuButton`.** `themeSelect`, `langSelect` and `orgSelect`
+  render the shared menu, with the current choice on the trigger and a `menuitemradio` per option. A
+  native `<select>` in a bar had a different look in every browser and no room for an icon or an
+  avatar. A menu is the one control of the library for a choice from a short list, and the three
+  pickers add no drawing of their own to it.
+- **`orgSelect` is the tenant switcher, and it remembers nothing.** It shows the organizations that
+  the app passes, marks the current one, and reports a choice through a cancelable `select` event
+  and a write into the `selected` state. The tenant belongs to the session and to the URL, so what a
+  switch does is the app's: a navigation to the param node of the tenant, see `application-map.md`.
+  The theme and the language pickers remember, because their setting belongs to the device.
+- **An action that is asynchronous, and that can fail, is a function prop**, as the `onSubmit` of
+  `bugReport`. You cannot await a `CustomEvent`. imp holds no session, and it talks to no identity
+  provider.
 - **`notifications` is the bell, and it renders its own drawer.** It composes `button`, a `tag` with
   the unread count, and a modal `drawer` with the list. So an app gives the drawer no mount point.
   The bell takes no data. It reads the app-wide store that `notify` writes, see
   `app-wide-notification-store.md`. The list inside the drawer is a component of its own, because
   the CSS of the bell does not reach the content of the drawer, see `shadow-dom-isolation.md`.
-- **`userCard` owns the whole authentication story of the frame.** Its `signedIn` prop picks the
-  sign-in button or the card with its sign-out action. An app puts it in the `extras` of `shell`,
-  and the frame moves it with the rest of the chrome. The frame knows nothing about a session.
+- **`userCard` displays the person, and nothing else.** It has no sign-in button, no sign-out button
+  and no menu, because how a person signs in and out differs with every app, and a button with a
+  fixed label in the card was the wrong place for that decision. The app renders its own `button` or
+  `menuButton` beside the card. Whether anybody is signed in is the `signedIn` gate of `shell`, see
+  `app-shell-component.md`, and the sign-in page is the `signIn` content of the app.
 
 ## Consequences
 

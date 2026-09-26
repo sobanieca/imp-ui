@@ -1,7 +1,8 @@
 # segmented - a choice drawn as a joined row of buttons, one value or many
 
 ```js
-import { segmented } from 'imp/std/inputs'
+import { segmented, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 segmented({ field: 'view', label: 'View', options: ['List', 'Board', 'Calendar'] })
 segmented({ field: 'formats', label: 'Format', multiple: true, options: FORMATS })
@@ -65,7 +66,7 @@ form(
       { value: 'italic', label: 'Italic', icon: luItalic },
     ],
   }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 

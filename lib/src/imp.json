@@ -39,7 +39,8 @@
       "theme-draft.js#themeFileSource",
       "theme-editor.js#appliedThemeName",
       "theme-editor.js#themeEditor",
-      "std/shared/copy-button.js#copyButton"
+      "std/shared/copy-button.js#copyButton",
+      "std/shared/imp-mark.js#impMarkSvg"
     ]
   },
   "maxFileSizeIgnore": [

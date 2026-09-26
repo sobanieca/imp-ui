@@ -1,12 +1,19 @@
 # comboBox - a text input that completes from a list, one value or many, optionally free text
 
 ```js
-import { comboBox } from 'imp/std/inputs'
+import { comboBox, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 comboBox({ field: 'country', label: 'Country', options: COUNTRIES })
 comboBox({ field: 'skills', label: 'Skills', options: SKILLS, multiple: true })
 comboBox({ field: 'labels', label: 'Labels', multiple: true, custom: true })
 comboBox({ field: 'assignee', label: 'Assignee', onSearch: (text) => findPeople(text) })
+comboBox({
+  field: 'assignee',
+  label: 'Assignee',
+  minSearch: 2,
+  onSearch: (text, { signal }) => api.get('/people', { query: { q: text }, signal }),
+})
 ```
 
 The call shape is `comboBox(props?)`. The choices are the `options` prop, never children.
@@ -21,14 +28,15 @@ The call shape is `comboBox(props?)`. The choices are the `options` prop, never 
 | `required`  | boolean                                    | Marks it and validates that a value exists |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks the input, the list and the chips   |
 
-| Prop          | Values                                    | Default | Notes                                       |
-| ------------- | ----------------------------------------- | ------- | ------------------------------------------- |
-| `options`     | strings, or `{ value, label, disabled? }` | `[]`    | The list that the text filters              |
-| `multiple`    | boolean                                   | `false` | The value becomes an array, shown as chips  |
-| `custom`      | boolean                                   | `false` | Text that matches no option becomes a value |
-| `onSearch`    | `(text) => options \| Promise<options>`   | -       | Remote options, called 250 ms after a key   |
-| `placeholder` | string                                    | -       | Shown while the input is empty              |
-| `validate`    | `(value) => message \| null`              | -       | `validateAsync` is the promise form         |
+| Prop          | Values                                     | Default | Notes                                       |
+| ------------- | ------------------------------------------ | ------- | ------------------------------------------- |
+| `options`     | strings, or `{ value, label, disabled? }`  | `[]`    | The list that the text filters              |
+| `multiple`    | boolean                                    | `false` | The value becomes an array, shown as chips  |
+| `custom`      | boolean                                    | `false` | Text that matches no option becomes a value |
+| `onSearch`    | `(text, { signal }) => options \| Promise` | -       | Remote options, called 250 ms after a key   |
+| `minSearch`   | whole number                               | `0`     | Typed characters before `onSearch` runs     |
+| `placeholder` | string                                     | -       | Shown while the input is empty              |
+| `validate`    | `(value) => message \| null`               | -       | `validateAsync` is the promise form         |
 
 | Mode                 | Value                                          |
 | -------------------- | ---------------------------------------------- |
@@ -57,8 +65,19 @@ Rules an agent gets wrong:
   then optional suggestions.
 - **The filter is a case-insensitive "contains" on the label.** There is no fuzzy match. For another
   match, filter in `onSearch`.
+- **`onSearch` is the server-backed autocomplete.** imp waits 250 ms after the last key, then calls
+  it once with the text. There is nothing to debounce yourself. The second argument carries a
+  `signal`. imp aborts it when a newer text starts a search, and when the component unmounts. Pass
+  it to the HTTP client, so the older request is cancelled instead of answered late.
+- **Fetch with the client of the app, inside `onSearch`.** Resolve it once in `setup` with
+  `useHttpClient(self, 'myapp.api')`, then write
+  `onSearch: (text, { signal }) => api.get('/people', { query: { q: text }, signal })`. The verb
+  returns the parsed body, so return an array of `{ value, label }` from it, see imp skill http.
 - **With `onSearch`, imp does not filter.** It shows what the function returns. It ignores a late
   answer to an older text. It logs a rejected promise and shows no matches.
+- **`minSearch` holds the search until enough is typed.** Below it, imp calls nothing and shows the
+  known `options`. Use `minSearch: 2` or `3` for a large directory, so one letter does not query the
+  server.
 - **Pass the known options with `onSearch` too.** A stored value such as `'u3'` shows as `u3` until
   an option supplies its label. `options: [{ value: 'u3', label: 'Grace Hopper' }]` fixes that.
 - **Text that matches no option does not stay.** Without `custom`, imp restores the label of the
@@ -86,11 +105,16 @@ form(
     field: 'assignee',
     label: 'Assignee',
     options: knownPeople,
-    onSearch: (text) => findPeople(text),
+    minSearch: 2,
+    onSearch: (text, { signal }) =>
+      api.get('/people', { query: { q: text }, signal }).then((people) =>
+        people.map(({ id, name }) => ({ value: id, label: name }))
+      ),
   }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 
 Related: imp skill std/form - the state that `field` writes to; imp skill std/select - a short fixed
-list with no typing; imp skill i18n - how to translate the `imp.comboBox.*` keys.
+list with no typing; imp skill http - the client that `onSearch` calls; imp skill i18n - how to
+translate the `imp.comboBox.*` keys.

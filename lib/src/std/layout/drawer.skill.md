@@ -4,7 +4,6 @@
 import { drawer } from 'imp/std/layout'
 
 drawer({ title: 'Filters', open: filtering }, filterForm())
-drawer({ title: 'Filters', open: filtering, pin: true }, filterForm())
 drawer({ title: 'Details', modal: false, open: inspecting }, details())
 ```
 
@@ -13,14 +12,13 @@ the content of the drawer. The component renders a real `<dialog>`, promoted to 
 platform. So an ancestor never clips it, and it needs no z-index. You can mount it anywhere: in a
 page, in a card, in a `shell` region, or in another component.
 
-| Prop         | Values                            | Default | Notes                                              |
-| ------------ | --------------------------------- | ------- | -------------------------------------------------- |
-| `title`      | string, or a state - **live**     | -       | Names the drawer for a screen reader; give one     |
-| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                  |
-| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                           |
-| `pin`        | boolean, or a state - **live**    | `false` | Pinned, a click outside leaves it open; modal only |
-| `background` | DOM                               | none    | Decorative layer under the bar and the content     |
-| `events`     | `{ openToggle, pinToggle }`       | -       | `{ open }` / `{ pinned }`, on changes it makes     |
+| Prop         | Values                            | Default | Notes                                          |
+| ------------ | --------------------------------- | ------- | ---------------------------------------------- |
+| `title`      | string, or a state - **live**     | -       | Names the drawer for a screen reader; give one |
+| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel              |
+| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                       |
+| `background` | DOM                               | none    | Decorative layer under the bar and the content |
+| `events`     | `{ openToggle }`                  | -       | `{ open }`, on changes the drawer makes itself |
 
 | Property                   | Default | Notes                                                  |
 | -------------------------- | ------- | ------------------------------------------------------ |
@@ -43,8 +41,7 @@ only when the frame fills the screen.
 | Page behind          | inert, dimmed by a backdrop | live and clickable            |
 | Page scroll          | held while open             | free                          |
 | Escape               | dismisses it                | ignored, as the platform does |
-| Backdrop click       | dismisses it, unless pinned | there is no backdrop          |
-| Pin toggle           | in the bar                  | none - nothing to pin against |
+| Backdrop click       | dismisses it                | there is no backdrop          |
 | Several open at once | one at a time               | as many as you mount          |
 
 Rules an agent gets wrong:
@@ -58,15 +55,13 @@ Rules an agent gets wrong:
 - **`open` is the whole API for opening the drawer.** There is no `show()` and no ref. Pass a
   **writable** state, never a `computed`, and set it. The drawer writes `false` back when the person
   dismisses it, so the state stays correct.
-- **`pin` keeps a modal drawer open across a click outside it.** The bar carries a pin toggle with
-  `aria-pressed`. Its icon is a tilted outline while loose, and upright and solid while pinned. When
-  the person changes it, the drawer writes back into a writable `pin` state and reports `pinToggle`.
-  While the drawer is pinned, only Escape and the close button close it, and the page stays inert. A
-  non-modal drawer never closes on an outside click, so it has no pin, and imp warns when you pass
-  one.
+- **A panel that must stay open while the person works on the page is `modal: false`.** A modal
+  drawer dims the page and holds it inert, so a click outside it dismisses it. There is no way to
+  keep a modal drawer open across that click. Use the non-modal panel instead. It never closes on an
+  outside click, and the page behind it stays live.
 - **imp reads `modal` once, at mount.** Render a different drawer instead of a change on a live one.
 - **The content is the children, and `title` is a prop.** The title bar belongs to the drawer, with
-  the heading, the pin and the close button. Do not render your own title bar.
+  the heading and the close button. Do not render your own title bar.
 - **A non-modal drawer covers the page. It does not push the page.** It sits in the top layer, over
   the content along its edge. The page behind it still scrolls and still works, and Escape does not
   close the drawer. Close it from your own UI, or with the close button. For a permanent side
@@ -76,7 +71,7 @@ Rules an agent gets wrong:
   region for it, because a panel that comes and goes is an overlay, not a column.
 - **Do not animate the drawer yourself.** It slides in from its edge and slides back out. It obeys
   `prefers-reduced-motion`. Every imp overlay shares this animation.
-- **The platform owns the focus.** In a modal drawer, the pin button is the first element, so the
+- **The platform owns the focus.** In a modal drawer, the close button is the first element, so the
   focus lands there. A non-modal drawer takes the focus on its panel, so a screen reader announces
   the title, and Tab reaches the close button next. On close, the focus returns to the element that
   had it before the drawer opened.

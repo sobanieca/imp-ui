@@ -68,11 +68,15 @@ added to the kernel.
   still submits synchronously. Otherwise it sets `imp.form.submitting`, which spins the submit
   button, and it continues when the last check clears. The form learns that by a watch on the state,
   and not by a promise that a control gave it.
-- **A submit is an action, and not a mode of a button.** `submitButton()` and `resetButton()` find
-  their form by dispatching a composed, bubbling event that the form catches. They read
-  `imp.form.submitting` to drive their own spinner. `button` keeps no `type` prop, see
-  `standard-component-library.md`. **The implicit submit**, which is Enter in a single-line field,
-  is implemented by the form. The platform would otherwise have provided it.
+- **A submit is an action, and not a mode of a button.** `submitForm(source)` and
+  `resetForm(source)` are plain functions of `imp/std/inputs`. They take the click event, or a node
+  inside the form, and dispatch a composed, bubbling, cancelable event from it. The form catches the
+  event and claims it. So any `button` is the submit button, at any depth:
+  `button({ events: { click: submitForm } }, 'Save')`. There is no `submitButton` component and no
+  `resetButton` component. A button that must spin reads `imp.form.submitting`, in a component of
+  the app. `button` keeps no `type` prop, see `standard-component-library.md`. **The implicit
+  submit**, which is Enter in a single-line field, is implemented by the form. The platform would
+  otherwise have provided it.
 
 ## Consequences
 

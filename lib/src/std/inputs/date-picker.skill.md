@@ -1,7 +1,8 @@
 # datePicker - a form control for a date, a date range, or a date with a time
 
 ```js
-import { datePicker } from 'imp/std/inputs'
+import { datePicker, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 datePicker({ field: 'dueDate', label: 'Due date' }) //            '2026-09-21'
 datePicker({ field: 'stay', label: 'Stay', range: true }) //      { start: '2026-09-21', end: '2026-09-25' }
@@ -71,7 +72,7 @@ form(
   textField({ field: 'title', label: 'Title', required: true }),
   datePicker({ field: 'day', label: 'Day', required: true, min: '2026-09-21' }),
   datePicker({ field: 'stay', label: 'Hotel stay', range: true, help: 'Optional' }),
-  submitButton('Save'),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 

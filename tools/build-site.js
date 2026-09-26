@@ -7,6 +7,7 @@ import { languageNameOf } from '../lib/src/std/display/code-languages.js'
 import { tokenizeLines } from '../lib/src/std/display/code-tokens.js'
 import { tokenNodes, tokenStyles } from '../lib/src/std/display/code-css.js'
 import { luMoon, luSun } from '../lib/src/icons/lucide-icons.js'
+import { impMarkSvg } from '../lib/src/std/shared/imp-mark.js'
 import {
   overviewScript,
   overviewStyles,
@@ -63,11 +64,9 @@ const PAGE_ORDER = [
   'browser-support',
 ]
 
-const COPIES = [
-  ['cli/src/templates/favicon.ico', 'favicon.ico'],
-  ['cli/src/templates/mark-dark.svg', 'mark-dark.svg'],
-  ['cli/src/templates/mark-light.svg', 'mark-light.svg'],
-]
+const COPIES = [['cli/src/templates/favicon.ico', 'favicon.ico']]
+
+const MARKS = [['mark-dark.svg', 'dark'], ['mark-light.svg', 'light']]
 
 const SECTIONS = [
   { href: '/', label: 'Overview', isCurrent: (route) => route === '' },
@@ -769,6 +768,7 @@ await Deno.writeTextFile(join(DIST, 'site.js'), clientScript())
 await Deno.writeTextFile(join(DIST, 'overview.js'), overviewScript())
 await Deno.copyFile(INSTALL_SCRIPT, join(DIST, 'install.sh'))
 for (const [from, to] of COPIES) await Deno.copyFile(join(ROOT, from), join(DIST, to))
+for (const [name, scheme] of MARKS) await Deno.writeTextFile(join(DIST, name), impMarkSvg(scheme))
 await Deno.mkdir(join(DIST, 'fonts'))
 for await (const { name } of Deno.readDir(FONTS)) {
   await Deno.copyFile(join(FONTS, name), join(DIST, 'fonts', name))

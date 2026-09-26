@@ -1,7 +1,8 @@
 # fileUpload - pick files or drop them, with the list as plain data and the File objects in onFiles
 
 ```js
-import { fileUpload } from 'imp/std/inputs'
+import { fileUpload, submitForm } from 'imp/std/inputs'
+import { button } from 'imp/std'
 
 fileUpload({
   field: 'attachments',
@@ -95,7 +96,7 @@ const ticketForm = () => {
         chosen = files
       },
     }),
-    submitButton('Send'),
+    button({ variant: 'primary', events: { click: submitForm } }, 'Send'),
   )
 }
 ```

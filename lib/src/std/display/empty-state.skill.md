@@ -5,6 +5,7 @@ import { emptyState } from 'imp/std/display'
 
 emptyState()
 emptyState({ icon: luInbox, title: 'No messages' })
+emptyState({ image: '/art/no-photos.svg', title: 'No photos yet' })
 emptyState(
   { icon: luCircleCheck, kind: 'success', title: 'Payment received' },
   button('Back to orders'),
@@ -21,6 +22,7 @@ text.
 | `title`       | string, or a state holding one - **live**                  | see below   | The line saying there is nothing              |
 | `description` | string, or a state holding one - **live**                  | -           | One sentence of explanation; omitted if unset |
 | `icon`        | an icon from `imp/icons`                                   | -           | Drawn large and muted above the title         |
+| `image`       | a DOM node, or an image URL                                | -           | A drawing above the title; wins over `icon`   |
 | `kind`        | `'neutral'`, `'success'`, `'error'`, `'warning'`, `'info'` | `'neutral'` | Tints the icon only                           |
 
 Rules an agent gets wrong:
@@ -31,9 +33,15 @@ Rules an agent gets wrong:
   and falls back to "No results". Translate those keys. Do not write a fixed title.
 - **A `title` that you pass is plain text.** imp does not translate it. To follow the language, pass
   `computed([lang], () => t('invoices.empty'))`.
+- **With no `icon` and no `image`, imp draws its own mark.** That is the imp logo, at 6rem, in the
+  ink of `color-text`. Pass an `icon` or an `image` to replace it.
 - **`icon` is an icon from `imp/icons`, not an `icon()` component and not a name.** Write
   `icon: luInbox`. imp draws it at 3rem, and hides it from a screen reader, because the title says
   the same.
+- **`image` is any drawing.** Pass an inline `<svg>` node, any DOM, or the URL of an SVG or a PNG. A
+  URL renders as an `<img>` with an empty `alt`. imp draws it 6rem wide and at most 6rem tall, and
+  it keeps the ratio of the picture. An inline SVG that uses `currentColor` follows `color-text`.
+  With both `icon` and `image`, imp warns and draws the `image`.
 - **`kind` only tints the icon.** `'success'` uses `color-success`, `'error'` uses `color-danger`,
   `'warning'` uses `color-warning` and `'info'` uses `color-info`. The title and the wording do not
   change. imp warns about a `kind` with no `icon`.

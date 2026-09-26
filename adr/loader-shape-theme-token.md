@@ -3,14 +3,14 @@
 ## Context
 
 Every loading state of the standard library draws the same loader. `button` shows it with `loading`.
-A `progress` ring with no value is that loader alone. `table` and `list` show it while the next rows
-load, and `richTextEditor` shows it while an image uploads. The catalog has no `spinner` component,
-see `short-component-catalog.md`, so an app has one loader with one look. A design often asks for
-another look, such as three bouncing dots. A theme is a flat map from a token name to a CSS value,
-see `themable-by-default-tokens.md`. A custom property can carry a colour or a length, but no custom
-property can swap an animation on its own. And `applyTheme` writes no attribute on the root, because
-a descendant selector cannot cross a shadow root, so a `data-*` switch reaches no standard
-component.
+The `loader` component is that loader alone. `table` and `list` show it while the next rows load,
+and `richTextEditor` shows it while an image uploads. The catalog has one loader component and no
+second spinner, see `short-component-catalog.md`, so an app has one loader with one look. A design
+often asks for another look, such as three bouncing dots. A theme is a flat map from a token name to
+a CSS value, see `themable-by-default-tokens.md`. A custom property can carry a colour or a length,
+but no custom property can swap an animation on its own. And `applyTheme` writes no attribute on the
+root, because a descendant selector cannot cross a shadow root, so a `data-*` switch reaches no
+standard component.
 
 ## Decision
 
@@ -27,8 +27,10 @@ through a shadow root. So the parent of the loader, inside any component, carrie
 query selects the block with no JavaScript and no attribute. A loader takes `currentColor` and the
 `--spinner-size` of its place, whatever its shape.
 
-There is **no loader component and no shape prop**. A component that shows a loader shows the one of
-the theme. An app that wants a loader in a place of its own writes a `progress` ring with no value.
+There is **no shape prop**, on `loader` or on any other component. A component that shows a loader
+shows the one of the theme. An app that wants a loader in a place of its own writes
+`loader({ label })`. `progress` never spins: it is for a measured amount of work, and the loader is
+for a wait with no measure.
 
 ## Consequences
 

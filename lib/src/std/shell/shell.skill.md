@@ -22,7 +22,9 @@ shell(
       tags: { [app.reports.revenue]: revenueCount },
     },
     sidebar: { label: 'Pages' },
-    extras: [themeSelect(), userCard({ signedIn: session, name, onSignIn, onSignOut })],
+    extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
+    signedIn: session,
+    signIn: () => signInPage(),
   },
   router({ map: app, access, screens, options }),
 )
@@ -31,18 +33,20 @@ shell(
 The call shape is `shell(props?, ...mainContent)`. When a props object is present, it must be the
 **first** argument. **Everything after it is the main content**, because it is the content.
 
-| Prop          | Values                         | Default  | Notes                                                         |
-| ------------- | ------------------------------ | -------- | ------------------------------------------------------------- |
-| `logo`        | DOM                            | none     | Brand block; heads the bar, the sidebar, or the drawer        |
-| `navbar`      | **data** - see below           | none     | The map, or plain sections for a frame with no router         |
-| `sidebar`     | **data** - see below           | none     | The second level: names it, foots it                          |
-| `extras`      | DOM, or an array of it         | none     | Theme picker, language picker, `userCard`, anything           |
-| `breadcrumbs` | `false`                        | shown    | Turns the trail above the content off; needs a map            |
-| `navOpen`     | boolean, or a state - **live** | `false`  | Drawer state; the shell owns one if the prop is omitted       |
-| `gap`         | spacing step `0`-`6`           | `0`      | Floats bar, column and bottom bar apart, rounded              |
-| `maxWidth`    | CSS length, or `'none'`        | `125rem` | Widest the column and the content get; centred beyond it      |
-| `background`  | DOM                            | none     | Decorative layer under the whole frame; the animated backdrop |
-| `events`      | `{ navToggle, select }`        | -        | `navToggle` gives `{ open }`, `select` gives `{ id, item }`   |
+| Prop          | Values                         | Default  | Notes                                                             |
+| ------------- | ------------------------------ | -------- | ----------------------------------------------------------------- |
+| `logo`        | DOM                            | none     | Brand block; heads the bar, the sidebar, or the drawer            |
+| `navbar`      | **data** - see below           | none     | The map, or plain sections for a frame with no router             |
+| `sidebar`     | **data** - see below           | none     | The second level: names it, foots it                              |
+| `extras`      | DOM, or an array of it         | none     | Theme picker, language picker, `userCard`, anything               |
+| `signedIn`    | boolean, or a state - **live** | none     | The gate: `undefined` waits, falsy shows `signIn`, truthy the app |
+| `signIn`      | DOM, or `() => DOM`            | none     | The sign-in page of the app, shown while nobody is signed in      |
+| `breadcrumbs` | `false`                        | shown    | Turns the trail above the content off; needs a map                |
+| `navOpen`     | boolean, or a state - **live** | `false`  | Drawer state; the shell owns one if the prop is omitted           |
+| `gap`         | spacing step `0`-`6`           | `0`      | Floats bar, column and bottom bar apart, rounded                  |
+| `maxWidth`    | CSS length, or `'none'`        | `125rem` | Widest the column and the content get; centred beyond it          |
+| `background`  | DOM                            | none     | Decorative layer under the whole frame; the animated backdrop     |
+| `events`      | `{ navToggle, select }`        | -        | `navToggle` gives `{ open }`, `select` gives `{ id, item }`       |
 
 **One map drives three surfaces and the trail.** With `navbar.map`, the router derives the sections,
 the rows of the current section, the marked rows, the head of the sidebar and the crumbs. The bar
@@ -115,9 +119,22 @@ Rules an agent gets wrong:
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows itself, because it draws each level more than once. `logo` and `extras` are
   still any DOM that you want.
-- **Who is signed in is not a prop of the frame.** Put `userCard` in `extras`; it owns the sign-in
-  button and the sign-out action. Whether a signed-out visitor sees a section is the `access` of the
-  map.
+- **`signedIn` gates the whole app, and `signIn` is your page.** Pass the session state, with
+  `undefined` for "not known yet" and `null` for nobody. While it is `undefined`, the frame shows a
+  `loader` in the middle of the screen. While it is `null` or `false`, it shows the `signIn` content
+  under the `logo`, centred, and nothing else: no bar, no column, no `extras`, and the main content
+  is not mounted, so no router runs and no screen loads. When it becomes truthy, the frame mounts
+  the app. The content of the gate is `--imp-shell-gate-inline-size` wide, `28rem` by default.
+- **The sign-in page is yours.** Pass a `form` with a password, buttons of the providers, a magic
+  link, a passkey, or all of them, as `signIn`. A function is called once, the first time the gate
+  shows. imp renders no form, holds no session and talks to no identity provider. Set the session
+  state in your handler, and the gate opens. Without `signedIn`, everybody sees the app.
+- **The frame has no account prop.** Put `userCard` in `extras` to display the person, and a
+  `button` or a `menuButton` of yours beside it for the sign-out. Whether a signed-in person sees a
+  section is the `access` of the map.
+- **A multi-tenant app puts `orgSelect` beside the logo.** Write
+  `logo: flex({ gap: 2, verticalAlign: 'center' }, appLogo({ label }), orgSelect({ orgs, selected }))`,
+  or put it in `extras`. See imp skill std/orgSelect.
 - **The trail is chrome.** With a map, the shell renders `breadcrumbs` above the content, and the
   phone title shows the last two crumbs. Do not render a second trail in a screen. Pass
   `breadcrumbs: false` to drop the strip. The head of the column and the trail row share one height,
@@ -186,7 +203,13 @@ Rules an agent gets wrong:
 
 ```js
 shell(
-  { logo: brand(), navbar: { map: app, icons, tags }, extras: [themeSelect(), userCard(person)] },
+  {
+    logo: brand(),
+    navbar: { map: app, icons, tags },
+    extras: [themeSelect(), userCard(person)],
+    signedIn: session,
+    signIn: () => signInPage(),
+  },
   router({ map: app, access, screens, options }),
 )
 shell({ logo: brand(), sidebar: { label: 'Reports', groups, selected: page } }, page())
@@ -204,4 +227,6 @@ shell({
 
 Related: imp skill std/drawer - the contextual panel that opens over the frame; imp skill
 std/appLogo - the brand block the `logo` prop takes; imp skill std/userCard - the signed-in person
-in `extras`; imp skill std/breadcrumbs - the trail the frame renders from the map.
+in `extras`; imp skill std/orgSelect - the tenant switcher beside the logo; imp skill
+std/breadcrumbs - the trail the frame renders from the map; imp skill std/loader - what the gate
+shows while the session is not known.

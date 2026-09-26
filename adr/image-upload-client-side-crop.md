@@ -38,11 +38,11 @@ client-side pipeline: `createImageBitmap` decodes, an `OffscreenCanvas` resample
   times the bytes of a square JPEG, and every place that shows an avatar draws it round anyway.
 - **Nothing is written before Done.** A pick opens the editor and changes no value. Cancel returns
   to the previous value. So a form never holds a half-edited picture.
-- **The placeholder and the preview share one box of `previewSize`.** The empty state draws a box of
-  that size with the prompt beside it, and the filled state draws the preview in the same box with
-  the buttons beside it. So a form does not move when a picture arrives. The preview never grows
-  past its own pixels, so a small output is not stretched and blurred. Only the editor is wider,
-  because a crop needs room to drag.
+- **The placeholder and the preview share one box, and there is no size prop.** The empty state
+  draws a box of that size with the prompt beside it, and the filled state draws the preview in the
+  same box with the buttons beside it. So a form does not move when a picture arrives. The preview
+  never grows past its own pixels, so a small output is not stretched and blurred. Only the editor
+  is wider, because a crop needs room to drag.
 
 ## Consequences
 

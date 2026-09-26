@@ -1,6 +1,7 @@
 import { join } from '@std/path'
 import { bold, dim } from './colors.js'
 import { logger } from './logger.js'
+import { impMarkSvg } from '../../lib/src/std/shared/imp-mark.js'
 
 export const REVIEW_ENDPOINT = '/@imp/review'
 
@@ -43,12 +44,7 @@ export const REVIEW_LOG_LINES = 20
 
 export const TELEMETRY_ENTRIES = 2000
 
-const WIDGET_MARK_URL = new URL('./templates/mark-dark.svg', import.meta.url)
-
-export const readWidgetMark = async () =>
-  (await Deno.readTextFile(WIDGET_MARK_URL))
-    .replace(' role="img" aria-label="imp"', ' aria-hidden="true"')
-    .trim()
+export const readWidgetMark = () => impMarkSvg('dark').replace('<svg ', '<svg aria-hidden="true" ')
 
 export const reviewsDirectory = (root) => join(root, '.imp', REVIEWS_FOLDER)
 
