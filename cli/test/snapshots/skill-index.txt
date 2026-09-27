@@ -75,6 +75,7 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/colorPicker      colorPicker - a hex colour input with a native picker beside it
   std/comboBox         comboBox - a text input that completes from a list, one value or many, optionally free text
   std/datePicker       datePicker - a form control for a date, a date range, or a date with a time
+  std/emojiPicker      emojiPicker - an emoji input with a searchable panel
   std/fileUpload       fileUpload - pick files or drop them, with the list as plain data and the File objects in onFiles
   std/form             form - a form whose values are ordinary imp state, addressed by field path
   std/resetForm        form - a form whose values are ordinary imp state, addressed by field path
@@ -100,6 +101,7 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/loader           loader - the spinner of the theme, for a wait with no known end
   std/notice           notice - an inline message banner: info, success, warning or error (an "alert" elsewhere)
   std/notify           toast - the corner popups, with `notify` and `dismiss` that feed them
+  std/reactions        reactions - a reaction bar under any content, with an emoji panel to add one
   std/progress         progress - a bar, a ring or a gauge for a measured amount of work, with the value in view
   std/skeleton         skeleton - a grey placeholder in the shape of content that loads
   std/toast            toast - the corner popups, with `notify` and `dismiss` that feed them

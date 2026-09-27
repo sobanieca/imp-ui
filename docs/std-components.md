@@ -312,8 +312,8 @@ form ignores a second submit until it settles. The state `imp.form.submitting` i
 so a button of yours can spin.
 
 The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
-`colorPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The gallery shows
-each one with its props.
+`colorPicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The
+gallery shows each one with its props.
 
 **A picture is cropped and resized before it leaves the browser.** `imageUpload` takes one picture
 and opens it in a frame with the ratio that you set, round or rectangular. The person drags the
@@ -343,12 +343,28 @@ stops typing, calls your function once with the text, and shows what it returns.
 an abort signal, so a request that a newer text replaces is cancelled. `minSearch` holds the search
 until enough letters are typed.
 
+**An emoji is a form value like any other.** `emojiPicker` holds the emoji itself as a string. Its
+panel shows 482 emoji in eight categories, and a search field finds one by name or by a keyword such
+as "coffee" or "party". The emoji tool of `richTextEditor` opens the same panel. To offer a specific
+set, pass it as `emojis`. An entry can carry a name and keywords in the language of your app:
+
+```js
+emojiPicker({
+  field: 'health',
+  label: 'Project health',
+  emojis: [
+    { emoji: '\u{1F7E2}', name: 'On track', keywords: ['good'] },
+    { emoji: '\u{1F534}', name: 'Blocked', keywords: ['stop'] },
+  ],
+})
+```
+
 ## Overlays use the platform, not a z-index war
 
 Anything that imp opens over your page is a real `<dialog>` or a popover in the **top layer** of the
-browser. This covers `dialog`, `drawer`, the menu of `menuButton`, `tooltip`, and the panel of a
-`datePicker`. An ancestor with `overflow: hidden` cannot clip it. Nothing paints over it. It needs
-no z-index, no portal and no placement prop.
+browser. This covers `dialog`, `drawer`, the menu of `menuButton`, `tooltip`, and the panels of
+`datePicker`, `emojiPicker` and `reactions`. An ancestor with `overflow: hidden` cannot clip it.
+Nothing paints over it. It needs no z-index, no portal and no placement prop.
 
 ```js
 import { dialog, drawer } from 'imp/std/layout'
@@ -392,6 +408,31 @@ const choice = await notify({
 
 `loader`, `notice` and `toast` take a `client` prop, the name of an HTTP client. They then show a
 request in flight and the last error on their own. See **[HTTP](http.md)**.
+
+## Let people react to content
+
+`reactions` from `imp/std/feedback` puts a reaction bar under any content that you give it. Each
+emoji shows as a button with its count. A click adds the reaction of the person, and a second click
+takes it back. A button at the end of the bar opens the same emoji panel as `emojiPicker`.
+
+```js
+import { card } from 'imp/std/display'
+import { reactions } from 'imp/std/feedback'
+
+reactions(
+  {
+    items: [{ emoji: '\u{1F44D}', count: 12, reacted: true }, { emoji: '\u{1F389}', count: 4 }],
+    onReact: (emoji, reacted) => api.post('/posts/42/reactions', { body: { emoji, reacted } }),
+  },
+  card(markdown(post.body)),
+)
+```
+
+**The count changes at once, and the server hears about it in `onReact`.** imp calls `onReact` with
+the emoji and with `true` for an added reaction or `false` for a removed one. Return the promise of
+the request. When the request fails, imp takes the change back, so the screen never shows a reaction
+that the server does not have. Pass a state as `items` to keep the reactions in your app, and imp
+writes each change into it.
 
 ## Put things on a map, with no map server
 

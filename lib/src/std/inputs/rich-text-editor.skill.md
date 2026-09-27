@@ -32,6 +32,10 @@ The toolbar has these tools, in this order: bold, italic, strikethrough, code, h
 quote, code block, bulleted list, numbered list, link, image, emoji, and align start, center and
 end. Ctrl-B and Ctrl-I work as in every editor. Ctrl-Z undoes.
 
+The emoji tool opens the panel of `emojiPicker`: a search field, eight categories and 482 emoji.
+Enter in the search field inserts the first match at the caret. The set is fixed. See
+`imp skill std/emojiPicker` for the search and the keys.
+
 What the markdown holds:
 
 | The person makes  | The value holds                                             |
