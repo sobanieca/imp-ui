@@ -770,16 +770,20 @@ that the host serves.
   the focus can focus its own heading in `onMount`. You can also keep one live region that is hidden
   visually, and update it from `useRoute().watch(self, ...)`.
 - **Usually it is better to do this once for every screen.** Give the element that your router slot
-  renders into a `tabindex` of `-1`. Focus that element from `useRoute().watch(self, ...)` whenever
-  the path changes. Compare the path, not the whole route, so a change of the query string never
-  takes the focus out of the input where the reader types. Skip the first call, because it fires
-  with the route that the page loaded on, where there is nothing to move the focus away from. Style
-  the `:focus` of that element with `outline: none`. The focus is programmatic, so the browser would
-  otherwise draw a ring around the whole screen on arrival.
+  renders into a `tabindex` of `-1` and the `region` role. Focus that element from
+  `useRoute().watch(self, ...)` whenever the path changes. Compare the path, not the whole route, so
+  a change of the query string never takes the focus out of the input where the reader types. Skip
+  the first call, because it fires with the route that the page loaded on, where there is nothing to
+  move the focus away from. Style the `:focus` of that element with `outline: none`. The focus is
+  programmatic, so the browser would otherwise draw a ring around the whole screen on arrival.
+- **Give the focused element a name.** A screen reader reads the name of the element that takes the
+  focus. An element with no name gets its name from all of its text, so the reader hears the whole
+  screen at once. Set `aria-label` to the page title before you move the focus. The reader then
+  hears one short line, such as "Stats - Todo, region".
 
-One component does both jobs for the whole app. It wraps the router slot, moves the focus, and
-announces the new title through a live region. A screen reader then reads the title, and the next
-Tab lands on the first control of the new screen:
+One component does this job for the whole app. It wraps the router slot, names it after the title,
+and moves the focus to it. A screen reader then reads the title, and the next Tab lands on the first
+control of the new screen:
 
 ```js
 import { component } from 'imp'
@@ -788,28 +792,19 @@ import { router, useRoute } from 'imp/router'
 import { shell } from 'imp/std/shell'
 
 const screenFrame = component('screen-frame', {
-  styles: `
-    .frame:focus { outline: none }
-    .announcer {
-      position: absolute;
-      inline-size: 1px;
-      block-size: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-  `,
+  styles: '.frame:focus { outline: none }',
   setup: (self, slot) => {
-    const frame = div({ class: 'frame', tabindex: '-1' }, slot)
-    const announcer = div({ class: 'announcer', role: 'status' })
+    const frame = div({ class: 'frame', tabindex: '-1', role: 'region' }, slot)
     let lastPath = useRoute().get().path
     useRoute().watch(self, ({ path }) => {
-      if (path === lastPath) return
+      const moved = path !== lastPath
       lastPath = path
-      frame.focus({ preventScroll: true })
-      queueMicrotask(() => announcer.textContent = document.title)
+      queueMicrotask(() => {
+        frame.setAttribute('aria-label', document.title)
+        if (moved) frame.focus({ preventScroll: true })
+      })
     })
-    return div(frame, announcer)
+    return frame
   },
 })
 
@@ -819,10 +814,13 @@ shell(
 )
 ```
 
-The `title` option of the router writes `document.title` on every navigation. The announcer reads it
-one microtask later, after the router has written it. `preventScroll` leaves the scroll to the
-router, which has already put the new screen at the top. A change of the query string keeps the
-path, so the frame does nothing, and a search box keeps its focus while the reader types.
+The `title` option of the router writes `document.title` on every navigation. The frame reads it one
+microtask later, after the router has written it. The focus moves in the same microtask, after the
+router has put the new screen in place. A dialog that is still open on the old screen makes the rest
+of the page inert, and an inert element cannot take the focus. The microtask lets the router remove
+that screen, and its dialog, first. `preventScroll` leaves the scroll to the router, which has
+already put the new screen at the top. A change of the query string keeps the path, so the frame
+does not move the focus, and a search box keeps its focus while the reader types.
 
 ## Deployment: a deep link and a refresh
 

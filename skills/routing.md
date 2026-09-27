@@ -253,26 +253,30 @@ and then to the `error` of the router, and its cleanup is `onRemove`. Put the st
 the root component of that screen. Put only app-wide state above the router.
 
 imp manages the scroll. **The focus is yours to manage.** Focus a heading in `onMount`, or wrap the
-router slot once, for every screen: a `div` with `tabindex: '-1'` and `:focus { outline: none }`,
-focused from `useRoute().watch(self, ...)` when the **path** changes, never on a query change, and
-not on the first call. Announce the new screen from the same watch, through a visually hidden
-`role="status"` node that reads `document.title` one microtask later. Pass `title` to `router` so
-that there is a title to read.
+router slot once, for every screen: a `div` with `tabindex: '-1'`, `role: 'region'` and
+`:focus { outline: none }`. From `useRoute().watch(self, ...)`, one microtask later, set its
+`aria-label` to `document.title`, then focus it when the **path** changed. Never focus on a query
+change or on the first call. Pass `title` to `router` so that there is a title to read.
+
+- A focused element with no name is read with all of its text. Always set the `aria-label`.
+- Focus in the microtask, not in the watch. An open dialog on the old screen makes the page inert
+  until the router removes that screen.
 
 ```js
 const screenFrame = component('screen-frame', {
-  styles: '.frame:focus { outline: none } .announcer { position: absolute; clip-path: inset(50%) }',
+  styles: '.frame:focus { outline: none }',
   setup: (self, slot) => {
-    const frame = div({ class: 'frame', tabindex: '-1' }, slot)
-    const announcer = div({ class: 'announcer', role: 'status' })
+    const frame = div({ class: 'frame', tabindex: '-1', role: 'region' }, slot)
     let lastPath = useRoute().get().path
     useRoute().watch(self, ({ path }) => {
-      if (path === lastPath) return
+      const moved = path !== lastPath
       lastPath = path
-      frame.focus({ preventScroll: true })
-      queueMicrotask(() => announcer.textContent = document.title)
+      queueMicrotask(() => {
+        frame.setAttribute('aria-label', document.title)
+        if (moved) frame.focus({ preventScroll: true })
+      })
     })
-    return div(frame, announcer)
+    return frame
   },
 })
 

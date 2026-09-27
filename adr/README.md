@@ -26,6 +26,7 @@ These are the conventions:
 | [web-component-lifecycle](web-component-lifecycle.md)           | Custom elements; loading/setup/error/onMount/onRemove, resolution through self |
 | [shadow-dom-isolation](shadow-dom-isolation.md)                 | Open shadow root per component; styles entry                                   |
 | [focus-delegation](focus-delegation.md)                         | Hosts delegate focus to the control they render                                |
+| [focus-survives-a-change](focus-survives-a-change.md)           | Focus stays on the acted-on element, or its replacement                        |
 | [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind                                    |
 | [error-boundaries](error-boundaries.md)                         | Error boundaries via events; isolated cleanup                                  |
 | [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components                            |

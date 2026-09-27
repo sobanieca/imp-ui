@@ -29,8 +29,8 @@ Rules an agent gets wrong:
   case. The text input commits what the person types, on every keystroke. An empty text commits
   `undefined`.
 - **A text that is not a hex colour fails validation.** The message is `imp.form.color`. It shows
-  after the person leaves the field, or tries to submit. Read the value only when it is a hex
-  colour, or wait for the submit.
+  after the person changes the field and leaves it, or tries to submit. Read the value only when it
+  is a hex colour, or wait for the submit.
 - **The swatch follows the value.** It shows the last hex colour that the value held. A value that
   is not a hex colour leaves the swatch as it was.
 - **The swatch has its own name.** It is `imp.colorPicker.pick` with the `label` as `{label}`.

@@ -3,20 +3,18 @@ import { div } from 'imp/html'
 import { useRoute } from 'imp/router'
 
 export const screenFrame = component('todo-screen-frame', {
-  styles: `
-    .frame:focus { outline: none; }
-    .announcer { position: absolute; clip-path: inset(50%); white-space: nowrap; }
-  `,
+  styles: '.frame:focus { outline: none; }',
   setup: (self, slot) => {
-    const frame = div({ class: 'frame', tabindex: '-1' }, slot)
-    const announcer = div({ class: 'announcer', role: 'status' })
+    const frame = div({ class: 'frame', tabindex: '-1', role: 'region' }, slot)
     let lastPath = useRoute().get().path
     useRoute().watch(self, ({ path }) => {
-      if (path === lastPath) return
+      const moved = path !== lastPath
       lastPath = path
-      frame.focus({ preventScroll: true })
-      queueMicrotask(() => announcer.textContent = document.title)
+      queueMicrotask(() => {
+        frame.setAttribute('aria-label', document.title)
+        if (moved) frame.focus({ preventScroll: true })
+      })
     })
-    return div(frame, announcer)
+    return frame
   },
 })

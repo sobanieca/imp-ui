@@ -86,6 +86,10 @@ export const accountMenu = component('todo-account-menu', {
         ),
       ),
     )
+    panel.addEventListener('focusout', (event) => {
+      const leaving = event.relatedTarget !== null && !panel.contains(event.relatedTarget)
+      if (leaving && panel.matches(':popover-open')) panel.hidePopover()
+    })
     return div(
       span(
         { class: 'anchor' },

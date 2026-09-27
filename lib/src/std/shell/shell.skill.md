@@ -193,7 +193,9 @@ Rules an agent gets wrong:
 - **The shell is the one component that changes structure by width.** Its query is `48rem`. Below it
   the top bar becomes a hamburger and a two-line title, the sidebar becomes the bottom bar capped at
   `--imp-shell-bottom-bar-items` rows with a **More** sheet, and the sections, the footer rows and
-  both `extras` move into the drawer. The trail strip hides, and the title carries the crumbs.
+  both `extras` move into the drawer. The trail strip hides, and the title carries the crumbs. The
+  hamburger and the drawer are named "Menu" (`imp.shell.menu`). When the bottom bar holds every
+  section, the drawer has no `<nav>`.
 - **The desktop sidebar collapses to an icon rail** from a toggle in its head. That head names the
   context, which is the param crumb when there is one. imp shows the toggle only when every row has
   an `icon`. In the rail, every row keeps its label for a screen reader and shows it as a tooltip on
@@ -267,6 +269,10 @@ export const accountMenu = component('myapp-account-menu', {
       themeSelect(),
       button({ variant: 'ghost', block: true, events: { click: onSignOut } }, 'Sign out'),
     )
+    panel.addEventListener('focusout', (event) => {
+      const leaving = event.relatedTarget !== null && !panel.contains(event.relatedTarget)
+      if (leaving && panel.matches(':popover-open')) panel.hidePopover()
+    })
     return div(
       span(
         { class: 'anchor' },
@@ -289,6 +295,9 @@ Rules an agent gets wrong in this recipe:
   outside, and the Tab order after the trigger. `popoverTarget` on the std `button` toggles the
   panel, and the browser announces the button as expanded or collapsed. Write no open state, no key
   handler and no outside-click listener.
+- **Close the panel when the focus leaves it.** The platform closes a popover on a click outside,
+  not on a Tab out of it. An open panel can then cover the control that has the focus. The
+  `focusout` listener in the recipe closes it.
 - **Anchor a `span` of yours, not the button.** The host of a std component has `display: contents`
   and makes no box, so an `anchor-name` on it anchors nothing.
 - **Use logical keywords in `position-area`.** `block-end span-inline-start` opens the panel under

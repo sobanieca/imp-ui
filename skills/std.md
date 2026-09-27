@@ -780,8 +780,8 @@ Rules an agent gets wrong:
 - **`textField` is the only text input.** `type` is `'text'`, `'email'`, `'tel'`, `'url'`,
   `'password'`, `'search'` or `'number'`. `rows` renders a `<textarea>`. Do not pass both.
 - **Type `'number'` commits a number.** An empty field commits `undefined`.
-- **imp hides an error until the person leaves the field, or tries to submit.** Do not add your own
-  "show errors" flag.
+- **imp hides an error until the person changes the field and leaves it, or tries to submit.** A Tab
+  through an untouched field shows nothing. Do not add your own "show errors" flag.
 - **Return the promise from an async `onSubmit`.** The guard against a double submit needs it, and
   `imp.form.submitting` is `true` meanwhile. A button that must spin reads that state and passes it
   as `loading`, in a small component of yours.

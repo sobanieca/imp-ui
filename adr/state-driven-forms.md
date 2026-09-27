@@ -51,9 +51,11 @@ added to the kernel.
   change of language renders the error again, in place, like every other word that the library
   shows, see `translatable-by-default.md`. imp stores the plain string that a custom `validate`
   returns as it is.
-- **imp shows an error only after the person leaves the field, or tries to submit.** imp tracks that
-  with `imp.form.touched` and `imp.form.submits`. So a form does not report a problem while somebody
-  still types in the first box.
+- **imp shows an error only after the person changes the field and leaves it, or tries to submit.**
+  imp tracks that with `imp.form.touched` and `imp.form.submits`. A field counts as changed when its
+  value differs from the value it had when it mounted. So a form does not report a problem while
+  somebody still types in the first box. A keyboard or screen reader user who tabs through the form
+  does not hear "This field is required" from every field that they pass.
 - **An async check is a separate prop, with a different rhythm.** `validate` is synchronous, and it
   runs at every commit. `validateAsync` returns a promise, and it runs on **blur and on submit**
   only. A round trip that asks "is this username taken?" must not fire on every keystroke. A

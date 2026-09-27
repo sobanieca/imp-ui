@@ -31,6 +31,9 @@ Rules an agent gets wrong:
   from there. A `type` prop gives a warning about an unknown prop.
 - **`loading` also disables the button.** So a request in flight cannot start twice. Do not also
   pass `disabled`.
+- **A focused button keeps the focus when it turns disabled or loading.** It takes
+  `aria-disabled="true"` and ignores a click until the focus leaves it. Then it takes the native
+  `disabled`. So a Save or Clear button that disables itself does not drop the focus to the page.
 - **A live prop takes the state itself, not its value.** Write `disabled: saving`, never
   `disabled: saving.get()`. The second form freezes at the value read during mount.
 - **The button has no outer margin.** Spacing between buttons belongs to whatever lays them out.

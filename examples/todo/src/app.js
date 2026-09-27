@@ -64,8 +64,16 @@ export const root = component('todo-root', {
       clientOptions({ baseUrl: env.API_URL, token: readToken }),
     )
 
+    let routeTitle = null
+    const showSignInTitle = () => {
+      routeTitle = document.title
+      document.title = `${t('signIn.title')} - ${t('app.name')}`
+    }
+
     items.watch(self, (todos) => options.set(todoOptions(todos)))
     session.watch(self, (user) => {
+      if (user === null) queueMicrotask(showSignInTitle)
+      if (user && routeTitle !== null) document.title = routeTitle
       if (!user) return items.set(undefined)
       log.info('signed in as', user.email)
       loadTodos(api).then(items.set, (error) => log.warn('could not load the todos', error.message))

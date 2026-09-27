@@ -39,6 +39,6 @@ Sign in with any name and email. The mock backend accepts everybody.
 | Environments                   | `env/dev.json`, `env/prod.json`                                        |
 | Logger                         | `createLogger` in `src/app.js` and `src/todos/todo-list-screen.js`     |
 | Custom component with a skill  | `src/todos/todo-progress.js`, `.skill.md` and `.preview.js` beside it  |
-| Focus and screen announcements | `src/screen-frame.js`                                                  |
+| Focus on a new screen          | `src/screen-frame.js`                                                  |
 | Unit tests                     | `test/*.test.js`: the model, the HTTP client, the translations, the UI |
 | Browser specs                  | `test/app.spec.js`: one user session from sign-in to sign-out          |

@@ -98,6 +98,11 @@ button({ variant: 'primary', loading: saving }, 'Save')
 saving.set(true) // the button is now busy - no re-render
 ```
 
+**A button keeps the focus while it is busy.** When a focused button turns busy or disabled, it
+stays focused and ignores a click. It takes the native disabled state when the focus leaves it. So a
+person who presses Save with the keyboard stays on Save, and a screen reader does not lose its
+place.
+
 **A component is themed. You do not style it.** Every component reads its colors, its spacing, its
 radii and its type from the `--imp-*` design tokens. See **[Theming](theming.md)**. A new theme
 re-skins the whole library at once. Every component also uses CSS logical properties, so it mirrors
@@ -156,9 +161,10 @@ bar. A language picker, a theme picker and a user card side by side take the pla
 sections, and a section that does not fit scrolls out of view. So put those controls in one account
 menu: an avatar button that opens a small popover with the person, the pickers and the sign-out. You
 write it as one component of your own. On a desktop the browser runs the popover and CSS anchor
-positioning places it under the avatar, with no script for opening, closing or placement. On a phone
-the shell moves the extras into its drawer, and one media query in your component shows the same
-panel inline there, without the button.
+positioning places it under the avatar, with no script for opening or placement. One `focusout`
+listener closes the panel when the focus leaves it, so an open panel never covers the focused
+control. On a phone the shell moves the extras into its drawer, and one media query in your
+component shows the same panel inline there, without the button.
 
 **A multi-tenant app gets a switcher.** `orgSelect` lists the organizations that a person belongs
 to, shows the current one on its trigger, and reports a choice. Put it beside the logo, or in
@@ -173,8 +179,10 @@ nothing twice, and a change to the map arrives everywhere at once.
 **The frame folds on a phone.** The bar becomes a hamburger and a title. The column becomes a bottom
 bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.
 The title of that sheet is a link to the page of the row itself, when the row has one. The pickers
-and the extras move into the drawer of the hamburger. imp drops nothing. On a desktop the column
-collapses to an icon rail when every row has an icon.
+and the extras move into the drawer of the hamburger. imp drops nothing. A screen reader names the
+hamburger and its drawer "Menu". When the bottom bar holds every section, the drawer has no
+navigation region, so the reader does not find an empty one. On a desktop the column collapses to an
+icon rail when every row has an icon.
 
 **There is no aside region, on purpose.** A contextual side column has no phone form. Content that
 comes and goes, such as filters or an inspector, is a `drawer` that you mount in the main content.
@@ -290,6 +298,11 @@ takes `label`, `help`, `required`, `disabled`, `validate` and `validateAsync`. I
 label, its hint and its error, because a `<label>` finds its input by id, and an id cannot cross a
 component boundary. Validation runs on blur and on submit, not on every keystroke. The value is
 always plain data: a string, a number, an array, or an ISO date. Never a `Date` or a `File`.
+
+**An error shows when the person can act on it.** A control shows its error after the person changes
+it and leaves it, or after a submit. A person who moves through the form with Tab, or with a screen
+reader, does not hear "This field is required" from every field that they pass. A field that is back
+at its first value shows its error at the next submit.
 
 **A submit is an ordinary button.** `submitForm` and `resetForm` are functions. Pass one as the
 click handler of any `button`, at any depth inside the form, and the function finds the form. A

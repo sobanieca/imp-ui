@@ -24,8 +24,9 @@ Rules an agent gets wrong:
 
 - **`field` and `value` are alternatives.** Inside a form, use `field`. With both, imp warns and
   `field` wins. A `field` with no form around it is an error.
-- **An error shows only after the person leaves the field, or tries to submit.** So the form does
-  not report a problem while the person still fills in the first box.
+- **An error shows only after the person changes the field and leaves it, or tries to submit.** A
+  Tab through an untouched field shows nothing. A field back at its first value shows nothing until
+  a submit.
 - **The label sits beside the box, not above it.** A click on the label toggles the box.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
 - imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back

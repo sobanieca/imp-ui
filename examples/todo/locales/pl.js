@@ -31,7 +31,6 @@ export default {
     progress: 'Zrobione: {done} z {total}',
     remaining: 'Otwarte: {count}',
     markDone: 'Oznacz "{title}" jako zrobione',
-    markOpen: 'Oznacz "{title}" jako otwarte',
     delete: 'Usuń "{title}"',
     added: 'Dodano "{title}"',
     deleted: 'Usunięto "{title}"',

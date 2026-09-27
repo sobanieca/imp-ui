@@ -130,7 +130,7 @@ export const todoListScreen = component('todo-list-screen', {
           size: 'sm',
           square: true,
           pressed: item.done,
-          label: t(item.done ? 'todos.markOpen' : 'todos.markDone', { title: item.title }),
+          label: t('todos.markDone', { title: item.title }),
           events: { click: () => toggle(item.id) },
         }, icon(luCheck)),
         button({

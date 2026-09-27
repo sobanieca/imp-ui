@@ -32,7 +32,7 @@ directly. There is nothing to connect. When the form unmounts, the state goes wi
 | --------------------- | ------------------------------------------------------ |
 | `imp.form`            | The values - read it with `useState(self, 'imp.form')` |
 | `imp.form.errors`     | `{ [path]: problem }` for the fields that fail         |
-| `imp.form.touched`    | `{ [path]: true }` once a field has been left          |
+| `imp.form.touched`    | `{ [path]: true }` once a field was changed and left   |
 | `imp.form.submitting` | `true` while an async `onSubmit` is in flight          |
 | `imp.form.submits`    | How many times submit has been attempted               |
 | `imp.form.validating` | `{ [path]: true }` for fields with a check in flight   |

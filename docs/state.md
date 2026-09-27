@@ -223,6 +223,12 @@ Keeping an unchanged item's DOM has two consequences:
 - imp compares an item **by content**, so the usual spread update does the correct thing. Replacing
   an item with an equal copy renders nothing again. Changing one field renders that item again, and
   no other.
+- A changed item keeps the focus. When the focus was inside the item, imp puts it back on the
+  element at the same place in the new DOM. So a "done" button in a row keeps the focus after a
+  click that changes the row, and a keyboard user does not lose their place in the list.
+- A removed item passes the focus on. When the focus was inside an item that goes away, imp moves it
+  to the same place in the item that now holds its position, or in the last item. So a "delete"
+  button in a row hands the focus to the "delete" button of the next row.
 - With a key, derive the DOM of the item from the item itself, not from the `index` argument. imp
   does not render a kept item again when its position changes.
 
