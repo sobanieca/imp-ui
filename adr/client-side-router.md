@@ -26,8 +26,8 @@ anything can run. That place is the application map, see `application-map.md`.
 
 **The router is an element with the shape of a component, that you drop into your layout. You feed
 it the application map, and the screens that bind to its nodes.** The public surface is `appMap`,
-`router`, `area`, `guard`, `wait`, `navigate`, `useRoute` and `url`. There is no new lifecycle, and
-no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
+`router`, `area`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute` and `url`. There is no new
+lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
 
 - **`router({ map, screens, access, loading, error, notFound })` renders the matched screen.** It is
   the slot where the current screen appears. Everything around it, which is the chrome of the app,
@@ -175,6 +175,24 @@ no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
   a document. A navigation to the current URL does nothing, in place of a duplicate history entry.
   One listener on `popstate` keeps `imp.route` in step with the back and forward buttons.
 
+- **`beforeLeave(self, check)` lets a screen with unsaved work stop a navigation.** The check has
+  the contract of the `beforeClose` of an overlay, see `overlay-top-layer.md`. It returns `false`,
+  or a promise of `false`, to stay. A check that throws also stays, and imp logs the error. The
+  registration ends when the component of `self` unmounts. So the check lives with the state that it
+  reads, and no route table names it. imp asks every check, in the order of registration, when the
+  path or the query changes. A change of the fragment only asks nothing.
+  - A `navigate` call asks first, and it moves only when every check allows. With no check
+    registered, `navigate` stays synchronous. A redirect of a guard, and a node bound to
+    `redirect()`, do not ask. The navigation that led to them already did.
+  - The back and forward buttons change the URL before `popstate` fires, and the platform cannot
+    cancel that in all four browsers. So each history entry carries its index. On a `popstate` that
+    leaves the route, imp goes back to the entry that it came from with `history.go()`, asks, and
+    goes on with a second `history.go()` when the checks allow. The screen never changes while it
+    waits. An entry with no index, such as a fragment that the person typed, is not held.
+  - A reload, a closed tab, and a link to another site unload the document. The platform owns that
+    case with `beforeunload`, and it shows its own prompt. imp adds nothing there, because an async
+    check cannot hold an unload.
+
 - **imp manages the scroll, and leaves the focus to the app.** The router sets
   `history.scrollRestoration = 'manual'`. It marks each history entry with a key, and records the
   scroll position. On a push it scrolls to the top, after the new screen mounts. On a back or a
@@ -245,6 +263,10 @@ no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
 - imp releases a screen, and an area, completely, on a navigation. A navigation that changes the
   query only keeps the screen mounted. So a page for a search, or for a filter, keeps its focus, its
   scroll position, and its state in progress.
+- Unsaved work survives a click on a link and the back button with one line in the component that
+  holds it. The Navigation API could cancel a traversal directly. It needs a synchronous answer and
+  user activation, so it cannot wait for a confirmation dialog. The index on each history entry
+  works in every browser now, and `beforeLeave` keeps its shape if the mechanism changes.
 - A deep link, a refresh, and the back and forward buttons all behave. The dev server, and the
   output of the build with the host setting, serve the entry for an unknown path. imp restores the
   scroll per history entry.

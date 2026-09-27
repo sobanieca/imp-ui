@@ -94,21 +94,22 @@ convention.
   personal data to the handler of the user.
 - The record of an event is plain data. So any sink can reshape it, for the SDK of its provider.
 
-## Open questions
+## Decisions
 
-- **A global registry, or a registry per mount scope.** Do the sinks of `onAnalytics` live in one
-  global registry at module level, or in one registry per `mount` root? That matters for a page with
-  several roots, and for the isolation of `imp test`.
-- **An event beyond a click.** Does the automatic instrumentation of `data-track` cover `click`
-  only? Or does it also cover `submit`, `change` and `focus`? How does imp encode the type of the
-  event? Possibly through `data-track-on`.
-- **Enrichment, and context.** Does imp support a shared layer of context, such as a session id and
-  the current route, which imp merges into the `props` of every event? Or does the sink enrich the
-  event?
-- **A gate for consent.** Does imp offer a built-in buffer, which holds an event until somebody
-  grants consent? Or does the handler own that completely?
-- **The naming.** Is it `track` and `onAnalytics`? Or is it an object surface, with `analytics.emit`
-  and `analytics.on`?
+- **One global registry.** The sinks of `onAnalytics` live in one registry. They do not live in one
+  registry per `mount` root. An app has one set of destinations. The cleanup of a scope removes a
+  sink, and that keeps the tests of `imp test` isolated.
+- **`data-track` fires on `click` by default.** The attribute `data-track-on` selects another event,
+  as in `data-track-on="submit"` or `data-track-on="change"`. imp supports `click`, `submit` and
+  `change` only.
+- **The sink adds the context.** imp merges nothing into `props`. The record stays
+  `{ name, props, timestamp }`. A sink that wants a session id or the current route adds it in one
+  line. The docs show that line.
+- **The handler owns the consent.** imp has no buffer for consent. The rules for consent differ per
+  region and per provider. The docs show a short buffer in a handler.
+- **The names are `track` and `onAnalytics`.** Plain functions match `onMount` and `onDispose`, and
+  a bundler drops them when an app does not use them. The seam for an error, `onError`, and the seam
+  for a log, `onLog`, use the same shape, see `todo/prod-ready.md`.
 
 ## Dependencies
 

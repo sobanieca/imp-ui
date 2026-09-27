@@ -1,11 +1,11 @@
 # Overlay seam - what is left after `dialog` landed
 
 The seam is built, and `adr/overlay-top-layer.md` records it. `lib/src/std/shared/overlay.js` ships
-`modalOverlay`, `panelOverlay`, `draggable`, `overlayMotion` and `overlayScrim`. The drawer of
-`shell`, and the `dialog` component, run on them. `cli/src/test-dom.js` carries the fill for the top
-layer. This file is the rest. Somebody checked the facts about a browser that it depends on, against
-the compatibility data of MDN, in August 2026. Several earlier assumptions here were wrong, and the
-corrections are below.
+`modalOverlay`, `panelOverlay`, `dismissal`, `draggable`, `overlayMotion` and `overlayScrim`. The
+drawer of `shell`, and the `dialog` component, run on them. `cli/src/test-dom.js` carries the fill
+for the top layer. This file is the rest. Somebody checked the facts about a browser that it depends
+on, against the compatibility data of MDN, in August 2026. Several earlier assumptions here were
+wrong, and the corrections are below.
 
 ## Corrections to the original plan
 
@@ -104,9 +104,3 @@ The consequence is that **a tooltip cannot name its control**. The child of
 `tooltip({ text }, button(...))` is an `imp-button` host, and `aria-describedby` on a host with no
 role names nothing. So `tooltip` is visual only. It wraps the control in a box of its own root, and
 anchors the panel to that box. The control carries its own accessible name.
-
-## Open questions
-
-- **A veto on a dismissal.** The seam prevents `cancel` itself. So an app cannot refuse to close. A
-  form with unsaved changes is the case that would want a veto. Decide whether that is a hook of the
-  seam, or a prop of a component, when a component asks for it.

@@ -13,9 +13,9 @@ This is the first set:
 - **An admin panel in the style of Grafana.** It has a dashboard, a chart, a table, a filter, and a
   dense layout with much data. It exercises the standard components, the theming, and the patterns
   for a refresh and for a poll.
-- **An e-commerce shop with server-side rendering.** It has product pages that a server renders, and
-  that islands hydrate. It also has a cart and a review. It is the successor, at full scale, of the
-  SSR islands example that used to live in this repository, under `examples/ssr`.
+- **An e-commerce shop.** It has a product list, product pages, a cart, a checkout and a review. It
+  renders on the client only, like every imp app, see `todo/prod-ready.md`. It exercises the router,
+  forms, the HTTP client and route metadata.
 
 Each repository must follow the published version of imp. So the examples stay runnable while imp
 changes. Each one must also link back to the main repository of imp, and to the documentation.

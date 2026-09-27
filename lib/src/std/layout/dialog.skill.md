@@ -11,13 +11,14 @@ The call shape is `dialog(props?, ...content)`. The props object comes first. Ev
 the content of the dialog. The component renders a real `<dialog>` and promotes it to the top layer
 of the platform. So an ancestor never clips it, and it needs no z-index.
 
-| Prop     | Values                            | Default | Notes                                          |
-| -------- | --------------------------------- | ------- | ---------------------------------------------- |
-| `title`  | string, or a state - **live**     | -       | Names the dialog for a screen reader; give one |
-| `modal`  | boolean - **read once, at mount** | `true`  | `false` is the movable, non-blocking window    |
-| `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                       |
-| `anchor` | element - **read once, at mount** | -       | Non-modal only: the window opens next to it    |
-| `events` | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
+| Prop          | Values                            | Default | Notes                                          |
+| ------------- | --------------------------------- | ------- | ---------------------------------------------- |
+| `title`       | string, or a state - **live**     | -       | Names the dialog for a screen reader; give one |
+| `modal`       | boolean - **read once, at mount** | `true`  | `false` is the movable, non-blocking window    |
+| `open`        | boolean, or a state - **live**    | `false` | What opens and closes it                       |
+| `beforeClose` | `() => boolean \| Promise`        | -       | Return `false` to stay open                    |
+| `anchor`      | element - **read once, at mount** | -       | Non-modal only: the window opens next to it    |
+| `events`      | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
 
 | Property                   | Default |
 | -------------------------- | ------- |
@@ -43,6 +44,13 @@ Rules an agent gets wrong:
 - **`open` is the whole API for opening the dialog.** There is no `show()` method, no `open()`
   method and no ref. Pass a **writable** state, never a `computed`, and set it. The dialog writes
   `false` back when the person dismisses it, so the state stays correct.
+- **Guard unsaved work with `beforeClose`.** imp calls it on every dismissal by the person: Escape,
+  a backdrop click and the close button. Return `false`, or a Promise of `false`, to keep the dialog
+  open: `beforeClose: () => !dirty.get() || confirm(t('edit.discard'))`. A Promise can wait for your
+  own confirmation dialog. `() => false` makes a dialog that only your code closes.
+  `() => !saving.get()` holds it while a request runs.
+- **Setting `open` to `false` never asks `beforeClose`.** Your code already decided. Close with
+  `open.set(false)` after a save.
 - **imp reads `modal` once, at mount.** It is not live. A change of modality would unwind one
   promotion and build the other, with the focus and the scroll state to reconcile. Render a
   different dialog instead.

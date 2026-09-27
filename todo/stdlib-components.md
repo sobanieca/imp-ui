@@ -10,7 +10,11 @@ preview and a unit test. This file lists the work that is still owed.
 - **The tracking of `dirty`**, which is a value that differs from `initialValues`, is not
   implemented. `touched` is.
 - **An error at the level of the form** has no home yet. That is a failure of a submit that belongs
-  to no single field.
+  to no single field. **Decision:** the form state gets `formError`. A submit handler that throws
+  sets it, and the next submit clears it. `form` shows it in a `notice` above its buttons.
+- **The addressing by a path stays inside the form layer.** The contract of
+  `field: 'user.firstName'` lives in the form components. A writable projection of a path in the
+  kernel stays **rejected** as unearned, see `adr/event-propagated-state.md`.
 
 ## Responsive
 
@@ -24,14 +28,19 @@ preview and a unit test. This file lists the work that is still owed.
   freeze that list. Then make `applyTheme` warn, through the shared `impLogger`, when an applied
   theme has no value for a known token key. The warning must not be fatal.
 
+## Components to build
+
+- **`splitPane`**, a set of panes that a user can resize. Build it. The CSS `resize` property drags
+  one corner only, and it has no keyboard path. So a handle in JavaScript replaces nothing that the
+  platform has. The handle is a focusable separator, and the arrow keys move it.
+- **A continuous bar for a multi-day event** in the month view of `calendar`. Today the event shows
+  as a chip in every day that it covers. Build it.
+
 ## Components that wait
 
-- **`splitPane`**, a set of panes that a user can resize, is still wanted.
 - **`carousel` waits** until `::scroll-button()` and `::scroll-marker()` work in every browser. To
   write JavaScript for a scroll button in the meantime is what `adr/browser-support-baseline.md`
   forbids.
-- **A continuous bar for a multi-day event** in the month view of `calendar`. Today the event shows
-  as a chip in every day that it covers.
 - **`timeline`, `image` with a zoom, and `qrCode`** are not built. Each waits for a call site.
 
 ## Verification that is still owed
@@ -45,13 +54,8 @@ checks are open:
 - A screen reader pass over `table`, `comboBox`, `calendar` and `toast`.
 - An e2e spec for the mirrored geometry of `chart`, `gantt`, `calendar` and the corner of `toast`.
   happy-dom cannot measure geometry, so the unit tests assert only the declared logical CSS.
-- A `comboBox` inside a modal `dialog`. Escape closes the list and must not also cancel the dialog.
 
 ## Open questions
 
-- **Whether the addressing by a path stays inside the form layer.** The contract of
-  `field: 'user.firstName'` lives in the form components. A writable projection of a path in the
-  kernel stays **rejected** as unearned, see `adr/event-propagated-state.md`. Reconsider it only
-  when something outside a form wants the same thing.
 - **The accessibility baseline.** The contract about ARIA and the keyboard that every interactive
   component must meet is in `todo/accessibility.md`.

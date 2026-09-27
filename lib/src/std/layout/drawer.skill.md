@@ -12,13 +12,14 @@ the content of the drawer. The component renders a real `<dialog>`, promoted to 
 platform. So an ancestor never clips it, and it needs no z-index. You can mount it anywhere: in a
 page, in a card, in a `shell` region, or in another component.
 
-| Prop         | Values                            | Default | Notes                                          |
-| ------------ | --------------------------------- | ------- | ---------------------------------------------- |
-| `title`      | string, or a state - **live**     | -       | Names the drawer for a screen reader; give one |
-| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel              |
-| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                       |
-| `background` | DOM                               | none    | Decorative layer under the bar and the content |
-| `events`     | `{ openToggle }`                  | -       | `{ open }`, on changes the drawer makes itself |
+| Prop          | Values                            | Default | Notes                                          |
+| ------------- | --------------------------------- | ------- | ---------------------------------------------- |
+| `title`       | string, or a state - **live**     | -       | Names the drawer for a screen reader; give one |
+| `modal`       | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel              |
+| `open`        | boolean, or a state - **live**    | `false` | What opens and closes it                       |
+| `beforeClose` | `() => boolean \| Promise`        | -       | Return `false` to stay open                    |
+| `background`  | DOM                               | none    | Decorative layer under the bar and the content |
+| `events`      | `{ openToggle }`                  | -       | `{ open }`, on changes the drawer makes itself |
 
 | Property                   | Default | Notes                                                  |
 | -------------------------- | ------- | ------------------------------------------------------ |
@@ -56,9 +57,16 @@ Rules an agent gets wrong:
   **writable** state, never a `computed`, and set it. The drawer writes `false` back when the person
   dismisses it, so the state stays correct.
 - **A panel that must stay open while the person works on the page is `modal: false`.** A modal
-  drawer dims the page and holds it inert, so a click outside it dismisses it. There is no way to
-  keep a modal drawer open across that click. Use the non-modal panel instead. It never closes on an
-  outside click, and the page behind it stays live.
+  drawer dims the page and holds it inert, so a click outside it dismisses it. `beforeClose` can
+  refuse that click, but the page stays inert. Use the non-modal panel instead. It never closes on
+  an outside click, and the page behind it stays live.
+- **Guard unsaved work with `beforeClose`.** imp calls it on every dismissal by the person: Escape,
+  a backdrop click and the close button. Return `false`, or a Promise of `false`, to keep the drawer
+  open: `beforeClose: () => !dirty.get() || confirm(t('edit.discard'))`. A Promise can wait for your
+  own confirmation dialog. `() => false` makes a drawer that only your code closes.
+  `() => !saving.get()` holds it while a request runs.
+- **Setting `open` to `false` never asks `beforeClose`.** Your code already decided. Close with
+  `open.set(false)` after a save.
 - **imp reads `modal` once, at mount.** Render a different drawer instead of a change on a live one.
 - **The content is the children, and `title` is a prop.** The title bar belongs to the drawer, with
   the heading and the close button. Do not render your own title bar.

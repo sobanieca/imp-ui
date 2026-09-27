@@ -85,6 +85,7 @@ mount(
 | `guard(states, check)`                    | the one `access` guard: `(...values, { need, params, query, path }) => true \| wait \| false \| '/path'`                                   |
 | `wait`                                    | the verdict for "cannot decide yet" - the router keeps `loading` up and re-runs the guard                                                  |
 | `navigate(path, { replace? })`            | navigate programmatically, from anywhere; give it `handle.href(params)`                                                                    |
+| `beforeLeave(self, check)`                | in `setup`: `check()` returns `false`, or a Promise of `false`, to stay; asked before the route changes                                    |
 | `useRoute()`                              | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                                       |
 | `url(path)`                               | prefixes `IMP_BASEPATH`, for an `href` you write as a string                                                                               |
 
@@ -183,6 +184,14 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
   `app: { path: '/', dashboard: {}, reports: {} }` serves `/dashboard` and `/reports`. The nav then
   has one section with rows, and the shell drops the bar and draws the column alone, see
   [std](std.md).
+- **Guard unsaved work with `beforeLeave(self, check)`, in the `setup` of the component that holds
+  it.** `beforeLeave(self, () => !dirty.get() || confirm(t('edit.discard')))`. Return `false` to
+  stay. A Promise works, so the check can await your own dialog. imp asks on `navigate`, on a `link`
+  click, and on the back and forward buttons. It does not ask on a guard redirect or a fragment-only
+  change. The check ends when the component unmounts. Never remove it by hand.
+- **`beforeLeave` does not cover a reload, a closed tab or another site.** Add
+  `globalThis.addEventListener('beforeunload', (event) => dirty.get() && event.preventDefault(), { signal: self.abortSignal })`.
+  The browser shows its own prompt there.
 - **The title is a router function.** `title: ({ crumbs, node, params }) => ...`. Without it, imp
   never writes `document.title`.
 

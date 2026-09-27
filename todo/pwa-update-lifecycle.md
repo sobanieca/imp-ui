@@ -1,4 +1,4 @@
-# PWA update lifecycle - decide between aggressive auto-update and wait-and-prompt
+# PWA update lifecycle - automatic update with a grace cache
 
 The service worker that `imp build --pwa` emits is `buildServiceWorker`, in `cli/src/pwa.js`. It
 takes control as early as it can. It calls `self.skipWaiting()` in `install`, and
@@ -6,8 +6,7 @@ takes control as early as it can. It calls `self.skipWaiting()` in `install`, an
 of the current build. So a new build becomes the controlling worker **in the middle of a session**,
 and imp removes the precache of the previous build the moment when the new worker activates.
 
-Somebody must make a deliberate decision here. This is an edge of correctness, and not a missing
-feature.
+This is an edge of correctness, and not a missing feature. The decision is below.
 
 ## The problem
 
@@ -25,37 +24,27 @@ A navigation that is network-first recovers from this on the **next full navigat
 not recover a lazy load that is in flight in the current session. For an app that never splits by
 route, this is harmless. For an app that does split, it is a real failure.
 
-## Options
+## Decision
 
-- **Keep the aggressive auto-update, which is the state today.** That is the simplest option, and it
-  always ships the newest code. It exposes the race about a chunk load, above. It is acceptable only
-  with a mitigation, described below.
-- **Wait and prompt.** The new worker installs, and it does **not** call `skipWaiting()`. It stays
-  in the `waiting` state. The page detects that worker, and offers a control that says "a new
-  version is available, reload". imp then calls `skipWaiting()` only when the user confirms. So the
-  swap happens at a controlled moment, which is a reload, and never in the middle of a session. That
-  is the mature default in the ecosystem.
-- **A hybrid.** imp updates automatically, and **keeps the previous cache** for a period of grace.
-  It does not delete the old hashes on `activate` immediately. So an old chunk that is in flight
-  still resolves. imp cleans up on the next navigation. That keeps an update that needs no action,
-  and it closes the race.
+**imp keeps the automatic update, and keeps the previous cache for a period of grace.** The new
+worker still calls `skipWaiting()` and `clients.claim()`. On `activate`, it does not delete the
+cache of the previous build. So a chunk of the old build that a running page requests still resolves
+from that cache. On the next navigation request, the worker deletes every cache that is not the
+current one or the previous one.
 
-## Considerations
-
-- The model of imp uses real DOM, and many imp apps do not split by route. So the race is narrow.
-  Weigh how much machinery for a lifecycle is worth that, against the philosophy of opinionated
-  defaults in `adr/pwa-toolkit.md`, which says that imp is not a collection of strategies.
-- A flow that waits and prompts needs a hook on the client, which is a small script that imp injects
-  beside the registration of the service worker, in `pwaHeadTags`. It also needs a signal that the
-  app can see. Decide whether imp renders its own small prompt, or exposes an event that the app
-  reacts to. The second option mirrors the position of imp about emitting and subscribing,
-  elsewhere.
-- Whichever option somebody chooses, the split between offline behaviour and live reload does not
-  change. That is the split between the telemetry worker in development, and the offline worker in
-  production. This decision covers production only.
+- **The app does nothing.** There is no prompt, no event and no script on the client. The update
+  needs no action from a person.
+- **Only one previous build stays.** Two deploys during one open session can still remove a chunk of
+  the first build. That case is rare, and imp accepts it.
+- **A wait and a prompt were not chosen.** They need a script on the client and a signal for the
+  app, for a race that is narrow. Many imp apps do not split by route. `adr/pwa-toolkit.md` says
+  that imp ships opinionated defaults, and not a collection of strategies.
+- **The split between development and production does not change.** The telemetry worker runs in
+  development, and the offline worker runs in production. This decision covers production only.
+- **A project worker that calls `precacheBuild()` gets the same lifecycle**, see
+  `todo/own-service-worker-offline-precache.md`.
 
 ## ADR impact
 
 Update `adr/pwa-toolkit.md`. Replace the note about an open item, in _Scope and non-goals_, with the
-lifecycle that somebody chose. Document the behaviour of an update in `docs/`, with any prompt or
-event that a user can see.
+lifecycle that somebody chose. Document the behaviour of an update in `docs/`.

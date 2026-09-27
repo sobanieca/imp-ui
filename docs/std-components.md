@@ -378,6 +378,22 @@ to `false` when the person closes the window. The state is always the truth abou
 screen. A modal takes the page over: the rest becomes inert, the focus moves in and returns, and
 Escape dismisses it. Nearly all of that comes from the browser, not from imp.
 
+**`beforeClose` keeps a window open that holds unsaved work.** imp asks it before every dismissal by
+the person: Escape, a click on the backdrop, and the close button. Return `false` to stay open. A
+promise works too, so you can wait for your own confirmation dialog. When your code sets `open` to
+`false`, imp does not ask, because your code already decided.
+
+```js
+dialog(
+  { title: 'Edit user', open: editing, beforeClose: () => !dirty.get() || confirm(t('discard')) },
+  form({ initialValues }, textField({ field: 'name' })),
+)
+```
+
+The same prop makes a dialog that only your code closes, with `() => false`. It also holds a dialog
+open while a request runs, with `() => !saving.get()`. The router asks the same kind of check before
+it leaves a screen, see **[Routing](routing.md)**.
+
 A `drawer` slides in from the end of the line, the right edge in English and the left edge under
 `dir="rtl"`. A `menuButton` opens its `items` as a menu that the browser places under the trigger,
 and flips when there is no room.

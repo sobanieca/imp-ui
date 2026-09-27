@@ -74,13 +74,28 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   no call that means "close after the exit transition". It is also the only way in which the exit
   animates in all four current browsers today. imp deletes it on the day when `display` is
   transitionable in Firefox, and `overlay` ships beyond Chrome.
-- **imp animates Escape as well.** The seam takes the cancelable `cancel` event of the platform,
-  prevents the instant close, and runs the same closing slide. So a `dialog.requestClose()` from app
-  code also animates, at no cost, because it raises `cancel` as Escape does.
+- **imp handles Escape on the `keydown` of the dialog.** The seam cancels the key event and runs the
+  closing slide. The platform does not start a close request for a cancelled Escape. That is the
+  rule of the HTML close requests, in all four browsers. A close request that the page cannot cancel
+  is the reason. Chrome makes `cancel` not cancelable after a close request with no user activation
+  between, for example a second Escape. Then a veto would lose to the browser. A `keydown` that a
+  child already cancelled is left alone, so an open `comboBox` list takes its Escape first.
+- **imp also takes the other close requests, through `cancel`.** `dialog.requestClose()` and the
+  back gesture of Android raise `cancel`, and they get the same closing slide. When the browser
+  raises a `cancel` that is not cancelable, imp lets the dialog close at once. The `close` listener
+  of the seam then gives the page scroll back.
+- **A dismissal asks `beforeClose` first.** `dismissal(name, beforeClose)` builds one gate per
+  component. Escape, a cancelable `cancel`, a click on the backdrop and the close button all pass
+  through it. The check returns `false`, or a promise of `false`, to keep the overlay open. A check
+  that throws also keeps it open, and imp logs the error. While a check is pending, a second
+  dismissal is ignored, so the app asks once. A close that the app makes through `open` does not
+  pass the gate, because the app already decided. Without a check, the gate closes at once, in the
+  same tick.
 - **A dismissal gets no vocabulary from imp.** Escape and the backdrop close the dialog with no
   return value. So `dialog.returnValue` stays the channel of the platform. An empty value means that
   the user dismissed the dialog. Any other value is what the app closed it with. There is no
-  `onDismiss` enum of reasons, and there is no veto.
+  `onDismiss` enum of reasons. The check of `beforeClose` gets no reason either. One answer covers
+  every route, because unsaved work is lost the same way on each one.
 - **Dragging is the one place where imp writes positioning**, and `draggable(element, handle)` is
   the helper. It captures the pointer. It writes the offset to `--drag-x` and `--drag-y`. It clamps
   the offset, so a title bar can never leave the viewport, and it clamps again on a resize. It also
@@ -113,7 +128,8 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   later open runs against an element that is connected.
 - **The test DOM gets a fill for the top layer.** `installDomEnvironment` installs it, beside the
   fills for the popover and for the animations. It covers the entry of the focus, the restore of the
-  focus, `inert` on the rest of the body, and the sequence from Escape to `cancel` to `close`. The
+  focus, `inert` on the rest of the body, and the sequence from Escape to `cancel` to `close`. Like
+  a browser, the fill starts no close request for an Escape `keydown` that a listener cancelled. The
   vendored happy-dom stubs `showModal()` as `setAttribute('open', '')`, and it has none of that.
   Without the fill, a unit test can assert the markup, and nothing that the seam exists for. The
   fill completes the test environment, in the way that `fake-timers.md` does. The seam itself calls
@@ -130,9 +146,11 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   one `await` between "the user dismissed it" and the `close()` call. A component that moves DOM on
   a close, such as the shell, which moves its sidebar back into the frame, does that work in the
   `close` listener. It then sees a dialog that has already finished its animation.
-- An overlay cannot veto its own dismissal, because the seam prevents the `cancel` event before any
-  app code could act. Nothing needs a veto yet. On the day when something does, the seam grows the
-  hook.
+- A form with unsaved work keeps its dialog or drawer open with one prop,
+  `beforeClose: () => !dirty.get() || confirmDiscard()`. The same prop makes a mandatory dialog,
+  with `() => false`, and a dialog that holds while a request runs, with `() => !saving.get()`. So
+  imp adds no `closedby` prop and no busy flag. The router asks the same kind of check before it
+  leaves a route, see `client-side-router.md`.
 - `closedby="any"` would delete the handler for a click on the backdrop completely, and
   `requestClose()` already works. The attribute is not usable yet. Chrome 134 and Firefox 141 ship
   it, and Safari has it in a preview only. So the handler stays until the attribute is
@@ -144,10 +162,7 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   `:dir(rtl)` mirrors. There is no side prop. The contextual panel has one place, and a panel from
   the start of the line is the drawer of the shell. It also has no phone mode. imp caps the panel at
   `85dvi`, and on a narrow screen that already is the phone form. So nobody added a breakpoint, see
-  `responsive-fluid-values-only.md`. The drawer adds one thing to the seam, which is `pin`.
-  `modalOverlay` takes a `backdropDismisses` predicate. So a pinned drawer keeps its click on the
-  backdrop, while Escape and the close button still close it. The modal stays modal, the page stays
-  inert, and only the accidental dismissal is gone.
+  `responsive-fluid-values-only.md`.
 - `dialog` is the first consumer of both halves, and it is **one component with a `modal` boolean**,
   and not two components. The modes differ in which promotion they call, and in nothing else. They
   share the frame, the title bar, the content and the close button. imp reads `modal` once, at

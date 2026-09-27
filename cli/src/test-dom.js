@@ -164,7 +164,7 @@ const installPopoverApi = (window) => {
   })
 
   window.document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return
+    if (event.key !== 'Escape' || event.defaultPrevented) return
     lightDismissable().at(-1)?.hidePopover()
   })
 }
@@ -233,15 +233,25 @@ const installTopLayer = (window) => {
   }
 
   window.document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || stack.length === 0) return
+    if (event.key !== 'Escape' || event.defaultPrevented || stack.length === 0) return
     const dialog = stack.at(-1)
     const cancel = new window.Event('cancel', { bubbles: false, cancelable: true })
     if (dialog.dispatchEvent(cancel)) dialog.close()
   })
 }
 
+const HISTORY_EVENTS = ['popstate', 'hashchange']
+
+const forwardHistoryEvents = (window) => {
+  const HostEvent = globalThis.Event
+  for (const type of HISTORY_EVENTS) {
+    window.addEventListener(type, () => globalThis.dispatchEvent(new HostEvent(type)))
+  }
+}
+
 export function installDomEnvironment() {
   const window = new Window({ url: 'http://localhost/' })
+  forwardHistoryEvents(window)
   installPopoverApi(window)
   installMoveBefore(window)
   installAnimationsApi(window)

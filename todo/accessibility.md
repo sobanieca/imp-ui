@@ -79,20 +79,28 @@ gains a role, a state or a key.
 
 ## Known gaps
 
-- A click on an empty column of `calendar` creates a slot at that time. From the keyboard, the day
-  button creates an all-day slot, and the person sets the time in the editor of the app. A slot at a
-  chosen time has no keyboard path.
-- `tooltip` is hidden from assistive technology and is not linked to its control. So its text never
-  reaches a screen reader, which is fine only while the control carries its own name.
+- **Fix: `calendar` has no keyboard path to a slot at a chosen time.** A click on an empty column
+  creates a slot at that time. From the keyboard, the day button creates an all-day slot only. That
+  breaks the rule that every pointer interaction has a keyboard equivalent. In the day view and the
+  week view, the arrow keys move the focus across the time slots. Enter creates a slot at the
+  focused time.
+- **Accepted: `tooltip` is hidden from assistive technology.** It is not linked to its control, see
+  `todo/overlay-seam.md`. So its text never reaches a screen reader. The control carries its own
+  accessible name. The docs and the skill of `tooltip` say that the tooltip text must never be the
+  only name of a control.
 
-## Lint and verification, later
+## Lint and verification
 
-Mirror the other static checks of imp. Consider a lint rule, or a check, that reports an obvious
-violation in app code. Two examples are a call to the `img` factory with no `alt`, and an icon-only
-`button` with no accessible name. A full automated audit of accessibility is out of scope. A few
-checks with a high signal, that catch the common mistakes, fit the existing lint model of imp.
-Whether `imp test` runs a pass in the style of axe, in process, over rendered standard components,
-is an open question.
+imp ships a few checks with a high signal. It does not ship a full automated audit.
+
+- **`imp lint` gets two rules.** The first reports a call to the `img` factory with no `alt`. The
+  second reports an icon-only `button` with no accessible name.
+- **`imp/test` ships a matcher that walks the accessibility tree** of a rendered page in an e2e
+  test. It reports every control with no accessible name, and every control with no role. The walk
+  already exists in `accessibility.spec.js`. The matcher makes it available to an app.
+- **imp does not bundle axe-core** or another wide audit engine.
+- **The theme editor checks contrast.** It reports a pair of text and background tokens that fails
+  the WCAG AA ratio, see `adr/theme-editor.md`. A custom theme is where contrast breaks.
 
 ## Dependencies
 
@@ -119,13 +127,14 @@ beyond a few lint checks. Update the table of ADRs in `adr/README.md`. Document 
 accessibility in `docs/`. When somebody accepts the ADR, remove the open question about an
 accessibility baseline from the item about the standard library, because this ADR answers it.
 
-## Open questions
+## Decisions
 
-- **An automated audit in `imp test`.** The e2e suite walks the accessibility tree of the browser
-  and reports every control with no name. Does imp ship that walk as a matcher of `imp/test`, so an
-  app can run it over its own pages? Does a wider check in the style of axe-core, in pure
-  JavaScript, fit the constraints about running in process, see `adr/in-process-toolchain.md`?
-- **How much is configurable.** Is the behaviour of the focus trap, and of an announcement, a fixed
-  default? Or can an app tune it with a prop?
-- **The coverage of a screen reader.** Which combinations of assistive technology and browser define
-  the word "supported", for this guarantee?
+- **The focus trap and the announcements are fixed.** No component takes a prop that tunes them. The
+  platform owns the focus trap of a modal. To move the first focus into an overlay, an app sets the
+  native `autofocus` attribute on the element.
+- **"Supported" means these pairs of screen reader and browser:**
+  - VoiceOver with Safari, on macOS and on iOS.
+  - NVDA with Chrome, and NVDA with Firefox, on Windows.
+  - TalkBack with Chrome, on Android.
+
+  JAWS is not in the list.

@@ -396,12 +396,13 @@ dialog({ title: 'Edit user', open: editing }, form({ initialValues }, textField(
 dialog({ title: 'Inspector', modal: false, open: inspecting }, details())
 ```
 
-| Prop     | Values                            | Default | Notes                                          |
-| -------- | --------------------------------- | ------- | ---------------------------------------------- |
-| `title`  | string - **live**                 | -       | Names the dialog for a screen reader; give one |
-| `modal`  | boolean - **read once, at mount** | `true`  | `false` is the movable, non-blocking window    |
-| `open`   | boolean, or a state - **live**    | `false` | What opens and closes it                       |
-| `events` | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
+| Prop          | Values                            | Default | Notes                                          |
+| ------------- | --------------------------------- | ------- | ---------------------------------------------- |
+| `title`       | string - **live**                 | -       | Names the dialog for a screen reader; give one |
+| `modal`       | boolean - **read once, at mount** | `true`  | `false` is the movable, non-blocking window    |
+| `open`        | boolean, or a state - **live**    | `false` | What opens and closes it                       |
+| `beforeClose` | `() => boolean \| Promise`        | -       | Return `false` to stay open                    |
+| `events`      | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
 
 - **`dialog` is both overlay windows.** `modal: true` is the default. It freezes the page behind a
   backdrop, closes on Escape, and holds the page scroll. `modal: false` is a movable window. It
@@ -409,6 +410,8 @@ dialog({ title: 'Inspector', modal: false, open: inspecting }, details())
   mount.
 - **`open` is the only way to open a dialog.** Pass a writable state. The dialog writes `false` back
   into it when the person closes the dialog. There is no `show()` and no handle.
+- **Guard unsaved work with `beforeClose`.** It runs on Escape, a backdrop click and the close
+  button. Return `false`, or a Promise of `false`, to stay open. Setting `open` never asks it.
 - **`dialog` shadows the `dialog` element factory** from `imp/html`. A file that needs both gives
   one an alias.
 
@@ -423,13 +426,14 @@ drawer({ title: 'Filters', open: filtering }, form({ initialValues }, ...fields)
 drawer({ title: 'Details', modal: false, open: inspecting }, details())
 ```
 
-| Prop         | Values                            | Default | Notes                                            |
-| ------------ | --------------------------------- | ------- | ------------------------------------------------ |
-| `title`      | string - **live**                 | -       | Names the drawer for a screen reader; give one   |
-| `modal`      | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                |
-| `open`       | boolean, or a state - **live**    | `false` | What opens and closes it                         |
-| `background` | DOM                               | -       | Decorative node under the panel; not interactive |
-| `events`     | `{ openToggle }`                  | -       | `{ open }`, on changes the drawer makes itself   |
+| Prop          | Values                            | Default | Notes                                            |
+| ------------- | --------------------------------- | ------- | ------------------------------------------------ |
+| `title`       | string - **live**                 | -       | Names the drawer for a screen reader; give one   |
+| `modal`       | boolean - **read once, at mount** | `true`  | `false` is the non-blocking panel                |
+| `open`        | boolean, or a state - **live**    | `false` | What opens and closes it                         |
+| `beforeClose` | `() => boolean \| Promise`        | -       | Return `false` to stay open                      |
+| `background`  | DOM                               | -       | Decorative node under the panel; not interactive |
+| `events`      | `{ openToggle }`                  | -       | `{ open }`, on changes the drawer makes itself   |
 
 - **A drawer is a dialog docked to the end of the line.** That is the right edge under `dir="ltr"`,
   and the left edge under `dir="rtl"`. There is no side prop. The modes and the `open` contract are

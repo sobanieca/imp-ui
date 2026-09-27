@@ -5,18 +5,18 @@
 and gets no precache. The worker of the project would have to list the hashed files by hand, which
 is what the build-graph precache exists to avoid.
 
-## Proposal
+## Decision
 
-Export a function from `imp/service-worker`, such as `precacheBuild()`, that installs the same
-precache and the same fetch strategy as the emitted offline worker. `imp build --pwa` would inject
-the precache list and the cache name into the bundle of the project worker, the way it injects the
-environment values. In development the function would do nothing, because the dev server caches
-nothing.
+Export `precacheBuild()` from `imp/service-worker`. It takes no options.
 
-## Open questions
-
-- Does the function take over navigation, or only the hashed assets? The emitted worker does both.
-- How does the call interact with `startDevMode()` when both run? The dev fetch listener must win.
+- **It installs the same behaviour as the emitted offline worker.** That covers the precache, the
+  navigation with the fallback to the app shell, the cache-first hashed assets, and the update
+  lifecycle, see `todo/pwa-update-lifecycle.md`. A project worker that calls it behaves the same as
+  the worker that imp writes.
+- **`imp build --pwa` injects the precache list and the cache name** into the bundle of the project
+  worker, the way it injects the environment values.
+- **In development, the function does nothing.** The dev server caches nothing, so the fetch
+  listener of `startDevMode()` always wins.
 
 ## ADR impact
 

@@ -622,6 +622,49 @@ a link in a page, use `link` with the `href` of a handle:
 link({ href: app.todos.$id.href({ id: todo.id }) }, todo.title)
 ```
 
+### Unsaved work: ask before the person leaves
+
+A screen with unsaved work can stop a navigation. Call `beforeLeave` in its `setup`, with a check.
+The check returns `false` to stay on the screen. Any other value lets the navigation go on:
+
+```js
+import { beforeLeave } from 'imp/router'
+
+const editScreen = component('edit-screen', {
+  setup: (self) => {
+    const dirty = initState(self, 'edit.dirty', false)
+    beforeLeave(self, () => !dirty.get() || confirm(t('edit.discard')))
+    return form() /* ... */
+  },
+})
+```
+
+The check can also return a promise. So it can open your own dialog and wait for the answer. The
+screen stays as it is while the check waits.
+
+imp asks the check in these cases:
+
+- A click on a `link`, or on any other control that calls `navigate`.
+- A `navigate` call from your code, such as a Cancel button.
+- The back and forward buttons of the browser. imp puts the current URL back while it asks, and goes
+  on when the check allows.
+
+imp does not ask when only the fragment of the URL changes, or when a guard redirects. The check
+ends when its component unmounts, so you never remove it yourself. If the check throws, imp keeps
+the screen and logs the error.
+
+A reload, a closed tab, and a link to another site unload the whole page. Only the browser can ask
+then, with its own prompt. Add a `beforeunload` listener for that case:
+
+```js
+globalThis.addEventListener('beforeunload', (event) => {
+  if (dirty.get()) event.preventDefault()
+}, { signal: self.abortSignal })
+```
+
+A `dialog` and a `drawer` take the same kind of check, as their `beforeClose` prop. See
+**[Standard components](std-components.md)**.
+
 ## How to read the current route
 
 `useRoute()` returns a read-only handle on the live route, which is `{ path, query }`. Any component

@@ -9,11 +9,10 @@ Components page embeds the export of `imp preview` (`adr/preview-export.md`). Th
 
 Today `tools/build-site.js` renders each `docs/*.md` file with the vendored `marked`. It writes
 heading ids, rewrites a link to a sibling `*.md` file into the route of that page, and highlights
-each fenced code block with the tokenizer of `codeBlock`. One thing remains:
+each fenced code block with the tokenizer of `codeBlock`.
 
-- **Decide whether the engine becomes a command of imp.** A maintainer tool is enough for the site
-  of imp. A user who wants a docs site from Markdown has no command. If the engine ships, it must
-  run in process, see `adr/in-process-toolchain.md`.
+**The engine stays a maintainer tool.** It does not become a command of imp. A docs site is not the
+job of a frontend toolkit. An app that renders Markdown uses the `markdown` component.
 
 ## The gallery index
 
@@ -29,13 +28,22 @@ text, and the `shell` bar takes the surface colour of the theme. The preview pag
 frame as components. The two share the tokens and the styles of `cli/src/design-styles.js`, so they
 cannot drift in colour or type, only in layout.
 
-## Open questions
+## Versioned documentation
 
-- **Versioned documentation.** Does imp publish the documentation per version, or the latest only?
-- **Where the site is hosted, and what builds it.** The site assumes GitHub Pages. The install
-  command on the overview page, and in `docs/cli.md`, fetches `install.sh` from
-  `https://sobanieca.github.io/imp-ui`, and the build copies the script into `site/dist/`. Set
-  `IMP_SITE_URL` to another origin, and the command follows it. Nothing publishes the site yet. A
-  workflow must run `deno run -A tools/build-site.js` and upload `site/dist/`. The pages link their
-  assets from the root, as `/site.css`, so the site needs its own origin: a custom domain, or the
-  root site of the account. A project site under `/imp-ui/` breaks those links.
+**The site publishes the documentation of the latest version only.** Before 1.0, imp keeps no
+backward compatibility, so the docs of an old version have no reader. At 1.0, decide again, and
+publish the docs per major version.
+
+## Hosting
+
+**The site is a GitHub Pages project site at `https://sobanieca.github.io/imp-ui/`.** There is no
+custom domain. The install command on the overview page, and in `docs/cli.md`, already fetches
+`install.sh` from that URL, and the build copies the script into `site/dist/`. Two things are left:
+
+- **The site must work under the path `/imp-ui/`.** The pages link their assets and their pages from
+  the root, as `/site.css`, `/fonts/` and `/docs/`. Under a project site, those links break. The
+  build must take the base path from `IMP_SITE_URL`, and prefix every root link with it. That covers
+  the pages, the navbar, the gallery export, the fonts, `sitemap.xml` and `robots.txt`.
+- **A workflow must publish the site.** On a push to `main`, it runs
+  `deno run -A tools/build-site.js` with `IMP_SITE_URL=https://sobanieca.github.io/imp-ui`, and it
+  uploads `site/dist/` to GitHub Pages.

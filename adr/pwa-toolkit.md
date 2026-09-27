@@ -119,11 +119,13 @@ otherwise:
 - **A richer manifest**, beyond the set that installability needs. That covers `shortcuts`,
   `share_target`, `display_override` and `screenshots`. The manifest guarantees installability, and
   nothing more.
+- **An offline fallback page.** `imp build` takes one HTML entry, and the worker precaches it as the
+  app shell. The shell renders every route through the router, `notFound` included. So a navigation
+  offline always gets a page that the app draws, and a separate offline page would never show. An
+  app that wants to say "you are offline" shows it from its own state.
 
-Two items are **open**, and `todo/` tracks them, because they are questions of correctness, and not
-missing conveniences. The first is the **update lifecycle of the service worker**. The emitted
-worker calls `skipWaiting()` and `clients.claim()`, and removes the old cache immediately. That can
-take a chunk from a split of the code away from a live session, in the middle of a deploy. See
-`todo/pwa-update-lifecycle.md`. The second is an **offline fallback page**, for a navigation that
-imp did not cache, in place of a fallback to the app shell every time. See
-`todo/pwa-offline-fallback.md`.
+One item is **open**, and `todo/pwa-update-lifecycle.md` tracks it, because it is a question of
+correctness, and not a missing convenience. That is the **update lifecycle of the service worker**.
+The emitted worker calls `skipWaiting()` and `clients.claim()`, and removes the old cache
+immediately. That can take a chunk from a split of the code away from a live session, in the middle
+of a deploy.
