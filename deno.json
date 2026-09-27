@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
   "tasks": {
-    "start": "cd examples/todo && deno run -A ../../tools/imp.js start",
+    "example": "cd examples/todo && deno run -A ../../tools/imp.js start",
     "preview": "cd lib/src && deno run -A ../../tools/imp.js preview",
     "site": "deno run -A tools/build-site.js && cd site/dist && rfm",
     "test": "cd lib/test && deno run -A ../../tools/imp.js test --unit && deno run -A ../../tools/imp.js test --e2e && cd ../.. && deno test -A cli/test/cli-test.js --",
