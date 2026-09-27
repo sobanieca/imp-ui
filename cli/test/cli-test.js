@@ -865,6 +865,30 @@ Deno.test('imp build', async (t) => {
       )
     })
 
+    await t.step('build-unreachable-chunks', async () => {
+      const chunksOf = async (entry, source) => {
+        await Deno.writeTextFile(join(dir, entry), source)
+        const result = await runImp(['build', entry, '--output', 'chunks-probe'], dir)
+        const chunks = join(dir, 'chunks-probe', 'chunks')
+        const entries = await Array.fromAsync(Deno.readDir(chunks)).catch(() => [])
+        const files = entries.map((file) => file.name.replace(/-[A-Z0-9]{8}\.js/, '-<hash>.js'))
+        await Deno.remove(join(dir, entry))
+        await Deno.remove(join(dir, 'chunks-probe'), { recursive: true })
+        return `${entry}: exit ${result.code}, chunks: ${files.sort().join(', ') || 'none'}`
+      }
+      const report = [
+        await chunksOf(
+          'list-entry.js',
+          "import { list } from 'imp/std/data'\n\nexport const render = () => list({ label: 'Rows' })\n",
+        ),
+        await chunksOf(
+          'map-entry.js',
+          "import { map } from 'imp/std/data'\n\nexport const render = () => map({ label: 'World' })\n",
+        ),
+      ]
+      await assertSnapshot('build-unreachable-chunks', `${report.join('\n')}\n`)
+    })
+
     await t.step('build-imp-subpath', async () => {
       const entry = join(dir, 'std-entry.js')
       await Deno.writeTextFile(

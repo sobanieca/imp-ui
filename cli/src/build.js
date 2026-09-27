@@ -17,6 +17,7 @@ import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
 import { formatSize } from './file-size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
+import { withoutUnreachableChunks } from './unreachable-chunks.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
@@ -229,7 +230,8 @@ function buildServiceWorkerEntry({ root, entry, dependencies, outdir, flags }) {
 
 async function bundleApp(options, serviceWorker) {
   try {
-    const page = await buildEntryPoints(options)
+    const entryFiles = options.entryPoints.map(({ out }) => join(options.outdir, `${out}.js`))
+    const page = withoutUnreachableChunks(await buildEntryPoints(options), entryFiles)
     if (!serviceWorker) return page
     const worker = await buildServiceWorkerEntry({ ...options, entry: serviceWorker })
     return {

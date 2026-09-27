@@ -132,6 +132,10 @@ Rules an agent gets wrong:
 - **The frame has no account prop.** Put `userCard` in `extras` to display the person, and a
   `button` or a `menuButton` of yours beside it for the sign-out. Whether a signed-in person sees a
   section is the `access` of the map.
+- **Keep the desktop `extras` to one or two icon buttons.** The sections and the extras share the
+  bar. When they do not fit, the sections scroll with no visible scrollbar, so a section disappears
+  and the extras stay. A `langSelect`, a `themeSelect` and a full `userCard` side by side take the
+  place of two or three sections. Put them behind one avatar button, as in the recipe below.
 - **A multi-tenant app puts `orgSelect` beside the logo.** Write
   `logo: flex({ gap: 2, verticalAlign: 'center' }, appLogo({ label }), orgSelect({ orgs, selected }))`,
   or put it in `extras`. See imp skill std/orgSelect.
@@ -201,6 +205,106 @@ Rules an agent gets wrong:
   only. Its text is `imp.shell.skip`. It is `100dvb` tall, and it scrolls each region on its own.
   The main region is a column flex box. A child with `flex: 1` and `min-block-size: 0` takes the
   height that the trail leaves, and can scroll on its own inside the region.
+
+## Recipe: an account menu that folds into the drawer
+
+One component of yours holds the person, the pickers and the sign-out. On a desktop it is an avatar
+button that opens a popover. Below `48rem` the shell moves `extras` into the drawer, and a media
+query in the component shows the same panel inline there. There is one DOM tree and no width logic
+in JavaScript.
+
+```js
+import { component } from 'imp'
+import { div, span } from 'imp/html'
+import { computed, useState } from 'imp/state'
+import { button } from 'imp/std'
+import { avatar } from 'imp/std/display'
+import { langSelect, themeSelect, userCard } from 'imp/std/shell'
+
+export const accountMenu = component('myapp-account-menu', {
+  styles: `
+    .anchor { display: inline-flex; anchor-name: --myapp-account; }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: var(--imp-space-3);
+      position: fixed;
+      position-anchor: --myapp-account;
+      position-area: block-end span-inline-start;
+      position-try-fallbacks: flip-block, flip-inline;
+      inset: auto;
+      margin: var(--imp-space-2) 0 0;
+      inline-size: min(20rem, calc(100dvi - 2rem));
+      padding: var(--imp-space-4);
+      background: var(--imp-color-surface);
+      border: var(--imp-border-width) solid var(--imp-color-border);
+      border-radius: var(--imp-radius-container);
+      box-shadow: var(--imp-shadow-lg);
+    }
+    .panel:not(:popover-open) { display: none; }
+    @media (max-width: 47.99rem) {
+      .anchor { display: none; }
+      .panel,
+      .panel:not(:popover-open) {
+        display: flex;
+        position: static;
+        inline-size: auto;
+        margin: 0;
+        padding: 0;
+        background: none;
+        border: none;
+        box-shadow: none;
+      }
+    }
+  `,
+  setup: (self, { languages, onSignOut }) => {
+    const session = useState(self, 'myapp.session')
+    const name = computed([session], (user) => user?.name ?? '')
+    const panel = div(
+      { class: 'panel', popover: 'auto', role: 'group', 'aria-label': 'Account' },
+      userCard({ name, description: computed([session], (user) => user?.email ?? '') }),
+      langSelect({ languages }),
+      themeSelect(),
+      button({ variant: 'ghost', block: true, events: { click: onSignOut } }, 'Sign out'),
+    )
+    return div(
+      span(
+        { class: 'anchor' },
+        button(
+          { variant: 'ghost', square: true, label: 'Account and settings', popoverTarget: panel },
+          avatar({ name, size: 'sm', decorative: true }),
+        ),
+      ),
+      panel,
+    )
+  },
+})
+
+shell({ navbar: { map: app }, extras: [notifications(), accountMenu({ languages, onSignOut })] })
+```
+
+Rules an agent gets wrong in this recipe:
+
+- **Let the platform run the panel.** `popover: 'auto'` gives the top layer, Escape, the click
+  outside, and the Tab order after the trigger. `popoverTarget` on the std `button` toggles the
+  panel, and the browser announces the button as expanded or collapsed. Write no open state, no key
+  handler and no outside-click listener.
+- **Anchor a `span` of yours, not the button.** The host of a std component has `display: contents`
+  and makes no box, so an `anchor-name` on it anchors nothing.
+- **Use logical keywords in `position-area`.** `block-end span-inline-start` opens the panel under
+  the trigger, toward the start of the line, and it mirrors under `dir="rtl"`.
+- **Override `.panel:not(:popover-open)` in the media query, not `.panel` alone.** The closed-panel
+  rule is more specific, so a bare `.panel { display: block }` leaves the panel hidden in the
+  drawer.
+- **Hide the trigger in the drawer.** The panel is already open there, so a second tap has no job.
+- **The pickers stay popovers inside the panel.** Escape in the language menu closes that menu only,
+  and the panel stays open.
+- **Translate the words.** Pass `computed([lang], () => t('account.open'))` as `label` and
+  `aria-label`. The recipe writes English only to stay short.
+- **The query is the literal `47.99rem`**, just under the `48rem` of the shell, because a media
+  query cannot read `--imp-breakpoint-desktop`.
+
+## Examples
 
 ```js
 shell(

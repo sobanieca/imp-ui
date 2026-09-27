@@ -533,7 +533,9 @@ the module scripts of the page. It bundles each one into minified, self-containe
   imports resolved.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
-  several entry points share once, instead of a copy in each bundle.
+  several entry points share once, instead of a copy in each bundle. imp writes a chunk only when an
+  entry can reach it. So a lazy import inside code that the build drops, such as the world data of a
+  `map` that you never render, adds no file to the output.
 - **You ship only the imp that you use.** imp drops unused code from the bundle. That applies to imp
   itself as much as to your own modules. A page that never touches state, theming, translations or
   the router carries none of them. An import of one standard component does not bring the other

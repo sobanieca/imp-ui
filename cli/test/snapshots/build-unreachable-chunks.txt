@@ -1,0 +1,2 @@
+list-entry.js: exit 0, chunks: none
+map-entry.js: exit 0, chunks: map-roads-10m-<hash>.js, map-world-110m-<hash>.js, map-world-50m-<hash>.js

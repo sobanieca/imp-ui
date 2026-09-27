@@ -142,10 +142,11 @@ skips the freshness check and runs whatever was compiled last.
 
 ## Tasks and tools
 
-`deno.json` holds four tasks. Each one is the daily command for one job:
+`deno.json` holds five tasks. Each one is the daily command for one job:
 
 | Task                | What it does                                                             |
 | ------------------- | ------------------------------------------------------------------------ |
+| `deno task start`   | serves the todo example from `examples/todo` on <http://localhost:4507/> |
 | `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/> |
 | `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm` |
 | `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests   |

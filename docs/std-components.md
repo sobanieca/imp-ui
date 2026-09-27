@@ -151,6 +151,15 @@ frame mounts the app. The sign-in page is yours, because it differs with every a
 password, buttons for social providers, a magic link, or a passkey. imp renders no form and talks to
 no identity provider. Sign-out is a plain `button` or a `menuButton` that you put beside `userCard`.
 
+**Keep the bar light, and group the account controls.** The sections and the extras share the top
+bar. A language picker, a theme picker and a user card side by side take the place of two or three
+sections, and a section that does not fit scrolls out of view. So put those controls in one account
+menu: an avatar button that opens a small popover with the person, the pickers and the sign-out. You
+write it as one component of your own. On a desktop the browser runs the popover and CSS anchor
+positioning places it under the avatar, with no script for opening, closing or placement. On a phone
+the shell moves the extras into its drawer, and one media query in your component shows the same
+panel inline there, without the button.
+
 **A multi-tenant app gets a switcher.** `orgSelect` lists the organizations that a person belongs
 to, shows the current one on its trigger, and reports a choice. Put it beside the logo, or in
 `extras`. What a switch means is yours: a navigation to the URL of the tenant, or a new token.

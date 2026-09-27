@@ -1113,6 +1113,9 @@ Rules an agent gets wrong:
   technology.** That is how a brand block with a mark only keeps its name.
 - **Inside `shell`, `userCard` goes in `extras`.** The frame has no account prop. It places the
   extras in the bar on a wide screen and in the drawer on a phone.
+- **Keep the desktop `extras` to one or two icon buttons.** When the bar is full, the sections give
+  way, not the extras. Put `userCard`, `langSelect`, `themeSelect` and the sign-out in one account
+  popover. `imp skill std/shell` has the recipe. The same panel shows inline in the phone drawer.
 
 - **`notifications` is the bell, and it takes no data.** It lists what `notify` from
   `imp/std/feedback` raised. It renders its own modal drawer. Put it in `extras`, beside `userCard`.

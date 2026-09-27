@@ -22,7 +22,8 @@ help the build.
 - imp bundles and minifies every `<script type="module" src="...">` **to the same relative path**.
   So the HTML works without a change. imp bundles an inline module script and inlines it again.
 - imp turns an `import()` into a separate hashed chunk under `chunks/` that loads on demand. It
-  emits code that several entries share once.
+  emits code that several entries share once. imp writes a chunk only when an entry can reach it. An
+  `import()` in code that the build drops, such as the world data of an unused `map`, ships no file.
 - **`public/` is the only folder that imp copies**, and its contents arrive at the site root. See
   below.
 - **imp removes all skill text.** It injects none, copies no `*.skill.md`, and removes any

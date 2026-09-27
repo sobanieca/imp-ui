@@ -51,6 +51,11 @@ That rule shapes the code in four places:
 - **imp writes a derived constant. It does not derive it.** An `Object.keys(TONE_TOKENS)` call, or a
   `BREAKPOINTS.slice(1)` call, at module scope, buys brevity and costs a pinned module. Where the
   value is a short fixed list, imp writes the list out.
+- **`imp build` writes only the chunks that an entry can reach.** esbuild makes a chunk for every
+  `import()` that it reads, also when it then drops the module that holds the call. Without a check,
+  an app that imports only `list` from `imp/std/data` ships 1.1 MB of `map` world data. After the
+  bundle, imp follows the imports from each entry through the output files. It removes each chunk
+  that nothing reaches, with its license notices.
 
 **Two tests hold the line, at different distances from the cause.** The first scans every library
 module for a call at module scope, outside the allowed globals, and for CSS that a module builds
