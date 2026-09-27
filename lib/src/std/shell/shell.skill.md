@@ -178,7 +178,8 @@ Rules an agent gets wrong:
   are the one collapsible level. The parent gets a caret and `aria-expanded`. The parent of the
   selected row starts expanded. A parent that the person folds stays folded until the selection
   moves to another parent. On a phone the parents are the bottom bar, and a tap opens the children
-  in the **More** sheet, one column anchored above the tapped row.
+  in the **More** sheet, one column anchored above the tapped row. The title of that sheet is a link
+  to the `href` of the parent, so the page of the parent stays reachable on a phone.
 - **The main content is the children, not a `main` prop.** Write `shell({ navbar }, page())`.
 - **There is no aside region. Do not ask for one.** Content that comes and goes is a `drawer` in the
   main content. Content that must stand beside the page is your own layout inside the main content,
@@ -196,8 +197,8 @@ Rules an agent gets wrong:
 - **`navOpen` is optional.** Without it, the shell owns the drawer state. Pass a **writable** state,
   never a `computed`, when the app must drive the drawer.
 - **The shell renders the `<nav>` landmarks itself**, named from the `label` of each level. It also
-  renders `<header>` and `<main>`, and a skip link as the first tab stop, hidden until it takes the
-  focus. Its text is `imp.shell.skip`. It is `100dvb` tall, and it scrolls each region on its own.
+  renders `<header>` and `<main>`, and a skip link as the first tab stop, shown on keyboard focus
+  only. Its text is `imp.shell.skip`. It is `100dvb` tall, and it scrolls each region on its own.
   The main region is a column flex box. A child with `flex: 1` and `min-block-size: 0` takes the
   height that the trail leaves, and can scroll on its own inside the region.
 

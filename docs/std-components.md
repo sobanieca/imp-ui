@@ -162,8 +162,10 @@ page. A section with no children gets no column, and the content takes the full 
 nothing twice, and a change to the map arrives everywhere at once.
 
 **The frame folds on a phone.** The bar becomes a hamburger and a title. The column becomes a bottom
-bar, where a thumb can reach it. The pickers and the extras move into the drawer of the hamburger.
-imp drops nothing. On a desktop the column collapses to an icon rail when every row has an icon.
+bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.
+The title of that sheet is a link to the page of the row itself, when the row has one. The pickers
+and the extras move into the drawer of the hamburger. imp drops nothing. On a desktop the column
+collapses to an icon rail when every row has an icon.
 
 **There is no aside region, on purpose.** A contextual side column has no phone form. Content that
 comes and goes, such as filters or an inspector, is a `drawer` that you mount in the main content.
@@ -172,7 +174,8 @@ a phone does with it.
 
 **The frame is ready for a keyboard and a screen reader.** Each navigation level is a named `<nav>`
 landmark, the content is `<main>`, and a "Skip to the content" link is the first tab stop of the
-page. The link is hidden until it takes the focus, and it moves the focus into the content.
+page. The link is hidden until the keyboard moves the focus to it, and it moves the focus into the
+content. A tap never shows it.
 
 `imp/std/shell` ships the pieces that usually fill the regions of the frame: `appLogo`, `userCard`,
 `orgSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,

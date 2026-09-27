@@ -303,7 +303,8 @@ Rules an agent gets wrong:
 - **Static grandchildren of the context nest one level, and are collapsed by default**, behind a
   caret with `aria-expanded`. The parent of the selected row starts expanded. A parent that the
   person folds stays folded until the selection moves to another parent. On a phone, a parent that
-  the person taps in the bottom bar opens its children in the More sheet.
+  the person taps in the bottom bar opens its children in the More sheet, and the title of the sheet
+  links to the page of the parent.
 - **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, which
   is the last two crumbs. The sidebar becomes the bottom bar, capped at
   `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections,

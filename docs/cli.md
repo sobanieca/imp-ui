@@ -1130,6 +1130,10 @@ the width and one for the height, in pixels. Type a number, and the stage takes 
 Clear a box, and that axis goes back to the size that the layout gives it. A drag of a handle writes
 its new size into the boxes.
 
+The screen does not cap the width. Type a width wider than the screen, and the stage takes it. The
+canvas then scrolls sideways, so you can move to the right and check the far edge of the component.
+On a phone, this is how you look at a component at a desktop width.
+
 On a phone, the scenario tabs leave little room beside them, so the strip of tabs folds. The button
 at its foot folds the tabs away, and the panel, with its head, its stage and its code panel, gets
 the width of the screen. The strip starts folded on a narrow screen and open on a wide one, and imp

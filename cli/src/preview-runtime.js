@@ -204,7 +204,6 @@ const STAGE_STYLES = `
     position: relative;
     box-sizing: border-box;
     inline-size: 100%;
-    max-inline-size: 100%;
   }
 
   .stage {

@@ -2340,7 +2340,42 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         scrolls: canvas.scrollWidth > canvas.clientWidth,
       }
     }
+    const widenedTo = async (width) => {
+      const scenario = globalThis.impScenarios()[0]
+      const stage = globalThis.impOne('imp-preview-stage', scenario).shadowRoot
+      const input = globalThis.impOne('imp-text-field', stage.querySelector('.sizes')).shadowRoot
+        .querySelector('input')
+      const canvas = globalThis.impOne('imp-preview-canvas').shadowRoot.querySelector('.scroll')
+      const frame = stage.querySelector('.frame')
+      const readout = stage.querySelector('.readout')
+      const type = async (value) => {
+        input.value = value
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        for (let attempt = 0; attempt < 40; attempt++) {
+          await new Promise((resolve) => requestAnimationFrame(resolve))
+          if (
+            readout.textContent.startsWith(`${Math.round(frame.getBoundingClientRect().width)} x`)
+          ) {
+            break
+          }
+        }
+      }
+      await type(String(width))
+      const result = {
+        frame: Math.round(frame.getBoundingClientRect().width),
+        readout: readout.textContent.split(' x ')[0],
+        beyondScreen: frame.getBoundingClientRect().width > innerWidth,
+        scrolls: canvas.scrollWidth > canvas.clientWidth,
+        reachable: canvas.scrollWidth >= frame.getBoundingClientRect().right -
+            canvas.getBoundingClientRect().left + canvas.scrollLeft,
+      }
+      await type('')
+      const panel = scenario.shadowRoot.querySelector('.scenario').getBoundingClientRect().width
+      result.released = Math.round(frame.getBoundingClientRect().width) === Math.round(panel)
+      return result
+    }
     const wide = await page.evaluate(panelWidths)
+    const wideStage = await page.evaluate(widenedTo, 2000)
     await page.setViewport({ width: 390, height: 844 })
     await page.waitForFunction(() =>
       globalThis.impAll('imp-tabs')[1].shadowRoot.querySelector('.fold')
@@ -2353,6 +2388,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       globalThis.impOne('imp-preview-stage')?.shadowRoot?.querySelector('.frame')
     )
     const phone = await page.evaluate(panelWidths)
+    const phoneStage = await page.evaluate(widenedTo, 1280)
     const unfolded = await page.evaluate(async () => {
       const strip = globalThis.impAll('imp-tabs')[1].shadowRoot
       strip.querySelector('.fold').click()
@@ -2443,8 +2479,10 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `state rows: ${counter.states.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
       `scenario tabs on a wide screen: folded ${wide.folded} ('${wide.foldLabel}', tabs inert ${wide.tabsInert}), panel is ${wide.share}% of the canvas, head and stage fill it ${wide.filled}, canvas scrolls sideways ${wide.scrolls}`,
+      `stage typed to 2000px on a wide screen: frame ${wideStage.frame}px (readout ${wideStage.readout}), wider than the screen ${wideStage.beyondScreen}, canvas scrolls sideways ${wideStage.scrolls}, right edge reachable ${wideStage.reachable}, cleared box releases the width ${wideStage.released}`,
       `scenario tabs after the screen shrinks to a phone: folded ${shrunk.folded} ('${shrunk.foldLabel}', tabs inert ${shrunk.tabsInert})`,
       `scenario tabs on a phone: folded ${phone.folded} ('${phone.foldLabel}', tabs inert ${phone.tabsInert}), panel is ${phone.share}% of the canvas, head and stage fill it ${phone.filled}, canvas scrolls sideways ${phone.scrolls}`,
+      `stage typed to 1280px on a phone: frame ${phoneStage.frame}px (readout ${phoneStage.readout}), wider than the screen ${phoneStage.beyondScreen}, canvas scrolls sideways ${phoneStage.scrolls}, right edge reachable ${phoneStage.reachable}, cleared box releases the width ${phoneStage.released}`,
       `after a tap on the fold button: aria-expanded ${unfolded.expanded}, tabs inert ${unfolded.tabsInert}, a tab is visible ${unfolded.tabVisible}, remembered as '${unfolded.remembered}'`,
       `state editor on a phone: anchored ${anchored.anchored}, ${anchored.below}px under its toggle, inside the viewport ${anchored.inside}`,
       `agent instruction strips on the page: ${agent.strips} (region '${agent.region}')`,

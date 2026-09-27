@@ -138,7 +138,8 @@ you want a person to copy. A helper is fine. It is shown above the call.
 - **Stage.** Drag the right, bottom or corner handle to resize. A readout shows the size. The pencil
   button beside the readout opens two boxes for an exact width and height in pixels. An empty box
   gives that axis back to the layout. The component re-lays-out live, which is how you find the
-  width where it breaks.
+  width where it breaks. The screen does not cap the width. A wider stage overflows the canvas,
+  which scrolls sideways, so a phone can show a component at a desktop width.
 - **State editor.** The sliders toggle in the panel head opens it in a movable window under the
   toggle, so the stage keeps the full width. A close of the window releases the toggle. A scenario
   with no state gets no toggle. It shows the state the components in the scenario hold, as JSON. The
