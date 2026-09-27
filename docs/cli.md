@@ -561,6 +561,14 @@ the module scripts of the page. It bundles each one into minified, self-containe
   by accident. Your module sources are already compiled into the bundles. `imp.json`, your
   environment files, your mocks and everything else in the project are never part of the site. See
   [The `public/` folder](#the-public-folder) below.
+- **imp writes no source map.** A stack trace from production points into minified code. So handle
+  errors properly in your app, and do not depend on the stack trace:
+  - Put an error boundary around each part of the page that can fail on its own, such as the page of
+    a route or a dashboard card. See [Error boundaries](components.md#error-boundaries).
+  - Catch the rejection of async work that runs outside a mount, such as a fetch in an event
+    handler. Show the failure to the user.
+  - Report each error with a clear message and its context: the screen, the action and the input
+    that failed. That report identifies the failure without a map back to your source.
 
 With a JavaScript module in place of a page, `imp build` emits that module as one self-contained
 file. imp compiles in imp itself and every dependency. You can drop the result into any application,

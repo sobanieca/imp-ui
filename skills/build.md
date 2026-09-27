@@ -153,6 +153,10 @@ behaviour is then the job of your worker. See [service-worker](service-worker.md
 - **A static asset belongs in `public/`.** imp does not copy a stylesheet or an image that sits next
   to your sources, and it returns 404 in production, although `imp start` serves it. The dev server
   serves the whole project. The build ships `public/` and the bundles.
+- **imp writes no source map, and no option turns one on.** A production stack trace points into
+  minified code. Handle errors in the app instead: an `error` boundary around each subtree that can
+  fail, a `catch` on async work outside a mount, and a report with a message and its context. See
+  [components](components.md).
 - **Do not run a build to test a change.** `imp start` serves the source with live reload. Build
   when you ship.
 - **Preview a `--pwa` build on a different port from `imp start`.** Its offline worker has root

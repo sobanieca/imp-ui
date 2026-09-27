@@ -52,6 +52,8 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   imp always compiles a declared dependency in, at the vendored, pinned version. That keeps the
   option one boolean, and not a list per import. An HTML entry compiles imp in anyway. The page is
   its own host, and its production output has no import map that could resolve a bare import.
+- **imp writes no source map.** There is no flag and no key that turns one on. The error handling of
+  the app identifies a production error, not a map back to the source.
 
 ## Consequences
 
@@ -84,5 +86,10 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
 - `imp install` closes the consumer side of this contract. While it vendors a package, it treats
   `imp` as external. So a published bundle that somebody built with `targetImpHost` keeps its bare
   `imp` imports. imp does not resolve them against a registry. See `vendored-dependencies.md`.
+- A stack trace from a production build points into minified code. So the app must implement proper
+  error handling. It puts an error boundary around each subtree that can fail on its own, see
+  `error-boundaries.md`. It catches the rejection of async work that is not part of a mount. It
+  reports each error with a message and a context that identify the failure without the stack trace.
+  The output has no second set of files to keep private or to upload to a service.
 - esbuild in wasm is about ten times slower than native esbuild. imp pays that cost per `imp build`
   run, and never while it serves.

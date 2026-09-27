@@ -43,16 +43,6 @@ block a procurement, in place of being a preference.
 
 ## Tier 2 - what `imp build` emits
 
-- **There is no source map anywhere.** The word `sourcemap` appears nowhere in `cli/src`. The
-  esbuild options in `cli/src/build.js` never set it. So the output is minified, with no map. Every
-  stack trace in production is unreadable, and no backend for error reporting can symbolicate it.
-  imp needs at least an external map that a person turns on. imp must emit that map, and not
-  reference it from the bundle. So somebody can upload it to a service for reporting, and nobody
-  serves it. With the missing global seam for an error, below, this is the whole reason why an imp
-  app in production is blind about diagnostics. **Decision:** `imp build` always writes external
-  source maps. There is no flag and no key. The maps go into a sibling folder of the output, such as
-  `dist-sourcemaps/`, and no bundle references them. So an upload of `dist/` as it is never exposes
-  the source.
 - **imp does not put a content hash on an entry file.** Only `chunkNames` and `assetNames` carry
   `[hash]`, in `cli/src/build.js`. The output of an entry keeps its plain name. So a long-term cache
   of the entry point is impossible, and every deploy depends on the cache headers of the host being
@@ -171,18 +161,18 @@ block a procurement, in place of being a preference.
 
 ## The suggested order
 
-Do the source maps, and the global seam for an error and for a log, first. Together they make a live
-app possible to debug. Then do the CSP, the hash on an entry file, and the change of one line, which
-is the escaping in `envInjectionScript`. Then harden the URLs in the router. Then write the ADR
-about the scope with no SSR, and the metadata per route. The policy about stability at 1.0, and a
-Windows target, are the items that decide whether a team can adopt imp at all. The rest decide
-whether the app holds up after they adopt it.
+Do the global seam for an error and for a log first. It makes a live app possible to debug. Then do
+the CSP, the hash on an entry file, and the change of one line, which is the escaping in
+`envInjectionScript`. Then harden the URLs in the router. Then write the ADR about the scope with no
+SSR, and the metadata per route. The policy about stability at 1.0, and a Windows target, are the
+items that decide whether a team can adopt imp at all. The rest decide whether the app holds up
+after they adopt it.
 
 ## ADR impact
 
-Several of these items land a decision that is worth a record. Those are a policy about a source
-map, a decision about a CSP and about the hash of an inline script, for
-`adr/production-bundling.md`, a seam for reporting an error, beside the ADR about analytics, and an
-ADR about a scope that renders on the client only. Each one belongs in `adr/` when the matching item
-lands, and not before. The one exception is `client-rendered-only.md`. It records a decision that
-somebody already made, and somebody can write it now.
+Several of these items land a decision that is worth a record. Those are a decision about a CSP and
+about the hash of an inline script, for `adr/production-bundling.md`, a seam for reporting an error,
+beside the ADR about analytics, and an ADR about a scope that renders on the client only. Each one
+belongs in `adr/` when the matching item lands, and not before. The one exception is
+`client-rendered-only.md`. It records a decision that somebody already made, and somebody can write
+it now.
