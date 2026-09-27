@@ -6,21 +6,21 @@ There is nothing to install and nothing to configure.
 
 The library is split by subject, so an import line shows which part of imp a file uses:
 
-| Specifier            | What it holds                                                                | Page                                     |
-| -------------------- | ---------------------------------------------------------------------------- | ---------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                        | [Components](components.md)              |
-| `imp/html`           | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...)    | [Rendering](rendering.md)                |
-| `imp/state`          | `initState`, `useState`, `computed`                                          | [State](state.md)                        |
-| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `useRoute`, `url` | [Routing](routing.md)                    |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                       | [Theming](theming.md)                    |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`          | [Translations](i18n.md)                  |
-| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                          | [Logging](logging.md)                    |
-| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`           | [HTTP](http.md)                          |
-| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... from the Lucide icon set                  | [Standard components](std-components.md) |
-| `imp/service-worker` | `startDevMode`, for a service worker of your own                             | [CLI](cli.md#your-own-service-worker)    |
-| `imp/std`            | The standard component library, split by group                               | [Standard components](std-components.md) |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, and the hooks                         | [Testing](testing.md)                    |
-| `imp/preview`        | `mockModule`, for a `*.preview.js` file                                      | [CLI](cli.md#imp-preview)                |
+| Specifier            | What it holds                                                                               | Page                                     |
+| -------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                       | [Components](components.md)              |
+| `imp/html`           | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...)                   | [Rendering](rendering.md)                |
+| `imp/state`          | `initState`, `useState`, `computed`                                                         | [State](state.md)                        |
+| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute`, `url` | [Routing](routing.md)                    |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                                      | [Theming](theming.md)                    |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                         | [Translations](i18n.md)                  |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                         | [Logging](logging.md)                    |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                          | [HTTP](http.md)                          |
+| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... from the Lucide icon set                                 | [Standard components](std-components.md) |
+| `imp/service-worker` | `startDevMode`, for a service worker of your own                                            | [CLI](cli.md#your-own-service-worker)    |
+| `imp/std`            | The standard component library, split by group                                              | [Standard components](std-components.md) |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, and the hooks                                        | [Testing](testing.md)                    |
+| `imp/preview`        | `mockModule`, for a `*.preview.js` file                                                     | [CLI](cli.md#imp-preview)                |
 
 A typical screen imports from the two or three specifiers it uses:
 
