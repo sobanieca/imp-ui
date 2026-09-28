@@ -116,6 +116,10 @@ for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
 | `toBeTruthy()`                           | truthy (`.not.toBeTruthy()` for falsy)                 |
 | `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives you `>=` and `<=`)    |
 | `toThrow(message?)`                      | function throws; optionally message contains / matches |
+| `toHaveAccessibleControls()`             | e2e only - every control has a role and a name         |
+
+`toHaveAccessibleControls()` reads the accessibility tree of a page, so it works in an e2e spec
+only. See [How to check what a screen reader gets](#how-to-check-what-a-screen-reader-gets) below.
 
 That is the whole set. There is no `toBeInstanceOf`, `toBeCloseTo` and `toHaveLength`. A check of an
 instance, or of a float tolerance, is an `expect.*` placeholder inside `toEqual`. A length is a
@@ -464,10 +468,42 @@ await page.click('imp-submit-button >>> imp-button >>> button')
 
 ### How to check what a screen reader gets
 
-A test of accessibility reads the accessibility tree of the browser, not the DOM. The browser
-computes that tree from every shadow root at once, with the name, the role and the state of each
-element, in the same way that a screen reader reads it. Ask the page for a snapshot below one
-element:
+A screen reader cannot use a control that has no name or no role. One matcher checks both for a
+whole page, or for the part below one element:
+
+```js
+test('every control has a name and a role', async ({ page }) => {
+  await expect(page).toHaveAccessibleControls()
+  await expect(await page.$('#checkout')).toHaveAccessibleControls()
+})
+```
+
+The matcher reads the accessibility tree of the browser and reports two kinds of problem:
+
+- **A control with no accessible name.** This is a button, a link, a field, a checkbox, a radio, a
+  switch, a slider, a tab, an option, a menu item or a tree item that a screen reader can only
+  announce by its role.
+- **A focusable element with no role.** This is an element that Tab reaches through a `tabindex`, or
+  an editable region, which the browser exposes as a plain container. A screen reader then does not
+  say what the element does.
+
+The matcher returns a promise, so always `await` it. A failure lists each control, with the path of
+components that holds it:
+
+```
+expect(page).toHaveAccessibleControls()
+  button with no accessible name: imp-toolbar >>> imp-button >>> button
+  focusable element with no role: invoice-list >>> div.card
+```
+
+The matcher is not a full audit. It does not check contrast, the order of headings, or the text of a
+name. `imp lint` finds an image with no `alt`, and an icon-only button with no name, before the app
+runs. See **[Linting](lint.md)**.
+
+To check a name, a role or a state in detail, read the tree yourself. A test of accessibility reads
+the accessibility tree of the browser, not the DOM. The browser computes that tree from every shadow
+root at once, with the name, the role and the state of each element, in the same way that a screen
+reader reads it. Ask the page for a snapshot below one element:
 
 ```js
 test('the checkout form names every field', async ({ page }) => {

@@ -158,6 +158,97 @@ const fail = (lines) => {
   throw new ExpectationError(lines.join('\n'))
 }
 
+const CONTROL_ROLES = new Set([
+  'button',
+  'checkbox',
+  'combobox',
+  'DisclosureTriangle',
+  'link',
+  'listbox',
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio',
+  'option',
+  'radio',
+  'searchbox',
+  'slider',
+  'spinbutton',
+  'switch',
+  'tab',
+  'textbox',
+  'tree',
+  'treeitem',
+])
+
+const ROLELESS = new Set(['generic', 'none', 'presentation', 'Unknown'])
+
+const isPuppeteerPage = (value) => typeof value?.accessibility?.snapshot === 'function'
+
+const isPuppeteerElement = (value) =>
+  typeof value?.asElement === 'function' && typeof value?.frame?.page === 'function'
+
+const describeElement = (element) => {
+  const describe = (node) =>
+    `${node.localName}${node.id ? `#${node.id}` : ''}${
+      [...node.classList].map((name) => `.${name}`).join('')
+    }`
+  const parts = [describe(element)]
+  let host = element.getRootNode().host
+  while (host) {
+    parts.unshift(describe(host), '>>>')
+    host = host.getRootNode().host
+  }
+  return parts.join(' ')
+}
+
+const focusableWithoutNativeRole = (scope) => {
+  const NATIVE = 'a[href], button, input, select, textarea, summary, iframe, audio, video'
+  const found = []
+  const visit = (root) => {
+    for (const element of root.querySelectorAll('*')) {
+      if (element.shadowRoot) visit(element.shadowRoot)
+      const inTabOrder = element.hasAttribute('tabindex') && element.tabIndex >= 0
+      const editingRoot = element.isContentEditable && !element.parentElement?.isContentEditable
+      if (!inTabOrder && !editingRoot) continue
+      if (element.matches(NATIVE) || !element.checkVisibility()) continue
+      found.push(element)
+    }
+  }
+  visit(scope ?? document)
+  return found
+}
+
+async function accessibilityProblems(target) {
+  const page = isPuppeteerPage(target) ? target : target.frame.page()
+  const root = isPuppeteerPage(target) ? null : target
+  const tree = await page.accessibility.snapshot({ root, interestingOnly: false })
+  const problems = []
+  const unnamed = []
+  const walk = (node) => {
+    if (!node) return
+    if (CONTROL_ROLES.has(node.role) && !node.name) unnamed.push(node)
+    for (const child of node.children ?? []) walk(child)
+  }
+  walk(tree)
+  for (const node of unnamed) {
+    const element = await node.elementHandle()
+    const where = element ? await element.evaluate(describeElement) : 'an element'
+    problems.push(`${node.role} with no accessible name: ${where}`)
+  }
+  const candidates = root
+    ? await root.evaluateHandle(focusableWithoutNativeRole)
+    : await page.evaluateHandle(focusableWithoutNativeRole, null)
+  for (const property of (await candidates.getProperties()).values()) {
+    const element = property.asElement()
+    if (!element) continue
+    const node = await page.accessibility.snapshot({ root: element, interestingOnly: false })
+    if (!node || ROLELESS.has(node.role)) {
+      problems.push(`focusable element with no role: ${await element.evaluate(describeElement)}`)
+    }
+  }
+  return problems
+}
+
 const describeCall = (negated, matcher, argument) =>
   `expect(received)${negated ? '.not' : ''}.${matcher}(${argument !== undefined ? argument : ''})`
 
@@ -214,6 +305,23 @@ function buildMatchers(received, negated) {
       check(received < expected, 'toBeLessThan', {
         expected: stringify(expected),
         argument: stringify(expected),
+      })
+    },
+    toHaveAccessibleControls() {
+      const call = `expect(page)${negated ? '.not' : ''}.toHaveAccessibleControls()`
+      if (!isPuppeteerPage(received) && !isPuppeteerElement(received)) {
+        fail([
+          `${call} - the received value must be the page of an e2e test, or an element from page.$()`,
+        ])
+      }
+      return accessibilityProblems(received).then((problems) => {
+        if ((problems.length === 0) !== negated) return
+        fail([
+          call,
+          ...(negated
+            ? ['  every control has a role and an accessible name']
+            : problems.map((problem) => `  ${problem}`)),
+        ])
       })
     },
     toThrow(expected) {

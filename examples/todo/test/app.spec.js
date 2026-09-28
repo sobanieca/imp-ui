@@ -82,6 +82,7 @@ test('a visitor without a session gets the sign-in form', async ({ page }) => {
   expect(await eventually(() => isPresent(page, 'todo-sign-in'), true)).toEqual(true)
   expect(await textOf(page, 'todo-sign-in >>> h1')).toEqual('Sign in')
   expect(await isPresent(page, 'todo-list-screen')).toEqual(false)
+  await expect(page).toHaveAccessibleControls()
 })
 
 test('the form checks the email before it signs in', async ({ page }) => {
@@ -108,6 +109,7 @@ test('a sign-in loads the todos, through one retried 503', async ({ page }) => {
   expect(await textOf(page, 'imp-user-card')).toContain('Ada Lovelace')
   expect(await page.title()).toEqual('Todos - Todo')
   expect(await textOf(page, 'todo-progress >>> .label')).toEqual('1 of 3 done')
+  await expect(page).toHaveAccessibleControls()
 })
 
 test('the account menu holds the settings, so every section fits a narrow desktop bar', async ({ page }) => {
@@ -200,6 +202,7 @@ test('a title opens the todo, and the edit dialog saves it', async ({ page }) =>
   )
     .toEqual('Write the first screen')
   expect(page.url()).toMatch(/\/todos\/2$/)
+  await expect(page).toHaveAccessibleControls()
   await clickButton(page, 'Edit')
   await page.waitForSelector('todo-detail-screen >>> textarea')
   await page.type('todo-detail-screen >>> textarea', 'Use **imp/std** components.')

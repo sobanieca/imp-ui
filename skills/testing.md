@@ -41,14 +41,15 @@ For a parameterized test, write a plain `for...of` loop around `test()`. There i
 
 Call `expect(value)`. You can invert every matcher with `.not`:
 
-| Matcher                                  | Passes when                                                |
-| ---------------------------------------- | ---------------------------------------------------------- |
-| `toEqual(x)`                             | data compares by structure, everything else by identity    |
-| `toContain(x)`                           | substring, or iterable contains element                    |
-| `toMatch(pattern)`                       | string matches a RegExp or contains a substring            |
-| `toBeTruthy()`                           | truthy (`.not.toBeTruthy()` for falsy)                     |
-| `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives `>=` and `<=`)            |
-| `toThrow(message?)`                      | function throws; `await expect(fn).toThrow(...)` for async |
+| Matcher                                  | Passes when                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| `toEqual(x)`                             | data compares by structure, everything else by identity            |
+| `toContain(x)`                           | substring, or iterable contains element                            |
+| `toMatch(pattern)`                       | string matches a RegExp or contains a substring                    |
+| `toBeTruthy()`                           | truthy (`.not.toBeTruthy()` for falsy)                             |
+| `toBeGreaterThan(n)` / `toBeLessThan(n)` | numeric comparison (`.not` gives `>=` and `<=`)                    |
+| `toThrow(message?)`                      | function throws; `await expect(fn).toThrow(...)` for async         |
+| `toHaveAccessibleControls()`             | e2e only: every control of a page or element has a role and a name |
 
 **That is the whole set.** There is no `toBe`, `toBeInstanceOf`, `toBeCloseTo`, `toHaveLength` or
 `toHaveBeenCalled`:
@@ -196,8 +197,18 @@ test. The browser console and the network stream to the terminal. A failing test
 under `.imp/screenshots/`. To use a different entry page, set `test.entry` in `imp.json`, see
 [config](config.md).
 
-**To assert what a screen reader gets, read the accessibility tree, not the DOM.** The tree is flat
-across every shadow root, and the browser computes the names, the roles and the states in it:
+**Check every control of a page with one matcher.** It reports a control with no accessible name,
+and a focusable element with no role. It returns a promise, so always `await` it. It takes the page,
+or an element from `page.$()`. It is not a full audit: it does not check contrast or headings.
+
+```js
+await expect(page).toHaveAccessibleControls()
+await expect(await page.$('#checkout')).toHaveAccessibleControls()
+```
+
+**To assert a name, a role or a state in detail, read the accessibility tree, not the DOM.** The
+tree is flat across every shadow root, and the browser computes the names, the roles and the states
+in it:
 
 ```js
 const root = await page.$('#checkout')
