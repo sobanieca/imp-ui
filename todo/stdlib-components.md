@@ -1,15 +1,15 @@
 # Standard component library - what is left
 
-The catalog is built, and `adr/short-component-catalog.md` records its shape: one component per job,
-a prop for a variant, and an infinite scroll in place of a pager. The groups are `imp/std`,
-`layout`, `inputs`, `display`, `shell`, `feedback` and `data`. Each component ships a skill file, a
-preview and a unit test. This file lists the work that is still owed.
+The catalog is built, and `adr/short-component-catalog.md` records its shape. This file lists the
+work that waits for a consumer, for a browser, or for a person.
 
 ## Responsive
 
 - **A `breakpoint` value with the shape of a state** is still owed. A person must be able to read it
   and to watch it. It serves the structural swap that CSS cannot express. `table` switches to cards
-  through a container query, so no consumer exists yet. Build it with the first consumer.
+  through a container query. `shell` swaps its navigation at the one breakpoint, and it reads its
+  own media query, because nothing outside it needs the value. So no consumer exists yet. Build the
+  state with the first consumer outside `shell`.
 
 ## Components that wait
 
@@ -18,17 +18,19 @@ preview and a unit test. This file lists the work that is still owed.
   forbids.
 - **`timeline`, `image` with a zoom, and `qrCode`** are not built. Each waits for a call site.
 
+## Platform features that wait
+
+- **`closedby="any"` on `<dialog>`** ships in Chrome 134 and Firefox 141, and in a Safari preview
+  only. When Safari ships it, remove the listener of the seam for a click on the backdrop, and let
+  the attribute close the modal. Keep `beforeClose` on that path. See `adr/overlay-top-layer.md`.
+
 ## Verification that is still owed
 
-The agents that built the new components looked at each one in Chrome, in the light theme. These
-checks are open:
+The e2e suite runs in Chrome. A screenshot pass in Chrome covered the light theme, the dark theme
+and the forced-colours mode of the components. These checks cannot run in that suite, so a person
+runs them by hand:
 
 - Firefox and Safari, for the native `<progress>`, `<input type="range">` and `<details name>`
-  styles.
-- The dark theme and the forced-colours mode of every new component.
-- A screen reader pass over `table`, `comboBox`, `calendar` and `toast`.
-
-## Open questions
-
-- **The accessibility baseline.** The contract about ARIA and the keyboard that every interactive
-  component must meet is in `todo/accessibility.md`.
+  styles, and for the anchored panels of `menuButton`, `datePicker` and `comboBox`.
+- A screen reader pass over `table`, `comboBox`, `calendar`, `splitPane` and `toast`, with each
+  supported pair of screen reader and browser.
