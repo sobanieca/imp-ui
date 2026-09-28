@@ -15,6 +15,7 @@ a typography value:
 // dark.js
 export default {
   name: 'dark',
+  base: 'imp-dark',
   tokens: {
     'color-primary': '#7c9cff',
     'color-secondary': '#94a3b8',
@@ -26,6 +27,9 @@ export default {
 - **`tokens`** is a flat map of a token name to a CSS value. A key is a bare name, such as
   `color-primary`. imp adds an `--imp-` prefix. The CSS custom property that your styles reference
   is `--imp-color-primary`. There is no nesting. There is one flat namespace.
+- **`base`** names a built-in theme to start from. imp takes every token from it, then writes your
+  tokens over it. Without a `base`, a theme must give a value to every token, see
+  [Token names](#token-names).
 - **`name`** labels the theme. It helps in a theme switcher UI, and when you store a choice.
 - **imp reads light or dark from `color-surface`.** imp checks the lightness of that token. A dark
   surface makes a dark theme. imp then sets the `color-scheme` of the page to match. A native form
@@ -370,11 +374,9 @@ applies a theme:
 }
 ```
 
-The set of tokens grows with the component library of imp. Each component brings the tokens that it
-needs into the built-in themes. A few tokens exist for your own layout, not for a component. They
-are `space-page`, `shadow-sm`, `breakpoint-desktop` and the palette. This page names each of them.
-These are the tokens that the built-in themes ship today. A theme of your own must define all of
-them:
+The set of tokens is fixed. A few tokens exist for your own layout, not for a component. They are
+`space-page`, `shadow-sm`, `breakpoint-desktop` and the palette. This page names each of them. A
+theme of your own must define all of them:
 
 | Group      | Tokens                                                                                                                                                                                                                                                   |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -384,6 +386,11 @@ them:
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
+
+**imp tells you when a theme is not complete.** When an applied theme has no value for one of these
+tokens, `applyTheme` logs a warning that names the missing tokens. The theme still applies. A
+component then falls back to its built-in value, and a token of the previous theme can stay on the
+page. A theme with a `base` is always complete, because imp fills every token from the base.
 
 `color-on-primary` and `color-on-danger` are the text colors that sit **on** those backgrounds. A
 theme can pick a readable pair, instead of hoping that white works. There is no hover token and no

@@ -9,6 +9,7 @@ renders again.
 // dark.js
 export default {
   name: 'dark',
+  base: 'imp-dark',
   tokens: { 'color-primary': '#7c9cff', 'color-secondary': '#94a3b8', 'color-surface': '#1f2028' },
 }
 ```
@@ -95,7 +96,11 @@ await init({
   `start` and `end`, and they already mirror. `init` and `setLang` write `dir` for you, see
   [i18n](i18n.md).
 
-## The tokens that the built-in themes ship
+## The tokens
+
+The list is fixed. A theme with no `base` must give every token a value. When one is missing,
+`applyTheme` warns and names it, then applies the theme anyway. A theme with a `base` is always
+complete.
 
 | Group      | Tokens                                                                                                                                                                                                                                                   |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

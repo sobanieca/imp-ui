@@ -40,8 +40,16 @@ a theme is complete. It does the following:
 - It overwrites every token that it carries. It does **not** compare against the previous theme, and
   it removes no property. A theme must define the **full** set of tokens. A partial theme is a bug
   in the theme, and it is the responsibility of the app. imp does not compensate for it. So a
-  complete theme fully replaces a complete theme. imp can add a check at runtime later, which warns
-  when an applied theme has no value for a known token key. But there is no cleanup pass per change.
+  complete theme fully replaces a complete theme. There is no cleanup pass per change.
+- **The list of token keys is frozen, and `applyTheme` checks a theme against it.** The list is the
+  set of keys that the built-in themes carry, written out as one constant. When an applied theme has
+  no value for a key on the list, `applyTheme` warns through the shared logger. The warning names
+  the missing keys and the count. It is not fatal: imp still applies the tokens that the theme has.
+  A component reads every token with its built-in value as the CSS fallback, so a missing token
+  degrades to the default look, or to the value of the previous theme. The check costs one pass over
+  63 keys per call. A theme with a `base` never warns, because the base fills every key. A new token
+  must go into the list and into every built-in theme in the same change, and a test asserts that
+  the two agree.
 - It sets `color-scheme` on the same root, from the lightness of `color-surface`. A theme carries no
   mode field. A dark theme is a theme whose surface is dark, so imp reads that fact from the colour
   instead of a second field that can disagree with it. `colorSchemeOf(tokens)` parses the hex value,

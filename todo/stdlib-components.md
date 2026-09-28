@@ -11,12 +11,6 @@ preview and a unit test. This file lists the work that is still owed.
   and to watch it. It serves the structural swap that CSS cannot express. `table` switches to cards
   through a container query, so no consumer exists yet. Build it with the first consumer.
 
-## Theme
-
-- **A check about a complete theme.** After somebody settles the full list of `--imp-*` tokens,
-  freeze that list. Then make `applyTheme` warn, through the shared `impLogger`, when an applied
-  theme has no value for a known token key. The warning must not be fatal.
-
 ## Components to build
 
 - **`splitPane`**, a set of panes that a user can resize. Build it. The CSS `resize` property drags
