@@ -11,7 +11,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/state`          | `initState`, `useState`, `computed`                                                         |
 | `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute`, `url` |
 | `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                          |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                                      |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`, `contrastProblems`                                  |
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                         |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                         |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                    |

@@ -2481,7 +2481,15 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const pick = (label, choice) =>
         [...host(label).shadowRoot.querySelectorAll('.segment')]
           .find((segment) => segment.textContent.trim() === choice).click()
+      const contrast = () =>
+        [...(globalThis.impDeep('.contrast', editorHost)?.querySelectorAll('imp-text') ?? [])]
+          .map((line) => line.shadowRoot.textContent.trim()).join(', ') || 'no contrast problem'
+      type('Primary', '#ffd400')
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const failing = contrast()
       type('Primary', '#8821ac')
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const passing = contrast()
       const primary = token('color-primary')
       const derived = token('color-on-primary')
       pick('Border radius', 'none')
@@ -2492,6 +2500,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const loader = token('loader')
       return {
         knobs: knobs.join(', '),
+        failing,
+        passing,
         primary,
         derived,
         flat,
@@ -2825,6 +2835,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `imp-dark font token, from the theme file that replaces it: ${themed.darkFont}`,
       `brand surface token: ${themed.custom}`,
       `theme editor knobs: ${themeEdits.knobs}`,
+      `contrast after a yellow primary: ${themeEdits.failing}`,
+      `contrast after a purple primary: ${themeEdits.passing}`,
       `after picking a primary: ${themeEdits.primary} (on-primary ${themeEdits.derived})`,
       `after picking radius none: ${themeEdits.flat}`,
       `after picking a shadow colour: ${themeEdits.shadow}`,
@@ -4222,11 +4234,12 @@ Deno.test('imp preview frames a page with the entry file, keeping its head', () 
   )
 })
 
-Deno.test('a derived theme puts white text on a saturated primary and dark text on a pale one', () => {
+Deno.test('a derived theme puts white text on a deep primary and dark text on a light one', () => {
   const onPrimary = (primary) =>
     buildTokens({ ...THEME_DEFAULTS, primary, mode: 'light' })['color-on-primary']
-  check(onPrimary('#ef4444') === '#ffffff', 'a saturated red gets white text')
-  check(onPrimary('#ea580c') === '#ffffff', 'a saturated orange gets white text')
+  check(onPrimary('#dc2626') === '#ffffff', 'a deep red gets white text')
+  check(onPrimary('#c2410c') === '#ffffff', 'a deep orange gets white text')
+  check(onPrimary('#ef4444') !== '#ffffff', 'a red below 4.5:1 against white gets dark text')
   check(onPrimary('#f59e0b') !== '#ffffff', 'a pale amber gets dark text')
   check(onPrimary('#0ea5e9') !== '#ffffff', 'a pale sky blue gets dark text')
 })

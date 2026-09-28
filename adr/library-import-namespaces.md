@@ -28,7 +28,7 @@ exactly the public names. An implementation module stays internal, and app code 
 | `imp/html`           | `el`, `html`, one factory per HTML tag                                    |
 | `imp/state`          | `initState`, `useState`, `computed`                                       |
 | `imp/router`         | `router`, `area`, `route`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
-| `imp/theme`          | `theme`, `applyTheme`                                                     |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`, `contrastProblems`                |
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
 | `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        |

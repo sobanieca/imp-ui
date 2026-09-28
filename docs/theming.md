@@ -277,12 +277,26 @@ swatch to open the picker of the browser. A font is a `comboBox`: pick a suggest
 font stack. A step is a `segmented` row of buttons.
 
 imp **derives** everything else. From the primary color, it picks a readable `color-on-primary`.
-That is white when white reaches a contrast of 3:1 against the primary, and a near-black tint of the
-same hue otherwise. A saturated red or green gets white text, and a pale amber gets dark text. When
-the automatic choice does not match your brand, set `color-on-primary` by hand in the JSON. From the
-secondary color, imp builds the surface, sunken, hover, border and text colors. They share one hue,
-and they land at a lightness that is safe for the contrast of a light theme or a dark theme. The
-page re-skins while you type, on the real components, and your choices survive a reload.
+That is white when white reaches a contrast of 4.5:1 against the primary. Otherwise it is a
+near-black tint of the same hue, when that tint reads better. A saturated blue gets white text, and
+a pale amber gets dark text. When the automatic choice does not match your brand, set
+`color-on-primary` by hand in the JSON. From the secondary color, imp builds the surface, sunken,
+hover, border and text colors. They share one hue, and they land at a lightness that is safe for the
+contrast of a light theme or a dark theme. The page re-skins while you type, on the real components,
+and your choices survive a reload.
+
+The derivation keeps muted text and error text readable. When `color-secondary` reads below 4.5:1 on
+the surface or on the sunken surface, imp moves its lightness until it reads. In a dark theme, the
+red of `color-danger` is too dark for error text. So a dark theme gets a lighter red, as a color of
+its own, with a dark `color-on-danger` on it.
+
+**The editor checks the contrast of the theme while you edit it.** Under the two tabs, it lists
+every pair of a text token and a background token that is below 4.5:1, the WCAG AA level for body
+text. A pair reads as `color-primary on color-surface: 1.4:1`. A knob always derives readable
+neutrals, so a problem usually comes from a hand edit in the JSON, or from a pale primary that is
+also the color of a link. When every pair passes, the editor says so. See
+**[How to check the contrast of a theme](#how-to-check-the-contrast-of-a-theme)** for the list of
+pairs, and for the same check in a test.
 
 **Tokens** is the second tab. It holds the whole theme as JSON, in a code editor that grows with the
 text. Every token that the knobs drive is there, and so is every token that they do not, such as
@@ -307,6 +321,40 @@ For a light theme and a dark theme, edit each one in turn, and save two files. A
 passes the second one to `applyTheme`. From that point the generated file is yours to edit by hand.
 A web font that you name in the editor shows on the page only when it is loaded there. See
 **[Fonts](#fonts)**. The file is a starting point, not a format that the editor owns.
+
+## How to check the contrast of a theme
+
+A custom theme is where contrast breaks. `contrastProblems(tokens)` from `imp/theme` runs the same
+check as the theme editor. It returns one entry for each pair that is below 4.5:1, and an empty
+array when every pair passes:
+
+```js
+import { applyTheme, contrastProblems } from 'imp/theme'
+import { expect, test } from 'imp/test'
+import brand from '../src/theme.js'
+
+test('the brand theme keeps every text readable', () => {
+  expect(contrastProblems(applyTheme(brand).tokens)).toEqual([])
+})
+```
+
+An entry has the shape
+`{ text: 'color-secondary', background: 'color-surface-sunken', ratio: 4.35 }`. The check reads
+these pairs, because the standard components draw text in these combinations:
+
+| Text               | Background                                                                       |
+| ------------------ | -------------------------------------------------------------------------------- |
+| `color-text`       | `color-surface`, `color-surface-sunken`, `color-surface-hover`, `background-app` |
+| `color-secondary`  | `color-surface`, `color-surface-sunken`, `background-app`                        |
+| `color-primary`    | `color-surface`, for a link                                                      |
+| `color-danger`     | `color-surface`, for an error message                                            |
+| `color-on-primary` | `color-primary`, for the label of a primary button                               |
+| `color-on-danger`  | `color-danger`, for the label of a danger button                                 |
+
+The check reads a hex color, and it follows a `var(--imp-...)` reference to another token. It skips
+a pair when one side is not a hex color, such as a gradient in `background-app`. Pass the tokens of
+the resolved theme. `applyTheme` returns that theme, with a `base` already filled in. The check does
+not measure the text of your own components, or a color that a component mixes at runtime.
 
 ## Token names
 

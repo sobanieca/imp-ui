@@ -1,4 +1,4 @@
-import { applyTheme, colorSchemeOf, theme } from 'imp/theme'
+import { applyTheme, colorSchemeOf, contrastProblems, theme } from 'imp/theme'
 import { expect, test } from 'imp/test'
 import { auroraLight, THEME_CHOICES } from '../src/theme.js'
 
@@ -25,4 +25,11 @@ test('a theme applies its tokens on top of the built-in base', () => {
   expect(theme.get().tokens['space-3']).toBeTruthy()
   expect(document.documentElement.style.getPropertyValue('--imp-color-primary')).toEqual('#a18dff')
   expect(document.documentElement.style.getPropertyValue('color-scheme')).toEqual('dark')
+})
+
+test('every text colour of both themes reads at the WCAG AA contrast', () => {
+  for (const choice of THEME_CHOICES) {
+    expect({ theme: choice.value, problems: contrastProblems(applyTheme(choice.theme).tokens) })
+      .toEqual({ theme: choice.value, problems: [] })
+  }
 })
