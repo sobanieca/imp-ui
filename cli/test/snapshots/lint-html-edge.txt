@@ -9,4 +9,4 @@ error[imp/unreachable-module]: nothing imports commented.js - no entry page, tes
  --> commented.js:1:1
 
 Found 1 problem
-Checked 4 files
+Checked 5 files

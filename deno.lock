@@ -274,6 +274,16 @@
       "integrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ=="
     }
   },
+  "remote": {
+    "http://127.0.0.1:33419/chunks/app-JIL4SEZX.js": "be4baf12ffa52c4824b6193b19a9faa73eaaafdea8723f650cc22ba45686c82e",
+    "http://127.0.0.1:33419/chunks/chunk-JC4CZSEL.js": "d3ef7e8becd2b742bfbf234d64d8af710b778175eb35001f6539108a1f47d0e1",
+    "http://127.0.0.1:33419/chunks/chunk-YQHKTYU6.js": "ae11d7c9cd49a0101008ff276f7c9dbd1bb42c1863ab239acfc5881dd8f8096c",
+    "http://127.0.0.1:33419/chunks/lazy-PVQILWWK.js": "2ddc334fb5b9af234e014a74d1980a570ebb3a3b6af167a97c5b255124f95b55",
+    "http://127.0.0.1:39281/chunks/app-NDW7OLZO.js": "c498f1e422120c520af77dd7b63e42fb0759c4b4cfc5dc7be14a9e386566f4c5",
+    "http://127.0.0.1:39281/chunks/chunk-HQCOGD5B.js": "d3ef7e8becd2b742bfbf234d64d8af710b778175eb35001f6539108a1f47d0e1",
+    "http://127.0.0.1:39281/chunks/chunk-YQHKTYU6.js": "ae11d7c9cd49a0101008ff276f7c9dbd1bb42c1863ab239acfc5881dd8f8096c",
+    "http://127.0.0.1:39281/chunks/lazy-V4NXAX6A.js": "ffc36e6c7d08323f23593ff7da73315bdbb59f218b93b1bc209042eebb38e2a5"
+  },
   "workspace": {
     "dependencies": [
       "jsr:@deno/esbuild-plugin@^1.2.1",

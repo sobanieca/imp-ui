@@ -174,8 +174,20 @@ function impResolverPlugin(
   }
 }
 
+const publicPathOf = ({ isHtmlEntry, base }) => isHtmlEntry ? { publicPath: `${base}/` } : {}
+
 function buildEntryPoints(
-  { root, entryPoints, dependencies, inlineSources, outdir, impProvidedByHost, isHtmlEntry, flags },
+  {
+    root,
+    entryPoints,
+    dependencies,
+    inlineSources,
+    outdir,
+    impProvidedByHost,
+    isHtmlEntry,
+    flags,
+    base,
+  },
 ) {
   return runEsbuild({
     plugins: [
@@ -202,6 +214,7 @@ function buildEntryPoints(
     metafile: true,
     write: false,
     outdir,
+    ...publicPathOf({ isHtmlEntry, base }),
     entryNames: isHtmlEntry ? HASHED_NAMES : '[dir]/[name]',
     chunkNames: HASHED_NAMES,
     assetNames: HASHED_NAMES,
@@ -211,7 +224,7 @@ function buildEntryPoints(
 
 const SERVICE_WORKER_FILE = 'sw.js'
 
-function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags }) {
+function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags, base }) {
   return runEsbuild({
     plugins: [
       workerEntryPlugin(root, OFFLINE_WORKER_SOURCE),
@@ -240,6 +253,7 @@ function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags }) 
     write: false,
     outdir,
     assetNames: HASHED_NAMES,
+    publicPath: `${base}/`,
     loader: ASSET_LOADERS,
   })
 }
@@ -373,8 +387,7 @@ function renamedScripts(document, root, outdir, entries) {
     const output = entries.get(scriptPathOf(script.src, root))
     if (!output || !script.srcAttribute) continue
     const suffix = script.src.match(/[?#].*$/)?.[0] ?? ''
-    const prefix = isRootAbsolute(script.src) ? '/' : ''
-    renamed.set(script.srcAttribute.start, `${prefix}${asPosix(relative(outdir, output))}${suffix}`)
+    renamed.set(script.srcAttribute.start, `/${asPosix(relative(outdir, output))}${suffix}`)
   }
   return renamed
 }
@@ -503,6 +516,7 @@ export async function build(
     })),
   ]
 
+  const base = basePathOf(resolvedEnv)
   const result = await bundleApp({
     root,
     entryPoints,
@@ -512,6 +526,7 @@ export async function build(
     impProvidedByHost,
     isHtmlEntry,
     flags,
+    base,
   }, {
     inputs: [...scripts, ...inlineSources.map((_, index) => join(root, inlineModuleName(index)))],
     serviceWorker,
@@ -520,7 +535,6 @@ export async function build(
 
   assertEveryFlagFolded(result.outputFiles)
 
-  const base = basePathOf(resolvedEnv)
   const { code: outputFiles, notices: embedded } = splitLicenseNotices(result.outputFiles)
   const { manifests, unrecorded } = await bundledDependencyManifests({
     root,

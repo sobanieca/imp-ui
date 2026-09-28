@@ -7,6 +7,8 @@ built index.html -> dist/
   chunks/app-<hash>.js (<size>)
   chunks/env-<hash>.js (<size>)
   chunks/inline-1-<hash>.js (<size>)
+  chunks/logo-<hash>.svg (<size>)
+  chunks/relative-<hash>.js (<size>)
   favicon.svg (<size>)
   index.html (<size>)
   logo.svg (<size>)
@@ -33,7 +35,11 @@ built index.html -> dist/
     <p>Write href="/docs" in text, and keep it as text.</p>
     <textarea><script type="module" src="/in-textarea.js"></script></textarea>
     <div data-template="<script type=module src=/in-attribute.js></script>"></div>
+    <template><script type="module" src="/base/in-template.js"></script><img src="/base/in-template.svg"></template>
     <SCRIPT TYPE=module SRC=/base/chunks/app-<hash>.js></SCRIPT>
+    <script type="module" src="/base/chunks/relative-<hash>.js?v=2"></script>
     <script type="module" src="/base/chunks/inline-1-<hash>.js"></script>
   </body>
 </html>
+
+[imported asset url: "/base/chunks/logo-<hash>.svg"]

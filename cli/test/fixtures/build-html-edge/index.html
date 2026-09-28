@@ -14,7 +14,9 @@
     <p>Write href="/docs" in text, and keep it as text.</p>
     <textarea><script type="module" src="/in-textarea.js"></script></textarea>
     <div data-template="<script type=module src=/in-attribute.js></script>"></div>
+    <template><script type="module" src="/in-template.js"></script><img src="/in-template.svg"></template>
     <SCRIPT TYPE=module SRC=/app.js></SCRIPT>
+    <script type="module" src="relative.js?v=2"></script>
     <script type="module">
       import { greet } from './greet.js'
       const html = '<p>' + greet('a > b') + '</p>'

@@ -11,11 +11,11 @@ export const isLocalScriptSource = (src) =>
 
 const childrenOf = (node) => node?.childNodes ?? []
 
-function* elementsOf(node) {
+function* elementsOf(node, inTemplate = false) {
   for (const child of childrenOf(node)) {
     if (!child.tagName) continue
-    yield child
-    yield* elementsOf(child.content ?? child)
+    yield { element: child, inTemplate }
+    yield* elementsOf(child.content ?? child, inTemplate || child.tagName === 'template')
   }
 }
 
@@ -108,11 +108,11 @@ export function readHtml(source) {
   const scripts = []
   const urlAttributes = []
   let title = null
-  for (const element of elementsOf(document)) {
+  for (const { element, inTemplate } of elementsOf(document)) {
     const location = element.sourceCodeLocation
     if (!location) continue
     const urls = urlAttributesOf(source, element)
-    if (element.tagName === 'script') {
+    if (element.tagName === 'script' && !inTemplate) {
       const srcAttribute = urls.find((attribute) => attribute.name.toLowerCase() === 'src') ?? null
       scripts.push({ ...scriptOf(source, element), srcAttribute })
     }

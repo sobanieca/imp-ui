@@ -22,7 +22,8 @@ help the build.
 - imp bundles and minifies every `<script type="module" src="...">` to
   **`chunks/<name>-<hash>.js`**, and points the `src` of the built page at it. The HTML keeps its
   name. imp writes an inline module script to `chunks/inline-<n>-<hash>.js`, and the environment
-  values to `chunks/env-<hash>.js`. The built page has no inline script.
+  values to `chunks/env-<hash>.js`. imp writes no inline script. A classic inline `<script>` that
+  you write stays, and a strict Content Security Policy blocks it.
 - **Never reference a built script by its source name**, such as `/src/main.js` in a host config or
   a test of the output. Only the built HTML knows the hashed name.
 - imp adds `<link rel="modulepreload">` to `<head>` for every chunk that a page script imports
@@ -83,8 +84,8 @@ sources:
 | Legal comments in the bundled code (`/*! */`, `//!`, `@license`, `@preserve`) | Notices the source itself must carry            |
 
 imp merges a duplicate inside each source. It does **not** compare the two sources against each
-other, so a package can appear twice. Every emitted `.js` file starts with the line below. This
-covers a bundle, a chunk, and the file of an inline module script:
+other, so a package can appear twice. Every script that holds bundled code starts with the line
+below. This covers a bundle, a chunk, and the file of an inline module script:
 
 ```js
 /*! Third-party license notices: /LICENSES.txt */

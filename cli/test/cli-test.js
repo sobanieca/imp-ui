@@ -1044,10 +1044,16 @@ Deno.test('imp build', async (t) => {
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
       const licenses = await Deno.readTextFile(join(dir, 'dist', 'LICENSES.txt'))
       const entry = html.match(/src="\/(chunks\/app-[A-Z0-9]{8}\.js)"/)[1]
-      const module = await import(toFileUrl(join(dir, 'dist', entry)).href)
-      const usage =
-        `[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, lazy loadShout()='${await module
-          .loadShout()}']`
+      const { server, base } = serveFolder(() => join(dir, 'dist'))
+      let usage
+      try {
+        const module = await import(`${base}/${entry}`)
+        usage =
+          `[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, lazy loadShout()='${await module
+            .loadShout()}']`
+      } finally {
+        await server.shutdown()
+      }
       await assertSnapshot(
         'build-app',
         mask(
@@ -1399,17 +1405,21 @@ Deno.test('imp build reads adversarial HTML the way a browser does', async (t) =
   const mask = (text) =>
     text
       .replaceAll(dir, '<tmp>')
-      .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
+      .replace(/-[A-Z0-9]{8}\.(js|svg)/g, '-<hash>.$1')
       .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
   try {
     await t.step('build-html-edge', async () => {
       const result = await runImp(['build'], dir)
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html')).catch(() => '(none)')
+      const entry = html.match(/SRC=\/base\/(chunks\/app-[A-Z0-9]{8}\.js)/)?.[1]
+      const bundle = entry ? await Deno.readTextFile(join(dir, 'dist', entry)) : ''
+      const assetUrl = bundle.match(/"[^"]*logo-[A-Z0-9]{8}\.svg"/)?.[0] ?? '(none)'
       await assertSnapshot(
         'build-html-edge',
         mask(
           `${commandTranscript('imp build  (cwd: <tmp>)', result)}\n` +
-            `${section('dist/index.html', html)}\n`,
+            `${section('dist/index.html', html)}\n\n` +
+            `[imported asset url: ${assetUrl.replace(/-[A-Z0-9]{8}\.svg/, '-<hash>.svg')}]\n`,
         ),
       )
     })

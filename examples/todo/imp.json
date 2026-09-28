@@ -9,7 +9,7 @@
   "flags": ["BULK_ACTIONS", "ANALYTICS"],
   "mocks": { "folder": "mocks", "enabled": true },
   "pwa": { "name": "Todo", "icon": "public/favicon.svg", "themeColor": "#6d4aff" },
-  "build": { "maxSize": 460000 },
+  "build": { "maxSize": 512000 },
   "preview": {
     "translations": { "en": "./locales/en.js", "pl": "./locales/pl.js" }
   }

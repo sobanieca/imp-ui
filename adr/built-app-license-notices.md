@@ -36,9 +36,10 @@ The notice travels with the code, to what a user downloads. Two changes make one
   one of the two sources that the file merges. The other source is the SPDX identifier and the
   licence text that imp recorded for every bundled package at vendor time, see
   `vendored-dependency-manifest.md`. That source covers a package that carries no header comment.
-- **Every emitted script points at the file.** Each `.js` output starts with
-  `/*! Third-party license notices: /LICENSES.txt */`. That covers an entry bundle, a chunk that
-  loads lazily, and an inline module script that imp inlines again into the page. imp puts
+- **Every script with bundled code points at the file.** Each `.js` output of the bundler starts
+  with `/*! Third-party license notices: /LICENSES.txt */`. That covers an entry bundle, a chunk
+  that loads lazily, and the file of an inline module script. The environment values and the
+  registration of the service worker hold no third-party code, so they carry no reference. imp puts
   `IMP_BASEPATH` in front of that path, like any other root-absolute URL. So a reader who arrives at
   a minified bundle can go from there to the notices.
 - **When imp bundles no notice, it writes none.** With no notice from either source, imp produces no

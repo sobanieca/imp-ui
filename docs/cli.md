@@ -654,9 +654,11 @@ Content-Security-Policy: script-src 'self'; style-src 'self'
 That policy blocks every inline script and every `style` attribute. So a page that it protects runs
 only the scripts that your own server sends. imp builds for it:
 
-- **The built page has no inline script.** An inline `<script type="module">` of your page goes into
-  a hashed file under `chunks/`. The environment values go into `chunks/env-<hash>.js`. The script
+- **imp writes no inline script.** An inline `<script type="module">` of your page goes into a
+  hashed file under `chunks/`. The environment values go into `chunks/env-<hash>.js`. The script
   that registers the service worker of `--pwa` goes into a hashed file too.
+- **A classic inline `<script>` in your page stays as you wrote it**, and the policy blocks it. Move
+  its code into a module.
 - **A `style` prop works under the policy**, as an object and as a string. imp sets the style
   through the CSS object model, which the policy does not block. The styles of the components are
   constructed stylesheets, which it does not block either.
@@ -722,8 +724,8 @@ imp lists only the dependencies that your code imports. imp drops a dependency t
 declares and nothing imports, so that dependency contributes no notice. When a bundled dependency
 has no recorded licence, the build warns and names it. Run `imp install` to record the licences.
 
-Every JavaScript file that the build emits starts with a comment that names the licence file. That
-covers the bundles, the chunks that load lazily, and the files of your inline module scripts:
+Every script that holds bundled code starts with a comment that names the licence file. That covers
+the bundles, the chunks that load lazily, and the files of your inline module scripts:
 
 ```js
 /*! Third-party license notices: /LICENSES.txt */
