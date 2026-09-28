@@ -14,9 +14,10 @@ script, or answers the questions by hand.
 One command, `imp audit`, reads the committed manifests of the declared dependencies.
 
 - **The check uses the OSV database.** `imp audit` sends the name and the version of each npm
-  package to `https://api.osv.dev/v1/querybatch`. It then reads each advisory that OSV returns. OSV
-  needs no account and no key, and it merges the GitHub advisory database with other sources. imp
-  sends nothing else.
+  package to `https://api.osv.dev/v1/querybatch`, in batches of 1000. When OSV splits the result of
+  a package over pages, imp asks `/v1/query` for each next page until no page is left. It then reads
+  each advisory that OSV returns. OSV needs no account and no key, and it merges the GitHub advisory
+  database with other sources. imp sends nothing else.
 - **The report is one block per affected package.** Each advisory shows its identifier, its severity
   when the source gives one, its summary, the first version that fixes it, and a link to the
   advisory. The command exits with code 1 when it finds a vulnerability, so a CI step fails.

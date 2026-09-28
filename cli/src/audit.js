@@ -73,14 +73,29 @@ async function getJson(url) {
   return await response.json()
 }
 
-async function knownVulnerabilityIds(packages) {
+const postToOsv = (path, body) => postJson(`${OSV_API}${path}`, body)
+
+async function remainingPages(entry, pageToken, post) {
+  const ids = []
+  let token = pageToken
+  while (token) {
+    const page = await post('/query', { ...osvQuery(entry), page_token: token })
+    ids.push(...(page.vulns ?? []).map(({ id }) => id))
+    token = page.next_page_token
+  }
+  return ids
+}
+
+export async function knownVulnerabilityIds(packages, post = postToOsv) {
   const ids = []
   for (let start = 0; start < packages.length; start += OSV_BATCH_SIZE) {
     const batch = packages.slice(start, start + OSV_BATCH_SIZE)
-    const { results } = await postJson(`${OSV_API}/querybatch`, {
-      queries: batch.map(osvQuery),
-    })
-    batch.forEach((_, index) => ids.push((results[index]?.vulns ?? []).map(({ id }) => id)))
+    const { results } = await post('/querybatch', { queries: batch.map(osvQuery) })
+    for (const [index, entry] of batch.entries()) {
+      const result = results[index] ?? {}
+      const first = (result.vulns ?? []).map(({ id }) => id)
+      ids.push([...first, ...await remainingPages(entry, result.next_page_token, post)])
+    }
   }
   return ids
 }

@@ -13,7 +13,13 @@ import { clientScript } from '../src/client.js'
 import { createMocks } from '../src/mocks.js'
 import { createDevLog } from '../src/dev-log.js'
 import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
-import { auditedPackages, auditReport, describeVulnerability, osvQuery } from '../src/audit.js'
+import {
+  auditedPackages,
+  auditReport,
+  describeVulnerability,
+  knownVulnerabilityIds,
+  osvQuery,
+} from '../src/audit.js'
 import {
   bundledFileProblem,
   matchesIntegrity,
@@ -779,6 +785,35 @@ Deno.test('imp audit reports the known vulnerabilities of a package', async () =
     `--- query ---\n${
       JSON.stringify(osvQuery(forge))
     }\n\n--- vulnerable (${affected.vulnerable}) ---\n${affected.text}\n\n--- clean (${clean.vulnerable}) ---\n${clean.text}\n`,
+  )
+})
+
+Deno.test('imp audit follows every page of the OSV results', async () => {
+  const requests = []
+  const pages = {
+    'second': { vulns: [{ id: 'GHSA-2' }], next_page_token: 'third' },
+    'third': { vulns: [{ id: 'GHSA-3' }] },
+  }
+  const post = (path, body) => {
+    requests.push(`${path} ${body.page_token ?? body.queries.length}`)
+    if (path === '/querybatch') {
+      return Promise.resolve({
+        results: [{ vulns: [{ id: 'GHSA-1' }], next_page_token: 'second' }, {}],
+      })
+    }
+    return Promise.resolve(pages[body.page_token])
+  }
+  const ids = await knownVulnerabilityIds(
+    [{ name: 'forge', version: '1.0.0' }, { name: 'calm', version: '2.0.0' }],
+    post,
+  )
+  check(
+    JSON.stringify(ids) === JSON.stringify([['GHSA-1', 'GHSA-2', 'GHSA-3'], []]),
+    `the pages were not joined: ${JSON.stringify(ids)}`,
+  )
+  check(
+    requests.join(' | ') === '/querybatch 2 | /query second | /query third',
+    `unexpected requests: ${requests.join(' | ')}`,
   )
 })
 
