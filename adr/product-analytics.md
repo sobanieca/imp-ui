@@ -57,21 +57,25 @@ command. The docs describe each number of the report and the query behind it.
 - **The `error` record is the only error seam of imp.** It has three sources: `script` for an
   uncaught error, an unhandled rejection and a state subscriber that throws, `render` for an error
   in a component, and `request` for an `imp/http` request that fails on the network, times out, or
-  answers 5xx. The message is one line of 200 characters or fewer, and it has no stack. imp has no
-  `onError` and no log sink. An app that wants only its errors forwards the records where `type` is
-  `'error'`. A team that needs a stream of logs uses the SDK of its provider directly.
+  answers 5xx. The message is one line of 200 characters or fewer, and it has no stack. A message
+  carries the path of a URL only, never its origin or its query, and an `imp/http` error always gets
+  the request message. One failed request gives one record: an error that gave a `request` record
+  gives no second `script` or `render` record when nothing catches it. imp has no `onError` and no
+  log sink. An app that wants only its errors forwards the records where `type` is `'error'`. A team
+  that needs a stream of logs uses the SDK of its provider directly.
 - **imp calls a sink at once, and never awaits it.** The call happens in the same task as the event,
   so a sink runs before a hidden page can freeze. imp catches a sink that throws or rejects, logs it
   through the built-in logger, see `built-in-logger.md`, and goes on. A failed sink never becomes an
   `error` record, because that record would go to the same sink and fail again.
 - **`batch` flushes on hide.** `batch(send, { size, ms })` returns a sink that holds the records. It
-  sends at `size`, after `ms`, when the page hides, and when the sink is unregistered. imp flushes a
-  batch after it dispatches the `time` and `zone` records of that hide, in the same task. A batch
-  that an app writes by hand gets that order wrong. imp does not retry, because a retry needs
-  storage.
+  sends at `size`, after `ms`, when the page hides, when its `when` state stops being `true`, and
+  when the sink is unregistered. imp flushes a batch after it dispatches the `time` and `zone`
+  records of that hide, in the same task. A batch that an app writes by hand gets that order wrong.
+  imp does not retry, because a retry needs storage.
 - **Consent is a state.** `onAnalytics(sink, { when })` holds the records for that sink while the
-  state is not `true`. It keeps the entry view and the newest 199 records after it. imp does not
-  decide what consent means. The hold is per sink.
+  state is not `true`. It keeps the first held view and the newest 199 records, so an early
+  `track()` call does not push the entry view out. imp does not decide what consent means. The hold
+  is per sink.
 - **An app with no sink pays nothing.** The router, the route page, the component lifecycle, the
   state layer, the HTTP client and `imp-zone` report to a small shared module. That module drops a
   report while no sink is registered. None of them imports the collection. A zone adds its listeners

@@ -236,9 +236,18 @@ imp sends an `error` record for three sources:
 | `render`  | an error in a component, caught by an error boundary or by no boundary       | the first line of the message    |
 | `request` | an `imp/http` request that fails on the network, times out, or answers a 5xx | `request failed: 500 POST /path` |
 
-The message is one line of 200 characters or fewer. A request message has no query. The record has
-no stack. `imp build` writes no source map, so a stack from production points into minified code.
-The page, the view, the source and the message identify the failure.
+The message is one line of 200 characters or fewer. It never carries the origin or the query of a
+URL, because a query often holds personal data. imp writes each URL in a message as its path only.
+An error of `imp/http` always gets the request message, also as a `script` or `render` record, such
+as `request failed: 404 GET /missing`.
+
+One failed request gives one record. A request that fails on the network, times out, or answers a
+5xx gives a `request` record. When your code does not catch that error, imp sends no second `script`
+or `render` record for it. A request that answers a 4xx gives no `request` record, because a 4xx is
+often an expected answer. If your code does not catch it, it gives a `script` or `render` record.
+
+The record has no stack. `imp build` writes no source map, so a stack from production points into
+minified code. The page, the view, the source and the message identify the failure.
 
 To count an error that you catch, rethrow it after your UI shows the failure. imp then sends a
 `script` record.
@@ -319,6 +328,7 @@ them. It sends in four cases:
 - the array reaches `size`,
 - `ms` passes after the first held record,
 - the page becomes hidden,
+- the `when` state of the sink stops being `true`,
 - the sink is unregistered.
 
 imp flushes a batch after it dispatches the `time` and `zone` records of that hide, in the same
@@ -353,7 +363,8 @@ onAnalytics(self, sendToStore, { when: consent })
 
 - imp does not decide what consent means. Your app owns the banner and the state. imp only holds the
   records, so the entry view is not lost while the banner is open.
-- The hold keeps the entry view and the newest 199 records after it.
+- The hold keeps the first view that it holds, and the newest 199 records. So a `track()` call or an
+  error before the first screen does not push the entry view out.
 - The same option covers an SDK that loads late: `{ when: providerReady }`.
 - The hold is per sink. To report errors with no consent, register a second sink with no `when`,
   which forwards only the `error` records. You decide if your error reports need consent.

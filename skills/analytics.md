@@ -34,6 +34,10 @@ as `/invoices/:id`, or `null` for a path off the map.
 - `error` sources: `script` is an uncaught error, an unhandled rejection, or a state subscriber that
   throws. `render` is an error in a component. `request` is an `imp/http` request that fails on the
   network, times out, or answers 5xx: `request failed: 500 POST /path`. No record has a stack.
+- A message never has the origin or the query of a URL: imp writes the path only. One failed request
+  gives one record: an uncaught 5xx or network error that already gave a `request` record gives no
+  `script` or `render` record. An uncaught 4xx gives a `script` or `render` record with the request
+  message.
 
 ## Calls
 
@@ -46,8 +50,9 @@ as `/invoices/:id`, or `null` for a path off the map.
 | `track(name, value?)`                 | records an outcome; `value` is a string or a number from code           |
 
 `batch` sends when the array reaches `size`, when `ms` passes, when the page hides (after the `time`
-and `zone` records of that hide), and when the sink is unregistered. `when` is a state. imp holds
-the records for that sink while the state is not `true`: the entry view and the newest 199 after it.
+and `zone` records of that hide), when its `when` state stops being `true`, and when the sink is
+unregistered. `when` is a state. imp holds the records for that sink while the state is not `true`:
+the first held view and the newest 199 records.
 
 ## Rules an agent gets wrong
 
