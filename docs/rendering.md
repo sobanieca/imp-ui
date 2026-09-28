@@ -125,3 +125,25 @@ eight-pixel gutter remains and adds a scrollbar to a page that must not scroll. 
 its own CSS cascade layer, and unlayered CSS always wins against a layer. Write
 `body { margin: 2rem }` in your own stylesheet to get your margin back. You do not need
 `!important`.
+
+## Rendering happens in the browser
+
+imp renders in the browser only. It has no server rendering, no prerender, and no static export of
+rendered pages. The HTML page that `imp build` writes is the page that you wrote. The content of the
+app appears when its JavaScript runs.
+
+That fits the apps that imp is for: an internal tool, a dashboard, an admin panel, a product behind
+a sign-in, and an installable app. It does not fit a public content site that must show its text
+before the JavaScript runs, such as a blog, a documentation site or a shop catalog. A crawler that
+runs no script, and a link preview, read only the static HTML of such a page. For those pages, use a
+static site generator. You can serve them beside an imp app on the same domain.
+
+imp does two things for a page that a crawler reads:
+
+- The router writes the title of the document and the description of the matched page on every
+  navigation. See **[Routing](routing.md)**.
+- Your HTML page keeps what you write in it. A `<title>`, a `<meta name="description">` and a short
+  text in the page reach every reader, also with JavaScript off.
+
+To add interactive parts to a page that your server renders, build a component as a JS entry, and
+mount it into that page. See **[the CLI docs](cli.md#imp-build)**.

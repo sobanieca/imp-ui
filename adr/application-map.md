@@ -111,7 +111,7 @@ handle per node.**
     `<meta name="description">` on every navigation. A page that has no description of its own, and
     a URL off the map, get the description of the HTML page back. When the HTML page has none, the
     router removes the tag. So a description never outlives its page. The router writes no other
-    meta tag.
+    meta tag, see `client-rendered-only.md`.
 
 - **A tenant is a scope of the router.** A multi-tenant URL, `/organizations/:org/...`, is a param
   node in the map, because a handle must print the real pattern. `router({ scope })` names that

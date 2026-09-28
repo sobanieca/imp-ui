@@ -19,6 +19,7 @@ These are the conventions:
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [browser-support-baseline](browser-support-baseline.md)         | Current stable browsers; no polyfills or workarounds                           |
 | [real-dom-no-virtual-dom](real-dom-no-virtual-dom.md)           | Real DOM, no virtual DOM                                                       |
+| [client-rendered-only](client-rendered-only.md)                 | Client rendering only; no server rendering, prerender or static export         |
 | [type-based-argument-dispatch](type-based-argument-dispatch.md) | Type-based argument dispatch                                                   |
 | [element-factory-syntax](element-factory-syntax.md)             | Element-factory syntax, no JSX or templates                                    |
 | [property-first-prop-model](property-first-prop-model.md)       | Verbatim attribute names, property-first fallback                              |

@@ -58,17 +58,6 @@ date.
 
   Add the same rules to `skills/build.md`.
 
-## Tier 4 - the router, and the scope of an app
-
-- **The absence of SSR is a boundary of the scope that nobody states.** Real DOM, with a component
-  in a shadow root, means that a built app is an empty HTML shell until the JavaScript runs. That is
-  a defensible choice for an internal tool or a dashboard. But no ADR and no document says "a public
-  content site is out of scope", in the way that the exclusion of `virtualList` is recorded. A team
-  finds that out only after it has adopted imp. **Decision:** write the ADR
-  `client-rendered-only.md`. imp renders on the client only. imp has no server rendering, no
-  prerender and no static export. A public content site that needs its HTML before the JavaScript
-  runs is out of scope. The docs say so.
-
 ## Tier 5 - the policy about a release, and about support
 
 - **The version is `0.1.0`. There is no Windows target. There is no policy about stability.** The
@@ -98,16 +87,12 @@ One gap blocks production too, but it has its own file:
 
 1. Do the CSP, the hash on an entry file and the external `env.js` first. They change what every
    deploy ships.
-2. Write `client-rendered-only.md`, and add the metadata per route.
-3. Write the deploy page, after tier 2 lands.
-4. Settle the 1.0 policy and the Windows target. They decide whether a team can adopt imp at all.
+2. Write the deploy page, after tier 2 lands.
+3. Settle the 1.0 policy and the Windows target. They decide whether a team can adopt imp at all.
 
 The error reporting lands with `todo/analytics.md`, and not in this order.
 
 ## ADR impact
 
-Two items land a decision that is worth a record. The CSP, with no inline script and the hashed
-entry files, goes into `adr/production-bundling.md`. The scope with no server rendering goes into a
-new `adr/client-rendered-only.md`. Each one belongs in `adr/` when the matching item lands, and not
-before. The one exception is `client-rendered-only.md`. It records a decision that is already made,
-so somebody can write it now.
+The CSP, with no inline script and the hashed entry files, goes into `adr/production-bundling.md`
+when that item lands, and not before.

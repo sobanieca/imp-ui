@@ -98,3 +98,8 @@ Rules an agent gets wrong:
 - **Never pass a state as a bare child.** imp reports `div(count)` and skips it. Write
   `div(count.text())`.
 - A binding that you build here is inert until a component or `mount` puts the DOM in the page.
+- **imp renders in the browser only.** There is no server rendering, no prerender and no static
+  export. Never promise one, and never write a script that renders imp components outside a browser.
+  A public content page that must show its text with JavaScript off is out of scope: put that text
+  in the HTML page itself, or use a static site generator for it. The router writes the title and
+  the `<meta name="description">` of each page, see [routing](routing.md).
