@@ -158,6 +158,21 @@ When `imp.json` names a `serviceWorker`, every page build bundles that source an
 `precacheBuild()` in your worker for the same offline behaviour. See
 [service-worker](service-worker.md).
 
+## Deploy
+
+Give the host these rules. imp writes no host config.
+
+| Rule                                                                       | Why                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------ |
+| serve `index.html` for a path with no file                                 | a deep link and a refresh reach the router |
+| `Cache-Control: public, max-age=31536000, immutable` on `/chunks/`         | every file there has a content hash        |
+| `Cache-Control: no-cache` on every other file                              | `index.html` names the current build       |
+| `Content-Security-Policy: script-src 'self'; style-src 'self'` on the page | see below                                  |
+
+Under a sub-path, prefix every path of the rules. Upload `LICENSES.txt` with the rest. A PWA update
+needs no rule of its own: `sw.js` is `no-cache` under the rules above. The errors of a live app
+reach the app as `error` records of an analytics sink, see [analytics](analytics.md).
+
 ## Content Security Policy
 
 A built app works under `script-src 'self'; style-src 'self'` with no setting, no hash and no nonce.
@@ -177,6 +192,8 @@ imp writes no policy and no host file. The host sends the header.
   `html()`.
 - **Add a third-party origin to the policy of the host**, such as the script of an analytics
   provider in `script-src` and its endpoint in `connect-src`. imp never writes the policy.
+- **Never put a `chunks` folder in `public/`.** imp writes its hashed files there, and the build
+  stops.
 - **Never edit a file in the output directory.** imp deletes and writes the directory again on every
   run.
 - **Deploy `LICENSES.txt` with the rest of the output.** The licenses that produce the file forbid

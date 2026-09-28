@@ -3,9 +3,9 @@
 ## Context
 
 imp is a complete toolkit. So a person must be able to build an app without assembling a stack of
-components, and without a third-party UI package. `todo/stdlib-components.md` holds the full catalog
-that this grows into. The kernel already supplies everything that such a library needs. It supplies
-the element factories, a component with `styles` that are scoped by a shadow root, see
+components, and without a third-party UI package. `short-component-catalog.md` records the shape of
+that catalog. The kernel already supplies everything that such a library needs. It supplies the
+element factories, a component with `styles` that are scoped by a shadow root, see
 `shadow-dom-isolation.md`, a named state, see `event-propagated-state.md`, and the `--imp-*` design
 tokens, see `themable-by-default-tokens.md`. So the question was not what to build on. The question
 was what shape a component takes, how imp packages it, and what an app can assume about all of them
@@ -17,11 +17,10 @@ first components, and not after somebody writes the catalog.
 A standard component is an **ordinary imp component, built on the public API of the kernel only**,
 and imp ships it. Those components live under `lib/src/std/<group>/`, with one file per component.
 imp groups them by the taxonomy of the catalog. The groups that exist are `general`, `layout`,
-`inputs`, `display`, `shell`, `feedback` and `data`, and `todo/stdlib-components.md` names the ones
-to come. The folder of a component is its group. The same name is the subpath of its import, the key
-of its preview group, and its section of the documentation. A test checks that every preview names
-the group of its folder, and that every group has a folder. Nothing in `std/` is privileged. It
-imports the same surface as an app.
+`inputs`, `display`, `shell`, `feedback` and `data`. The folder of a component is its group. The
+same name is the subpath of its import, the key of its preview group, and its section of the
+documentation. A test checks that every preview names the group of its folder, and that every group
+has a folder. Nothing in `std/` is privileged. It imports the same surface as an app.
 
 - **The library is a separate import namespace, split by group.** The kernel is `imp`, with its
   specifiers per subject, which are `imp/html`, `imp/state`, `imp/router`, `imp/theme` and

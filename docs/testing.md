@@ -59,7 +59,7 @@ The flags are these:
 - `--video <dir>` records the browser session of each e2e spec as an animated GIF, into `<dir>`. See
   _How to record a spec as a GIF_.
 - `--mock` and `--no-mock` decide where an e2e spec gets its answers. `--mock` serves the
-  [mock responses](cli.md#mock-responses--mockjs) of your project. `--no-mock` forces the real API.
+  [mock responses](cli.md#mock-responses---mockjs) of your project. `--no-mock` forces the real API.
   With neither flag, a spec follows the default in your `imp.json`.
 
 ## How to write a test
@@ -540,7 +540,7 @@ When the entry page of your app is not `index.html`, set it in `imp.json`:
 ```
 
 A spec runs against the same server as `imp start`. So a project with
-**[mock responses](cli.md#mock-responses--mockjs)** can point a spec at a fixture in place of a
+**[mock responses](cli.md#mock-responses---mockjs)** can point a spec at a fixture in place of a
 backend. `imp test --e2e --mock` makes the `*.mock.js` files answer the requests of your app during
 the spec. There is no stub, and there is no configuration in the test. `--no-mock` forces a run
 against the real API. With neither flag, the suite follows the default in your `imp.json`.

@@ -1,0 +1,8 @@
+$ imp build  (cwd: <tmp>, with public/chunks/)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] public/chunks/ is reserved - imp writes the hashed files of the build there, and a host caches that folder for a year; move the files to another folder

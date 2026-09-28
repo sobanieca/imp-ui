@@ -3,7 +3,7 @@
 imp gives you a configured HTTP client, so your app talks to its backend and you write no `fetch`
 wrapper. Describe the network layer once, with a base URL, headers, retries and timeouts, and call
 it everywhere. The loading state and the error state come with it, ready to bind to the DOM. The
-whole app can also run against [mock responses](cli.md#mock-responses--mockjs), with no backend.
+whole app can also run against [mock responses](cli.md#mock-responses---mockjs), with no backend.
 
 ```js
 import { component } from 'imp'
@@ -383,7 +383,7 @@ source knows about the mocks, and nothing about mocking ships. Choose the mode w
 server, with `imp start --mock`, `imp start --no-mock`, or the default in your `imp.json`. The
 answers arrive as ordinary responses, so everything on this page still applies to them. A mocked
 `503` retries, a `delay` keeps `pending` above zero, and your interceptors run. See
-[Mock responses](cli.md#mock-responses--mockjs) for the full format.
+[Mock responses](cli.md#mock-responses---mockjs) for the full format.
 
 ## Request state
 
@@ -466,7 +466,7 @@ host works for every test in the file. To test that an unmount cancels what was 
 the host from the DOM.
 
 An end-to-end spec runs against the served app, so it gets your `*.mock.js` files, with no stub. See
-[Mock responses](cli.md#mock-responses--mockjs).
+[Mock responses](cli.md#mock-responses---mockjs).
 
 ## Debugging
 

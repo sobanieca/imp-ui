@@ -1366,6 +1366,18 @@ Deno.test('imp build', async (t) => {
       )
     })
 
+    await t.step('build-public-hashed-folder', async () => {
+      const reserved = join(dir, 'public', 'chunks')
+      await Deno.mkdir(reserved)
+      await Deno.writeTextFile(join(reserved, 'old.js'), 'export const old = true\n')
+      const result = await runImp(['build'], dir)
+      await Deno.remove(reserved, { recursive: true })
+      await assertSnapshot(
+        'build-public-hashed-folder',
+        mask(commandTranscript('imp build  (cwd: <tmp>, with public/chunks/)', result)),
+      )
+    })
+
     await t.step('build-public-collision', async () => {
       const collision = join(dir, 'public', 'LICENSES.txt')
       await Deno.writeTextFile(collision, 'a file of the app\n')

@@ -13,10 +13,11 @@ imp test --unit        run the unit tests
 imp test --e2e         run the browser specs against the mocks
 imp preview            show the todoProgress component in isolation
 imp map                print the application map
-imp build --env prod   build for production, with BULK_ACTIONS and ANALYTICS off
+imp build --env prod --pwa   build an installable app, with BULK_ACTIONS and ANALYTICS off
 ```
 
-Sign in with any name and email. The mock backend accepts everybody.
+Sign in with any name and email. The mock backend refuses only an email that starts with `locked@`,
+so you can see a failed submit.
 
 ## Where each feature is
 
@@ -28,6 +29,8 @@ Sign in with any name and email. The mock backend accepts everybody.
 | Retry of a failed read         | `mocks/todos.mock.js` returns one `503`, the client retries it                               |
 | Named state and `computed`     | `src/app.js`, `src/todos/todo-list-screen.js`                                                |
 | Forms and validation           | `src/sign-in.js`, `src/todos/todo-list-screen.js`                                            |
+| A failed submit, a clean form  | `formError` in `src/sign-in.js`, `imp.form.dirty` in `src/submit-button.js`                  |
+| Page titles and descriptions   | `title` of the router in `src/app.js`, `description` of a node in `src/app-map.js`           |
 | Async `setup` and error screen | `src/todos/todo-detail-screen.js`                                                            |
 | Dialogs, toasts, notifications | `src/todos/todo-detail-screen.js`, `src/app.js`                                              |
 | Translations (English, Polish) | `locales/`, bound through `src/translate.js`                                                 |
@@ -38,9 +41,25 @@ Sign in with any name and email. The mock backend accepts everybody.
 | Styled components of your own  | `src/ui/`: the hero, the stat tiles, the backdrop and the logo mark                          |
 | Account menu                   | `src/ui/account-menu.js`: a popover on desktop, inline in the drawer                         |
 | Environments                   | `env/dev.json`, `env/prod.json`                                                              |
+| Installable offline app        | `pwa` in `imp.json`, built with `imp build --pwa`                                            |
+| Size budget of the build       | `build.maxSize` in `imp.json`                                                                |
 | Logger                         | `createLogger` in `src/app.js` and `src/todos/todo-list-screen.js`                           |
 | Custom component with a skill  | `src/todos/todo-progress.js`, `.skill.md` and `.preview.js` beside it                        |
 | Focus on a new screen          | `src/screen-frame.js`                                                                        |
 | Accessibility checks           | `toHaveAccessibleControls` in `test/app.spec.js`, `contrastProblems` in `test/theme.test.js` |
 | Unit tests                     | `test/*.test.js`: the model, the HTTP client, the translations, the UI                       |
 | Browser specs                  | `test/app.spec.js`: one user session from sign-in to sign-out                                |
+
+## Deploy it
+
+`imp build --env prod --pwa` writes `dist/`. Upload that folder, and give the host these rules:
+
+- Serve `index.html` for a path that has no file, so a deep link works.
+- Send `Cache-Control: public, max-age=31536000, immutable` for `/chunks/`, and
+  `Cache-Control: no-cache` for every other file.
+- Send the Content Security Policy below with the page. This app loads its fonts from Google Fonts,
+  so the policy names those two origins:
+
+```
+Content-Security-Policy: script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com
+```

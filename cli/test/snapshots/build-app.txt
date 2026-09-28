@@ -32,9 +32,9 @@ dist/styles.css
 <!doctype html>
 <html lang="en">
   <head>
-<link rel="modulepreload" href="/chunks/chunk-<hash>.js">
-<link rel="modulepreload" href="/chunks/chunk-<hash>.js">
     <meta charset="utf-8">
+<link rel="modulepreload" href="/chunks/chunk-<hash>.js">
+<link rel="modulepreload" href="/chunks/chunk-<hash>.js">
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/styles.css">
     <script type="module" src="/chunks/inline-1-<hash>.js"></script>

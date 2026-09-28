@@ -202,7 +202,7 @@ the self-contained bundle of that dependency, and every asset the package needs.
 folder, you remove the dependency completely.
 
 imp carries an asset that a package **imports** into the production build automatically, with a
-content hash, under `assets/`. The build cannot see an asset that a package instead loads by URL at
+content hash, under `chunks/`. The build cannot see an asset that a package instead loads by URL at
 runtime. Copy that asset into your `public/` folder, so it ships. See
 **[The `public/` folder](cli.md#the-public-folder)**.
 

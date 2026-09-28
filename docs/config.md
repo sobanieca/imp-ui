@@ -27,7 +27,7 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
 
 - **`version`** pins the exact imp version for this project. Any imp binary then runs the project on
   that version, and downloads it once if needed. Set the key with `imp update`. See
-  **[Pinning the imp version](cli.md#imp-update--pinning-the-imp-version)**.
+  **[Pinning the imp version](cli.md#imp-update---pinning-the-imp-version)**.
 - **`dependencies`** lists the packages you vendored into your project. Each entry maps an import
   alias to the exact version imp installed. `imp install` and `imp uninstall` write and update the
   key, so you rarely edit it by hand. imp exposes each alias to the browser, so you write
@@ -38,7 +38,7 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   package outside this policy. See **[The license policy](dependencies.md#the-license-policy)**.
 - **`targetImpHost`** is `true` when your build must run inside another imp application. `imp build`
   then keeps the `imp` imports bare, for that host to provide. See
-  **[Targeting an imp host](cli.md#targeting-an-imp-host--sharing-the-hosts-imp)**.
+  **[Targeting an imp host](cli.md#targeting-an-imp-host---sharing-the-hosts-imp)**.
 - **`map`** is the path of the file that exports your application map, such as `src/app-map.js`.
   `imp init` writes the key. See **[Routing](routing.md)**.
 - **`build`** holds the options for `imp build`. `maxSize` is the budget, in bytes, for the whole
@@ -58,7 +58,7 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   optional keys are `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and
   `scope`. The block drives the manifest that `imp start` injects and the offline app that
   `imp build --pwa` produces. See
-  **[Progressive Web App](cli.md#progressive-web-app--imp-build---pwa)**.
+  **[Progressive Web App](cli.md#progressive-web-app---imp-build---pwa)**.
 - **`environments`** lists the named configuration sets you select with `--env`. Each name maps to a
   JSON file of values. See _Environments_ below.
 - **`flags`** lists, by name, the feature flags your app can check. Each environment says whether a
@@ -66,7 +66,7 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   **[Feature flags](feature-flags.md)**.
 - **`mocks`** sets where your `*.mock.js` files live, and whether they answer by default. Both
   `folder` and `enabled` are required. `--mock` and `--no-mock` override `enabled` for one run.
-  `imp build` never copies the folder. See **[Mock responses](cli.md#mock-responses--mockjs)**.
+  `imp build` never copies the folder. See **[Mock responses](cli.md#mock-responses---mockjs)**.
 - **`serviceWorker`** is the path of your own service worker source, such as `src/sw.js`.
   `imp start` serves it at `/sw.js` instead of its own dev worker, and `imp build` writes the same
   bundle as `sw.js`. See **[Your own service worker](cli.md#your-own-service-worker)**.

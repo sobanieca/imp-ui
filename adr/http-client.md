@@ -158,9 +158,8 @@ one request costs one name, and every other call costs nothing.
 - Everything that an app might want to intercept is reachable. So imp needs no option per concern.
   The cost is that a hook is an ordinary function, with no sandbox. A hook that throws fails the
   call, and that is also how a hook aborts a call on purpose.
-- The request state binds like any other state. So the planned loader of the standard library, and
-  its banner for a failure, see `todo/stdlib-components.md`, attach by the name of the client,
-  through the existing rules of a binding. There is no new coupling.
+- The request state binds like any other state. So `loader` of the standard library attaches by the
+  name of the client, through the existing rules of a binding. There is no new coupling.
 - A duplicate read is a problem for the app to notice. Two components that both fetch `/users` at
   mount make two requests. The fix is to lift the fetch above them, and not to configure the client.
   That is a visible cost, and imp pays it to keep the behaviour of the client literal. What you call

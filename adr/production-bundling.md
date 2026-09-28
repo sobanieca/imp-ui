@@ -38,8 +38,10 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   in the built HTML to match. The HTML file keeps its plain name. imp bundles an inline module
   script as another entry, and writes it as `chunks/inline-<n>-<hash>.js`. A module that loads
   lazily, through `import()`, and code that two entry points share, both go into a file under
-  `chunks/`, with a content hash. So every script of a page build lives under `chunks/` with a hash,
-  and a host can cache that folder for a year.
+  `chunks/`, with a content hash. An asset that the code imports goes there too. So every hashed
+  file of a build lives under `chunks/`, and only there. A host caches that folder for a year and
+  revalidates every other file on each load, with no special case. A `public/chunks/` folder stops
+  the build, because a copied file with no hash must never get that cache.
 - **A JS entry keeps its plain name.** A consumer imports that file by name, so a hash would break
   every import of it.
 - **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of

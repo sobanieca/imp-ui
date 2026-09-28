@@ -63,6 +63,7 @@ const PAGE_ORDER = [
   'lint',
   'fmt',
   'dependencies',
+  'deploy',
   'browser-support',
 ]
 

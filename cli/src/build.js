@@ -58,7 +58,9 @@ import {
 
 const FLAGS_GLOBAL = 'globalThis.__IMP_FLAGS__'
 
-const HASHED_NAMES = 'chunks/[name]-[hash]'
+const HASHED_FOLDER = 'chunks'
+
+const HASHED_NAMES = `${HASHED_FOLDER}/[name]-[hash]`
 
 const INLINE_ENTRY_SCHEME = 'imp-inline:'
 const inlineModuleName = (index) => `.imp-inline-${index}.js`
@@ -202,7 +204,7 @@ function buildEntryPoints(
     outdir,
     entryNames: isHtmlEntry ? HASHED_NAMES : '[dir]/[name]',
     chunkNames: HASHED_NAMES,
-    assetNames: 'assets/[name]-[hash]',
+    assetNames: HASHED_NAMES,
     loader: ASSET_LOADERS,
   })
 }
@@ -237,7 +239,7 @@ function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags }) 
     metafile: true,
     write: false,
     outdir,
-    assetNames: 'assets/[name]-[hash]',
+    assetNames: HASHED_NAMES,
     loader: ASSET_LOADERS,
   })
 }
@@ -318,8 +320,8 @@ const contentHash = async (text) => {
 }
 
 async function writeHashedScript({ outdir, name, text, written }) {
-  const file = `chunks/${name}-${await contentHash(text)}.js`
-  await Deno.mkdir(join(outdir, 'chunks'), { recursive: true })
+  const file = `${HASHED_FOLDER}/${name}-${await contentHash(text)}.js`
+  await Deno.mkdir(join(outdir, HASHED_FOLDER), { recursive: true })
   await Deno.writeTextFile(join(outdir, file), text)
   written.push(file)
   return file
@@ -336,6 +338,12 @@ async function copyPublicFiles({ publicDir, outdir, written, reserved }) {
     throw new Error(`public must be a folder, not a file: ${publicDir}`)
   }
   const generated = new Set([...written, ...reserved])
+  const hashedFolder = await Deno.stat(join(publicDir, HASHED_FOLDER)).catch(() => null)
+  if (hashedFolder) {
+    throw new Error(
+      `public/${HASHED_FOLDER}/ is reserved - imp writes the hashed files of the build there, and a host caches that folder for a year; move the files to another folder`,
+    )
+  }
   const copy = async (directory, prefix) => {
     for await (const entry of Deno.readDir(directory)) {
       const path = join(directory, entry.name)

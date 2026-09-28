@@ -570,12 +570,14 @@ the module scripts of the page. It bundles each one into minified, self-containe
   vendored dependency alias, resolve exactly as they do under `imp start`. Every `imp` specifier
   resolves to the built-in library, and each alias resolves to the bundle in your `dependencies/`
   folder. The build runs offline. What you tested in development is what you ship.
-- **Every script gets a content hash in its name.** imp writes the bundle of each
-  `<script type="module" src="...">` to `chunks/`, with a content hash in the file name, such as
-  `chunks/main-4ZDAFRFX.js`. It then points the `src` of the built page at that file. The HTML file
-  keeps its own name. So a browser can cache every script for a long time, and a deploy never serves
-  an old script under a new page. imp also bundles an inline `<script type="module">` block, and
-  writes it to its own hashed file under `chunks/`. The built page has no inline script.
+- **Every script gets a content hash in its name.** So does every file that your code imports, such
+  as an image or a font. All of them go into `chunks/`, and only imp writes there. A
+  `public/chunks/` folder stops the build, see [Deploying an app](deploy.md). imp writes the bundle
+  of each `<script type="module" src="...">` to `chunks/`, with a content hash in the file name,
+  such as `chunks/main-4ZDAFRFX.js`. It then points the `src` of the built page at that file. The
+  HTML file keeps its own name. So a browser can cache every script for a long time, and a deploy
+  never serves an old script under a new page. imp also bundles an inline `<script type="module">`
+  block, and writes it to its own hashed file under `chunks/`. The built page has no inline script.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
   several entry points share once, instead of a copy in each bundle. imp writes a chunk only when an
@@ -785,7 +787,7 @@ A few consequences are worth knowing:
 
 When your app is served from a sub-path, such as `https://example.com/my-imp-app/` in place of the
 domain root, set the `IMP_BASEPATH` environment value for that deployment. See
-[Environments](#environments):
+[Environments](config.md#environments---per-target-config):
 
 ```json
 {
@@ -1211,9 +1213,9 @@ relative to the preview file, or a dependency alias from `imp.json`. The factory
 of the module, and it receives `{ spy, orig }`. Every import of that module resolves to what you
 returned. That covers an import from the component, and from anything that the component imports, at
 any depth. `orig()` keeps the rest of the module real. See
-**[Mocking modules](testing.md#mocking-modules--mockmodule)** for the full behaviour. A mock is a
-plain object that you write, and it lives next to the component, so a reviewer sees the fixture and
-the component in one diff.
+**[Mocking modules](testing.md#how-to-mock-a-module---mockmodule)** for the full behaviour. A mock
+is a plain object that you write, and it lives next to the component, so a reviewer sees the fixture
+and the component in one diff.
 
 A mock applies to the whole preview app. Every preview shares one module graph, so a module that one
 file mocks is mocked for every component that imports it. Two files that mock the same module must

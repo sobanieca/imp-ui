@@ -39,8 +39,8 @@ older than the current stable version.
     them.
 - **imp does not build a component that needs the forbidden kind.** imp documents the absence of
   that component as a deliberate boundary. It does not fill the gap with an approximation. This is a
-  rule about scope, and not a bar of quality to reach later. The catalog in
-  `todo/stdlib-components.md` is subject to it, and this rule can remove an entry from that catalog.
+  rule about scope, and not a bar of quality to reach later. The catalog, see
+  `short-component-catalog.md`, is subject to it, and this rule can remove an entry from it.
 - **The floor moves on its own.** It is "current stable", and not a version number in a config file.
   So there is nothing to raise, and there is no support matrix to maintain. A feature that is
   interoperable today is usable today.

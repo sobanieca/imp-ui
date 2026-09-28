@@ -19,8 +19,8 @@ built index.html -> dist/
 <!doctype html>
 <html lang="en">
   <HEAD data-note="a > b">
-<script src="/base/chunks/env-<hash>.js"></script>
     <meta charset="utf-8">
+<script src="/base/chunks/env-<hash>.js"></script>
     <title>edge cases</title>
     <link rel="icon" href="/base/favicon.svg">
     <link rel="preconnect" href="//cdn.example.com">

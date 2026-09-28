@@ -84,7 +84,12 @@ const topElements = (document) => {
   }
 }
 
+const isCharsetMeta = (node) =>
+  node.tagName === 'meta' && node.attrs.some(({ name }) => name.toLowerCase() === 'charset')
+
 function headInsertion(document, { html, head }) {
+  const charset = childrenOf(head).find(isCharsetMeta)?.sourceCodeLocation
+  if (charset) return { offset: charset.endOffset, wrap: (tags) => `\n${tags}` }
   const headTag = head?.sourceCodeLocation?.startTag
   if (headTag) return { offset: headTag.endOffset, wrap: (tags) => `\n${tags}` }
   const wrapped = (tags) => `\n<head>${tags}</head>`

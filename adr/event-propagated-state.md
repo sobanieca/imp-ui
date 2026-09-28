@@ -174,10 +174,9 @@ the structural comparison. The write half has no combinator. `set` replaces the 
 nested update spreads. imp considered a writable projection, and **rejected** it. It cannot be built
 from a `compute` function, because nobody can invert an opaque function. So it would have to take a
 **path** instead. A form with a path is a second way to address a state, and it earns its place only
-when something consumes it. The one candidate consumer is the contract for binding a control, in the
-standard library, see `todo/stdlib-components.md`. That contract is not built, and it can equally
-take a read and a write, as two separate props. Reconsider the projection there, with the contract
-in hand, and not before it.
+when something consumes it. The one consumer that addresses a value by a path is the binding of a
+form control, see `state-driven-forms.md`. It keeps the path inside the form layer, and it reads and
+writes the form state as a whole. So the kernel has no writable projection.
 
 **A state name must carry a namespace.** It needs two or more dot-separated segments that are not
 empty, such as `myapp.user`. Both helpers throw at runtime on a name that does not conform. The
