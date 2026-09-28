@@ -4,7 +4,7 @@ import impPlugin, { dependencyPinProblem } from './lint-rules.js'
 import { findConfigFile, loadImpConfig } from './config.js'
 import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file-size.js'
 import { collectFiles } from './walk.js'
-import { htmlScripts, isJavaScriptType } from './html-scripts.js'
+import { isJavaScriptType, readHtml } from './html-document.js'
 import { reportDeadCode } from './dead-code.js'
 
 const LINT_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
@@ -57,7 +57,7 @@ const rewriteIgnoreDirectives = (source) => {
 }
 
 export const scriptBlocks = (html) =>
-  htmlScripts(html).filter((script) => script.src === null && isJavaScriptType(script.type))
+  readHtml(html).scripts.filter((script) => script.src === null && isJavaScriptType(script.type))
 
 async function trackedFiles(root) {
   const command = new Deno.Command('git', {

@@ -78,13 +78,6 @@ This tier is the most likely to block a procurement, in place of being a prefere
   that breaks a build, and not a hole for an injection. **Decision:** the external `env.js` of the
   CSP item removes the inline script, and the hazard with it. `imp start` still injects the values
   inline, so the dev path uses the same guard as `cli/src/build.js`.
-- **The build processes HTML with a regular expression.** `SCRIPT_TAG`, and
-  `rewriteRootAbsoluteUrls`, in `cli/src/build.js`, parse and rewrite HTML with a regular
-  expression. That works for a scaffolded page. It handles an edge case wrongly, with no message.
-  Two examples are a script tag inside a comment, and an attribute that contains `>`. **Decision:**
-  add the adversarial fixtures first. Then replace the regular expressions with a vendored HTML
-  parser in pure JavaScript, such as parse5. The build edits the source at the locations that the
-  parser reports, so the layout of the rest of the page does not change.
 - **Some hygiene for production is missing on the side of the build.** There is no `modulepreload`
   hint for a chunk that the entry will pull. There is no budget for the size of an app build. imp
   enforces a limit on the size of its own binary, through `binary-size-limit.json`, and it offers

@@ -29,6 +29,8 @@ Run `imp licenses` to print this notice from the binary.
 | dprint-plugin-markdown        | 0.22.1  | MIT           | https://github.com/dprint/dprint-plugin-markdown       |
 | malva (CSS)                   | 0.16.0  | MIT           | https://github.com/g-plane/malva                       |
 | marked                        | 18.0.12 | MIT           | https://github.com/markedjs/marked                     |
+| parse5                        | 8.0.1   | MIT           | https://github.com/inikulin/parse5                     |
+| entities                      | 8.1.0   | BSD-2-Clause  | https://github.com/fb55/entities                       |
 | markup_fmt (HTML)             | 0.27.3  | MIT           | https://github.com/g-plane/markup_fmt                  |
 | pretty_yaml (YAML)            | 0.6.0   | MIT           | https://github.com/g-plane/pretty_yaml                 |
 | lax-sql (SQL)                 | 0.3.0   | MIT           | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
@@ -69,11 +71,11 @@ reproduced below.
 
 Applies to: happy-dom (© David Ortner and contributors), eslint and @eslint/js (© OpenJS Foundation
 and other contributors), globals (© Sindre Sorhus), gifenc (© Matt DesLauriers), esbuild-wasm (©
-Evan Wallace), marked (© MarkedJS and Christopher Jeffrey), @dprint/formatter and
-dprint-plugin-typescript / -json / -markdown (© David Sherret and dprint contributors), malva /
-markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (© Bartłomiej Iwańczuk and dprint
-contributors), @std (© the Deno authors), @deno/esbuild-plugin (© the Deno authors), and the
-Feather-derived Lucide icons (© 2013-present Cole Bemis).
+Evan Wallace), marked (© MarkedJS and Christopher Jeffrey), parse5 ((c) 2013-2019 Ivan Nikulin),
+@dprint/formatter and dprint-plugin-typescript / -json / -markdown (© David Sherret and dprint
+contributors), malva / markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (© Bartłomiej
+Iwańczuk and dprint contributors), @std (© the Deno authors), @deno/esbuild-plugin (© the Deno
+authors), and the Feather-derived Lucide icons (© 2013-present Cole Bemis).
 
 ```
 MIT License
@@ -120,6 +122,26 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+```
+
+---
+
+## BSD-2-Clause License
+
+Applies to: entities ((c) Felix Böhm), which parse5 bundles to decode character references.
+
+```
+Copyright (c) Felix Böhm
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ---

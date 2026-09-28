@@ -38,6 +38,12 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   without a change. imp bundles an inline module script as another entry, and inlines it again. A
   module that loads lazily, through `import()`, and code that two entry points share, both go into a
   file under `chunks/`, with a content hash.
+- **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of
+  the HTML standard. So a script in a comment, in a `<textarea>` or in an attribute value is text,
+  as it is for a browser. An attribute value that holds `>` does not end its tag. imp edits the
+  source at the offsets that the parser reports, and it writes no page again from a tree. So the
+  rest of the page keeps its layout, its case and its quotes. The dev server, the preview and the
+  linter read a page with the same parser.
 - **A static asset ships from `public/`.** imp copies its contents to the root of the output,
   without a change, and it copies nothing else. See `public-folder-static-assets.md`. The output
   directory, which is `dist/` by default and which imp replaces on each run, is the complete site to

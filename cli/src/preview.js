@@ -33,6 +33,7 @@ import { PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
 import { scanGroupsModule, scanPreviewSource } from './preview-source.js'
 import { retargetLinks, skillFileFor, standardComponentSubjects } from './skill.js'
 import { marked } from './vendor/marked.js'
+import { applyEdits, headEdit, readHtml } from './html-document.js'
 import { createDevLog, DEFAULT_MAX_LOG_ENTRIES } from './dev-log.js'
 import { addLogSink, logger } from './logger.js'
 import { dim } from './colors.js'
@@ -540,23 +541,17 @@ ${body}
 </html>
 `
 
-const TITLE_ELEMENT = /<title\b[^>]*>[\s\S]*?<\/title>/i
-
-const withTitle = (html, title) => {
+const withTitleAndBody = (html, title, body) => {
+  const document = readHtml(html)
   const titleTag = `<title>${escapeHtml(title)}</title>`
-  if (TITLE_ELEMENT.test(html)) return html.replace(TITLE_ELEMENT, () => titleTag)
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${titleTag}`)
-  }
-  return `${titleTag}\n${html}`
+  const titleEdit = document.title
+    ? { ...document.title, text: titleTag }
+    : headEdit(document, titleTag)
+  const bodyEdit = { start: document.bodyEnd, end: document.bodyEnd, text: `\n${body}\n` }
+  return applyEdits(html, [titleEdit, bodyEdit])
 }
 
-const withBody = (html, body) => {
-  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, () => `\n${body}\n</body>`)
-  return `${html}\n${body}\n`
-}
-
-export const entryShell = (entryHtml, title, body) => withBody(withTitle(entryHtml, title), body)
+export const entryShell = (entryHtml, title, body) => withTitleAndBody(entryHtml, title, body)
 
 const PAGE_TITLE = 'imp preview'
 

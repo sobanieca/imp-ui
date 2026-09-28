@@ -13,6 +13,7 @@ import { clientScript } from './client.js'
 import { loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { publicCopyOfEntry, resolveEntryPath } from './entry.js'
 import { isSkippedPath } from './walk.js'
+import { applyEdits, headEdit, readHtml } from './html-document.js'
 import { createMocks, MOCK_ENDPOINT } from './mocks.js'
 import {
   assembleServiceWorker,
@@ -123,13 +124,7 @@ function buildHeadInjection(dependencies, pwa, env, flags, mocks, ownWorker, wid
 
 export function injectImp(html, headInjection) {
   if (html.includes(INJECTION_MARKER)) return html
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${headInjection}`)
-  }
-  if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html[^>]*>/i, (open) => `${open}\n<head>${headInjection}</head>`)
-  }
-  return `${headInjection}\n${html}`
+  return applyEdits(html, [headEdit(readHtml(html), headInjection)])
 }
 
 function contentType(path) {

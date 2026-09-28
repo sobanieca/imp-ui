@@ -12,6 +12,13 @@ import {
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { licensePolicy, loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { resolveEntryPath } from './entry.js'
+import {
+  applyEdits,
+  headEdit,
+  isLocalScriptSource,
+  isModuleType,
+  readHtml,
+} from './html-document.js'
 import { basePathOf, siteUrl } from './base-path.js'
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
@@ -48,41 +55,30 @@ import {
   validatePwaBuild,
 } from './pwa.js'
 
-const SCRIPT_TAG = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi
-
 const FLAGS_GLOBAL = 'globalThis.__IMP_FLAGS__'
 
 const INLINE_ENTRY_SCHEME = 'imp-inline:'
 const inlineModuleName = (index) => `.imp-inline-${index}.js`
 const INLINE_MODULE_PATH = /[/\\]\.imp-inline-(\d+)\.js$/
 
-function attributeValue(attributes, name) {
-  const pattern = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, 'i')
-  const match = attributes.match(pattern)
-  return match ? match[1] ?? match[2] ?? match[3] : null
-}
+const moduleScriptsOf = (document) => document.scripts.filter((script) => isModuleType(script.type))
 
-const isLocalSource = (src) => !/^[a-z][a-z0-9+.-]*:/i.test(src) && !src.startsWith('//')
+const isInlineModule = (script) => script.src === null && script.text.trim() !== ''
 
-const isModuleScript = (attributes) =>
-  attributeValue(attributes, 'type')?.toLowerCase() === 'module'
-
-function parseHtmlEntryPoints(html, root, entryName) {
+function parseHtmlEntryPoints(document, root, entryName) {
   const scripts = []
   const inlineSources = []
-  for (const [, attributes, content] of html.matchAll(SCRIPT_TAG)) {
-    if (!isModuleScript(attributes)) continue
-    const src = attributeValue(attributes, 'src')
-    if (src) {
-      if (!isLocalSource(src)) continue
-      const path = decodeURIComponent(src.split(/[?#]/)[0])
+  for (const script of moduleScriptsOf(document)) {
+    if (script.src !== null) {
+      if (!isLocalScriptSource(script.src)) continue
+      const path = decodeURIComponent(script.src.split(/[?#]/)[0])
       const filePath = normalize(join(root, path.startsWith('/') ? path.slice(1) : path))
       if (!filePath.startsWith(normalize(root))) {
-        throw new Error(`${entryName} references a script outside the project: ${src}`)
+        throw new Error(`${entryName} references a script outside the project: ${script.src}`)
       }
       if (!scripts.includes(filePath)) scripts.push(filePath)
-    } else if (content.trim()) {
-      inlineSources.push(content)
+    } else if (isInlineModule(script)) {
+      inlineSources.push(script.text)
     }
   }
   return { scripts, inlineSources }
@@ -279,15 +275,12 @@ function assertEveryFlagFolded(outputFiles) {
   }
 }
 
-function replaceInlineScripts(html, inlineOutputs) {
-  let index = 0
-  return html.replace(SCRIPT_TAG, (tag, attributes, content) => {
-    if (!isModuleScript(attributes) || attributeValue(attributes, 'src') || !content.trim()) {
-      return tag
-    }
-    const bundled = inlineOutputs[index++].trim().replace(/<\/script/gi, '<\\/script')
-    return `<script${attributes}>\n${bundled}\n</script>`
-  })
+function inlineScriptEdits(document, inlineOutputs) {
+  return moduleScriptsOf(document).filter(isInlineModule).map((script, index) => ({
+    start: script.start,
+    end: script.end,
+    text: `\n${inlineOutputs[index].trim().replace(/<\/script/gi, '<\\/script')}\n`,
+  }))
 }
 
 async function copyPublicFiles({ publicDir, outdir, written, reserved }) {
@@ -321,26 +314,13 @@ async function copyPublicFiles({ publicDir, outdir, written, reserved }) {
   await copy(publicDir, '')
 }
 
-const ROOT_ABSOLUTE_URL_ATTRIBUTE = /\b(href|src)(\s*=\s*)(["'])(\/(?!\/)[^"']*)\3/gi
+const isRootAbsolute = (url) => url.startsWith('/') && !url.startsWith('//')
 
-function rewriteRootAbsoluteUrls(html, base) {
-  if (!base) return html
-  const prefix = (text) =>
-    text.replace(
-      ROOT_ABSOLUTE_URL_ATTRIBUTE,
-      (_match, attribute, equals, quote, path) =>
-        `${attribute}${equals}${quote}${base}${path}${quote}`,
-    )
-  let result = ''
-  let lastIndex = 0
-  for (const match of html.matchAll(SCRIPT_TAG)) {
-    const [tag, , content] = match
-    const openTagEnd = tag.indexOf('>') + 1
-    result += prefix(html.slice(lastIndex, match.index))
-    result += prefix(tag.slice(0, openTagEnd)) + content + tag.slice(openTagEnd + content.length)
-    lastIndex = match.index + tag.length
-  }
-  return result + prefix(html.slice(lastIndex))
+function basePathEdits(document, base) {
+  if (!base) return []
+  return document.urlAttributes
+    .filter((attribute) => isRootAbsolute(attribute.value))
+    .map((attribute) => ({ start: attribute.start, end: attribute.start, text: base }))
 }
 
 async function precacheOfBuild({ outdirPath, base, written, shell }) {
@@ -356,16 +336,6 @@ async function precacheOfBuild({ outdirPath, base, written, shell }) {
     files: precached.map((name) => siteUrl(base, name)),
     shell: siteUrl(base, shell),
   })
-}
-
-function injectHead(html, headTags) {
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, (open) => `${open}\n${headTags}`)
-  }
-  if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html[^>]*>/i, (open) => `${open}\n<head>${headTags}</head>`)
-  }
-  return `${headTags}\n${html}`
 }
 
 export async function build(
@@ -395,11 +365,13 @@ export async function build(
   if (serviceWorker) await assertServiceWorkerSource(serviceWorker, imp.serviceWorker)
 
   let html = null
+  let document = null
   let scripts = [entryPath]
   let inlineSources = []
   if (isHtmlEntry) {
     html = await Deno.readTextFile(entryPath)
-    const parsed = parseHtmlEntryPoints(html, root, entryName)
+    document = readHtml(html)
+    const parsed = parseHtmlEntryPoints(document, root, entryName)
     scripts = parsed.scripts
     inlineSources = parsed.inlineSources
   }
@@ -480,9 +452,7 @@ export async function build(
     written.push(LICENSE_NOTICES_FILE)
   }
   if (isHtmlEntry) {
-    let builtHtml = rewriteRootAbsoluteUrls(replaceInlineScripts(html, inlineOutputs), base)
-    const envTag = envInjectionScript(resolvedEnv)
-    if (envTag) builtHtml = injectHead(builtHtml, envTag)
+    const headTags = [envInjectionScript(resolvedEnv)]
     if (pwa) {
       for (const icon of await renderIconSet({ root, pwa: impPwa })) {
         const path = join(outdirPath, icon.file)
@@ -499,16 +469,17 @@ export async function build(
         }),
       )
       written.push('manifest.webmanifest')
-      builtHtml = injectHead(
-        builtHtml,
-        pwaHeadTags({
-          manifestHref: siteUrl(base, 'manifest.webmanifest'),
-          themeColor: impPwa.themeColor,
-          appleTouchHref: siteUrl(base, APPLE_TOUCH_ICON),
-          swHref: siteUrl(base, 'sw.js'),
-        }),
-      )
+      headTags.push(pwaHeadTags({
+        manifestHref: siteUrl(base, 'manifest.webmanifest'),
+        themeColor: impPwa.themeColor,
+        appleTouchHref: siteUrl(base, APPLE_TOUCH_ICON),
+        swHref: siteUrl(base, 'sw.js'),
+      }))
     }
+    const edits = [...inlineScriptEdits(document, inlineOutputs), ...basePathEdits(document, base)]
+    const head = headTags.filter(Boolean).join('\n')
+    if (head) edits.push(headEdit(document, head))
+    const builtHtml = applyEdits(html, edits)
     await Deno.writeTextFile(join(outdirPath, entryName), builtHtml)
     written.push(entryName)
     await copyPublicFiles({

@@ -30,7 +30,7 @@
 --- input ---
 <h1>fragment</h1>
 --- output ---
-<script>imp-injection</script>
+<head><script>imp-injection</script></head>
 <h1>fragment</h1>
 
 === already injected ===

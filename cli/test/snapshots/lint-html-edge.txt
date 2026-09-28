@@ -1,0 +1,12 @@
+$ imp lint  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/unreachable-module]: nothing imports commented.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> commented.js:1:1
+
+Found 1 problem
+Checked 4 files

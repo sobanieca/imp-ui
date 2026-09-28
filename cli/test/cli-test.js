@@ -1155,6 +1155,38 @@ Deno.test('imp build', async (t) => {
   }
 })
 
+Deno.test('imp build reads adversarial HTML the way a browser does', async (t) => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('build-html-edge'), dir)
+  const mask = (text) =>
+    text
+      .replaceAll(dir, '<tmp>')
+      .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
+      .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+  try {
+    await t.step('build-html-edge', async () => {
+      const result = await runImp(['build'], dir)
+      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html')).catch(() => '(none)')
+      await assertSnapshot(
+        'build-html-edge',
+        mask(
+          `${commandTranscript('imp build  (cwd: <tmp>)', result)}\n` +
+            `${section('dist/index.html', html)}\n`,
+        ),
+      )
+    })
+    await t.step('lint-html-edge', async () => {
+      const result = await runImp(['lint'], dir)
+      await assertSnapshot(
+        'lint-html-edge',
+        mask(commandTranscript('imp lint  (cwd: <tmp>)', result)),
+      )
+    })
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
 const workerReport = (source) => {
   const worker = runServiceWorker(source)
   const precache = worker.scope.__IMP_PRECACHE__

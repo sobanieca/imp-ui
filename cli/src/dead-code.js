@@ -2,7 +2,7 @@ import { dirname, join, relative, resolve, SEPARATOR } from '@std/path'
 import { browserGlobals, Linter } from './vendor/eslint.js'
 import { resolveModuleFile } from './bundling.js'
 import { collectFiles } from './walk.js'
-import { htmlScripts, isJavaScriptType, isLocalScriptSource, isModuleType } from './html-scripts.js'
+import { isJavaScriptType, isLocalScriptSource, isModuleType, readHtml } from './html-document.js'
 import { isMockFile, isPreviewFile, isTestFile } from './project-files.js'
 import { publicDirectory } from './config.js'
 
@@ -280,7 +280,7 @@ export async function reportDeadCode({ root, config, configName }) {
     if (isScript(file)) continue
     const html = await Deno.readTextFile(file)
     const directory = dirname(file)
-    for (const script of htmlScripts(html)) {
+    for (const script of readHtml(html).scripts) {
       if (!isJavaScriptType(script.type)) continue
       if (script.src !== null) {
         if (!script.src || !isLocalScriptSource(script.src)) continue

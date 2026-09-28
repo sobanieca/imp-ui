@@ -15,6 +15,7 @@ const VERSIONS = {
   'gifenc': '1.0.3',
   'jsonc-parser': '3.3.1',
   'marked': '18.0.12',
+  'parse5': '8.0.1',
 }
 
 const PREBUNDLES = [
@@ -66,6 +67,11 @@ const PREBUNDLES = [
     file: 'marked.js',
     packages: ['marked'],
     entryCode: (v) => `export { marked } from 'npm:marked@${v['marked']}'\n`,
+  },
+  {
+    file: 'parse5.js',
+    packages: ['parse5'],
+    entryCode: (v) => `export { parse } from 'npm:parse5@${v['parse5']}'\n`,
   },
 ]
 

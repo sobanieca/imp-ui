@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <HEAD data-note="a > b">
+    <meta charset="utf-8">
+    <title>edge cases</title>
+    <link rel="icon" href="/favicon.svg">
+    <link rel="preconnect" href="//cdn.example.com">
+    <link rel="stylesheet" href='/styles.css'>
+  </HEAD>
+  <body>
+    <!-- <script type="module" src="/missing.js"></script> -->
+    <!-- <script type="module" src="/commented.js"></script> -->
+    <img alt="a > b" src="/logo.svg">
+    <p>Write href="/docs" in text, and keep it as text.</p>
+    <textarea><script type="module" src="/in-textarea.js"></script></textarea>
+    <div data-template="<script type=module src=/in-attribute.js></script>"></div>
+    <SCRIPT TYPE=module SRC=/app.js></SCRIPT>
+    <script type="module">
+      import { greet } from './greet.js'
+      const html = '<p>' + greet('a > b') + '</p>'
+      document.body.dataset.greeting = html
+    </script>
+  </body>
+</html>
