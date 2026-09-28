@@ -5,6 +5,7 @@ exit code: 0
 built index.html -> dist/
   flags folded in - CHECKOUT_V2 off, NEW_NAV off
   chunks/app-<hash>.js (<size>)
+  chunks/env-<hash>.js (<size>)
   index.html (<size>)
 
 --- stderr ---

@@ -41,11 +41,15 @@ Two constraints shaped the mechanism:
   somebody defined one. Otherwise there is no environment, and `env` is an empty object. That is the
   behaviour of today, and a project that never opts in does not break. An unknown alias fails
   immediately, and imp lists the aliases that exist.
-- **There is one runtime mechanism, and development equals production.** imp injects the resolved
-  values into the head of the HTML, as `<script>globalThis.__IMP_ENV__ = { ... }</script>`, in front
-  of the import map. The dev server and the production build inject it in the same way. The library
-  of imp exports a frozen `env` object, read from that global, and it is empty when imp injected
-  nothing. So app code writes `import { env } from 'imp'`, and never touches the global.
+- **There is one runtime mechanism, and development equals production.** imp sets the resolved
+  values as the global `globalThis.__IMP_ENV__ = { ... }` before any module of the page runs. The
+  dev server writes that statement into an inline script in the head of the HTML, in front of the
+  import map. The production build writes it into a hashed file, `chunks/env-<hash>.js`, and loads
+  that file with a classic script in the head, so a strict Content Security Policy allows it, see
+  `production-bundling.md`. Both escape `<` in the values, so a value that holds `</script>` cannot
+  end the script. The library of imp exports a frozen `env` object, read from that global, and it is
+  empty when imp set nothing. So app code writes `import { env } from 'imp'`, and never touches the
+  global.
 - **An env file stays out of the build output.** imp excludes every file that `environments`
   references from the static copy into the output directory. It is config for build time, like
   `imp.json`.

@@ -10,6 +10,8 @@ built index.html -> dist/
   chunks/app-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
+  chunks/env-<hash>.js (<size>)
+  chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)
@@ -23,6 +25,8 @@ dist/assets/note.txt
 dist/chunks/app-<hash>.js
 dist/chunks/chunk-<hash>.js
 dist/chunks/chunk-<hash>.js
+dist/chunks/env-<hash>.js
+dist/chunks/inline-1-<hash>.js
 dist/chunks/lazy-<hash>.js
 dist/index.html
 dist/styles.css
@@ -31,14 +35,11 @@ dist/styles.css
 <!doctype html>
 <html lang="en">
   <head>
-<script>globalThis.__IMP_ENV__ = {"IMP_BASEPATH":"/my-imp-app"}</script>
+<script src="/my-imp-app/chunks/env-<hash>.js"></script>
     <meta charset="utf-8">
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/my-imp-app/styles.css">
-    <script type="module">
-/*! Third-party license notices: /my-imp-app/LICENSES.txt */
-import{a as e}from"./chunk-<hash>.js";console.log("inline module sees imp:",e());
-</script>
+    <script type="module" src="/my-imp-app/chunks/inline-1-<hash>.js"></script>
   </head>
   <body>
     <div id="app"></div>

@@ -6,6 +6,7 @@ built index.html -> dist/
   mocks/ left out - mocks serve in imp start
   sw.js - your service worker, bundled from src/sw.js
   chunks/app-<hash>.js (<size>)
+  chunks/env-<hash>.js (<size>)
   index.html (<size>)
   sw.js (<size>)
 

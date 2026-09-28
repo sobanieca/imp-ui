@@ -114,6 +114,11 @@ host with the result, and returns an `unmount` function that empties the host. T
 `Node`, a string (which becomes a text node), or an array of either. imp skips a `null`,
 `undefined`, or `false` entry. A `target` selector that matches nothing throws.
 
+`html(markup)` parses a string of trusted markup into a fragment. Use it for markup that your own
+code wrote, never for text that a person typed. A strict Content Security Policy blocks a `style`
+attribute inside that markup. Use a `class` and CSS instead, see
+[Content Security Policy](cli.md#content-security-policy).
+
 The first `mount` also sets the browser's default `body` margin to zero, so a full-height app (any
 app built on [shell](std-components.md)) reaches the edges of the window. Without this, an
 eight-pixel gutter remains and adds a scrollbar to a page that must not scroll. This rule sits in

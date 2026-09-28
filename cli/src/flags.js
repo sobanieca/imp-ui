@@ -1,4 +1,5 @@
 import { extractCalls, parseStringLiteral, splitFirstArgument } from './bundling.js'
+import { scriptSafeJson } from './environments.js'
 
 const FLAG_EXPORT = 'flag'
 
@@ -27,7 +28,7 @@ export function splitEnvAndFlags({ config, env }) {
 
 export function flagsInjectionScript(flags) {
   if (!flags || Object.keys(flags).length === 0) return ''
-  return `<script>globalThis.__IMP_FLAGS__ = ${JSON.stringify(flags)}</script>`
+  return `<script>globalThis.__IMP_FLAGS__ = ${scriptSafeJson(flags)}</script>`
 }
 
 const IMP_NAMED_IMPORT = /^[ \t]*import\s*\{([^}]*)\}\s*from\s*(['"])imp\2/gm

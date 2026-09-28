@@ -562,8 +562,8 @@ the module scripts of the page. It bundles each one into minified, self-containe
   `<script type="module" src="...">` to `chunks/`, with a content hash in the file name, such as
   `chunks/main-4ZDAFRFX.js`. It then points the `src` of the built page at that file. The HTML file
   keeps its own name. So a browser can cache every script for a long time, and a deploy never serves
-  an old script under a new page. imp also bundles an inline `<script type="module">` block. It
-  inlines it again, minified and with its imports resolved.
+  an old script under a new page. imp also bundles an inline `<script type="module">` block, and
+  writes it to its own hashed file under `chunks/`. The built page has no inline script.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
   several entry points share once, instead of a copy in each bundle. imp writes a chunk only when an
@@ -619,6 +619,36 @@ including the skill of a pre-built component that you installed, and of your own
 it from a chunk that loads lazily as well as from the main bundle. See
 **[Components](components.md)**.
 
+### Content Security Policy
+
+A built app works under a strict Content Security Policy with no setting, no hash and no nonce:
+
+```
+Content-Security-Policy: script-src 'self'; style-src 'self'
+```
+
+That policy blocks every inline script and every `style` attribute. So a page that it protects runs
+only the scripts that your own server sends. imp builds for it:
+
+- **The built page has no inline script.** An inline `<script type="module">` of your page goes into
+  a hashed file under `chunks/`. The environment values go into `chunks/env-<hash>.js`. The script
+  that registers the service worker of `--pwa` goes into a hashed file too.
+- **A `style` prop works under the policy**, as an object and as a string. imp sets the style
+  through the CSS object model, which the policy does not block. The styles of the components are
+  constructed stylesheets, which it does not block either.
+- **Markup in `html()` with a `style` attribute is blocked.** Write that style in CSS instead, or
+  add `'unsafe-inline'` to `style-src`. The same applies to a `<style>` element or a `style`
+  attribute in your `index.html`. Put that CSS in a file in `public/`.
+- **Add each origin that you load from.** An app that loads the script of an analytics provider adds
+  its origin to `script-src`, and the origin that it sends data to, to `connect-src`. A web font
+  from another origin needs `style-src` and `font-src` entries.
+
+imp writes no policy. It emits no `<meta http-equiv>` tag and no host file, such as `_headers`. Your
+app knows its origins, and your host decides the format of its headers. Send the policy as a header
+from the host. imp does not support Trusted Types: `require-trusted-types-for 'script'` blocks the
+`innerHTML` that `html()` uses. The policy applies to the build only. `imp start` injects inline
+scripts for the dev tools, so do not send the policy from the dev server.
+
 ### License notices
 
 Most open-source licences, such as MIT, BSD and Apache-2.0, let you ship the code on one condition.
@@ -669,8 +699,7 @@ declares and nothing imports, so that dependency contributes no notice. When a b
 has no recorded licence, the build warns and names it. Run `imp install` to record the licences.
 
 Every JavaScript file that the build emits starts with a comment that names the licence file. That
-covers the bundles, the chunks that load lazily, and the inline module scripts that imp inlines
-again into your page:
+covers the bundles, the chunks that load lazily, and the files of your inline module scripts:
 
 ```js
 /*! Third-party license notices: /LICENSES.txt */
@@ -829,8 +858,8 @@ the build prints a warning when that happens. The build then does the following,
   app. It also guarantees the fields that a browser needs before it offers an installation: a name,
   a 192px icon and a 512px icon, a display mode, and a start URL.
 - **imp writes an offline service worker**, `sw.js`. It injects the manifest link, the theme-color
-  meta tag, the apple-touch-icon link and the registration of the service worker into the `<head>`
-  of your page. The built HTML is ready to install, and you edit no source.
+  meta tag, the apple-touch-icon link and a script that registers the service worker into the
+  `<head>` of your page. The built HTML is ready to install, and you edit no source.
 
 **The service worker is the part that matters.** Anything can make a manifest from a template and
 resize an icon. What really breaks for a user is a lost connection, an unreliable network, or an app

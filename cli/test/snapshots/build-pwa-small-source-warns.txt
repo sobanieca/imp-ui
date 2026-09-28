@@ -7,6 +7,7 @@ built index.html -> dist/
   PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
   installable - name, 192 + 512 icons, display, start_url all present
   chunks/app-<hash>.js (<size>)
+  chunks/register-service-worker-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)
   icons/icon-192.png (<size>)
   icons/icon-512.png (<size>)

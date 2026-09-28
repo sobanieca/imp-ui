@@ -7,6 +7,7 @@ import {
   toFileUrl,
 } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
+import { readHtml } from '../src/html-document.js'
 import { clientScript } from '../src/client.js'
 import { createMocks } from '../src/mocks.js'
 import { createDevLog } from '../src/dev-log.js'
@@ -795,6 +796,15 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
   }
 })
 
+async function withBuiltScripts(dist, html) {
+  const texts = [html]
+  for (const { src } of readHtml(html).scripts) {
+    const file = src?.match(/chunks\/(env|register-service-worker)-[A-Z0-9]{8}\.js$/)?.[0]
+    if (file) texts.push(await Deno.readTextFile(join(dist, file)))
+  }
+  return texts.join('\n')
+}
+
 async function copyDirectory(source, destination) {
   await Deno.mkdir(destination, { recursive: true })
   for await (const entry of Deno.readDir(source)) {
@@ -1509,6 +1519,114 @@ Deno.test('precacheBuild in a project worker serves the app offline', async () =
   }
 })
 
+const STRICT_POLICY = "script-src 'self'; style-src 'self'"
+
+Deno.test('a built app runs under a strict Content Security Policy', async () => {
+  const dir = await Deno.makeTempDir()
+  const write = async (path, text) => {
+    await Deno.mkdir(dirname(join(dir, path)), { recursive: true })
+    await Deno.writeTextFile(join(dir, path), text)
+  }
+  await write(
+    'index.html',
+    '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>csp</title>' +
+      '<link rel="stylesheet" href="/styles.css"></head><body><div id="app"></div>' +
+      '<script type="module" src="/src/main.js"></script>' +
+      '<script type="module">globalThis.inlineRan = \'yes\'</script></body></html>',
+  )
+  await write('public/styles.css', 'body { margin: 0; }\n')
+  await write(
+    'src/main.js',
+    [
+      "import { env, mount } from 'imp'",
+      "import { div } from 'imp/html'",
+      "import { button } from 'imp/std'",
+      "import { breadcrumbs } from 'imp/std/shell'",
+      '',
+      "mount('#app', () =>",
+      '  div(',
+      "    div({ id: 'greeting' }, env.GREETING),",
+      "    div({ id: 'styled', style: 'color: rgb(1, 2, 3)' }, 'styled'),",
+      "    button({ variant: 'primary' }, 'Save'),",
+      '    breadcrumbs({',
+      '      items: [',
+      "        { id: 'home', label: 'Home', href: '/' },",
+      "        { id: 'repo', label: 'imp', href: '/imp', options: [{ id: 'a', label: 'a', href: '/a' }] },",
+      '      ],',
+      '    }),',
+      '  ))',
+      '',
+    ].join('\n'),
+  )
+  await write('env/prod.json', JSON.stringify({ GREETING: 'hello </script> <!-- world' }))
+  await write(
+    'icon.svg',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8"/></svg>',
+  )
+  await write(
+    'imp.json',
+    JSON.stringify({
+      environments: { default: 'env/prod.json' },
+      pwa: { name: 'Strict', icon: 'icon.svg' },
+    }),
+  )
+  const result = await runImp(['build', '--pwa'], dir)
+  check(result.code === 0, `the build failed:\n${result.stderr}`)
+  const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+  check(
+    [...readHtml(html).scripts].every((script) => script.src !== null && script.text === ''),
+    `the built page still has an inline script:\n${html}`,
+  )
+  const { server, base } = serveFolder(() => join(dir, 'dist'), {
+    'content-security-policy': STRICT_POLICY,
+  })
+  const browser = await launchBrowser()
+  try {
+    const page = await browser.newPage()
+    const reports = []
+    page.on('console', (message) => {
+      if (/content security policy/i.test(message.text())) reports.push(message.text())
+    })
+    await page.evaluateOnNewDocument(() => {
+      globalThis.impViolations = []
+      document.addEventListener('securitypolicyviolation', (event) => {
+        globalThis.impViolations.push(`${event.violatedDirective} ${event.blockedURI}`)
+      }, true)
+    })
+    await page.goto(`${base}/`)
+    await page.waitForFunction(() => document.querySelector('imp-breadcrumbs')?.shadowRoot)
+    const state = await page.evaluate(async () => {
+      await navigator.serviceWorker.ready
+      const crumbs = document.querySelector('imp-breadcrumbs').shadowRoot
+      return {
+        inline: globalThis.inlineRan,
+        greeting: document.querySelector('#greeting').textContent,
+        styled: getComputedStyle(document.querySelector('#styled')).color,
+        anchor: getComputedStyle(crumbs.querySelector('.picker')).anchorName,
+        violations: [...globalThis.impViolations],
+      }
+    })
+    check(state.inline === 'yes', 'the inline module script did not run')
+    check(state.greeting === 'hello </script> <!-- world', `env value: ${state.greeting}`)
+    check(state.styled === 'rgb(1, 2, 3)', `a string style was blocked: ${state.styled}`)
+    check(state.anchor === '--imp-crumb-1', `the breadcrumbs anchor was blocked: ${state.anchor}`)
+    check(
+      state.violations.length === 0 && reports.length === 0,
+      `CSP violations: ${JSON.stringify([...state.violations, ...reports])}`,
+    )
+    const probe = await page.evaluate(async () => {
+      document.body.setAttribute('style', 'color: red')
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      return globalThis.impViolations.length
+    })
+    check(probe === 1, 'the policy is not active, so the check above proves nothing')
+  } finally {
+    await browser.close()
+    await server.shutdown()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
 async function startServer(cwd, extraArgs = [], command = ['start', 'index.html']) {
   const child = new Deno.Command(IMP, {
     args: [...command, '--port', '0', ...extraArgs],
@@ -1989,7 +2107,10 @@ Deno.test('imp build bundles the service worker of the project', async (t) => {
     check(plain.code === 0, `the plain build failed:\n${plain.stderr}`)
     const plainWorker = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
     const result = await runImp(['build', '--pwa'], dir)
-    const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+    const html = await withBuiltScripts(
+      join(dir, 'dist'),
+      await Deno.readTextFile(join(dir, 'dist', 'index.html')),
+    )
     const sw = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
     const report = [
       `registration: ${html.match(/serviceWorker\.register\([^)]*\)/)?.[0] ?? '(none)'}`,
@@ -3649,6 +3770,18 @@ Deno.test('imp start warns about an entry copy in public', async () => {
   }
 })
 
+Deno.test('an injected value cannot end its script', () => {
+  const tag = envInjectionScript({ NOTE: 'a </script><script>alert(1)</script> <!-- b' })
+  const inner = tag.slice('<script>'.length, -'</script>'.length)
+  check(!/<\/script|<!--/i.test(inner), `the value escaped its script: ${tag}`)
+  const values = {}
+  new Function('globalThis', inner)(values)
+  check(
+    values.__IMP_ENV__.NOTE === 'a </script><script>alert(1)</script> <!-- b',
+    'the value changed',
+  )
+})
+
 Deno.test('injectImp', async () => {
   const headInjection = '<script>imp-injection</script>'
   const cases = [
@@ -3823,13 +3956,17 @@ Deno.test('imp build and start with environments', async (t) => {
   const mask = (text) =>
     text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
       .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
-  const envLine = (html) => html.match(/globalThis\.__IMP_ENV__ = [^<]*/)?.[0] ?? '(none injected)'
+  const envLine = (html) =>
+    html.match(/globalThis\.__IMP_ENV__ = [^<\n]*/)?.[0] ?? '(none injected)'
 
   try {
     await t.step('build-default-env', async () => {
       Deno.env.delete('IMP_DEMO_TOKEN')
       const result = await runImp(['build'], dir)
-      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      const html = await withBuiltScripts(
+        join(dir, 'dist'),
+        await Deno.readTextFile(join(dir, 'dist', 'index.html')),
+      )
       const envFileCopied = await Deno.stat(join(dir, 'dist', 'env', 'dev.json'))
         .then(() => true).catch(() => false)
       await assertSnapshot(
@@ -3843,7 +3980,10 @@ Deno.test('imp build and start with environments', async (t) => {
     await t.step('build-selected-env-with-secret', async () => {
       Deno.env.set('IMP_DEMO_TOKEN', 'prod-secret')
       const result = await runImp(['build', '--env', 'prod'], dir)
-      const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      const html = await withBuiltScripts(
+        join(dir, 'dist'),
+        await Deno.readTextFile(join(dir, 'dist', 'index.html')),
+      )
       await assertSnapshot(
         'env-build-selected',
         `${mask(commandTranscript('imp build --env prod  (cwd: <tmp>)', result))}\n${
@@ -3952,7 +4092,7 @@ Deno.test('imp build and start with feature flags', async (t) => {
     text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
       .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
   const globalsIn = (html) =>
-    [...html.matchAll(/globalThis\.__IMP_[A-Z_]+ = [^<]*/g)].map(([line]) => line).join('\n')
+    [...html.matchAll(/globalThis\.__IMP_[A-Z_]+ = [^<\n]*/g)].map(([line]) => line).join('\n')
 
   const buildReport = async (alias) => {
     const result = await runImp(['build', '--env', alias], dir)
@@ -3961,9 +4101,10 @@ Deno.test('imp build and start with feature flags', async (t) => {
     const sources = await Promise.all(
       files.map((file) => Deno.readTextFile(join(dir, 'dist', 'chunks', file.name))),
     )
-    const chunks = files.filter((file) => !file.name.startsWith('app-'))
+    const chunks = files.filter((file) => !/^(app|env)-/.test(file.name))
     const output = sources.join('\n')
-    const html = await Deno.readTextFile(join(dir, 'dist', 'index.html')).catch(() => '')
+    const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
+      .then((text) => withBuiltScripts(join(dir, 'dist'), text)).catch(() => '')
     return `${mask(commandTranscript(`imp build --env ${alias}  (cwd: <tmp>)`, result))}\n${
       section(
         'folded bundle',

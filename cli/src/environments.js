@@ -109,7 +109,11 @@ export async function resolveEnvironment({ root, config, requestedAlias = null }
   return resolveValues(alias, filePath, raw)
 }
 
+export const scriptSafeJson = (value) => JSON.stringify(value).replaceAll('<', '\\u003c')
+
+export const envValuesScript = (env) => `globalThis.__IMP_ENV__ = ${scriptSafeJson(env)}\n`
+
 export function envInjectionScript(env) {
   if (!env || Object.keys(env).length === 0) return ''
-  return `<script>globalThis.__IMP_ENV__ = ${JSON.stringify(env)}</script>`
+  return `<script>globalThis.__IMP_ENV__ = ${scriptSafeJson(env)}</script>`
 }

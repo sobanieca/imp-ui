@@ -35,41 +35,6 @@ This tier is the most likely to block a procurement, in place of being a prefere
 
 ## Tier 2 - what `imp build` emits
 
-- **There is no story about a CSP.** A strict Content Security Policy blocks every inline `<script>`
-  and every `style` attribute. A security review of a serious deployment asks for such a policy. A
-  built app breaks under it today, in four places:
-  - `imp build` inlines the body of an inline module script into the HTML, through
-    `replaceInlineScripts`.
-  - It injects `<script>globalThis.__IMP_ENV__ = ...</script>`, when the app has environment values.
-  - `imp build --pwa` injects an inline script that registers the service worker, in
-    `cli/src/pwa.js`. That script also has a feature detection, `'serviceWorker' in navigator`.
-  - A `style` prop that is a string goes through `setAttribute('style', ...)`, in `applyStyle` in
-    `lib/src/render.js`. `style-src 'self'` blocks that attribute. `breadcrumbs` passes
-    `anchor-name` as a string `style`, so its menu loses its anchor under a strict policy.
-
-  The styles of a component are not affected. `style-src` does not check a constructed stylesheet in
-  `adoptedStyleSheets`, or a call to `style.setProperty`. Nothing in `docs/` mentions a CSP at all.
-  **Decision:** a built app works under `script-src 'self'; style-src 'self'`, with no hash, no
-  nonce and no setting.
-  - The build output has no inline script. The body of an inline module script goes into an external
-    hashed file. The environment values go into a hashed `env.js`.
-  - The registration of the service worker goes into a hashed file, with no feature detection.
-  - A string `style` sets `node.style.cssText`, which a CSP does not block.
-  - An e2e test serves a built app, with the PWA and environment values, under that policy. It fails
-    on any report of a CSP violation. So the next inline script cannot come back in silence.
-  - The docs give that baseline policy. An app that loads the script of an analytics provider adds
-    that origin to its own policy. The docs say that markup in `html()` with a `style` attribute
-    needs `'unsafe-inline'`, so an app writes the style in CSS instead.
-  - imp does not write the policy. It emits no `<meta http-equiv>` tag and no host file such as
-    `_headers`. The app owns its origins, and the host owns the format of its headers.
-  - Trusted Types are out of scope. `require-trusted-types-for 'script'` blocks the `innerHTML` of
-    `html()` and of `imp-mark`.
-- **`envInjectionScript` does not escape `</script`.** `cli/src/environments.js` writes
-  `JSON.stringify(env)` straight into an inline script. `cli/src/build.js` explicitly guards the
-  same hazard, for an inline bundle. An environment value comes from the author. So this is a trap
-  that breaks a build, and not a hole for an injection. **Decision:** the external `env.js` of the
-  CSP item removes the inline script, and the hazard with it. `imp start` still injects the values
-  inline, so the dev path uses the same guard as `cli/src/build.js`.
 - **Some hygiene for production is missing on the side of the build.** There is no `modulepreload`
   hint for a chunk that the entry will pull. There is no budget for the size of an app build. imp
   enforces a limit on the size of its own binary, through `binary-size-limit.json`, and it offers

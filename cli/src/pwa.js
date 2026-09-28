@@ -95,20 +95,17 @@ export async function cacheVersion(files) {
   return (await sha256Hex(new TextEncoder().encode(lines.join('\n')))).slice(0, 16)
 }
 
-export function pwaHeadTags({ manifestHref, themeColor, appleTouchHref, swHref = null }) {
+export function pwaHeadTags({ manifestHref, themeColor, appleTouchHref }) {
   const tags = [
     `<link rel="manifest" href="${manifestHref}">`,
     themeColor ? `<meta name="theme-color" content="${themeColor}">` : null,
     `<link rel="apple-touch-icon" href="${appleTouchHref}">`,
   ]
-  if (swHref) {
-    tags.push(
-      `<script>if('serviceWorker' in navigator)addEventListener('load',` +
-        `()=>navigator.serviceWorker.register(${JSON.stringify(swHref)}))</script>`,
-    )
-  }
   return tags.filter(Boolean).join('\n')
 }
+
+export const serviceWorkerRegistration = (swHref) =>
+  `addEventListener('load', () => navigator.serviceWorker.register(${JSON.stringify(swHref)}))\n`
 
 export async function validatePwaBuild(pwa, isHtmlEntry, root) {
   if (!pwa) {

@@ -21,7 +21,8 @@ help the build.
 
 - imp bundles and minifies every `<script type="module" src="...">` to
   **`chunks/<name>-<hash>.js`**, and points the `src` of the built page at it. The HTML keeps its
-  name. imp bundles an inline module script and inlines it again.
+  name. imp writes an inline module script to `chunks/inline-<n>-<hash>.js`, and the environment
+  values to `chunks/env-<hash>.js`. The built page has no inline script.
 - **Never reference a built script by its source name**, such as `/src/main.js` in a host config or
   a test of the output. Only the built HTML knows the hashed name.
 - imp turns an `import()` into a separate hashed chunk under `chunks/` that loads on demand. It
@@ -78,7 +79,7 @@ sources:
 
 imp merges a duplicate inside each source. It does **not** compare the two sources against each
 other, so a package can appear twice. Every emitted `.js` file starts with the line below. This
-covers a bundle, a chunk, and an inline module script that imp inlines again into the page:
+covers a bundle, a chunk, and the file of an inline module script:
 
 ```js
 /*! Third-party license notices: /LICENSES.txt */
@@ -133,7 +134,7 @@ the assets and the navigation move together. See [routing](routing.md).
 - **imp writes `manifest.webmanifest`** with the fields that a browser needs to offer installation.
 - **imp writes an offline `sw.js`.** Its precache list is exactly the files of this build, derived
   from the build and not from a folder scan. imp also injects the manifest link, the theme-color
-  meta tag, the apple-touch-icon link and the registration into `<head>`.
+  meta tag, the apple-touch-icon link and a script tag for the registration into `<head>`.
 
 The caching defaults are fixed and you cannot configure them. The page and its deep links are
 network-first, and fall back to the cached shell. A hashed asset is cache-first. imp never caches a
@@ -152,8 +153,25 @@ When `imp.json` names a `serviceWorker`, every page build bundles that source an
 `precacheBuild()` in your worker for the same offline behaviour. See
 [service-worker](service-worker.md).
 
+## Content Security Policy
+
+A built app works under `script-src 'self'; style-src 'self'` with no setting, no hash and no nonce.
+imp writes no policy and no host file. The host sends the header.
+
+| Works under the policy                   | Blocked by the policy                                  |
+| ---------------------------------------- | ------------------------------------------------------ |
+| every script that imp builds             | a classic inline `<script>` in `index.html`            |
+| a `style` prop, as an object or a string | a `style` attribute in `html()` markup                 |
+| the styles of every component            | a `<style>` element or a `style` attribute in the HTML |
+| `init`, themes and `applyTheme`          | Trusted Types (`require-trusted-types-for`)            |
+
 ## Rules an agent gets wrong
 
+- **Write no inline script, `<style>` element or `style` attribute in `index.html`.** Put CSS in a
+  file in `public/`, and code in a module. Use the `style` prop, not a `style` attribute in
+  `html()`.
+- **Add a third-party origin to the policy of the host**, such as the script of an analytics
+  provider in `script-src` and its endpoint in `connect-src`. imp never writes the policy.
 - **Never edit a file in the output directory.** imp deletes and writes the directory again on every
   run.
 - **Deploy `LICENSES.txt` with the rest of the output.** The licenses that produce the file forbid

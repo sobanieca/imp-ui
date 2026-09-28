@@ -79,6 +79,9 @@ html('<b>trusted</b>') // raw HTML -> DocumentFragment; trusted input only
 host with the result, and returns an `unmount` function. The result can be a `Node`, a string or an
 array. imp skips a `null`, `undefined` or `false` entry. A selector that matches nothing throws.
 
+`html(markup)` is for trusted markup only. A strict Content Security Policy blocks a `style`
+attribute in that markup, so use a `class` there. A `style` prop is safe under the policy.
+
 The first `mount` adopts one document rule, `body { margin: 0 }`, in a cascade layer of imp's own.
 The user agent applies an 8px body margin. Without imp's rule, that margin makes a `100dvb` app
 taller than the window, and the page scrolls. **Do not write your own `body { margin: 0 }`, and do

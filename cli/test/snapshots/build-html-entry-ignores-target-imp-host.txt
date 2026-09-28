@@ -10,6 +10,7 @@ built index.html -> dist/
   chunks/app-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
+  chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)

@@ -36,10 +36,10 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
 - **An HTML entry hashes every script.** Every `<script type="module">` with a local `src` becomes
   an entry point. imp writes its bundled output to `chunks/<name>-<hash>.js`, and rewrites the `src`
   in the built HTML to match. The HTML file keeps its plain name. imp bundles an inline module
-  script as another entry, and inlines it again. A module that loads lazily, through `import()`, and
-  code that two entry points share, both go into a file under `chunks/`, with a content hash. So
-  every script of a page build lives under `chunks/` with a hash, and a host can cache that folder
-  for a year.
+  script as another entry, and writes it as `chunks/inline-<n>-<hash>.js`. A module that loads
+  lazily, through `import()`, and code that two entry points share, both go into a file under
+  `chunks/`, with a content hash. So every script of a page build lives under `chunks/` with a hash,
+  and a host can cache that folder for a year.
 - **A JS entry keeps its plain name.** A consumer imports that file by name, so a hash would break
   every import of it.
 - **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of
@@ -62,6 +62,18 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   imp always compiles a declared dependency in, at the vendored, pinned version. That keeps the
   option one boolean, and not a list per import. An HTML entry compiles imp in anyway. The page is
   its own host, and its production output has no import map that could resolve a bare import.
+- **A built page runs under a strict Content Security Policy**,
+  `script-src 'self'; style-src
+  'self'`, with no hash, no nonce and no setting. The build output
+  has no inline script. An inline module script becomes a hashed file under `chunks/`. The
+  environment values go into a hashed `chunks/env-<hash>.js`, and the registration of the service
+  worker goes into a hashed file too. A `style` prop that is a string sets `node.style.cssText`,
+  which a policy does not check. The constructed stylesheets of the components are not checked
+  either. An e2e test serves a built app, with the PWA and environment values, under that policy,
+  and fails on any report of a violation. imp writes no policy. It emits no `<meta http-equiv>` tag
+  and no host file, because the app owns its origins and the host owns the format of its headers.
+  Trusted Types are out of scope: `require-trusted-types-for 'script'` blocks the `innerHTML` of
+  `html()`.
 - **imp writes no source map.** There is no flag and no key that turns one on. The error handling of
   the app identifies a production error, not a map back to the source.
 

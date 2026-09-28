@@ -9,6 +9,7 @@ built index.html -> dist/
   chunks/app-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
+  chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)
@@ -22,6 +23,7 @@ dist/assets/note.txt
 dist/chunks/app-<hash>.js
 dist/chunks/chunk-<hash>.js
 dist/chunks/chunk-<hash>.js
+dist/chunks/inline-1-<hash>.js
 dist/chunks/lazy-<hash>.js
 dist/index.html
 dist/styles.css
@@ -33,10 +35,7 @@ dist/styles.css
     <meta charset="utf-8">
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/styles.css">
-    <script type="module">
-/*! Third-party license notices: /LICENSES.txt */
-import{a as e}from"./chunk-<hash>.js";console.log("inline module sees imp:",e());
-</script>
+    <script type="module" src="/chunks/inline-1-<hash>.js"></script>
   </head>
   <body>
     <div id="app"></div>

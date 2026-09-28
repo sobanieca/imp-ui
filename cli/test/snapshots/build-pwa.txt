@@ -6,6 +6,7 @@ built index.html -> dist/
   PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
   installable - name, 192 + 512 icons, display, start_url all present
   chunks/app-<hash>.js (<size>)
+  chunks/register-service-worker-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)
   icons/icon-192.png (<size>)
   icons/icon-512.png (<size>)
@@ -19,6 +20,7 @@ built index.html -> dist/
 
 --- output files ---
 dist/chunks/app-<hash>.js
+dist/chunks/register-service-worker-<hash>.js
 dist/icons/apple-touch-icon.png
 dist/icons/icon-192.png
 dist/icons/icon-512.png
@@ -60,7 +62,7 @@ dist/sw.js
 
 --- dist/sw.js ---
 precache version: <16 hex digits>
-precache files: ["/chunks/app-<hash>.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
+precache files: ["/chunks/app-<hash>.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/chunks/register-service-worker-<hash>.js","/index.html"]
 precache shell: "/index.html"
 listeners: activate, fetch, install
 
@@ -71,7 +73,7 @@ listeners: activate, fetch, install
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#101828">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register("/sw.js"))</script>
+<script src="/chunks/register-service-worker-<hash>.js"></script>
     <meta charset="utf-8">
     <title>pwa fixture</title>
   </head>

@@ -5,6 +5,8 @@ exit code: 0
 built index.html -> dist/
   base path /base - root-absolute urls prefixed for a sub-path deployment
   chunks/app-<hash>.js (<size>)
+  chunks/env-<hash>.js (<size>)
+  chunks/inline-1-<hash>.js (<size>)
   favicon.svg (<size>)
   index.html (<size>)
   logo.svg (<size>)
@@ -17,7 +19,7 @@ built index.html -> dist/
 <!doctype html>
 <html lang="en">
   <HEAD data-note="a > b">
-<script>globalThis.__IMP_ENV__ = {"IMP_BASEPATH":"/base"}</script>
+<script src="/base/chunks/env-<hash>.js"></script>
     <meta charset="utf-8">
     <title>edge cases</title>
     <link rel="icon" href="/base/favicon.svg">
@@ -32,8 +34,6 @@ built index.html -> dist/
     <textarea><script type="module" src="/in-textarea.js"></script></textarea>
     <div data-template="<script type=module src=/in-attribute.js></script>"></div>
     <SCRIPT TYPE=module SRC=/base/chunks/app-<hash>.js></SCRIPT>
-    <script type="module">
-var t=e=>`hello ${e}`;var o="<p>"+t("a > b")+"</p>";document.body.dataset.greeting=o;
-</script>
+    <script type="module" src="/base/chunks/inline-1-<hash>.js"></script>
   </body>
 </html>

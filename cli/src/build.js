@@ -20,7 +20,7 @@ import {
   readHtml,
 } from './html-document.js'
 import { basePathOf, siteUrl } from './base-path.js'
-import { envInjectionScript, resolveEnvironment } from './environments.js'
+import { envValuesScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
 import { formatSize } from './file-size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
@@ -52,6 +52,7 @@ import {
   cacheVersion,
   pwaHeadTags,
   renderIconSet,
+  serviceWorkerRegistration,
   validatePwaBuild,
 } from './pwa.js'
 
@@ -297,12 +298,31 @@ function assertEveryFlagFolded(outputFiles) {
   }
 }
 
-function inlineScriptEdits(document, inlineOutputs) {
-  return moduleScriptsOf(document).filter(isInlineModule).map((script, index) => ({
-    start: script.start,
-    end: script.end,
-    text: `\n${inlineOutputs[index].trim().replace(/<\/script/gi, '<\\/script')}\n`,
-  }))
+function inlineScriptEdits(document, { inlineOutputs, outdir, base }) {
+  return moduleScriptsOf(document).filter(isInlineModule).flatMap((script, index) => {
+    const src = siteUrl(base, asPosix(relative(outdir, inlineOutputs[index])))
+    return [
+      { start: script.start - 1, end: script.start - 1, text: ` src="${src}"` },
+      { start: script.start, end: script.end, text: '' },
+    ]
+  })
+}
+
+const contentHash = async (text) => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return Array.from(
+    new Uint8Array(digest).slice(0, 4),
+    (byte) => byte.toString(16).padStart(2, '0'),
+  )
+    .join('').toUpperCase()
+}
+
+async function writeHashedScript({ outdir, name, text, written }) {
+  const file = `chunks/${name}-${await contentHash(text)}.js`
+  await Deno.mkdir(join(outdir, 'chunks'), { recursive: true })
+  await Deno.writeTextFile(join(outdir, file), text)
+  written.push(file)
+  return file
 }
 
 async function copyPublicFiles({ publicDir, outdir, written, reserved }) {
@@ -426,7 +446,7 @@ export async function build(
     })),
     ...inlineSources.map((_, index) => ({
       in: `${INLINE_ENTRY_SCHEME}${index}`,
-      out: withoutExtension(inlineModuleName(index)),
+      out: `inline-${index + 1}`,
     })),
   ]
 
@@ -476,17 +496,11 @@ export async function build(
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
   await Deno.mkdir(outdirPath, { recursive: true })
   const written = []
-  const inlineOutputPaths = inlineSources.map((_, index) =>
+  const inlineOutputs = inlineSources.map((_, index) =>
     result.entries.get(join(root, inlineModuleName(index)))
   )
-  const inlineOutputs = []
   for (const file of outputFiles) {
     if (file === workerFile) continue
-    const inline = inlineOutputPaths.indexOf(file.path)
-    if (inline !== -1) {
-      inlineOutputs[inline] = noticeReference + file.text
-      continue
-    }
     await Deno.mkdir(dirname(file.path), { recursive: true })
     await Deno.writeFile(
       file.path,
@@ -499,7 +513,16 @@ export async function build(
     written.push(LICENSE_NOTICES_FILE)
   }
   if (isHtmlEntry) {
-    const headTags = [envInjectionScript(resolvedEnv)]
+    const headTags = []
+    if (Object.keys(resolvedEnv).length) {
+      const file = await writeHashedScript({
+        outdir: outdirPath,
+        name: 'env',
+        text: envValuesScript(resolvedEnv),
+        written,
+      })
+      headTags.push(`<script src="${siteUrl(base, file)}"></script>`)
+    }
     if (pwa) {
       for (const icon of await renderIconSet({ root, pwa: impPwa })) {
         const path = join(outdirPath, icon.file)
@@ -520,11 +543,17 @@ export async function build(
         manifestHref: siteUrl(base, 'manifest.webmanifest'),
         themeColor: impPwa.themeColor,
         appleTouchHref: siteUrl(base, APPLE_TOUCH_ICON),
-        swHref: siteUrl(base, 'sw.js'),
       }))
+      const registration = await writeHashedScript({
+        outdir: outdirPath,
+        name: 'register-service-worker',
+        text: serviceWorkerRegistration(siteUrl(base, SERVICE_WORKER_FILE)),
+        written,
+      })
+      headTags.push(`<script src="${siteUrl(base, registration)}"></script>`)
     }
     const edits = [
-      ...inlineScriptEdits(document, inlineOutputs),
+      ...inlineScriptEdits(document, { inlineOutputs, outdir: outdirPath, base }),
       ...urlEdits(document, {
         base,
         renamed: renamedScripts(document, root, outdirPath, result.entries),

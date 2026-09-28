@@ -45,8 +45,11 @@ With `--pwa` on an HTML entry, the build also does the following:
   second codec. This keeps the guarantee of no subprocess, see `in-process-toolchain.md`.
 - **imp writes `manifest.webmanifest`.** It guarantees the set that installability needs, which is
   the name, the 192 and 512 icons, the display mode and the `start_url`. imp injects the manifest
-  link, the theme-color meta tag, the apple-touch-icon link and the registration of the service
-  worker into the built HTML. So the page ships ready to install, and nobody edits the source.
+  link, the theme-color meta tag and the apple-touch-icon link into the built HTML. It writes the
+  registration of the service worker into a hashed file under `chunks/`, and loads it with a script
+  tag, so a strict Content Security Policy allows it. The registration has no feature detection,
+  because every supported browser has a service worker. So the page ships ready to install, and
+  nobody edits the source.
 - **imp writes an offline service worker, `sw.js`, and derives its precache list from the build
   graph.** imp does not glob a directory. The list is exactly the files that this build emitted,
   which are the hashed scripts, the chunks and the assets, plus the HTML entry, the manifest, the
