@@ -1098,12 +1098,17 @@ Deno.test('imp build', async (t) => {
       const licenses = await Deno.readTextFile(join(dir, 'dist', 'LICENSES.txt'))
       const entry = html.match(/src="\/(chunks\/app-[A-Z0-9]{8}\.js)"/)[1]
       const { server, base } = serveFolder(() => join(dir, 'dist'))
+      const probe = `const module = await import(${JSON.stringify(`${base}/${entry}`)})\n` +
+        "console.log(`[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, " +
+        "lazy loadShout()='${await module.loadShout()}']`)"
       let usage
       try {
-        const module = await import(`${base}/${entry}`)
-        usage =
-          `[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, lazy loadShout()='${await module
-            .loadShout()}']`
+        const { stdout, stderr } = await new Deno.Command(Deno.execPath(), {
+          args: ['eval', '--no-lock', probe],
+          stdout: 'piped',
+          stderr: 'piped',
+        }).output()
+        usage = new TextDecoder().decode(stdout).trim() || new TextDecoder().decode(stderr)
       } finally {
         await server.shutdown()
       }
