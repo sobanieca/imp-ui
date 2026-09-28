@@ -1,0 +1,111 @@
+$ imp audit --sbom  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+wrote sbom.cdx.json - CycloneDX 1.7, 3 packages
+
+--- stderr ---
+(empty)
+
+--- sbom.cdx.json ---
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:<random>",
+  "version": 1,
+  "metadata": {
+    "timestamp": "<now>",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "imp",
+          "version": "<version>"
+        }
+      ]
+    },
+    "component": {
+      "type": "application",
+      "bom-ref": "app:<app>",
+      "name": "<app>"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/%40angular/core@17.0.0",
+      "name": "@angular/core",
+      "version": "17.0.0",
+      "purl": "pkg:npm/%40angular/core@17.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.npmjs.com/package/@angular/core/v/17.0.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "jsr:@std/encoding@1.0.10",
+      "name": "@std/encoding",
+      "version": "1.0.10",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://jsr.io/@std/encoding@1.0.10"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/node-forge@0.7.0",
+      "name": "node-forge",
+      "version": "0.7.0",
+      "purl": "pkg:npm/node-forge@0.7.0",
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "9eb1a62476e7ca5ecb7d9c876dc80dca2d321dac045ce0275989f0ff7309289eefc92d8d713aace7eb08e3171a8af77a923a14c27903e771454470bb9b6147e0"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "(BSD-3-Clause OR GPL-2.0)"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://www.npmjs.com/package/node-forge/v/0.7.0"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "app:<app>",
+      "dependsOn": [
+        "jsr:@std/encoding@1.0.10",
+        "pkg:npm/%40angular/core@17.0.0",
+        "pkg:npm/node-forge@0.7.0"
+      ]
+    }
+  ]
+}
+
+$ imp audit  (cwd: <tmp with no dependencies>)
+exit code: 0
+
+--- stdout ---
+nothing to audit - no dependencies declared in imp.json
+
+--- stderr ---
+(empty)

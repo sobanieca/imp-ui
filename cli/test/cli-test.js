@@ -1,4 +1,5 @@
 import {
+  basename,
   dirname,
   fromFileUrl,
   join,
@@ -12,6 +13,7 @@ import { clientScript } from '../src/client.js'
 import { createMocks } from '../src/mocks.js'
 import { createDevLog } from '../src/dev-log.js'
 import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
+import { auditedPackages, auditReport, describeVulnerability, osvQuery } from '../src/audit.js'
 import {
   bundledFileProblem,
   matchesIntegrity,
@@ -670,6 +672,130 @@ Deno.test('imp install license policy', async (t) => {
     'jsr:@std/encoding@1.0.10/base64',
   ])
   await withPolicy('license-invalid-policy-value', 'mostly-fine', ['install', 'mitt@3.0.1'])
+})
+
+const auditManifests = [
+  {
+    alias: 'forge',
+    specifier: 'npm:node-forge@0.7.0',
+    installedAt: '2026-09-01T10:00:00Z',
+    impImports: [],
+    packages: [{
+      registry: 'npm',
+      name: 'node-forge',
+      version: '0.7.0',
+      integrity:
+        'sha512-nrGmJHbnyl7LfZyHbcgNyi0yHawEXOAnWYnw/3MJKJ7vyS2NcTqs5+sI4xcaivd6kjoUwnkD53FFRHC7m2FH4A==',
+      provenance: false,
+      license: '(BSD-3-Clause OR GPL-2.0)',
+      licenseText: '...',
+    }],
+  },
+  {
+    alias: 'base64',
+    specifier: 'jsr:@std/encoding@1.0.10/base64',
+    installedAt: '2026-09-01T10:00:00Z',
+    impImports: [],
+    packages: [{
+      registry: 'jsr',
+      name: '@std/encoding',
+      version: '1.0.10',
+      integrity: null,
+      provenance: true,
+      license: null,
+      licenseText: '...',
+    }],
+  },
+  {
+    alias: 'ng',
+    specifier: 'npm:@angular/core@17.0.0',
+    installedAt: '2026-09-01T10:00:00Z',
+    impImports: [],
+    packages: [{
+      registry: 'npm',
+      name: '@angular/core',
+      version: '17.0.0',
+      integrity: null,
+      provenance: false,
+      license: 'SEE LICENSE IN LICENSE.md',
+      licenseText: null,
+    }],
+  },
+]
+
+Deno.test('imp audit reports the known vulnerabilities of a package', async () => {
+  const packages = auditedPackages(auditManifests)
+  const forge = packages.find((entry) => entry.name === 'node-forge')
+  const advisory = {
+    id: 'GHSA-5rrq-pxf6-6jx5',
+    summary: 'Prototype Pollution in node-forge debug API.',
+    database_specific: { severity: 'LOW' },
+    affected: [{
+      package: { name: 'node-forge', ecosystem: 'npm' },
+      ranges: [{ type: 'SEMVER', events: [{ introduced: '0' }, { fixed: '1.0.0' }] }],
+    }, {
+      package: { name: 'node-forge', ecosystem: 'npm' },
+      ranges: [{ type: 'SEMVER', events: [{ introduced: '0' }, { fixed: '0.10.0' }] }],
+    }],
+  }
+  const unfixed = { id: 'GHSA-xxxx-yyyy-zzzz', details: 'A second problem.\nMore text.' }
+  const affected = auditReport(
+    [{
+      entry: forge,
+      vulnerabilities: [
+        describeVulnerability(advisory, forge),
+        describeVulnerability(unfixed, forge),
+      ],
+    }],
+    packages.filter((entry) => entry.registry === 'jsr'),
+  )
+  const clean = auditReport([{ entry: forge, vulnerabilities: [] }], [])
+  await assertSnapshot(
+    'audit-report',
+    `--- query ---\n${
+      JSON.stringify(osvQuery(forge))
+    }\n\n--- vulnerable (${affected.vulnerable}) ---\n${affected.text}\n\n--- clean (${clean.vulnerable}) ---\n${clean.text}\n`,
+  )
+})
+
+Deno.test('imp audit --sbom writes a CycloneDX bill of materials', async () => {
+  const dir = await Deno.makeTempDir({ prefix: 'audit-app-' })
+  try {
+    await Deno.writeTextFile(
+      join(dir, 'imp.json'),
+      `${
+        JSON.stringify(
+          { dependencies: Object.fromEntries(auditManifests.map((m) => [m.alias, m.specifier])) },
+          null,
+          2,
+        )
+      }\n`,
+    )
+    for (const manifest of auditManifests) {
+      await Deno.mkdir(join(dir, 'dependencies', manifest.alias), { recursive: true })
+      await Deno.writeTextFile(
+        join(dir, 'dependencies', manifest.alias, 'manifest.json'),
+        JSON.stringify(manifest),
+      )
+    }
+    const result = await runImp(['audit', '--sbom'], dir)
+    const bom = (await Deno.readTextFile(join(dir, 'sbom.cdx.json')))
+      .replace(/"urn:uuid:[0-9a-f-]+"/, '"urn:uuid:<random>"')
+      .replace(/"timestamp": "[^"]+"/, '"timestamp": "<now>"')
+      .replaceAll(basename(dir), '<app>')
+    const empty = await Deno.makeTempDir()
+    await Deno.writeTextFile(join(empty, 'imp.json'), '{}\n')
+    const nothing = await runImp(['audit'], empty)
+    await Deno.remove(empty, { recursive: true })
+    await assertSnapshot(
+      'audit-sbom',
+      `${commandTranscript('imp audit --sbom  (cwd: <tmp>)', result)}\n--- sbom.cdx.json ---\n${
+        normalize(bom)
+      }\n${commandTranscript('imp audit  (cwd: <tmp with no dependencies>)', nothing)}`,
+    )
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
 })
 
 const tarHeader = (name, size) => {

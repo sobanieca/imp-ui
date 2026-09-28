@@ -1,0 +1,14 @@
+--- query ---
+{"package":{"name":"node-forge","ecosystem":"npm"},"version":"0.7.0"}
+
+--- vulnerable (true) ---
+node-forge@0.7.0 (in forge)
+  GHSA-5rrq-pxf6-6jx5 LOW Prototype Pollution in node-forge debug API. - fixed in 0.10.0
+    https://osv.dev/vulnerability/GHSA-5rrq-pxf6-6jx5
+  GHSA-xxxx-yyyy-zzzz A second problem. - no fix yet
+    https://osv.dev/vulnerability/GHSA-xxxx-yyyy-zzzz
+2 known vulnerabilities in 1 npm package, of 1 checked
+not checked: @std/encoding@1.0.10 - the OSV database has no records for jsr packages
+
+--- clean (false) ---
+no known vulnerabilities in 1 npm package

@@ -17,6 +17,8 @@ imp install jsr:@std/encoding@1.0.10/base64    jsr, and a module inside the pack
 imp install mitt --alias events
 imp install                   re-resolve and update every declared dependency
 imp uninstall mitt            remove the folder and the pin
+imp audit                     check every npm package against the OSV database; exit 1 on a finding
+imp audit --sbom              write sbom.cdx.json (CycloneDX 1.7); --output <file> moves it
 ```
 
 ```json
@@ -87,6 +89,17 @@ full license text.
 
 The bundle also keeps the license notice of the package, `/*! ... */` or `@license`, where the
 package put it. Never remove it.
+
+## Audit - `imp audit`
+
+- It reads the committed manifests only. A dependency with no manifest gives a warning and is left
+  out. Run `imp install` to record it.
+- It checks npm packages against OSV. A jsr package is listed as not checked, because OSV has no jsr
+  records.
+- To fix a finding, run `imp install <pkg>@<fixed version>`. For a transitive package, update the
+  dependency that contains it. Then run `imp audit` again.
+- `--sbom` needs no network and never fails on a vulnerability. Commit the file only when the
+  project wants it in git.
 
 ## License policy - `licenses` in `imp.json`
 

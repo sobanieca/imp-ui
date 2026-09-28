@@ -43,6 +43,10 @@ USAGE
   imp install [package[@version]]       vendor a dependency into dependencies/
                                         (no version: latest | no package: update all)
   imp uninstall <package>               remove a vendored dependency
+  imp audit [--sbom]                    check every vendored package against the OSV
+            [--output <file>]           database of known vulnerabilities (--sbom: write a
+                                        CycloneDX bill of materials instead, by default to
+                                        sbom.cdx.json | --output: another path for it)
   imp test <file>                       run one test file: *.test.js unit in-process,
                                         *.spec.js e2e in a real browser
   imp test --unit | --e2e               run every file of that level, each in its own
@@ -221,6 +225,16 @@ try {
     case 'uninstall': {
       const { uninstall } = await import('./install.js')
       await uninstall({ root: await projectRoot(Deno.cwd()), alias: positional(rest)[0] ?? null })
+      break
+    }
+    case 'audit': {
+      const { audit } = await import('./audit.js')
+      const code = await audit({
+        root: await projectRoot(Deno.cwd()),
+        sbom: rest.includes('--sbom'),
+        output: flag(rest, 'output', null),
+      })
+      if (code) Deno.exit(code)
       break
     }
     case 'test': {

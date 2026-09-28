@@ -13,18 +13,6 @@ record its decision as an ADR. When the last item goes, delete the file.
 Somebody verified this against the code again on 2026-09-23. Every item below was still open at that
 date.
 
-## Tier 1 - the supply chain, and compliance
-
-This tier is the most likely to block a procurement, in place of being a preference.
-
-- **Nothing consumes the recorded graph.** The manifest per dependency answers the question "which
-  versions of what do I ship?", and only for a reader who opens it. There is no `imp audit`. There
-  is no export of a software bill of materials, in a standard format for interchange, such as
-  CycloneDX or SPDX. There is no path to scan for a vulnerability. Each one of those is a transform
-  over data that is already committed in the repository. None of them is new plumbing. **Decision:**
-  one command, `imp audit`, reads the manifests and checks every package against the OSV database,
-  which needs no key. `imp audit --sbom` writes a CycloneDX file. imp does not write SPDX.
-
 ## Tier 2 - what `imp build` emits
 
 - **Some hygiene for production is missing on the side of the build.** There is no `modulepreload`
@@ -126,7 +114,6 @@ One gap blocks production too, but it has its own file:
 3. Write `client-rendered-only.md`, and add the metadata per route.
 4. Write the deploy page, after tier 2 lands.
 5. Settle the 1.0 policy and the Windows target. They decide whether a team can adopt imp at all.
-6. Close the supply chain items. They decide whether a procurement passes.
 
 The error reporting lands with `todo/analytics.md`, and not in this order.
 

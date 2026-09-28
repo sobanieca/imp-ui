@@ -19,6 +19,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp test <file> \| --unit \| --e2e` | `*.test.js` in-process, `*.spec.js` in a real browser    | [testing](testing.md)           |
 | `imp install [pkg[@version]]`        | vendor a dependency into `dependencies/`                 | [dependencies](dependencies.md) |
 | `imp uninstall <pkg>`                | remove one                                               | [dependencies](dependencies.md) |
+| `imp audit [--sbom]`                 | known vulnerabilities (OSV), or a CycloneDX SBOM         | [dependencies](dependencies.md) |
 | `imp lint [...paths] [--fix]`        | imp's rules plus a standard set; `--fix` autofixes       | [lint](lint.md)                 |
 | `imp fmt [...paths] [--check]`       | format every file type in the project                    | [fmt](fmt.md)                   |
 | `imp resize <image>`                 | downscale an oversized PNG/JPEG asset                    | [resize](resize.md)             |

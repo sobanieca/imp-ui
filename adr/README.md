@@ -99,6 +99,7 @@ These are the conventions:
 | [in-process-dependency-bundling](in-process-dependency-bundling.md)   | Bundle deps in-process via esbuild-wasm + Deno plugin                                |
 | [vendored-dependencies](vendored-dependencies.md)                     | Vendored, committed deps via imp install; no lockfile                                |
 | [vendored-dependency-manifest](vendored-dependency-manifest.md)       | Each vendored bundle records its packages, versions, licenses; npm integrity checked |
+| [dependency-audit](dependency-audit.md)                               | imp audit: OSV check of the manifests, CycloneDX bill of materials                   |
 | [license-policy-gate](license-policy-gate.md)                         | 'licenses' in imp.json; install and build refuse a violation                         |
 | [production-bundling](production-bundling.md)                         | imp build from vendored bundles + baked-in library                                   |
 | [public-folder-static-assets](public-folder-static-assets.md)         | public/ is the site root; IMP_BASEPATH prefixes built URLs                           |

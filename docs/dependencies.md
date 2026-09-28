@@ -263,14 +263,50 @@ file, and nothing reads it back to pin a version. So you can answer these questi
 clone, with no network:
 
 - **What do I ship?** Every package and its exact version, for an inventory or a software bill of
-  materials.
+  materials. `imp audit --sbom` writes that bill for you.
 - **Does this affect me?** When an advisory names a package and a version, the answer is in the
-  repository. You do not need a rebuild.
+  repository. You do not need a rebuild. `imp audit` checks every package for you.
 - **Can I ship this?** Every license identifier and its text. `imp build` folds the same data into
   the `LICENSES.txt` of your app.
 
 When a package declares no license, `imp install` says so and names the package. It does not skip
 past the package in silence. Settle that question with the author of the package before you ship.
+
+## How to audit your dependencies
+
+```
+imp audit
+imp audit --sbom [--output <file>]
+```
+
+`imp audit` reads the manifest of every declared dependency and checks each npm package against the
+[OSV database](https://osv.dev) of known vulnerabilities. OSV is free, and needs no account and no
+key. imp sends only the name and the version of each package.
+
+```
+node-forge@0.7.0 (in node-forge)
+  GHSA-5rrq-pxf6-6jx5 LOW Prototype Pollution in node-forge debug API. - fixed in 1.0.0
+    https://osv.dev/vulnerability/GHSA-5rrq-pxf6-6jx5
+1 known vulnerability in 1 npm package, of 12 checked
+```
+
+For each vulnerability, imp prints its identifier, its severity when the database gives one, a
+summary, the first version that fixes it, and a link to the full advisory. The command exits with
+code 1 when it finds a vulnerability, so a CI step fails. To fix a finding, install the fixed
+version with `imp install <package>@<version>`. For a package that another package brings in, update
+the dependency that contains it.
+
+The OSV database has no records for jsr packages. `imp audit` lists them as not checked.
+
+### A software bill of materials
+
+`imp audit --sbom` writes a software bill of materials in the [CycloneDX](https://cyclonedx.org) 1.7
+JSON format. The default file is `sbom.cdx.json` in the root of the project. `--output` writes it to
+another path. This command needs no network, because it only transforms the committed manifests.
+
+The file lists every bundled package once, with its version, its package URL, its license and the
+integrity hash that `imp install` checked. Give it to a security review, or to a scanner that reads
+CycloneDX. imp does not write the SPDX format.
 
 ## The license policy
 

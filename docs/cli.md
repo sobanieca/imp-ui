@@ -58,6 +58,8 @@ imp logs [-n <count>] [-f]            print the log of the dev server session
 imp install [package[@version]]       vendor a dependency into dependencies/
                                       (no version: latest | no package: update all)
 imp uninstall <package>               remove a vendored dependency
+imp audit [--sbom] [--output <file>]  check the vendored packages for known vulnerabilities
+                                      (--sbom: write a CycloneDX bill of materials)
 imp test  <file>                      run one test file: *.test.js unit in-process,
                                       *.spec.js e2e in a real browser
 imp test  --unit | --e2e              run every file of that level, each in its own
