@@ -47,14 +47,14 @@ mount, all travel with it. What restarts is the subscription layer:
   the subscribers of the consumer only when the newly resolved value differs from the last value
   that it delivered. Two providers rarely share a reference. So this comparison is structural. imp
   compares a plain object and an array recursively, by content. It compares a value object, such as
-  a `Date`, a `URL`, a `RegExp` or a Temporal value, by its value. It compares everything else, such
-  as another class instance and a function, with `Object.is`. When imp cannot establish equality,
-  the binding fires again. So a binding updates in place, and a `view` or `each` region renders
-  again on a move only when its value really changed. A move between two providers that hold equal
-  plain data leaves the DOM of the region as it is. On a move, the structural walk runs on the
-  rebinds only, and those happen at the frequency of a gesture. It is the same `valuesEqual`
-  comparison that `set` and `computed` use, see `state-plain-data-values.md`. When nothing at the
-  new position provides the name, imp logs an error and keeps the previous binding.
+  a `Date`, a `URL`, a `URLSearchParams`, a `RegExp` or a Temporal value, by its value. It compares
+  everything else, such as another class instance and a function, with `Object.is`. When imp cannot
+  establish equality, the binding fires again. So a binding updates in place, and a `view` or `each`
+  region renders again on a move only when its value really changed. A move between two providers
+  that hold equal plain data leaves the DOM of the region as it is. On a move, the structural walk
+  runs on the rebinds only, and those happen at the frequency of a gesture. It is the same
+  `valuesEqual` comparison that `set` and `computed` use, see `state-plain-data-values.md`. When
+  nothing at the new position provides the name, imp logs an error and keeps the previous binding.
 
 ## Consequences
 

@@ -62,9 +62,9 @@ user.set({ ...user.get(), theme: 'light' })
   throws. Spread the value into a new object or a new array. A `set` of a structurally equal value
   does **nothing**. There is no notification and no rebuild.
 - **A state holds plain data only.** This covers an object, an array, a primitive, a `Date`, a
-  Temporal value, a `URL` and a `RegExp`. It excludes a function, a DOM node, a class instance, a
-  `Map`, a `Set` and a cycle. imp logs an error that names the path, and the content comparison
-  becomes an identity comparison in silence.
+  Temporal value, a `URL`, a `URLSearchParams` and a `RegExp`. It excludes a function, a DOM node, a
+  class instance, a `Map`, a `Set` and a cycle. imp logs an error that names the path, and the
+  content comparison becomes an identity comparison in silence.
 - **A function that you pass to `set` is always the updater form.** So a function can never be a
   value.
 - **There is no pending phase and no loading phase.** `initState(self, name)` with no initial value

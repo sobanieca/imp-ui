@@ -220,24 +220,27 @@ necessary:
   imp calls it on every navigation. Without it, imp leaves `document.title` alone.
 - **`loading`** is what the router shows while the code of an **area** downloads (see _Areas_), or
   while a guard waits for the state that it reads (see _Access_). imp calls it with the
-  `{ params, query, node }` of the route.
+  `{ params, query, searchParams, node }` of the route.
 - **`error`** is an **error boundary** at route level. It renders in place of the matched screen
   when that screen, or any component that it renders, throws during the mount and does not handle
   the error itself. That includes an area whose `import()` does not download. A screen, or any
   nested component, that defines its own `error` catches the failure first. Anything that it does
   not handle goes up to the router. imp calls the router `error` with
-  `(self, error, { params, query, node })`. `self` belongs to the host that wraps the screen. imp
-  logs the failure in both cases.
+  `(self, error, { params, query, searchParams, node })`. `self` belongs to the host that wraps the
+  screen. imp logs the failure in both cases.
 - **`notFound`** is the one screen that imp shows for a URL that matches no node of the map.
 
-A screen factory receives one argument, `{ params, query, node }`:
+A screen factory receives one argument, `{ params, query, searchParams, node }`:
 
 - **`params`** holds the values of the `$name` segments, URL-decoded. For `/todos/42`,
   `params.id === '42'`.
 - **`query`** is the query string of the URL, parsed into an object **at the moment when the person
   enters the screen**. For `/search?q=imp&page=2`, `query.q === 'imp'`. A query value is always a
-  string. When the query can change while the screen stays mounted, described below, read it live
-  from `useRoute()` instead.
+  string. When the query repeats a key, as in `?tag=a&tag=b`, `query` keeps the first value. When
+  the query can change while the screen stays mounted, described below, read it live from
+  `useRoute()` instead.
+- **`searchParams`** is the same query as a native `URLSearchParams`. Read a repeated key with
+  `searchParams.getAll('tag')`, which gives `['a', 'b']`.
 - **`node`** is the handle of the matched node. Its `spec.label` and `spec.description` are what the
   map says about the page, so a screen heading can read them instead of repeating them.
 
@@ -324,8 +327,9 @@ Declare your not-found screen in one place, with the `notFound` option of the ro
 router({ map: app, screens, notFound: () => notFoundPage() })
 ```
 
-It renders whenever the current URL matches no node of the map. It is a factory. It has no node,
-because it is not a page. It is the one page for every URL that matches nothing in the map.
+It renders whenever the current URL matches no node of the map. A URL with a broken percent encoding
+in a param, such as `/todos/%zz` from an external link, also renders it. It is a factory. It has no
+node, because it is not a page. It is the one page for every URL that matches nothing in the map.
 
 ## Areas: how to load a section on demand
 
@@ -422,9 +426,9 @@ outside it needs to see. Examples are a state scoped to the section, an [HTTP cl
 its backend, and a layout that keeps its scroll position. imp does not rebuild any of that on a
 navigation inside the section.
 
-The root receives the same `{ params, query, node }` as a screen factory. So a prefix param is there
-for the frame too, as in `root: ({ params }) => orgFrame(params.orgId)`. A prefix param that changes
-remounts the area, and the root with it.
+The root receives the same `{ params, query, searchParams, node }` as a screen factory. So a prefix
+param is there for the frame too, as in `root: ({ params }) => orgFrame(params.orgId)`. A prefix
+param that changes remounts the area, and the root with it.
 
 A `router()` with no map finds its area when it mounts, from its own position in the DOM. It does
 not care where in `setup` you call it. An **async** root can build the slot after its `await`. A
@@ -486,8 +490,8 @@ router({ map: app, access, screens })
 
 Read that from the inside out. `['myapp.session']` declares **which states this guard reads**. The
 router looks them up for you, and passes their values in, in the same order. After the values comes
-`{ need, params, query, path }`, where `need` is the `access` value of the node. The function
-returns one of four answers:
+`{ need, params, query, searchParams, path }`, where `need` is the `access` value of the node. The
+function returns one of four answers:
 
 | Return              | Means                                                      |
 | ------------------- | ---------------------------------------------------------- |
@@ -675,10 +679,10 @@ A `dialog` and a `drawer` take the same kind of check, as their `beforeClose` pr
 
 ## How to read the current route
 
-`useRoute()` returns a read-only handle on the live route, which is `{ path, query }`. Any component
-can watch it, including a component outside the router, such as a nav bar. It has the same shape as
-any imp state, with `get`, `watch`, `text`, `view` and `each`. It has no `set`, because you change
-the route by navigating, not by writing to it.
+`useRoute()` returns a read-only handle on the live route, which is `{ path, query, searchParams }`.
+Any component can watch it, including a component outside the router, such as a nav bar. It has the
+same shape as any imp state, with `get`, `watch`, `text`, `view` and `each`. It has no `set`,
+because you change the route by navigating, not by writing to it.
 
 ```js
 useRoute().watch(self, (current) => (searchInput.value = current.query.q ?? '')) // in a component
@@ -908,5 +912,5 @@ So a deep link and a refresh work while you build.
 | `guard(states, check)`                    | a guard            | A synchronous check over the values of the states it names and the `need` of the node; returns `true`, `wait`, `false`, or a path.         |
 | `wait`                                    | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `loading` up and re-runs the guard when a declared state changes.        |
 | `navigate(path, { replace? })`            | -                  | Navigates programmatically; `replace` swaps the current history entry.                                                                     |
-| `useRoute()`                              | a read-only route  | The live `{ path, query }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                                 |
+| `useRoute()`                              | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
 | `url(path)`                               | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |

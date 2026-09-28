@@ -43,11 +43,17 @@ lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` 
   matches the current path against the whole map. It splits on `/`, and ignores an empty segment, so
   a trailing slash does not matter. At each level it tries the static children first, then the one
   param child, so a static path always shadows a param path and no order of declaration matters. imp
-  decodes a param with `decodeURIComponent`. There is no `*` wildcard. The page for a URL that is
-  off the map is `notFound`. That keeps "the 404" one named concept. A node on the map with no
-  screen renders a stub, forwards to its first static child, or forwards where a `redirect()`
-  binding says, see `application-map.md`. A screen factory receives `{ params, query, node }`, where
-  `node` is the handle of the matched node.
+  decodes a param with `decodeURIComponent`. A param with a broken percent encoding, such as
+  `/user/%zz` from an external link, matches nothing, so the URL renders `notFound`. The failure is
+  in the URL, and not in the app, so it must not surface as an error of a mount. There is no `*`
+  wildcard. The page for a URL that is off the map is `notFound`. That keeps "the 404" one named
+  concept. A node on the map with no screen renders a stub, forwards to its first static child, or
+  forwards where a `redirect()` binding says, see `application-map.md`. A screen factory receives
+  `{ params, query, searchParams, node }`, where `node` is the handle of the matched node.
+- **The query is two views of one search string.** `query` is an object of plain strings, and the
+  first value of a repeated key wins. It covers the common case, a single value per key, with plain
+  property access. `searchParams` is the native `URLSearchParams` of the same string. An app reads a
+  repeated key with `getAll()`. imp adds no third shape, such as an object of arrays.
 
 - **An area is a binding whose value is a loader, and it is always lazy.** A section of the app that
   loads on demand binds its node to an `area()` marker, in place of a screen factory. An example is
@@ -76,9 +82,9 @@ lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` 
   prefix. A layout that you wrap around each screen factory cannot do that. Such a layout remounts
   on every navigation, and it takes a state scoped to the section, or an HTTP client, with it.
   `root` is optional. Its absence is exactly the previous behaviour, where the route page of the
-  area renders the nested router itself. `root` receives the same `{ params, query, node }` as a
-  screen factory. So a prefix param reaches the shell. A `router()` with no map, outside an area,
-  throws, and the message names both fixes.
+  area renders the nested router itself. `root` receives the same
+  `{ params, query, searchParams, node }` as a screen factory. So a prefix param reaches the shell.
+  A `router()` with no map, outside an area, throws, and the message names both fixes.
 
 - **An area declares the translations that it needs, and the router owns their lifetime.** The
   `translations` key of an area definition is a map, from a language code to a loader, see
@@ -100,12 +106,12 @@ lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` 
   under that node. imp rejects any other value when it validates the bindings.
 
 - **The current location is one state for the lifetime of the app, `imp.route`, which is
-  `{ path, query }`.** There is exactly one location per page. It lives longer than every screen,
-  and longer than every router. So the router creates it once, as a detached state that belongs to
-  the framework, the first time when anything touches the routing. `useRoute()` returns a read-only
-  handle. That handle has `get`, `watch`, `text`, `view` and `each`, and no `set`. So any component
-  anywhere can read the path and the query, and react to a navigation. That covers a nav bar outside
-  a router, and a breadcrumb deep inside a screen.
+  `{ path, query, searchParams }`.** There is exactly one location per page. It lives longer than
+  every screen, and longer than every router. So the router creates it once, as a detached state
+  that belongs to the framework, the first time when anything touches the routing. `useRoute()`
+  returns a read-only handle. That handle has `get`, `watch`, `text`, `view` and `each`, and no
+  `set`. So any component anywhere can read the path and the query, and react to a navigation. That
+  covers a nav bar outside a router, and a breadcrumb deep inside a screen.
 
 - **The router keys the matched screen by the node and the params, and not by the whole URL.**
   Inside, the router is `computed([imp.route], key).view(renderMatched)`, where `key` is
@@ -122,17 +128,17 @@ lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` 
 - **Each matched screen mounts inside an internal `imp-route` component.** That is where the loading
   on demand, the loading content, the guard against a stale navigation, and the error boundary, all
   come from. The component lifecycle already provides all four. The `setup` of `imp-route` calls the
-  target factory with `{ params, query }`, and returns the result. For a screen that result is a
-  `Node`, which imp renders synchronously, with no flash of loading content. An area renders through
-  the same wrapper. The factory of the area awaits the `area()` loader for the table, and returns a
-  **nested `router` bound to the tail**, where imp removed the prefix of the parent and merged the
-  prefix params in. So an area is "a screen that is itself a nested router". When the area has a
-  `root`, it is that root component, with the same nested router that the `router()` call inside it
-  builds. The async branch of the wrapper exists for that one case, and not for a screen. Nesting to
-  any depth falls out of that recursion, with no special logic for a cascade. To unmount a parent
-  area unmounts its nested router, and that unmounts its sub-screens. The counter of the mount
-  generation is the token of the navigation. imp discards a slow chunk that resolves after the user
-  navigated away, because its generation is old.
+  target factory with `{ params, query, searchParams }`, and returns the result. For a screen that
+  result is a `Node`, which imp renders synchronously, with no flash of loading content. An area
+  renders through the same wrapper. The factory of the area awaits the `area()` loader for the
+  table, and returns a **nested `router` bound to the tail**, where imp removed the prefix of the
+  parent and merged the prefix params in. So an area is "a screen that is itself a nested router".
+  When the area has a `root`, it is that root component, with the same nested router that the
+  `router()` call inside it builds. The async branch of the wrapper exists for that one case, and
+  not for a screen. Nesting to any depth falls out of that recursion, with no special logic for a
+  cascade. To unmount a parent area unmounts its nested router, and that unmounts its sub-screens.
+  The counter of the mount generation is the token of the navigation. imp discards a slow chunk that
+  resolves after the user navigated away, because its generation is old.
 
 - **The options of a router travel with each screen, and nothing about a router lives in module
   state.** imp passes the `loading`, the `error` and the `notFound` of a router down to every

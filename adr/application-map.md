@@ -71,10 +71,11 @@ handle per node.**
 
 - **`access` is the one door.** A node carries any `access` value, and one guard on the router,
   `router({ access })`, receives that value as `need`, beside the state values and
-  `{ params, query, path }`. Every `access` on the chain from the root to the matched node must
-  allow. A node with no `access` is open, so a login page never loops. The verdicts, `wait`, the
-  redirect path and `false`, keep the meaning of `route-guards.md`. There is no second guard form. A
-  rule that `access` cannot express is a richer `access` value, not a different mechanism.
+  `{ params, query, searchParams, path }`. Every `access` on the chain from the root to the matched
+  node must allow. A node with no `access` is open, so a login page never loops. The verdicts,
+  `wait`, the redirect path and `false`, keep the meaning of `route-guards.md`. There is no second
+  guard form. A rule that `access` cannot express is a richer `access` value, not a different
+  mechanism.
 
 - **A translation is a message, keyed by the id of the node.** The messages of the app translate a
   node under `appMap.<id>.label`, `appMap.<id>.group` and `appMap.<id>.description`. A message wins

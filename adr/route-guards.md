@@ -56,7 +56,7 @@ router({ map: app, access, screens })
   exists. The router resolves each name with the ordinary `useState`, at its own position in the
   DOM. So the scoping of a provider, and the rebinding on a move, work as they do everywhere else.
   The values arrive by position, which mirrors `computed([a, b], (a, b) => ...)`, and
-  `{ need, params, query, path }` arrives last.
+  `{ need, params, query, searchParams, path }` arrives last.
 
 - **The vocabulary of a verdict is small.** `true` and `undefined` allow the route. `wait` waits. A
   path string redirects, with `replace: true`. `false` renders `notFound`. Anything else throws, and

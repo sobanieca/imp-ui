@@ -82,16 +82,17 @@ mount(
 | `redirect(handle \| '/path')`             | a `screens` binding: the node forwards there, with the params of the route filled in                                                       |
 | `area(() => import('./x.js'))`            | binds a node to a lazily loaded area - the **only** on-demand unit                                                                         |
 | `area({ screens, root?, translations? })` | an area's own definition, for its `export default`                                                                                         |
-| `guard(states, check)`                    | the one `access` guard: `(...values, { need, params, query, path }) => true \| wait \| false \| '/path'`                                   |
+| `guard(states, check)`                    | the one `access` guard: `(...values, { need, params, query, searchParams, path }) => true \| wait \| false \| '/path'`                     |
 | `wait`                                    | the verdict for "cannot decide yet" - the router keeps `loading` up and re-runs the guard                                                  |
 | `navigate(path, { replace? })`            | navigate programmatically, from anywhere; give it `handle.href(params)`                                                                    |
 | `beforeLeave(self, check)`                | in `setup`: `check()` returns `false`, or a Promise of `false`, to stay; asked before the route changes                                    |
-| `useRoute()`                              | read-only live `{ path, query }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                                       |
+| `useRoute()`                              | read-only live `{ path, query, searchParams }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                         |
 | `url(path)`                               | prefixes `IMP_BASEPATH`, for an `href` you write as a string                                                                               |
 
 `loading` shows while the module of an **area** downloads or a guard waits. `error` is an error
-boundary at route level, called with `(self, error, { params, query, node })`. `notFound` is the one
-page for a URL that is off the map. A screen factory receives `{ params, query, node }`.
+boundary at route level, called with `(self, error, { params, query, searchParams, node })`.
+`notFound` is the one page for a URL that is off the map, or with a broken percent encoding. A
+screen factory receives `{ params, query, searchParams, node }`.
 
 | Router option | Shape                                                   | Meaning                                                                      |
 | ------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -170,6 +171,10 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
   `root` of an area. Elsewhere pass `router({ map, screens })`.
 - **A change of the query only keeps the current screen mounted.** Read a live query from
   `useRoute()`, not from the `query` of the factory.
+- **`query` keeps the first value of a repeated key.** For `?tag=a&tag=b`, read
+  `searchParams.getAll('tag')`. `searchParams` is a native `URLSearchParams`. Never mutate it.
+- **A broken percent encoding in a param, such as `/todos/%zz`, renders `notFound`.** A screen never
+  sees a param that failed to decode.
 - **Navigate with a handle.** `navigate(app.projects.$projectId.href({ projectId }))`, and
   `link({ href: app.x.href() }, ...)` from `imp/std`. Do not write a path string. Use
   `{ replace: true }` after a login redirect. Inside a param, `app.x.$id.y.href()` fills `id` from
@@ -248,8 +253,8 @@ export default area({
 ```
 
 - `root` is optional. It stays mounted while the user moves between the screens of the section, and
-  unmounts when the user leaves. It receives `{ params, query, node }`. A prefix param that changes
-  remounts the area.
+  unmounts when the user leaves. It receives `{ params, query, searchParams, node }`. A prefix param
+  that changes remounts the area.
 - A `router()` inside the root inherits `loading`, `error` and `notFound`, and can override each.
 - [i18n](i18n.md) covers `translations`. A navigation inside an area keeps it mounted. The browser
   keeps a downloaded module for the life of the page, so an area saves the **download**, not the

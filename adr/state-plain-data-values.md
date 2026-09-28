@@ -31,6 +31,8 @@ and synchronous. These are admitted, with their rules of equality in `valuesEqua
   and `PT60M` different. The error is toward a rebuild that nobody needs, and not toward an update
   that imp misses.
 - **`URL`**, by its `href`.
+- **`URLSearchParams`**, by its serialized string. The router keeps the query of the route in one,
+  so a repeated key survives.
 - **`RegExp`**, by its `source` and its `flags`.
 
 `initState` validates the initial value. `set` validates every resolved value. The helper of a
@@ -95,8 +97,8 @@ concrete consumer, and never in advance.
 - imp enforces the promise about plain data where somebody breaks it, and gives a path. The problem
   does not appear later, as a rebuild that nobody can explain, or as an update that imp missed.
 - imp compares a value object by content, everywhere that `valuesEqual` runs. So a freshly
-  constructed but equal `Date`, Temporal value, `URL` or `RegExp`, stays quiet through a keyed
-  `each`, a `computed`, a rebind of a provider, and the gate of `set`.
+  constructed but equal `Date`, Temporal value, `URL`, `URLSearchParams` or `RegExp`, stays quiet
+  through a keyed `each`, a `computed`, a rebind of a provider, and the gate of `set`.
 - A component that sets a freshly built but unchanged value does not notify a subscriber, and does
   not rebuild its `view` region. That is the common shape when a value crosses a boundary of
   serialization, such as the network, storage or a worker, and comes back as a new reference.

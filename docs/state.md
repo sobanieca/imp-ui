@@ -24,8 +24,9 @@ wrap things in, and no re-rendering. A change of state updates only the DOM you 
   that computes it from the current value, the same way `setState` works in React. To change one
   field of an object, spread the rest into a new object.
 - A state holds **plain data**: a plain object, an array, a date (a `Date` or any Temporal type), a
-  URL, a regular expression, or a primitive such as a string, a number or a boolean. A function is
-  never a state value. A function passed to `set` always means the updater form.
+  URL, a set of URL search params, a regular expression, or a primitive such as a string, a number
+  or a boolean. A function is never a state value. A function passed to `set` always means the
+  updater form.
 - A value computed **from several states** is a computed state. `computed([a, b], fn)` returns a
   read-only state that follows its sources.
 
@@ -109,8 +110,9 @@ the data, and derive everything else from it.
 A few types that behave like values also count as plain data. imp compares each one by content, not
 by reference: a `Date`, compared by its instant; every Temporal type, such as `Temporal.PlainDate`,
 `Temporal.Instant`, `Temporal.ZonedDateTime` and `Temporal.Duration`; a `URL`, compared by its full
-href; and a `RegExp`, compared by its source and its flags. Two different `Date` objects that hold
-the same instant count as unchanged. Two `URL`s with the same href do the same.
+href; a `URLSearchParams`, compared by its serialized string; and a `RegExp`, compared by its source
+and its flags. Two different `Date` objects that hold the same instant count as unchanged. Two
+`URL`s with the same href do the same.
 
 imp checks the plain-data rule. When an initial value, or a value passed to `set`, contains anything
 else, such as a `Map`, a class instance or a function, imp logs an error. It also logs an error when

@@ -60,14 +60,6 @@ date.
 
 ## Tier 4 - the router, and the scope of an app
 
-- **A malformed URL breaks the match of a route. It does not render `notFound`.**
-  `decodeURIComponent(segment)`, in `matchMap` in `lib/src/app-map.js`, throws a `URIError` on bad
-  percent encoding. An example is `/user/%zz`, which arrives from any external link. That surfaces
-  as an error during the mount of a component, in place of the not-found page. There is a related
-  problem. `Object.fromEntries(location.searchParams)` drops a repeated key of a query, and says
-  nothing. **Decision:** a path with a malformed percent encoding renders `notFound`. `query` stays
-  an object of plain strings, and the first value of a repeated key wins. The route also exposes the
-  native `URLSearchParams` as `searchParams`, and an app reads a repeated key with `getAll()`.
 - **There is no story about metadata.** The router sets `document.title` per navigation, and nothing
   else. It never touches a meta tag. Any app that faces the public needs at least a description per
   route. **Decision:** a route in the application map takes a `description`, and the router writes
@@ -110,10 +102,9 @@ One gap blocks production too, but it has its own file:
 
 1. Do the CSP, the hash on an entry file and the external `env.js` first. They change what every
    deploy ships.
-2. Harden the URLs in the router.
-3. Write `client-rendered-only.md`, and add the metadata per route.
-4. Write the deploy page, after tier 2 lands.
-5. Settle the 1.0 policy and the Windows target. They decide whether a team can adopt imp at all.
+2. Write `client-rendered-only.md`, and add the metadata per route.
+3. Write the deploy page, after tier 2 lands.
+4. Settle the 1.0 policy and the Windows target. They decide whether a team can adopt imp at all.
 
 The error reporting lands with `todo/analytics.md`, and not in this order.
 
