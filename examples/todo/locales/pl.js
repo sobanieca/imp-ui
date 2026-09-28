@@ -12,7 +12,8 @@ export default {
   },
   signIn: {
     title: 'Logowanie',
-    intro: 'Każde imię i e-mail są dobre. Atrapa serwera blokuje tylko adres zaczynający się od locked@.',
+    intro:
+      'Każde imię i e-mail są dobre. Atrapa serwera blokuje tylko adres zaczynający się od locked@.',
     name: 'Imię',
     email: 'E-mail',
     submit: 'Zaloguj',

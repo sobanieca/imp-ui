@@ -12,7 +12,8 @@ export default {
   },
   signIn: {
     title: 'Sign in',
-    intro: 'Any name and email work. The mock backend locks only an address that starts with locked@.',
+    intro:
+      'Any name and email work. The mock backend locks only an address that starts with locked@.',
     name: 'Name',
     email: 'Email',
     submit: 'Sign in',
