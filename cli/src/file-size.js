@@ -1,4 +1,4 @@
-import { SEPARATOR } from '@std/path'
+import { isWithinPrefix } from './walk.js'
 
 export const DEFAULT_MAX_FILE_BYTES = 200 * 1024
 
@@ -11,10 +11,7 @@ export const formatSize = (bytes) => {
 export const maxFileBytes = (config) => config.maxFileSize ?? DEFAULT_MAX_FILE_BYTES
 
 export const isFileSizeIgnored = (relativePath, ignore = []) =>
-  ignore.some((entry) => {
-    const prefix = entry.replace(/\/+$/, '')
-    return relativePath === prefix || relativePath.startsWith(prefix + SEPARATOR)
-  })
+  ignore.some((entry) => isWithinPrefix(relativePath, entry))
 
 export const maxFileSizeHint =
   'raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json'

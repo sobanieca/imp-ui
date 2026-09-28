@@ -4,6 +4,14 @@ const ALWAYS_SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules', 'dist', '.im
 
 const VENDORED_DEPENDENCIES = 'dependencies'
 
+export const posixPath = (path) => path.replaceAll('\\', '/')
+
+export const isWithinPrefix = (relativePath, entry) => {
+  const path = posixPath(relativePath)
+  const prefix = entry.replace(/\/+$/, '')
+  return path === prefix || path.startsWith(`${prefix}/`)
+}
+
 export const isSkippedPath = (path) =>
   path.split(/[/\\]/).some((segment) => ALWAYS_SKIPPED_DIRECTORIES.has(segment))
 
@@ -20,10 +28,7 @@ export async function collectFiles({ root, paths, extensions, exclude = [] }) {
     const segments = relativePath.split(SEPARATOR)
     if (segments.some((segment) => ALWAYS_SKIPPED_DIRECTORIES.has(segment))) return true
     if (segments[0] === VENDORED_DEPENDENCIES) return true
-    return exclude.some((entry) => {
-      const prefix = entry.replace(/\/+$/, '')
-      return relativePath === prefix || relativePath.startsWith(prefix + SEPARATOR)
-    })
+    return exclude.some((entry) => isWithinPrefix(relativePath, entry))
   }
 
   const walkDirectory = async (directory) => {

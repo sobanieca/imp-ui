@@ -14,19 +14,22 @@ const PLATFORM_SLUGS = {
   'darwin-aarch64': 'macos-arm64',
   'linux-x86_64': 'linux-x64',
   'linux-aarch64': 'linux-arm64',
+  'windows-x86_64': 'windows-x64',
 }
+
+const EXECUTABLE = Deno.build.os === 'windows' ? 'imp.exe' : 'imp'
 
 function platformSlug() {
   const slug = PLATFORM_SLUGS[`${Deno.build.os}-${Deno.build.arch}`]
   if (!slug) {
     throw new Error(
-      `imp does not ship a binary for ${Deno.build.os}/${Deno.build.arch} - supported platforms are macOS and Linux on x64 or arm64`,
+      `imp does not ship a binary for ${Deno.build.os}/${Deno.build.arch} - supported platforms are macOS and Linux on x64 or arm64, and Windows on x64`,
     )
   }
   return slug
 }
 
-const assetName = () => `imp-${platformSlug()}`
+const assetName = () => `imp-${platformSlug()}${Deno.build.os === 'windows' ? '.exe' : ''}`
 
 const homeDir = () => Deno.env.get('HOME') ?? Deno.env.get('USERPROFILE')
 
@@ -40,7 +43,7 @@ function impHome() {
 
 const versionsDir = () => join(impHome(), 'versions')
 const versionDir = (version) => join(versionsDir(), version)
-const versionBinaryPath = (version) => join(versionDir(version), 'imp')
+const versionBinaryPath = (version) => join(versionDir(version), EXECUTABLE)
 const lastUsedPath = (version) => join(versionDir(version), 'lastUsed')
 
 const releaseAssetUrl = (version) =>
@@ -140,7 +143,7 @@ async function downloadVersion(version) {
   }
   const dir = join(impHome(), 'versions', version)
   await Deno.mkdir(dir, { recursive: true })
-  const finalPath = join(dir, 'imp')
+  const finalPath = join(dir, EXECUTABLE)
   const tempPath = `${finalPath}.download-${crypto.randomUUID()}`
   await Deno.writeFile(tempPath, bytes, { mode: 0o755 })
   await Deno.chmod(tempPath, 0o755).catch(() => {})

@@ -119,7 +119,8 @@ These are the conventions:
 | [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD-PARTY-LICENSES                              |
 | [built-app-license-notices](built-app-license-notices.md)             | imp build writes LICENSES.txt; every script points at it                             |
 | [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals                            |
-| [binary-distribution](binary-distribution.md)                         | GitHub Releases, compiled per platform on push                                       |
+| [binary-distribution](binary-distribution.md)                         | GitHub Releases for Linux, macOS and Windows, compiled on push                       |
+| [release-policy](release-policy.md)                                   | No guarantee before 1.0; semantic versioning and a deprecation window from 1.0       |
 | [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary                                  |
 | [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits                          |
 | [environments](environments.md)                                       | Named env files, `$env.` shell refs, one injected `env` global                       |

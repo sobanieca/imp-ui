@@ -12,8 +12,13 @@ imp is not released yet. Until version `1.0.0`, any part of it can change.
 curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
 ```
 
-The script supports Linux and macOS. The docs are in [`docs/`](docs/). Start with
-[`docs/cli.md`](docs/cli.md).
+The script supports Linux and macOS. On Windows x64, run this command in PowerShell:
+
+```
+irm https://sobanieca.github.io/imp-ui/install.ps1 | iex
+```
+
+The docs are in [`docs/`](docs/). Start with [`docs/cli.md`](docs/cli.md).
 
 ## Work on imp
 

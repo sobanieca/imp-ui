@@ -1,7 +1,7 @@
 import { dirname, join, relative, resolve, SEPARATOR } from '@std/path'
 import { browserGlobals, Linter } from './vendor/eslint.js'
 import { resolveModuleFile } from './bundling.js'
-import { collectFiles } from './walk.js'
+import { collectFiles, isWithinPrefix, posixPath } from './walk.js'
 import { isJavaScriptType, isLocalScriptSource, isModuleType, readHtml } from './html-document.js'
 import { isMockFile, isPreviewFile, isTestFile } from './project-files.js'
 import { publicDirectory } from './config.js'
@@ -163,7 +163,7 @@ const matchesPath = (relativePath, prefix) =>
   relativePath === prefix || relativePath.startsWith(prefix + SEPARATOR)
 
 const isExcluded = (relativePath, exclude) =>
-  exclude.some((entry) => matchesPath(relativePath, entry.replace(/\/+$/, '')))
+  exclude.some((entry) => isWithinPrefix(relativePath, entry))
 
 const scriptSourcePath = (src) => {
   try {
@@ -192,13 +192,13 @@ export async function reportDeadCode({ root, config, configName }) {
   const modules = new Map()
   const roots = new Set()
   const findings = []
-  const relativeTo = (file) => relative(projectRoot, file)
+  const relativeTo = (file) => posixPath(relative(projectRoot, file))
   const hint = `add it to "publicExports" in ${configName} if it is used from outside the project`
   const computedImportMessage =
     'import() takes a computed specifier, so imp cannot tell which module it loads - name the folder in a template like import(`./pages/${name}.js`), or list the modules it loads in "publicExports" in ' +
     configName
 
-  const grantsFor = (file) => grants.filter((grant) => matchesPath(relativeTo(file), grant.path))
+  const grantsFor = (file) => grants.filter((grant) => isWithinPrefix(relativeTo(file), grant.path))
 
   const reportComputedImports = (file, record, lineOffset = 0) => {
     const relativePath = relativeTo(file)

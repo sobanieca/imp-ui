@@ -33,6 +33,9 @@ caches the release, but it writes no pin.
 - **An imp update is not a routine step.** Update when a user asks for it, or when you need a fix
   that a new version contains. Do not update as a reflex before other work. A version change affects
   everyone on the project.
+- **Before 1.0.0 any update can break the app.** Run `imp test` and `imp lint` after it. From 1.0.0,
+  imp follows semantic versioning: a break comes in a major version only, and a deprecation warns
+  for at least one minor version first. Act on a deprecation warning in the same change.
 - **After an update, exercise the installed components that are built for an imp host.** They run on
   the imp version that your app provides, not on the version that their author built against. See
   [dependencies](dependencies.md).

@@ -19,8 +19,9 @@ development does, so what you tested is what you ship.
 
 ## Installation
 
-`imp` ships as one self-contained binary. On macOS and on Linux, for x64 and for arm64, the install
-script detects your platform, downloads the latest binary, and puts it on your `PATH`:
+`imp` ships as one self-contained binary, for macOS and Linux on x64 and arm64, and for Windows on
+x64. On macOS and on Linux, the install script detects your platform, downloads the latest binary,
+and puts it on your `PATH`:
 
 ```sh
 curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
@@ -36,7 +37,16 @@ curl -fsSL -o imp https://github.com/sobanieca/imp-ui/releases/latest/download/i
 chmod +x imp
 ```
 
-The asset names are `imp-linux-x64`, `imp-linux-arm64`, `imp-macos-x64` and `imp-macos-arm64`. To
+On Windows x64, run this command in PowerShell. It installs `imp.exe` into
+`%LOCALAPPDATA%\Programs\imp`, and adds that folder to your `PATH`. It needs no administrator
+rights. To choose another folder, set `INSTALL_DIR`.
+
+```powershell
+irm https://sobanieca.github.io/imp-ui/install.ps1 | iex
+```
+
+The asset names are `imp-linux-x64`, `imp-linux-arm64`, `imp-macos-x64`, `imp-macos-arm64` and
+`imp-windows-x64.exe`. Each asset has a `.sha256` file beside it, and both scripts verify it. To
 confirm the install, run `imp --version`. It prints the version that the binary runs.
 
 ## Commands
@@ -1798,6 +1808,22 @@ imp caches a downloaded version per user, under `~/.imp/`, and verifies each one
 published checksum before it stores it. Every project that you work on shares that cache. To cache
 the versions somewhere else, set `IMP_HOME`. That helps in CI, and in a container where the home
 directory is not writable. It also keeps the binaries off your home volume.
+
+### Versions and stability
+
+imp is not released yet. Until version `1.0.0`, any release can change or remove an export, a config
+key, a command or an output format. Pin a version, and update the pin on purpose.
+
+From version `1.0.0`, imp follows semantic versioning:
+
+- A breaking change goes into a new major version only. A breaking change is one that can make a
+  correct app, its tests or its build fail.
+- A deprecated feature keeps working, and imp warns about it, for at least one minor version before
+  imp removes it. The warning names the replacement.
+- A minor version adds features, and a patch version fixes defects. Neither one needs a change in
+  your app.
+- An exit code, a file that imp writes, and a machine format such as `--json` are stable in the same
+  way. The wording of a message for a person can change in any version.
 
 ## `imp prune` - reclaim disk space
 

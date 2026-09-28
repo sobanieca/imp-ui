@@ -59,6 +59,8 @@ export const renderNotice = () =>
 
 export const installCommand = (origin) => `curl -fsSL ${origin}/install.sh | bash`
 
+export const windowsInstallCommand = (origin) => `irm ${origin}/install.ps1 | iex`
+
 export const renderInstall = (origin) =>
   `<div class="install">` +
   `<div class="install-command">` +
@@ -66,7 +68,8 @@ export const renderInstall = (origin) =>
   `<button class="copy" type="button" aria-label="Copy the install command">` +
   `${svgIcon('copy-icon', luCopy)}${svgIcon('copied-icon', luCheck)}</button>` +
   `</div>` +
-  `<p class="install-note">macOS and Linux, x64 and arm64. Then run ` +
+  `<p class="install-note">macOS and Linux, x64 and arm64. On Windows, run ` +
+  `<code>${escape(windowsInstallCommand(origin))}</code> in PowerShell. Then run ` +
   `<code>imp init my-app</code>.</p>` +
   `</div>`
 

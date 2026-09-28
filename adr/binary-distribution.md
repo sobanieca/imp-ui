@@ -24,11 +24,17 @@ mirrors the release mechanism of jsonr.
   GitHub Release, tagged `v{version}`, through `softprops/action-gh-release`. A second push with no
   change of the version does nothing, because the guard for an existing tag skips the release. So
   the pipeline is safe to run on every push.
-- **There are four targets, and no Windows.** That matches jsonr. The targets are `x86_64` and
-  `aarch64`, across `linux` and `macos`. imp compiles them with the same
-  `--include cli/src --include lib/src`, and with the same preparation of the prebundled fmt plugins
-  and npm dependencies, as `deno run -A tools/compile.js`. imp names an asset `imp-{os}-{arch}`.
-  `{os}` is `linux` or `macos`. `{arch}` is `x64` or `arm64`.
+- **There are five targets.** They are `x86_64` and `aarch64` for `linux` and `macos`, and `x86_64`
+  for `windows`. The release job compiles each one with
+  `tools/compile.js --target <triple>
+  --output <file>`. So a release binary has exactly the
+  include set of the binary that the tests ran: the CLI, the library without its `public/` fonts,
+  the skills and the licence notices. It also gets the same preparation of the prebundled fmt
+  plugins and npm dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe` on Windows.
+  `{os}` is `linux`, `macos` or `windows`. `{arch}` is `x64` or `arm64`.
+- **Windows is tested in CI.** The test job runs `deno task test` on Ubuntu and on Windows. A
+  release waits for both. So a change that breaks Windows cannot ship, although no maintainer runs
+  Windows day to day.
 - **The download URLs follow from that.** For a pinned version, it is
   `https://github.com/sobanieca/imp-ui/releases/download/v{version}/imp-{os}-{arch}`. For the newest
   version, it is `.../releases/latest/download/imp-{os}-{arch}`. imp resolves the latest version
@@ -37,6 +43,9 @@ mirrors the release mechanism of jsonr.
 - **An `install.sh` script detects the OS and the architecture with `uname`.** It downloads the
   matching latest asset, and installs it to `INSTALL_DIR`. The default is `/usr/local/bin`, and the
   script uses `sudo` when it must. That is the one-line install that `docs/cli.md` documents.
+- **An `install.ps1` script does the same on Windows, in PowerShell.** It installs
+  `imp-windows-x64.exe` as `imp.exe` into `%LOCALAPPDATA%\Programs\imp`, or `INSTALL_DIR`, and adds
+  that folder to the `PATH` of the user. It needs no administrator rights.
 - **Each asset has a SHA-256 checksum.** imp publishes each binary with an `imp-{os}-{arch}.sha256`
   asset, which holds the output of `sha256sum`. This is the one place where imp deliberately differs
   from jsonr, which ships no checksum. imp owns the release workflow and the on-demand download
@@ -51,9 +60,9 @@ mirrors the release mechanism of jsonr.
 - A release is fully automated from one change to the version in `deno.json`. Nobody can forget to
   tag, or to build a platform. A push with no change of the version does not release again by
   mistake.
-- A Windows user is unsupported until somebody adds a Windows target to the workflow, and to the map
-  of platform names. The CLI already fails immediately, with a clear message, on an unsupported
-  platform.
+- Windows on arm64 has no binary. The CLI fails immediately, with a clear message, on a platform
+  that has no binary. The e2e tests on Windows use the pinned Chrome build for `win64`.
+- The CI of every push takes longer, because the tests run twice.
 - imp checks the integrity of a downloaded binary against its published SHA-256. So imp rejects an
   asset that is corrupt or changed, instead of running it. The trade is that imp cannot fetch a
   release that has no `.sha256` asset on demand. The workflow guarantees that this never happens.

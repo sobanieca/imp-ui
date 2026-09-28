@@ -30,7 +30,7 @@ const OVERVIEW = join(SITE, 'content', 'overview.md')
 const FONTS = join(ROOT, 'lib', 'src', 'public', 'fonts')
 const ORIGIN = Deno.env.get('IMP_SITE_URL')?.replace(/\/$/, '') ?? null
 const INSTALL_ORIGIN = ORIGIN ?? 'https://sobanieca.github.io/imp-ui'
-const INSTALL_SCRIPT = join(ROOT, 'install.sh')
+const INSTALL_SCRIPTS = ['install.sh', 'install.ps1']
 
 const SCHEME_STORAGE_KEY = 'imp.site.scheme'
 const SCHEMES = ['light', 'dark']
@@ -768,7 +768,7 @@ for (const page of pages) {
 await Deno.writeTextFile(join(DIST, 'site.css'), stylesheet())
 await Deno.writeTextFile(join(DIST, 'site.js'), clientScript())
 await Deno.writeTextFile(join(DIST, 'overview.js'), overviewScript())
-await Deno.copyFile(INSTALL_SCRIPT, join(DIST, 'install.sh'))
+for (const script of INSTALL_SCRIPTS) await Deno.copyFile(join(ROOT, script), join(DIST, script))
 for (const [from, to] of COPIES) await Deno.copyFile(join(ROOT, from), join(DIST, to))
 for (const [name, scheme] of MARKS) await Deno.writeTextFile(join(DIST, name), impMarkSvg(scheme))
 await Deno.mkdir(join(DIST, 'fonts'))

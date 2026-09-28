@@ -24,8 +24,12 @@ jobs:
         run: cd lib/src && deno run -A ../../tools/imp.js lint
 
   test:
-    name: Tests
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -75,12 +79,6 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Prepare bundled assets
-        if: steps.tag.outputs.exists == 'false'
-        run: |
-          deno run -A tools/download-fmt-plugins.js
-          deno run -A tools/prebundle-npm-deps.js
-
       - name: Compile binaries
         if: steps.tag.outputs.exists == 'false'
         run: |
@@ -88,10 +86,11 @@ jobs:
             "x86_64-unknown-linux-gnu:imp-linux-x64" \
             "aarch64-unknown-linux-gnu:imp-linux-arm64" \
             "x86_64-apple-darwin:imp-macos-x64" \
-            "aarch64-apple-darwin:imp-macos-arm64"; do
+            "aarch64-apple-darwin:imp-macos-arm64" \
+            "x86_64-pc-windows-msvc:imp-windows-x64.exe"; do
             triple="${target%%:*}"
             output="${target##*:}"
-            deno compile -A --include cli/src --include lib/src --target "$triple" -o "$output" cli/src/main.js
+            deno run -A tools/compile.js --target "$triple" --output "$output"
             sha256sum "$output" > "$output.sha256"
           done
 
@@ -112,3 +111,5 @@ jobs:
             imp-macos-x64.sha256
             imp-macos-arm64
             imp-macos-arm64.sha256
+            imp-windows-x64.exe
+            imp-windows-x64.exe.sha256

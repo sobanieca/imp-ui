@@ -38,7 +38,19 @@ async function run(...args) {
   if (!success) Deno.exit(code)
 }
 
-if (!Deno.args.includes('--force') && await binaryIsFresh()) {
+const option = (name) => {
+  const index = Deno.args.indexOf(`--${name}`)
+  return index === -1 ? null : Deno.args[index + 1] ?? null
+}
+
+const target = option('target')
+const output = option('output')
+if ((target === null) !== (output === null)) {
+  console.error('error: --target and --output go together, as in --target <triple> --output <file>')
+  Deno.exit(1)
+}
+
+if (target === null && !Deno.args.includes('--force') && await binaryIsFresh()) {
   console.log(`${BINARY} is up to date - skipping compile (pass --force to recompile)`)
   Deno.exit(0)
 }
@@ -59,7 +71,6 @@ await run(
   'skills',
   '--include',
   'THIRD-PARTY-LICENSES.md',
-  '-o',
-  'imp',
+  ...(target === null ? ['-o', 'imp'] : ['--target', target, '-o', output]),
   'cli/src/main.js',
 )

@@ -60,15 +60,6 @@ date.
 
 ## Tier 5 - the policy about a release, and about support
 
-- **The version is `0.1.0`. There is no Windows target. There is no policy about stability.** The
-  rule about no backward compatibility, in `CLAUDE.md`, is correct for now. But it must end at a
-  documented 1.0, with a window for a deprecation and for support, before a team can responsibly pin
-  imp in production. A pinned version, see `adr/version-pinning-self-delegation.md`, is worth
-  pinning only when its guarantees are written down. Windows is still unsupported, see
-  `adr/binary-distribution.md`, and CI builds no binary for Windows. That excludes many teams
-  completely. **Decision:** from 1.0, imp follows semantic versioning. A breaking change goes into a
-  major version only. A deprecation warns for at least one minor version before the removal.
-  **Windows is a target before 1.0.** CI builds, tests and releases a Windows binary.
 - **A sealed CI system has no documented path.** imp downloads the e2e browser on first use, and
   verifies its checksum, see `cli/src/test-browser.js`. `test.browser` and `IMP_BROWSER` point at a
   browser that is already there. But there is no documented mirror, and no override of the cache
@@ -88,7 +79,6 @@ One gap blocks production too, but it has its own file:
 1. Do the CSP, the hash on an entry file and the external `env.js` first. They change what every
    deploy ships.
 2. Write the deploy page, after tier 2 lands.
-3. Settle the 1.0 policy and the Windows target. They decide whether a team can adopt imp at all.
 
 The error reporting lands with `todo/analytics.md`, and not in this order.
 
