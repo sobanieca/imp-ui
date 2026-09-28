@@ -247,7 +247,7 @@ approves.**
   component preview of imp is where that shows. An app that embeds a frame in a narrow panel must
   give the frame the room that a frame needs.
 - **A screen cannot push DOM up into the nav**, because imp ships no portal, see
-  `todo/overlay-seam.md`. A contribution across screens is a state that the map names, as the
+  `overlay-top-layer.md`. A contribution across screens is a state that the map names, as the
   `options` of a param node or the `tag` of a row, which a screen fills. That is why the rule about
   plain data, see `state-plain-data-values.md`, governs the tree.
 - **imp moves the chrome that changes parent. It does not duplicate it.** So the same `extras` node

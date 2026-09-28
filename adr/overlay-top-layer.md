@@ -170,6 +170,53 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   with the focus and the scroll state to reconcile across the gap.
 - The anchored layer uses neither helper here. A panel that hangs from a trigger is a
   `popover="auto"` element, and CSS anchor positioning places it. imp builds it as the
-  `anchoredStyles` string builder, beside the two helpers. The `items` menu of `menuButton` is its
-  first consumer. `tooltip`, the panel of `datePicker`, the list of `comboBox` and the region of
-  `toast` sit on the same layer. What is still open is in `todo/overlay-seam.md`.
+  `anchoredStyles` string builder, beside the two helpers. It has no runtime at all. The menu of
+  `menuButton` and of `breadcrumbs`, the panel of `datePicker`, of `emojiPicker` and of `reactions`,
+  the list of `comboBox`, and the pickers of `richTextEditor` use it. `tooltip` places its tip with
+  CSS anchor positioning too, and the region of `toast` is a manual popover in a corner of the
+  viewport.
+
+## The anchored panel
+
+`anchoredStyles({ trigger, panel, placement, align })` writes one CSS string. Each line answers one
+fact about the four current browsers:
+
+- **`anchor-name` goes on the trigger, and `position-anchor` goes on the panel, always.** The
+  initial value of `position-anchor` settled only in Chrome 151, Firefox 151 and Safari 27. So no
+  panel depends on it. Every instance can use the same literal `--imp-anchor`, because a tree scope
+  contains the name.
+- **`position-area` is written in logical keywords**, such as `block-end span-inline-end`. So a
+  right-to-left page mirrors the panel with no rule of its own.
+- **`position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline`** keeps the panel on
+  the screen when the trigger sits at an edge or in a corner.
+- **`position-try-order: most-block-size` picks the side with the most room, and the panel is capped
+  to that room.** The panel has `max-block-size: calc(100% - 2 * space-1)`, and the percentage
+  resolves against the area that `position-area` chose. So a menu that is taller than the space on
+  either side of its trigger takes the larger side and scrolls inside it. It never runs off the
+  screen. The price is that a short panel under a trigger in the lower half of the screen opens
+  upwards. Chrome 125, Firefox 148 and Safari 26 ship the property.
+- **`position-visibility: anchors-visible`** hides the panel when the trigger scrolls out of view.
+- **`:not(:popover-open) { display: none }` hides a closed panel.** The rule of the user agent that
+  does the same uses a selector of one class. A `display` that a component sets on its own panel
+  would win against it, and the panel would paint at all times.
+
+**A panel anchors to a box of its own root, never to a nested control.** A component host is
+`display: contents`, so an `anchor-name` on a host names no box. The name cannot cross a tree scope
+either, see `joined-control-seam.md`. So every anchored component places its `anchor-name` on an
+element of its own root.
+
+**A trigger and its panel are rendered by one component.** An ARIA id reference does not cross a
+shadow root, and `anchor-name` and `position-anchor` resolve inside one tree scope. Both force a
+trigger and its panel into the same shadow root. That is why the seam is a module and not an
+`overlay()` wrapper. It is also why a panel is a prop of the component that renders its trigger, as
+in `menuButton({ items })`, and never `menu(button(...))`.
+
+**So `tooltip` cannot name its control.** The child of `tooltip({ text }, button(...))` is an
+`imp-button` host. `aria-describedby` on a host with no role names nothing. So `tooltip` is visual
+only. It wraps the control in a box of its own root and anchors the tip to that box. The control
+carries its own accessible name, and the tooltip text must never be the only name of a control.
+
+**A placement is proven in a browser.** happy-dom has no layout engine, so a unit test cannot see
+which side a panel took. The e2e suite pins the trigger of the menu, of `datePicker` and of
+`comboBox` to each edge and each corner of the viewport, and asserts the side that the panel took.
+It also asserts the corner of the `toast` region in both directions.

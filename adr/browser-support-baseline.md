@@ -56,7 +56,7 @@ the focus.
 
 - The overlay components are buildable now, entirely on platform behaviour. The top layer handles
   the stacking and the focus. CSS anchor positioning handles the placement. `popovertarget` handles
-  the open and the close, see `todo/overlay-seam.md`. None of that is imp code. So none of it can
+  the open and the close, see `overlay-top-layer.md`. None of that is imp code. So none of it can
   decay.
 - **A user on an older browser gets a broken app, and not a degraded one.** imp accepts that cost.
   An app whose audience includes such a user must not use imp. The clearest case today is Firefox

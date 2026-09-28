@@ -160,7 +160,7 @@ customer who reports a bug.
   report goes, and what somebody removes from it first, is a decision that only the app can make.
   The job of imp ends when it collects the report. The panel is a `<dialog>` inside a
   `popover="manual"` layer. So it reaches the top layer with no portal, and with no backdrop that
-  hides the element that the person describes, see `todo/overlay-seam.md`.
+  hides the element that the person describes, see `overlay-top-layer.md`.
 - **`imp review` reads the folder back, and `imp review clear` empties it.** The files are plain
   text, exactly so that the command is a convenience, and not the only way in. The command sorts,
   counts, and resolves the project root from any subdirectory. `cat .imp/reviews/*.txt` stays
