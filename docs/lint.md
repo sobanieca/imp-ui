@@ -438,6 +438,44 @@ error[imp/icons-by-name]: 'import * as icons' reaches for the whole 'imp/icons' 
 Import each icon by name, as in `import { luHouse, luStar } from 'imp/icons'`. When a module of your
 own collects the icons, re-export them by name in the same way.
 
+### `imp/img-alt`
+
+An image with no `alt` attribute has no text for a screen reader. The screen reader then reads the
+file name, or it skips the image. The rule reports a call to the `img` factory, or to
+`el('img', ...)`, when its props have no `alt` key:
+
+```js
+img({ src: '/chart.png' })
+```
+
+```
+error[imp/img-alt]: 'img' has no alt - a screen reader then reads the file name or nothing; describe the image in alt, or write alt: '' for an image that only decorates
+ --> src/report.js:4:3
+```
+
+Describe what the image shows, as in `img({ src: '/chart.png', alt: 'Sales per month' })`. An image
+that only decorates the page takes `alt: ''`. The screen reader then skips it on purpose. The rule
+does not check props that it cannot see, such as `img(props)` or a spread object.
+
+### `imp/icon-button-name`
+
+A button that shows only an icon has no text. So a screen reader announces it as "button" and
+nothing more. The rule reports a standard `button`, a plain `button` from `imp/html`, or
+`el('button', ...)`, when every child is an `icon(...)` call and the props give no name:
+
+```js
+button({ variant: 'ghost', square: true }, icon(luTrash))
+```
+
+```
+error[imp/icon-button-name]: 'button' shows only an icon and has no accessible name - a screen reader announces it as "button" and nothing more; name the button itself: button({ label: 'Delete' }, icon(luTrash))
+ --> src/row.js:9:3
+```
+
+Name the button, not the icon. The standard `button` takes `label`. A plain `button` takes
+`'aria-label'`, `'aria-labelledby'` or `title`. A button with text next to the icon needs no label,
+because the text is its name.
+
 ### `imp/exact-dependency-versions`
 
 imp vendors a dependency. You declare it under `dependencies` in `imp.json`, and `imp install`

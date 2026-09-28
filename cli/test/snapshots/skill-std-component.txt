@@ -43,8 +43,9 @@ Rules an agent gets wrong:
 - **The button has no outer margin.** Spacing between buttons belongs to whatever lays them out.
 - **An icon next to text needs no wrapper.** Pass the icon and the text as children. The button
   centres them on one line and puts the standard gap between them.
-- The accessible name is the content of the button. An icon-only button needs `label`. There is no
-  `aria-label` prop, and imp warns that it is unknown.
+- The accessible name is the content of the button. An icon-only button needs `label`, and
+  `imp lint` reports one without it (`imp/icon-button-name`). There is no `aria-label` prop, and imp
+  warns that it is unknown.
 - **`pressed` makes a toggle button, and the same `<button>` stays.** With `pressed`, a click flips
   the value and paints `aria-pressed`. Pass a **state** to read the value and to drive it from
   outside, as with the `open` state of a dialog. imp writes the flip back to the state. The host

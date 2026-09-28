@@ -34,6 +34,8 @@ own rules. imp always applies them as errors, and you cannot reconfigure them.
 | `imp/component-name`             | a literal `component()` name that is not lowercase-with-a-dash (or is HTML-reserved)                                     | name it `my-app-profile`                                                               |
 | `imp/import-source`              | an imp export imported from the wrong specifier                                                                          | autofixed - the name is moved to the right import                                      |
 | `imp/icons-by-name`              | `import * as`, `export *` or `import()` of `imp/icons`                                                                   | import each icon by name: `import { luHouse } from 'imp/icons'`                        |
+| `imp/img-alt`                    | an `img` factory call, or `el('img', ...)`, whose props have no `alt` key                                                | describe the image: `img({ src, alt: 'Sales per month' })`; `alt: ''` for decoration   |
+| `imp/icon-button-name`           | a standard `button` or a plain `button` whose only children are `icon(...)` calls, with no name prop                     | `button({ label: 'Delete' }, icon(luTrash))`; the plain one takes `'aria-label'`       |
 | `imp/exact-dependency-versions`  | inexact pins in `imp.json`, inline `npm:`/`jsr:` specifiers, undeclared bare imports, unknown `imp/...` subpaths         | pin exactly, or run the `imp install` command the message prints                       |
 
 A rule that names a hook (`setup`, `loading`, `error`, `onMount`, `onRemove`) looks only at an
@@ -43,7 +45,8 @@ key in any other object, such as a bundler plugin, is not a hook.
 Each rule protects one subject. Read [components](components.md) for the component rules,
 [state](state.md) for the state rules, [http](http.md) for the http client rules,
 [rendering](rendering.md) for the props rule, [imports](imports.md) for `import-source`,
-[icons](icons.md) for `icons-by-name`, and [dependencies](dependencies.md) for the pin rule.
+[icons](icons.md) for `icons-by-name`, [components](components.md) for `img-alt` and
+`icon-button-name`, and [dependencies](dependencies.md) for the pin rule.
 
 imp does not check a name that you build dynamically, such as a variable or a template with an
 expression. The runtime does the same validation, and a bad name throws there.

@@ -130,6 +130,7 @@ Deno.test('imp commands', async (t) => {
   await test('lint-component-name', ['lint', 'app.js'], fixture('lint-component'))
   await test('lint-import-source', ['lint', 'app.js'], fixture('lint-import-source'))
   await test('lint-icons-by-name', ['lint', 'app.js'], fixture('lint-icons'))
+  await test('lint-accessible-names', ['lint', 'app.js'], fixture('lint-accessible-names'))
   await test('lint-html-embedded-script', ['lint', 'index.html'], fixture('lint-html'))
   await test('lint-dependency-errors', ['lint', 'app.js'], fixture('lint-unpinned'))
   await test('lint-ignore-directive', ['lint', 'app.js'], fixture('lint-ignore'))

@@ -306,6 +306,95 @@ const SELF_FREE_ARGUMENT_TYPES = new Map([
 
 const SELF_HOOKS_TEXT = 'self is the first parameter of setup, error, onMount and onRemove'
 
+const ACCESSIBLE_NAME_FACTORIES = new Map([
+  ['imp/html', new Map([['el', 'el'], ['img', 'img'], ['button', 'button']])],
+  ['imp/std', new Map([['button', 'std-button'], ['icon', 'icon']])],
+])
+
+const IMG_ALT_KEYS = new Set(['alt'])
+
+const EL_TAG_KINDS = new Map([['img', 'img'], ['button', 'button']])
+
+const BUTTON_NAME_KEYS = new Map([
+  ['button', new Set(['aria-label', 'ariaLabel', 'aria-labelledby', 'title'])],
+  ['std-button', new Set(['label'])],
+])
+
+const BUTTON_NAME_EXAMPLES = new Map([
+  ['button', "button({ 'aria-label': 'Delete' }, icon(luTrash))"],
+  ['std-button', "button({ label: 'Delete' }, icon(luTrash))"],
+])
+
+const createAccessibleNameTracker = () => {
+  const locals = new Map()
+  const namespaces = new Map()
+  const calleeKind = (callee) => {
+    if (callee.type === 'Identifier') return locals.get(callee.name) ?? null
+    if (
+      callee.type !== 'MemberExpression' || callee.computed ||
+      callee.object.type !== 'Identifier' || callee.property.type !== 'Identifier'
+    ) return null
+    return namespaces.get(callee.object.name)?.get(callee.property.name) ?? null
+  }
+  return {
+    visitImport(node) {
+      const kinds = ACCESSIBLE_NAME_FACTORIES.get(node.source.value)
+      if (!kinds) return
+      for (const specifier of node.specifiers) {
+        if (specifier.type === 'ImportSpecifier') {
+          const kind = kinds.get(importedName(specifier))
+          if (kind) locals.set(specifier.local.name, kind)
+        } else if (specifier.type === 'ImportNamespaceSpecifier') {
+          namespaces.set(specifier.local.name, kinds)
+        }
+      }
+    },
+    element(node) {
+      const kind = calleeKind(node.callee)
+      if (kind !== 'el') return kind === null ? null : { kind, args: node.arguments }
+      const { known, name } = literalArgumentName(node.arguments[0])
+      const elKind = known ? EL_TAG_KINDS.get(String(name).toLowerCase()) : undefined
+      return elKind ? { kind: elKind, args: node.arguments.slice(1) } : null
+    },
+    isIconCall(expression) {
+      return expression.type === 'CallExpression' && calleeKind(expression.callee) === 'icon'
+    },
+  }
+}
+
+const propsObjectsOf = (args) => args.filter((argument) => argument.type === 'ObjectExpression')
+
+const hasSpread = (objects) =>
+  objects.some((object) => object.properties.some((property) => property.type === 'SpreadElement'))
+
+const hasPropKey = (objects, keys) =>
+  objects.some((object) =>
+    object.properties.some((property) =>
+      property.type === 'Property' && keys.has(propertyKeyName(property))
+    )
+  )
+
+const createAccessibleNameRule = (check) => ({
+  create(context) {
+    const tracker = createAccessibleNameTracker()
+    const calls = []
+    return {
+      ImportDeclaration: (node) => tracker.visitImport(node),
+      CallExpression(node) {
+        calls.push(node)
+      },
+      'Program:exit'() {
+        for (const node of calls) {
+          const element = tracker.element(node)
+          if (element === null) continue
+          const message = check(element, tracker)
+          if (message) context.report({ node, message })
+        }
+      },
+    }
+  },
+})
+
 const createHelperTracker = (helpersBySource) => {
   const locals = new Map()
   const namespaceLocals = new Set()
@@ -1221,6 +1310,24 @@ export default {
         }
       },
     },
+    'img-alt': createAccessibleNameRule(({ kind, args }) => {
+      if (kind !== 'img') return null
+      if (args.some((argument) => argument.type !== 'ObjectExpression')) return null
+      const props = propsObjectsOf(args)
+      if (hasSpread(props) || hasPropKey(props, IMG_ALT_KEYS)) return null
+      return `'img' has no alt - a screen reader then reads the file name or nothing; describe the image in alt, or write alt: '' for an image that only decorates`
+    }),
+    'icon-button-name': createAccessibleNameRule(({ kind, args }, tracker) => {
+      const nameKeys = BUTTON_NAME_KEYS.get(kind)
+      if (!nameKeys) return null
+      const children = args.filter((argument) => argument.type !== 'ObjectExpression')
+      if (!children.length || !children.every((child) => tracker.isIconCall(child))) return null
+      const props = propsObjectsOf(args)
+      if (hasSpread(props) || hasPropKey(props, nameKeys)) return null
+      return `'button' shows only an icon and has no accessible name - a screen reader announces it as "button" and nothing more; name the button itself: ${
+        BUTTON_NAME_EXAMPLES.get(kind)
+      }`
+    }),
     'exact-dependency-versions': {
       create(context) {
         const aliases = new Set(context.settings?.imp?.dependencyAliases ?? [])

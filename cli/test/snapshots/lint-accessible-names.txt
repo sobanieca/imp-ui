@@ -1,0 +1,27 @@
+$ imp lint app.js  (cwd: test/fixtures/lint-accessible-names)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/img-alt]: 'img' has no alt - a screen reader then reads the file name or nothing; describe the image in alt, or write alt: '' for an image that only decorates
+ --> app.js:6:27
+
+error[imp/img-alt]: 'img' has no alt - a screen reader then reads the file name or nothing; describe the image in alt, or write alt: '' for an image that only decorates
+ --> app.js:7:28
+
+error[imp/img-alt]: 'img' has no alt - a screen reader then reads the file name or nothing; describe the image in alt, or write alt: '' for an image that only decorates
+ --> app.js:8:29
+
+error[imp/icon-button-name]: 'button' shows only an icon and has no accessible name - a screen reader announces it as "button" and nothing more; name the button itself: button({ label: 'Delete' }, icon(luTrash))
+ --> app.js:14:29
+
+error[imp/icon-button-name]: 'button' shows only an icon and has no accessible name - a screen reader announces it as "button" and nothing more; name the button itself: button({ 'aria-label': 'Delete' }, icon(luTrash))
+ --> app.js:17:35
+
+error[imp/icon-button-name]: 'button' shows only an icon and has no accessible name - a screen reader announces it as "button" and nothing more; name the button itself: button({ 'aria-label': 'Delete' }, icon(luTrash))
+ --> app.js:19:31
+
+Found 6 problems
+Checked 1 file
