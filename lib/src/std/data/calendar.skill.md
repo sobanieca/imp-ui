@@ -36,11 +36,11 @@ One item:
 | `end`   | same shapes as `start`                  | An all-day `end` is inclusive. Default: 1 hour, or 1 day |
 | `color` | a theme palette name, such as `'green'` | Default: the primary colour                              |
 
-| Event        | `detail`                                                  | Fires when the person activates                 |
-| ------------ | --------------------------------------------------------- | ----------------------------------------------- |
-| `select`     | `{ id, item }`                                            | an event                                        |
-| `slotSelect` | `{ start: '2026-09-21', allDay: true }`                   | a day number (month), a day header (week, day)  |
-| `slotSelect` | `{ start: '...T10:00', end: '...T11:00', allDay: false }` | an empty place in the time grid, with a pointer |
+| Event        | `detail`                                                  | Fires when the person activates                |
+| ------------ | --------------------------------------------------------- | ---------------------------------------------- |
+| `select`     | `{ id, item }`                                            | an event                                       |
+| `slotSelect` | `{ start: '2026-09-21', allDay: true }`                   | a day number (month), a day header (week, day) |
+| `slotSelect` | `{ start: '...T10:00', end: '...T11:00', allDay: false }` | a half-hour slot of the time grid              |
 
 Rules an agent gets wrong:
 
@@ -53,9 +53,11 @@ Rules an agent gets wrong:
 - **Pass a writable state to `view` and `date` to follow the toolbar.** With a plain value, the
   calendar keeps its own view and date from that start value. Watch the two states to load the
   entries of the shown range.
-- **A time slot is for a pointer only.** The keyboard path to a new entry is the day button: the day
-  number in the month view, and the day header in the week view and the day view. Both fire
-  `slotSelect` with `allDay: true`. Let the dialog of the app ask for the time.
+- **Every half hour of the week view and the day view is a slot button.** The time grid is one tab
+  stop. The arrow keys move the focus by half an hour and by a day, Home and End go to the first and
+  the last slot of the day, and a move past the edge of the week shows the next week. Enter, or a
+  click, fires `slotSelect` with a start and an end one hour later. The day number in the month view
+  and the day header fire `slotSelect` with `allDay: true`.
 - **An entry over several days is one bar per week in the month view.** The bar keeps one lane on
   every day that it covers. A bar that goes on into the next week has square ends on that side.
 - **The month view shows 3 lanes for each day.** On a day with more entries, the last lane is a "+N
