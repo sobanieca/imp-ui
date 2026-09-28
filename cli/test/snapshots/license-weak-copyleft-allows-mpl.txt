@@ -8,6 +8,7 @@ installed axe-core (npm:axe-core@4.8.2)
   dependencies/axe-core/manifest.json (packages, versions, licenses)
   bundled packages:
     axe-core@4.8.2 - MPL-2.0
+  integrity: 1 npm package checked against the published hash
 
 --- stderr ---
 (empty)

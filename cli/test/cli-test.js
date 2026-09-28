@@ -12,6 +12,13 @@ import { clientScript } from '../src/client.js'
 import { createMocks } from '../src/mocks.js'
 import { createDevLog } from '../src/dev-log.js'
 import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
+import {
+  bundledFileProblem,
+  matchesIntegrity,
+  sriDigest,
+  strongestSri,
+  tarballFiles,
+} from '../src/integrity.js'
 import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
@@ -663,6 +670,65 @@ Deno.test('imp install license policy', async (t) => {
     'jsr:@std/encoding@1.0.10/base64',
   ])
   await withPolicy('license-invalid-policy-value', 'mostly-fine', ['install', 'mitt@3.0.1'])
+})
+
+const tarHeader = (name, size) => {
+  const header = new Uint8Array(512)
+  const write = (text, offset) => header.set(new TextEncoder().encode(text), offset)
+  write(name, 0)
+  write('0000644\0', 100)
+  write(`${size.toString(8).padStart(11, '0')}\0`, 124)
+  write('0', 156)
+  write('ustar\0', 257)
+  write('00', 263)
+  return header
+}
+
+async function gzipTar(files) {
+  const blocks = []
+  for (const [name, text] of Object.entries(files)) {
+    const bytes = new TextEncoder().encode(text)
+    blocks.push(tarHeader(name, bytes.length))
+    const padded = new Uint8Array(Math.ceil(bytes.length / 512) * 512)
+    padded.set(bytes)
+    blocks.push(padded)
+  }
+  blocks.push(new Uint8Array(1024))
+  const stream = new Blob(blocks).stream().pipeThrough(new CompressionStream('gzip'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+
+Deno.test('imp install checks a package against its published integrity', async () => {
+  const tarball = await gzipTar({
+    'package/package.json': '{"name":"demo"}',
+    'package/lib/index.js': 'export const answer = 42\n',
+  })
+  const published = await sriDigest('sha512', tarball)
+  const tampered = tarball.slice()
+  tampered[tampered.length - 1] ^= 1
+  const files = await tarballFiles(tarball)
+  const encode = (text) => new TextEncoder().encode(text)
+  const results = [
+    `strongest of sha1 and sha512: ${strongestSri(`sha1-AAAA ${published}`)?.algorithm}`,
+    `no known algorithm: ${strongestSri('md5-AAAA')}`,
+    `published tarball matches: ${await matchesIntegrity(published, tarball)}`,
+    `changed tarball matches: ${await matchesIntegrity(published, tampered)}`,
+    `files in the tarball: ${[...files.keys()].join(', ')}`,
+    `bundled copy is the published one: ${
+      bundledFileProblem('demo@1.0.0', files, [
+        { path: 'lib/index.js', bytes: encode('export const answer = 42\n') },
+      ])
+    }`,
+    `bundled copy was edited: ${
+      bundledFileProblem('demo@1.0.0', files, [
+        { path: 'lib/index.js', bytes: encode('export const answer = 43\n') },
+      ])
+    }`,
+    `bundled file is not in the package: ${
+      bundledFileProblem('demo@1.0.0', files, [{ path: 'lib/extra.js', bytes: encode('') }])
+    }`,
+  ]
+  await assertSnapshot('install-integrity-check', `${results.join('\n')}\n`)
 })
 
 Deno.test('imp test', async (t) => {

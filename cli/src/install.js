@@ -1,6 +1,7 @@
 import { join } from '@std/path'
 import { configTargetPath, licensePolicy, loadImpConfig, updateConfigFile } from './config.js'
 import { bundleDependency, packageId, shutdownBundler } from './deps.js'
+import { verifyPackages } from './integrity.js'
 import {
   DEPENDENCY_MANIFEST_FILE,
   dependencyManifest,
@@ -46,7 +47,7 @@ async function installOne(
   const manifest = dependencyManifest({
     alias,
     specifier,
-    packages: await recordPackageLicenses(packages),
+    packages: await recordPackageLicenses(await verifyPackages(packages)),
     impImports,
   })
   const { violations, unknown } = reviewLicenses([manifest], policy)
@@ -73,7 +74,16 @@ async function installOne(
   console.log(`  dependencies/${alias}/${DEPENDENCY_MANIFEST_FILE} (packages, versions, licenses)`)
   console.log('  bundled packages:')
   for (const entry of manifest.packages) {
-    console.log(`    ${packageId(entry)} - ${entry.license ?? 'license not declared'}`)
+    const provenance = entry.provenance ? ', provenance attested' : ''
+    console.log(`    ${packageId(entry)} - ${entry.license ?? 'license not declared'}${provenance}`)
+  }
+  const checked = manifest.packages.filter((entry) => entry.integrity).length
+  if (checked) {
+    console.log(
+      `  integrity: ${checked} npm package${
+        checked === 1 ? '' : 's'
+      } checked against the published hash`,
+    )
   }
   const undeclared = unlicensedPackages(manifest)
   if (undeclared.length) {

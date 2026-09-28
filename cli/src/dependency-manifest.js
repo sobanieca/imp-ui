@@ -54,11 +54,13 @@ const licenseOf = (record) =>
   record.registry === 'npm' ? npmLicense(record.directory) : jsrLicense(record)
 
 export async function recordPackageLicenses(packages) {
-  return await Promise.all(packages.map(async ({ registry, name, version, directory }) => {
-    const { license, licenseText } = await licenseOf({ registry, name, version, directory })
-      .catch(() => ({ license: null, licenseText: null }))
-    return { registry, name, version, license, licenseText }
-  }))
+  return await Promise.all(
+    packages.map(async ({ registry, name, version, directory, integrity, provenance }) => {
+      const { license, licenseText } = await licenseOf({ registry, name, version, directory })
+        .catch(() => ({ license: null, licenseText: null }))
+      return { registry, name, version, integrity, provenance, license, licenseText }
+    }),
+  )
 }
 
 export const unlicensedPackages = (manifest) =>

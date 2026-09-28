@@ -120,10 +120,34 @@ installed micromark (npm:micromark@4.0.2)
     micromark@4.0.2 - MIT
     micromark-core-commonmark@2.0.3 - MIT
     ...
+  integrity: 12 npm packages checked against the published hash
 ```
 
-Read the listing to see what you ship. imp also writes the same listing to disk, so it stays there
-long after the terminal scrolls away. See **[The dependency manifest](#the-dependency-manifest)**.
+Read the listing to see what you ship. A package that its registry marks with a provenance
+attestation shows `provenance attested` after its license. imp also writes the same listing to disk,
+so it stays there long after the terminal scrolls away. See
+**[The dependency manifest](#the-dependency-manifest)**.
+
+## The integrity check
+
+`imp install` checks every npm package before it writes anything. For each package in the bundle,
+imp does these steps:
+
+1. It reads the `integrity` hash that the npm registry publishes for that exact version.
+2. It downloads the package archive, and compares its hash with the published hash.
+3. It compares every file that went into the bundle with the same file in that archive.
+
+When one of these checks fails, imp refuses the install and names the package. It writes no bundle
+and no manifest, and it does not change `imp.json`. So a changed archive, or a changed copy of a
+file on your machine, never reaches the `dependencies/` folder.
+
+imp also records whether the registry marks the version with a provenance attestation. An
+attestation links a published version to the source repository and the build that made it. imp
+records the fact in the manifest and prints it. It does not refuse a package that has no
+attestation, because most packages do not have one yet.
+
+The check covers npm packages. A jsr package records its provenance, but it has no archive hash to
+check.
 
 ## Large dependencies
 
@@ -220,6 +244,8 @@ you shipped. The manifest answers the question instead.
       "registry": "npm",
       "name": "micromark",
       "version": "4.0.2",
+      "integrity": "sha512-...",
+      "provenance": false,
       "license": "MIT",
       "licenseText": "..."
     }
@@ -227,9 +253,10 @@ you shipped. The manifest answers the question instead.
 }
 ```
 
-The manifest lists every package that went into the bundle, with its exact version, its license
-identifier, and the full text of that license. Commit it with the bundle. `imp uninstall` removes it
-with everything else in the folder.
+The manifest lists every package that went into the bundle, with its exact version, the integrity
+hash that imp checked, whether the version has a provenance attestation, its license identifier, and
+the full text of that license. A jsr package has `null` as its `integrity`. Commit it with the
+bundle. `imp uninstall` removes it with everything else in the folder.
 
 imp writes the manifest when you install, and it describes what you installed. It is not a lock
 file, and nothing reads it back to pin a version. So you can answer these questions from a fresh

@@ -67,11 +67,18 @@ function packageRecord(input) {
   return null
 }
 
+const packageFile = (record, input) =>
+  record.directory ? input.slice(record.directory.length).replaceAll('\\', '/') : null
+
 export function bundledPackages(metafile) {
   const packages = new Map()
   for (const input of Object.keys(metafile.inputs)) {
     const record = packageRecord(input)
-    if (record && !packages.has(packageId(record))) packages.set(packageId(record), record)
+    if (!record) continue
+    const id = packageId(record)
+    if (!packages.has(id)) packages.set(id, { ...record, files: [] })
+    const file = packageFile(record, input)
+    if (file && !packages.get(id).files.includes(file)) packages.get(id).files.push(file)
   }
   return [...packages.values()].sort((a, b) => packageId(a).localeCompare(packageId(b)))
 }

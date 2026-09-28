@@ -6,13 +6,14 @@ installed base64 (jsr:@std/encoding@<latest>/base64)
   dependencies/base64/base64.js (<size>)
   dependencies/base64/manifest.json (packages, versions, licenses)
   bundled packages:
-    @std/encoding@<latest> - license not declared
+    @std/encoding@<latest> - license not declared, provenance attested
 [WARN] could not identify the license of @std/encoding@<latest> - check the terms yourself; imp cannot hold it to the 'licenses' policy
 installed mitt (npm:mitt@<latest>)
   dependencies/mitt/mitt.js (<size>)
   dependencies/mitt/manifest.json (packages, versions, licenses)
   bundled packages:
     mitt@<latest> - MIT
+  integrity: 1 npm package checked against the published hash
 
 --- stderr ---
 (empty)

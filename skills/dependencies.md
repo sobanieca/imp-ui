@@ -59,11 +59,20 @@ installed micromark (npm:micromark@4.0.2)
   bundled packages:
     micromark@4.0.2 - MIT
     micromark-core-commonmark@2.0.3 - MIT
+  integrity: 2 npm packages checked against the published hash
 ```
 
 `manifest.json` records the same resolution on disk. It holds the alias, the resolved specifier, the
 install timestamp, the bare `imp` imports that imp kept, and every bundled package. For each package
-it gives the registry, the exact version, the SPDX identifier and the full license text.
+it gives the registry, the exact version, `integrity` (the checked SRI hash, `null` for jsr),
+`provenance` (`true` when the registry has a provenance attestation), the SPDX identifier and the
+full license text.
+
+- **`imp install` refuses a package that fails the integrity check.** It compares the npm archive
+  with the `dist.integrity` hash of the registry, and every bundled file with that archive. On a
+  mismatch it writes nothing. Never work around it. Report it, because the package or the local
+  cache was changed.
+- **A missing provenance attestation is not an error.** imp records it and does not enforce it.
 
 - **Commit the manifest with the bundle.** It is the only record of what the minified bundle
   contains. A new `imp install` resolves a transitive version to the latest one, so it cannot

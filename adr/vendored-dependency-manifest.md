@@ -41,8 +41,21 @@ destroys it. To freeze the bytes removed the fallback that would make a record o
   dependencies that share a transitive package each record that package.
 - **What it records** is the alias, the exact resolved specifier, a timestamp of the install, the
   bare `imp` imports that stay in the bundle, and every package that went into the bundle. For each
-  package it records the registry, the name, the exact version, the SPDX identifier and the full
-  licence text.
+  package it records the registry, the name, the exact version, the integrity hash that imp checked,
+  whether the version has a provenance attestation, the SPDX identifier and the full licence text.
+- **imp checks every npm package before it writes the manifest.** TLS alone proves only that the
+  bytes came from the registry host. It does not prove that they are the bytes that the author
+  published. So imp reads the `dist.integrity` hash of the exact version from the npm registry. It
+  downloads the package archive and compares its hash with that value. Then it compares every file
+  that went into the bundle with the same file in the archive. So the check covers the bytes that
+  imp really bundled, and not only an archive that imp downloaded for the check. On a mismatch,
+  `imp install` refuses the install and writes nothing. That is the same standard that `imp update`
+  applies to the binary of imp, see `binary-distribution.md`.
+- **imp records a provenance attestation, and does not enforce it.** For an npm package, the
+  attestation is `dist.attestations.provenance` of the version. For a JSR package, it is the
+  transparency log entry that the JSR API reports for the version. Most packages publish no
+  attestation yet, so a requirement would block the common case. A JSR package has no archive hash,
+  so its `integrity` is `null`.
 - **imp reads the licence data at vendor time, from the resolved package itself.** That is the only
   moment when imp has the package, and not the bundle. For an npm package, imp reads the `license`
   field of its `package.json`, and its `LICENSE` file, from the resolved package directory. For a
@@ -81,7 +94,12 @@ without a change.
 - The manifest records the graph at install time. It cannot detect that somebody edited the bundle
   by hand later. It describes the bytes in good faith, and a reviewer sees the bytes in the same
   diff.
-- `imp install` makes one network request per JSR package, to fetch its licence text. An npm package
-  costs nothing extra, because the resolved package is already on disk from the bundling.
+- `imp install` makes network requests per package. For an npm package, it fetches the metadata of
+  the version and the archive, for the integrity check. For a JSR package, it fetches the licence
+  text and the provenance record. The install already needs the network, so this adds time and no
+  new requirement.
+- The integrity check trusts the hash that the registry publishes. It detects an archive or a local
+  copy that differs from what the registry published. It does not detect a malicious version that
+  the author published. The provenance record, and a review of the diff of the bundle, address that.
 - imp records a package that declares no licence as such, and warns about it. imp does not infer,
   normalize or repair an SPDX identifier. An absent identifier stays absent.

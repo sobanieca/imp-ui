@@ -17,14 +17,6 @@ date.
 
 This tier is the most likely to block a procurement, in place of being a preference.
 
-- **There is no check of integrity, and no check of provenance, at install.** `latestVersion`, in
-  `cli/src/install.js`, and the package fetches of the bundler, trust TLS alone. There is no check
-  of the npm `dist.integrity` field. There is no check of a provenance or of an attestation.
-  `imp update` already verifies the binary that it downloads, against its published SHA-256, see
-  `cli/src/version-manager.js`. So the standard exists inside imp. The install of a dependency does
-  not meet it. **Decision:** `imp install` always checks each package against its `dist.integrity`,
-  and it refuses the install on a mismatch. The manifest per dependency records whether a package
-  has a provenance attestation. imp does not enforce a provenance yet.
 - **Nothing consumes the recorded graph.** The manifest per dependency answers the question "which
   versions of what do I ship?", and only for a reader who opens it. There is no `imp audit`. There
   is no export of a software bill of materials, in a standard format for interchange, such as

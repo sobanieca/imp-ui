@@ -1,0 +1,8 @@
+strongest of sha1 and sha512: sha512
+no known algorithm: null
+published tarball matches: true
+changed tarball matches: false
+files in the tarball: package.json, lib/index.js
+bundled copy is the published one: null
+bundled copy was edited: demo@1.0.0 bundled a copy of lib/index.js that differs from the published package
+bundled file is not in the package: demo@1.0.0 bundled lib/extra.js, which the published package does not contain
