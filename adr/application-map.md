@@ -107,6 +107,11 @@ handle per node.**
     is allowed inside.
   - `router({ title })` is a function of `{ crumbs, node, params }`, and the router writes its
     result to `document.title` on every navigation. Without it, the router leaves the title alone.
+  - The router writes the `description` of the matched node, translated, to
+    `<meta name="description">` on every navigation. A page that has no description of its own, and
+    a URL off the map, get the description of the HTML page back. When the HTML page has none, the
+    router removes the tag. So a description never outlives its page. The router writes no other
+    meta tag.
 
 - **A tenant is a scope of the router.** A multi-tenant URL, `/organizations/:org/...`, is a param
   node in the map, because a handle must print the real pattern. `router({ scope })` names that

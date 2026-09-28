@@ -126,14 +126,14 @@ The rules are few:
 
 ### Node props
 
-| Prop          | Values                                      | Meaning                                                           |
-| ------------- | ------------------------------------------- | ----------------------------------------------------------------- |
-| `description` | string                                      | Shown by the placeholder of an unbound node, printed by `imp map` |
-| `access`      | any value                                   | Who can see the node. The `access` guard of the router decides.   |
-| `path`        | one segment, or `'/'`                       | Overrides the segment derived from the name                       |
-| `label`       | string, or `({ params, option }) => string` | Overrides the label derived from the name                         |
-| `nav`         | `false`                                     | Hides a static node from the nav; the route stays                 |
-| `group`       | string                                      | The sidebar groups consecutive rows under this title              |
+| Prop          | Values                                      | Meaning                                                                                                        |
+| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `description` | string                                      | The `<meta name="description">` of the page, shown by the placeholder of an unbound node, printed by `imp map` |
+| `access`      | any value                                   | Who can see the node. The `access` guard of the router decides.                                                |
+| `path`        | one segment, or `'/'`                       | Overrides the segment derived from the name                                                                    |
+| `label`       | string, or `({ params, option }) => string` | Overrides the label derived from the name                                                                      |
+| `nav`         | `false`                                     | Hides a static node from the nav; the route stays                                                              |
+| `group`       | string                                      | The sidebar groups consecutive rows under this title                                                           |
 
 That is the whole set. A prop describes what a feature is. How a feature is served, and how the nav
 shows it, is a binding elsewhere. Examples are a screen or a redirect in `screens`, the choices of a
@@ -218,6 +218,13 @@ necessary:
   the URL_.
 - **`title`** is a function of `{ crumbs, node, params }` that returns the title of the document.
   imp calls it on every navigation. Without it, imp leaves `document.title` alone.
+
+The router also writes the `description` of the matched node to `<meta name="description">` on every
+navigation, with no option. A search engine and a link preview read that tag. When the node has no
+description, or the URL is off the map, the router puts back the description that your HTML page
+declares. When the page declares none, the router removes the tag. Translate a description with the
+`appMap.<id>.description` key, as described above. imp sets no other meta tag.
+
 - **`loading`** is what the router shows while the code of an **area** downloads (see _Areas_), or
   while a guard waits for the state that it reads (see _Access_). imp calls it with the
   `{ params, query, searchParams, node }` of the route.

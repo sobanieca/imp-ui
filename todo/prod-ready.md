@@ -60,10 +60,6 @@ date.
 
 ## Tier 4 - the router, and the scope of an app
 
-- **There is no story about metadata.** The router sets `document.title` per navigation, and nothing
-  else. It never touches a meta tag. Any app that faces the public needs at least a description per
-  route. **Decision:** a route in the application map takes a `description`, and the router writes
-  it to `<meta name="description">` on each navigation. imp sets no other meta tag.
 - **The absence of SSR is a boundary of the scope that nobody states.** Real DOM, with a component
   in a shadow root, means that a built app is an empty HTML shell until the JavaScript runs. That is
   a defensible choice for an internal tool or a dashboard. But no ADR and no document says "a public

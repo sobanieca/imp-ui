@@ -113,14 +113,14 @@ screen factory receives `{ params, query, searchParams, node }`.
 | `path: '/'` is the index  | on one top-level node only; its children hang from the root, so `app.home.reports` is `/reports` |
 | key order is nav order    | the router matches static siblings before the param sibling on its own                           |
 
-| Prop          | Values                                      | Meaning                                                         |
-| ------------- | ------------------------------------------- | --------------------------------------------------------------- |
-| `description` | string                                      | shown by the stub, printed by `imp map`                         |
-| `access`      | any value                                   | passed to the `access` guard as `need`; no `access` = open      |
-| `path`        | one segment, or `'/'`                       | overrides the segment                                           |
-| `label`       | string, or `({ params, option }) => string` | overrides the label; a translation is a message, not a function |
-| `nav`         | `false`                                     | hides a static node from the nav; the route stays               |
-| `group`       | string                                      | sidebar group title for consecutive rows                        |
+| Prop          | Values                                      | Meaning                                                                         |
+| ------------- | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `description` | string                                      | written to `<meta name="description">`, shown by the stub, printed by `imp map` |
+| `access`      | any value                                   | passed to the `access` guard as `need`; no `access` = open                      |
+| `path`        | one segment, or `'/'`                       | overrides the segment                                                           |
+| `label`       | string, or `({ params, option }) => string` | overrides the label; a translation is a message, not a function                 |
+| `nav`         | `false`                                     | hides a static node from the nav; the route stays                               |
+| `group`       | string                                      | sidebar group title for consecutive rows                                        |
 
 That is the whole set. There is no `title`, `redirect`, `options`, `tag`, `href` or `icon` in the
 map. A translation is not in the map either. The messages of the app translate a node by its id:
@@ -159,6 +159,9 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
   whole map, never a part, to `router()` and `shell()`. A part goes into one map only.
 - **Bind, never mutate.** `screens`, `options`, `icons` and `tags` are objects keyed by handles.
   Nothing writes into the map.
+- **Give every public page a `description`.** The router writes it to `<meta name="description">` on
+  each navigation. A node with none gets the description of `index.html` back. Never set that meta
+  tag yourself.
 - **Every node renders from the first run.** Unbound leaf: a stub with the label and `description`.
   Unbound parent with static children: forwards to the first child. `redirect(handle)` in `screens`:
   forwards there. The router logs the stub nodes when it mounts. Write the map first, then bind
