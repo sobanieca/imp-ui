@@ -427,8 +427,8 @@ components keep their real calls. `imp build` leaves the folder out of productio
 - **A thrown error simulates a failed connection.** The request fails in the page exactly as it does
   when the server is unreachable. It is a real network error, not a `500`.
 - **A mock file is an ordinary module.** It can import a shared fixture, and any dependency that you
-  installed. imp evaluates each file once, so a closure is how a mock keeps state between two
-  requests:
+  installed. imp loads the files once when the run starts, so a closure is how a mock keeps state
+  between two requests. All tabs share that state, and a reload keeps it:
 
   ```js
   const flaky = () => {
@@ -472,7 +472,7 @@ component, and on **`imp test`**, where they are fixtures for your e2e specs. So
 it starts:
 
 ```
-[INFO] mocks - 2 file(s) from mocks/ serving through the browser
+[INFO] mocks - 2 file(s) from mocks/ answering requests
 ```
 
 A mocked answer is a real response, and it arrives over the network layer of the browser. So
@@ -484,14 +484,20 @@ like any other request, with the file and the entry that answered it:
 [HTTP] GET http://localhost:4507/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
 ```
 
-An edit to a mock file reloads the browser, like any other change. imp reports a file that it cannot
-build, with its line, in the terminal, and the rest of the app continues to run.
+An edit to a mock file, or to a file that it imports, reloads the browser like any other change. imp
+then loads the mocks again, so their state starts again from the files. imp reports a file that it
+cannot build, with its line, in the terminal, and the rest of the app continues to run.
 
 Mocking works through a service worker that `imp start` registers for you. So it covers _every_
 request that the page makes: `fetch`, `XMLHttpRequest` and a third-party SDK, not only the requests
-that imp issues. It also means the mock code runs outside the page. In a `*.mock.js` file there is
-no `document`, and there is no access to the state of your app. `imp preview` and the e2e server of
-`imp test` are the same dev server, so your mocks apply there as well.
+that imp issues. The worker sends each request to the `imp start` process, and your mock code runs
+there. The browser can stop an idle service worker at any time and start it again from nothing. So
+the worker keeps no state, and a list that a mock remembers stays correct for the whole run.
+
+The mock code runs outside the page. In a `*.mock.js` file there is no `document`, and there is no
+access to the state of your app. The code runs with the same access to your machine as `imp start`,
+as any other script in your project does. `imp preview` and the e2e server of `imp test` are the
+same dev server, so your mocks apply there as well.
 
 ### Dependencies
 

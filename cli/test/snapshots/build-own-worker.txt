@@ -17,4 +17,4 @@ first line: globalThis.__IMP_ENV__ = {"IMP_LOG_LEVEL":"info","DEV_TOOLS":"on"};
 bare imports left: no
 worker code ran: {"greeting":"hello from the worker","devTools":"on"}
 listeners: activate, fetch, install
-mocks bundled: 0
+mock endpoint: (none)

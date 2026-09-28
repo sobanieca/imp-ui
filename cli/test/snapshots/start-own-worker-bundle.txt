@@ -8,7 +8,7 @@ bare imports left: no
 first line: globalThis.__IMP_ENV__ = {"IMP_LOG_LEVEL":"info","DEV_TOOLS":"on"};
 worker code ran: {"greeting":"hello from the worker","devTools":"on"}
 listeners: activate, fetch, install
-registered mocks: mocks/users.mock.js #1
+mock endpoint: /@imp/mock
 
 GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"}]
 GET /api/other -> 200 text/plain from the network

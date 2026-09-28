@@ -153,7 +153,7 @@ skips the freshness check and runs whatever was compiled last.
 | `deno task check`   | runs `deno lint`, `deno fmt`, then `imp lint` on `lib/src`               |
 
 `deno task test --update` rewrites the CLI snapshots. `rfm` is a static file server installed on the
-machine, not part of the repo.
+machine, not part of the repo. Install it from <https://sobanieca.github.io/remote-file-manager/>.
 
 Every other maintainer job is a script, run directly with `deno run -A`:
 

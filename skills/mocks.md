@@ -1,9 +1,10 @@
 # mocks - running the app without its backend, from `*.mock.js` files
 
-Point `imp.json` at a folder. The dev server then answers a matching request itself, through the dev
-service worker, or through your own worker when it calls `startDevMode()`, see
-[service-worker](service-worker.md). **Nothing in the app changes.** The app keeps its real
-`baseUrl` and its real calls. There is no stub and no import. `imp build` never copies the folder.
+Point `imp.json` at a folder. The dev server then answers a matching request itself. The dev service
+worker, or your own worker when it calls `startDevMode()`, sends each request of the page to the
+`imp start` process, where the mocks run. See [service-worker](service-worker.md). **Nothing in the
+app changes.** The app keeps its real `baseUrl` and its real calls. There is no stub and no import.
+`imp build` never copies the folder.
 
 ```json
 { "mocks": { "folder": "mocks", "enabled": true } }
@@ -58,7 +59,7 @@ When the mocks are on, the server says so as it starts. It reports every mocked 
 other request, and adds the file and the entry that answered:
 
 ```
-[INFO] mocks - 2 file(s) from mocks/ serving through the browser
+[INFO] mocks - 2 file(s) from mocks/ answering requests
 [HTTP] GET http://localhost:4507/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
 ```
 
@@ -70,12 +71,14 @@ other request, and adds the file and the entry that answered:
   does not exist yet, while the rest goes to your backend.
 - **A thrown error simulates a failed connection, not a `500`.** The request fails in the page as if
   the server were unreachable. To simulate a server error, return `{ status: 500 }`.
-- **Mock code runs in the service worker, outside the page.** There is no `document`, no access to
-  app state, and no import from the DOM layer of your app. A plain module and a vendored dependency
-  both work.
-- **imp evaluates each file once.** So a closure is how a mock keeps state between requests.
+- **Mock code runs in the `imp start` process, outside the page and outside the worker.** There is
+  no `document`, no access to app state, and no import from the DOM layer of your app. A plain
+  module and a vendored dependency both work.
+- **imp loads the files once per run.** So a closure is how a mock keeps state between requests.
   Examples are a counter that fails every second call, and an in-memory list that remembers a
-  `POST`.
+  `POST`. All tabs share the state. A reload and a stopped service worker keep it.
+- **An edit to a mock file, or to a file that it imports, resets the state.** imp loads the files
+  again. To start again from the seed data with no edit, restart `imp start`.
 - **An answer is a real response over the network layer of the browser.** So everything after it
   behaves normally. An [http](http.md) client retries a mocked `503`, a `delay` keeps `pending`
   true, and an interceptor runs.
@@ -84,7 +87,7 @@ other request, and adds the file and the entry that answered:
 - An edit to a mock file reloads the browser like any other change. imp reports a file that fails to
   build, with its line, and the rest of the app continues to run.
 
-The mock runs in a service worker, so it covers **every** request that the page makes. This includes
-`fetch`, XHR and a third-party SDK, not only the requests that imp issues. `imp preview` and the e2e
-server are the same dev server, so the same files apply there. See [start](start.md),
-[preview](preview.md) and [testing](testing.md).
+The service worker sends imp **every** request that the page makes, so the mocks cover all of them.
+This includes `fetch`, XHR and a third-party SDK, not only the requests that imp issues.
+`imp preview` and the e2e server are the same dev server, so the same files apply there. See
+[start](start.md), [preview](preview.md) and [testing](testing.md).

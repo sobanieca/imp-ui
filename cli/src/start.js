@@ -13,7 +13,7 @@ import { clientScript } from './client.js'
 import { loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { publicCopyOfEntry, resolveEntryPath } from './entry.js'
 import { isSkippedPath } from './walk.js'
-import { createMockBundler } from './mocks.js'
+import { createMocks, MOCK_ENDPOINT } from './mocks.js'
 import {
   assembleServiceWorker,
   assertServiceWorkerSource,
@@ -200,8 +200,13 @@ export async function loadApp(
     Boolean(serviceWorkerEntry),
     { mark: await readWidgetMark(), themeEditor },
   )
-  const buildMocks = mocksDirectory
-    ? createMockBundler({ root, directory: mocksDirectory, dependencies })
+  const mockServer = mocksDirectory
+    ? createMocks({
+      root,
+      directory: mocksDirectory,
+      dependencies,
+      onChange: (state) => reportMocks(state, { root, directory: mocksDirectory }),
+    })
     : null
   const buildServiceWorker = createServiceWorkerBundler({
     root,
@@ -231,8 +236,7 @@ export async function loadApp(
     pwa,
     maxLogEntries,
     devServerPort,
-    mocksDirectory,
-    buildMocks,
+    mockServer,
     serviceWorker: serviceWorkerEntry
       ? relative(root, serviceWorkerEntry).replaceAll('\\', '/')
       : null,
@@ -255,13 +259,12 @@ export function reportServiceWorker(state, { serviceWorker }) {
 }
 
 export function reportMocks(state, { root, directory }) {
-  if (!state.changed) return
   const where = relative(root, directory).replaceAll('\\', '/')
-  if (state.problem) {
-    logger.error(`mocks - ${state.problem}`)
-  } else if (state.files.length) {
-    logger.info(`mocks - ${state.files.length} file(s) from ${where}/ serving through the browser`)
-  } else {
+  for (const problem of state.problems) logger.error(`mocks - ${problem}`)
+  if (state.files.length) {
+    const answering = state.entries.length ? 'answering requests' : 'answering nothing'
+    logger.info(`mocks - ${state.files.length} file(s) from ${where}/ ${answering}`)
+  } else if (!state.problems.length) {
     logger.warn(`mocks - no *.mock.js files under ${where}/`)
   }
 }
@@ -300,8 +303,7 @@ export function createRequestHandler(
     clients,
     pwa = null,
     historyFallback = true,
-    mocksDirectory = null,
-    buildMocks = null,
+    mockServer = null,
     serviceWorker = null,
     buildServiceWorker = null,
     runtimeValues = {},
@@ -378,14 +380,9 @@ export function createRequestHandler(
           headers: { 'content-type': CONTENT_TYPES['.txt'], 'cache-control': 'no-store' },
         })
       }
-      let mockBundle = ''
-      if (buildMocks) {
-        const state = await buildMocks()
-        reportMocks(state, { root, directory: mocksDirectory })
-        mockBundle = state.source
-      }
+      const mockEndpoint = mockServer ? MOCK_ENDPOINT : null
       return new Response(
-        assembleServiceWorker({ worker: worker.source, mockBundle, ...runtimeValues }),
+        assembleServiceWorker({ worker: worker.source, mockEndpoint, ...runtimeValues }),
         {
           headers: {
             'content-type': CONTENT_TYPES['.js'],
@@ -394,6 +391,10 @@ export function createRequestHandler(
           },
         },
       )
+    }
+
+    if (mockServer && url.pathname === MOCK_ENDPOINT && req.method === 'POST') {
+      return mockServer.answer(req)
     }
 
     if (url.pathname.startsWith('/@imp/')) {
@@ -459,8 +460,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
     pwa,
     maxLogEntries,
     devServerPort,
-    mocksDirectory,
-    buildMocks,
+    mockServer,
     serviceWorker,
     buildServiceWorker,
     runtimeValues,
@@ -483,7 +483,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
     )
   }
 
-  if (buildMocks) reportMocks(await buildMocks(), { root, directory: mocksDirectory })
+  await mockServer?.refresh()
   if (serviceWorker) reportServiceWorker(await buildServiceWorker(), { serviceWorker })
 
   const broadcast = createBroadcaster(clients)
@@ -508,8 +508,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
       headInjection,
       clients,
       pwa,
-      mocksDirectory,
-      buildMocks,
+      mockServer,
       serviceWorker,
       buildServiceWorker,
       runtimeValues,

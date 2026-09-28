@@ -14,7 +14,7 @@ A named state, see `event-propagated-state.md`, decides part of the shape. It gi
 `watch` contract, which the renderer detects by shape at the position of a prop. So a client can
 expose its own request state, and imp invents no second reactive mechanism. The client also does not
 have to be a component. To run the app with no backend is deliberately _not_ part of this decision.
-An app declares a mock outside itself, and the service worker of the dev server answers it, see
+An app declares a mock outside itself, and the dev server answers it through its service worker, see
 `dev-server-mocks.md`. So the client has one code path, and it never learns whether an answer was
 mocked.
 

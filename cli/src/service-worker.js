@@ -27,8 +27,11 @@ export async function assertServiceWorkerSource(path, declared) {
   if (!stat.isFile) throw new Error(`serviceWorker - ${declared} is not a file`)
 }
 
-export const assembleServiceWorker = ({ worker, mockBundle = '', env, flags }) =>
-  `${runtimeValues({ env, flags })}${mockBundle ? `${mockBundle}\n` : ''}${worker}`
+const mockEndpointValue = (endpoint) =>
+  endpoint ? `globalThis.__IMP_MOCK_ENDPOINT__ = ${JSON.stringify(endpoint)};\n` : ''
+
+export const assembleServiceWorker = ({ worker, mockEndpoint = null, env, flags }) =>
+  `${runtimeValues({ env, flags })}${mockEndpointValue(mockEndpoint)}${worker}`
 
 function devEntryPlugin(root) {
   return {

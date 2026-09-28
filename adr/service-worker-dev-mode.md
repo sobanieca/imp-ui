@@ -3,9 +3,9 @@
 ## Context
 
 `imp start` runs a service worker at root scope. It reports every request of the page as a `[net]`
-line, and it answers a request from the `*.mock.js` files, see `dev-server-mocks.md`. A browser runs
-one service worker per scope. So an app with a worker of its own, for a push notification, a
-background sync or an offline strategy that imp does not emit, could not run it in development. Its
+line, and it sends a request to the `*.mock.js` files, see `dev-server-mocks.md`. A browser runs one
+service worker per scope. So an app with a worker of its own, for a push notification, a background
+sync or an offline strategy that imp does not emit, could not run it in development. Its
 registration and the registration of imp replaced each other, and the last one won.
 
 A worker cannot use the import map of the page. So a source file that imports from imp cannot be
@@ -14,7 +14,7 @@ served raw, the way the dev server serves the modules of the page.
 ## Decision
 
 **Dev mode is `startDevMode()` from `imp/service-worker`, and the dev server bundles the worker that
-runs it.** The library holds the code that reports a request and answers from the mocks. The worker
+runs it.** The library holds the code that reports a request and relays it to the mocks. The worker
 of imp is that one call. A project names its own worker in `imp.json`, and it makes the same call
 itself.
 
@@ -24,18 +24,18 @@ itself.
   in the output folder. The app registers `/sw.js` itself, in both modes. There is one registration,
   and the app owns it.
 - **`startDevMode()` adds exactly the dev behaviour.** It adds a `fetch` listener that reports each
-  request and answers a mock, an `install` listener that calls `skipWaiting()`, and an `activate`
-  listener that claims the clients. The last two are what an edit needs: the new bundle takes over
-  on the next navigation, and a mock edit applies at once. The call touches nothing else. The app
-  keeps its own listeners for push, sync and everything else.
+  request and relays it to the mocks, an `install` listener that calls `skipWaiting()`, and an
+  `activate` listener that claims the clients. The last two are what an edit needs: the new bundle
+  takes over on the next navigation. The call touches nothing else. The app keeps its own listeners
+  for push, sync and everything else.
 - **The app decides when dev mode runs.** The call is not folded away by the build, and imp adds no
   flag for it. The bundle starts with the values of the selected environment, as the page does, so
   `env` from `imp` works in the worker. An app gates the call on an environment value. The docs say
   why: a production worker with the call would report to a dev server that is not there.
-- **The mocks ride in front of the worker code.** The dev server puts the bundled mock files first,
-  then the worker bundle. So the mock list exists before `startDevMode()` runs, whatever the order
-  of the statements in the worker. A mock file that fails its shape check records a problem, and
-  `startDevMode()` reports every recorded problem when it starts.
+- **The worker carries no mock code.** When mocking is on, the dev server starts the worker script
+  with the path of the mock endpoint, before the worker bundle. So `startDevMode()` knows the
+  endpoint whatever the order of the statements in the worker. The mocks run in the dev server
+  process, which reports a mock file that fails to bundle or fails its shape check.
 - **`imp build --pwa` keeps the worker of the project.** It writes the manifest and the icons, and
   registers the worker of the project. It writes no offline worker, because two workers cannot share
   `sw.js` and root scope.

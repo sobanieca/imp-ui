@@ -1,5 +1,5 @@
 --- imp start ---
-"enabled": true -> 4 mock(s) registered | GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay
-"enabled": true with --no-mock -> 0 mock(s) registered | GET /api/users -> 200 text/plain from the network
-"enabled": false -> 0 mock(s) registered | GET /api/users -> 200 text/plain from the network
-"enabled": false with --mock -> 4 mock(s) registered | GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay
+"enabled": true -> mock endpoint /@imp/mock | GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay
+"enabled": true with --no-mock -> mock endpoint (none) | GET /api/users -> 200 text/plain from the network
+"enabled": false -> mock endpoint (none) | GET /api/users -> 200 text/plain from the network
+"enabled": false with --mock -> mock endpoint /@imp/mock | GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay

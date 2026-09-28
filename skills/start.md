@@ -38,7 +38,7 @@ warning. See [build](build.md).
 
 The same run can answer a request from a `*.mock.js` file instead of the network. `--mock` and
 `--no-mock` override the `mocks` block in `imp.json` for one run. When the mocks are on, the server
-prints `[INFO] mocks - N file(s) from mocks/ serving through the browser`. See [mocks](mocks.md).
+prints `[INFO] mocks - N file(s) from mocks/ answering requests`. See [mocks](mocks.md).
 
 ## `imp logs` - how to read the browser from the terminal
 

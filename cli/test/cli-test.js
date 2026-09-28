@@ -8,7 +8,7 @@ import {
 } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
-import { createMockBundler } from '../src/mocks.js'
+import { createMocks } from '../src/mocks.js'
 import { createDevLog } from '../src/dev-log.js'
 import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
 import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
@@ -1424,7 +1424,7 @@ Deno.test('imp start', async (t) => {
   }
 })
 
-function runServiceWorker(source) {
+function runServiceWorker(source, port = null) {
   const listeners = {}
   const telemetry = []
   const scope = {
@@ -1439,6 +1439,7 @@ function runServiceWorker(source) {
       telemetry.push(...JSON.parse(init.body))
       return Promise.resolve(new Response('ok'))
     }
+    if (input === '/@imp/mock') return fetch(`http://127.0.0.1:${port}${input}`, init)
     return Promise.resolve(
       new Response('from the network', { headers: { 'content-type': 'text/plain' } }),
     )
@@ -1464,7 +1465,7 @@ function runServiceWorker(source) {
   }
 
   return {
-    registered: (scope.__impMocks ?? []).map((entry) => entry.source),
+    mockEndpoint: scope.__IMP_MOCK_ENDPOINT__ ?? '(none)',
     send,
     telemetry,
     listeners,
@@ -1498,9 +1499,11 @@ Deno.test('imp start serves mocks through the service worker', async (t) => {
 
     await t.step('start-mocks-service-worker', async () => {
       const response = await fetch(`http://127.0.0.1:${port}/@imp/sw.js`)
-      const worker = runServiceWorker(await response.text())
+      const source = await response.text()
+      const worker = runServiceWorker(source, port)
       const transcript = [
-        ...worker.registered,
+        `mock endpoint: ${worker.mockEndpoint}`,
+        `mock code in the worker: ${source.includes('/api/users') ? 'yes' : 'no'}`,
         '',
         await worker.send('/api/users'),
         await worker.send('/api/users', {
@@ -1512,10 +1515,13 @@ Deno.test('imp start serves mocks through the service worker', async (t) => {
         await worker.send('/api/flaky'),
         await worker.send('/api/flaky'),
         await worker.send('/api/unmocked'),
+        '',
+        'a new worker, as after the browser stops an idle one:',
+        await runServiceWorker(source, port).send('/api/flaky'),
       ]
       await assertSnapshot(
         'start-mocks-service-worker',
-        `${section('registered mocks and what they answer', transcript.join('\n'))}\n`,
+        `${section('what the mocks answer', transcript.join('\n'))}\n`,
       )
     })
   } finally {
@@ -1526,8 +1532,9 @@ Deno.test('imp start serves mocks through the service worker', async (t) => {
 const mockedRequest = async (port) => {
   const worker = runServiceWorker(
     await (await fetch(`http://127.0.0.1:${port}/@imp/sw.js`)).text(),
+    port,
   )
-  return `${worker.registered.length} mock(s) registered | ${await worker.send('/api/users')}`
+  return `mock endpoint ${worker.mockEndpoint} | ${await worker.send('/api/users')}`
 }
 
 Deno.test('--mock and --no-mock decide whether the mocks folder is served', async (t) => {
@@ -1607,13 +1614,13 @@ Deno.test('a project with its own service worker gets dev mode from startDevMode
       const path = '/sw.js'
       const response = await fetch(`http://127.0.0.1:${port}${path}`)
       const source = await response.text()
-      const worker = runServiceWorker(source)
+      const worker = runServiceWorker(source, port)
       const transcript = [
         `bare imports left: ${/^\s*import\s/m.test(source) ? 'yes' : 'no'}`,
         `first line: ${source.split('\n')[0]}`,
         `worker code ran: ${JSON.stringify(worker.scope.__fixture)}`,
         `listeners: ${Object.keys(worker.listeners).sort().join(', ')}`,
-        `registered mocks: ${worker.registered.join(', ')}`,
+        `mock endpoint: ${worker.mockEndpoint}`,
         '',
         await worker.send('/api/users'),
         await worker.send('/api/other'),
@@ -1652,7 +1659,7 @@ Deno.test('a project with its own service worker gets dev mode from startDevMode
         [
           `worker code ran: ${JSON.stringify(worker.scope.__fixture)}`,
           `listeners: ${Object.keys(worker.listeners).sort().join(', ') || '(none)'}`,
-          `mocks bundled: ${worker.registered.length}`,
+          `mock endpoint: ${worker.mockEndpoint}`,
         ].join('\n') + '\n',
       )
     } finally {
@@ -1723,7 +1730,7 @@ Deno.test('imp build bundles the service worker of the project', async (t) => {
       `bare imports left: ${/^\s*import\s/m.test(sw) ? 'yes' : 'no'}`,
       `worker code ran: ${JSON.stringify(worker.scope.__fixture)}`,
       `listeners: ${Object.keys(worker.listeners).sort().join(', ')}`,
-      `mocks bundled: ${worker.registered.length}`,
+      `mock endpoint: ${worker.mockEndpoint}`,
     ]
     await assertSnapshot(
       'build-own-worker',
@@ -1805,27 +1812,61 @@ Deno.test('imp build leaves the mocks folder behind', async () => {
   )
 })
 
-Deno.test('mock bundling reports a file it cannot build', async () => {
+Deno.test('the mocks of the imp process report problems and keep their state', async () => {
   const root = await Deno.makeTempDir()
   const directory = join(root, 'mocks')
   await Deno.mkdir(directory)
-  await Deno.writeTextFile(join(directory, 'broken.mock.js'), 'export const mocks = [\n')
-  const build = createMockBundler({ root, directory })
-  const broken = await build()
+  const file = join(directory, 'counter.mock.js')
+  const fixtureFile = join(directory, 'start.js')
+  const changes = []
+  const mocks = createMocks({
+    root,
+    directory,
+    onChange: (state) => changes.push(state.problems.join('; ') || `${state.entries.length} entry`),
+  })
+  const ask = async () => {
+    const response = await mocks.answer(
+      new Request('http://app.test/@imp/mock', {
+        method: 'POST',
+        body: JSON.stringify({ method: 'GET', path: '/api/count' }),
+      }),
+    )
+    return `${response.status} ${await response.text()}`
+  }
+  await Deno.writeTextFile(file, 'export const mocks = [\n')
+  await mocks.refresh()
+  await Deno.writeTextFile(file, 'export const mocks = { match: () => true }\n')
+  await mocks.refresh()
+  await Deno.writeTextFile(fixtureFile, 'export const start = 10\n')
   await Deno.writeTextFile(
-    join(directory, 'broken.mock.js'),
-    'export const mocks = [{ match: () => true, handler: () => ({ body: "ok" }) }]\n',
+    file,
+    [
+      "import { start } from './start.js'",
+      'let count = start',
+      'export const mocks = [{ match: () => true, handler: () => ({ body: { count: ++count } }) }]',
+      '',
+    ].join('\n'),
   )
-  const repaired = await build()
-  const missing = await createMockBundler({ root, directory: join(root, 'absent') })()
+  const answers = [await ask(), await ask(), await ask()]
+  await mocks.refresh()
+  await Deno.writeTextFile(fixtureFile, 'export const start = 100\n')
+  const afterFixtureEdit = await ask()
+  const missing = []
+  await createMocks({
+    root,
+    directory: join(root, 'absent'),
+    onChange: (state) => missing.push(...state.problems),
+  }).refresh()
   await Deno.remove(root, { recursive: true })
 
   await assertSnapshot(
     'mocks-build-problem',
     [
-      `broken: ${broken.problem}`,
-      `repaired: ${repaired.problem} (${repaired.files.length} file, changed: ${repaired.changed})`,
-      `missing directory: ${missing.problem}`,
+      ...changes.map((change) => `reported: ${change}`),
+      '',
+      ...answers.map((answer) => `answer: ${answer}`),
+      `after an edit to an imported fixture: ${afterFixtureEdit}`,
+      `missing directory: ${missing.join('; ')}`,
       '',
     ].join('\n'),
   )
