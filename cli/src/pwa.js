@@ -7,6 +7,8 @@ const DEFAULT_THEME = '#ffffff'
 
 const MASKABLE_PADDING = 0.1
 
+export const BUILD_CACHE_PREFIX = 'imp-pwa-'
+
 const ICON_TARGETS = [
   { file: 'icons/icon-192.png', size: 192 },
   { file: 'icons/icon-512.png', size: 512 },
@@ -99,20 +101,40 @@ export function buildServiceWorker({ cacheName, precache, shell }) {
   return `const CACHE = ${JSON.stringify(cacheName)}
 const PRECACHE = ${JSON.stringify(precache)}
 const SHELL = ${JSON.stringify(shell)}
+const BUILD_CACHE_PREFIX = ${JSON.stringify(BUILD_CACHE_PREFIX)}
+
+const buildCaches = async () =>
+  (await caches.keys()).filter((key) => key.startsWith(BUILD_CACHE_PREFIX))
+
+const previousBuildCache = async () =>
+  (await buildCaches()).filter((key) => key !== CACHE).at(-1) ?? null
+
+const removeOlderBuilds = async () => {
+  const kept = [CACHE, await previousBuildCache()]
+  for (const key of await buildCaches()) {
+    if (!kept.includes(key)) await caches.delete(key)
+  }
+}
+
+const fromBuildCaches = async (request) => {
+  for (const key of [CACHE, await previousBuildCache()]) {
+    if (!key) continue
+    const cached = await (await caches.open(key)).match(request)
+    if (cached) return cached
+  }
+  return null
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting()),
+    caches.open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
   )
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil((async () => {
-    for (const key of await caches.keys()) {
-      if (key !== CACHE) await caches.delete(key)
-    }
-    await self.clients.claim()
-  })())
+  event.waitUntil(self.clients.claim())
 })
 
 self.addEventListener('fetch', (event) => {
@@ -120,12 +142,13 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
   if (new URL(request.url).origin !== self.location.origin) return
   if (request.mode === 'navigate') {
+    event.waitUntil(removeOlderBuilds())
     event.respondWith(
-      fetch(request).catch(() => caches.match(SHELL).then((cached) => cached ?? Response.error())),
+      fetch(request).catch(() => fromBuildCaches(SHELL).then((cached) => cached ?? Response.error())),
     )
     return
   }
-  event.respondWith(caches.match(request).then((cached) => cached ?? fetch(request)))
+  event.respondWith(fromBuildCaches(request).then((cached) => cached ?? fetch(request)))
 })
 `
 }

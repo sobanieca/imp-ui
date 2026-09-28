@@ -171,10 +171,8 @@ This tier is the most likely to block a procurement, in place of being a prefere
 
 ## Tracked in other items
 
-Two gaps block production too, but each has its own file:
+One gap blocks production too, but it has its own file:
 
-- **The update of a PWA** removes the chunks of the previous build in the middle of a session, see
-  `todo/pwa-update-lifecycle.md`. That breaks on the first real deploy of an installed app.
 - **No automatic check catches an accessibility regression at the level of the app**, such as a
   missing label in app code or the contrast of a custom theme, see `todo/accessibility.md`.
 

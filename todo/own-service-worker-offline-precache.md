@@ -11,8 +11,8 @@ Export `precacheBuild()` from `imp/service-worker`. It takes no options.
 
 - **It installs the same behaviour as the emitted offline worker.** That covers the precache, the
   navigation with the fallback to the app shell, the cache-first hashed assets, and the update
-  lifecycle, see `todo/pwa-update-lifecycle.md`. A project worker that calls it behaves the same as
-  the worker that imp writes.
+  lifecycle, see `adr/pwa-toolkit.md`. A project worker that calls it behaves the same as the worker
+  that imp writes.
 - **`imp build --pwa` injects the precache list and the cache name** into the bundle of the project
   worker, the way it injects the environment values.
 - **In development, the function does nothing.** The dev server caches nothing, so the fetch

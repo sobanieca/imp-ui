@@ -34,6 +34,7 @@ import { productionDefines } from './development-checks.js'
 import { assertServiceWorkerSource, runtimeValues } from './service-worker.js'
 import {
   APPLE_TOUCH_ICON,
+  BUILD_CACHE_PREFIX,
   buildManifest,
   buildServiceWorker,
   cacheVersion,
@@ -498,7 +499,7 @@ export async function build(
         })),
       )
       const offlineWorker = buildServiceWorker({
-        cacheName: `imp-pwa-${await cacheVersion(files)}`,
+        cacheName: `${BUILD_CACHE_PREFIX}${await cacheVersion(files)}`,
         precache: precache.map((name) => siteUrl(base, name)),
         shell: siteUrl(base, entryName),
       })

@@ -813,8 +813,13 @@ knows the exact set of files the app is made of:
   the list from the build itself. It does not scan a folder and guess afterwards. imp misses nothing
   that the app needs to run offline, and it caches nothing stale.
 - **A deploy is never stuck.** The cache key comes from the content of the build, so a new deploy is
-  a new cache. On activation the worker fetches what changed, and deletes what is gone. A user moves
-  to the new version automatically. Their own cache does not hold them on an old version.
+  a new cache. The new worker takes control at once, and a user moves to the new version
+  automatically. Their own cache does not hold them on an old version.
+- **A deploy does not break an open tab.** A tab that runs the previous build can still load a lazy
+  chunk of that build after the deploy, although the server no longer has it. The new worker keeps
+  the cache of the previous build, and deletes older caches on the next page load. You write no code
+  for this, and the app shows no prompt. Two deploys while one tab stays open can still remove a
+  chunk of the first build. A reload of that tab fixes it.
 - **The defaults are safe, and there is no configuration.** imp serves your page and its deep links
   network-first, and falls back to the cached app shell when the connection is lost. It serves a
   hashed asset cache-first. It never caches a cross-origin response, a request that is not a `GET`,

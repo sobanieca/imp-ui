@@ -55,12 +55,11 @@ With `--pwa` on an HTML entry, the build also does the following:
   link, the icon links, the registration, the `start_url`, the `scope`, a precache entry, and the
   shell. A relative URL would resolve against the current document, and it would break on a deep
   link. imp keys the name of the cache to a content hash of that list. So each deploy is a new
-  cache, which the worker reconciles on `activate`. It fetches what changed, and deletes what is
-  gone. So a deploy is never stuck on a stale version. The caching strategy is a small set of
-  opinionated defaults, and not a collection of strategies to configure. A navigation is
-  network-first, and falls back to the cached app shell, so a deep link works offline. A precached
-  asset is cache-first. imp never caches a cross-origin or opaque response, a request that is not a
-  `GET`, or an error response.
+  cache, and a deploy is never stuck on a stale version. The lifecycle of an update is below. The
+  caching strategy is a small set of opinionated defaults, and not a collection of strategies to
+  configure. A navigation is network-first, and falls back to the cached app shell, so a deep link
+  works offline. A precached asset is cache-first. imp never caches a cross-origin or opaque
+  response, a request that is not a `GET`, or an error response.
 
 Installability in development is automatic, and it needs no flag. When a `pwa` block is present,
 `imp start` injects the tags for the manifest, the theme colour and the apple-touch-icon. It also
@@ -97,8 +96,8 @@ The term "PWA" covers far more in the wider ecosystem than what `--pwa` emits. T
 the boundary. So nobody reads the decision as "offline is fully solved".
 
 The emitted worker **does** cover the model of a precached app shell. That is a precache of the
-exact build graph at install, a cache name with a content hash that the worker reconciles on
-`activate`, a navigation that is network-first with a fallback to the cached shell, and a
+exact build graph at install, a cache name with a content hash per build, a grace cache for the
+previous build, a navigation that is network-first with a fallback to the cached shell, and a
 cache-first strategy for a hashed asset on the same origin.
 
 These are **deliberately out of scope**, and they stay out until a concrete need from a user argues
@@ -124,8 +123,19 @@ otherwise:
   offline always gets a page that the app draws, and a separate offline page would never show. An
   app that wants to say "you are offline" shows it from its own state.
 
-One item is **open**, and `todo/pwa-update-lifecycle.md` tracks it, because it is a question of
-correctness, and not a missing convenience. That is the **update lifecycle of the service worker**.
-The emitted worker calls `skipWaiting()` and `clients.claim()`, and removes the old cache
-immediately. That can take a chunk from a split of the code away from a live session, in the middle
-of a deploy.
+**The update lifecycle is automatic, with a grace cache for the previous build.** A new worker calls
+`skipWaiting()` in `install` and `clients.claim()` in `activate`, so a deploy takes control in the
+middle of a session. The build splits a lazy module into a hashed chunk, see
+`production-bundling.md`. A page of the previous build that still runs can request a chunk that is
+gone from the server. So `activate` deletes no cache. The worker looks up a request in the cache of
+the current build first, then in the cache of the previous build. On the next navigation request, it
+deletes every build cache except those two. It deletes only its own caches, whose names start with
+`imp-pwa-`, and never a cache that the app made.
+
+- The app does nothing. There is no prompt, no event and no script on the client.
+- Only one previous build stays. Two deploys during one open session can still remove a chunk of the
+  first build. That case is rare, and imp accepts it.
+- A wait for the next load, and a prompt to reload, were not chosen. Both need a script on the
+  client and a signal for the app, for a race that is narrow. Many apps do not split by route.
+- The precache requests bypass the HTTP cache of the browser. So a file with a plain name, such as
+  the HTML entry, is never precached from a stale copy.

@@ -1284,6 +1284,143 @@ Deno.test('imp build --pwa', async (t) => {
   }
 })
 
+async function launchBrowser() {
+  const { resolveBrowser } = await import('../src/test-browser.js')
+  const { default: puppeteer } = await import('../src/vendor/puppeteer-core.js')
+  const args = ['--disable-dev-shm-usage']
+  try {
+    if (Deno.uid() === 0) args.push('--no-sandbox')
+  } catch { /* not available on this platform */ }
+  return puppeteer.launch({ executablePath: await resolveBrowser(), headless: true, args })
+}
+
+const STATIC_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.txt': 'text/plain; charset=utf-8',
+}
+
+function serveFolder(folderOf, headers = {}) {
+  const server = Deno.serve(
+    { port: 0, hostname: '127.0.0.1', onListen: () => {} },
+    async (request) => {
+      const path = decodeURIComponent(new URL(request.url).pathname)
+      const file = path.endsWith('/') ? `${path}index.html` : path
+      try {
+        const bytes = await Deno.readFile(join(folderOf(), file))
+        const type = STATIC_TYPES[file.slice(file.lastIndexOf('.'))] ?? 'application/octet-stream'
+        return new Response(bytes, { headers: { 'content-type': type, ...headers } })
+      } catch {
+        return new Response('not found', { status: 404 })
+      }
+    },
+  )
+  return { server, base: `http://127.0.0.1:${server.addr.port}` }
+}
+
+Deno.test('imp build --pwa keeps the previous build for a running page', async () => {
+  const dir = await Deno.makeTempDir()
+  const html = '<!doctype html><html><head><title>update</title></head><body>' +
+    '<script type="module" src="/app.js"></script></body></html>'
+  const buildRelease = async (release) => {
+    await Deno.writeTextFile(join(dir, 'index.html'), html)
+    await Deno.writeTextFile(
+      join(dir, 'imp.json'),
+      JSON.stringify({ pwa: { name: 'Update', icon: 'icon.svg' } }),
+    )
+    await Deno.writeTextFile(
+      join(dir, 'icon.svg'),
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8"/></svg>',
+    )
+    await Deno.writeTextFile(
+      join(dir, 'app.js'),
+      `globalThis.release = ${JSON.stringify(release)}\n` +
+        `globalThis.loadPanel = () => import('./panel.js').then((module) => module.panel)\n`,
+    )
+    await Deno.writeTextFile(
+      join(dir, 'panel.js'),
+      `export const panel = ${JSON.stringify(`panel of ${release}`)}\n`,
+    )
+    const result = await runImp(['build', '--pwa', '--output', release], dir)
+    check(result.code === 0, `build of ${release} failed:\n${result.stderr}`)
+    return join(dir, release)
+  }
+  const releases = [
+    await buildRelease('one'),
+    await buildRelease('two'),
+    await buildRelease('three'),
+  ]
+  let deployed = releases[0]
+  const { server, base } = serveFolder(() => deployed)
+  const browser = await launchBrowser()
+  const updateWorker = (page) =>
+    page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration()
+      const previous = registration.active
+      await registration.update()
+      await new Promise((resolve) => {
+        const settle = () => {
+          const worker = registration.active
+          if (worker !== previous && worker?.state === 'activated') return resolve()
+          setTimeout(settle, 50)
+        }
+        settle()
+      })
+    })
+  const buildCaches = (page) =>
+    page.evaluate(async () =>
+      (await caches.keys()).filter((key) => key.startsWith('imp-pwa-')).length
+    )
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${base}/`)
+    await page.evaluate(() => navigator.serviceWorker.ready)
+    await page.reload()
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
+    check(await page.evaluate(() => globalThis.release) === 'one', 'the first release did not load')
+
+    deployed = releases[1]
+    await updateWorker(page)
+    check(
+      await page.evaluate(() => globalThis.loadPanel()) === 'panel of one',
+      'a lazy chunk of the running release did not load after the update',
+    )
+    check(await buildCaches(page) === 2, 'the update did not keep the previous build cache')
+
+    const next = await browser.newPage()
+    await next.goto(`${base}/`)
+    check(
+      await next.evaluate(() => globalThis.release) === 'two',
+      'a navigation did not load the new release',
+    )
+    check(await buildCaches(next) === 2, 'a navigation removed the previous build cache')
+
+    deployed = releases[2]
+    await updateWorker(next)
+    check(await buildCaches(next) === 3, 'the update removed a build cache before a navigation')
+    await next.goto(`${base}/`)
+    await next.waitForFunction(async () =>
+      (await caches.keys()).filter((key) => key.startsWith('imp-pwa-')).length === 2
+    )
+    check(
+      await next.evaluate(() => globalThis.release) === 'three',
+      'the third release did not load',
+    )
+    check(
+      await next.evaluate(() => globalThis.loadPanel()) === 'panel of three',
+      'the lazy chunk of the current release did not load',
+    )
+  } finally {
+    await browser.close()
+    await server.shutdown()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
 async function startServer(cwd, extraArgs = [], command = ['start', 'index.html']) {
   const child = new Deno.Command(IMP, {
     args: [...command, '--port', '0', ...extraArgs],

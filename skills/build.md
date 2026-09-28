@@ -137,6 +137,10 @@ network-first, and fall back to the cached shell. A hashed asset is cache-first.
 cross-origin response, a request that is not a `GET`, or an error response. A new deploy is a new
 cache, so a user is never held on a stale version.
 
+The update is automatic. The new worker takes control at once, and keeps the cache of the previous
+build. So a tab that still runs the old build loads its lazy chunks. The worker deletes older build
+caches on the next navigation. Write no update prompt and no reload code for this.
+
 Without the flag, a PWA project still builds normally. In development, installability needs no flag.
 But the **offline** worker comes only from `imp build --pwa`. See [start](start.md).
 
