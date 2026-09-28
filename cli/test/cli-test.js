@@ -834,7 +834,8 @@ Deno.test('imp build', async (t) => {
       const result = await runImp(['build'], dir)
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
       const licenses = await Deno.readTextFile(join(dir, 'dist', 'LICENSES.txt'))
-      const module = await import(toFileUrl(join(dir, 'dist', 'app.js')).href)
+      const entry = html.match(/src="\/(chunks\/app-[A-Z0-9]{8}\.js)"/)[1]
+      const module = await import(toFileUrl(join(dir, 'dist', entry)).href)
       const usage =
         `[bundled module: message='${module.message}', impLogLevel=${module.impLogLevel}, lazy loadShout()='${await module
           .loadShout()}']`
@@ -1035,6 +1036,7 @@ Deno.test('imp build', async (t) => {
       const result = await runImp(['build'], project)
       const chunks = []
       for await (const entry of Deno.readDir(join(project, 'dist', 'chunks'))) {
+        if (entry.name.startsWith('app-')) continue
         chunks.push({
           name: entry.name,
           text: await Deno.readTextFile(join(project, 'dist', 'chunks', entry.name)),
@@ -1141,8 +1143,8 @@ Deno.test('imp build', async (t) => {
     })
 
     await t.step('build-public-collision', async () => {
-      const collision = join(dir, 'public', 'app.js')
-      await Deno.writeTextFile(collision, 'export const shadowed = true\n')
+      const collision = join(dir, 'public', 'LICENSES.txt')
+      await Deno.writeTextFile(collision, 'a file of the app\n')
       const result = await runImp(['build'], dir)
       await Deno.remove(collision)
       await assertSnapshot(
@@ -1206,6 +1208,7 @@ Deno.test('imp build --pwa', async (t) => {
     text
       .replaceAll(dir, '<tmp>')
       .replace(/imp-pwa-[0-9a-f]{16}/g, 'imp-pwa-<hash>')
+      .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
       .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
 
   const outputTree = async () => {
@@ -1940,6 +1943,7 @@ Deno.test('a project with its own service worker gets dev mode from startDevMode
 Deno.test('imp build bundles the service worker of the project', async (t) => {
   const mask = (text, dir) =>
     text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+      .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
 
   await t.step('build-own-worker', async () => {
     const dir = await ownWorkerFixture()
@@ -2040,9 +2044,10 @@ Deno.test('imp build leaves the mocks folder behind', async () => {
     `${
       commandTranscript('imp build  (cwd: <tmp>)', {
         ...result,
-        stdout: result.stdout.replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)'),
+        stdout: result.stdout.replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+          .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js'),
       })
-    }\n${section('output files', built.join('\n'))}\n`,
+    }\n${section('output files', built.join('\n').replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js'))}\n`,
   )
 })
 
@@ -3802,7 +3807,9 @@ Deno.test('imp build and start with environments', async (t) => {
   const savedImpEnv = Deno.env.get('IMP_ENV')
   Deno.env.delete('IMP_ENV')
 
-  const mask = (text) => text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+  const mask = (text) =>
+    text.replaceAll(dir, '<tmp>').replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
+      .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
   const envLine = (html) => html.match(/globalThis\.__IMP_ENV__ = [^<]*/)?.[0] ?? '(none injected)'
 
   try {
@@ -3936,13 +3943,13 @@ Deno.test('imp build and start with feature flags', async (t) => {
 
   const buildReport = async (alias) => {
     const result = await runImp(['build', '--env', alias], dir)
-    const bundle = await Deno.readTextFile(join(dir, 'dist', 'app.js')).catch(() => '')
-    const chunks = await Array.fromAsync(Deno.readDir(join(dir, 'dist', 'chunks')))
+    const files = await Array.fromAsync(Deno.readDir(join(dir, 'dist', 'chunks')))
       .catch(() => [])
-    const chunkSources = await Promise.all(
-      chunks.map((chunk) => Deno.readTextFile(join(dir, 'dist', 'chunks', chunk.name))),
+    const sources = await Promise.all(
+      files.map((file) => Deno.readTextFile(join(dir, 'dist', 'chunks', file.name))),
     )
-    const output = [bundle, ...chunkSources].join('\n')
+    const chunks = files.filter((file) => !file.name.startsWith('app-'))
+    const output = sources.join('\n')
     const html = await Deno.readTextFile(join(dir, 'dist', 'index.html')).catch(() => '')
     return `${mask(commandTranscript(`imp build --env ${alias}  (cwd: <tmp>)`, result))}\n${
       section(

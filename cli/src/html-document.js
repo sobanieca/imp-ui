@@ -106,11 +106,15 @@ export function readHtml(source) {
   for (const element of elementsOf(document)) {
     const location = element.sourceCodeLocation
     if (!location) continue
-    if (element.tagName === 'script') scripts.push(scriptOf(source, element))
+    const urls = urlAttributesOf(source, element)
+    if (element.tagName === 'script') {
+      const srcAttribute = urls.find((attribute) => attribute.name.toLowerCase() === 'src') ?? null
+      scripts.push({ ...scriptOf(source, element), srcAttribute })
+    }
     if (element.tagName === 'title' && !title) {
       title = { start: location.startOffset, end: location.endOffset }
     }
-    urlAttributes.push(...urlAttributesOf(source, element))
+    urlAttributes.push(...urls)
   }
   const top = topElements(document)
   return {

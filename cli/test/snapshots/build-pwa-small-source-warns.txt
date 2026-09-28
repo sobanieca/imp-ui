@@ -6,7 +6,7 @@ exit code: 0
 built index.html -> dist/
   PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
   installable - name, 192 + 512 icons, display, start_url all present
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)
   icons/icon-192.png (<size>)
   icons/icon-512.png (<size>)

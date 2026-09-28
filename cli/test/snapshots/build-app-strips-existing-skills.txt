@@ -4,7 +4,7 @@ exit code: 0
 --- stdout ---
 [WARN] no manifest.json for widget - the licenses of that dependency are missing from LICENSES.txt; run 'imp install' to record them
 built index.html -> dist/
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   chunks/hand-<hash>.js (<size>)
   chunks/widget-<hash>.js (<size>)
   index.html (<size>)

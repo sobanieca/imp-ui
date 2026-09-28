@@ -6,8 +6,8 @@ built index.html -> dist/
   LICENSES.txt - 3 third-party license notices, referenced from every script emitted
   targetImpHost ignored - an HTML page is its own host, imp is bundled in
   LICENSES.txt (<size>)
-  app.js (<size>)
   assets/note.txt (<size>)
+  chunks/app-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)

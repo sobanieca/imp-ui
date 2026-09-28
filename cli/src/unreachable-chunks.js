@@ -1,7 +1,9 @@
 const SIDECAR_SUFFIXES = ['.map', '.LEGAL.txt']
 
-const namesSameFile = (absolutePath, metafilePath) =>
-  absolutePath === metafilePath || absolutePath.endsWith(`/${metafilePath}`)
+export const namesSameFile = (absolutePath, metafilePath) => {
+  const path = absolutePath.replaceAll('\\', '/')
+  return path === metafilePath || path.endsWith(`/${metafilePath}`)
+}
 
 const reachableFrom = (roots, outputs) => {
   const reached = new Set()

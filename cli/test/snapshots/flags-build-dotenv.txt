@@ -4,7 +4,7 @@ exit code: 0
 --- stdout ---
 built index.html -> dist/
   flags folded in - CHECKOUT_V2 off, NEW_NAV on
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   index.html (<size>)
 
 --- stderr ---

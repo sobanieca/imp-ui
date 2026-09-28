@@ -5,4 +5,4 @@ exit code: 1
 (empty)
 
 --- stderr ---
-[ERROR] public file would overwrite a generated file: app.js
+[ERROR] public file would overwrite a generated file: LICENSES.txt

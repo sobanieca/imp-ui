@@ -4,12 +4,12 @@ exit code: 0
 --- stdout ---
 built index.html -> dist/
   mocks/ left out - mocks serve in imp start
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   index.html (<size>)
 
 --- stderr ---
 (empty)
 
 --- output files ---
-dist/app.js
+dist/chunks/app-<hash>.js
 dist/index.html

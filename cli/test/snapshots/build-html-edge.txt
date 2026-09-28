@@ -4,7 +4,7 @@ exit code: 0
 --- stdout ---
 built index.html -> dist/
   base path /base - root-absolute urls prefixed for a sub-path deployment
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   favicon.svg (<size>)
   index.html (<size>)
   logo.svg (<size>)
@@ -31,7 +31,7 @@ built index.html -> dist/
     <p>Write href="/docs" in text, and keep it as text.</p>
     <textarea><script type="module" src="/in-textarea.js"></script></textarea>
     <div data-template="<script type=module src=/in-attribute.js></script>"></div>
-    <SCRIPT TYPE=module SRC=/base/app.js></SCRIPT>
+    <SCRIPT TYPE=module SRC=/base/chunks/app-<hash>.js></SCRIPT>
     <script type="module">
 var t=e=>`hello ${e}`;var o="<p>"+t("a > b")+"</p>";document.body.dataset.greeting=o;
 </script>

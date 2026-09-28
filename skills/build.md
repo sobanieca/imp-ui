@@ -19,8 +19,11 @@ help the build.
 
 ## HTML entry - an app
 
-- imp bundles and minifies every `<script type="module" src="...">` **to the same relative path**.
-  So the HTML works without a change. imp bundles an inline module script and inlines it again.
+- imp bundles and minifies every `<script type="module" src="...">` to
+  **`chunks/<name>-<hash>.js`**, and points the `src` of the built page at it. The HTML keeps its
+  name. imp bundles an inline module script and inlines it again.
+- **Never reference a built script by its source name**, such as `/src/main.js` in a host config or
+  a test of the output. Only the built HTML knows the hashed name.
 - imp turns an `import()` into a separate hashed chunk under `chunks/` that loads on demand. It
   emits code that several entries share once. imp writes a chunk only when an entry can reach it. An
   `import()` in code that the build drops, such as the world data of an unused `map`, ships no file.

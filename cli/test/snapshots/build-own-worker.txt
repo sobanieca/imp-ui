@@ -5,7 +5,7 @@ exit code: 0
 built index.html -> dist/
   mocks/ left out - mocks serve in imp start
   sw.js - your service worker, bundled from src/sw.js
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   index.html (<size>)
   sw.js (<size>)
 

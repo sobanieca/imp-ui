@@ -16,7 +16,7 @@ exit code: 0
 
 --- stdout ---
 built index.html -> app/
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   index.html (<size>)
 
@@ -24,7 +24,7 @@ built index.html -> app/
 (empty)
 
 --- app bundles (eager imported statically, lazy dynamically) ---
-app.js
+chunks/app-<hash>.js
 chunks/lazy-<hash>.js
 
 [app files carrying skill text: none]

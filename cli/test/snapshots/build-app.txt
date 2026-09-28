@@ -5,8 +5,8 @@ exit code: 0
 built index.html -> dist/
   LICENSES.txt - 3 third-party license notices, referenced from every script emitted
   LICENSES.txt (<size>)
-  app.js (<size>)
   assets/note.txt (<size>)
+  chunks/app-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
@@ -18,8 +18,8 @@ built index.html -> dist/
 
 --- output files ---
 dist/LICENSES.txt
-dist/app.js
 dist/assets/note.txt
+dist/chunks/app-<hash>.js
 dist/chunks/chunk-<hash>.js
 dist/chunks/chunk-<hash>.js
 dist/chunks/lazy-<hash>.js
@@ -35,12 +35,12 @@ dist/styles.css
     <link rel="stylesheet" href="/styles.css">
     <script type="module">
 /*! Third-party license notices: /LICENSES.txt */
-import{a as e}from"./chunks/chunk-<hash>.js";console.log("inline module sees imp:",e());
+import{a as e}from"./chunk-<hash>.js";console.log("inline module sees imp:",e());
 </script>
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/chunks/app-<hash>.js"></script>
     <script type="module" src="https://example.com/external.js"></script>
   </body>
 </html>

@@ -24,7 +24,7 @@ import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
 import { formatSize } from './file-size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
-import { withoutUnreachableChunks } from './unreachable-chunks.js'
+import { namesSameFile, withoutUnreachableChunks } from './unreachable-chunks.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
@@ -57,6 +57,8 @@ import {
 
 const FLAGS_GLOBAL = 'globalThis.__IMP_FLAGS__'
 
+const HASHED_NAMES = 'chunks/[name]-[hash]'
+
 const INLINE_ENTRY_SCHEME = 'imp-inline:'
 const inlineModuleName = (index) => `.imp-inline-${index}.js`
 const INLINE_MODULE_PATH = /[/\\]\.imp-inline-(\d+)\.js$/
@@ -65,14 +67,18 @@ const moduleScriptsOf = (document) => document.scripts.filter((script) => isModu
 
 const isInlineModule = (script) => script.src === null && script.text.trim() !== ''
 
+function scriptPathOf(src, root) {
+  const path = decodeURIComponent(src.split(/[?#]/)[0])
+  return normalize(join(root, path.startsWith('/') ? path.slice(1) : path))
+}
+
 function parseHtmlEntryPoints(document, root, entryName) {
   const scripts = []
   const inlineSources = []
   for (const script of moduleScriptsOf(document)) {
     if (script.src !== null) {
       if (!isLocalScriptSource(script.src)) continue
-      const path = decodeURIComponent(script.src.split(/[?#]/)[0])
-      const filePath = normalize(join(root, path.startsWith('/') ? path.slice(1) : path))
+      const filePath = scriptPathOf(script.src, root)
       if (!filePath.startsWith(normalize(root))) {
         throw new Error(`${entryName} references a script outside the project: ${script.src}`)
       }
@@ -193,7 +199,8 @@ function buildEntryPoints(
     metafile: true,
     write: false,
     outdir,
-    chunkNames: 'chunks/[name]-[hash]',
+    entryNames: isHtmlEntry ? HASHED_NAMES : '[dir]/[name]',
+    chunkNames: HASHED_NAMES,
     assetNames: 'assets/[name]-[hash]',
     loader: ASSET_LOADERS,
   })
@@ -234,15 +241,30 @@ function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags }) 
   })
 }
 
-async function bundleApp(options, { serviceWorker, offlineWorker }) {
+function entryOutputs({ metafile, outputFiles }, inputs) {
+  const outputs = new Map()
+  for (const [output, { entryPoint }] of Object.entries(metafile.outputs)) {
+    const input = entryPoint && inputs.find((path) => namesSameFile(path, entryPoint))
+    const file = input && outputFiles.find(({ path }) => namesSameFile(path, output))
+    if (file) outputs.set(input, file.path)
+  }
+  return outputs
+}
+
+async function bundleApp(options, { inputs, serviceWorker, offlineWorker }) {
   try {
-    const entryFiles = options.entryPoints.map(({ out }) => join(options.outdir, `${out}.js`))
-    const page = withoutUnreachableChunks(await buildEntryPoints(options), entryFiles)
+    const bundled = await buildEntryPoints(options)
+    const entries = entryOutputs(bundled, inputs)
+    const page = { ...withoutUnreachableChunks(bundled, [...entries.values()]), entries }
     if (!serviceWorker && !offlineWorker) return page
     const worker = await buildServiceWorkerEntry({ ...options, worker: serviceWorker })
     return {
+      ...page,
       outputFiles: [...page.outputFiles, ...worker.outputFiles],
-      metafile: { inputs: { ...page.metafile.inputs, ...worker.metafile.inputs } },
+      metafile: {
+        inputs: { ...page.metafile.inputs, ...worker.metafile.inputs },
+        outputs: page.metafile.outputs,
+      },
     }
   } finally {
     await shutdownBundler()
@@ -316,11 +338,29 @@ async function copyPublicFiles({ publicDir, outdir, written, reserved }) {
 
 const isRootAbsolute = (url) => url.startsWith('/') && !url.startsWith('//')
 
-function basePathEdits(document, base) {
-  if (!base) return []
-  return document.urlAttributes
-    .filter((attribute) => isRootAbsolute(attribute.value))
-    .map((attribute) => ({ start: attribute.start, end: attribute.start, text: base }))
+function renamedScripts(document, root, outdir, entries) {
+  const renamed = new Map()
+  for (const script of moduleScriptsOf(document)) {
+    if (script.src === null || !isLocalScriptSource(script.src)) continue
+    const output = entries.get(scriptPathOf(script.src, root))
+    if (!output || !script.srcAttribute) continue
+    const suffix = script.src.match(/[?#].*$/)?.[0] ?? ''
+    const prefix = isRootAbsolute(script.src) ? '/' : ''
+    renamed.set(script.srcAttribute.start, `${prefix}${asPosix(relative(outdir, output))}${suffix}`)
+  }
+  return renamed
+}
+
+function urlEdits(document, { base, renamed }) {
+  return document.urlAttributes.flatMap((attribute) => {
+    const renamedValue = renamed.get(attribute.start)
+    const value = renamedValue ?? attribute.value
+    const prefix = base && isRootAbsolute(value) ? base : ''
+    if (renamedValue !== undefined) {
+      return [{ start: attribute.start, end: attribute.end, text: prefix + renamedValue }]
+    }
+    return prefix ? [{ start: attribute.start, end: attribute.start, text: prefix }] : []
+  })
 }
 
 async function precacheOfBuild({ outdirPath, base, written, shell }) {
@@ -399,7 +439,11 @@ export async function build(
     impProvidedByHost,
     isHtmlEntry,
     flags,
-  }, { serviceWorker, offlineWorker: pwa && isHtmlEntry })
+  }, {
+    inputs: [...scripts, ...inlineSources.map((_, index) => join(root, inlineModuleName(index)))],
+    serviceWorker,
+    offlineWorker: pwa && isHtmlEntry,
+  })
 
   assertEveryFlagFolded(result.outputFiles)
 
@@ -432,12 +476,15 @@ export async function build(
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
   await Deno.mkdir(outdirPath, { recursive: true })
   const written = []
+  const inlineOutputPaths = inlineSources.map((_, index) =>
+    result.entries.get(join(root, inlineModuleName(index)))
+  )
   const inlineOutputs = []
   for (const file of outputFiles) {
     if (file === workerFile) continue
-    const inline = file.path.match(INLINE_MODULE_PATH)
-    if (inline) {
-      inlineOutputs[Number(inline[1])] = noticeReference + file.text
+    const inline = inlineOutputPaths.indexOf(file.path)
+    if (inline !== -1) {
+      inlineOutputs[inline] = noticeReference + file.text
       continue
     }
     await Deno.mkdir(dirname(file.path), { recursive: true })
@@ -476,7 +523,13 @@ export async function build(
         swHref: siteUrl(base, 'sw.js'),
       }))
     }
-    const edits = [...inlineScriptEdits(document, inlineOutputs), ...basePathEdits(document, base)]
+    const edits = [
+      ...inlineScriptEdits(document, inlineOutputs),
+      ...urlEdits(document, {
+        base,
+        renamed: renamedScripts(document, root, outdirPath, result.entries),
+      }),
+    ]
     const head = headTags.filter(Boolean).join('\n')
     if (head) edits.push(headEdit(document, head))
     const builtHtml = applyEdits(html, edits)

@@ -554,10 +554,12 @@ the module scripts of the page. It bundles each one into minified, self-containe
   vendored dependency alias, resolve exactly as they do under `imp start`. Every `imp` specifier
   resolves to the built-in library, and each alias resolves to the bundle in your `dependencies/`
   folder. The build runs offline. What you tested in development is what you ship.
-- **imp keeps the paths.** Each `<script type="module" src="...">` keeps its URL. imp writes the
-  bundled file to the same relative path as the source file, so the HTML works without a change. imp
-  also bundles an inline `<script type="module">` block. It inlines it again, minified and with its
-  imports resolved.
+- **Every script gets a content hash in its name.** imp writes the bundle of each
+  `<script type="module" src="...">` to `chunks/`, with a content hash in the file name, such as
+  `chunks/main-4ZDAFRFX.js`. It then points the `src` of the built page at that file. The HTML file
+  keeps its own name. So a browser can cache every script for a long time, and a deploy never serves
+  an old script under a new page. imp also bundles an inline `<script type="module">` block. It
+  inlines it again, minified and with its imports resolved.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
   several entry points share once, instead of a copy in each bundle. imp writes a chunk only when an

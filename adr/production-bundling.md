@@ -33,11 +33,15 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
 - **Each dependency alias resolves to its vendored `dependencies/<alias>/` bundle.** imp contacts no
   registry. A declared alias with no vendored bundle fails the build, and the message suggests
   `imp install`.
-- **An HTML entry keeps its URLs.** Every `<script type="module">` with a local `src` becomes an
-  entry point. imp writes its bundled output to the same project-relative path. So the HTML ships
-  without a change. imp bundles an inline module script as another entry, and inlines it again. A
-  module that loads lazily, through `import()`, and code that two entry points share, both go into a
-  file under `chunks/`, with a content hash.
+- **An HTML entry hashes every script.** Every `<script type="module">` with a local `src` becomes
+  an entry point. imp writes its bundled output to `chunks/<name>-<hash>.js`, and rewrites the `src`
+  in the built HTML to match. The HTML file keeps its plain name. imp bundles an inline module
+  script as another entry, and inlines it again. A module that loads lazily, through `import()`, and
+  code that two entry points share, both go into a file under `chunks/`, with a content hash. So
+  every script of a page build lives under `chunks/` with a hash, and a host can cache that folder
+  for a year.
+- **A JS entry keeps its plain name.** A consumer imports that file by name, so a hash would break
+  every import of it.
 - **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of
   the HTML standard. So a script in a comment, in a `<textarea>` or in an attribute value is text,
   as it is for a browser. An attribute value that holds `>` does not end its tag. imp edits the
@@ -74,9 +78,8 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
 - A development check in the library reads `globalThis.__IMP_DEV__`, and the build defines that
   expression as `false`. So the minifier drops the check, and the module that holds it leaves the
   bundle, see `development-checks.md`.
-- An entry file keeps a stable name that comes from the source. So nobody has to rewrite the HTML.
-  An entry therefore gets no content hash to break a cache. imp hashes a chunk and an emitted asset
-  only.
+- The entry HTML is the one file of a page build that a host must revalidate on every load. Every
+  script has a content hash, so a stale cache of the HTML is the only way to serve an old build.
 - Each vendored bundle enters the graph as one opaque module that imp already minified. imp emits it
   once, and shares it across all the chunks. But a transitive package that two different vendored
   bundles hold stays duplicated in the output. imp accepts that deliberately, see

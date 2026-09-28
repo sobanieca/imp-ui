@@ -5,7 +5,7 @@ exit code: 0
 built index.html -> dist/
   PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
   installable - name, 192 + 512 icons, display, start_url all present
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)
   icons/icon-192.png (<size>)
   icons/icon-512.png (<size>)
@@ -18,7 +18,7 @@ built index.html -> dist/
 (empty)
 
 --- output files ---
-dist/app.js
+dist/chunks/app-<hash>.js
 dist/icons/apple-touch-icon.png
 dist/icons/icon-192.png
 dist/icons/icon-512.png
@@ -60,7 +60,7 @@ dist/sw.js
 
 --- dist/sw.js ---
 precache version: <16 hex digits>
-precache files: ["/app.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
+precache files: ["/chunks/app-<hash>.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
 precache shell: "/index.html"
 listeners: activate, fetch, install
 
@@ -77,7 +77,7 @@ listeners: activate, fetch, install
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/chunks/app-<hash>.js"></script>
   </body>
 </html>
 

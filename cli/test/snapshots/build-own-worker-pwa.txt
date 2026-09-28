@@ -6,7 +6,7 @@ built index.html -> dist/
   sw.js - your service worker, bundled from src/sw.js
   PWA: manifest, icons (192, 512, maskable, apple-touch), your service worker registered
   installable - name, 192 + 512 icons, display, start_url all present
-  app.js (<size>)
+  chunks/app-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)
   icons/icon-192.png (<size>)
   icons/icon-512.png (<size>)
@@ -22,7 +22,7 @@ built index.html -> dist/
 registration: serviceWorker.register("/sw.js")
 dist/sw.js is the project worker: yes
 precache version: <16 hex digits>
-precache files: ["/app.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
+precache files: ["/chunks/app-<hash>.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
 precache shell: "/index.html"
 listeners: activate, fetch, install
 

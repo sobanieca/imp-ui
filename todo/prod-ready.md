@@ -35,14 +35,6 @@ This tier is the most likely to block a procurement, in place of being a prefere
 
 ## Tier 2 - what `imp build` emits
 
-- **imp does not put a content hash on an entry file.** Only `chunkNames` and `assetNames` carry
-  `[hash]`, in `cli/src/build.js`. The output of an entry keeps its plain name. So a long-term cache
-  of the entry point is impossible, and every deploy depends on the cache headers of the host being
-  correct. There is related drift in the documentation. `docs/cli.md` describes the precache of the
-  PWA as covering "every hashed script and chunk", and that says more than imp emits. **Decision:**
-  the build of an HTML entry always hashes the entry scripts, and it rewrites the HTML to match. The
-  HTML file keeps its plain name. The build of a JS entry keeps the plain name, because a consumer
-  imports that file by name.
 - **There is no story about a CSP.** A strict Content Security Policy blocks every inline `<script>`
   and every `style` attribute. A security review of a serious deployment asks for such a policy. A
   built app breaks under it today, in four places:
