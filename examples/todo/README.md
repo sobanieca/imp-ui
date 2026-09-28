@@ -41,6 +41,7 @@ so you can see a failed submit.
 | Custom light and dark theme    | `src/theme.js`, applied in `src/main.js`, offered by `themeSelect`                           |
 | Styled components of your own  | `src/ui/`: the hero, the stat tiles, the backdrop and the logo mark                          |
 | Account menu                   | `src/ui/account-menu.js`: a popover on desktop, inline in the drawer                         |
+| QR code of the app address     | `qrCode` in `src/about/about-screen.js`, with the address as text                            |
 | Environments                   | `env/dev.json`, `env/prod.json`                                                              |
 | Installable offline app        | `pwa` in `imp.json`, built with `imp build --pwa`                                            |
 | Size budget of the build       | `build.maxSize` in `imp.json`                                                                |

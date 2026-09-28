@@ -80,6 +80,8 @@ Ta aplikacja to przegląd **imp**. Każdy ekran używa innej części:
 - przycisk **Usuń zrobione** jest za **flagą funkcji**
 `,
     report: 'Coś nie działa na tej stronie? Zgłoś to.',
+    phone: 'Otwórz tę aplikację na telefonie: zeskanuj kod aparatem.',
+    qrLabel: 'Kod QR z adresem tej aplikacji',
   },
   appMap: {
     todos: { label: 'Zadania', description: 'Lista zadań' },
@@ -95,6 +97,7 @@ Ta aplikacja to przegląd **imp**. Każdy ekran używa innej części:
       optional: 'opcjonalne',
     },
     dialog: { close: 'Zamknij' },
+    qrCode: { label: 'Kod QR' },
     theme: {
       label: 'Motyw',
       system: 'Systemowy',

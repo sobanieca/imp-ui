@@ -9,7 +9,7 @@ include. Each component is a real imp component. It renders as its own element, 
 | `imp/std`          | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                                | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                                                |
 | `imp/std/layout`   | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                 | `imp skill std/flex`, `std/stack`, `std/splitPane`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                 |
 | `imp/std/inputs`   | `form`, `submitForm`, `resetForm`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor` | `imp skill std/form`, `std/submitForm`, `std/resetForm`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/emojiPicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor` |
-| `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`                                                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`                                                                                                                                                       |
+| `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`, `qrCode`                                                                                                             | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`, `std/qrCode`                                                                                                                                         |
 | `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                 | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                         |
 | `imp/std/feedback` | `bugReport`, `notice`, `loader`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`, `reactions`                                                                                                                                       | `imp skill std/bugReport`, `std/notice`, `std/loader`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`, `std/reactions`                                                                                                                                                                           |
 | `imp/std/data`     | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                 | `imp skill std/table`, `std/list`, `std/timeline`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                         |
@@ -635,6 +635,27 @@ tooltip({ text: 'Refresh' }, refreshButton)
 - **The icon rail of `shell` shows one per row by itself.** Do not wrap a nav row.
 
 Full manual: `imp skill std/tooltip`.
+
+## qrCode - from `imp/std/display`
+
+```js
+import { qrCode } from 'imp/std/display'
+
+qrCode({ value: 'https://shop.example.com/order/42', label: 'QR code of the order link' })
+```
+
+| Prop              | Values                        | Default   | Notes                          |
+| ----------------- | ----------------------------- | --------- | ------------------------------ |
+| `value`           | string, or a state - **live** | -         | Necessary. The encoded text    |
+| `label`           | string, or a state - **live** | 'QR code' | The accessible name            |
+| `errorCorrection` | `'L'`, `'M'`, `'Q'`, `'H'`    | `'M'`     | `'H'` for a print that wears   |
+| `size`            | `'sm'`, `'md'`, `'lg'`        | `'md'`    | A side of 6rem, 10rem or 16rem |
+
+- **Show the value as text next to the code.** A person cannot read a QR code.
+- **It is dark on white in every theme**, so a scanner reads it. Do not recolour it.
+- **A value over the capacity draws nothing**, and imp warns. At `'L'` the limit is 2953 bytes.
+
+Full manual: `imp skill std/qrCode`.
 
 ## codeBlock - from `imp/std/display`
 

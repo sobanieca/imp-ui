@@ -535,6 +535,33 @@ map({ label: 'Europe', detail: 'high', center: [50, 10], zoom: 3, pins })
 The detail stops there. The map has no streets and no towns, because that needs a map server, and
 imp does not ship one. For a street map, use a tile provider of your own in a custom component.
 
+## Share a link as a QR code
+
+`qrCode` from `imp/std/display` draws a QR code of a text or a link. A phone camera reads it, so a
+person can open a page of your app on the phone without typing the address. imp encodes the code
+itself, with no library and no request, and draws it as one SVG image.
+
+```js
+import { link } from 'imp/std'
+import { qrCode } from 'imp/std/display'
+
+qrCode({ value: 'https://shop.example.com/order/42', label: 'QR code of the order link' })
+link({ href: 'https://shop.example.com/order/42' }, 'shop.example.com/order/42')
+```
+
+Show the value as text next to the code. A person cannot read a QR code, and a screen reader reads
+only the label of the image. `value` and `label` can be states, and the code follows them.
+
+- **The code is dark on white in every theme.** Many scanners cannot read light modules on a dark
+  ground. So the code keeps its own colours, and a dark theme does not change them. In
+  forced-colours mode it uses the colours of the system.
+- **`errorCorrection` sets how much damage a scanner can repair**: `'L'`, `'M'`, `'Q'` or `'H'`. The
+  default `'M'` suits a screen. Use `'H'` for a print that gets dirty or has a logo on top.
+- **A short value gives a code that is easy to read.** imp picks the smallest QR version that fits
+  the UTF-8 bytes of the value. A code holds at most 2953 bytes at `'L'`. For a longer value imp
+  warns and draws nothing.
+- **`size` is `'sm'`, `'md'` or `'lg'`**, for a side of 6rem, 10rem or 16rem.
+
 ## The name that you look for
 
 The library has one component per job. A name from another library often maps to a prop here:

@@ -80,6 +80,8 @@ This app is a tour of **imp**. Every screen uses a different part of it:
 - the **Clear done** button is behind a **feature flag**
 `,
     report: 'Found a problem on this page? Report it.',
+    phone: 'Open this app on a phone: scan the code with the camera.',
+    qrLabel: 'QR code of the address of this app',
   },
   appMap: {
     todos: { label: 'Todos', description: 'The todo list' },
