@@ -50,6 +50,7 @@ const PAGE_ORDER = [
   'components',
   'custom-components',
   'std-components',
+  'accessibility',
   'state',
   'routing',
   'theming',

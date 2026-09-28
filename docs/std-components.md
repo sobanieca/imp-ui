@@ -121,7 +121,8 @@ one exists, so the roles, the states and the keyboard behavior come from the bro
 interaction has a keyboard equivalent. Every interactive element carries an accessible name. The
 ARIA state binds to the same state that drives the visuals, so the two cannot drift apart. An app
 that you assemble from these components clears the common accessibility bar, and you connect none of
-it by hand.
+it by hand. See **[Accessibility](accessibility.md)** for the full contract, and for the few things
+that stay with your app, such as a name for an icon-only button.
 
 ## Start an app with the frame
 

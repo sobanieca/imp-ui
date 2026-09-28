@@ -474,7 +474,8 @@ error[imp/icon-button-name]: 'button' shows only an icon and has no accessible n
 
 Name the button, not the icon. The standard `button` takes `label`. A plain `button` takes
 `'aria-label'`, `'aria-labelledby'` or `title`. A button with text next to the icon needs no label,
-because the text is its name.
+because the text is its name. See **[Accessibility](accessibility.md)** for what else an app owes a
+screen reader.
 
 ### `imp/exact-dependency-versions`
 

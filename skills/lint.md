@@ -45,7 +45,7 @@ key in any other object, such as a bundler plugin, is not a hook.
 Each rule protects one subject. Read [components](components.md) for the component rules,
 [state](state.md) for the state rules, [http](http.md) for the http client rules,
 [rendering](rendering.md) for the props rule, [imports](imports.md) for `import-source`,
-[icons](icons.md) for `icons-by-name`, [components](components.md) for `img-alt` and
+[icons](icons.md) for `icons-by-name`, [accessibility](accessibility.md) for `img-alt` and
 `icon-button-name`, and [dependencies](dependencies.md) for the pin rule.
 
 imp does not check a name that you build dynamically, such as a variable or a template with an

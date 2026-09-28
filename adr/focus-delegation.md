@@ -43,8 +43,9 @@ component, and there is no `focus()` entry in the definition of a component.
 - Composition is symmetric. A component can drive a nested component through props, such as a state
   handle for `disabled` or for `loading`, and it can focus that component afterwards. That removed
   the reason why `bugReport` rendered its own buttons instead of composing `button`.
-- An overlay component can meet the focus-restore requirement of `todo/accessibility.md` with the
-  handle that it already holds. So nobody has to reconsider this decision for each component.
+- An overlay component can meet the focus-restore requirement of `accessible-by-default-stdlib.md`,
+  with the handle that it already holds. So nobody has to reconsider this decision for each
+  component.
 - `:focus` can match a host. The platform can also give the focus to the first focusable descendant
   when a person clicks a part of a host that is not focusable. The sequential tab order does not
   change. A control is reached exactly once, and not once for the host and once for itself. A test

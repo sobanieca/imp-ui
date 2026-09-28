@@ -24,6 +24,7 @@ WRITING AN APP
   http                 the configured HTTP client a component owns, with retries and request state
   routing              one application map drives the routes, the nav of the shell and the trail
   std                  the built-in component library: text, layout, forms, navigation and empty states
+  accessibility        what the standard components guarantee, what the app owes, and the three checks
   icons                the Lucide icon set as tree-shaken exports, drawn by icon
   theming              themes as plain token modules, applied at the entry point and swappable
   i18n                 t() lookups, per-language messages, and the lang attribute that drives them

@@ -83,6 +83,12 @@ export const SKILLS = [
     summary: 'the built-in component library: text, layout, forms, navigation and empty states',
   },
   {
+    name: 'accessibility',
+    group: 'app',
+    aliases: ['a11y', 'aria', 'screen-reader', 'wcag', 'contrast'],
+    summary: 'what the standard components guarantee, what the app owes, and the three checks',
+  },
+  {
     name: 'icons',
     group: 'app',
     aliases: ['imp/icons', 'lucide'],

@@ -401,8 +401,8 @@ full decision and its scope are in `adr/logical-properties-rtl-scope.md`.
 **imp supports accessibility by default.** An app built from standard components clears the common
 WCAG bar without the app author wiring ARIA, focus, or keyboard handling by hand. Accessibility is a
 property of the components imp ships, not something each app re-implements. Treat it as a shipping
-requirement of every component, never as a follow-up pass. The full contract and its open questions
-live in `todo/accessibility.md`.
+requirement of every component, never as a follow-up pass. The full contract, its scope and its
+checks live in `adr/accessible-by-default-stdlib.md`.
 
 When you build or change a standard component:
 

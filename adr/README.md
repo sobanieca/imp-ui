@@ -62,6 +62,7 @@ These are the conventions:
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md)                               | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props    |
 | [short-component-catalog](short-component-catalog.md)                                     | One component per job; a prop covers a variant; paging is an infinite scroll        |
+| [accessible-by-default-stdlib](accessible-by-default-stdlib.md)                           | One accessibility contract per component; lint, an e2e matcher and a contrast check |
 | [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box       |
 | [image-upload-client-side-crop](image-upload-client-side-crop.md)                         | `imageUpload` crops and resizes in the browser; the value is a data URL             |
 | [responsive-fluid-values-only](responsive-fluid-values-only.md)                           | Fluid theme values only; no per-screen props - an app writes its own media query    |
