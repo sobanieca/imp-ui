@@ -145,8 +145,9 @@ Without the flag, a PWA project still builds normally. In development, installab
 But the **offline** worker comes only from `imp build --pwa`. See [start](start.md).
 
 When `imp.json` names a `serviceWorker`, every page build bundles that source and writes it as
-`sw.js`. With `--pwa`, imp registers that worker in the HTML and writes no offline worker. Offline
-behaviour is then the job of your worker. See [service-worker](service-worker.md).
+`sw.js`. With `--pwa`, imp registers that worker in the HTML and writes no second worker. Call
+`precacheBuild()` in your worker for the same offline behaviour. See
+[service-worker](service-worker.md).
 
 ## Rules an agent gets wrong
 

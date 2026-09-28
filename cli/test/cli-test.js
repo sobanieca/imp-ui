@@ -1155,6 +1155,17 @@ Deno.test('imp build', async (t) => {
   }
 })
 
+const workerReport = (source) => {
+  const worker = runServiceWorker(source)
+  const precache = worker.scope.__IMP_PRECACHE__
+  return [
+    `precache version: ${/^[0-9a-f]{16}$/.test(precache?.version) ? '<16 hex digits>' : '(none)'}`,
+    `precache files: ${JSON.stringify(precache?.files ?? null)}`,
+    `precache shell: ${JSON.stringify(precache?.shell ?? null)}`,
+    `listeners: ${Object.keys(worker.listeners).sort().join(', ')}`,
+  ].join('\n')
+}
+
 Deno.test('imp build --pwa', async (t) => {
   const dir = await Deno.makeTempDir()
   await copyDirectory(fixture('build-pwa'), dir)
@@ -1209,7 +1220,7 @@ Deno.test('imp build --pwa', async (t) => {
             commandTranscript('imp build --pwa  (cwd: <tmp>)', result)
           }\n${await outputTree()}\n\n` +
             `${section('dist/manifest.webmanifest', manifest)}\n\n` +
-            `${section('dist/sw.js', sw)}\n\n` +
+            `${section('dist/sw.js', workerReport(sw))}\n\n` +
             `${section('dist/index.html', html)}\n\n` +
             `${section('icon files', iconReport.join('\n'))}\n`,
         ),
@@ -1417,6 +1428,47 @@ Deno.test('imp build --pwa keeps the previous build for a running page', async (
   } finally {
     await browser.close()
     await server.shutdown()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('precacheBuild in a project worker serves the app offline', async () => {
+  const dir = await Deno.makeTempDir()
+  await Deno.mkdir(join(dir, 'src'))
+  await Deno.writeTextFile(
+    join(dir, 'index.html'),
+    '<!doctype html><html><head><title>offline</title></head><body>' +
+      '<script type="module" src="/app.js"></script></body></html>',
+  )
+  await Deno.writeTextFile(join(dir, 'app.js'), "globalThis.started = 'yes'\n")
+  await Deno.writeTextFile(
+    join(dir, 'src', 'sw.js'),
+    "import { precacheBuild } from 'imp/service-worker'\n\nprecacheBuild()\n",
+  )
+  await Deno.writeTextFile(
+    join(dir, 'icon.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8"/></svg>',
+  )
+  await Deno.writeTextFile(
+    join(dir, 'imp.json'),
+    JSON.stringify({ serviceWorker: 'src/sw.js', pwa: { name: 'Offline', icon: 'icon.svg' } }),
+  )
+  const result = await runImp(['build', '--pwa'], dir)
+  check(result.code === 0, `the build failed:\n${result.stderr}`)
+  const { server, base } = serveFolder(() => join(dir, 'dist'))
+  const browser = await launchBrowser()
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${base}/`)
+    await page.evaluate(() => navigator.serviceWorker.ready)
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
+    await server.shutdown()
+    await page.goto(`${base}/invoices/7`)
+    check(await page.evaluate(() => globalThis.started) === 'yes', 'the app did not start offline')
+    check(await page.title() === 'offline', 'a deep link did not get the app shell offline')
+  } finally {
+    await browser.close()
+    await server.shutdown().catch(() => {})
     await Deno.remove(dir, { recursive: true })
   }
 })
@@ -1884,18 +1936,31 @@ Deno.test('imp build bundles the service worker of the project', async (t) => {
     const dir = await Deno.makeTempDir()
     await copyDirectory(fixture('build-pwa'), dir)
     await copyDirectory(join(fixture('start-service-worker'), 'src'), join(dir, 'src'))
+    await Deno.writeTextFile(
+      join(dir, 'src', 'sw.js'),
+      "import { precacheBuild } from 'imp/service-worker'\n" +
+        "import { greeting } from './greeting.js'\n\n" +
+        'self.__fixture = { greeting }\n\n' +
+        'precacheBuild()\n',
+    )
     const config = JSON.parse(await Deno.readTextFile(join(dir, 'imp.json')))
     await Deno.writeTextFile(
       join(dir, 'imp.json'),
       JSON.stringify({ ...config, serviceWorker: 'src/sw.js' }, null, 2) + '\n',
     )
+    const plain = await runImp(['build'], dir)
+    check(plain.code === 0, `the plain build failed:\n${plain.stderr}`)
+    const plainWorker = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
     const result = await runImp(['build', '--pwa'], dir)
     const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
     const sw = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
     const report = [
       `registration: ${html.match(/serviceWorker\.register\([^)]*\)/)?.[0] ?? '(none)'}`,
       `dist/sw.js is the project worker: ${sw.includes('__fixture') ? 'yes' : 'no'}`,
-      `dist/sw.js precaches: ${sw.includes('imp-pwa-') ? 'yes' : 'no'}`,
+      workerReport(sw),
+      '',
+      'without --pwa:',
+      workerReport(plainWorker),
     ]
     await assertSnapshot(
       'build-own-worker-pwa',

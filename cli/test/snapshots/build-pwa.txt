@@ -59,58 +59,10 @@ dist/sw.js
 }
 
 --- dist/sw.js ---
-const CACHE = "imp-pwa-<hash>"
-const PRECACHE = ["/app.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
-const SHELL = "/index.html"
-const BUILD_CACHE_PREFIX = "imp-pwa-"
-
-const buildCaches = async () =>
-  (await caches.keys()).filter((key) => key.startsWith(BUILD_CACHE_PREFIX))
-
-const previousBuildCache = async () =>
-  (await buildCaches()).filter((key) => key !== CACHE).at(-1) ?? null
-
-const removeOlderBuilds = async () => {
-  const kept = [CACHE, await previousBuildCache()]
-  for (const key of await buildCaches()) {
-    if (!kept.includes(key)) await caches.delete(key)
-  }
-}
-
-const fromBuildCaches = async (request) => {
-  for (const key of [CACHE, await previousBuildCache()]) {
-    if (!key) continue
-    const cached = await (await caches.open(key)).match(request)
-    if (cached) return cached
-  }
-  return null
-}
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' }))))
-      .then(() => self.skipWaiting()),
-  )
-})
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
-})
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event
-  if (request.method !== 'GET') return
-  if (new URL(request.url).origin !== self.location.origin) return
-  if (request.mode === 'navigate') {
-    event.waitUntil(removeOlderBuilds())
-    event.respondWith(
-      fetch(request).catch(() => fromBuildCaches(SHELL).then((cached) => cached ?? Response.error())),
-    )
-    return
-  }
-  event.respondWith(fromBuildCaches(request).then((cached) => cached ?? fetch(request)))
-})
+precache version: <16 hex digits>
+precache files: ["/app.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
+precache shell: "/index.html"
+listeners: activate, fetch, install
 
 --- dist/index.html ---
 <!doctype html>

@@ -69,10 +69,20 @@ In development, the dev service worker keeps its place, see `service-worker-dev-
 worker reports network activity, and it caches nothing. So development keeps live reload and
 telemetry, and production gets the offline behaviour.
 
+**The offline worker is one library call, `precacheBuild()` from `imp/service-worker`.** For a
+project with no worker of its own, `imp build --pwa` bundles a two-line entry that calls it. The
+build writes the precache values in front of the bundle: the version, the file list and the shell.
+The build writes `sw.js` last, after `public/` is copied, so the list holds every file of the build.
+`sw.js` is never in its own list.
+
 A project that names its own `serviceWorker` in `imp.json` keeps that worker. `imp build --pwa` then
-writes the manifest and the icons, registers the worker of the project, and writes no offline
-worker. Two workers cannot share `sw.js` and root scope. Offline behaviour is then the job of that
-worker. `todo/own-service-worker-offline-precache.md` tracks a precache that imp could hand to it.
+writes the manifest and the icons, registers the worker of the project, and writes the same precache
+values in front of its bundle. Two workers cannot share `sw.js` and root scope, so imp writes no
+second one. The worker of the project calls `precacheBuild()`, and it gets exactly the behaviour of
+the worker that imp writes. A build without `--pwa`, and the dev server, write no values. The call
+then adds no listener. So the call needs no gate, and development keeps a worker that caches
+nothing. The first `respondWith` of a `fetch` event wins, so a `fetch` listener of the project that
+answers first takes that request.
 
 ## Consequences
 

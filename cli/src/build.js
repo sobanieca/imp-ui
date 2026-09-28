@@ -31,12 +31,17 @@ import { readDependencyManifest, recordedNotices } from './dependency-manifest.j
 import { licenseViolationProblem, reviewLicenses } from './license-policy.js'
 import { logger } from './logger.js'
 import { productionDefines } from './development-checks.js'
-import { assertServiceWorkerSource, runtimeValues } from './service-worker.js'
+import {
+  assertServiceWorkerSource,
+  OFFLINE_WORKER_SOURCE,
+  precacheValues,
+  runtimeValues,
+  WORKER_ENTRY,
+  workerEntryPlugin,
+} from './service-worker.js'
 import {
   APPLE_TOUCH_ICON,
-  BUILD_CACHE_PREFIX,
   buildManifest,
-  buildServiceWorker,
   cacheVersion,
   pwaHeadTags,
   renderIconSet,
@@ -200,9 +205,10 @@ function buildEntryPoints(
 
 const SERVICE_WORKER_FILE = 'sw.js'
 
-function buildServiceWorkerEntry({ root, entry, dependencies, outdir, flags }) {
+function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags }) {
   return runEsbuild({
     plugins: [
+      workerEntryPlugin(root, OFFLINE_WORKER_SOURCE),
       impResolverPlugin({
         root,
         dependencies,
@@ -213,7 +219,10 @@ function buildServiceWorkerEntry({ root, entry, dependencies, outdir, flags }) {
       }),
       denoPlugin(),
     ],
-    entryPoints: [{ in: toFileUrl(entry).href, out: withoutExtension(SERVICE_WORKER_FILE) }],
+    entryPoints: [{
+      in: worker ? toFileUrl(worker).href : WORKER_ENTRY,
+      out: withoutExtension(SERVICE_WORKER_FILE),
+    }],
     define: productionDefines(),
     bundle: true,
     minify: true,
@@ -229,12 +238,12 @@ function buildServiceWorkerEntry({ root, entry, dependencies, outdir, flags }) {
   })
 }
 
-async function bundleApp(options, serviceWorker) {
+async function bundleApp(options, { serviceWorker, offlineWorker }) {
   try {
     const entryFiles = options.entryPoints.map(({ out }) => join(options.outdir, `${out}.js`))
     const page = withoutUnreachableChunks(await buildEntryPoints(options), entryFiles)
-    if (!serviceWorker) return page
-    const worker = await buildServiceWorkerEntry({ ...options, entry: serviceWorker })
+    if (!serviceWorker && !offlineWorker) return page
+    const worker = await buildServiceWorkerEntry({ ...options, worker: serviceWorker })
     return {
       outputFiles: [...page.outputFiles, ...worker.outputFiles],
       metafile: { inputs: { ...page.metafile.inputs, ...worker.metafile.inputs } },
@@ -281,7 +290,7 @@ function replaceInlineScripts(html, inlineOutputs) {
   })
 }
 
-async function copyPublicFiles({ publicDir, outdir, written }) {
+async function copyPublicFiles({ publicDir, outdir, written, reserved }) {
   let publicStat
   try {
     publicStat = await Deno.stat(publicDir)
@@ -291,7 +300,7 @@ async function copyPublicFiles({ publicDir, outdir, written }) {
   if (!publicStat.isDirectory) {
     throw new Error(`public must be a folder, not a file: ${publicDir}`)
   }
-  const generated = new Set(written)
+  const generated = new Set([...written, ...reserved])
   const copy = async (directory, prefix) => {
     for await (const entry of Deno.readDir(directory)) {
       const path = join(directory, entry.name)
@@ -332,6 +341,21 @@ function rewriteRootAbsoluteUrls(html, base) {
     lastIndex = match.index + tag.length
   }
   return result + prefix(html.slice(lastIndex))
+}
+
+async function precacheOfBuild({ outdirPath, base, written, shell }) {
+  const precached = written.filter((name) => name !== SERVICE_WORKER_FILE)
+  const files = await Promise.all(
+    precached.map(async (name) => ({
+      path: siteUrl(base, name),
+      bytes: await Deno.readFile(join(outdirPath, name)),
+    })),
+  )
+  return precacheValues({
+    version: await cacheVersion(files),
+    files: precached.map((name) => siteUrl(base, name)),
+    shell: siteUrl(base, shell),
+  })
 }
 
 function injectHead(html, headTags) {
@@ -403,7 +427,7 @@ export async function build(
     impProvidedByHost,
     isHtmlEntry,
     flags,
-  }, serviceWorker)
+  }, { serviceWorker, offlineWorker: pwa && isHtmlEntry })
 
   assertEveryFlagFolded(result.outputFiles)
 
@@ -430,15 +454,15 @@ export async function build(
     ? licenseNoticesReference(siteUrl(base, LICENSE_NOTICES_FILE))
     : ''
   const withNoticeReference = (text) => new TextEncoder().encode(noticeReference + text)
-  const workerPath = serviceWorker ? join(outdirPath, SERVICE_WORKER_FILE) : null
-  const scriptText = (file) =>
-    file.path === workerPath ? runtimeValues({ env: resolvedEnv }) + file.text : file.text
+  const workerPath = join(outdirPath, SERVICE_WORKER_FILE)
+  const workerFile = isHtmlEntry ? outputFiles.find((file) => file.path === workerPath) : null
 
   await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
   await Deno.mkdir(outdirPath, { recursive: true })
   const written = []
   const inlineOutputs = []
   for (const file of outputFiles) {
+    if (file === workerFile) continue
     const inline = file.path.match(INLINE_MODULE_PATH)
     if (inline) {
       inlineOutputs[Number(inline[1])] = noticeReference + file.text
@@ -447,7 +471,7 @@ export async function build(
     await Deno.mkdir(dirname(file.path), { recursive: true })
     await Deno.writeFile(
       file.path,
-      file.path.endsWith('.js') ? withNoticeReference(scriptText(file)) : file.contents,
+      file.path.endsWith('.js') ? withNoticeReference(file.text) : file.contents,
     )
     written.push(asPosix(relative(outdirPath, file.path)))
   }
@@ -487,23 +511,18 @@ export async function build(
     }
     await Deno.writeTextFile(join(outdirPath, entryName), builtHtml)
     written.push(entryName)
-    await copyPublicFiles({ publicDir: publicDirectory(root), outdir: outdirPath, written })
-    if (pwa && !serviceWorker) {
-      const precache = written.filter(
-        (name) => name !== SERVICE_WORKER_FILE && !name.endsWith('.map'),
-      )
-      const files = await Promise.all(
-        precache.map(async (name) => ({
-          path: siteUrl(base, name),
-          bytes: await Deno.readFile(join(outdirPath, name)),
-        })),
-      )
-      const offlineWorker = buildServiceWorker({
-        cacheName: `${BUILD_CACHE_PREFIX}${await cacheVersion(files)}`,
-        precache: precache.map((name) => siteUrl(base, name)),
-        shell: siteUrl(base, entryName),
-      })
-      await Deno.writeTextFile(join(outdirPath, SERVICE_WORKER_FILE), offlineWorker)
+    await copyPublicFiles({
+      publicDir: publicDirectory(root),
+      outdir: outdirPath,
+      written,
+      reserved: workerFile ? [SERVICE_WORKER_FILE] : [],
+    })
+    if (workerFile) {
+      const precache = pwa
+        ? await precacheOfBuild({ outdirPath, base, written, shell: entryName })
+        : ''
+      const values = serviceWorker ? runtimeValues({ env: resolvedEnv }) : ''
+      await Deno.writeFile(workerPath, withNoticeReference(values + precache + workerFile.text))
       written.push(SERVICE_WORKER_FILE)
     }
   }

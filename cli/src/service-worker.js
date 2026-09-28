@@ -6,8 +6,6 @@ import { describeBundleProblem } from './mocks.js'
 
 export const SERVICE_WORKER_PATH = '/sw.js'
 
-const DEV_ENTRY_NAMESPACE = 'imp-dev-worker-entry'
-
 const DEV_ENTRY_SOURCE = `import { startDevMode } from 'imp/service-worker'\nstartDevMode()\n`
 
 export const runtimeValues = ({ env = {}, flags = {} }) => {
@@ -33,16 +31,21 @@ const mockEndpointValue = (endpoint) =>
 export const assembleServiceWorker = ({ worker, mockEndpoint = null, env, flags }) =>
   `${runtimeValues({ env, flags })}${mockEndpointValue(mockEndpoint)}${worker}`
 
-function devEntryPlugin(root) {
+export const WORKER_ENTRY = 'imp-worker-entry'
+
+export const OFFLINE_WORKER_SOURCE =
+  `import { precacheBuild } from 'imp/service-worker'\nprecacheBuild()\n`
+
+export function workerEntryPlugin(root, source) {
   return {
-    name: DEV_ENTRY_NAMESPACE,
+    name: WORKER_ENTRY,
     setup(build) {
-      build.onResolve({ filter: new RegExp(`^${DEV_ENTRY_NAMESPACE}$`) }, () => ({
-        path: DEV_ENTRY_NAMESPACE,
-        namespace: DEV_ENTRY_NAMESPACE,
+      build.onResolve({ filter: new RegExp(`^${WORKER_ENTRY}$`) }, () => ({
+        path: WORKER_ENTRY,
+        namespace: WORKER_ENTRY,
       }))
-      build.onLoad({ filter: /.*/, namespace: DEV_ENTRY_NAMESPACE }, () => ({
-        contents: DEV_ENTRY_SOURCE,
+      build.onLoad({ filter: /.*/, namespace: WORKER_ENTRY }, () => ({
+        contents: source,
         loader: 'js',
         resolveDir: root,
       }))
@@ -50,10 +53,17 @@ function devEntryPlugin(root) {
   }
 }
 
+export const precacheValues = ({ version, files, shell }) =>
+  `globalThis.__IMP_PRECACHE__ = ${JSON.stringify({ version, files, shell })};\n`
+
 async function bundleWorker({ root, entry, dependencies }) {
   const result = await runEsbuild({
-    plugins: [devEntryPlugin(root), impResolverPlugin({ root, dependencies }), denoPlugin()],
-    entryPoints: [entry ? toFileUrl(entry).href : DEV_ENTRY_NAMESPACE],
+    plugins: [
+      workerEntryPlugin(root, DEV_ENTRY_SOURCE),
+      impResolverPlugin({ root, dependencies }),
+      denoPlugin(),
+    ],
+    entryPoints: [entry ? toFileUrl(entry).href : WORKER_ENTRY],
     bundle: true,
     format: 'iife',
     platform: 'browser',

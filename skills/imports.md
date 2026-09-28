@@ -15,7 +15,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                         |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                         |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                    |
-| `imp/service-worker` | `startDevMode`, called from a service worker of your own                                    |
+| `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                   |
 | `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                   |
 | `imp/std/layout`     | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                                 |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                   |

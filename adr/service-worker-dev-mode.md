@@ -37,8 +37,11 @@ itself.
   endpoint whatever the order of the statements in the worker. The mocks run in the dev server
   process, which reports a mock file that fails to bundle or fails its shape check.
 - **`imp build --pwa` keeps the worker of the project.** It writes the manifest and the icons, and
-  registers the worker of the project. It writes no offline worker, because two workers cannot share
-  `sw.js` and root scope.
+  registers the worker of the project. It writes no second worker, because two workers cannot share
+  `sw.js` and root scope. It writes the precache values in front of the bundle, and a
+  `precacheBuild()` call in the worker installs the offline behaviour, see `pwa-toolkit.md`.
+- **`precacheBuild()` does nothing in development.** The dev server writes no precache values, so
+  the call adds no listener, and the `fetch` listener of `startDevMode()` answers every request.
 - **The bundle is fresh per request.** The dev server keeps the stamps of every file that the last
   bundle read. A request rebuilds only when one of them changed. A failed bundle answers the worker
   request with the error, and the terminal names the file and the line.
@@ -53,5 +56,5 @@ itself.
   imports it and never calls `startDevMode()` carries the code and runs none of it.
 - The worker of a project imports `env` from `imp`. The bundle then carries the modules that the
   root barrel reaches, at a few kilobytes. That cost is accepted over a second home for `env`.
-- A project worker gets no offline precache from `--pwa`.
-  `todo/own-service-worker-offline-precache.md` tracks it.
+- A project worker gets the offline precache from `--pwa` with one call, and needs no gate for it.
+  The worker of imp and the worker of a project run the same code.

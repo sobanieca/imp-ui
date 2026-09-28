@@ -321,6 +321,27 @@ new bundle installs on that navigation. When the bundle cannot be built, imp rep
 the line in the terminal, and the worker request fails with the same message. Under a sub-path, see
 [Deploying under a sub-path](#deploying-under-a-sub-path), register `url('/sw.js')`.
 
+Your worker can also work offline, with the same behaviour as the worker that `imp build --pwa`
+writes for a project without one. Call `precacheBuild` from `imp/service-worker`:
+
+```js
+import { precacheBuild } from 'imp/service-worker'
+
+self.addEventListener('push', (event) => {
+  event.waitUntil(self.registration.showNotification(event.data.text()))
+})
+
+precacheBuild()
+```
+
+`imp build --pwa` writes the list of the files of the build into your bundle, and `precacheBuild`
+caches them when the worker installs. It serves your page network-first, with the cached app shell
+as the fallback, and every other file of the build from the cache. It keeps the previous build for
+an open tab, see [Progressive Web App](#progressive-web-app---imp-build---pwa). A build without
+`--pwa` writes no list, and in development there is no list either. The call then does nothing, so
+you never need to gate it. Call it at the top level of the worker. When your own `fetch` listener
+answers a request first, your answer wins.
+
 ### Reviewing the page - notes for your agent
 
 Every page that the dev server serves carries a small **review widget**. It is the imp mark in the
@@ -828,8 +849,9 @@ knows the exact set of files the app is made of:
 
 **A project with its own service worker keeps it.** When `imp.json` names a `serviceWorker`, see
 [Your own service worker](#your-own-service-worker), `imp build --pwa` still writes the manifest and
-the icons, and registers your worker in the built HTML. It writes no offline worker, because the two
-would claim the same file and the same scope. Offline behaviour is then the job of your worker.
+the icons, and registers your worker in the built HTML. It writes no second worker, because the two
+would claim the same file and the same scope. Call `precacheBuild()` in your worker, and it gets the
+same precache and the same update behaviour as the worker that imp writes.
 
 **In development, with `imp start`, installability is automatic.** You need no `--pwa` flag and no
 edit to the HTML. When your `imp.json` has a `pwa` block, the dev server injects the manifest link

@@ -21,4 +21,13 @@ built index.html -> dist/
 --- output ---
 registration: serviceWorker.register("/sw.js")
 dist/sw.js is the project worker: yes
-dist/sw.js precaches: no
+precache version: <16 hex digits>
+precache files: ["/app.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
+precache shell: "/index.html"
+listeners: activate, fetch, install
+
+without --pwa:
+precache version: (none)
+precache files: null
+precache shell: null
+listeners:
