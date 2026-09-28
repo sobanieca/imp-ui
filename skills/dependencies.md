@@ -37,6 +37,9 @@ import mitt from 'mitt'
 - **A bare import that is not a declared alias is a lint error.** The error names the `imp install`
   command to run. See [lint](lint.md). Add a package with the command. Never edit `imp.json` by
   hand, see [config](config.md).
+- **A failed `imp install` changes nothing.** With no argument, imp checks every package before it
+  writes. One failure leaves every folder and `imp.json` as they were. Fix the cause and run it
+  again.
 - **A pin is always exact.** Write `npm:mitt@3.0.1`. Never write `^3.0.1`, `3` or a bare `npm:mitt`.
   There is no lock file. The pin and the committed bundle give the reproducibility.
 - **`imp` is reserved.** It always means the imp library of [imports](imports.md). You can never

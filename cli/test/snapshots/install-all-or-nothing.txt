@@ -1,0 +1,11 @@
+$ imp install  (cwd: <tmp>, the second package fails)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] package not found: npm:imp-test-no-such-package-404
+
+[dependencies/ written: false]
+[imp.json unchanged: true]

@@ -95,7 +95,9 @@ imp install
 ```
 
 One command refreshes your whole dependency surface. The diff in `imp.json` and in `dependencies/`
-shows exactly what changed.
+shows exactly what changed. imp resolves, bundles and checks every package first. It writes the
+folders and `imp.json` only when every package passed. So when one package fails, nothing changes,
+and your dependencies never mix old and new versions.
 
 ## How to remove a dependency
 

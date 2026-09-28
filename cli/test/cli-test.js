@@ -630,6 +630,24 @@ Deno.test('imp install and uninstall', async (t) => {
       )
     })
 
+    await t.step('install-all-or-nothing', async () => {
+      const project = await Deno.makeTempDir()
+      const config =
+        '{ "dependencies": { "mitt": "npm:mitt@3.0.1", "zzz": "npm:imp-test-no-such-package-404@1.0.0" } }\n'
+      await Deno.writeTextFile(join(project, 'imp.json'), config)
+      const result = withoutDownloadNoise(await runImp(['install'], project))
+      const folder = await Deno.stat(join(project, 'dependencies')).then(() => true).catch(() =>
+        false
+      )
+      const unchanged = await Deno.readTextFile(join(project, 'imp.json')) === config
+      await Deno.remove(project, { recursive: true })
+      await assertSnapshot(
+        'install-all-or-nothing',
+        `${commandTranscript('imp install  (cwd: <tmp>, the second package fails)', result)}\n` +
+          `[dependencies/ written: ${folder}]\n[imp.json unchanged: ${unchanged}]\n`,
+      )
+    })
+
     await test('install-unknown-package', ['install', 'imp-test-no-such-package-404'], {
       state: false,
     })

@@ -38,9 +38,7 @@ async function latestVersion(scheme, name) {
   return latest
 }
 
-async function installOne(
-  { root, alias, scheme, name, version, subpath, maxBytes, ignore, policy },
-) {
+async function prepareOne({ alias, scheme, name, version, subpath, policy }) {
   const resolvedVersion = version ?? await latestVersion(scheme, name)
   const specifier = `${scheme}:${name}@${resolvedVersion}${subpath}`
   const { files, packages, impImports } = await bundleDependency({ specifier, alias })
@@ -52,6 +50,13 @@ async function installOne(
   })
   const { violations, unknown } = reviewLicenses([manifest], policy)
   if (violations.length) throw new Error(licenseViolationProblem(violations, policy))
+  return { alias, specifier, files, manifest, unknown, impImports }
+}
+
+async function writeOne(
+  { root, maxBytes, ignore },
+  { alias, specifier, files, manifest, unknown, impImports },
+) {
   const countedSize = files
     .filter((file) => !isFileSizeIgnored(join('dependencies', alias, file.name), ignore))
     .reduce((sum, file) => sum + file.contents.length, 0)
@@ -168,18 +173,14 @@ export async function install({ root, packageArg = null, versionArg = null, alia
       targets.push(declaredTarget(alias, specifier, null))
     }
   }
+  const prepared = []
   try {
-    for (const target of targets) {
-      dependencies[target.alias] = await installOne({
-        root,
-        maxBytes,
-        ignore,
-        policy,
-        ...target,
-      })
-    }
+    for (const target of targets) prepared.push(await prepareOne({ policy, ...target }))
   } finally {
     await shutdownBundler()
+  }
+  for (const dependency of prepared) {
+    dependencies[dependency.alias] = await writeOne({ root, maxBytes, ignore }, dependency)
   }
   await updateConfigFile(
     await configTargetPath(root),
