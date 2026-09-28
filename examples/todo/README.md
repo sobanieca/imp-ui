@@ -33,6 +33,7 @@ so you can see a failed submit.
 | Page titles and descriptions   | `title` of the router in `src/app.js`, `description` of a node in `src/app-map.js`           |
 | Async `setup` and error screen | `src/todos/todo-detail-screen.js`                                                            |
 | Dialogs, toasts, notifications | `src/todos/todo-detail-screen.js`, `src/app.js`                                              |
+| History of a todo              | `timeline` in `src/todos/todo-detail-screen.js`, events kept by `mocks/todos.mock.js`        |
 | Translations (English, Polish) | `locales/`, bound through `src/translate.js`                                                 |
 | Lazy area with own messages    | `src/stats/area.js`, `src/stats/locales/`                                                    |
 | Feature flag                   | `BULK_ACTIONS` in `imp.json` and `env/`, read in the todo list screen                        |

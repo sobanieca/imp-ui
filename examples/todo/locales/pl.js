@@ -59,6 +59,13 @@ export default {
     back: 'Wróć do listy',
     edit: 'Edytuj',
     noNotes: 'Brak notatek',
+    history: 'Historia',
+    events: {
+      created: 'Utworzono',
+      edited: 'Zmieniono',
+      done: 'Oznaczono jako zrobione',
+      reopened: 'Otwarto ponownie',
+    },
   },
   about: {
     title: 'O tym przykładzie',

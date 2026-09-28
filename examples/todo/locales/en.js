@@ -59,6 +59,13 @@ export default {
     back: 'Back to the list',
     edit: 'Edit',
     noNotes: 'No notes',
+    history: 'History',
+    events: {
+      created: 'Created',
+      edited: 'Edited',
+      done: 'Marked as done',
+      reopened: 'Opened again',
+    },
   },
   about: {
     title: 'About this example',

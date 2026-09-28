@@ -12,7 +12,7 @@ include. Each component is a real imp component. It renders as its own element, 
 | `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`                                                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`                                                                                                                                                       |
 | `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                 | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                         |
 | `imp/std/feedback` | `bugReport`, `notice`, `loader`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`, `reactions`                                                                                                                                       | `imp skill std/bugReport`, `std/notice`, `std/loader`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`, `std/reactions`                                                                                                                                                                           |
-| `imp/std/data`     | `table`, `list`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                             | `imp skill std/table`, `std/list`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                                         |
+| `imp/std/data`     | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                 | `imp skill std/table`, `std/list`, `std/timeline`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                         |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -979,11 +979,8 @@ Rules an agent gets wrong:
   component. There is no tile server and no street level. `zoom: 0` fits the world to the box.
 - **A pin is `{ id, lat, lng }`.** Without `content` it is a marker button named by `label`, and a
   click reports `select` with `{ id, pin }`. With `content`, any node, the map only positions it.
-- **Always pass `label`.** It is the accessible name of the chart, of the timeline, or of the map.
-  Full manuals: `imp skill std/chart`, `imp skill std/gantt`, `imp skill std/map`.
-
-For `skills/imports.md`, the specifier is `imp/std/data`, with the exports `chart`, `gantt` and
-`map`.
+- **Always pass `label`.** It is the accessible name of the chart, of the gantt, or of the map. Full
+  manuals: `imp skill std/chart`, `imp skill std/gantt`, `imp skill std/map`.
 
 ## table - from `imp/std/data`
 
@@ -1036,6 +1033,27 @@ with `href`, and a button when you pass `events.select`. `select` is cancelable,
 Infinite scroll works as in `table`.
 
 Full manual: `imp skill std/list`.
+
+## timeline - from `imp/std/data`
+
+```js
+import { timeline } from 'imp/std/data'
+
+timeline({
+  label: 'Order history',
+  items: [
+    { id: 'placed', time: '2026-09-21T09:12:00Z', title: 'Order placed', color: 'blue' },
+    { id: 'due', time: '2026-09-30', title: 'Invoice due' },
+  ],
+})
+```
+
+An item is plain data: `{ id, time, title, description, icon, color, href }`. `time` is an ISO
+string, a `Date` or epoch milliseconds. A `'YYYY-MM-DD'` value shows the date only. imp draws the
+items in the order given and does not sort them. The marker shows `icon`, or a dot, in the palette
+colour `color`. The title, `select`, `actions` and infinite scroll work as in `list`.
+
+Full manual: `imp skill std/timeline`.
 
 ## tree - from `imp/std/data`
 

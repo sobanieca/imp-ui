@@ -1,5 +1,5 @@
 import { component } from 'imp'
-import { luCircleX, luPencil, luTrash } from 'imp/icons'
+import { luCircleCheck, luCirclePlus, luCircleX, luPencil, luRotateCcw, luTrash } from 'imp/icons'
 import { useHttpClient } from 'imp/http'
 import { track, zone } from 'imp/analytics'
 import { lang, t } from 'imp/i18n'
@@ -7,6 +7,7 @@ import { navigate } from 'imp/router'
 import { computed, initState, useState } from 'imp/state'
 import { button, icon, link, text } from 'imp/std'
 import { card, descriptionList, emptyState, markdown, tag } from 'imp/std/display'
+import { timeline } from 'imp/std/data'
 import { notify, skeleton } from 'imp/std/feedback'
 import { datePicker, form, select, textField, toggle } from 'imp/std/inputs'
 import { div } from 'imp/html'
@@ -33,6 +34,21 @@ const details = (todo, language) => [
   },
   { term: t('todos.due'), details: todo.due ? formatDate(todo.due, language) : '-' },
 ]
+
+const HISTORY_EVENTS = {
+  created: { icon: luCirclePlus, color: 'blue' },
+  edited: { icon: luPencil, color: 'neutral' },
+  done: { icon: luCircleCheck, color: 'green' },
+  reopened: { icon: luRotateCcw, color: 'amber' },
+}
+
+const historyItems = (todo) =>
+  [...(todo.history ?? [])].reverse().map((event) => ({
+    id: event.id,
+    time: event.time,
+    title: t(`todo.events.${event.kind}`),
+    ...HISTORY_EVENTS[event.kind],
+  }))
 
 const editForm = (todo, onSave) =>
   form(
@@ -115,6 +131,13 @@ export const todoDetailScreen = component('todo-detail-screen', {
           { header: tr('todo.notes') },
           markdown({
             text: computed([todo, lang], (current) => current.notes || t('todo.noNotes')),
+          }),
+        ),
+        card(
+          { header: tr('todo.history') },
+          timeline({
+            label: translated('todo.history'),
+            items: computed([todo, lang], (current) => historyItems(current)),
           }),
         ),
       ),

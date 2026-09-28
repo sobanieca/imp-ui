@@ -16,7 +16,7 @@ work that waits for a consumer, for a browser, or for a person.
 - **`carousel` waits** until `::scroll-button()` and `::scroll-marker()` work in every browser. To
   write JavaScript for a scroll button in the meantime is what `adr/browser-support-baseline.md`
   forbids.
-- **`timeline`, `image` with a zoom, and `qrCode`** are not built. Each waits for a call site.
+- **`image` with a zoom, and `qrCode`** are not built. Each waits for a call site.
 
 ## Platform features that wait
 

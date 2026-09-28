@@ -31,6 +31,7 @@ only when it adds behaviour of its own. These are the merges that follow from th
 | A menu of actions           | `menuButton`, with `items`           | A dropdown menu, a split button component                  |
 | A panel beside a control    | `dialog({ modal: false, anchor })`   | A popover, a popconfirm                                    |
 | A pager                     | none                                 | Paging is an infinite scroll, in `table` and in `list`     |
+| Dated events in order       | `timeline`, with `icon` and `color`  | An activity feed, a history log, an audit trail            |
 | A chart of numbers          | `chart`, with `type` and `stacked`   | A bar, a column, a line and a stacked chart component      |
 | An arrangement in two axes  | none                                 | An app writes CSS grid in its own component                |
 | A floating button           | none                                 | A `button` that the app places with its own CSS            |
@@ -40,15 +41,15 @@ only when it adds behaviour of its own. These are the merges that follow from th
 | A number with step buttons  | `textField`, with `stepper`          | A number stepper, an input group                           |
 | Panes that a person resizes | `splitPane`, nested for a third pane | A splitter, a resizable panel group                        |
 
-**Paging is an infinite scroll.** `table` and `list` take `hasMore` and `onLoadMore`. A sentinel at
-the end of the rows asks for the next page when it comes into view. There is no pager component, and
-no page number prop.
+**Paging is an infinite scroll.** `table`, `list` and `timeline` take `hasMore` and `onLoadMore`. A
+sentinel at the end of the rows asks for the next page when it comes into view. There is no pager
+component, and no page number prop.
 
 **The shared code lives in `std/shared/`, and a component never copies a drawing.** The menu panel
 of `menuButton` and of `breadcrumbs` is `shared/menu.js`. The avatar of `userCard`, of `list` and of
 `avatar` is `shared/avatar.js`, and `orgSelect` renders `avatar` itself. The ring of a loading
 `button` and of `loader` is `shared/spinner.js`. `themeSelect`, `langSelect` and `orgSelect` render
-`menuButton`, and add no menu of their own. The infinite scroll of `table` and `list` is
+`menuButton`, and add no menu of their own. The infinite scroll of `table`, `list` and `timeline` is
 `shared/load-more.js`. The month matrix of `datePicker` and `calendar` is `shared/dates.js`. The
 check of an `items` array, with the warning for a bad entry and the `id` that defaults to the index,
 is `shared/items.js`. The padding of a button, a segment and a text segment per `size` is

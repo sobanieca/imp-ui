@@ -231,6 +231,13 @@ test('a title opens the todo, and the edit dialog saves it', async ({ page }) =>
     ),
   )
     .toEqual('imp/std')
+  expect(
+    await eventually(
+      () => textOf(page, 'todo-detail-screen >>> imp-timeline >>> li .title'),
+      'Edited',
+    ),
+  )
+    .toEqual('Edited')
 })
 
 test('an unknown todo renders the error boundary', async ({ page }) => {

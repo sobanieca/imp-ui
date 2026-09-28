@@ -9,6 +9,11 @@ let todos = [
     priority: 'high',
     due: '2026-10-01',
     done: true,
+    history: [
+      { id: '1', kind: 'created', time: '2026-09-20T08:30:00Z' },
+      { id: '2', kind: 'edited', time: '2026-09-22T10:05:00Z' },
+      { id: '3', kind: 'done', time: '2026-09-25T16:45:00Z' },
+    ],
   },
   {
     id: '2',
@@ -17,9 +22,33 @@ let todos = [
     priority: 'normal',
     due: '2026-10-05',
     done: false,
+    history: [{ id: '1', kind: 'created', time: '2026-09-21T09:00:00Z' }],
   },
-  { id: '3', title: 'Ship it', notes: '', priority: 'low', done: false },
+  {
+    id: '3',
+    title: 'Ship it',
+    notes: '',
+    priority: 'low',
+    done: false,
+    history: [{ id: '1', kind: 'created', time: '2026-09-21T09:10:00Z' }],
+  },
 ]
+
+const now = () => new Date().toISOString()
+
+const withoutHistory = (values) =>
+  Object.fromEntries(Object.entries(values).filter(([key]) => key !== 'history'))
+
+const changeKind = (current, changes) => {
+  if ('done' in changes && changes.done !== current.done) return changes.done ? 'done' : 'reopened'
+  const edited = Object.entries(changes).some(([key, value]) =>
+    key !== 'id' && value !== current[key]
+  )
+  return edited ? 'edited' : null
+}
+
+const withEvent = (history, kind) =>
+  kind === null ? history : [...history, { id: String(history.length + 1), kind, time: now() }]
 let listRequests = 0
 
 const itemPath = /^\/api\/todos\/([^/]+)$/
@@ -48,8 +77,9 @@ export const mocks = [
         notes: '',
         priority: 'normal',
         done: false,
-        ...request.body,
+        ...withoutHistory(request.body),
         id: String(nextId),
+        history: [{ id: '1', kind: 'created', time: now() }],
       }
       nextId += 1
       todos = [...todos, todo]
@@ -80,7 +110,13 @@ export const mocks = [
       const id = idOf(request.path)
       const current = todos.find((todo) => todo.id === id)
       if (!current) return notFound
-      const updated = { ...current, ...request.body, id }
+      const changes = withoutHistory(request.body)
+      const updated = {
+        ...current,
+        ...changes,
+        id,
+        history: withEvent(current.history ?? [], changeKind(current, changes)),
+      }
       todos = todos.map((todo) => (todo.id === id ? updated : todo))
       return { body: updated }
     },
