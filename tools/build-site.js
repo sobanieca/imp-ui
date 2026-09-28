@@ -56,6 +56,7 @@ const PAGE_ORDER = [
   'i18n',
   'http',
   'logging',
+  'analytics',
   'feature-flags',
   'testing',
   'lint',

@@ -1,6 +1,7 @@
 import { component, flag } from 'imp'
 import { luCheck, luCircle, luCircleCheck, luCircleDot, luListChecks, luTrash } from 'imp/icons'
 import { useHttpClient } from 'imp/http'
+import { track, zone } from 'imp/analytics'
 import { lang, t } from 'imp/i18n'
 import { createLogger } from 'imp/log'
 import { computed, initState, useState } from 'imp/state'
@@ -74,6 +75,7 @@ const addForm = (api, items) => {
     const created = await createTodo(api, draft)
     items.set((current) => [...(current ?? []), created])
     resetForm(titleField)
+    track('todo-added')
     notify({ kind: 'success', title: t('todos.added', { title: created.title }) })
   }
   return form(
@@ -104,6 +106,7 @@ export const todoListScreen = component('todo-list-screen', {
       try {
         const updated = await updateTodo(api, id, { done: !todo.done })
         items.set((current) => replaceTodo(current, updated))
+        track('todo-toggled', updated.done ? 'done' : 'open')
       } catch (error) {
         log.warn('toggle failed, restoring the list', error.message)
         items.set(before)
@@ -183,26 +186,29 @@ export const todoListScreen = component('todo-list-screen', {
         }),
       ),
       todoProgress({ todos: items }),
-      card(addForm(api, items)),
-      card(
-        {
-          header: flex(
-            { horizontalAlign: 'justify', verticalAlign: 'center', wrap: true },
-            lang.view(() =>
-              segmented({
-                value: filter,
-                ariaLabel: t('todos.filter'),
-                size: 'sm',
-                options: FILTERS.map((value) => ({ value, label: t(FILTER_KEYS[value]) })),
-              })
+      zone({ name: 'add-form' }, card(addForm(api, items))),
+      zone(
+        { name: 'todo-list' },
+        card(
+          {
+            header: flex(
+              { horizontalAlign: 'justify', verticalAlign: 'center', wrap: true },
+              lang.view(() =>
+                segmented({
+                  value: filter,
+                  ariaLabel: t('todos.filter'),
+                  size: 'sm',
+                  options: FILTERS.map((value) => ({ value, label: t(FILTER_KEYS[value]) })),
+                })
+              ),
+              flag('BULK_ACTIONS') && clearDoneButton(api, items),
             ),
-            flag('BULK_ACTIONS') && clearDoneButton(api, items),
+          },
+          loaded.view((ready) =>
+            ready
+              ? list({ label: translated('todos.listLabel'), items: visible, actions: rowActions })
+              : skeleton({ lines: 3 })
           ),
-        },
-        loaded.view((ready) =>
-          ready
-            ? list({ label: translated('todos.listLabel'), items: visible, actions: rowActions })
-            : skeleton({ lines: 3 })
         ),
       ),
     )

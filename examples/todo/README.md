@@ -13,7 +13,7 @@ imp test --unit        run the unit tests
 imp test --e2e         run the browser specs against the mocks
 imp preview            show the todoProgress component in isolation
 imp map                print the application map
-imp build --env prod   build for production, with BULK_ACTIONS off
+imp build --env prod   build for production, with BULK_ACTIONS and ANALYTICS off
 ```
 
 Sign in with any name and email. The mock backend accepts everybody.
@@ -33,6 +33,7 @@ Sign in with any name and email. The mock backend accepts everybody.
 | Translations (English, Polish) | `locales/`, bound through `src/translate.js`                           |
 | Lazy area with own messages    | `src/stats/area.js`, `src/stats/locales/`                              |
 | Feature flag                   | `BULK_ACTIONS` in `imp.json` and `env/`, read in the todo list screen  |
+| Analytics                      | `src/analytics.js`, zones and outcomes in `src/todos/`                 |
 | Custom light and dark theme    | `src/theme.js`, applied in `src/main.js`, offered by `themeSelect`     |
 | Styled components of your own  | `src/ui/`: the hero, the stat tiles, the backdrop and the logo mark    |
 | Account menu                   | `src/ui/account-menu.js`: a popover on desktop, inline in the drawer   |

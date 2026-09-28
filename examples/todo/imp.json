@@ -6,7 +6,7 @@
     "dev": "env/dev.json",
     "prod": "env/prod.json"
   },
-  "flags": ["BULK_ACTIONS"],
+  "flags": ["BULK_ACTIONS", "ANALYTICS"],
   "mocks": { "folder": "mocks", "enabled": true },
   "preview": {
     "translations": { "en": "./locales/en.js", "pl": "./locales/pl.js" }

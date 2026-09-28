@@ -66,6 +66,8 @@ function printEntry(entry) {
     logger.browser(entry.level, entry.text)
   } else if (entry.type === 'page') {
     logger.browser('uncaught', entry.text)
+  } else if (entry.type === 'analytics') {
+    logger.browser('analytics', JSON.stringify(entry.record))
   } else if (entry.type === 'net') {
     const status = entry.error
       ? red(entry.error)

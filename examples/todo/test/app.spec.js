@@ -143,6 +143,36 @@ test('a new todo goes to the backend and into the list', async ({ page }) => {
   expect(await eventually(() => isPresent(page, 'imp-toast'), true)).toEqual(true)
 })
 
+const hideAndShow = (page) =>
+  page.evaluate(() => {
+    const setVisibility = (state) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: state })
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    setVisibility('hidden')
+    setVisibility('visible')
+    delete document.visibilityState
+  })
+
+test('the analytics batch goes to the backend when the page hides', async ({ page }) => {
+  const posted = []
+  const collect = (request) => {
+    if (request.url().endsWith('/api/analytics')) posted.push(...JSON.parse(request.postData()))
+  }
+  page.on('request', collect)
+  await hideAndShow(page)
+  const outcome = () =>
+    Promise.resolve(
+      posted.some((record) => record.type === 'action' && record.name === 'todo-added'),
+    )
+  expect(await eventually(outcome, true)).toEqual(true)
+  const added = posted.find((record) => record.name === 'todo-added')
+  expect(added.page).toEqual('/todos')
+  const zones = posted.filter((record) => record.type === 'zone' && record.view === added.view)
+  expect(zones.map((record) => record.name).includes('add-form')).toEqual(true)
+  page.off('request', collect)
+})
+
 test('a check marks a todo as done, and the filters follow', async ({ page }) => {
   await page.$eval(`button[aria-label='Mark "Ship it" as done']`, (node) => node.click())
   expect(await eventually(() => textOf(page, 'todo-progress >>> .label'), '2 of 4 done'))

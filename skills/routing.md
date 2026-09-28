@@ -261,6 +261,9 @@ A screen is a component. Its loading is `loading` and an async `setup`, its erro
 and then to the `error` of the router, and its cleanup is `onRemove`. Put the state of a screen in
 the root component of that screen. Put only app-wide state above the router.
 
+With an analytics sink registered, the router records each screen as a `view` record keyed by the
+route pattern. Never send a page view from a `useRoute().watch`. See [analytics](analytics.md).
+
 imp manages the scroll. **The focus is yours to manage.** Focus a heading in `onMount`, or wrap the
 router slot once, for every screen: a `div` with `tabindex: '-1'`, `role: 'region'` and
 `:focus { outline: none }`. From `useRoute().watch(self, ...)`, one microtask later, set its

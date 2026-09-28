@@ -212,6 +212,29 @@ imp skill ./components/counter.js`,
     },
   },
   {
+    key: 'analytics',
+    eyebrow: 'Analytics',
+    title: 'See which parts of the UI work',
+    lead: 'imp records the pages, the zones and the outcomes of your app, and gives each record ' +
+      'to a sink that you register.',
+    points: [
+      'Every view of a page is recorded, with no code per route.',
+      'A zone measures any part of a screen, with no code in the component.',
+      'The records go to any store: Google Analytics, PostHog or your own endpoint.',
+      'imp stores no id on the device.',
+    ],
+    code: {
+      language: 'js',
+      source: `import { onAnalytics, track, zone } from 'imp/analytics'
+
+onAnalytics((record) => console.log(record))
+
+zone({ name: 'due-date' }, dueDatePicker())
+
+track('invoice-sent')`,
+    },
+  },
+  {
     key: 'build',
     eyebrow: 'Ship',
     title: 'Build once, host anywhere',

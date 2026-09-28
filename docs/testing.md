@@ -491,9 +491,9 @@ components ship with such tests, so a name, a role and a keyboard path are a gua
 not a habit of each app.
 
 While a spec runs, the browser stays connected to your terminal, as it does with `imp start`.
-`console.*`, an uncaught error, and every network request arrive as a `[browser:*]` line and a
-`[net]` line. So a failing spec comes with the context that explains it. When a test fails, imp also
-saves a screenshot of the page under `.imp/screenshots/`. Add `.imp/` to your `.gitignore`.
+`console.*`, an uncaught error, and every network request arrive as a `[BROWSER:*]` line and an
+`[HTTP]` line. So a failing spec comes with the context that explains it. When a test fails, imp
+also saves a screenshot of the page under `.imp/screenshots/`. Add `.imp/` to your `.gitignore`.
 
 When the entry page of your app is not `index.html`, set it in `imp.json`:
 

@@ -16,6 +16,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                         |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                    |
 | `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                   |
+| `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                     |
 | `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                   |
 | `imp/std/layout`     | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                                 |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                   |
@@ -37,8 +38,8 @@ Each specifier is one subject, and each subject has a manual. Read [rendering](r
 [routing](routing.md) for `imp/router`, [http](http.md) for `imp/http`, [theming](theming.md) for
 `imp/theme`, [i18n](i18n.md) for `imp/i18n`, [logging](logging.md) for `imp/log`, [std](std.md) for
 `imp/std`, [icons](icons.md) for `imp/icons`, [service-worker](service-worker.md) for
-`imp/service-worker`, [testing](testing.md) for `imp/test`, and [feature-flags](feature-flags.md)
-for `flag`.
+`imp/service-worker`, [analytics](analytics.md) for `imp/analytics`, [testing](testing.md) for
+`imp/test`, and [feature-flags](feature-flags.md) for `flag`.
 
 Rules an agent gets wrong:
 

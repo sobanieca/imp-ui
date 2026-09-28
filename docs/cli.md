@@ -233,25 +233,29 @@ path. imp skips the injection for a document that already contains the item:
   `p`, `time` and `menu`. Those names would collide on `window`.
 
 - **Console and error telemetry.** A small inline script forwards `console.*`, an uncaught error and
-  an unhandled rejection to the terminal, with the prefix `[browser:*]`. You read the runtime
+  an unhandled rejection to the terminal, with the prefix `[BROWSER:*]`. You read the runtime
   behaviour in the terminal, with no developer tools open. An AI coding agent that drives the
   session reads it the same way.
 
+- **Analytics records.** imp writes every record of [Analytics](analytics.md) as a
+  `[BROWSER:analytics]` line, with or without a sink of your app. So you check the views, the zones
+  and the outcomes of a screen while you click through it: `imp logs | grep analytics`.
+
 - **Network telemetry.** A service worker, registered at root scope, intercepts _every_ kind of
   request. That covers `fetch`, `XMLHttpRequest`, an image, a script and a navigation. It reports
-  each one as `[net] METHOD url -> status ms`. imp passes a request under `/@imp/` through without a
-  change.
+  each one as `[HTTP] METHOD url -> status ms`. imp passes a request under `/@imp/` through without
+  a change.
 
 imp **also keeps everything that `imp start` prints as a log of the session**, one entry per line.
-That covers the browser console, the error telemetry, the network telemetry and the status lines of
-imp. **[`imp logs`](#imp-logs)** prints that log, so you do not have to watch the terminal to see
-what happened. This is what makes the development session readable for an AI coding agent. While you
-click through the app, the agent can run `imp logs | grep '\[browser:error\]'` for an error, a
-failed request, or any message it expects. It does not have to watch the terminal. imp starts the
-log again each time you start the server, so the log always holds the current session. imp also caps
-the log. It keeps the most recent entries, 4000 by default, and removes an older entry as a new one
-arrives. A long session never grows the log without a limit. To raise or lower the cap, set
-**`maxLogEntries`** in `imp.json`:
+That covers the browser console, the error telemetry, the analytics records, the network telemetry
+and the status lines of imp. **[`imp logs`](#imp-logs)** prints that log, so you do not have to
+watch the terminal to see what happened. This is what makes the development session readable for an
+AI coding agent. While you click through the app, the agent can run
+`imp logs | grep '\[BROWSER:error\]'` for an error, a failed request, or any message it expects. It
+does not have to watch the terminal. imp starts the log again each time you start the server, so the
+log always holds the current session. imp also caps the log. It keeps the most recent entries, 4000
+by default, and removes an older entry as a new one arrives. A long session never grows the log
+without a limit. To raise or lower the cap, set **`maxLogEntries`** in `imp.json`:
 
 ```json
 {
@@ -596,8 +600,10 @@ the module scripts of the page. It bundles each one into minified, self-containe
     a route or a dashboard card. See [Error boundaries](components.md#error-boundaries).
   - Catch the rejection of async work that runs outside a mount, such as a fetch in an event
     handler. Show the failure to the user.
-  - Report each error with a clear message and its context: the screen, the action and the input
-    that failed. That report identifies the failure without a map back to your source.
+  - Report each error with a clear message and its context. imp does this for you when you register
+    an analytics sink: every uncaught error, render error and failed request becomes an `error`
+    record with its page and its view. A sink that forwards those records to your store identifies
+    the failure without a map back to your source. See [Analytics](analytics.md#errors-only).
 
 With a JavaScript module in place of a page, `imp build` emits that module as one self-contained
 file. imp compiles in imp itself and every dependency. You can drop the result into any application,
@@ -1556,7 +1562,7 @@ request with its status, and the status lines of imp. See
 it is, with no colour and no header, so the command composes with the tools that you already use:
 
 ```sh
-imp logs | grep '\[browser:error\]'
+imp logs | grep '\[BROWSER:error\]'
 imp logs | grep '\[net\] POST' | tail -20
 imp logs -n 50
 imp logs -f

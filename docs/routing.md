@@ -278,6 +278,14 @@ const results = component('app-results', {
 })
 ```
 
+### Each screen is a page view
+
+When your app registers an analytics sink, the router records each screen that it shows as a `view`
+record. The record carries the route pattern of the node, such as `/invoices/:id`, the page that the
+person came from, and the time until the screen was ready. You write no code per route. A change of
+the query only is no view, because the screen stays mounted. A redirect is no view. See
+**[Analytics](analytics.md)**.
+
 ### A tenant in the URL
 
 A multi-tenant app puts the tenant in the URL, as in `/organizations/acme/projects`. The map holds
@@ -673,7 +681,7 @@ any imp state, with `get`, `watch`, `text`, `view` and `each`. It has no `set`, 
 the route by navigating, not by writing to it.
 
 ```js
-useRoute().watch(self, (current) => track('pageview', { path: current.path })) // in a component
+useRoute().watch(self, (current) => (searchInput.value = current.query.q ?? '')) // in a component
 const { path, query } = useRoute().get() // read once, imperatively
 ```
 
@@ -726,12 +734,12 @@ const dashboard = component('app-dashboard', {
   setup: (self) => {
     const metrics = initState(self, 'dashboard.metrics', []) // released when you leave the dashboard
     self.socket = openMetricsSocket((m) => metrics.set(m))
-    globalThis.gtag = setupAnalytics()
+    self.refresh = setInterval(() => self.socket.send('ping'), 30_000)
     return metricsGrid()
   },
   onRemove: (self) => {
     self.socket.close() // closed on navigation away
-    delete globalThis.gtag // undo the global you set - imp can't track it, so you do
+    clearInterval(self.refresh) // imp can't track a timer you started, so you stop it
   },
 })
 ```

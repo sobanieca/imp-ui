@@ -1,6 +1,7 @@
 import { component } from 'imp'
 import { luCircleX, luPencil, luTrash } from 'imp/icons'
 import { useHttpClient } from 'imp/http'
+import { track, zone } from 'imp/analytics'
 import { lang, t } from 'imp/i18n'
 import { navigate } from 'imp/router'
 import { computed, initState, useState } from 'imp/state'
@@ -68,11 +69,13 @@ export const todoDetailScreen = component('todo-detail-screen', {
       todo.set(saved)
       items.set((current) => replaceTodo(current ?? [], saved))
       editing.set(false)
+      track('todo-saved')
       notify({ kind: 'success', title: t('todo.saved', { title: saved.title }) })
     }
 
     const remove = async () => {
       await deleteTodo(api, id)
+      track('todo-deleted')
       items.set((current) => (current ?? []).filter((item) => item.id !== id))
       confirming.set(false)
       notify({ kind: 'info', title: t('todos.deleted', { title: todo.get().title }) })
@@ -115,7 +118,10 @@ export const todoDetailScreen = component('todo-detail-screen', {
           }),
         ),
       ),
-      dialog({ title: translated('todo.edit'), open: editing }, editForm(loadedTodo, save)),
+      dialog(
+        { title: translated('todo.edit'), open: editing },
+        zone({ name: 'edit-form' }, editForm(loadedTodo, save)),
+      ),
       dialog(
         { title: translated('todo.confirmTitle'), open: confirming },
         stack(

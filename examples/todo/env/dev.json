@@ -1,5 +1,6 @@
 {
   "API_URL": "/api",
   "IMP_LOG_LEVEL": "info",
-  "BULK_ACTIONS": true
+  "BULK_ACTIONS": true,
+  "ANALYTICS": true
 }

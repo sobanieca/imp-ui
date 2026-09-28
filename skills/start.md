@@ -19,9 +19,11 @@ imp skips an item that the document already contains. You never reference the li
 - **The import map.** `imp` and its subpaths resolve to the served library under `/@imp/`. Every
   alias in `dependencies` resolves to its vendored bundle. See [imports](imports.md).
 - **Console and error telemetry.** imp forwards `console.*`, an uncaught error and an unhandled
-  rejection to the terminal as a `[browser:*]` line.
+  rejection to the terminal as a `[BROWSER:*]` line.
+- **Analytics records.** Every record goes to the log as a `[BROWSER:analytics]` line, with or
+  without a sink of the app: `imp logs | grep analytics`. See [analytics](analytics.md).
 - **Network telemetry.** A service worker at root scope reports every request as
-  `[net] METHOD url -> status ms`. This covers `fetch`, XHR, images, scripts and navigations. A
+  `[HTTP] METHOD url -> status ms`. This covers `fetch`, XHR, images, scripts and navigations. A
   `/@imp/` request passes through. When `imp.json` names a `serviceWorker`, imp registers no worker
   of its own. Your worker gets the same telemetry when it calls `startDevMode()`, see
   [service-worker](service-worker.md).
@@ -48,7 +50,7 @@ it. The log holds the browser console, the errors, the network lines and imp's o
 have to watch a terminal that you cannot see:
 
 ```
-imp logs | grep '\[browser:error\]'
+imp logs | grep '\[BROWSER:error\]'
 imp logs | grep '\[net\] POST' | tail -20
 imp logs -n 50
 imp logs -f

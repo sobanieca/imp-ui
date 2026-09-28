@@ -393,10 +393,10 @@ there.
 ### `imp/import-source`
 
 The library of imp is split by subject: `imp`, `imp/html`, `imp/state`, `imp/router`, `imp/theme`,
-`imp/i18n`, `imp/log`, `imp/http` and `imp/icons`. See **[Imports](imports.md)**. Each name has
-exactly one home. An import of a name from a sibling specifier fails at runtime, with a
-missing-export error that does not say where to look. So the rule names the correct specifier
-instead:
+`imp/i18n`, `imp/log`, `imp/http`, `imp/icons`, `imp/service-worker` and `imp/analytics`. See
+**[Imports](imports.md)**. Each name has exactly one home. An import of a name from a sibling
+specifier fails at runtime, with a missing-export error that does not say where to look. So the rule
+names the correct specifier instead:
 
 ```js
 import { component, div } from 'imp'
@@ -484,7 +484,7 @@ where a dependency can appear:
   specifiers that exist:
 
   ```
-  error[imp/exact-dependency-versions]: 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
+  error[imp/exact-dependency-versions]: 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
    --> src/app.js:2:23
   ```
 

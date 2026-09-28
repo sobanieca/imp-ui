@@ -2,7 +2,7 @@
 
 ## Context
 
-`imp start` runs a service worker at root scope. It reports every request of the page as a `[net]`
+`imp start` runs a service worker at root scope. It reports every request of the page as an `[HTTP]`
 line, and it sends a request to the `*.mock.js` files, see `dev-server-mocks.md`. A browser runs one
 service worker per scope. So an app with a worker of its own, for a push notification, a background
 sync or an offline strategy that imp does not emit, could not run it in development. Its

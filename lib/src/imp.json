@@ -11,6 +11,7 @@
       "api/http.js",
       "api/icons.js",
       "api/service-worker.js",
+      "api/analytics.js",
       "std/index.js",
       "std/layout/index.js",
       "std/display/index.js",

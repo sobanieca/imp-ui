@@ -163,8 +163,8 @@ When `imp.json` names a `serviceWorker`, every page build bundles that source an
   serves the whole project. The build ships `public/` and the bundles.
 - **imp writes no source map, and no option turns one on.** A production stack trace points into
   minified code. Handle errors in the app instead: an `error` boundary around each subtree that can
-  fail, a `catch` on async work outside a mount, and a report with a message and its context. See
-  [components](components.md).
+  fail, a `catch` on async work outside a mount, and a sink that forwards the `error` records of
+  imp. See [components](components.md) and [analytics](analytics.md).
 - **Do not run a build to test a change.** `imp start` serves the source with live reload. Build
   when you ship.
 - **Preview a `--pwa` build on a different port from `imp start`.** Its offline worker has root

@@ -26,11 +26,11 @@ navigator.serviceWorker.register('/sw.js')
 
 ## What startDevMode() does
 
-| Listener   | Effect                                                                      |
-| ---------- | --------------------------------------------------------------------------- |
-| `fetch`    | reports every request as a `[net]` line, asks imp for a `*.mock.js` answer  |
-| `install`  | `skipWaiting()`, so an edited bundle takes over on the next navigation      |
-| `activate` | `clients.claim()`, so the page that loaded the bundle is controlled at once |
+| Listener   | Effect                                                                       |
+| ---------- | ---------------------------------------------------------------------------- |
+| `fetch`    | reports every request as an `[HTTP]` line, asks imp for a `*.mock.js` answer |
+| `install`  | `skipWaiting()`, so an edited bundle takes over on the next navigation       |
+| `activate` | `clients.claim()`, so the page that loaded the bundle is controlled at once  |
 
 It adds nothing else. Your own listeners stay as written.
 

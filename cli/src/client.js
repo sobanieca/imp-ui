@@ -1,4 +1,7 @@
 import { reviewWidgetScript, TELEMETRY_ENTRIES } from './review.js'
+import { IMP_MODULES } from './specifiers.js'
+
+const ANALYTICS_MODULE = `/@imp/${IMP_MODULES['imp/analytics']}`
 
 const THEME_DRAFT_MODULE = '/@imp/theme-draft.js'
 
@@ -76,12 +79,19 @@ export const clientScript = (
     }).catch(() => {})
   }
 
-  const push = (entry) => {
-    keep(entry)
+  const send = (entry) => {
     queue.push(entry)
     if (!timer) timer = setTimeout(flush, 200)
   }
+  const push = (entry) => {
+    keep(entry)
+    send(entry)
+  }
   globalThis.__impFlushTelemetry = flush
+
+  import('${ANALYTICS_MODULE}')
+    .then(({ onAnalytics }) => onAnalytics((record) => send({ type: 'analytics', record })))
+    .catch((error) => console.error('imp: analytics records do not reach the log -', error))
 
   for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
     const orig = console[level]

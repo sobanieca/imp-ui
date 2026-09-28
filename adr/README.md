@@ -86,6 +86,7 @@ These are the conventions:
 | [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/i18n, imp/log |
 | [tree-shakeable-library](tree-shakeable-library.md)       | Nothing runs at module scope; unused library code is dropped from app bundles              |
 | [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, bindable request state                |
+| [product-analytics](product-analytics.md)                 | imp collects views, zones, outcomes and errors; the app forwards them through a sink       |
 
 ## CLI
 

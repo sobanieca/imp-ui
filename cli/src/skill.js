@@ -107,6 +107,12 @@ export const SKILLS = [
     summary: 'the built-in logger and the per-environment log level',
   },
   {
+    name: 'analytics',
+    group: 'app',
+    aliases: ['imp/analytics', 'zone', 'zones', 'track', 'onanalytics', 'tracking', 'metrics'],
+    summary: 'page views, zones and outcomes as plain records, sent to a sink of the app',
+  },
+  {
     name: 'feature-flags',
     group: 'app',
     aliases: ['flag', 'flags', 'feature-flag', 'toggles'],
