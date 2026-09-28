@@ -43,7 +43,8 @@ imp-dark surface token: #161719
 imp-dark font token, from the theme file that replaces it: Prompt, sans-serif
 brand surface token: #fdf7ff
 theme editor knobs: Primary (imp-color-picker), Secondary (imp-color-picker), Font (imp-combo-box), Mono font (imp-combo-box), Border radius (imp-segmented), Shadow (imp-segmented), Shadow colour (imp-color-picker), Loader (imp-segmented)
-contrast after a yellow primary: color-primary on color-surface: 1.35:1
+contrast after a yellow primary: no contrast problem (primary #846d00)
+contrast after a yellow primary by hand in the JSON: color-primary on color-surface: 1.35:1, color-primary on color-surface-sunken: 1.31:1, color-on-primary on color-primary: 1.43:1
 contrast after a purple primary: no contrast problem
 after picking a primary: #8821ac (on-primary #ffffff)
 after picking radius none: 0px

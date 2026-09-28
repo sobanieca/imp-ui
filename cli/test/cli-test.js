@@ -39,7 +39,13 @@ import {
   UNUSED_EXPORT_RULE,
 } from '../src/dead-code.js'
 import { IMP_MODULES, IMP_TOOLING_MODULES } from '../src/specifiers.js'
-import { buildTokens, colorSchemeOf, defaultTokens, THEME_DEFAULTS } from '../../lib/src/theme.js'
+import {
+  buildTokens,
+  colorSchemeOf,
+  contrastProblems,
+  defaultTokens,
+  THEME_DEFAULTS,
+} from '../../lib/src/theme.js'
 import { VERSION } from '../src/version.js'
 
 const ROOT = fromFileUrl(new URL('..', import.meta.url))
@@ -2814,6 +2820,11 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
           .map((line) => line.shadowRoot.textContent.trim()).join(', ') || 'no contrast problem'
       type('Primary', '#ffd400')
       await new Promise((resolve) => setTimeout(resolve, 0))
+      const yellow = `${contrast()} (primary ${token('color-primary')})`
+      const json = globalThis.impDeep('textarea', globalThis.impOne('imp-code-editor', editorHost))
+      json.value = JSON.stringify({ ...JSON.parse(json.value), 'color-primary': '#ffd400' })
+      json.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
       const failing = contrast()
       type('Primary', '#8821ac')
       await new Promise((resolve) => setTimeout(resolve, 0))
@@ -2828,6 +2839,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       const loader = token('loader')
       return {
         knobs: knobs.join(', '),
+        yellow,
         failing,
         passing,
         primary,
@@ -3163,7 +3175,8 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `imp-dark font token, from the theme file that replaces it: ${themed.darkFont}`,
       `brand surface token: ${themed.custom}`,
       `theme editor knobs: ${themeEdits.knobs}`,
-      `contrast after a yellow primary: ${themeEdits.failing}`,
+      `contrast after a yellow primary: ${themeEdits.yellow}`,
+      `contrast after a yellow primary by hand in the JSON: ${themeEdits.failing}`,
       `contrast after a purple primary: ${themeEdits.passing}`,
       `after picking a primary: ${themeEdits.primary} (on-primary ${themeEdits.derived})`,
       `after picking radius none: ${themeEdits.flat}`,
@@ -4582,14 +4595,43 @@ Deno.test('imp preview frames a page with the entry file, keeping its head', () 
   )
 })
 
-Deno.test('a derived theme puts white text on a deep primary and dark text on a light one', () => {
-  const onPrimary = (primary) =>
-    buildTokens({ ...THEME_DEFAULTS, primary, mode: 'light' })['color-on-primary']
-  check(onPrimary('#dc2626') === '#ffffff', 'a deep red gets white text')
-  check(onPrimary('#c2410c') === '#ffffff', 'a deep orange gets white text')
-  check(onPrimary('#ef4444') !== '#ffffff', 'a red below 4.5:1 against white gets dark text')
-  check(onPrimary('#f59e0b') !== '#ffffff', 'a pale amber gets dark text')
-  check(onPrimary('#0ea5e9') !== '#ffffff', 'a pale sky blue gets dark text')
+Deno.test('a derived primary reads as text on the surface and carries readable text', () => {
+  const derived = (primary, mode) => buildTokens({ ...THEME_DEFAULTS, primary, mode })
+  const deep = derived('#b91c1c', 'light')
+  check(deep['color-primary'] === '#b91c1c', 'a deep red that reads on the surface stays as given')
+  check(deep['color-on-primary'] === '#ffffff', 'a deep red gets white text')
+  const pale = derived('#f59e0b', 'light')
+  check(pale['color-primary'] !== '#f59e0b', 'a pale amber is too light for text in a light theme')
+  check(pale['color-on-primary'] === '#ffffff', 'the darker amber carries white text')
+  check(contrastProblems(pale).length === 0, 'every pair of the pale amber theme reads at 4.5:1')
+  const night = derived('#f59e0b', 'dark')
+  check(night['color-primary'] === '#f59e0b', 'a pale amber reads on a dark surface as given')
+  check(night['color-on-primary'] !== '#ffffff', 'a pale amber gets dark text')
+  const dim = derived('#1e3a8a', 'dark')
+  check(dim['color-primary'] !== '#1e3a8a', 'a deep blue is too dark for text in a dark theme')
+  check(contrastProblems(dim).length === 0, 'every pair of the deep blue dark theme reads at 4.5:1')
+})
+
+Deno.test('every pair of a derived theme reaches 4.5:1 over a grid of colours', () => {
+  const steps = [0x00, 0x24, 0x49, 0x6d, 0x92, 0xb6, 0xdb, 0xff]
+  const channel = (value) => value.toString(16).padStart(2, '0')
+  const colors = steps.flatMap((red) =>
+    steps.flatMap((green) =>
+      steps.map((blue) => `#${channel(red)}${channel(green)}${channel(blue)}`)
+    )
+  )
+  const failures = []
+  for (const mode of ['light', 'dark']) {
+    for (const color of colors) {
+      for (const knobs of [{ primary: color }, { secondary: color }]) {
+        const problems = contrastProblems(buildTokens({ ...THEME_DEFAULTS, ...knobs, mode }))
+        if (problems.length) {
+          failures.push(`${mode} ${JSON.stringify(knobs)} ${JSON.stringify(problems)}`)
+        }
+      }
+    }
+  }
+  check(failures.length === 0, `derived themes below 4.5:1:\n${failures.slice(0, 10).join('\n')}`)
 })
 
 Deno.test('the theme editor exports a theme file that imports back as one theme', async () => {
@@ -4617,7 +4659,7 @@ Deno.test('the theme editor exports a theme file that imports back as one theme'
   const missing = Object.keys(defaultTokens()).filter((name) => !(name in theme.tokens))
   check(missing.length === 0, `the exported theme omits ${missing.join(', ')}`)
   check(
-    theme.tokens['color-primary'] === '#3b6fe0',
+    theme.tokens['color-primary'] === tokens['color-primary'],
     'the theme carries the primary the editor was given',
   )
   check(theme.tokens['color-green'] === '#12b76a', 'a palette colour edited by hand is kept')

@@ -280,25 +280,28 @@ Every knob is a standard component. A color is a `colorPicker`: type a hex value
 swatch to open the picker of the browser. A font is a `comboBox`: pick a suggested font, or type any
 font stack. A step is a `segmented` row of buttons.
 
-imp **derives** everything else. From the primary color, it picks a readable `color-on-primary`.
-That is white when white reaches a contrast of 4.5:1 against the primary. Otherwise it is a
-near-black tint of the same hue, when that tint reads better. A saturated blue gets white text, and
-a pale amber gets dark text. When the automatic choice does not match your brand, set
-`color-on-primary` by hand in the JSON. From the secondary color, imp builds the surface, sunken,
-hover, border and text colors. They share one hue, and they land at a lightness that is safe for the
-contrast of a light theme or a dark theme. The page re-skins while you type, on the real components,
-and your choices survive a reload.
+imp **derives** everything else. The primary color is also the color of a link, so it must read as
+text. imp keeps its hue, and moves its lightness until it reads at 4.5:1 on the surface and on the
+sunken surface. The move goes darker in a light theme and lighter in a dark theme. imp then picks a
+readable `color-on-primary`. That is white when white reaches 4.5:1 against the primary. Otherwise
+it is a near-black tint of the same hue. So a pale amber becomes a deeper amber with white text in a
+light theme, and keeps its value with dark text in a dark theme. To keep an exact brand color, set
+`color-primary` and `color-on-primary` by hand in the JSON. From the secondary color, imp builds the
+surface, sunken, hover, border and text colors. They share one hue, and they land at a lightness
+that is safe for the contrast of a light theme or a dark theme. The page re-skins while you type, on
+the real components, and your choices survive a reload.
 
-The derivation keeps muted text and error text readable. When `color-secondary` reads below 4.5:1 on
-the surface or on the sunken surface, imp moves its lightness until it reads. In a dark theme, the
-red of `color-danger` is too dark for error text. So a dark theme gets a lighter red, as a color of
-its own, with a dark `color-on-danger` on it.
+The derivation keeps muted text and error text readable too. When `color-secondary` reads below
+4.5:1 on the surface or on the sunken surface, imp moves its lightness until it reads. In a dark
+theme, the red of `color-danger` is too dark for error text. So a dark theme gets a lighter red, as
+a color of its own, with a dark `color-on-danger` on it. So every text pair of a derived theme
+reaches 4.5:1, for any primary and any secondary.
 
 **The editor checks the contrast of the theme while you edit it.** Under the two tabs, it lists
 every pair of a text token and a background token that is below 4.5:1, the WCAG AA level for body
 text. A pair reads as `color-primary on color-surface: 1.4:1`. A knob always derives readable
-neutrals, so a problem usually comes from a hand edit in the JSON, or from a pale primary that is
-also the color of a link. When every pair passes, the editor says so. See
+colors, so a problem comes from a hand edit in the JSON, such as an exact brand color. When every
+pair passes, the editor says so. See
 **[How to check the contrast of a theme](#how-to-check-the-contrast-of-a-theme)** for the list of
 pairs, and for the same check in a test.
 
@@ -350,7 +353,7 @@ these pairs, because the standard components draw text in these combinations:
 | ------------------ | -------------------------------------------------------------------------------- |
 | `color-text`       | `color-surface`, `color-surface-sunken`, `color-surface-hover`, `background-app` |
 | `color-secondary`  | `color-surface`, `color-surface-sunken`, `background-app`                        |
-| `color-primary`    | `color-surface`, for a link                                                      |
+| `color-primary`    | `color-surface`, `color-surface-sunken`, for a link                              |
 | `color-danger`     | `color-surface`, for an error message                                            |
 | `color-on-primary` | `color-primary`, for the label of a primary button                               |
 | `color-on-danger`  | `color-danger`, for the label of a danger button                                 |

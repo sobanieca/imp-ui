@@ -190,13 +190,15 @@ await init({ theme })
 ```
 
 The editor follows these derivation rules. Follow them as well when you write a theme by hand.
-`color-on-primary` is white when white reaches a contrast of 4.5:1 against the primary. Otherwise it
-is a near-black tint of the same hue, when that tint reads better. Set `color-on-primary` by hand
-when a brand needs another colour there. A surface, a border and the text take the hue of the
+`color-primary` keeps its hue, and moves in lightness until it reads at 4.5:1 on the surface and the
+sunken surface: darker in a light theme, lighter in a dark theme. `color-on-primary` is white when
+white reaches 4.5:1 against the primary. Otherwise it is a near-black tint of the same hue. Set
+`color-primary` and `color-on-primary` by hand when a brand needs an exact colour. The contrast
+check then reports a pair below 4.5:1. A surface, a border and the text take the hue of the
 secondary colour, at a fixed lightness step for each mode. `color-secondary` moves in lightness
 until it reads at 4.5:1 on the surface and the sunken surface. A dark theme gets a lighter
 `color-danger` hex of its own, with a dark `color-on-danger`, because the palette red is too dark
-for error text there.
+for error text there. So every text pair of a derived theme reaches 4.5:1.
 
 ## Contrast check
 
@@ -217,8 +219,8 @@ test('the brand theme keeps every text readable', () => {
   `{ text: 'color-secondary', background: 'color-surface-sunken', ratio: 4.35 }`, or `[]`.
 - It checks `color-text` on `color-surface`, `color-surface-sunken`, `color-surface-hover` and
   `background-app`; `color-secondary` on `color-surface`, `color-surface-sunken` and
-  `background-app`; `color-primary` and `color-danger` on `color-surface`; `color-on-primary` on
-  `color-primary`; `color-on-danger` on `color-danger`.
+  `background-app`; `color-primary` on `color-surface` and `color-surface-sunken`; `color-danger` on
+  `color-surface`; `color-on-primary` on `color-primary`; `color-on-danger` on `color-danger`.
 - It follows a `var(--imp-...)` reference and skips a pair whose side is not hex, such as a
   gradient.
 - Pass resolved tokens: the return value of `applyTheme`, not a `{ base, tokens }` object.

@@ -132,19 +132,24 @@ colour, a **radius** step, which is `none`, `small`, `medium` or `large`, and a 
 which is `none`, `soft` or `strong`, produce the whole surface of colour, radius and shadow for one
 mode, light or dark. A shadow step is the same value in both modes. It casts `color-shadow` at a
 fixed opacity, and that token is near-black in a light theme and white in a dark one. The derivation
-belongs to imp, and imp computes it in OKLCH. The primary colour yields a `color-on-primary`, which
-imp selects by WCAG contrast, between white and a near-black tint of the same hue. White wins when
-it reaches 4.5:1, the AA level for body text. Otherwise the tint wins when it reads better. A hover
-step and an active step are not tokens. A component mixes them from the base colour and `color-text`
-with `color-mix()`. So the step goes darker in a light theme and lighter in a dark theme, and a
-theme sets one colour per role. A link and the focus ring take `color-primary`. The secondary colour
-yields `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover` and
-`color-border`, at a fixed lightness step per mode. imp keeps the hue of the secondary colour, at a
-capped chroma. So the neutrals of a theme carry a tint, and they are not grey. `color-secondary` is
-the muted text of every component, so imp moves its lightness until it reads at 4.5:1 on the surface
-and on the sunken surface. To derive, in place of to tabulate, is what stops the built-in themes,
-the live preview of the theme editor, and the file that the editor exports, from ever disagreeing.
-There is one function, and all three call it.
+belongs to imp, and imp computes it in OKLCH. The primary colour is also the colour of a link and of
+the focus ring. So imp keeps its hue, and moves its lightness until it reads at 4.5:1, the AA level
+for body text, on the surface and on the sunken surface. The move goes darker in a light theme and
+lighter in a dark theme. The primary then yields a `color-on-primary`, which imp selects by WCAG
+contrast, between white and a near-black tint of the same hue. White wins when it reaches 4.5:1.
+Otherwise the tint wins. The search stops only when both hold. It tests the rounded hex value that
+imp emits, so every text pair of a derived theme reaches 4.5:1 for any primary and any secondary. A
+brand that needs an exact colour sets the token by hand, and the contrast check reports the pair. A
+hover step and an active step are not tokens. A component mixes them from the base colour and
+`color-text` with `color-mix()`. So the step goes darker in a light theme and lighter in a dark
+theme, and a theme sets one colour per role. A link and the focus ring take `color-primary`. The
+secondary colour yields `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`
+and `color-border`, at a fixed lightness step per mode. imp keeps the hue of the secondary colour,
+at a capped chroma. So the neutrals of a theme carry a tint, and they are not grey.
+`color-secondary` is the muted text of every component, so imp moves its lightness until it reads at
+4.5:1 on the surface and on the sunken surface. To derive, in place of to tabulate, is what stops
+the built-in themes, the live preview of the theme editor, and the file that the editor exports,
+from ever disagreeing. There is one function, and all three call it.
 
 **The palette is 16 named colours, and every theme carries it.** The names run from `color-gray` to
 `color-pink`, and each one has one solid value. imp generates them from a table of anchors, in
