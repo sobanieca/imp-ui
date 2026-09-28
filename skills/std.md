@@ -796,6 +796,11 @@ Rules an agent gets wrong:
   `validate` does not work, because a promise is truthy and every value then looks invalid. An async
   check runs on blur and on submit only, never on a keystroke. Debounce it yourself if you need
   more.
+- **A throw from `onSubmit` is shown, not lost.** The form sets `imp.form.formError` to the message
+  of the error, and shows it in an error `notice` above its **last child**. Put the buttons last.
+  The next submit clears it. Do not add your own notice for a failed save.
+- **`imp.form.dirty` is `true` while the values differ from `initialValues`.** Read it with
+  `useState`, from a component inside the form, for a save button or a `beforeLeave` guard.
 - To read the values anywhere in the subtree, call `useState(self, 'imp.form')`.
 
 ## codeEditor - from `imp/std/inputs`

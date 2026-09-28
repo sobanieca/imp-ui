@@ -15,6 +15,9 @@ export const mocks = [
     match: (request) => request.method === 'POST' && request.path === '/api/session',
     delay: 400,
     handler: ({ body }) => {
+      if (body.email.startsWith('locked@')) {
+        return { status: 403, body: { message: 'Account locked' } }
+      }
       const user = { name: body.name, email: body.email }
       return { status: 201, body: { ...user, token: tokenFor(user) } }
     },

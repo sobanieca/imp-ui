@@ -35,11 +35,12 @@ added to the kernel.
   needed. `value` remains, for a standalone control outside a form. It takes a state, or a plain
   value.
 - **Everything that the form layer must agree on is state, and not a registry.** That is
-  `imp.form.errors`, `imp.form.touched`, `imp.form.submitting` and `imp.form.submits`. A submit
-  increases `imp.form.submits`. Every mounted control watches that counter, runs its own validators
-  again, synchronously, and writes its result into `imp.form.errors`. When the notification of the
-  counter returns, the form reads the errors, and runs `onSubmit` only when there is none. There is
-  no registry of controls, and there is no bookkeeping of a lifecycle. A control that unmounts stops
+  `imp.form.errors`, `imp.form.touched`, `imp.form.submitting`, `imp.form.submits`,
+  `imp.form.validating`, `imp.form.dirty` and `imp.form.formError`. A submit increases
+  `imp.form.submits`. Every mounted control watches that counter, runs its own validators again,
+  synchronously, and writes its result into `imp.form.errors`. When the notification of the counter
+  returns, the form reads the errors, and runs `onSubmit` only when there is none. There is no
+  registry of controls, and there is no bookkeeping of a lifecycle. A control that unmounts stops
   mattering, because it is no longer subscribed.
 - **A control renders its own label, its help text and its error.** `label[for]`, `aria-describedby`
   and `aria-invalid` resolve by id, and they cannot cross a shadow root. So a separate `formField`
@@ -70,6 +71,19 @@ added to the kernel.
   still submits synchronously. Otherwise it sets `imp.form.submitting`, which spins the submit
   button, and it continues when the last check clears. The form learns that by a watch on the state,
   and not by a promise that a control gave it.
+- **The form tracks whether its values changed.** `imp.form.dirty` is `true` while `imp.form`
+  differs from `initialValues`, by the same structural comparison that `set` uses. It is a boolean,
+  and not a map per field, because its readers ask one question: "is there anything to save or to
+  lose?". A save button and a `beforeLeave` guard read it. The baseline is `initialValues` only. A
+  successful submit does not move it, because `resetForm` restores `initialValues`, and two
+  baselines would disagree.
+- **A failure that belongs to no single field is state too.** When `onSubmit` throws, or its promise
+  rejects, the form writes the first line of the message of the error into `imp.form.formError`. The
+  next submit and `resetForm` write `null`. The form shows the message in an error `notice` that it
+  renders above its last child, where the buttons sit. The notice is mounted from the start, with
+  `open` bound to the state. So a screen reader announces the failure, because the words change
+  inside a live region that is already on the page. The value is the message string, and not the
+  error object, because a state holds plain data only, see `state-plain-data-values.md`.
 - **A submit is an action, and not a mode of a button.** `submitForm(source)` and
   `resetForm(source)` are plain functions of `imp/std/inputs`. They take the click event, or a node
   inside the form, and dispatch a composed, bubbling, cancelable event from it. The form catches the

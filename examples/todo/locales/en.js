@@ -12,10 +12,12 @@ export default {
   },
   signIn: {
     title: 'Sign in',
-    intro: 'Any name and email work. The mock backend accepts everybody.',
+    intro: 'Any name and email work. The mock backend locks only an address that starts with locked@.',
     name: 'Name',
     email: 'Email',
     submit: 'Sign in',
+    locked: 'This account is locked. Use another email.',
+    failed: 'We could not sign you in. Try again.',
   },
   todos: {
     title: 'Todos',

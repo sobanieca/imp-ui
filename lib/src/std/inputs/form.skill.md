@@ -36,18 +36,21 @@ directly. There is nothing to connect. When the form unmounts, the state goes wi
 | `imp.form.submitting` | `true` while an async `onSubmit` is in flight          |
 | `imp.form.submits`    | How many times submit has been attempted               |
 | `imp.form.validating` | `{ [path]: true }` for fields with a check in flight   |
+| `imp.form.dirty`      | `true` while the values differ from `initialValues`    |
+| `imp.form.formError`  | `null`, or the message of the error `onSubmit` threw   |
 
-`imp.form` and `imp.form.submitting` are the states for your code. The others are how the controls
-and the form agree with each other.
+`imp.form`, `imp.form.submitting`, `imp.form.dirty` and `imp.form.formError` are the states for your
+code. The others are how the controls and the form agree with each other. A state of the form
+reaches only the subtree of the form. So read it from a component inside the form.
 
 ## Submitting and resetting
 
 `imp/std/inputs` exports two functions beside the components:
 
-| Function             | Does                                                                   |
-| -------------------- | ---------------------------------------------------------------------- |
-| `submitForm(source)` | Validates every field, then runs `onSubmit` when every field passes    |
-| `resetForm(source)`  | Puts `initialValues` back, and clears the errors and the touched state |
+| Function             | Does                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `submitForm(source)` | Validates every field, then runs `onSubmit` when every field passes                 |
+| `resetForm(source)`  | Puts `initialValues` back, and clears the errors, the touched state and the failure |
 
 `source` is the click event, or any node inside the form. So a plain `button` is the submit button:
 `button({ events: { click: submitForm } }, 'Save')`. The function finds the form by position, at any
@@ -62,6 +65,12 @@ depth, so the button can sit inside a `flex`, a `card` or a component of yours.
   check, the submit happens in the same tick.
 - **While `onSubmit` runs, a second submit is ignored.** Return the promise, so the form knows when
   the work finished.
+- **When `onSubmit` throws, or its promise rejects, the form shows the failure.** It writes the
+  first line of the message of the error into `imp.form.formError`. An error `notice` above the
+  **last child** of the form shows it, and a screen reader announces it. An error with no message
+  shows `imp.form.submitFailed`. The next submit and `resetForm` clear it.
+- `imp.form.dirty` compares the values with `initialValues`, not with the last saved values. A form
+  that stays on the page after a save stays dirty. Mount it again with the saved values.
 - A `resetForm` does not ask first. Add your own confirmation when the loss of the edits matters.
 
 Rules an agent gets wrong:
@@ -74,6 +83,10 @@ Rules an agent gets wrong:
   small component that reads the state and passes it as `loading`, as in the example below.
 - **`onSubmit` receives the values object**, already validated. Read the argument. Do not call
   `useState(self, 'imp.form')` again.
+- **Put the buttons in the last child.** The failure notice goes above the last child. A row of
+  buttons is one `flex`, so the notice sits above the whole row.
+- **Do not catch the error in `onSubmit` to show it yourself.** Throw an error whose message a
+  person can read, and route it through `t()`. The form shows it.
 - **Use one form per `initialValues`.** Two forms on a page each own their own `imp.form`, and imp
   resolves each one by position. So in a nested form, the inner form wins for its own children.
 - imp warns about `submitForm` or `resetForm` called with something that is not an event or a node,

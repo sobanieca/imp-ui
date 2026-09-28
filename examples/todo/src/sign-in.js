@@ -1,6 +1,7 @@
 import { component } from 'imp'
 import { div, h1, p } from 'imp/html'
-import { useHttpClient } from 'imp/http'
+import { HttpError, useHttpClient } from 'imp/http'
+import { t } from 'imp/i18n'
 import { useState } from 'imp/state'
 import { form, textField } from 'imp/std/inputs'
 import { signIn } from './todos/todo-api.js'
@@ -40,7 +41,13 @@ export const signInPage = component('todo-sign-in', {
     const api = useHttpClient(self, 'todo.api')
     const session = useState(self, 'todo.session')
     const submit = async (credentials) => {
-      const user = await signIn(api, credentials)
+      let user
+      try {
+        user = await signIn(api, credentials)
+      } catch (error) {
+        const locked = error instanceof HttpError && error.status === 403
+        throw new Error(t(locked ? 'signIn.locked' : 'signIn.failed'), { cause: error })
+      }
       writeToken(user.token)
       session.set(user)
     }

@@ -5,17 +5,6 @@ a prop for a variant, and an infinite scroll in place of a pager. The groups are
 `layout`, `inputs`, `display`, `shell`, `feedback` and `data`. Each component ships a skill file, a
 preview and a unit test. This file lists the work that is still owed.
 
-## Form layer
-
-- **The tracking of `dirty`**, which is a value that differs from `initialValues`, is not
-  implemented. `touched` is.
-- **An error at the level of the form** has no home yet. That is a failure of a submit that belongs
-  to no single field. **Decision:** the form state gets `formError`. A submit handler that throws
-  sets it, and the next submit clears it. `form` shows it in a `notice` above its buttons.
-- **The addressing by a path stays inside the form layer.** The contract of
-  `field: 'user.firstName'` lives in the form components. A writable projection of a path in the
-  kernel stays **rejected** as unearned, see `adr/event-propagated-state.md`.
-
 ## Responsive
 
 - **A `breakpoint` value with the shape of a state** is still owed. A person must be able to read it

@@ -95,6 +95,19 @@ test('the form checks the email before it signs in', async ({ page }) => {
     .toEqual('true')
 })
 
+test('a failed sign-in shows the reason above the button', async ({ page }) => {
+  await page.$eval('input[type="email"]', (node) => node.select())
+  await page.type('input[type="email"]', 'locked@example.com')
+  await page.keyboard.press('Enter')
+  expect(
+    await eventually(
+      () => textOf(page, 'todo-sign-in >>> imp-form >>> imp-notice >>> [role="alert"]'),
+      'This account is locked. Use another email.',
+    ),
+  ).toEqual('This account is locked. Use another email.')
+  expect(await isPresent(page, 'todo-list-screen')).toEqual(false)
+})
+
 test('a sign-in loads the todos, through one retried 503', async ({ page }) => {
   await page.$eval('input[type="email"]', (node) => node.select())
   await page.type('input[type="email"]', 'ada@example.com')
@@ -205,7 +218,9 @@ test('a title opens the todo, and the edit dialog saves it', async ({ page }) =>
   await expect(page).toHaveAccessibleControls()
   await clickButton(page, 'Edit')
   await page.waitForSelector('todo-detail-screen >>> textarea')
+  expect(await isEnabled(page, 'Save')).toEqual(false)
   await page.type('todo-detail-screen >>> textarea', 'Use **imp/std** components.')
+  expect(await eventually(() => isEnabled(page, 'Save'), true)).toEqual(true)
   await clickButton(page, 'Save')
   expect(
     await eventually(

@@ -312,6 +312,28 @@ their messages, and the focus moves to the first of them. Return a promise from 
 form ignores a second submit until it settles. The state `imp.form.submitting` is `true` meanwhile,
 so a button of yours can spin.
 
+**A failed save shows above the buttons.** When `onSubmit` throws, or its promise rejects, the form
+shows the message of the error in an error `notice` above its last child, which holds the buttons. A
+screen reader announces it. The next submit removes it. So a failure that belongs to no single
+field, such as "The server is down", needs no code of yours. Throw an error with a message that the
+person can read, and route that message through `t()`.
+
+**The form knows when the values changed.** The state `imp.form.dirty` is `true` while the values
+differ from `initialValues`, and `false` again when the person restores them or resets the form. Use
+it to enable a save button, or to ask before the person leaves the page:
+
+```js
+const unsavedGuard = component('myapp-unsaved-guard', {
+  setup: (self) => {
+    const dirty = useState(self, 'imp.form.dirty')
+    beforeLeave(self, () => !dirty.get() || confirm(t('edit.discard')))
+    return null
+  },
+})
+```
+
+Put the component inside the form, because the states of a form reach only its own subtree.
+
 The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
 `colorPicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The
 gallery shows each one with its props.

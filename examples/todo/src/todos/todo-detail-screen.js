@@ -14,7 +14,7 @@ import { dialog, flex, stack } from 'imp/std/layout'
 import { app } from '../app-map.js'
 import { hero } from '../ui/hero.js'
 import { pageStyles } from '../ui/page-styles.js'
-import { submitButton } from '../submit-button.js'
+import { saveChangesButton } from '../submit-button.js'
 import { tr, translated } from '../translate.js'
 import { deleteTodo, loadTodo, updateTodo } from './todo-api.js'
 import { formatDate, PRIORITIES, PRIORITY_COLORS, replaceTodo } from './todo-model.js'
@@ -48,7 +48,7 @@ const editForm = (todo, onSave) =>
     ),
     datePicker({ field: 'due', label: translated('todos.due') }),
     toggle({ field: 'done', label: translated('todo.done') }),
-    submitButton('todo.save'),
+    saveChangesButton('todo.save'),
   )
 
 export const todoDetailScreen = component('todo-detail-screen', {
