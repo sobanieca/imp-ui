@@ -27,8 +27,6 @@ checks are open:
   styles.
 - The dark theme and the forced-colours mode of every new component.
 - A screen reader pass over `table`, `comboBox`, `calendar` and `toast`.
-- An e2e spec for the mirrored geometry of `chart`, `gantt`, `calendar` and the corner of `toast`.
-  happy-dom cannot measure geometry, so the unit tests assert only the declared logical CSS.
 
 ## Open questions
 
