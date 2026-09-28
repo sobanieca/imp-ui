@@ -374,6 +374,13 @@ const hasPropKey = (objects, keys) =>
     )
   )
 
+const ICON_NAME_KEYS = new Set(['label'])
+
+const iconIsNamed = (call) => {
+  const props = propsObjectsOf(call.arguments)
+  return hasSpread(props) || hasPropKey(props, ICON_NAME_KEYS)
+}
+
 const createAccessibleNameRule = (check) => ({
   create(context) {
     const tracker = createAccessibleNameTracker()
@@ -1321,7 +1328,8 @@ export default {
       const nameKeys = BUTTON_NAME_KEYS.get(kind)
       if (!nameKeys) return null
       const children = args.filter((argument) => argument.type !== 'ObjectExpression')
-      if (!children.length || !children.every((child) => tracker.isIconCall(child))) return null
+      const unnamedIcon = (child) => tracker.isIconCall(child) && !iconIsNamed(child)
+      if (!children.length || !children.every(unnamedIcon)) return null
       const props = propsObjectsOf(args)
       if (hasSpread(props) || hasPropKey(props, nameKeys)) return null
       return `'button' shows only an icon and has no accessible name - a screen reader announces it as "button" and nothing more; name the button itself: ${

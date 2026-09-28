@@ -472,10 +472,10 @@ error[imp/icon-button-name]: 'button' shows only an icon and has no accessible n
  --> src/row.js:9:3
 ```
 
-Name the button, not the icon. The standard `button` takes `label`. A plain `button` takes
-`'aria-label'`, `'aria-labelledby'` or `title`. A button with text next to the icon needs no label,
-because the text is its name. See **[Accessibility](accessibility.md)** for what else an app owes a
-screen reader.
+Name the button, not the icon. The standard `button` takes `label`. An icon with a `label` also
+gives the button a name, so the rule does not report it. A plain `button` takes `'aria-label'`,
+`'aria-labelledby'` or `title`. A button with text next to the icon needs no label, because the text
+is its name. See **[Accessibility](accessibility.md)** for what else an app owes a screen reader.
 
 ### `imp/exact-dependency-versions`
 

@@ -73,8 +73,9 @@ text must never be the only name of a control.
 
 - **`imp lint` has two rules.** `imp/img-alt` reports an `img` call with no `alt` key.
   `imp/icon-button-name` reports a standard or a plain `button` whose only children are `icon` calls
-  and whose props give no name. Each rule checks only what it can see in the source, so it never
-  reports a false problem for props that it cannot read.
+  with no `label`, and whose props give no name. An icon with a `label` names the button through the
+  shadow tree, so the rule accepts it. Each rule checks only what it can see in the source, so it
+  never reports a false problem for props that it cannot read.
 - **`imp/test` has the matcher `toHaveAccessibleControls()`.** In an e2e spec, it reads the
   accessibility tree of the browser, below the page or below one element. It reports every control
   with no accessible name, and every element in the tab order whose role is a plain container. The

@@ -204,15 +204,22 @@ const describeElement = (element) => {
 const focusableWithoutNativeRole = (scope) => {
   const NATIVE = 'a[href], button, input, select, textarea, summary, iframe, audio, video'
   const found = []
+  const consider = (element) => {
+    const inTabOrder = element.hasAttribute('tabindex') && element.tabIndex >= 0
+    const editingRoot = element.isContentEditable && !element.parentElement?.isContentEditable
+    if (!inTabOrder && !editingRoot) return
+    if (element.matches(NATIVE) || !element.checkVisibility()) return
+    found.push(element)
+  }
   const visit = (root) => {
     for (const element of root.querySelectorAll('*')) {
       if (element.shadowRoot) visit(element.shadowRoot)
-      const inTabOrder = element.hasAttribute('tabindex') && element.tabIndex >= 0
-      const editingRoot = element.isContentEditable && !element.parentElement?.isContentEditable
-      if (!inTabOrder && !editingRoot) continue
-      if (element.matches(NATIVE) || !element.checkVisibility()) continue
-      found.push(element)
+      consider(element)
     }
+  }
+  if (scope) {
+    consider(scope)
+    if (scope.shadowRoot) visit(scope.shadowRoot)
   }
   visit(scope ?? document)
   return found
