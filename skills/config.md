@@ -17,6 +17,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 | `dependencies`      | alias -> exact `npm:`/`jsr:` specifier | `{}`         | `imp start`, `imp build`, `imp lint`; written by `imp install`    |
 | `licenses`          | tier string or SPDX id array           | `permissive` | `imp install`, `imp build` (both error on a violation)            |
 | `targetImpHost`     | boolean                                | `false`      | `imp build` with a **JS** entry                                   |
+| `build`             | `{ maxSize }`, bytes                   | -            | `imp build` (fails over the budget)                               |
 | `fmt`               | object                                 | see below    | `imp fmt`                                                         |
 | `lint`              | object                                 | `{}`         | `imp lint`                                                        |
 | `test`              | object                                 | `{}`         | `imp test`                                                        |
@@ -53,6 +54,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
   "flags": ["CHECKOUT_V2", "NEW_NAV"],
   "mocks": { "folder": "mocks", "enabled": false },
   "serviceWorker": "src/sw.js",
+  "build": { "maxSize": 512000 },
   "fmt": {
     "lineWidth": 100,
     "indentWidth": 2,

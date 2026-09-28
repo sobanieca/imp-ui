@@ -587,6 +587,16 @@ the module scripts of the page. It bundles each one into minified, self-containe
   components of its group. A page that mounts one element builds less than 4 kB of imp. A page that
   uses every part of imp pays for every part. There is nothing to configure. Import what you need,
   and imp emits nothing else.
+- **imp preloads what a script needs at once.** For each chunk that a script of your page imports
+  statically, imp adds a `<link rel="modulepreload">` tag to the `<head>`. So the browser fetches
+  the whole first screen in parallel, and not one import after another. A chunk that loads through
+  `import()` gets no tag, because the page may never need it.
+- **A size budget stops a build that grew too much.** Set `build.maxSize` in `imp.json`, in bytes. A
+  build whose output is larger fails. imp names the largest files, and leaves no output folder, so
+  an oversized build cannot reach a deploy. imp sets no budget by default.
+- **A built app logs warnings and errors only.** The default log level of a built app is `warn`, so
+  a debug message and an info message stay out of the console of every user. `IMP_LOG_LEVEL` sets
+  another level, see [Logging](logging.md).
 - **imp drops its development checks.** While `imp start` serves your app, imp checks the page as it
   renders, and warns in the console about a mistake that the browser hides. One such check finds a
   styled element that moved into the shadow root of another component. `imp build` folds every such

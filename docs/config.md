@@ -41,6 +41,9 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   **[Targeting an imp host](cli.md#targeting-an-imp-host--sharing-the-hosts-imp)**.
 - **`map`** is the path of the file that exports your application map, such as `src/app-map.js`.
   `imp init` writes the key. See **[Routing](routing.md)**.
+- **`build`** holds the options for `imp build`. `maxSize` is the budget, in bytes, for the whole
+  output folder. A build that writes more fails, names its largest files, and leaves no output. See
+  **[`imp build`](cli.md#imp-build)**.
 - **`fmt`** holds the formatting options for `imp fmt`. See **[Formatting](fmt.md)**.
 - **`lint`** holds more lint settings: `rules`, `exclude`, and `publicExports` for code that
   something outside the project uses. imp always applies its own rule set on top. See

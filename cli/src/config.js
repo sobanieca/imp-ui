@@ -99,7 +99,9 @@ export async function loadImpConfig(startDir) {
   if (!isPlainObject(config)) {
     throw new Error(`invalid ${name} - expected a JSON object at the top level`)
   }
-  for (const key of ['dependencies', 'fmt', 'lint', 'test', 'preview', 'pwa', 'environments']) {
+  for (
+    const key of ['dependencies', 'fmt', 'lint', 'test', 'preview', 'pwa', 'environments', 'build']
+  ) {
     if (config[key] !== undefined && !isPlainObject(config[key])) {
       throw new Error(`invalid ${name} - '${key}' must be an object`)
     }
@@ -123,6 +125,12 @@ export async function loadImpConfig(startDir) {
         }, or a list of SPDX identifiers`,
       )
     }
+  }
+  const maxSize = config.build?.maxSize
+  if (maxSize !== undefined && (!Number.isInteger(maxSize) || maxSize <= 0)) {
+    throw new Error(
+      `invalid ${name} - 'build.maxSize' must be a positive whole number of bytes, like 512000`,
+    )
   }
   for (const [alias, path] of Object.entries(config.environments ?? {})) {
     if (typeof path !== 'string') {

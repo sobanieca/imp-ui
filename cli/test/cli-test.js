@@ -1345,6 +1345,21 @@ Deno.test('imp build', async (t) => {
       )
     })
 
+    await t.step('build-over-budget', async () => {
+      await writeImpJson({ dependencies: { mitt: 'npm:mitt@3.0.1' }, build: { maxSize: 2048 } })
+      const result = await runImp(['build'], dir)
+      const distExists = await Deno.stat(join(dir, 'dist')).then(() => true).catch(() => false)
+      await writeImpJson({ dependencies: { mitt: 'npm:mitt@3.0.1' } })
+      await assertSnapshot(
+        'build-over-budget',
+        `${
+          mask(commandTranscript('imp build  (cwd: <tmp>, build.maxSize 2048)', result))
+            .replace(/the build is [\d.]+ k?B/, 'the build is <size>')
+        }\n` +
+          `[dist left behind: ${distExists}]\n`,
+      )
+    })
+
     await t.step('build-public-collision', async () => {
       const collision = join(dir, 'public', 'LICENSES.txt')
       await Deno.writeTextFile(collision, 'a file of the app\n')

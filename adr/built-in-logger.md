@@ -19,8 +19,11 @@ imp adds no new configuration.
   through `console.warn`. `error` writes through `console.error`. So the severity filter of the
   browser console, and its stack traces, continue to work. There is no transport to configure.
 - **There are four ordered levels**, which are `debug`, `info`, `warn` and `error`. The default is
-  `info`. So a warning and an error from the library always show, and you turn debug tracing on
-  yourself. There is deliberately no way to silence an error.
+  `info` in development and in tests, and `warn` in a built app. The build folds
+  `globalThis.__IMP_DEV__` to `false`, and the logger reads that value, see `development-checks.md`.
+  So a warning and an error from the library always show, a built app does not fill the console of
+  every user, and you turn debug tracing on yourself. There is deliberately no way to silence an
+  error.
 - **The level comes from the environment.** It is the `IMP_LOG_LEVEL` value in the selected
   environment file. imp reads it from the injected `env` object on first use, and remembers it. imp
   warns about an unknown value, and falls back to the default. `setLogLevel` overrides the level at

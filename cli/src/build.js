@@ -383,6 +383,51 @@ function urlEdits(document, { base, renamed }) {
   })
 }
 
+function staticImportsOf(metafile, entryOutputs) {
+  const outputs = metafile.outputs
+  const keyOf = (path) => Object.keys(outputs).find((key) => namesSameFile(path, key))
+  const pending = entryOutputs.map(keyOf).filter(Boolean)
+  const entries = new Set(pending)
+  const reached = new Set()
+  while (pending.length) {
+    const key = pending.pop()
+    for (const imported of outputs[key]?.imports ?? []) {
+      if (imported.kind !== 'import-statement' || imported.external) continue
+      if (reached.has(imported.path) || entries.has(imported.path)) continue
+      reached.add(imported.path)
+      pending.push(imported.path)
+    }
+  }
+  return [...reached]
+}
+
+function modulePreloadTags({ metafile, outputFiles, entries, outdir, base }) {
+  return staticImportsOf(metafile, [...entries.values()]).flatMap((key) => {
+    const file = outputFiles.find(({ path }) => namesSameFile(path, key))
+    if (!file) return []
+    const href = siteUrl(base, asPosix(relative(outdir, file.path)))
+    return [`<link rel="modulepreload" href="${href}">`]
+  })
+}
+
+async function assertWithinBudget({ imp, outdirPath, written }) {
+  const budget = imp.build?.maxSize
+  if (budget === undefined) return
+  const sizes = await Promise.all(
+    written.map(async (name) => ({ name, size: (await Deno.stat(join(outdirPath, name))).size })),
+  )
+  const total = sizes.reduce((sum, { size }) => sum + size, 0)
+  if (total <= budget) return
+  await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
+  const largest = sizes.sort((one, other) => other.size - one.size).slice(0, 5)
+    .map(({ name, size }) => `  ${name} (${formatSize(size)})`).join('\n')
+  throw new Error(
+    `the build is ${formatSize(total)}, over the budget of ${
+      formatSize(budget)
+    } that 'build.maxSize' sets in imp.json. imp wrote nothing. The largest files:\n${largest}`,
+  )
+}
+
 async function precacheOfBuild({ outdirPath, base, written, shell }) {
   const precached = written.filter((name) => name !== SERVICE_WORKER_FILE)
   const files = await Promise.all(
@@ -513,7 +558,13 @@ export async function build(
     written.push(LICENSE_NOTICES_FILE)
   }
   if (isHtmlEntry) {
-    const headTags = []
+    const headTags = modulePreloadTags({
+      metafile: result.metafile,
+      outputFiles,
+      entries: result.entries,
+      outdir: outdirPath,
+      base,
+    })
     if (Object.keys(resolvedEnv).length) {
       const file = await writeHashedScript({
         outdir: outdirPath,
@@ -579,6 +630,8 @@ export async function build(
       written.push(SERVICE_WORKER_FILE)
     }
   }
+
+  await assertWithinBudget({ imp, outdirPath, written })
 
   console.log(`built ${entryName} -> ${relative(Deno.cwd(), outdirPath) || '.'}/`)
   const mocksFolder = mocksSetting(imp)?.folder

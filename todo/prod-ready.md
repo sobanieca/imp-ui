@@ -13,20 +13,6 @@ record its decision as an ADR. When the last item goes, delete the file.
 Somebody verified this against the code again on 2026-09-23. Every item below was still open at that
 date.
 
-## Tier 2 - what `imp build` emits
-
-- **Some hygiene for production is missing on the side of the build.** There is no `modulepreload`
-  hint for a chunk that the entry will pull. There is no budget for the size of an app build. imp
-  enforces a limit on the size of its own binary, through `binary-size-limit.json`, and it offers
-  the author of an app no equivalent for `dist/`. The default log level of a built app is `info`, so
-  a built app fills the console of every user. **Decision:**
-  - The build always writes a `modulepreload` hint for each chunk that an entry imports statically.
-  - A size budget for `dist/` goes into `imp.json`. `imp build` fails when the output is over it,
-    the same way as the `licenses` gate.
-  - The default log level of a built app is `warn`. `IMP_LOG_LEVEL` still sets another level.
-  - imp does not add subresource integrity, because every script is same-origin and hashed.
-  - imp does not compress in advance, because the host compresses.
-
 ## Tier 3 - how to operate the app after it is live
 
 - **Errors in production reach the app through analytics. imp adds no second seam for them.**

@@ -25,6 +25,11 @@ help the build.
   values to `chunks/env-<hash>.js`. The built page has no inline script.
 - **Never reference a built script by its source name**, such as `/src/main.js` in a host config or
   a test of the output. Only the built HTML knows the hashed name.
+- imp adds `<link rel="modulepreload">` to `<head>` for every chunk that a page script imports
+  statically. An `import()` chunk gets no tag.
+- `build.maxSize` in `imp.json` is a budget in bytes for the whole output. A larger build fails,
+  names its largest files and writes nothing.
+- The default log level of a built app is `warn`. `IMP_LOG_LEVEL` in the environment file wins.
 - imp turns an `import()` into a separate hashed chunk under `chunks/` that loads on demand. It
   emits code that several entries share once. imp writes a chunk only when an entry can reach it. An
   `import()` in code that the build drops, such as the world data of an unused `map`, ships no file.

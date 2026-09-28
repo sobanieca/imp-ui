@@ -74,6 +74,12 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   and no host file, because the app owns its origins and the host owns the format of its headers.
   Trusted Types are out of scope: `require-trusted-types-for 'script'` blocks the `innerHTML` of
   `html()`.
+- **A page build adds a `modulepreload` hint** for each chunk that an entry script imports
+  statically, directly or through another chunk. A chunk behind `import()` gets no hint.
+- **`build.maxSize` in `imp.json` is a budget for the whole output.** A build over it fails, names
+  the largest files and removes the output folder, the same way as the `licenses` gate stops a
+  build. imp adds no subresource integrity, because every script is same-origin and hashed. It does
+  not compress in advance, because the host compresses.
 - **imp writes no source map.** There is no flag and no key that turns one on. The error handling of
   the app identifies a production error, not a map back to the source.
 

@@ -31,8 +31,9 @@ console, and its handling of a stack trace, keep working as usual.
 ## Log levels
 
 There are four levels, in this order: `debug` < `info` < `warn` < `error`. imp writes a message only
-when its level is at or above the active level. The default level is `info`, so the warnings and
-errors of imp show, and debug tracing stays quiet.
+when its level is at or above the active level. The default level is `info` while you develop and
+test, so the warnings and errors of imp show, and debug tracing stays quiet. In a built app the
+default level is `warn`, so an info message does not fill the console of every user.
 
 To set the level per environment, use the `IMP_LOG_LEVEL` value in an environment file. See
 _Environments_ in **[Configuration](config.md)**. Use debug tracing in development, and warnings and

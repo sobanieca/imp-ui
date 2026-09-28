@@ -32,6 +32,8 @@ dist/styles.css
 <!doctype html>
 <html lang="en">
   <head>
+<link rel="modulepreload" href="/chunks/chunk-<hash>.js">
+<link rel="modulepreload" href="/chunks/chunk-<hash>.js">
     <meta charset="utf-8">
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/styles.css">
@@ -90,4 +92,4 @@ Notices carried in the bundled code
  * SPDX-License-Identifier: Apache-2.0
  */
 
-[bundled module: message='hello from the bundle', impLogLevel=info, lazy loadShout()='HELLO FROM THE BUNDLE']
+[bundled module: message='hello from the bundle', impLogLevel=warn, lazy loadShout()='HELLO FROM THE BUNDLE']

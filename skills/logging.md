@@ -27,8 +27,9 @@ to `console.error`.
 ## Levels
 
 The order is `debug` < `info` < `warn` < `error`. imp writes a message only at the active level or
-above it. The default level is **`info`**. To set the level per environment, put `IMP_LOG_LEVEL` in
-an environment file, see [config](config.md):
+above it. The default level is **`info`** under `imp start` and `imp test`, and **`warn`** in a
+built app. To set the level per environment, put `IMP_LOG_LEVEL` in an environment file, see
+[config](config.md):
 
 ```json
 {
