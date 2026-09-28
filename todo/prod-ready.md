@@ -58,15 +58,6 @@ date.
 
   Add the same rules to `skills/build.md`.
 
-## Tier 5 - the policy about a release, and about support
-
-- **A sealed CI system has no documented path.** imp downloads the e2e browser on first use, and
-  verifies its checksum, see `cli/src/test-browser.js`. `test.browser` and `IMP_BROWSER` point at a
-  browser that is already there. But there is no documented mirror, and no override of the cache
-  folder, for a CI environment that has no network, or that restricts its outbound traffic.
-  **Decision:** add `IMP_CACHE_DIR`, which moves the cache folder of imp. Document `IMP_BROWSER` and
-  `test.browser` as the path for a sealed CI. imp adds no mirror.
-
 ## Tracked in other items
 
 One gap blocks production too, but it has its own file:

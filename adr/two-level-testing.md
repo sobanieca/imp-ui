@@ -141,8 +141,12 @@ discovery.
   uses the `IMP_BROWSER` environment variable. Then it uses an installed Chrome or Chromium, which
   covers a GitHub Actions runner with no setup. Otherwise it uses a Chrome for Testing build. imp
   pins that build by version, and by a sha256 hash per platform, in `cli/src/test-browser.js`. imp
-  downloads it once, into the cache for that user at `~/.imp/browser/`, and never inside a project,
+  downloads it once, into the cache folder of imp at `~/.imp/browser/`, and never inside a project,
   see `vendored-dependencies.md`. imp extracts it with an unzip in pure JavaScript.
+- **A sealed CI needs no network for the browser.** `IMP_CACHE_DIR` moves the cache folder, so a CI
+  can restore a cached folder that already holds the browser. `test.browser` and `IMP_BROWSER` point
+  at a browser that the image of the CI already has. imp adds no download mirror. Either path is
+  enough, and a mirror would be one more address to trust.
 - **`imp test` has two approved exceptions about a subprocess**, against `in-process-toolchain.md`.
   The first is the e2e browser, which is the system under test, and not a delegated tool. The second
   is the fan-out over a level, where imp invokes itself again, as one worker per file. Both keep the

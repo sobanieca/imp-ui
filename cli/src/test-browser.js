@@ -1,6 +1,7 @@
 import { dirname, join } from '@std/path'
 import { BlobReader, Uint8ArrayWriter, ZipReader } from '@zip-js/zip-js'
 import { logger } from './logger.js'
+import { impCacheDirectory } from './cache-dir.js'
 
 export const CHROME_VERSION = '150.0.7871.46'
 
@@ -62,10 +63,8 @@ const SYSTEM_BROWSERS = {
   },
 }
 
-const homeDirectory = () => Deno.env.get('HOME') ?? Deno.env.get('USERPROFILE')
-
 export const browserCacheDirectory = () =>
-  join(homeDirectory() ?? '.', '.imp', 'browser', `chrome-${CHROME_VERSION}`)
+  join(impCacheDirectory(), 'browser', `chrome-${CHROME_VERSION}`)
 
 const isExecutableFile = async (path) => {
   try {
@@ -149,7 +148,9 @@ export async function downloadBrowser() {
   const url =
     `https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/${build.platform}/chrome-${build.platform}.zip`
   logger.info(
-    `downloading Chrome ${CHROME_VERSION} for e2e tests (one-time, cached in ~/.imp/browser)...`,
+    `downloading Chrome ${CHROME_VERSION} for e2e tests (one-time, cached in ${
+      join(impCacheDirectory(), 'browser')
+    })...`,
   )
   const response = await fetch(url)
   if (!response.ok) {

@@ -159,6 +159,6 @@ comments, an optional `export` and a quoted value. **Every value in a `.env` fil
   own, see [routing](routing.md). A flag name must not start with `IMP_`.
 
 imp reads these shell variables directly, outside any environment file: `IMP_ENV` selects an
-environment, `IMP_VERSION=system` bypasses the version pin, `IMP_HOME` sets where imp caches a
-downloaded version, `IMP_BROWSER` gives the path of the e2e browser, and `IMP_NO_UPDATE_CHECK` stops
-the update hint.
+environment, `IMP_VERSION=system` bypasses the version pin, `IMP_CACHE_DIR` moves the cache folder
+of imp (the downloaded versions and the e2e browser), `IMP_BROWSER` gives the path of the e2e
+browser, and `IMP_NO_UPDATE_CHECK` stops the update hint.

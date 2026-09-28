@@ -1805,9 +1805,10 @@ version in silence. A pin that imp does not enforce is not a pin. To bypass the 
 example to debug against the binary that you have, set `IMP_VERSION=system`.
 
 imp caches a downloaded version per user, under `~/.imp/`, and verifies each one against its
-published checksum before it stores it. Every project that you work on shares that cache. To cache
-the versions somewhere else, set `IMP_HOME`. That helps in CI, and in a container where the home
-directory is not writable. It also keeps the binaries off your home volume.
+published checksum before it stores it. Every project that you work on shares that cache. The same
+folder holds the browser of the e2e tests. To move the whole folder, set `IMP_CACHE_DIR`. That helps
+in CI, and in a container where the home directory is not writable. It also keeps the binaries off
+your home volume.
 
 ### Versions and stability
 

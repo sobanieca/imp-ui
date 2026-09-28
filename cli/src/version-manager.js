@@ -3,6 +3,7 @@ import { cyan, dim } from './colors.js'
 import { findConfigFile, tryParseConfig, updateConfigFile } from './config.js'
 import { isNewer, VERSION } from './version.js'
 import { formatSize } from './file-size.js'
+import { impCacheDirectory } from './cache-dir.js'
 
 const REPO = 'sobanieca/imp-ui'
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
@@ -31,17 +32,7 @@ function platformSlug() {
 
 const assetName = () => `imp-${platformSlug()}${Deno.build.os === 'windows' ? '.exe' : ''}`
 
-const homeDir = () => Deno.env.get('HOME') ?? Deno.env.get('USERPROFILE')
-
-function impHome() {
-  const override = Deno.env.get('IMP_HOME')
-  if (override) return override
-  const home = homeDir()
-  if (!home) throw new Error('cannot locate the imp home directory - set IMP_HOME or HOME')
-  return join(home, '.imp')
-}
-
-const versionsDir = () => join(impHome(), 'versions')
+const versionsDir = () => join(impCacheDirectory(), 'versions')
 const versionDir = (version) => join(versionsDir(), version)
 const versionBinaryPath = (version) => join(versionDir(version), EXECUTABLE)
 const lastUsedPath = (version) => join(versionDir(version), 'lastUsed')
@@ -141,7 +132,7 @@ async function downloadVersion(version) {
       `imp ${version} failed checksum verification - expected ${expected}, got ${actual}`,
     )
   }
-  const dir = join(impHome(), 'versions', version)
+  const dir = join(impCacheDirectory(), 'versions', version)
   await Deno.mkdir(dir, { recursive: true })
   const finalPath = join(dir, EXECUTABLE)
   const tempPath = `${finalPath}.download-${crypto.randomUUID()}`
@@ -334,7 +325,7 @@ export async function update({ root, check = false, requestedVersion = null }) {
 }
 
 async function latestReleaseThrottled() {
-  const cachePath = join(impHome(), 'update-check.json')
+  const cachePath = join(impCacheDirectory(), 'update-check.json')
   const now = Date.now()
   try {
     const cache = JSON.parse(await Deno.readTextFile(cachePath))
@@ -350,7 +341,7 @@ async function latestReleaseThrottled() {
   }
   const latest = await resolveLatestVersion(AbortSignal.timeout(UPDATE_CHECK_TIMEOUT))
   try {
-    await Deno.mkdir(impHome(), { recursive: true })
+    await Deno.mkdir(impCacheDirectory(), { recursive: true })
     await Deno.writeTextFile(cachePath, JSON.stringify({ latest, checkedAt: now }))
   } catch {
     // caching is best-effort

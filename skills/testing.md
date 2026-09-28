@@ -221,7 +221,9 @@ because the default prunes a container such as a `tablist`, a `group`, an `alert
 
 imp resolves the browser in this order: `test.browser` in `imp.json`, then `IMP_BROWSER`, then an
 installed Chrome or Chromium, then a pinned download into `~/.imp/browser/` that imp verifies
-against its checksum.
+against its checksum. `IMP_CACHE_DIR` moves that cache folder. For a CI with no network, set
+`IMP_BROWSER` to a browser in the image, or restore an `IMP_CACHE_DIR` folder that already holds the
+browser. imp has no download mirror.
 
 `--video <dir>` records one GIF per spec. Tune it with `test.video`, which has `enable`, `fps`,
 `maxDuration`, `width` and `quality`. A GIF plays inside a GitHub pull request. That is how an agent

@@ -604,7 +604,22 @@ An e2e test needs a Chrome or Chromium binary. imp resolves one in this order:
    runner, imp uses the preinstalled Chrome, and you need no setup step.
 4. **A managed download.** Otherwise imp downloads a pinned Chrome build once, and verifies its
    checksum. It stores the build in `~/.imp/browser/`, per user and never inside your project, and
-   it uses that build from then on.
+   it uses that build from then on. To keep the cache somewhere else, set `IMP_CACHE_DIR`.
+
+### A CI with no network
+
+A CI runner that has no network access, or that allows only some hosts, cannot download the browser.
+Give it a browser in one of two ways:
+
+- **Use a browser that the image already has.** Install Chrome or Chromium in the image of the CI.
+  Set `IMP_BROWSER` to its path in the job, or `test.browser` in `imp.json` when every machine has
+  the same path. imp then downloads nothing.
+- **Restore the cache folder of imp.** Set `IMP_CACHE_DIR` to a folder inside the workspace, for
+  example `.imp-cache`. Run the tests once on a machine with network access, and keep that folder in
+  the cache of your CI. imp finds the browser there and downloads nothing.
+
+A unit test needs no browser and no network. The dependencies of your app are in the repository, so
+`imp test` never talks to a package registry.
 
 ## How to run tests in parallel
 

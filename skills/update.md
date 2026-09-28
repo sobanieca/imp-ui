@@ -40,8 +40,8 @@ caches the release, but it writes no pin.
   the imp version that your app provides, not on the version that their author built against. See
   [dependencies](dependencies.md).
 - imp caches a downloaded version per user under `~/.imp/`, and verifies each one against its
-  published checksum. `IMP_HOME` moves the cache. This helps in CI, or in a container that has a
-  read-only home directory.
+  published checksum. `IMP_CACHE_DIR` moves the cache folder, with the e2e browser in it. This helps
+  in CI, or in a container that has a read-only home directory.
 - In a project with **no pin**, imp prints a one-line update hint when a newer release exists, at
   most once a day. imp stays silent when a pin is present. To stop the hint, use `--no-update-check`
   or `IMP_NO_UPDATE_CHECK`.
