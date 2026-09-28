@@ -11,11 +11,6 @@ preview and a unit test. This file lists the work that is still owed.
   and to watch it. It serves the structural swap that CSS cannot express. `table` switches to cards
   through a container query, so no consumer exists yet. Build it with the first consumer.
 
-## Components to build
-
-- **A continuous bar for a multi-day event** in the month view of `calendar`. Today the event shows
-  as a chip in every day that it covers. Build it.
-
 ## Components that wait
 
 - **`carousel` waits** until `::scroll-button()` and `::scroll-marker()` work in every browser. To

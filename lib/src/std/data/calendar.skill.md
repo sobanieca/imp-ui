@@ -56,11 +56,14 @@ Rules an agent gets wrong:
 - **A time slot is for a pointer only.** The keyboard path to a new entry is the day button: the day
   number in the month view, and the day header in the week view and the day view. Both fire
   `slotSelect` with `allDay: true`. Let the dialog of the app ask for the time.
-- **The month view shows 3 rows for each day.** With more entries, the last row is a "+N more"
-  button. It opens the day view of that day.
+- **An entry over several days is one bar per week in the month view.** The bar keeps one lane on
+  every day that it covers. A bar that goes on into the next week has square ends on that side.
+- **The month view shows 3 lanes for each day.** On a day with more entries, the last lane is a "+N
+  more" button. It opens the day view of that day. A bar in the last lane that covers a full day is
+  counted in the "+N more" of every day that it covers.
 - **A narrow container changes the layout, not the viewport.** Below 36rem of its own width, the
-  month view shows a dot for each entry, and the week view scrolls sideways. Do not write a
-  breakpoint for it.
+  month view shows a dot for each entry and a thin line for a bar, and the week view scrolls
+  sideways. Do not write a breakpoint for it.
 - **`color` is a palette name, not a CSS colour.** imp warns about another value and uses the
   primary colour.
 - **The language decides the formats and the first day of the week.** The words are the
