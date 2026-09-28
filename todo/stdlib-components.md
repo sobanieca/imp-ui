@@ -13,9 +13,6 @@ preview and a unit test. This file lists the work that is still owed.
 
 ## Components to build
 
-- **`splitPane`**, a set of panes that a user can resize. Build it. The CSS `resize` property drags
-  one corner only, and it has no keyboard path. So a handle in JavaScript replaces nothing that the
-  platform has. The handle is a focusable separator, and the arrow keys move it.
 - **A continuous bar for a multi-day event** in the month view of `calendar`. Today the event shows
   as a chip in every day that it covers. Build it.
 

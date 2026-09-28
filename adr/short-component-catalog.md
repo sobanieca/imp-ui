@@ -17,27 +17,28 @@ short enough to read in one look at the sidebar of `imp preview`. It must still 
 **One component does one job, and a prop covers a variant of that job.** A second component exists
 only when it adds behaviour of its own. These are the merges that follow from that rule:
 
-| Job                        | The component                        | What it replaces                                           |
-| -------------------------- | ------------------------------------ | ---------------------------------------------------------- |
-| Any text input             | `textField`, with `type` and `rows`  | A password, search, number and multi-line component        |
-| A choice drawn as a row    | `segmented`, with `multiple`         | A toggle group                                             |
-| A value from a list        | `comboBox`, with `multiple`/`custom` | A tag input, a cascader, a tree select                     |
-| A date                     | `datePicker`, with `range`/`time`    | A range picker, a time picker                              |
-| Progress and a measurement | `progress`, with `shape`             | A gauge, a statistic                                       |
-| A wait with no measure     | `loader`                             | A spinner component per size, and a busy overlay           |
-| A status mark              | `tag`, with `dot`                    | A badge                                                    |
-| A page-level message       | `emptyState`, with `icon` and `kind` | A result page, an illustration component                   |
-| An inline message          | `notice`                             | An alert. The name `alert` shadows the global of a browser |
-| A menu of actions          | `menuButton`, with `items`           | A dropdown menu, a split button component                  |
-| A panel beside a control   | `dialog({ modal: false, anchor })`   | A popover, a popconfirm                                    |
-| A pager                    | none                                 | Paging is an infinite scroll, in `table` and in `list`     |
-| A chart of numbers         | `chart`, with `type` and `stacked`   | A bar, a column, a line and a stacked chart component      |
-| An arrangement in two axes | none                                 | An app writes CSS grid in its own component                |
-| A floating button          | none                                 | A `button` that the app places with its own CSS            |
-| A submit button            | `button`, with `submitForm`          | A submit button component, a reset button component        |
-| A tenant switcher          | `orgSelect`                          | A workspace menu that every app wrote by hand              |
-| A joined row of controls   | `flex`, with `joined`                | A button group                                             |
-| A number with step buttons | `textField`, with `stepper`          | A number stepper, an input group                           |
+| Job                         | The component                        | What it replaces                                           |
+| --------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| Any text input              | `textField`, with `type` and `rows`  | A password, search, number and multi-line component        |
+| A choice drawn as a row     | `segmented`, with `multiple`         | A toggle group                                             |
+| A value from a list         | `comboBox`, with `multiple`/`custom` | A tag input, a cascader, a tree select                     |
+| A date                      | `datePicker`, with `range`/`time`    | A range picker, a time picker                              |
+| Progress and a measurement  | `progress`, with `shape`             | A gauge, a statistic                                       |
+| A wait with no measure      | `loader`                             | A spinner component per size, and a busy overlay           |
+| A status mark               | `tag`, with `dot`                    | A badge                                                    |
+| A page-level message        | `emptyState`, with `icon` and `kind` | A result page, an illustration component                   |
+| An inline message           | `notice`                             | An alert. The name `alert` shadows the global of a browser |
+| A menu of actions           | `menuButton`, with `items`           | A dropdown menu, a split button component                  |
+| A panel beside a control    | `dialog({ modal: false, anchor })`   | A popover, a popconfirm                                    |
+| A pager                     | none                                 | Paging is an infinite scroll, in `table` and in `list`     |
+| A chart of numbers          | `chart`, with `type` and `stacked`   | A bar, a column, a line and a stacked chart component      |
+| An arrangement in two axes  | none                                 | An app writes CSS grid in its own component                |
+| A floating button           | none                                 | A `button` that the app places with its own CSS            |
+| A submit button             | `button`, with `submitForm`          | A submit button component, a reset button component        |
+| A tenant switcher           | `orgSelect`                          | A workspace menu that every app wrote by hand              |
+| A joined row of controls    | `flex`, with `joined`                | A button group                                             |
+| A number with step buttons  | `textField`, with `stepper`          | A number stepper, an input group                           |
+| Panes that a person resizes | `splitPane`, nested for a third pane | A splitter, a resizable panel group                        |
 
 **Paging is an infinite scroll.** `table` and `list` take `hasMore` and `onLoadMore`. A sentinel at
 the end of the rows asks for the next page when it comes into view. There is no pager component, and

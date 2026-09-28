@@ -18,7 +18,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                   |
 | `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                     |
 | `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                   |
-| `imp/std/layout`     | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                                 |
+| `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                    |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                   |
 | `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                       |
 | `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, ...              |

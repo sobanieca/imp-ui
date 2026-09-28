@@ -233,6 +233,22 @@ rules stop at that boundary. So `stack({ gap: 2 }, div({ class: 'box' }))` rende
 your `.box` rule. In development, imp warns about it in the console when the page renders. Give such
 a box its own component, or set an inline `style`.
 
+**Two panes that a person resizes are `splitPane`.** A mail list beside a reader, or an editor over
+its output, gets a handle between the panes. The person drags the handle, or focuses it and moves it
+with the arrow keys, Home and End. A screen reader hears a separator with its value in percent. The
+CSS `resize` property drags one corner only and has no keyboard path, so imp draws the handle:
+
+```js
+const share = initState(self, 'mail.split', 35)
+
+splitPane({ size: share, min: 20, max: 60, label: t('mail.resize') }, mailList(), mailReader())
+```
+
+`size` is the share of the start pane, in percent. A drag writes it into the state, so the app can
+store it with the preferences of the person. `orientation: 'vertical'` stacks the panes, and then
+its parent needs a height. For a third pane, put a `splitPane` in a pane. The start pane follows the
+reading direction, so it is on the right in a right-to-left page.
+
 Two rules follow, and they hold across the library:
 
 - **Spacing is a `gap`, and it is a step, not a length.** `gap` is a step on the spacing scale of

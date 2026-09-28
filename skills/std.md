@@ -7,7 +7,7 @@ include. Each component is a real imp component. It renders as its own element, 
 | Import             | Exports                                                                                                                                                                                                                                  | Per-component skill                                                                                                                                                                                                                                                                                                        |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imp/std`          | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                                | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                                                |
-| `imp/std/layout`   | `flex`, `stack`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                              | `imp skill std/flex`, `std/stack`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                                  |
+| `imp/std/layout`   | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                 | `imp skill std/flex`, `std/stack`, `std/splitPane`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                 |
 | `imp/std/inputs`   | `form`, `submitForm`, `resetForm`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `slider`, `colorPicker`, `datePicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor` | `imp skill std/form`, `std/submitForm`, `std/resetForm`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/emojiPicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor` |
 | `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`                                                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`                                                                                                                                                       |
 | `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                 | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                         |
@@ -387,6 +387,21 @@ stack(
 - A layout that must change shape below some width needs a media query in the `styles` of your own
   component. No prop varies with the size of the screen.
 
+### splitPane
+
+`splitPane(props?, start, end)` puts a handle between two panes. The person drags it, or moves it
+with the arrow keys, PageUp, PageDown, Home and End. Run `imp skill std/splitPane`.
+
+| Prop          | Values                                   | Default        | Notes                                  |
+| ------------- | ---------------------------------------- | -------------- | -------------------------------------- |
+| `orientation` | `'horizontal'`, `'vertical'`             | `'horizontal'` | Horizontal puts the panes side by side |
+| `size`        | percent `0`-`100`, or a state - **live** | `50`           | The start pane; a move writes it back  |
+| `min`, `max`  | percent `0`-`100`                        | `10`, `90`     | The limits of the start pane           |
+| `label`       | string, or a state - **live**            | translated     | The name of the handle                 |
+
+- **It takes exactly two children.** Nest a `splitPane` in a pane for a third pane.
+- **A vertical split needs a height from the parent**, like `verticalAlign` on a `stack`.
+
 ## dialog - from `imp/std/layout`
 
 ```js
@@ -683,9 +698,10 @@ read a custom property inside a query.
 
 Rules an agent gets wrong:
 
-- **The arrangement components are `flex` and `stack` only.** `shell` is the page frame, not a box.
-  Everything else that a box needs, such as padding, a background, a width or a grid, is plain CSS
-  in the `styles` of your own component.
+- **The arrangement components are `flex` and `stack`.** `splitPane` adds a handle that resizes two
+  panes, and has no other layout prop. `shell` is the page frame, not a box. Everything else that a
+  box needs, such as padding, a background, a width or a grid, is plain CSS in the `styles` of your
+  own component.
 - **Spacing is a `gap` on the parent, never a margin on a child.** No std component has an outer
   margin.
 

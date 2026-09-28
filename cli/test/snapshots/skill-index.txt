@@ -60,6 +60,7 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/dialog           dialog - one component for both overlay windows: the modal frame and the movable panel
   std/drawer           drawer - a panel that slides in from the side of the screen, modal or not, on any width
   std/flex             flex - a row of children laid out with CSS flexbox
+  std/splitPane        splitPane - two panes with a handle between them that a person drags or moves with the keys
   std/stack            stack - a vertical stack of children laid out with CSS flexbox
   std/tabs             tabs - one strip of tabs over a set of panels, keyboard-operable and ARIA-wired
   std/accordion        accordion - a list of titled sections that open and close, built on native details

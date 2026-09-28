@@ -78,6 +78,12 @@ no third way to put them in a box.**
   over its page, promoted into the top layer, see `overlay-top-layer.md`. All three are frames that
   hold content. None of them is a component that arranges content. Neither one places anything that
   an app hands it, beyond a box. So the rule above still holds inside every one of those boxes.
+- **`splitPane` is not a third arrangement either.** It places exactly two panes, start and end,
+  with a handle between them, and it takes no alignment or spacing prop. Its job is the handle. A
+  person drags it, or moves it from the keyboard, and the platform has no control that does that.
+  The CSS `resize` property drags one corner only, and it has no keyboard path. So the handle is a
+  focusable `role="separator"` that imp writes, see `short-component-catalog.md`. A third pane is a
+  `splitPane` in a pane.
 
 ## Consequences
 
