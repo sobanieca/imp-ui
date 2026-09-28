@@ -4024,6 +4024,21 @@ Deno.test('an injected value cannot end its script', () => {
   )
 })
 
+Deno.test('IMP_CACHE_DIR resolves a relative folder against the current folder', async () => {
+  const { impCacheDirectory } = await import('../src/cache-dir.js')
+  const saved = Deno.env.get('IMP_CACHE_DIR')
+  try {
+    Deno.env.set('IMP_CACHE_DIR', '.imp/cache')
+    check(
+      impCacheDirectory() === join(Deno.cwd(), '.imp', 'cache'),
+      `a relative cache folder stayed relative: ${impCacheDirectory()}`,
+    )
+  } finally {
+    if (saved === undefined) Deno.env.delete('IMP_CACHE_DIR')
+    else Deno.env.set('IMP_CACHE_DIR', saved)
+  }
+})
+
 Deno.test('injectImp', async () => {
   const headInjection = '<script>imp-injection</script>'
   const cases = [

@@ -614,9 +614,12 @@ Give it a browser in one of two ways:
 - **Use a browser that the image already has.** Install Chrome or Chromium in the image of the CI.
   Set `IMP_BROWSER` to its path in the job, or `test.browser` in `imp.json` when every machine has
   the same path. imp then downloads nothing.
-- **Restore the cache folder of imp.** Set `IMP_CACHE_DIR` to a folder inside the workspace, for
-  example `.imp-cache`. Run the tests once on a machine with network access, and keep that folder in
-  the cache of your CI. imp finds the browser there and downloads nothing.
+- **Restore the cache folder of imp.** Set `IMP_CACHE_DIR` to `.imp/cache` in the workspace. Run the
+  tests once on a machine with network access, and keep that folder in the cache of your CI. imp
+  finds the browser there and downloads nothing. imp already leaves `.imp/` out of every command
+  that reads your project, such as `imp lint` and `imp fmt`, and the scaffold puts it in
+  `.gitignore`. A relative path counts from the folder where you run imp, so set the same value for
+  every step.
 
 A unit test needs no browser and no network. The dependencies of your app are in the repository, so
 `imp test` never talks to a package registry.
