@@ -286,6 +286,7 @@ onAnalytics((record) => {
 - A GA4 event name uses letters, numbers and underscores only. So the sink replaces each hyphen.
 - GA4 reads a `value` parameter as a monetary amount. So the sink sends the value as `outcome`.
 - The sink skips `time`. GA4 measures the engaged time itself.
+- GA4 writes cookies, so in Europe it needs consent. See [Consent](#consent).
 
 ### PostHog
 
@@ -306,7 +307,8 @@ onAnalytics((record) => {
 })
 ```
 
-Turn off the automatic exceptions of PostHog, so each failure arrives once.
+Turn off the automatic exceptions of PostHog, so each failure arrives once. PostHog writes a cookie
+by default, so in Europe it needs consent. See [Consent](#consent).
 
 ### Your own endpoint
 
@@ -350,7 +352,62 @@ onAnalytics((record) => {
 imp has no other error hook and no log sink. The `error` records answer "what breaks, where, and how
 often?". A team that needs a stream of logs uses the SDK of its provider directly.
 
+## Your own context
+
+imp does not know who the person is, so no record has a user id or an organization id. Your app
+knows it. Add the context in the sink:
+
+```js
+const user = useState(self, 'myapp.user')
+const send = batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records)))
+
+onAnalytics(self, (record) => send({ ...record, orgId: user.get()?.orgId, plan: user.get()?.plan }))
+```
+
+With a provider, use the calls of its SDK instead: `gtag('config', GA_ID, { user_id })`, or
+`posthog.identify(userId)` and `posthog.group('org', orgId)`.
+
+- **A user id is personal data, also when you hash it.** In Europe, it usually needs consent. See
+  [Consent](#consent).
+- An organization id or a plan is usually not personal data, unless the organization is one person.
+- The sink reads the context when it gets the record. A record that `when` held gets the context of
+  the moment of the release.
+
 ## Consent
+
+imp collects the records in memory. It stores nothing on the device, and it sends nothing. So imp
+itself does not make your app need a consent banner. The sink and the store decide that. This
+section tells you when a banner is necessary, and how imp helps you to wait for the answer. It is
+not legal advice. The rules are different in each region, so check them for the regions of your
+users.
+
+### When to show a consent banner
+
+In the European Union and the United Kingdom, show a banner before the sink sends records, when one
+of these is true:
+
+- **The SDK of a provider stores data on the device.** GA4 writes the `_ga` cookies. PostHog writes
+  a cookie and a `localStorage` entry by default. Most analytics SDKs do the same.
+- **The sink adds an id that stays after a reload.** Examples are a visitor id in `localStorage` and
+  the id of the signed-in user.
+- **The sink sends personal data.** Examples are an email address, a name, or a value that the
+  person typed.
+- **The store shares the records with a third party** that uses them for its own purposes, such as
+  advertising.
+
+A banner is often not necessary when you send the records to your own endpoint, with no stored id
+and no personal data. Such first-party statistics can usually use legitimate interest as their legal
+basis, not consent. Your app must then do these things:
+
+- Describe the analytics in your privacy policy.
+- Give the person a way to object. A `when` state that starts as `true` is an opt-out switch.
+- Do not keep the full IP address of a request. Remove it or shorten it when the request arrives.
+- Delete the records after a fixed period.
+
+Outside Europe, most regions do not ask for consent for first-party analytics. In California, the
+CCPA applies when you sell or share the records.
+
+### Hold the records until consent
 
 `onAnalytics(sink, { when: consent })` holds the records for that sink while the state `consent` is
 not `true`. When it becomes `true`, imp delivers the held records in order, and the next records at
@@ -365,11 +422,51 @@ onAnalytics(self, sendToStore, { when: consent })
   records, so the entry view is not lost while the banner is open.
 - The hold keeps the first view that it holds, and the newest 199 records. So a `track()` call or an
   error before the first screen does not push the entry view out.
+- To remember the choice of the person, save it, for example in `localStorage`. This entry is part
+  of the consent, so it needs no consent of its own.
 - The same option covers an SDK that loads late: `{ when: providerReady }`.
 - The hold is per sink. To report errors with no consent, register a second sink with no `when`,
   which forwards only the `error` records. You decide if your error reports need consent.
 - `batch` works with `when`. The hold comes first, and the batch gets the records when the hold
   releases them.
+
+### Stop the SDK until consent
+
+**`when` holds only the records of imp. It does not stop the SDK of a provider.** GA4 and PostHog
+write their cookies when they start, before the first record. So also start the SDK with no storage,
+and give it the consent from the same state.
+
+For GA4, use the consent mode of Google. In the `denied` state, GA4 writes no cookie:
+
+```js
+gtag('consent', 'default', { analytics_storage: 'denied' })
+gtag('config', GA_ID, { send_page_view: false })
+
+const consent = initState(self, 'myapp.consent', false)
+consent.watch(self, (granted) => {
+  gtag('consent', 'update', { analytics_storage: granted ? 'granted' : 'denied' })
+})
+onAnalytics(self, sendToGa, { when: consent })
+```
+
+For PostHog, keep its data in memory until consent:
+
+```js
+posthog.init(POSTHOG_KEY, {
+  capture_pageview: false,
+  capture_exceptions: false,
+  persistence: 'memory',
+})
+
+const consent = initState(self, 'myapp.consent', false)
+consent.watch(self, (granted) => {
+  posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' })
+})
+onAnalytics(self, sendToPosthog, { when: consent })
+```
+
+**Call `consent.watch` before `onAnalytics`.** imp notifies the subscribers of a state in the order
+in which they subscribed. So the SDK gets the consent first, and the held records arrive after it.
 
 ## The queries
 
@@ -466,7 +563,7 @@ Each of these failed the test "one number, one action":
 - **Props on an action, the full path, the query, and the component chain.** The report groups by
   page, zone name, action name and action value only.
 - **A user id and a session across tabs.** One visit per document load gives reach, bounce and "left
-  here".
+  here". Your sink can add a user id, see [Your own context](#your-own-context).
 - **Web Vitals.** `readyMs` measures what your app controls, from the navigation to a ready screen.
 - **A stack trace.** imp writes no source map, so a stack from production has no reader.
 - **A transport, a retry and sampling.** They are the job of the sink.

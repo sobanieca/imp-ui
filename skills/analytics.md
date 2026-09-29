@@ -71,6 +71,16 @@ the first held view and the newest 199 records.
   twice otherwise.
 - **A sink that posts to an own endpoint uses `navigator.sendBeacon` or `fetch` with
   `keepalive: true`,** and `batch`. A provider SDK batches itself, so do not wrap it in `batch`.
+- **Add `when: consent` only when the store needs consent.** imp stores nothing on the device. A
+  provider SDK that writes cookies (GA4, PostHog), an id kept across reloads, or personal data needs
+  it. A sink to an own endpoint with none of these does not. Do not add a banner by default.
+- **`when` does not stop a provider SDK.** Start GA4 after
+  `gtag('consent', 'default', { analytics_storage: 'denied' })`. Start PostHog with
+  `persistence: 'memory'`. Update the SDK in `consent.watch(self, ...)`, and call it before
+  `onAnalytics`, so the SDK gets the consent before the held records.
+- **imp sends no user id or organization id.** Add them in the sink:
+  `onAnalytics(self, (record) => send({ ...record, orgId: user.get()?.orgId }))`. A user id is
+  personal data, also when hashed, so it needs `when: consent` in Europe.
 - **Gate the sink and the SDK on a flag**, so a build with the flag off has none of it. See
   [feature-flags](feature-flags.md).
 - **Do not add `onError`, a log sink, or a `data-track` attribute.** They do not exist. Forward the
