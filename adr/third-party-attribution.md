@@ -10,6 +10,9 @@ people:
   every package that they depend on,
 - the WebAssembly formatter plugins that `tools/` downloads, and the esbuild engine,
 - `@zip-js/zip-js`, `@resvg/resvg-wasm`, `@deno/esbuild-plugin` and the Deno standard library.
+- the third-party parts of the imp library: the Lucide icons, the Natural Earth data of `map`, and
+  the QR code encoder of `qrCode`, which is adapted from the QR Code generator library of Project
+  Nayuki.
 
 On the first e2e run, imp also downloads a Chrome for Testing build. Every one of those carries a
 licence, and the obligations of its notice travel with the distribution. MIT, ISC and BSD require
@@ -49,6 +52,10 @@ binary.
   puppeteer-core and its dependencies. That does not change the MIT licence of imp itself. imp keeps
   the notice of each component, keeps the source form of an MPL-covered file available at its
   published version, and ships those components without a change.
+- **Code that the imp library adapts from another project keeps its notice in the source file.** The
+  notice is a legal comment (`/*! ... */`) at the top of the module, verbatim. The QR code encoder
+  of `qrCode` is such a module. The record lists the project in the table, and its licence family
+  names its copyright holder. The legal comment is also what carries the notice into a built app.
 - **This record covers the binary only.** The `dist/` directory that `imp build` produces carries
   its own notices, the notice of imp included. See `built-app-license-notices.md`.
 - **Record a new bundled component here.** For a new npm tool, add it to `PREBUNDLES` and a row to

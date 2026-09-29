@@ -3,7 +3,7 @@ import { div, h1, p } from 'imp/html'
 import { HttpError, useHttpClient } from 'imp/http'
 import { t } from 'imp/i18n'
 import { useState } from 'imp/state'
-import { form, textField } from 'imp/std/inputs'
+import { form, FormError, textField } from 'imp/std/inputs'
 import { signIn } from './todos/todo-api.js'
 import { writeToken } from './session-token.js'
 import { submitButton } from './submit-button.js'
@@ -29,7 +29,7 @@ export const signInPage = component('todo-sign-in', {
     .intro { display: flex; flex-direction: column; align-items: center; gap: var(--imp-space-3); text-align: center; }
     h1 {
       margin: 0;
-      font: 700 clamp(1.75rem, 1.4rem + 1.5dvi, 2.25rem) / 1.1 var(--imp-font-family-heading);
+      font: 600 clamp(1.75rem, 1.4rem + 1.5dvi, 2.25rem) / 1.1 var(--imp-font-family-heading);
       letter-spacing: -0.03em;
       color: var(--imp-color-text);
     }
@@ -46,7 +46,7 @@ export const signInPage = component('todo-sign-in', {
         user = await signIn(api, credentials)
       } catch (error) {
         const locked = error instanceof HttpError && error.status === 403
-        throw new Error(t(locked ? 'signIn.locked' : 'signIn.failed'), { cause: error })
+        throw new FormError(t(locked ? 'signIn.locked' : 'signIn.failed'), { cause: error })
       }
       writeToken(user.token)
       session.set(user)

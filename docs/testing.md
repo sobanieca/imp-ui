@@ -487,6 +487,11 @@ The matcher reads the accessibility tree of the browser and reports two kinds of
   an editable region, which the browser exposes as a plain container. A screen reader then does not
   say what the element does.
 
+The matcher checks only what a screen reader can reach. It skips an element that is not in the
+accessibility tree: an element with `hidden`, `display: none` or `visibility: hidden`, an element in
+an `inert` or an `aria-hidden="true"` subtree, and the content of a closed `<details>` or
+`<dialog>`. So a closed menu or a hidden panel does not fail the check. Open it, and check it again.
+
 The matcher returns a promise, so always `await` it. A failure lists each control, with the path of
 components that holds it:
 

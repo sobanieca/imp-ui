@@ -71,11 +71,12 @@ clear fix.
   **[Linting](lint.md#impimg-alt)**.
 - **An e2e matcher checks the running page.** `await expect(page).toHaveAccessibleControls()` reads
   the accessibility tree of the browser. It reports every control with no accessible name, and every
-  focusable element with no role. See
-  **[Testing](testing.md#how-to-check-what-a-screen-reader-gets)**.
+  focusable element with no role. It skips an element that a screen reader cannot reach, such as a
+  hidden or an inert one. See **[Testing](testing.md#how-to-check-what-a-screen-reader-gets)**.
 - **The theme editor checks contrast.** It lists every text color of the theme that reads below
-  4.5:1 on its background. `contrastProblems` from `imp/theme` runs the same check in a unit test.
-  See **[Theming](theming.md#how-to-check-the-contrast-of-a-theme)**.
+  4.5:1 on its background, and every pair that it cannot check. `contrastProblems` from `imp/theme`
+  runs the same check in a unit test. See
+  **[Theming](theming.md#how-to-check-the-contrast-of-a-theme)**.
 
 imp does not bundle a full audit engine, such as axe-core, and it does not audit the markup of your
 app beyond these checks. A full audit reports many findings that need a person to judge them. The

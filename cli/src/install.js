@@ -53,10 +53,7 @@ async function prepareOne({ alias, scheme, name, version, subpath, policy }) {
   return { alias, specifier, files, manifest, unknown, impImports }
 }
 
-async function writeOne(
-  { root, maxBytes, ignore },
-  { alias, specifier, files, manifest, unknown, impImports },
-) {
+function warnAboutSize({ maxBytes, ignore }, { alias, specifier, files }) {
   const countedSize = files
     .filter((file) => !isFileSizeIgnored(join('dependencies', alias, file.name), ignore))
     .reduce((sum, file) => sum + file.contents.length, 0)
@@ -67,11 +64,9 @@ async function writeOne(
       }, which will be committed into your git repository - ${maxFileSizeHint}`,
     )
   }
-  const folder = join(root, 'dependencies', alias)
-  await Deno.remove(folder, { recursive: true }).catch(() => {})
-  await Deno.mkdir(folder, { recursive: true })
-  for (const file of files) await Deno.writeFile(join(folder, file.name), file.contents)
-  await Deno.writeTextFile(join(folder, DEPENDENCY_MANIFEST_FILE), manifestFileContents(manifest))
+}
+
+function reportInstalled({ alias, specifier, files, manifest, unknown, impImports }) {
   console.log(`installed ${alias} (${specifier})`)
   for (const file of files) {
     console.log(`  dependencies/${alias}/${file.name} (${formatSize(file.contents.length)})`)
@@ -79,15 +74,17 @@ async function writeOne(
   console.log(`  dependencies/${alias}/${DEPENDENCY_MANIFEST_FILE} (packages, versions, licenses)`)
   console.log('  bundled packages:')
   for (const entry of manifest.packages) {
-    const provenance = entry.provenance ? ', provenance attested' : ''
-    console.log(`    ${packageId(entry)} - ${entry.license ?? 'license not declared'}${provenance}`)
+    const attestation = entry.attestationListed ? ', attestation listed by the registry' : ''
+    console.log(
+      `    ${packageId(entry)} - ${entry.license ?? 'license not declared'}${attestation}`,
+    )
   }
   const checked = manifest.packages.filter((entry) => entry.integrity).length
   if (checked) {
     console.log(
       `  integrity: ${checked} npm package${
         checked === 1 ? '' : 's'
-      } checked against the published hash`,
+      } checked against the signed hash of the npm registry`,
     )
   }
   const undeclared = unlicensedPackages(manifest)
@@ -109,7 +106,109 @@ async function writeOne(
       '    note: this package runs against the imp version this app provides, not the one it was built with',
     )
   }
-  return specifier
+}
+
+export const projectFileSystem = {
+  writeFile: (path, bytes) => Deno.writeFile(path, bytes),
+  rename: (from, to) => Deno.rename(from, to),
+  updateConfig: (path, changes) => updateConfigFile(path, changes),
+}
+
+const pathExists = (path) => Deno.lstat(path).then(() => true, () => false)
+
+async function stage(folder, { files, manifest }, fileSystem) {
+  await Deno.mkdir(folder, { recursive: true })
+  for (const file of files) await fileSystem.writeFile(join(folder, file.name), file.contents)
+  await fileSystem.writeFile(
+    join(folder, DEPENDENCY_MANIFEST_FILE),
+    new TextEncoder().encode(manifestFileContents(manifest)),
+  )
+}
+
+async function rollBack({ swaps, configPath, configBefore, configTouched, createdFolder }) {
+  const problems = []
+  const attempt = (action, step) =>
+    action().catch((error) => problems.push(`${step}: ${error.message}`))
+  for (const swap of [...swaps].reverse()) {
+    if (swap.placed) {
+      await attempt(() => Deno.remove(swap.target, { recursive: true }), `remove ${swap.target}`)
+    }
+    if (swap.movedAside) {
+      await attempt(() => Deno.rename(swap.aside, swap.target), `restore ${swap.target}`)
+    }
+  }
+  if (configTouched) {
+    await attempt(
+      () =>
+        configBefore === null
+          ? Deno.remove(configPath)
+          : Deno.writeTextFile(configPath, configBefore),
+      `restore ${configPath}`,
+    )
+  }
+  if (createdFolder) await Deno.remove(createdFolder).catch(() => {})
+  return problems
+}
+
+export async function commitDependencies(
+  { root, dependencies, configChanges, fileSystem = projectFileSystem },
+) {
+  const dependenciesFolder = join(root, 'dependencies')
+  const workFolder = join(root, '.imp')
+  const createdWorkFolder = !await pathExists(workFolder)
+  const createdFolder = await pathExists(dependenciesFolder) ? null : dependenciesFolder
+  const staging = join(workFolder, `install-${crypto.randomUUID()}`)
+  const configPath = await configTargetPath(root)
+  const configBefore = await Deno.readTextFile(configPath).catch(() => null)
+  const swaps = []
+  let configTouched = false
+  let keepStaging = false
+  try {
+    for (const dependency of dependencies) {
+      await stage(join(staging, 'new', dependency.alias), dependency, fileSystem)
+    }
+    await Deno.mkdir(join(staging, 'old'), { recursive: true })
+    await Deno.mkdir(dependenciesFolder, { recursive: true })
+    for (const { alias } of dependencies) {
+      const swap = {
+        target: join(dependenciesFolder, alias),
+        aside: join(staging, 'old', alias),
+        movedAside: false,
+        placed: false,
+      }
+      swaps.push(swap)
+      if (await pathExists(swap.target)) {
+        await fileSystem.rename(swap.target, swap.aside)
+        swap.movedAside = true
+      }
+      await fileSystem.rename(join(staging, 'new', alias), swap.target)
+      swap.placed = true
+    }
+    configTouched = true
+    await fileSystem.updateConfig(configPath, configChanges)
+  } catch (error) {
+    const problems = await rollBack({
+      swaps,
+      configPath,
+      configBefore,
+      configTouched,
+      createdFolder,
+    })
+    if (problems.length) {
+      keepStaging = true
+      throw new Error(
+        `${error.message} - and the rollback failed (${
+          problems.join('; ')
+        }); the previous versions are in ${join(staging, 'old')}`,
+      )
+    }
+    throw new Error(`${error.message} - nothing was installed`)
+  } finally {
+    if (!keepStaging) {
+      await Deno.remove(staging, { recursive: true }).catch(() => {})
+      if (createdWorkFolder) await Deno.remove(workFolder).catch(() => {})
+    }
+  }
 }
 
 const alphabeticalInsertionIndex = (alias) => (keys) => {
@@ -179,17 +278,17 @@ export async function install({ root, packageArg = null, versionArg = null, alia
   } finally {
     await shutdownBundler()
   }
-  for (const dependency of prepared) {
-    dependencies[dependency.alias] = await writeOne({ root, maxBytes, ignore }, dependency)
-  }
-  await updateConfigFile(
-    await configTargetPath(root),
-    targets.map((target) => ({
-      path: ['dependencies', target.alias],
-      value: dependencies[target.alias],
-      getInsertionIndex: alphabeticalInsertionIndex(target.alias),
+  for (const dependency of prepared) warnAboutSize({ maxBytes, ignore }, dependency)
+  await commitDependencies({
+    root,
+    dependencies: prepared,
+    configChanges: prepared.map(({ alias, specifier }) => ({
+      path: ['dependencies', alias],
+      value: specifier,
+      getInsertionIndex: alphabeticalInsertionIndex(alias),
     })),
-  )
+  })
+  for (const dependency of prepared) reportInstalled(dependency)
 }
 
 export async function uninstall({ root, alias = null }) {

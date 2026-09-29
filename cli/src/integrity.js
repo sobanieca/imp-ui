@@ -1,8 +1,9 @@
-import { encodeBase64 } from '@std/encoding/base64'
-import { isAbsolute, join } from '@std/path'
+import { decodeBase64, encodeBase64 } from '@std/encoding/base64'
+import { join } from '@std/path'
 import { packageId } from './deps.js'
 
 const NPM_REGISTRY = 'https://registry.npmjs.org'
+const NPM_SIGNING_KEYS = `${NPM_REGISTRY}/-/npm/v1/keys`
 const JSR_API = 'https://api.jsr.io'
 
 const SRI_ALGORITHMS = { sha512: 'SHA-512', sha384: 'SHA-384', sha256: 'SHA-256', sha1: 'SHA-1' }
@@ -109,8 +110,6 @@ async function fetchBytes(url, what) {
   return new Uint8Array(await response.arrayBuffer())
 }
 
-const absoluteCachePath = (path) => isAbsolute(path) ? path : `/${path}`
-
 export function bundledFileProblem(id, tarball, bundled) {
   for (const { path, bytes } of bundled) {
     const published = tarball.get(path)
@@ -124,7 +123,86 @@ export function bundledFileProblem(id, tarball, bundled) {
   return null
 }
 
-async function verifyNpmPackage({ name, version, directory, files }) {
+const DER_SEQUENCE = 0x30
+const DER_INTEGER = 0x02
+const P256_COORDINATE = 32
+
+export function signatureFromDer(der) {
+  if (der[0] !== DER_SEQUENCE || der[1] !== der.length - 2) return null
+  const raw = new Uint8Array(P256_COORDINATE * 2)
+  let offset = 2
+  for (const start of [0, P256_COORDINATE]) {
+    if (der[offset] !== DER_INTEGER) return null
+    const length = der[offset + 1]
+    let value = der.subarray(offset + 2, offset + 2 + length)
+    offset += 2 + length
+    while (value.length > P256_COORDINATE && value[0] === 0) value = value.subarray(1)
+    if (value.length > P256_COORDINATE || offset > der.length) return null
+    raw.set(value, start + P256_COORDINATE - value.length)
+  }
+  return offset === der.length ? raw : null
+}
+
+async function signatureMatches(key, message, signature) {
+  const raw = signatureFromDer(decodeBase64(signature))
+  if (!raw) return false
+  const publicKey = await crypto.subtle.importKey(
+    'spki',
+    decodeBase64(key),
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['verify'],
+  )
+  return await crypto.subtle.verify(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    publicKey,
+    raw,
+    new TextEncoder().encode(message),
+  )
+}
+
+export async function registrySignatureProblem(
+  { name, version, integrity, signatures },
+  keys,
+  publishTime,
+) {
+  const id = packageId({ name, version })
+  if (!signatures?.length) return `${id} carries no signature of the npm registry`
+  for (const { keyid, sig } of signatures) {
+    const key = keys.find((candidate) => candidate.keyid === keyid)
+    if (!key) return `${id} is signed with the key ${keyid}, which the npm registry does not list`
+    if (key.expires) {
+      const published = await publishTime()
+      if (!published) {
+        return `${id} is signed with the key ${keyid}, which expired on ${key.expires}, and the npm registry gives no publish time for the version`
+      }
+      if (!(Date.parse(published) < Date.parse(key.expires))) {
+        return `${id} was published on ${published}, after the key ${keyid} that signs it expired on ${key.expires}`
+      }
+    }
+    const matches = await signatureMatches(key.key, `${name}@${version}:${integrity}`, sig)
+      .catch(() => false)
+    if (!matches) {
+      return `${id} has a signature of the key ${keyid} that does not match its name, version and hash`
+    }
+  }
+  return null
+}
+
+async function npmSigningKeys() {
+  const { keys } = await fetchJson(NPM_SIGNING_KEYS, 'the signing keys of the npm registry')
+  if (!Array.isArray(keys)) {
+    throw new Error(`could not read the signing keys of the npm registry - ${NPM_SIGNING_KEYS}`)
+  }
+  return keys
+}
+
+async function npmPublishTime(name, version) {
+  const packument = await fetchJson(`${NPM_REGISTRY}/${name}`, `the publish times of ${name}`)
+  return packument.time?.[version] ?? null
+}
+
+async function verifyNpmPackage({ name, version, directory, files }, signingKeys) {
   const id = packageId({ name, version })
   const metadata = await fetchJson(`${NPM_REGISTRY}/${name}/${version}`, `the metadata of ${id}`)
   const integrity = metadata.dist?.integrity ?? null
@@ -132,6 +210,15 @@ async function verifyNpmPackage({ name, version, directory, files }) {
     throw new Error(
       `${id} has no integrity hash in the npm registry - imp installs only a package it can check`,
     )
+  }
+  let publishTime = null
+  const signatureProblem = await registrySignatureProblem(
+    { name, version, integrity, signatures: metadata.dist.signatures },
+    await signingKeys(),
+    () => publishTime ??= npmPublishTime(name, version),
+  )
+  if (signatureProblem) {
+    throw new Error(`signature check failed - ${signatureProblem}; nothing was installed`)
   }
   const tarball = await fetchBytes(metadata.dist.tarball, id)
   if (!await matchesIntegrity(integrity, tarball)) {
@@ -141,17 +228,17 @@ async function verifyNpmPackage({ name, version, directory, files }) {
   }
   const bundled = await Promise.all(files.map(async (path) => ({
     path,
-    bytes: await Deno.readFile(join(absoluteCachePath(directory), path)),
+    bytes: await Deno.readFile(join(directory, path)),
   })))
   const problem = bundledFileProblem(id, await tarballFiles(tarball), bundled)
   if (problem) throw new Error(`integrity check failed - ${problem}; nothing was installed`)
   return {
     integrity: strongestSri(integrity).expected,
-    provenance: Boolean(metadata.dist?.attestations?.provenance),
+    attestationListed: Boolean(metadata.dist?.attestations?.provenance),
   }
 }
 
-async function jsrProvenance({ name, version }) {
+async function jsrAttestationListed({ name, version }) {
   const [scope, packageName] = name.slice(1).split('/')
   const response = await fetch(
     `${JSR_API}/scopes/${scope}/packages/${packageName}/versions/${version}`,
@@ -165,8 +252,10 @@ async function jsrProvenance({ name, version }) {
 }
 
 export async function verifyPackages(packages) {
+  let keys = null
+  const signingKeys = () => keys ??= npmSigningKeys()
   return await Promise.all(packages.map(async (entry) => {
-    if (entry.registry === 'npm') return { ...entry, ...await verifyNpmPackage(entry) }
-    return { ...entry, integrity: null, provenance: await jsrProvenance(entry) }
+    if (entry.registry === 'npm') return { ...entry, ...await verifyNpmPackage(entry, signingKeys) }
+    return { ...entry, integrity: null, attestationListed: await jsrAttestationListed(entry) }
   }))
 }

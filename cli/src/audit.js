@@ -10,6 +10,12 @@ import { logger } from './logger.js'
 const OSV_API = 'https://api.osv.dev/v1'
 const OSV_BATCH_SIZE = 1000
 const OSV_LINK = 'https://osv.dev/vulnerability/'
+const OSV_ATTEMPTS = 4
+const OSV_FIRST_BACKOFF_MS = 1000
+const OSV_LONGEST_WAIT_MS = 60000
+
+export const AUDIT_VULNERABLE = 1
+export const AUDIT_INCOMPLETE = 2
 
 export const SBOM_FILE = 'sbom.cdx.json'
 const CYCLONEDX_VERSION = '1.7'
@@ -21,14 +27,24 @@ async function readManifests(root, dependencies) {
   const missing = []
   for (const alias of Object.keys(dependencies)) {
     const manifest = await readDependencyManifest(root, alias)
-    if (manifest) manifests.push(manifest)
-    else missing.push(alias)
+    if (!manifest) {
+      missing.push(alias)
+      continue
+    }
+    if (!Array.isArray(manifest.packages)) {
+      throw new Error(
+        `invalid dependencies/${alias}/${DEPENDENCY_MANIFEST_FILE} - it lists no packages`,
+      )
+    }
+    manifests.push(manifest)
   }
   if (missing.length) {
-    logger.warn(
-      `no ${DEPENDENCY_MANIFEST_FILE} for ${missing.join(', ')} - ${
-        missing.length === 1 ? 'that dependency is' : 'those dependencies are'
-      } left out; run 'imp install' to record ${missing.length === 1 ? 'it' : 'them'}`,
+    throw new Error(
+      `no ${DEPENDENCY_MANIFEST_FILE} for ${missing.join(', ')} - imp has no record of what ${
+        missing.length === 1 ? 'that dependency bundles' : 'those dependencies bundle'
+      }, so it cannot check ${missing.length === 1 ? 'it' : 'them'}; run 'imp install' to record ${
+        missing.length === 1 ? 'it' : 'them'
+      }`,
     )
   }
   return manifests
@@ -51,51 +67,67 @@ export const osvQuery = ({ name, version }) => ({
   version,
 })
 
-async function postJson(url, body) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw new Error(`the OSV database did not answer - ${url} responded ${response.status}`)
-  }
-  return await response.json()
+const isRetryable = (status) => status === 429 || status >= 500
+
+export function retryDelay(retryAfter, attempt, now = Date.now()) {
+  const header = retryAfter?.trim() ?? ''
+  const requested = /^\d+$/.test(header) ? Number(header) * 1000 : Date.parse(header) - now
+  const delay = Number.isNaN(requested) ? OSV_FIRST_BACKOFF_MS * 2 ** attempt : requested
+  return Math.min(Math.max(delay, 0), OSV_LONGEST_WAIT_MS)
 }
 
-async function getJson(url) {
-  const response = await fetch(url)
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw new Error(`the OSV database did not answer - ${url} responded ${response.status}`)
-  }
-  return await response.json()
-}
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const postToOsv = (path, body) => postJson(`${OSV_API}${path}`, body)
-
-async function remainingPages(entry, pageToken, post) {
-  const ids = []
-  let token = pageToken
-  while (token) {
-    const page = await post('/query', { ...osvQuery(entry), page_token: token })
-    ids.push(...(page.vulns ?? []).map(({ id }) => id))
-    token = page.next_page_token
-  }
-  return ids
-}
-
-export async function knownVulnerabilityIds(packages, post = postToOsv) {
-  const ids = []
-  for (let start = 0; start < packages.length; start += OSV_BATCH_SIZE) {
-    const batch = packages.slice(start, start + OSV_BATCH_SIZE)
-    const { results } = await post('/querybatch', { queries: batch.map(osvQuery) })
-    for (const [index, entry] of batch.entries()) {
-      const result = results[index] ?? {}
-      const first = (result.vulns ?? []).map(({ id }) => id)
-      ids.push([...first, ...await remainingPages(entry, result.next_page_token, post)])
+export function osvClient({ send = fetch, sleep = wait } = {}) {
+  async function request(path, init) {
+    const url = `${OSV_API}${path}`
+    for (let attempt = 1;; attempt++) {
+      const response = await send(url, init)
+      if (response.ok) return await response.json()
+      await response.body?.cancel()
+      if (!isRetryable(response.status) || attempt === OSV_ATTEMPTS) {
+        throw new Error(`the OSV database did not answer - ${url} responded ${response.status}`)
+      }
+      await sleep(retryDelay(response.headers.get('retry-after'), attempt - 1))
     }
+  }
+  return {
+    post: (path, body) =>
+      request(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    get: (path) => request(path),
+  }
+}
+
+export async function knownVulnerabilityIds(packages, osv = osvClient()) {
+  const ids = packages.map(() => [])
+  let pending = packages.map((entry, index) => ({ index, query: osvQuery(entry) }))
+  while (pending.length) {
+    const next = []
+    for (let start = 0; start < pending.length; start += OSV_BATCH_SIZE) {
+      const batch = pending.slice(start, start + OSV_BATCH_SIZE)
+      const { results } = await osv.post('/querybatch', {
+        queries: batch.map(({ query }) => query),
+      })
+      if (!Array.isArray(results) || results.length !== batch.length) {
+        throw new Error(
+          `the OSV database answered ${batch.length} queries with ${results?.length ?? 0} results`,
+        )
+      }
+      for (const [position, { index, query }] of batch.entries()) {
+        const { vulns = [], next_page_token: token } = results[position] ?? {}
+        ids[index].push(...vulns.map(({ id }) => id))
+        if (!token) continue
+        if (token === query.page_token) {
+          throw new Error('the OSV database returned the same page token twice')
+        }
+        next.push({ index, query: { ...query, page_token: token } })
+      }
+    }
+    pending = next
   }
   return ids
 }
@@ -135,11 +167,9 @@ export function auditReport(checked, unchecked) {
   const count = affected.reduce((sum, { vulnerabilities }) => sum + vulnerabilities.length, 0)
   const packages = (number) => `${number} npm package${number === 1 ? '' : 's'}`
   const found = count === 1 ? '1 known vulnerability' : `${count} known vulnerabilities`
-  lines.push(
-    count
-      ? `${found} in ${packages(affected.length)}, of ${checked.length} checked`
-      : `no known vulnerabilities in ${packages(checked.length)}`,
-  )
+  if (count) lines.push(`${found} in ${packages(affected.length)}, of ${checked.length} checked`)
+  else if (checked.length) lines.push(`no known vulnerabilities in ${packages(checked.length)}`)
+  else lines.push('no npm packages to check')
   if (unchecked.length) {
     lines.push(
       `not checked: ${
@@ -150,20 +180,20 @@ export function auditReport(checked, unchecked) {
   return { text: lines.join('\n'), vulnerable: count > 0 }
 }
 
-async function vulnerabilityDetails(ids) {
+async function vulnerabilityDetails(ids, osv) {
   const details = new Map()
   const unique = [...new Set(ids.flat())]
   await Promise.all(unique.map(async (id) => {
-    details.set(id, await getJson(`${OSV_API}/vulns/${encodeURIComponent(id)}`))
+    details.set(id, await osv.get(`/vulns/${encodeURIComponent(id)}`))
   }))
   return details
 }
 
-async function checkVulnerabilities(packages) {
+async function checkVulnerabilities(packages, osv = osvClient()) {
   const npm = packages.filter((entry) => entry.registry === 'npm')
   const unchecked = packages.filter((entry) => entry.registry !== 'npm')
-  const ids = await knownVulnerabilityIds(npm)
-  const details = await vulnerabilityDetails(ids)
+  const ids = await knownVulnerabilityIds(npm, osv)
+  const details = await vulnerabilityDetails(ids, osv)
   const checked = npm.map((entry, index) => ({
     entry,
     vulnerabilities: ids[index].map((id) => describeVulnerability(details.get(id), entry)),
@@ -242,32 +272,41 @@ export function cycloneDxBom({ appName, manifests, serialNumber, timestamp }) {
   }
 }
 
+async function writeBom(root, manifests, output) {
+  const path = resolve(output ?? join(root, SBOM_FILE))
+  const bom = cycloneDxBom({
+    appName: basename(root),
+    manifests,
+    serialNumber: `urn:uuid:${crypto.randomUUID()}`,
+    timestamp: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+  })
+  await Deno.writeTextFile(path, `${JSON.stringify(bom, null, 2)}\n`)
+  const count = bom.components.length
+  console.log(
+    `wrote ${relative(Deno.cwd(), path)} - CycloneDX ${CYCLONEDX_VERSION}, ${count} package${
+      count === 1 ? '' : 's'
+    }`,
+  )
+}
+
 export async function audit({ root, sbom = false, output = null }) {
-  const config = await loadImpConfig(root)
-  const dependencies = config.dependencies ?? {}
-  if (!Object.keys(dependencies).length) {
-    console.log('nothing to audit - no dependencies declared in imp.json')
-    return 0
+  try {
+    const config = await loadImpConfig(root)
+    const dependencies = config.dependencies ?? {}
+    if (!Object.keys(dependencies).length) {
+      console.log('nothing to audit - imp.json declares no dependencies, so imp vendors no package')
+      return 0
+    }
+    const manifests = await readManifests(root, dependencies)
+    if (sbom) {
+      await writeBom(root, manifests, output)
+      return 0
+    }
+    const { text, vulnerable } = await checkVulnerabilities(auditedPackages(manifests))
+    console.log(text)
+    return vulnerable ? AUDIT_VULNERABLE : 0
+  } catch (error) {
+    logger.error(`${error.message} - the audit did not complete`)
+    return AUDIT_INCOMPLETE
   }
-  const manifests = await readManifests(root, dependencies)
-  if (sbom) {
-    const path = resolve(output ?? join(root, SBOM_FILE))
-    const bom = cycloneDxBom({
-      appName: basename(root),
-      manifests,
-      serialNumber: `urn:uuid:${crypto.randomUUID()}`,
-      timestamp: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-    })
-    await Deno.writeTextFile(path, `${JSON.stringify(bom, null, 2)}\n`)
-    const count = bom.components.length
-    console.log(
-      `wrote ${relative(Deno.cwd(), path)} - CycloneDX ${CYCLONEDX_VERSION}, ${count} package${
-        count === 1 ? '' : 's'
-      }`,
-    )
-    return 0
-  }
-  const { text, vulnerable } = await checkVulnerabilities(auditedPackages(manifests))
-  console.log(text)
-  return vulnerable ? 1 : 0
 }

@@ -1,7 +1,7 @@
-import { fromFileUrl, isAbsolute, join, relative, SEPARATOR, toFileUrl } from '@std/path'
+import { join, relative, toFileUrl } from '@std/path'
 import { encodeBase64 } from '@std/encoding/base64'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
+import { bundledFiles, DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
 import { impResolverPlugin } from './bundling.js'
 import { isMockFile } from './project-files.js'
 import { logger } from './logger.js'
@@ -14,11 +14,9 @@ const SKIPPED_DIRECTORIES = new Set(['.git', 'node_modules', 'dist', '.imp'])
 
 const ENTRY_NAMESPACE = 'imp-mocks-entry'
 
-const EMPTY_BODY_STATUSES = new Set([204, 205, 304])
+const MOCK_WORKER_URL = new URL('./mock-worker.js', import.meta.url)
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const importCode = (code) => import(`data:text/javascript;base64,${encodeBase64(code)}`)
+const moduleUrl = (code) => `data:text/javascript;base64,${encodeBase64(code)}`
 
 const messageOf = (error) => String(error?.message || error)
 
@@ -67,7 +65,7 @@ function mocksEntryPlugin({ contents, root }) {
   }
 }
 
-async function bundleMockFiles(files, { root, dependencies = {} } = {}) {
+export async function bundleMockFiles(files, { root, dependencies = {} } = {}) {
   const result = await runEsbuild({
     plugins: [
       mocksEntryPlugin({ contents: entrySource(files), root }),
@@ -75,6 +73,7 @@ async function bundleMockFiles(files, { root, dependencies = {} } = {}) {
       denoPlugin(),
     ],
     entryPoints: [ENTRY_NAMESPACE],
+    absWorkingDir: root,
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -85,16 +84,8 @@ async function bundleMockFiles(files, { root, dependencies = {} } = {}) {
     outdir: '/imp-mocks',
     loader: DATAURL_ASSET_LOADERS,
   })
-  return { source: result.outputFiles[0].text, inputs: inputFiles(result.metafile) }
+  return { source: result.outputFiles[0].text, inputs: bundledFiles(result.metafile) }
 }
-
-const inputFiles = (metafile) =>
-  Object.keys(metafile.inputs).flatMap((input) => {
-    if (input.startsWith('file://')) return [fromFileUrl(input)]
-    if (/^[a-z][\w-]*:/i.test(input)) return []
-    const file = [input, SEPARATOR + input].find((candidate) => isAbsolute(candidate))
-    return file ? [file] : []
-  })
 
 const stampOf = async (files) => {
   const stamps = await Promise.all(files.map(async (file) => {
@@ -108,81 +99,106 @@ const stampOf = async (files) => {
   return stamps.join('|')
 }
 
-const locate = (file, root) => {
-  for (const candidate of [file, SEPARATOR + file]) {
-    if (isAbsolute(candidate)) return asPosix(relative(root, candidate))
-  }
-  return asPosix(file)
-}
-
-export function describeBundleProblem(error, root) {
+export function describeBundleProblem(error) {
   const reported = error?.errors?.map((issue) => {
     const file = issue.location?.file
-    const where = file ? `${locate(file, root)}:${issue.location.line} - ` : ''
+    const where = file ? `${file}:${issue.location.line} - ` : ''
     return `${where}${issue.text}`
   })
   return reported?.length ? reported.join('; ') : (error?.message ?? String(error))
 }
 
-function collectEntries(modules, files, root) {
-  const problems = []
-  const entries = modules.flatMap((module, fileIndex) => {
-    const file = asPosix(relative(root, files[fileIndex]))
-    const declared = module.mocks ?? module.default
-    if (!Array.isArray(declared)) {
-      problems.push(`${file} must export 'mocks' - an array of { match, handler }`)
-      return []
-    }
-    return declared.flatMap((entry, index) => {
-      const source = `${file} #${index + 1}`
-      if (typeof entry?.match !== 'function' || typeof entry?.handler !== 'function') {
-        problems.push(`${source} must be { match, handler }, both functions`)
-        return []
-      }
-      return [{ match: entry.match, handler: entry.handler, delay: entry.delay ?? 0, source }]
+function startMockWorker({ onStop }) {
+  const worker = new Worker(MOCK_WORKER_URL, { type: 'module' })
+  const pending = new Map()
+  const streams = new Set()
+  let nextId = 0
+  let retired = false
+  let stopped = false
+  const stop = (reason) => {
+    if (stopped) return
+    stopped = true
+    worker.terminate()
+    for (const settle of pending.values()) settle({ failure: reason })
+    pending.clear()
+    for (const stream of streams) stream.abort(new Error(reason))
+    streams.clear()
+  }
+  const stopWhenIdle = () => {
+    if (retired && pending.size === 0 && streams.size === 0) stop('the mocks were replaced')
+  }
+  const relayed = (body) => {
+    if (!body) return null
+    const { readable, writable } = new TransformStream()
+    const stream = new AbortController()
+    streams.add(stream)
+    body.pipeTo(writable, { signal: stream.signal }).catch(() => {}).finally(() => {
+      streams.delete(stream)
+      stopWhenIdle()
     })
-  })
-  return { entries, problems }
+    return readable
+  }
+  worker.onmessage = ({ data }) => {
+    if (data.problem) {
+      logger.error(`mocks - ${data.problem}`)
+      return
+    }
+    const settle = pending.get(data.id)
+    pending.delete(data.id)
+    settle?.({ ...data, body: relayed(data.body) })
+    stopWhenIdle()
+  }
+  worker.onerror = (event) => {
+    event.preventDefault()
+    const failure = messageOf(event.message)
+    logger.error(`mocks - ${failure}`)
+    stop(failure)
+    onStop()
+  }
+  const call = (message) => {
+    if (stopped) return Promise.resolve({ failure: 'the mocks stopped' })
+    const id = nextId++
+    return new Promise((resolve) => {
+      pending.set(id, resolve)
+      worker.postMessage({ ...message, id })
+    })
+  }
+  return {
+    load: (code, files) => call({ url: moduleUrl(code), files }),
+    answer: (description) => call({ description }),
+    retire: () => {
+      retired = true
+      stopWhenIdle()
+    },
+  }
 }
 
-async function loadMockSet(files, { root, dependencies }) {
-  let bundle
+async function bundleMockSet(files, { root, dependencies, watched, bundle }) {
   try {
-    bundle = await bundleMockFiles(files, { root, dependencies })
+    return { ...await bundle(files, { root, dependencies }), problems: [] }
   } catch (error) {
-    return { inputs: [], entries: [], problems: [describeBundleProblem(error, root)] }
-  }
-  try {
-    const { default: modules } = await importCode(bundle.source)
-    return { inputs: bundle.inputs, ...collectEntries(modules, files, root) }
-  } catch (error) {
+    const failing = (error?.errors ?? []).map((issue) => issue.location?.file)
+      .filter((file) => file && !/^[^/]*:/.test(file))
     return {
-      inputs: bundle.inputs,
-      entries: [],
-      problems: [`evaluation failed - ${messageOf(error)}`],
+      source: null,
+      inputs: [...new Set([...watched, ...failing.map((file) => join(root, file))])],
+      problems: [describeBundleProblem(error)],
     }
   }
 }
 
-const isRawBody = (body) =>
-  body instanceof Blob || body instanceof ArrayBuffer || ArrayBuffer.isView(body) ||
-  body instanceof FormData || body instanceof URLSearchParams || body instanceof ReadableStream
-
-function mockResponse(result) {
-  if (result instanceof Response) return result
-  const descriptor = result || {}
-  const status = descriptor.status ?? 200
-  const headers = new Headers(descriptor.headers || {})
-  let body = descriptor.body
-  if (body === undefined || body === null || EMPTY_BODY_STATUSES.has(status)) {
-    body = null
-  } else if (typeof body === 'string') {
-    if (!headers.has('content-type')) headers.set('content-type', 'text/plain;charset=utf-8')
-  } else if (!isRawBody(body)) {
-    body = JSON.stringify(body)
-    if (!headers.has('content-type')) headers.set('content-type', 'application/json')
+async function evaluateMockSet({ source, inputs }, files, { root, onStop }) {
+  const worker = startMockWorker({ onStop: () => onStop(worker) })
+  const loaded = await worker.load(source, files.map((file) => asPosix(relative(root, file))))
+  if (loaded.body) await new Response(loaded.body).arrayBuffer()
+  const sources = loaded.sources ?? []
+  if (!sources.length) worker.retire()
+  return {
+    inputs,
+    entries: sources,
+    problems: loaded.failure ? [`evaluation failed - ${loaded.failure}`] : loaded.problems,
+    worker: sources.length ? worker : null,
   }
-  return new Response(body, { status, statusText: descriptor.statusText || '', headers })
 }
 
 const verdictHeaders = (verdict) => ({
@@ -190,33 +206,31 @@ const verdictHeaders = (verdict) => ({
   'cache-control': 'no-store',
 })
 
-async function answerFromEntry(entry, description) {
-  try {
-    if (entry.delay) await sleep(entry.delay)
-    const response = mockResponse(await entry.handler(description))
-    const verdict = {
-      source: entry.source,
-      status: response.status,
-      statusText: response.statusText,
-      headers: [...response.headers],
-    }
-    return new Response(response.body, { headers: verdictHeaders(verdict) })
-  } catch (error) {
-    return new Response(null, {
-      headers: verdictHeaders({ source: entry.source, error: messageOf(error) }),
-    })
-  }
-}
+const MISSING_FOLDER = 'missing'
 
-export function createMocks({ root, directory, dependencies = {}, onChange = () => {} }) {
-  let current = { key: null, inputs: [], files: [], entries: [], problems: [] }
-  let refreshing = null
+const NO_FILES = 'none'
+
+const unanswered = () =>
+  new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } })
+
+export function createMocks(
+  { root, directory, dependencies = {}, onChange = () => {}, bundle = bundleMockFiles },
+) {
+  const empty = { key: null, inputs: [], files: [], entries: [], problems: [], worker: null }
+  let current = empty
+  let running = null
+  let queued = null
 
   const settle = (next) => {
-    const changed = current.key !== next.key
+    const previous = current
     current = next
-    if (changed) onChange(current)
+    if (previous.worker !== next.worker) previous.worker?.retire()
+    if (previous.key !== next.key) onChange(current)
     return current
+  }
+
+  const onStop = (worker) => {
+    if (current.worker === worker) current = { ...current, key: null, worker: null }
   }
 
   const rebuild = async () => {
@@ -225,22 +239,43 @@ export function createMocks({ root, directory, dependencies = {}, onChange = () 
       files = await findMockFiles(directory)
     } catch {
       return settle({
-        key: 'missing',
-        inputs: [],
-        files: [],
-        entries: [],
+        ...empty,
+        key: MISSING_FOLDER,
         problems: [`${asPosix(relative(root, directory))}/ does not exist`],
       })
     }
+    if (!files.length) {
+      return current.key === NO_FILES ? current : settle({ ...empty, key: NO_FILES })
+    }
     const watched = (inputs) => [...new Set([...files, ...inputs])].sort()
-    if (current.key === await stampOf(watched(current.inputs))) return current
-    const loaded = files.length
-      ? await loadMockSet(files, { root, dependencies })
-      : { inputs: [], entries: [], problems: [] }
-    return settle({ key: await stampOf(watched(loaded.inputs)), files, ...loaded })
+    let known = current.inputs
+    for (;;) {
+      const before = await stampOf(watched(known))
+      if (before === current.key) return current
+      const bundled = await bundleMockSet(files, { root, dependencies, watched: known, bundle })
+      const after = await stampOf(watched(bundled.inputs))
+      if (after !== before) {
+        known = bundled.inputs
+        continue
+      }
+      const loaded = bundled.source
+        ? await evaluateMockSet(bundled, files, { root, onStop })
+        : { inputs: bundled.inputs, entries: [], problems: bundled.problems, worker: null }
+      return settle({ ...loaded, key: after, files })
+    }
   }
 
-  const refresh = () => (refreshing ??= rebuild().finally(() => refreshing = null))
+  const refresh = () => {
+    if (!running) {
+      running = rebuild().finally(() => running = null)
+      return running
+    }
+    queued ??= running.catch(() => {}).then(() => {
+      queued = null
+      return refresh()
+    })
+    return queued
+  }
 
   const answer = async (request) => {
     let description
@@ -249,17 +284,16 @@ export function createMocks({ root, directory, dependencies = {}, onChange = () 
     } catch {
       return new Response('mocks - the request description could not be read', { status: 400 })
     }
-    const { entries } = await refresh()
-    for (const entry of entries) {
-      let matched = false
-      try {
-        matched = await entry.match(description)
-      } catch (error) {
-        logger.error(`mocks - ${entry.source} match() threw: ${messageOf(error)}`)
-      }
-      if (matched) return answerFromEntry(entry, description)
+    const { worker } = await refresh()
+    if (!worker) return unanswered()
+    const reply = await worker.answer(description)
+    if (reply.failure) {
+      return new Response(null, {
+        headers: verdictHeaders({ source: 'mocks', error: reply.failure }),
+      })
     }
-    return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } })
+    if (!reply.verdict) return unanswered()
+    return new Response(reply.body, { headers: verdictHeaders(reply.verdict) })
   }
 
   return { refresh, answer }

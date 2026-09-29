@@ -199,7 +199,10 @@ under `.imp/screenshots/`. To use a different entry page, set `test.entry` in `i
 
 **Check every control of a page with one matcher.** It reports a control with no accessible name,
 and a focusable element with no role. It returns a promise, so always `await` it. It takes the page,
-or an element from `page.$()`. It is not a full audit: it does not check contrast or headings.
+or an element from `page.$()`. It is not a full audit: it does not check contrast or headings. It
+skips an element outside the accessibility tree: `hidden`, `display: none`, `visibility: hidden`,
+inside `inert` or `aria-hidden="true"`, or in a closed `<details>` or `<dialog>`. Open a hidden
+panel before you check it.
 
 ```js
 await expect(page).toHaveAccessibleControls()

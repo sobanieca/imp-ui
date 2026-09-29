@@ -12,7 +12,7 @@ const createFlakyHandler = () => {
 export const mocks = [
   {
     match: (request) => request.method === 'GET' && request.path === '/api/users',
-    delay: 20,
+    delay: 250,
     handler: () => ({ status: 200, body: people }),
   },
   {

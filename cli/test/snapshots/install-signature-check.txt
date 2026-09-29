@@ -1,0 +1,13 @@
+signed by a current key: null
+publish time looked up for a key with no expiry: false
+another hash: @demo/pkg@1.0.0 has a signature of the key SHA256:current that does not match its name, version and hash
+another version: @demo/pkg@1.0.1 has a signature of the key SHA256:current that does not match its name, version and hash
+signed by another key: @demo/pkg@1.0.0 has a signature of the key SHA256:current that does not match its name, version and hash
+no signature: @demo/pkg@1.0.0 carries no signature of the npm registry
+unknown key: @demo/pkg@1.0.0 is signed with the key SHA256:other, which the npm registry does not list
+a second signature that fails: @demo/pkg@1.0.0 has a signature of the key SHA256:current that does not match its name, version and hash
+retired key, published before it expired: null
+retired key, published after it expired: @demo/pkg@1.0.0 was published on 2025-03-01T00:00:00.000Z, after the key SHA256:retired that signs it expired on 2025-01-29T00:00:00.000Z
+retired key, no publish time: @demo/pkg@1.0.0 is signed with the key SHA256:retired, which expired on 2025-01-29T00:00:00.000Z, and the npm registry gives no publish time for the version
+DER with a padded r and a short s reads back: true
+DER with a wrong length: null

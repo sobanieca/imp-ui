@@ -35,6 +35,19 @@ Dependency bundling runs fully in process, and imp writes no resolver of its own
   by itself, over the network. It needs no `node_modules`, no lock file, and no `deno` on the
   machine.
 
+- **Every call to esbuild goes through one function, `runEsbuild`.** The browser build of
+  esbuild-wasm has a virtual file system in the POSIX style. It accepts only a path that starts with
+  `/`, so it rejects a Windows path such as `C:\app\main.js`. On Windows, `runEsbuild` turns each
+  native path into a POSIX form before esbuild sees it: `C:\app\main.js` becomes `/C:/app/main.js`,
+  and `\\server\share` becomes `/UNC/server/share`. That covers the entry points, the output folder,
+  the working folder, and every path that a plugin returns. It turns each path that esbuild gives
+  back into the native form again: the arguments of a plugin callback, the output files and the
+  metafile. So no caller and no plugin handles a path of the other form. On other systems the two
+  forms are the same, and the function changes nothing.
+- **`runEsbuild` gives every file of the metafile as an absolute path.** esbuild writes it relative
+  to the working folder. The callers compare an output with a file on disk, so one absolute form
+  removes the guesswork. A key in another namespace, such as `imp-library:`, keeps its prefix.
+
 `cli/src/deps.js` initializes esbuild-wasm on first use. It bundles each installed specifier with
 `[denoPlugin()]`, minified. It emits a non-JS asset, such as a wasm file, an image, a font or a
 stylesheet, as a sibling file in the vendor folder of the dependency.

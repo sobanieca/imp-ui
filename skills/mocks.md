@@ -71,14 +71,17 @@ other request, and adds the file and the entry that answered:
   does not exist yet, while the rest goes to your backend.
 - **A thrown error simulates a failed connection, not a `500`.** The request fails in the page as if
   the server were unreachable. To simulate a server error, return `{ status: 500 }`.
-- **Mock code runs in the `imp start` process, outside the page and outside the worker.** There is
-  no `document`, no access to app state, and no import from the DOM layer of your app. A plain
-  module and a vendored dependency both work.
+- **Mock code runs in a worker thread of the `imp start` process, outside the page and outside the
+  service worker.** There is no `document`, no access to app state, and no import from the DOM layer
+  of your app. A plain module and a vendored dependency both work.
+- **An error thrown outside a handler, such as in a timer, stops only the mocks.** imp reports it,
+  and the next request loads the files again with a new state.
 - **imp loads the files once per run.** So a closure is how a mock keeps state between requests.
   Examples are a counter that fails every second call, and an in-memory list that remembers a
   `POST`. All tabs share the state. A reload and a stopped service worker keep it.
 - **An edit to a mock file, or to a file that it imports, resets the state.** imp loads the files
-  again. To start again from the seed data with no edit, restart `imp start`.
+  again in a new thread. An edit saved during a load starts one more load, so it is never lost. To
+  start again from the seed data with no edit, restart `imp start`.
 - **An answer is a real response over the network layer of the browser.** So everything after it
   behaves normally. An [http](http.md) client retries a mocked `503`, a `delay` keeps `pending`
   true, and an interceptor runs.

@@ -7,7 +7,7 @@ installed bus (npm:mitt@3.0.1)
   dependencies/bus/manifest.json (packages, versions, licenses)
   bundled packages:
     mitt@3.0.1 - MIT
-  integrity: 1 npm package checked against the published hash
+  integrity: 1 npm package checked against the signed hash of the npm registry
 
 --- stderr ---
 (empty)

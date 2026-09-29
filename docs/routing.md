@@ -398,6 +398,12 @@ code arrives. When the user navigates away before a slow chunk arrives, imp disc
 section that arrives late never replaces a newer screen. After the screen of the section mounts, its
 own async `setup`, when it has one, shows the `loading` of the **screen** while the data loads.
 
+A deploy can remove the chunk of an area while a tab still runs the previous build. When the chunk
+does not download, imp fetches the current page. If the page names a newer build, imp loads the
+current URL again, so the tab runs the new build on the same screen. It does this at most once for
+each build. Otherwise the `error` of the router shows. See
+[A deploy and the open tabs](deploy.md#a-deploy-and-the-open-tabs).
+
 An area binds only its own nodes. A binding for a node outside its subtree is an error when the area
 loads, and the message names both. A node inside the area that the area does not bind renders the
 same placeholder as anywhere else.
@@ -894,13 +900,18 @@ app, so the client router can take over. Otherwise a refresh returns 404.
 with nothing specific to a host, and you upload it anywhere. To serve the entry for an unknown path
 is a single setting on whatever hosts the app, and every platform has it:
 
-| Host                 | Setting                                                 |
-| -------------------- | ------------------------------------------------------- |
-| nginx                | `try_files $uri /index.html;`                           |
-| Netlify / Cloudflare | a `_redirects` file with `/*  /index.html  200`         |
-| Vercel               | a `rewrites` rule to `/index.html` in `vercel.json`     |
-| S3 + CloudFront      | set the "error document" / 404 response to `index.html` |
-| GitHub Pages         | add a `404.html` that is a copy of your `index.html`    |
+| Host            | Setting                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| nginx           | `try_files $uri /index.html;` in `location /`, and `try_files $uri =404;` in `location /chunks/` |
+| Netlify         | a `_redirects` file with `/chunks/*  /404.html  404` above `/*  /index.html  200`                |
+| Vercel          | a `rewrites` rule in `vercel.json` from `/((?!chunks/).*)` to `/index.html`                      |
+| S3 + CloudFront | a CloudFront Function that sends a path with no file extension to `/index.html`                  |
+| GitHub Pages    | add a `404.html` that is a copy of your `index.html`                                             |
+
+Keep `/chunks/` out of the fallback. A missing file there must get a `404`, never the entry HTML,
+see [Deep links](deploy.md#deep-links). So do not use the error document of S3 or an error page of
+CloudFront for the fallback. They answer a missing chunk with the page too. GitHub Pages sends its
+`404.html` with the status `404`, so a missing chunk is a `404` there as well.
 
 In development you need none of this. `imp start` already serves your entry HTML for a navigation
 request to a path with no extension. A missing asset, such as a wrong `.js` path, still returns 404.

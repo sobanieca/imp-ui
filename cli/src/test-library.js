@@ -204,11 +204,19 @@ const describeElement = (element) => {
 const focusableWithoutNativeRole = (scope) => {
   const NATIVE = 'a[href], button, input, select, textarea, summary, iframe, audio, video'
   const found = []
+  const flatParent = (node) => node.assignedSlot ?? node.parentElement ?? node.parentNode?.host
+  const hiddenFromAssistiveTechnology = (element) => {
+    if (!element.checkVisibility({ visibilityProperty: true })) return true
+    for (let node = element; node; node = flatParent(node)) {
+      if (node.inert || node.getAttribute('aria-hidden') === 'true') return true
+    }
+    return false
+  }
   const consider = (element) => {
     const inTabOrder = element.hasAttribute('tabindex') && element.tabIndex >= 0
     const editingRoot = element.isContentEditable && !element.parentElement?.isContentEditable
     if (!inTabOrder && !editingRoot) return
-    if (element.matches(NATIVE) || !element.checkVisibility()) return
+    if (element.matches(NATIVE) || hiddenFromAssistiveTechnology(element)) return
     found.push(element)
   }
   const visit = (root) => {

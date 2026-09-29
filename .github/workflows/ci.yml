@@ -11,7 +11,7 @@ jobs:
     name: Format and lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -22,6 +22,10 @@ jobs:
         run: deno lint
       - name: Library lint
         run: cd lib/src && deno run -A ../../tools/imp.js lint
+      - name: Install scripts parse
+        run: |
+          bash -n install.sh
+          pwsh -NoProfile -Command '$errors = $null; [System.Management.Automation.Language.Parser]::ParseFile("install.ps1", [ref] $null, [ref] $errors) | Out-Null; if ($errors) { $errors; exit 1 }'
 
   test:
     name: Tests (${{ matrix.os }})
@@ -31,7 +35,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -43,7 +47,7 @@ jobs:
     name: Binary size
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -53,15 +57,16 @@ jobs:
       - name: Check binary size against limit
         run: deno run -A tools/check-binary-size.js
 
-  release:
-    name: Release
+  version:
+    name: Release version
     needs: [check, test, size]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      exists: ${{ steps.tag.outputs.exists }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -79,37 +84,128 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Compile binaries
-        if: steps.tag.outputs.exists == 'false'
+  build:
+    name: Build ${{ matrix.asset }}
+    needs: version
+    if: needs.version.outputs.exists == 'false'
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset: imp-linux-x64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            asset: imp-linux-arm64
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            asset: imp-macos-x64
+          - runner: macos-latest
+            target: aarch64-apple-darwin
+            asset: imp-macos-arm64
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: imp-windows-x64.exe
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+
+      - name: Compile ${{ matrix.asset }}
+        run: deno run -A tools/compile.js --target ${{ matrix.target }} --output ${{ matrix.asset }}
+
+      - name: Smoke test ${{ matrix.asset }}
         run: |
-          for target in \
-            "x86_64-unknown-linux-gnu:imp-linux-x64" \
-            "aarch64-unknown-linux-gnu:imp-linux-arm64" \
-            "x86_64-apple-darwin:imp-macos-x64" \
-            "aarch64-apple-darwin:imp-macos-arm64" \
-            "x86_64-pc-windows-msvc:imp-windows-x64.exe"; do
-            triple="${target%%:*}"
-            output="${target##*:}"
-            deno run -A tools/compile.js --target "$triple" --output "$output"
-            sha256sum "$output" > "$output.sha256"
-          done
+          binary="$PWD/${{ matrix.asset }}"
+          reported="$("$binary" --version | tr -d '\r')"
+          if [ "$reported" != "${{ needs.version.outputs.version }}" ]; then
+            echo "imp --version printed '$reported', expected '${{ needs.version.outputs.version }}'"
+            exit 1
+          fi
+          work="$(mktemp -d)"
+          cd "$work"
+          "$binary" init app
+          cd app
+          "$binary" build
+          test -f dist/index.html
+          "$binary" test --unit
+
+      - name: Checksum ${{ matrix.asset }}
+        run: |
+          if command -v sha256sum > /dev/null; then
+            hash="$(sha256sum "${{ matrix.asset }}" | awk '{print $1}')"
+          else
+            hash="$(shasum -a 256 "${{ matrix.asset }}" | awk '{print $1}')"
+          fi
+          printf '%s  %s\n' "$hash" "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256"
+          cat "${{ matrix.asset }}.sha256"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            ${{ matrix.asset }}
+            ${{ matrix.asset }}.sha256
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Skip if the release already exists
+        id: tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v${{ needs.version.outputs.version }}$"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/download-artifact@v8
+        if: steps.tag.outputs.exists == 'false'
+        with:
+          pattern: imp-*
+          path: release
+          merge-multiple: true
+
+      - name: Verify the checksums
+        if: steps.tag.outputs.exists == 'false'
+        working-directory: release
+        run: |
+          test "$(ls *.sha256 | wc -l)" -eq 5
+          sha256sum --check --strict *.sha256
 
       - name: Create release
         if: steps.tag.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          tag_name: v${{ needs.version.outputs.version }}
+          name: Release v${{ needs.version.outputs.version }}
           draft: false
           prerelease: false
+          fail_on_unmatched_files: true
           files: |
-            imp-linux-x64
-            imp-linux-x64.sha256
-            imp-linux-arm64
-            imp-linux-arm64.sha256
-            imp-macos-x64
-            imp-macos-x64.sha256
-            imp-macos-arm64
-            imp-macos-arm64.sha256
-            imp-windows-x64.exe
-            imp-windows-x64.exe.sha256
+            release/imp-linux-x64
+            release/imp-linux-x64.sha256
+            release/imp-linux-arm64
+            release/imp-linux-arm64.sha256
+            release/imp-macos-x64
+            release/imp-macos-x64.sha256
+            release/imp-macos-arm64
+            release/imp-macos-arm64.sha256
+            release/imp-windows-x64.exe
+            release/imp-windows-x64.exe.sha256

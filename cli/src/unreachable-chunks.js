@@ -1,10 +1,5 @@
 const SIDECAR_SUFFIXES = ['.map', '.LEGAL.txt']
 
-export const namesSameFile = (absolutePath, metafilePath) => {
-  const path = absolutePath.replaceAll('\\', '/')
-  return path === metafilePath || path.endsWith(`/${metafilePath}`)
-}
-
 const reachableFrom = (roots, outputs) => {
   const reached = new Set()
   const pending = [...roots]
@@ -28,9 +23,7 @@ const referencedOutputs = (outputs) =>
 
 export function unreachableOutputs(metafile, entryFiles) {
   const outputs = metafile.outputs
-  const roots = Object.keys(outputs).filter((path) =>
-    entryFiles.some((entry) => namesSameFile(entry, path))
-  )
+  const roots = Object.keys(outputs).filter((path) => entryFiles.includes(path))
   const reached = reachableFrom(roots, outputs)
   const referenced = referencedOutputs(outputs)
   const dropped = Object.keys(outputs).filter((path) =>
@@ -42,10 +35,9 @@ export function unreachableOutputs(metafile, entryFiles) {
 export function withoutUnreachableChunks(result, entryFiles) {
   const dropped = unreachableOutputs(result.metafile, entryFiles)
   if (dropped.length === 0) return result
-  const isDropped = (path) => dropped.some((unreachable) => namesSameFile(path, unreachable))
   return {
     ...result,
-    outputFiles: result.outputFiles.filter((file) => !isDropped(file.path)),
+    outputFiles: result.outputFiles.filter((file) => !dropped.includes(file.path)),
     metafile: {
       ...result.metafile,
       outputs: Object.fromEntries(

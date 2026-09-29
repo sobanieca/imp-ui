@@ -1,6 +1,17 @@
 import { parse } from './vendor/parse5.js'
 
-const URL_ATTRIBUTES = new Set(['href', 'src'])
+const URL_ATTRIBUTES = new Set(['href', 'src', 'poster'])
+
+const SRCSET_ATTRIBUTES = new Set(['srcset', 'imagesrcset'])
+
+const URL_META_NAMES = new Set([
+  'og:image',
+  'og:image:url',
+  'og:image:secure_url',
+  'twitter:image',
+])
+
+const SCRIPT_URL_ATTRIBUTES = new Set(['href', 'src', 'action', 'formaction'])
 
 export const isJavaScriptType = (type) => !type || type === 'module' || type === 'text/javascript'
 
@@ -63,14 +74,89 @@ function valueRange(source, location) {
   return { start: location.startOffset + start, end: location.startOffset + end }
 }
 
+function srcsetCandidates(text) {
+  const candidates = []
+  let index = 0
+  while (index < text.length) {
+    while (index < text.length && /[\s,]/.test(text[index])) index++
+    const start = index
+    while (index < text.length && !/\s/.test(text[index])) index++
+    const url = text.slice(start, index)
+    if (!url) break
+    const trimmed = url.replace(/,+$/, '')
+    candidates.push({ start, value: trimmed })
+    if (trimmed !== url) continue
+    let depth = 0
+    while (index < text.length) {
+      const char = text[index++]
+      if (char === '(') depth++
+      else if (char === ')') depth--
+      else if (char === ',' && depth <= 0) break
+    }
+  }
+  return candidates
+}
+
+const metaUrlName = (element) => {
+  const attributes = attributesOf(element)
+  const name = (attributes.get('property') ?? attributes.get('name') ?? '').toLowerCase()
+  return URL_META_NAMES.has(name)
+}
+
+const holdsUrl = (element, name) =>
+  URL_ATTRIBUTES.has(name) || (name === 'content' && element.tagName === 'meta' &&
+    metaUrlName(element))
+
 function urlAttributesOf(source, element) {
   const found = []
   const locations = element.sourceCodeLocation?.startTag?.attrs ?? {}
   for (const { name, value } of element.attrs) {
-    if (!URL_ATTRIBUTES.has(name.toLowerCase())) continue
+    const lowerName = name.toLowerCase()
+    const isSrcset = SRCSET_ATTRIBUTES.has(lowerName)
+    if (!isSrcset && !holdsUrl(element, lowerName)) continue
     const location = locations[name]
     const range = location ? valueRange(source, location) : null
-    if (range) found.push({ name, value, ...range })
+    if (!range) continue
+    if (!isSrcset) {
+      found.push({ name, value, ...range })
+      continue
+    }
+    for (const candidate of srcsetCandidates(source.slice(range.start, range.end))) {
+      const start = range.start + candidate.start
+      found.push({ name, value: candidate.value, start, end: start + candidate.value.length })
+    }
+  }
+  return found
+}
+
+const lineOfLocation = (location) => location?.startLine ?? 1
+
+function inlineCodeOf(element) {
+  const location = element.sourceCodeLocation
+  const attributeLocations = location?.startTag?.attrs ?? {}
+  const found = []
+  const add = (line, construct, advice) => found.push({ line, construct, advice })
+  if (element.tagName === 'style') {
+    add(lineOfLocation(location), 'a <style> element', 'move the CSS into a file in public/')
+  }
+  if (element.tagName === 'script') {
+    const attributes = attributesOf(element)
+    const type = attributes.get('type')?.toLowerCase()
+    const text = childrenOf(element).map((child) => child.value ?? '').join('')
+    if (!attributes.has('src') && isJavaScriptType(type) && !isModuleType(type) && text.trim()) {
+      add(lineOfLocation(location), 'an inline classic <script>', 'move the code into a module')
+    }
+  }
+  for (const { name, value } of element.attrs) {
+    const lowerName = name.toLowerCase()
+    const line = lineOfLocation(attributeLocations[name] ?? location)
+    if (lowerName.startsWith('on') && lowerName.length > 2) {
+      add(line, `an inline event handler ${lowerName}=`, 'add the listener in a module')
+    } else if (lowerName === 'style') {
+      add(line, 'a style attribute', 'move the style into a CSS file in public/')
+    } else if (SCRIPT_URL_ATTRIBUTES.has(lowerName) && /^\s*javascript:/i.test(value)) {
+      add(line, `a javascript: URL in ${lowerName}=`, 'handle the event in a module')
+    }
   }
   return found
 }
@@ -107,10 +193,12 @@ export function readHtml(source) {
   const document = parse(source, { sourceCodeLocationInfo: true })
   const scripts = []
   const urlAttributes = []
+  const inlineCode = []
   let title = null
   for (const { element, inTemplate } of elementsOf(document)) {
     const location = element.sourceCodeLocation
     if (!location) continue
+    inlineCode.push(...inlineCodeOf(element))
     const urls = urlAttributesOf(source, element)
     if (element.tagName === 'script' && !inTemplate) {
       const srcAttribute = urls.find((attribute) => attribute.name.toLowerCase() === 'src') ?? null
@@ -126,6 +214,7 @@ export function readHtml(source) {
     source,
     scripts,
     urlAttributes,
+    inlineCode,
     title,
     head: headInsertion(document, top),
     bodyEnd: bodyEnd(source, top),

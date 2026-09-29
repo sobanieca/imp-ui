@@ -46,6 +46,10 @@ The notice travels with the code, to what a user downloads. Two changes make one
   that the app uses. When the metafile of the build holds a module of the imp library, the file
   starts with the `LICENSE` of imp, under the heading of the library. The binary includes that
   `LICENSE`. An app under `targetImpHost` bundles no imp code, so its file leaves the notice out.
+- **Third-party code inside the imp library brings its own notice.** The Lucide icons and the QR
+  code encoder of `qrCode` start with a legal comment that holds the notice of their project. The
+  build collects that comment like any other. So the notice reaches `LICENSES.txt` only when the app
+  bundles that module. An app that draws no `qrCode` does not carry the notice of the encoder.
 - **When imp bundles no notice, it writes none.** With no notice from any source, imp produces no
   file and adds no reference comment. So a build that redistributes nothing does not pretend that it
   does.

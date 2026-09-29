@@ -48,12 +48,13 @@ These consequences follow from a list of what to include:
 
 **`IMP_BASEPATH` is the one setting for a deployment on a sub-path.** `imp build` reads it from the
 resolved environment. It puts the base in front of every root-absolute URL that it emits. That
-covers an `href` and a `src` attribute in the page, the PWA manifest, the apple-touch icon, the
-registration of the service worker, and the `start_url`, the `scope` and the icon `src` values of
-the manifest. It also covers the precache list and the shell of the service worker. imp does not
-change a URL inside the body of a `<script>`, an external URL, a protocol-relative URL, or a path
-that is already relative. The CLI normalizes the value exactly as the router does. So one value
-drives the asset URLs and the matching of a route.
+covers an `href`, a `src` and a `poster` attribute in the page, each candidate of a `srcset` and an
+`imagesrcset`, the `content` of an `og:image` and a `twitter:image` meta tag, the PWA manifest, the
+apple-touch icon, the registration of the service worker, and the `start_url`, the `scope` and the
+icon `src` values of the manifest. It also covers the precache list and the shell of the service
+worker. imp does not change a URL inside the body of a `<script>`, an external URL, a
+protocol-relative URL, or a path that is already relative. The CLI normalizes the value exactly as
+the router does. So one value drives the asset URLs and the matching of a route.
 
 The PWA URLs are root-absolute, and not relative. A relative URL resolves against the current
 document. So a deep link, such as `/todos/42`, resolved such a URL against the wrong directory. A

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>page urls</title>
+    <meta property="og:image" content="/images/a.svg">
+    <meta name="twitter:image" content="/images/b.svg">
+    <meta name="description" content="/not-a-url">
+    <link rel="preload" as="image" imagesrcset="/images/a.svg 1x, /images/b.svg 2x">
+    <link rel="stylesheet" href="/site.css">
+    <style>p { color: red; }</style>
+    <script>window.started = Date.now()</script>
+    <script type="application/ld+json">{ "@type": "WebSite" }</script>
+  </head>
+  <body>
+    <img alt="a" src="/images/a.svg" srcset="/images/a.svg 1x,/images/b.svg 2x, https://cdn.example.com/c.svg 3x, images/d.svg 4x">
+    <img alt="data" srcset="data:image/svg+xml,a,b 1x, /images/b.svg 2x">
+    <video poster="/images/a.svg"></video>
+    <button type="button" onclick="start()" style="color: red">Start</button>
+    <a href="javascript:void 0">Nothing</a>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

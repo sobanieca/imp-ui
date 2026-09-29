@@ -56,12 +56,17 @@ so you can see a failed submit.
 
 `imp build --env prod --pwa` writes `dist/`. Upload that folder, and give the host these rules:
 
-- Serve `index.html` for a path that has no file, so a deep link works.
-- Send `Cache-Control: public, max-age=31536000, immutable` for `/chunks/`, and
+- Serve `index.html` for a path that has no file, so a deep link works. A missing file under
+  `/chunks/` must get a `404`, not `index.html`.
+- Send `Cache-Control: public, max-age=31536000, immutable` for a file under `/chunks/`, and
   `Cache-Control: no-cache` for every other file.
-- Send the Content Security Policy below with the page. This app loads its fonts from Google Fonts,
-  so the policy names those two origins:
+- Keep the `chunks/` files of the previous build, so an open tab can still load its lazy chunks.
+- Send the Content Security Policy below with the page. The app loads its fonts from its own
+  `public/fonts/` folder, so the policy names no other origin:
 
 ```
-Content-Security-Policy: script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com
+Content-Security-Policy: script-src 'self'; style-src 'self'
 ```
+
+The fonts are IBM Plex Sans and Sora. Both are licensed under the SIL Open Font License 1.1. The
+license texts are next to the font files.

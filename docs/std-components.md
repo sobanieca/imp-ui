@@ -247,7 +247,8 @@ splitPane({ size: share, min: 20, max: 60, label: t('mail.resize') }, mailList()
 `size` is the share of the start pane, in percent. A drag writes it into the state, so the app can
 store it with the preferences of the person. `orientation: 'vertical'` stacks the panes, and then
 its parent needs a height. For a third pane, put a `splitPane` in a pane. The start pane follows the
-reading direction, so it is on the right in a right-to-left page.
+reading direction, so it is on the right in a right-to-left page. The line of the handle is thin,
+but a pointer or a finger can grab it 12px to each side. So the touch target is 24px wide.
 
 Two rules follow, and they hold across the library:
 
@@ -329,14 +330,37 @@ form ignores a second submit until it settles. The state `imp.form.submitting` i
 so a button of yours can spin.
 
 **A failed save shows above the buttons.** When `onSubmit` throws, or its promise rejects, the form
-shows the message of the error in an error `notice` above its last child, which holds the buttons. A
-screen reader announces it. The next submit removes it. So a failure that belongs to no single
-field, such as "The server is down", needs no code of yours. Throw an error with a message that the
-person can read, and route that message through `t()`.
+shows an error `notice` above its last child, which holds the buttons. A screen reader announces it.
+The next submit removes it. So a failure that belongs to no single field needs no code of yours.
+
+**Only a message that you wrote for a person reaches the person.** The text of an ordinary error,
+such as `TypeError: Cannot read properties of undefined`, means nothing to the reader of your app.
+So the form shows a translated generic message, "We could not send the form - try again", and logs
+the original error. To show your own message, throw a `FormError` from `imp/std/inputs`, and route
+its text through `t()`:
+
+```js
+import { HttpError } from 'imp/http'
+import { t } from 'imp/i18n'
+import { FormError } from 'imp/std/inputs'
+
+const save = async (values) => {
+  try {
+    await api.post('/signup', values)
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 409) {
+      throw new FormError(t('signup.emailTaken'), { cause: error })
+    }
+    throw error
+  }
+}
+```
 
 **The form knows when the values changed.** The state `imp.form.dirty` is `true` while the values
-differ from `initialValues`, and `false` again when the person restores them or resets the form. Use
-it to enable a save button, or to ask before the person leaves the page:
+differ from the clean state of the form. The clean state starts as `initialValues`. After a
+successful submit, the submitted values become the clean state. So a form that stays on the page
+after a save is clean again. An edit that the person makes while the save runs keeps the form dirty.
+Use the state to enable a save button, or to ask before the person leaves the page:
 
 ```js
 const unsavedGuard = component('myapp-unsaved-guard', {
@@ -349,6 +373,11 @@ const unsavedGuard = component('myapp-unsaved-guard', {
 ```
 
 Put the component inside the form, because the states of a form reach only its own subtree.
+
+**`resetForm` puts the clean state back.** A call to `resetForm` inside `onSubmit` wins over the
+save. So a form that adds a record and clears itself for the next one is clean after the save. Pass
+values as the second argument, `resetForm(source, values)`, to make them the new clean state. Use it
+when the data of the form arrives after the form is on the page.
 
 The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
 `colorPicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The
@@ -489,6 +518,41 @@ the request. When the request fails, imp takes the change back, so the screen ne
 that the server does not have. Pass a state as `items` to keep the reactions in your app, and imp
 writes each change into it.
 
+## Show what happened, in order
+
+`timeline` from `imp/std/data` shows a list of dated events from top to bottom. Each event has a
+marker, a time, a title, and an optional description and actions. Use it for the history of an
+order, an activity feed, or an audit log.
+
+```js
+import { luTruck } from 'imp/icons'
+import { timeline } from 'imp/std/data'
+
+timeline({
+  label: 'Order history',
+  items: [
+    { id: 'placed', time: '2026-09-21T09:12:00Z', title: 'Order placed', color: 'blue' },
+    { id: 'shipped', time: '2026-09-23T07:05:00Z', title: 'Shipped', icon: luTruck },
+    { id: 'due', time: '2026-09-30', title: 'Invoice due', description: 'Net 7' },
+  ],
+  events: { select: (event) => openEvent(event.detail.id) },
+})
+```
+
+**imp draws the events in the order of the array, and it does not sort them.** Put the newest event
+first for a feed. Put the oldest event first for a history that a person reads from the top.
+
+- **The time shows in the language of the page**, in a `<time>` element with a machine-readable
+  value. A change of language formats every time again. A value such as `'2026-09-30'` shows as a
+  date only, on that calendar day in every time zone. A full ISO string also shows the time, in the
+  time zone of the reader.
+- **The marker is decoration.** An `icon` and a `color` from the palette make an event easy to find,
+  but a screen reader does not announce them. Put the meaning in the `title`.
+- **The title is the control of an event.** With an `href`, it is a link in the space of your app.
+  Without an `href`, it is a button when you pass `events.select`, and plain text when you do not.
+- **A long history loads in pages.** Pass `hasMore` and `onLoadMore`, and append the next events to
+  the `items` state. An empty timeline shows an empty state.
+
 ## Put things on a map, with no map server
 
 `map` from `imp/std/data` shows the world with your markers on it, and it sends no request. The
@@ -553,13 +617,18 @@ Show the value as text next to the code. A person cannot read a QR code, and a s
 only the label of the image. `value` and `label` can be states, and the code follows them.
 
 - **The code is dark on white in every theme.** Many scanners cannot read light modules on a dark
-  ground. So the code keeps its own colours, and a dark theme does not change them. In
-  forced-colours mode it uses the colours of the system.
+  ground. So the code keeps its own colours. A dark theme and forced-colours mode do not change
+  them.
 - **`errorCorrection` sets how much damage a scanner can repair**: `'L'`, `'M'`, `'Q'` or `'H'`. The
   default `'M'` suits a screen. Use `'H'` for a print that gets dirty or has a logo on top.
 - **A short value gives a code that is easy to read.** imp picks the smallest QR version that fits
   the UTF-8 bytes of the value. A code holds at most 2953 bytes at `'L'`. For a longer value imp
   warns and draws nothing.
+- **Any language works.** When the value has a character outside ASCII, the code also tells the
+  scanner that the bytes are UTF-8. So a phone shows the text in the script that you wrote, and not
+  a row of wrong letters.
+- **An empty value draws nothing.** The image leaves the page and the accessibility tree until the
+  value has text.
 - **`size` is `'sm'`, `'md'` or `'lg'`**, for a side of 6rem, 10rem or 16rem.
 
 ## The name that you look for

@@ -1,0 +1,20 @@
+$ imp audit  (cwd: <tmp>, ng has no manifest)
+exit code: 2
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] no manifest.json for ng - imp has no record of what that dependency bundles, so it cannot check it; run 'imp install' to record it - the audit did not complete
+
+$ imp audit --sbom  (cwd: <tmp>, ng has no manifest)
+exit code: 2
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] no manifest.json for ng - imp has no record of what that dependency bundles, so it cannot check it; run 'imp install' to record it - the audit did not complete
+
+--- wrote sbom.cdx.json ---
+no

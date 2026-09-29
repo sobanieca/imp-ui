@@ -99,6 +99,11 @@ shows exactly what changed. imp resolves, bundles and checks every package first
 folders and `imp.json` only when every package passed. So when one package fails, nothing changes,
 and your dependencies never mix old and new versions.
 
+The write is also all or nothing. imp writes every new folder into a temporary folder in `.imp/`
+first. Then it moves each old folder aside, moves each new folder into place, and updates
+`imp.json`. When one of these steps fails, for example because the disk is full, imp moves the old
+folders back and restores `imp.json`. The command then fails with the cause.
+
 ## How to remove a dependency
 
 ```
@@ -122,13 +127,13 @@ installed micromark (npm:micromark@4.0.2)
     micromark@4.0.2 - MIT
     micromark-core-commonmark@2.0.3 - MIT
     ...
-  integrity: 12 npm packages checked against the published hash
+  integrity: 12 npm packages checked against the signed hash of the npm registry
 ```
 
-Read the listing to see what you ship. A package that its registry marks with a provenance
-attestation shows `provenance attested` after its license. imp also writes the same listing to disk,
-so it stays there long after the terminal scrolls away. See
-**[The dependency manifest](#the-dependency-manifest)**.
+Read the listing to see what you ship. When the registry lists a provenance attestation for a
+package, the package shows `attestation listed by the registry` after its license. imp does not
+verify that attestation. imp also writes the same listing to disk, so it stays there long after the
+terminal scrolls away. See **[The dependency manifest](#the-dependency-manifest)**.
 
 ## The integrity check
 
@@ -136,20 +141,31 @@ so it stays there long after the terminal scrolls away. See
 imp does these steps:
 
 1. It reads the `integrity` hash that the npm registry publishes for that exact version.
-2. It downloads the package archive, and compares its hash with the published hash.
-3. It compares every file that went into the bundle with the same file in that archive.
+2. It checks the registry signature of that hash. The npm registry signs the package name, the
+   version and the hash with its own key. imp reads the public keys of the registry and verifies the
+   signature.
+3. It downloads the package archive, and compares its hash with the published hash.
+4. It compares every file that went into the bundle with the same file in that archive.
 
 When one of these checks fails, imp refuses the install and names the package. It writes no bundle
 and no manifest, and it does not change `imp.json`. So a changed archive, or a changed copy of a
 file on your machine, never reaches the `dependencies/` folder.
 
-imp also records whether the registry marks the version with a provenance attestation. An
-attestation links a published version to the source repository and the build that made it. imp
-records the fact in the manifest and prints it. It does not refuse a package that has no
-attestation, because most packages do not have one yet.
+A package with no registry signature fails the check. A signature from a key that the registry does
+not list also fails. The registry retires a key on a date. A retired key is valid only for a version
+that was published before that date.
 
-The check covers npm packages. A jsr package records its provenance, but it has no archive hash to
-check.
+The checks prove that the archive is the one that the npm registry signed. They do not prove that
+the author published safe code. imp reads the keys from the same registry, so the checks also trust
+that registry.
+
+imp also records whether the registry lists a provenance attestation for the version. An attestation
+links a published version to the source repository and the build that made it. imp records only that
+the registry lists one. It does not verify the attestation, and it does not refuse a package that
+has none.
+
+The checks cover npm packages. For a jsr package, imp records whether the registry lists an
+attestation, but a jsr package has no archive hash to check.
 
 ## Large dependencies
 
@@ -247,7 +263,7 @@ you shipped. The manifest answers the question instead.
       "name": "micromark",
       "version": "4.0.2",
       "integrity": "sha512-...",
-      "provenance": false,
+      "attestationListed": false,
       "license": "MIT",
       "licenseText": "..."
     }
@@ -256,8 +272,8 @@ you shipped. The manifest answers the question instead.
 ```
 
 The manifest lists every package that went into the bundle, with its exact version, the integrity
-hash that imp checked, whether the version has a provenance attestation, its license identifier, and
-the full text of that license. A jsr package has `null` as its `integrity`. Commit it with the
+hash that imp checked, whether the registry lists a provenance attestation, its license identifier,
+and the full text of that license. A jsr package has `null` as its `integrity`. Commit it with the
 bundle. `imp uninstall` removes it with everything else in the folder.
 
 imp writes the manifest when you install, and it describes what you installed. It is not a lock
@@ -293,18 +309,36 @@ node-forge@0.7.0 (in node-forge)
 ```
 
 For each vulnerability, imp prints its identifier, its severity when the database gives one, a
-summary, the first version that fixes it, and a link to the full advisory. The command exits with
-code 1 when it finds a vulnerability, so a CI step fails. To fix a finding, install the fixed
-version with `imp install <package>@<version>`. For a package that another package brings in, update
-the dependency that contains it.
+summary, the first version that fixes it, and a link to the full advisory. To fix a finding, install
+the fixed version with `imp install <package>@<version>`. For a package that another package brings
+in, update the dependency that contains it.
 
-The OSV database has no records for jsr packages. `imp audit` lists them as not checked.
+The exit code tells a CI step what happened:
+
+| Code | Meaning                                                                  |
+| ---- | ------------------------------------------------------------------------ |
+| `0`  | imp checked every npm package and found no known vulnerability           |
+| `1`  | imp found at least one known vulnerability                               |
+| `2`  | the audit did not complete, so imp cannot say whether a package is clean |
+
+The audit does not complete when a declared dependency has no manifest, because imp has no record of
+what that bundle contains. Run `imp install` to write the manifest. The audit also does not complete
+when the OSV database does not answer. imp tries a request again when OSV is busy or has a server
+error. It waits as long as OSV asks, and it stops after four attempts.
+
+When `imp.json` declares no dependencies, `imp audit` says so and exits with code 0. Your app then
+vendors no package, so there is nothing to check.
+
+The OSV database has no records for jsr packages. `imp audit` lists them as not checked. When every
+dependency is a jsr package, the report says that there are no npm packages to check.
 
 ### A software bill of materials
 
 `imp audit --sbom` writes a software bill of materials in the [CycloneDX](https://cyclonedx.org) 1.7
 JSON format. The default file is `sbom.cdx.json` in the root of the project. `--output` writes it to
 another path. This command needs no network, because it only transforms the committed manifests.
+When a declared dependency has no manifest, the bill would be incomplete. imp then writes no file,
+and exits with code 2.
 
 The file lists every bundled package once, with its version, its package URL, its license and the
 integrity hash that `imp install` checked. Give it to a security review, or to a scanner that reads

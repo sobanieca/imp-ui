@@ -81,6 +81,11 @@ export const clientScript = (
 
   const send = (entry) => {
     queue.push(entry)
+    if (document.visibilityState === 'hidden') {
+      clearTimeout(timer)
+      flush()
+      return
+    }
     if (!timer) timer = setTimeout(flush, 200)
   }
   const push = (entry) => {

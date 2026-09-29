@@ -116,12 +116,15 @@ of a text token and a background token that is below 4.5:1, the WCAG AA level fo
 pairs are the combinations that the standard components draw: `color-text` and `color-secondary` on
 the surfaces and on `background-app`, `color-primary` on `color-surface` and on
 `color-surface-sunken`, `color-danger` on `color-surface`, and each `color-on-*` on its colour. The
-check follows a `var()` reference to another token, and it skips a side that is not a hex colour,
-such as a gradient. A custom theme is where contrast breaks, and the editor is where a person makes
-a custom theme. So the report sits beside the edit that causes it, and not in a separate audit. The
-check is `contrastProblems` in `imp/theme`, so an app can guard its theme file with the same
-function in a unit test. The report is advice. It blocks no edit and no export, because a brand can
-accept a pair on purpose, for example for large text only.
+check follows a `var()` reference to another token. It reads every CSS colour syntax, converts it to
+sRGB, and clips a colour outside sRGB. It puts translucent text over its background. A side that it
+cannot read, such as a gradient, `color-mix()` or a translucent background, is also a listed pair,
+with the reason. A pair that the check cannot read must never pass in silence. A custom theme is
+where contrast breaks, and the editor is where a person makes a custom theme. So the report sits
+beside the edit that causes it, and not in a separate audit. The check is `contrastProblems` in
+`imp/theme`, so an app can guard its theme file with the same function in a unit test. The report is
+advice. It blocks no edit and no export, because a brand can accept a pair on purpose, for example
+for large text only.
 
 **The derivation belongs to the library, and not to the editor.** A knob calls the same functions
 that the built-in themes call, see `themable-by-default-tokens.md`. So what a knob writes and what

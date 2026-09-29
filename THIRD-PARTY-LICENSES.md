@@ -42,6 +42,7 @@ Run `imp licenses` to print this notice from the binary.
 | @resvg/resvg-wasm             | 2.6.2   | MPL-2.0       | https://github.com/yisibl/resvg-js                     |
 | Lucide (icons)                | 1.38.0  | ISC, MIT      | https://lucide.dev                                     |
 | Natural Earth (map data)      | 5.1.2   | Public domain | https://www.naturalearthdata.com                       |
+| QR Code generator library     | -       | MIT           | https://www.nayuki.io/page/qr-code-generator-library   |
 | @std (Deno standard library)  | -       | MIT           | https://github.com/denoland/std                        |
 | @deno/esbuild-plugin          | 1.2.1   | MIT           | https://github.com/denoland/deno_esbuild               |
 | @deno/loader                  | 0.3.14  | MIT           | https://github.com/denoland/deno-js-loader             |
@@ -70,6 +71,12 @@ Mercator and quantizes them to a grid, which are the generated modules `map-worl
 `map-world-50m.js` and `map-roads-10m.js`. The data carries no notice obligation, and none is
 reproduced below.
 
+imp bundles **a QR code encoder that is derived from the QR Code generator library of Project
+Nayuki**, as the encoder of the `qrCode` component. The encoder is a JavaScript adaptation of the
+TypeScript version of that library. The source file keeps the notice of the library in a legal
+comment. So every app built with `imp build` that draws a `qrCode` carries the notice into its own
+`LICENSES.txt`. The notice is reproduced below, in the words of the library.
+
 ---
 
 ## MIT License
@@ -78,7 +85,8 @@ Applies to: Deno (© the Deno authors), esbuild-wasm (© Evan Wallace), @dprint/
 dprint-plugin-typescript / -json / -markdown (© David Sherret and dprint contributors), malva /
 markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (© Bartłomiej Iwańczuk and dprint
 contributors), @std, @deno/esbuild-plugin and @deno/loader (© the Deno authors), the Feather-derived
-Lucide icons (© 2013-present Cole Bemis), and every package that the last section lists under MIT.
+Lucide icons (© 2013-present Cole Bemis), the QR code encoder of `qrCode` (Copyright (c) Project
+Nayuki), and every package that the last section lists under MIT.
 
 ```
 MIT License
@@ -100,6 +108,31 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+The QR Code generator library states its notice as follows:
+
+```
+QR Code generator library (TypeScript)
+
+Copyright (c) Project Nayuki. (MIT License)
+https://www.nayuki.io/page/qr-code-generator-library
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+- The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+- The Software is provided "as is", without warranty of any kind, express or
+  implied, including but not limited to the warranties of merchantability,
+  fitness for a particular purpose and noninfringement. In no event shall the
+  authors or copyright holders be liable for any claim, damages or other
+  liability, whether in an action of contract, tort or otherwise, arising from,
+  out of or in connection with the Software or the use or other dealings in the
+  Software.
 ```
 
 ---

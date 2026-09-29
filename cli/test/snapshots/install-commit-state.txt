@@ -1,0 +1,5 @@
+dependencies/events/events.js: "export const version = 2\n"
+dependencies/events/manifest.json: "{\n  \"alias\": \"events\",\n  \"specifier\": \"npm:events@2.0.0\",\n  \"packages\": []\n}\n"
+dependencies/fresh/fresh.js: "new\n"
+dependencies/fresh/manifest.json: "{\n  \"alias\": \"fresh\",\n  \"specifier\": \"npm:fresh@2.0.0\",\n  \"packages\": []\n}\n"
+imp.json: "{\n  \"dependencies\": {\n    \"events\": \"npm:events@2.0.0\",\n    \"fresh\": \"npm:fresh@2.0.0\"\n  }\n}\n"

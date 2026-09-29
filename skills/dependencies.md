@@ -17,7 +17,7 @@ imp install jsr:@std/encoding@1.0.10/base64    jsr, and a module inside the pack
 imp install mitt --alias events
 imp install                   re-resolve and update every declared dependency
 imp uninstall mitt            remove the folder and the pin
-imp audit                     check every npm package against the OSV database; exit 1 on a finding
+imp audit                     check npm packages against OSV; exit 1 on a finding, 2 if incomplete
 imp audit --sbom              write sbom.cdx.json (CycloneDX 1.7); --output <file> moves it
 ```
 
@@ -38,8 +38,8 @@ import mitt from 'mitt'
   command to run. See [lint](lint.md). Add a package with the command. Never edit `imp.json` by
   hand, see [config](config.md).
 - **A failed `imp install` changes nothing.** With no argument, imp checks every package before it
-  writes. One failure leaves every folder and `imp.json` as they were. Fix the cause and run it
-  again.
+  writes. It stages the new folders in `.imp/`, then swaps them in and updates `imp.json`. A failure
+  at any step restores every folder and `imp.json`. Fix the cause and run it again.
 - **A pin is always exact.** Write `npm:mitt@3.0.1`. Never write `^3.0.1`, `3` or a bare `npm:mitt`.
   There is no lock file. The pin and the committed bundle give the reproducibility.
 - **`imp` is reserved.** It always means the imp library of [imports](imports.md). You can never
@@ -64,20 +64,21 @@ installed micromark (npm:micromark@4.0.2)
   bundled packages:
     micromark@4.0.2 - MIT
     micromark-core-commonmark@2.0.3 - MIT
-  integrity: 2 npm packages checked against the published hash
+  integrity: 2 npm packages checked against the signed hash of the npm registry
 ```
 
 `manifest.json` records the same resolution on disk. It holds the alias, the resolved specifier, the
 install timestamp, the bare `imp` imports that imp kept, and every bundled package. For each package
 it gives the registry, the exact version, `integrity` (the checked SRI hash, `null` for jsr),
-`provenance` (`true` when the registry has a provenance attestation), the SPDX identifier and the
-full license text.
+`attestationListed` (`true` when the registry lists a provenance attestation), the SPDX identifier
+and the full license text.
 
-- **`imp install` refuses a package that fails the integrity check.** It compares the npm archive
-  with the `dist.integrity` hash of the registry, and every bundled file with that archive. On a
-  mismatch it writes nothing. Never work around it. Report it, because the package or the local
-  cache was changed.
-- **A missing provenance attestation is not an error.** imp records it and does not enforce it.
+- **`imp install` refuses a package that fails the integrity check.** It verifies the npm registry
+  signature of the `dist.integrity` hash. It compares the npm archive with that hash, and every
+  bundled file with that archive. On a missing or invalid signature, or a mismatch, it writes
+  nothing. Never work around it. Report it, because the package or the local cache was changed.
+- **imp does not verify a provenance attestation.** `attestationListed` says only that the registry
+  lists one. A package with no attestation is not an error.
 
 - **Commit the manifest with the bundle.** It is the only record of what the minified bundle
   contains. A new `imp install` resolves a transitive version to the latest one, so it cannot
@@ -95,14 +96,18 @@ package put it. Never remove it.
 
 ## Audit - `imp audit`
 
-- It reads the committed manifests only. A dependency with no manifest gives a warning and is left
-  out. Run `imp install` to record it.
+- It reads the committed manifests only. A dependency with no manifest fails the audit. Run
+  `imp install` to record it.
+- Exit codes: `0` no known vulnerability, `1` a vulnerability found, `2` the audit did not complete.
+  Code `2` means a missing manifest, or no answer from OSV after four attempts. Never treat `2` as a
+  pass.
+- No dependencies in `imp.json` prints `nothing to audit` and exits `0`.
 - It checks npm packages against OSV. A jsr package is listed as not checked, because OSV has no jsr
   records.
 - To fix a finding, run `imp install <pkg>@<fixed version>`. For a transitive package, update the
   dependency that contains it. Then run `imp audit` again.
-- `--sbom` needs no network and never fails on a vulnerability. Commit the file only when the
-  project wants it in git.
+- `--sbom` needs no network and never fails on a vulnerability. A missing manifest makes it exit `2`
+  and write no file. Commit the file only when the project wants it in git.
 
 ## License policy - `licenses` in `imp.json`
 

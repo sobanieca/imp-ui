@@ -41,6 +41,11 @@ Rules an agent gets wrong:
 - **Pass a writable state as `size` to keep the split.** A drag and a key write the new share into
   it. Store it with the preferences of the person to restore it on the next visit.
 - **A pane scrolls.** Each pane has `overflow: auto`, so a long list scrolls inside its pane.
+- **The handle takes a pointer 12px to each side of its line.** The line stays thin, but the hit
+  area is 24px, and it covers the edge of each pane. Do not put a control at the edge of a pane next
+  to the handle.
+- **A drag follows one pointer.** It moves the handle by the travel of the pointer, and it ignores a
+  second finger. It ends on release, on cancel, and when the handle loses the pointer capture.
 - imp warns about a child count that is not two, about a percent outside `0`-`100`, and about a
   `min` above `max`.
 

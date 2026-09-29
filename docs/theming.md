@@ -34,8 +34,9 @@ export default {
 - **imp reads light or dark from `color-surface`.** imp checks the lightness of that token. A dark
   surface makes a dark theme. imp then sets the `color-scheme` of the page to match. A native form
   control, a scrollbar, and CSS that reads `prefers-color-scheme` follow your palette. You declare
-  no mode. The value must be a hex color, such as `#1f2028`. When the token is missing, or not a hex
-  color, imp warns and leaves the color scheme unset.
+  no mode. The value must be an opaque CSS color, such as `#1f2028` or `oklch(0.25 0.01 270)`. When
+  the token is missing, or imp cannot read it, imp warns and leaves the color scheme unset. imp
+  warns one time for each theme.
 
 An app can ship as many theme files as it wants. There is no registry to register them in. A theme
 is a module that you import.
@@ -90,7 +91,8 @@ theme switcher.
 To branch on light against dark, call `colorSchemeOf(tokens)` from `imp/theme`. It returns `'light'`
 or `'dark'` from the lightness of `color-surface`, the same way `applyTheme` does. So
 `colorSchemeOf(theme.get().tokens)` is the scheme of the active theme. It returns `undefined` when
-the token is missing, or not a hex color.
+the token is missing, translucent, or not a color that imp can read, such as a gradient or
+`color-mix()`.
 
 ## Built-in starter themes
 
@@ -332,8 +334,8 @@ A web font that you name in the editor shows on the page only when it is loaded 
 ## How to check the contrast of a theme
 
 A custom theme is where contrast breaks. `contrastProblems(tokens)` from `imp/theme` runs the same
-check as the theme editor. It returns one entry for each pair that is below 4.5:1, and an empty
-array when every pair passes:
+check as the theme editor. It returns one entry for each pair that is below 4.5:1, and one entry for
+each pair that it cannot check. It returns an empty array when every pair passes:
 
 ```js
 import { applyTheme, contrastProblems } from 'imp/theme'
@@ -358,10 +360,28 @@ these pairs, because the standard components draw text in these combinations:
 | `color-on-primary` | `color-primary`, for the label of a primary button                               |
 | `color-on-danger`  | `color-danger`, for the label of a danger button                                 |
 
-The check reads a hex color, and it follows a `var(--imp-...)` reference to another token. It skips
-a pair when one side is not a hex color, such as a gradient in `background-app`. Pass the tokens of
-the resolved theme. `applyTheme` returns that theme, with a `base` already filled in. The check does
-not measure the text of your own components, or a color that a component mixes at runtime.
+The check reads every CSS color syntax: a hex color, a color name, `rgb()`, `hsl()`, `hwb()`,
+`lab()`, `lch()`, `oklab()`, `oklch()` and `color()`. It converts the color to sRGB, as the screen
+shows it. A color outside sRGB is clipped to the nearest sRGB value. The check follows a
+`var(--imp-...)` reference to another token. Translucent text is measured over its background.
+
+**A pair that the check cannot read does not pass.** A gradient, `color-mix()`, `currentColor`, a
+`var()` that is not a token of the theme, and a translucent background all give an entry with
+`ratio: null` and a `reason`:
+
+```js
+{
+  text: 'color-text',
+  background: 'background-app',
+  ratio: null,
+  reason: "cannot check contrast - background-app is 'linear-gradient(#fff, #eee)', not a colour",
+}
+```
+
+Check such a pair by eye, then leave it out of the test with a filter on `background`. Pass the
+tokens of the resolved theme. `applyTheme` returns that theme, with a `base` already filled in. The
+check does not measure the text of your own components, or a color that a component mixes at
+runtime.
 
 ## Token names
 
@@ -391,7 +411,8 @@ theme of your own must define all of them:
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
 
 **imp tells you when a theme is not complete.** When an applied theme has no value for one of these
-tokens, `applyTheme` logs a warning that names the missing tokens. The theme still applies. A
+tokens, `applyTheme` logs a warning that names the missing tokens. imp warns about each missing
+token of a theme one time, so a theme switcher does not fill the console. The theme still applies. A
 component then falls back to its built-in value, and a token of the previous theme can stay on the
 page. A theme with a `base` is always complete, because imp fills every token from the base.
 

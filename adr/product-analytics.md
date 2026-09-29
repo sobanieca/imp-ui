@@ -35,12 +35,23 @@ command. The docs describe each number of the report and the query behind it.
   such as `/invoices/:id`, see `application-map.md`. It holds no param value, and it has the shape
   of a path, so a store that keys a page by its URL uses it as it is. A path off the map has
   `page: null`, and its `view` record carries the `path`, with no query.
+- **imp scrubs each recorded URL.** The `path` of a `view` and the text of an `error` message lose
+  their emails, which become `:email`, and their tokens, which become `:token`. A token is a JSON
+  Web Token, or a word with 16 or more letters and digits in a row that holds a digit and a letter.
+  A number, a UUID and a slug stay, because the report treats an id as no personal data. The rule is
+  a pattern, so the route pattern of the map stays the key that carries no value at all.
 - **The route page is the view.** The internal route page of the router, see
   `client-side-router.md`, reports its mount, its readiness and its unmount. `readyMs` is the time
   from the mount to the moment the screen replaces its loading content. It includes a guard wait,
   the area chunk, and the data that the screen awaits in its `setup`. For the entry view, it starts
   at the start of the document load. A change of the query only is no view. A guard redirect and a
   `redirect()` binding are no view. For an area, the view is the route page of the matched node.
+- **A view that is not ready goes out when the page hides.** A browser can discard a hidden page
+  with no further event. So when the document becomes hidden, or the page unloads, before the screen
+  is ready, imp sends the `view` with `readyMs: null` and `waitedMs`, the time until the person
+  left. A view goes out once, so a screen that is ready after the person comes back keeps
+  `readyMs: null`. The loads that people give up are the slowest loads. Without them, the cold start
+  percentile and the bounce rate look better than they are.
 - **A visit is one document load, with no stored id.** `visit` and `view` are random ids in memory.
   imp writes no cookie, and nothing to `localStorage` or `sessionStorage`. A reload is a new visit.
 - **Engaged time and zones are deltas.** imp sends a `time` record, and one `zone` record per zone
@@ -63,19 +74,31 @@ command. The docs describe each number of the report and the query behind it.
   gives no second `script` or `render` record when nothing catches it. imp has no `onError` and no
   log sink. An app that wants only its errors forwards the records where `type` is `'error'`. A team
   that needs a stream of logs uses the SDK of its provider directly.
+- **Errors are limited per view.** The first error of a kind, the same `source` and `message`, goes
+  out at once with `count: 1`. The repeats of that kind go out as one record with their `count`,
+  when the document hides and when the view ends. A view sends 10 kinds or fewer. A loop that throws
+  on each frame then gives a few records, not thousands. The `ResizeObserver loop` messages and a
+  cross-origin `Script error.` with no file give no record. They are not errors of the app, and a
+  developer cannot act on them.
 - **imp calls a sink at once, and never awaits it.** The call happens in the same task as the event,
   so a sink runs before a hidden page can freeze. imp catches a sink that throws or rejects, logs it
   through the built-in logger, see `built-in-logger.md`, and goes on. A failed sink never becomes an
   `error` record, because that record would go to the same sink and fail again.
 - **`batch` flushes on hide.** `batch(send, { size, ms })` returns a sink that holds the records. It
-  sends at `size`, after `ms`, when the page hides, when its `when` state stops being `true`, and
-  when the sink is unregistered. imp flushes a batch after it dispatches the `time` and `zone`
-  records of that hide, in the same task. A batch that an app writes by hand gets that order wrong.
-  imp does not retry, because a retry needs storage.
-- **Consent is a state.** `onAnalytics(sink, { when })` holds the records for that sink while the
-  state is not `true`. It keeps the first held view and the newest 199 records, so an early
-  `track()` call does not push the entry view out. imp does not decide what consent means. The hold
-  is per sink.
+  sends at `size`, after `ms`, when the page hides or unloads, when its `when` state stops being
+  `true`, and when the sink is unregistered. imp flushes a batch after it dispatches the records of
+  that hide, in the same task. A batch that an app writes by hand gets that order wrong. imp does
+  not retry, because a retry needs storage.
+- **Consent is a state with three values.** `onAnalytics(sink, { when })` sends the records of that
+  sink while the state is `true`, and drops them while it is `false`. A refusal must not become a
+  delayed send. Any other value, such as `null`, means that the person has not answered. imp holds
+  the records then: the first held view and the newest 199 records, so an early `track()` call does
+  not push the entry view out. A refusal drops the held records. imp does not decide what consent
+  means. The hold is per sink.
+- **A late sink gets the current view.** A sink that registers after the current view started gets
+  the `view` record of that view at once, and so does a sink whose `when` state leaves `false`.
+  Without it, the next records of the view reach a store that has no view to join them to. In
+  development, the session log registers its sink first, so each sink of the app is a late sink.
 - **An app with no sink pays nothing.** The router, the route page, the component lifecycle, the
   state layer, the HTTP client and `imp-zone` report to a small shared module. That module drops a
   report while no sink is registered. None of them imports the collection. A zone adds its listeners

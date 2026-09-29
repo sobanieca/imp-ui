@@ -19,13 +19,25 @@ mirrors the release mechanism of jsonr.
   and the comparison for self-delegation, read the same value that the release is tagged with. jsonr
   copies its version into a `src/version.js`, and runs a `check-version` job to keep the two the
   same. imp imports `deno.json` directly, so it needs no such check.
-- **A `Release` workflow runs on a push to `main`.** It runs the formatting checks and the lint
-  checks. Then, when no tag for the current version exists, it compiles the binary and publishes a
-  GitHub Release, tagged `v{version}`, through `softprops/action-gh-release`. A second push with no
-  change of the version does nothing, because the guard for an existing tag skips the release. So
-  the pipeline is safe to run on every push.
+- **The CI workflow releases on a push to `main`.** It runs the formatting, lint, test and binary
+  size jobs. Then a version job reads the version, and checks whether the tag `v{version}` exists.
+  When no tag exists, the build jobs run, and a release job publishes a GitHub Release through
+  `softprops/action-gh-release`. A second push with no change of the version does nothing, because
+  the guard for an existing tag skips the build and the release. So the pipeline is safe to run on
+  every push.
+- **Each binary is built and run on its own platform.** A cross-compiled binary that no job runs can
+  ship broken. So each target has a build job on a GitHub runner of the same OS and architecture:
+  `ubuntu-latest`, `ubuntu-24.04-arm`, `macos-15-intel`, `macos-latest` and `windows-latest`. The
+  job compiles the binary, then runs it as a smoke test. The binary must print the release version
+  with `--version`. Then `init`, `build` and `test --unit` must pass in a temporary folder. The job
+  uploads the binary and its checksum as a workflow artifact. The release job downloads the five
+  artifacts, verifies each checksum, and publishes them.
+- **Only one release job runs at a time.** The release job is in the concurrency group `release`,
+  and it never cancels a release in progress. It checks for the tag again before it publishes. So
+  two pushes of the same version cannot publish twice. GitHub keeps one waiting job per group, so a
+  newer waiting release job replaces an older one that waits.
 - **There are five targets.** They are `x86_64` and `aarch64` for `linux` and `macos`, and `x86_64`
-  for `windows`. The release job compiles each one with a command of this form:
+  for `windows`. Each build job compiles its target with a command of this form:
   `tools/compile.js --target <triple> --output <file>`. So a release binary has exactly the include
   set of the binary that the tests ran: the CLI, the library without its `public/` fonts, the skills
   and the licence notices. It also gets the same preparation of the prebundled fmt plugins and npm
@@ -46,11 +58,12 @@ mirrors the release mechanism of jsonr.
   `imp-windows-x64.exe` as `imp.exe` into `%LOCALAPPDATA%\Programs\imp`, or `INSTALL_DIR`, and adds
   that folder to the `PATH` of the user. It needs no administrator rights.
 - **Each asset has a SHA-256 checksum.** imp publishes each binary with an `imp-{os}-{arch}.sha256`
-  asset, which holds the output of `sha256sum`. This is the one place where imp deliberately differs
-  from jsonr, which ships no checksum. imp owns the release workflow and the on-demand download
-  path, see `version-pinning-self-delegation.md`. So it verifies every downloaded binary against its
-  published checksum before it installs the binary. A download that is truncated, or changed, then
-  fails with a message. It does not run.
+  asset. It holds the hex digest and the asset name, in the format of `sha256sum`. The build job
+  computes it with `sha256sum`, or with `shasum -a 256` on macOS. This is the one place where imp
+  deliberately differs from jsonr, which ships no checksum. imp owns the release workflow and the
+  on-demand download path, see `version-pinning-self-delegation.md`. So it verifies every downloaded
+  binary against its published checksum before it installs the binary. A download that is truncated,
+  or changed, then fails with a message. It does not run.
 
 ## Consequences
 
@@ -62,6 +75,8 @@ mirrors the release mechanism of jsonr.
 - Windows on arm64 has no binary. The CLI fails immediately, with a clear message, on a platform
   that has no binary. The e2e tests on Windows use the pinned Chrome build for `win64`.
 - The CI of every push takes longer, because the tests run twice.
+- A release needs five runners, two of them macOS. When GitHub retires a runner image, the build job
+  for that target fails, and no release ships until the workflow names a current image.
 - imp checks the integrity of a downloaded binary against its published SHA-256. So imp rejects an
   asset that is corrupt or changed, instead of running it. The trade is that imp cannot fetch a
   release that has no `.sha256` asset on demand. The workflow guarantees that this never happens.

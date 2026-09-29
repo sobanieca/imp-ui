@@ -26,10 +26,11 @@ module graph of the app. It resolves a bare specifier in the same way as the imp
 server, offline. An esbuild resolver that imp owns intercepts before the resolver of Deno:
 
 - **`imp` resolves to the library source that imp baked into the binary.** imp loads it from the
-  virtual filesystem of the compiled binary. imp addresses an entry point and a library module as an
-  absolute `file://` URL. imp resolves a local entry path against the project before it bundles,
-  because a relative path would otherwise resolve into that virtual filesystem, and not into the
-  project.
+  virtual filesystem of the compiled binary. imp addresses a library module by its path inside the
+  binary, such as `/lib/src/api/router.js`, and never by the folder that the binary runs from. imp
+  addresses an entry point as an absolute `file://` URL. imp resolves a local entry path against the
+  project before it bundles, because a relative path would otherwise resolve into that virtual
+  filesystem, and not into the project.
 - **Each dependency alias resolves to its vendored `dependencies/<alias>/` bundle.** imp contacts no
   registry. A declared alias with no vendored bundle fails the build, and the message suggests
   `imp install`.
@@ -42,6 +43,14 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   file of a build lives under `chunks/`, and only there. A host caches that folder for a year and
   revalidates every other file on each load, with no special case. A `public/chunks/` folder stops
   the build, because a copied file with no hash must never get that cache.
+- **A hashed name depends only on the sources.** esbuild puts the path of each input into the hash
+  of an output. imp bundles with the project root as the working directory. So a project file enters
+  the hash by its path inside the project, and a library module by its path inside the binary. The
+  same sources give the same names and the same bytes in any folder, and from a binary at any path.
+  A test builds one project in two folders and compares the output.
+- **CSS that a script imports ships as `chunks/<name>-<hash>.css`.** The page links it with a
+  `<link rel="stylesheet">` in `<head>`, under the base path. The CSS of a lazy chunk gets a link
+  too, at page load, because esbuild emits no code that loads it later.
 - **A JS entry keeps its plain name.** A consumer imports that file by name, so a hash would break
   every import of it.
 - **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of
@@ -74,6 +83,18 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   report of a violation. imp writes no policy. It emits no `<meta http-equiv>` tag and no host file,
   because the app owns its origins and the host owns the format of its headers. Trusted Types are
   out of scope: `require-trusted-types-for 'script'` blocks the `innerHTML` of `html()`.
+- **`imp build` warns about inline code in the entry HTML that the policy blocks.** That is a
+  classic inline `<script>`, an event handler attribute such as `onclick`, a `javascript:` URL, a
+  `<style>` element and a `style` attribute. The warning names the line of each case. It is a
+  warning and not an error, because a host can relax the policy on purpose.
+- **A tab that misses a lazy chunk of its build loads the page again, once.** An open tab runs the
+  build that it loaded. A deploy that removed the old `chunks/` files makes its next `import()`
+  fail. The library then fetches the current page. When the page names another entry script, the
+  library reloads the current URL. A marker in `sessionStorage`, keyed by the entry script of the
+  running build, allows one reload per build. So a stale cache or a broken deploy cannot cause a
+  loop. The router wraps the loader of an area in this check, and so does the loader of the
+  translations. The docs tell the host to keep the files of the previous build, so the reload is the
+  exception.
 - **A page build adds a `modulepreload` hint** for each chunk that an entry script imports
   statically, directly or through another chunk. A chunk behind `import()` gets no hint.
 - **`build.maxSize` in `imp.json` is a budget for the whole output.** A build over it fails, names
@@ -98,6 +119,12 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   bundle, see `development-checks.md`.
 - The entry HTML is the one file of a page build that a host must revalidate on every load. Every
   script has a content hash, so a stale cache of the HTML is the only way to serve an old build.
+- The fallback of a host to the entry HTML must not cover `chunks/`. A missing chunk must get a
+  `404`. A fallback page under the name of a chunk, with the cache header of `chunks/`, would stay
+  in the browser for a year.
+- A failed `import()` does not tell a missing file from a module that throws a `TypeError` while it
+  runs. The check of the served page separates the two. A reload happens only when the host names a
+  newer build.
 - Each vendored bundle enters the graph as one opaque module that imp already minified. imp emits it
   once, and shares it across all the chunks. But a transitive package that two different vendored
   bundles hold stays duplicated in the output. imp accepts that deliberately, see

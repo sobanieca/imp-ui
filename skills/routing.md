@@ -317,5 +317,9 @@ The route then lives in the fragment, `#/todos/42?tab=notes`, and the path stays
 nothing. The base path does not apply under hash routing.
 
 A deep link needs the host to serve your entry HTML for an unknown path. Use `try_files` in nginx, a
-`_redirects` file, a copy named `404.html`, or the equivalent on your host. `imp start` already does
-this in development.
+`_redirects` file, a copy named `404.html`, or the equivalent on your host. Keep `/chunks/` out of
+that fallback: a missing chunk must get a `404`. `imp start` already does this in development.
+
+When the chunk of an area does not download, imp fetches the page. If the page names a newer build,
+imp loads the current URL again, once per build. Otherwise the `error` of the router shows. The
+loaders of `translations` do the same. See [build](build.md).

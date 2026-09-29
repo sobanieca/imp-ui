@@ -7,26 +7,39 @@ import {
   relative,
   toFileUrl,
 } from '@std/path'
+import { encodeBase64 } from '@std/encoding/base64'
 import { assertSnapshot } from './snapshot.js'
 import { readHtml } from '../src/html-document.js'
 import { clientScript } from '../src/client.js'
-import { createMocks } from '../src/mocks.js'
+import { bundleMockFiles, createMocks } from '../src/mocks.js'
 import { createDevLog } from '../src/dev-log.js'
-import { BINARY_ASSET_EXTENSIONS, bundleDependency, shutdownBundler } from '../src/deps.js'
+import {
+  BINARY_ASSET_EXTENSIONS,
+  bundleDependency,
+  runEsbuild,
+  shutdownBundler,
+} from '../src/deps.js'
+import { fromEsbuildPath, toEsbuildPath } from '../src/esbuild-paths.js'
+import { dirname as win32Dirname, join as win32Join } from '@std/path/windows'
 import {
   auditedPackages,
   auditReport,
   describeVulnerability,
   knownVulnerabilityIds,
+  osvClient,
   osvQuery,
+  retryDelay,
 } from '../src/audit.js'
 import {
   bundledFileProblem,
   matchesIntegrity,
+  registrySignatureProblem,
+  signatureFromDer,
   sriDigest,
   strongestSri,
   tarballFiles,
 } from '../src/integrity.js'
+import { commitDependencies, projectFileSystem } from '../src/install.js'
 import { CONTENT_TYPES, injectImp, resolveWithinRoot } from '../src/start.js'
 import { envInjectionScript, resolveEnvironment } from '../src/environments.js'
 import { defaultAlias, parseSpecifier } from '../src/specifiers.js'
@@ -716,7 +729,7 @@ const auditManifests = [
       version: '0.7.0',
       integrity:
         'sha512-nrGmJHbnyl7LfZyHbcgNyi0yHawEXOAnWYnw/3MJKJ7vyS2NcTqs5+sI4xcaivd6kjoUwnkD53FFRHC7m2FH4A==',
-      provenance: false,
+      attestationListed: false,
       license: '(BSD-3-Clause OR GPL-2.0)',
       licenseText: '...',
     }],
@@ -731,7 +744,7 @@ const auditManifests = [
       name: '@std/encoding',
       version: '1.0.10',
       integrity: null,
-      provenance: true,
+      attestationListed: true,
       license: null,
       licenseText: '...',
     }],
@@ -746,7 +759,7 @@ const auditManifests = [
       name: '@angular/core',
       version: '17.0.0',
       integrity: null,
-      provenance: false,
+      attestationListed: false,
       license: 'SEE LICENSE IN LICENSE.md',
       licenseText: null,
     }],
@@ -788,32 +801,119 @@ Deno.test('imp audit reports the known vulnerabilities of a package', async () =
   )
 })
 
+const osvResponse = (status, body = {}, headers = {}) =>
+  new Response(JSON.stringify(body), { status, headers })
+
 Deno.test('imp audit follows every page of the OSV results', async () => {
   const requests = []
   const pages = {
-    'second': { vulns: [{ id: 'GHSA-2' }], next_page_token: 'third' },
-    'third': { vulns: [{ id: 'GHSA-3' }] },
+    'forge-2': { vulns: [{ id: 'GHSA-2' }], next_page_token: 'forge-3' },
+    'forge-3': { vulns: [{ id: 'GHSA-3' }] },
+    'wide-2': { vulns: [{ id: 'GHSA-9' }] },
   }
-  const post = (path, body) => {
-    requests.push(`${path} ${body.page_token ?? body.queries.length}`)
-    if (path === '/querybatch') {
-      return Promise.resolve({
-        results: [{ vulns: [{ id: 'GHSA-1' }], next_page_token: 'second' }, {}],
+  const send = (url, init) => {
+    const { queries } = JSON.parse(init.body)
+    requests.push(
+      `${new URL(url).pathname} ${
+        queries.map((query) => `${query.package.name}:${query.page_token ?? '-'}`).join(',')
+      }`,
+    )
+    if (!queries[0].page_token) {
+      return osvResponse(200, {
+        results: [
+          { vulns: [{ id: 'GHSA-1' }], next_page_token: 'forge-2' },
+          {},
+          { vulns: [{ id: 'GHSA-8' }], next_page_token: 'wide-2' },
+        ],
       })
     }
-    return Promise.resolve(pages[body.page_token])
+    return osvResponse(200, { results: queries.map((query) => pages[query.page_token]) })
   }
   const ids = await knownVulnerabilityIds(
-    [{ name: 'forge', version: '1.0.0' }, { name: 'calm', version: '2.0.0' }],
-    post,
+    [
+      { name: 'forge', version: '1.0.0' },
+      { name: 'calm', version: '2.0.0' },
+      { name: 'wide', version: '3.0.0' },
+    ],
+    osvClient({ send, sleep: () => Promise.resolve() }),
   )
   check(
-    JSON.stringify(ids) === JSON.stringify([['GHSA-1', 'GHSA-2', 'GHSA-3'], []]),
+    JSON.stringify(ids) ===
+      JSON.stringify([['GHSA-1', 'GHSA-2', 'GHSA-3'], [], ['GHSA-8', 'GHSA-9']]),
     `the pages were not joined: ${JSON.stringify(ids)}`,
   )
   check(
-    requests.join(' | ') === '/querybatch 2 | /query second | /query third',
+    requests.join(' | ') ===
+      '/v1/querybatch forge:-,calm:-,wide:- | /v1/querybatch forge:forge-2,wide:wide-2 | ' +
+        '/v1/querybatch forge:forge-3',
     `unexpected requests: ${requests.join(' | ')}`,
+  )
+})
+
+Deno.test('imp audit fails when OSV answers fewer results than it was asked', async () => {
+  const send = () => Promise.resolve(osvResponse(200, { results: [{}] }))
+  const error = await knownVulnerabilityIds(
+    [{ name: 'forge', version: '1.0.0' }, { name: 'calm', version: '2.0.0' }],
+    osvClient({ send, sleep: () => Promise.resolve() }),
+  ).then(() => null, (thrown) => thrown)
+  check(
+    error?.message === 'the OSV database answered 2 queries with 1 results',
+    `a short answer was not refused: ${error?.message}`,
+  )
+})
+
+Deno.test('imp audit retries OSV after a rate limit or a server error', async () => {
+  const waits = []
+  const sleep = (ms) => {
+    waits.push(ms)
+    return Promise.resolve()
+  }
+  const answers = [
+    osvResponse(429, {}, { 'retry-after': '7' }),
+    osvResponse(503),
+    osvResponse(200, { id: 'GHSA-1' }),
+  ]
+  const recovered = await osvClient({ send: () => Promise.resolve(answers.shift()), sleep })
+    .get('/vulns/GHSA-1')
+  check(recovered.id === 'GHSA-1', `the retry did not return the answer: ${recovered.id}`)
+  check(
+    JSON.stringify(waits) === '[7000,2000]',
+    `the waits did not follow Retry-After, then the backoff: ${waits}`,
+  )
+
+  let calls = 0
+  const busy = () => {
+    calls++
+    return Promise.resolve(osvResponse(500))
+  }
+  const gaveUp = await osvClient({ send: busy, sleep: () => Promise.resolve() })
+    .get('/vulns/GHSA-1').then(() => null, (error) => error.message)
+  check(calls === 4, `a server that always fails got ${calls} requests, not 4`)
+  check(
+    gaveUp ===
+      'the OSV database did not answer - https://api.osv.dev/v1/vulns/GHSA-1 responded 500',
+    `unexpected message: ${gaveUp}`,
+  )
+
+  calls = 0
+  const refused = () => {
+    calls++
+    return Promise.resolve(osvResponse(400))
+  }
+  await osvClient({ send: refused, sleep: () => Promise.resolve() }).get('/vulns/x').catch(() => {})
+  check(calls === 1, `a 400 answer was retried ${calls - 1} times`)
+
+  const now = Date.parse('2026-09-01T10:00:00Z')
+  const delays = [
+    retryDelay('3', 0, now),
+    retryDelay('Tue, 01 Sep 2026 10:00:12 GMT', 0, now),
+    retryDelay('Tue, 01 Sep 2026 09:00:00 GMT', 0, now),
+    retryDelay(null, 2, now),
+    retryDelay('3600', 0, now),
+  ]
+  check(
+    JSON.stringify(delays) === '[3000,12000,0,4000,60000]',
+    `unexpected delays: ${delays}`,
   )
 })
 
@@ -851,6 +951,32 @@ Deno.test('imp audit --sbom writes a CycloneDX bill of materials', async () => {
       `${commandTranscript('imp audit --sbom  (cwd: <tmp>)', result)}\n--- sbom.cdx.json ---\n${
         normalize(bom)
       }\n${commandTranscript('imp audit  (cwd: <tmp with no dependencies>)', nothing)}`,
+    )
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('imp audit fails when a dependency has no manifest', async () => {
+  const dir = await Deno.makeTempDir()
+  try {
+    await Deno.writeTextFile(
+      join(dir, 'imp.json'),
+      '{ "dependencies": { "forge": "npm:node-forge@0.7.0", "ng": "npm:@angular/core@17.0.0" } }\n',
+    )
+    await Deno.mkdir(join(dir, 'dependencies', 'forge'), { recursive: true })
+    await Deno.writeTextFile(
+      join(dir, 'dependencies', 'forge', 'manifest.json'),
+      JSON.stringify(auditManifests[0]),
+    )
+    const audited = await runImp(['audit'], dir)
+    const sbom = await runImp(['audit', '--sbom'], dir)
+    const wrote = await Deno.stat(join(dir, 'sbom.cdx.json')).then(() => 'yes', () => 'no')
+    await assertSnapshot(
+      'audit-missing-manifest',
+      `${commandTranscript('imp audit  (cwd: <tmp>, ng has no manifest)', audited)}\n${
+        commandTranscript('imp audit --sbom  (cwd: <tmp>, ng has no manifest)', sbom)
+      }\n--- wrote sbom.cdx.json ---\n${wrote}\n`,
     )
   } finally {
     await Deno.remove(dir, { recursive: true })
@@ -914,6 +1040,229 @@ Deno.test('imp install checks a package against its published integrity', async 
     }`,
   ]
   await assertSnapshot('install-integrity-check', `${results.join('\n')}\n`)
+})
+
+const derFromP1363 = (raw) => {
+  const integer = (bytes) => {
+    let start = 0
+    while (start < bytes.length - 1 && bytes[start] === 0) start++
+    const value = [...bytes.subarray(start)]
+    if (value[0] & 0x80) value.unshift(0)
+    return [0x02, value.length, ...value]
+  }
+  const body = [...integer(raw.subarray(0, 32)), ...integer(raw.subarray(32))]
+  return new Uint8Array([0x30, body.length, ...body])
+}
+
+async function registrySigner() {
+  const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, [
+    'sign',
+    'verify',
+  ])
+  const key = encodeBase64(new Uint8Array(await crypto.subtle.exportKey('spki', pair.publicKey)))
+  const sign = async (message) =>
+    encodeBase64(derFromP1363(
+      new Uint8Array(
+        await crypto.subtle.sign(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          pair.privateKey,
+          new TextEncoder().encode(message),
+        ),
+      ),
+    ))
+  return { key, sign }
+}
+
+Deno.test('imp install checks the npm registry signature of a package', async () => {
+  const registry = await registrySigner()
+  const impostor = await registrySigner()
+  const integrity =
+    'sha512-nrGmJHbnyl7LfZyHbcgNyi0yHawEXOAnWYnw/3MJKJ7vyS2NcTqs5+sI4xcaivd6kjoUwnkD5'
+  const signed = {
+    name: '@demo/pkg',
+    version: '1.0.0',
+    integrity,
+    signatures: [{
+      keyid: 'SHA256:current',
+      sig: await registry.sign(`@demo/pkg@1.0.0:${integrity}`),
+    }],
+  }
+  const keys = [
+    { keyid: 'SHA256:current', key: registry.key, expires: null },
+    { keyid: 'SHA256:retired', key: registry.key, expires: '2025-01-29T00:00:00.000Z' },
+  ]
+  let lookups = 0
+  const publishedOn = (time) => () => {
+    lookups++
+    return Promise.resolve(time)
+  }
+  const retired = { ...signed, signatures: [{ ...signed.signatures[0], keyid: 'SHA256:retired' }] }
+  const results = [
+    `signed by a current key: ${await registrySignatureProblem(signed, keys, publishedOn(null))}`,
+    `publish time looked up for a key with no expiry: ${lookups > 0}`,
+    `another hash: ${await registrySignatureProblem(
+      { ...signed, integrity: `${integrity.slice(0, -1)}6` },
+      keys,
+      publishedOn(null),
+    )}`,
+    `another version: ${await registrySignatureProblem(
+      { ...signed, version: '1.0.1' },
+      keys,
+      publishedOn(null),
+    )}`,
+    `signed by another key: ${await registrySignatureProblem(
+      {
+        ...signed,
+        signatures: [{
+          keyid: 'SHA256:current',
+          sig: await impostor.sign(`@demo/pkg@1.0.0:${integrity}`),
+        }],
+      },
+      keys,
+      publishedOn(null),
+    )}`,
+    `no signature: ${await registrySignatureProblem(
+      { ...signed, signatures: [] },
+      keys,
+      publishedOn(null),
+    )}`,
+    `unknown key: ${await registrySignatureProblem(
+      { ...signed, signatures: [{ ...signed.signatures[0], keyid: 'SHA256:other' }] },
+      keys,
+      publishedOn(null),
+    )}`,
+    `a second signature that fails: ${await registrySignatureProblem(
+      { ...signed, signatures: [...signed.signatures, { keyid: 'SHA256:current', sig: 'AAAA' }] },
+      keys,
+      publishedOn(null),
+    )}`,
+    `retired key, published before it expired: ${await registrySignatureProblem(
+      retired,
+      keys,
+      publishedOn('2023-07-04T17:31:47.638Z'),
+    )}`,
+    `retired key, published after it expired: ${await registrySignatureProblem(
+      retired,
+      keys,
+      publishedOn('2025-03-01T00:00:00.000Z'),
+    )}`,
+    `retired key, no publish time: ${await registrySignatureProblem(
+      retired,
+      keys,
+      publishedOn(null),
+    )}`,
+  ]
+  const raw = new Uint8Array(64)
+  raw.fill(0x91, 0, 32)
+  raw.set([0, 0, 0x05], 32)
+  raw.fill(0x22, 35)
+  const roundTrip = signatureFromDer(derFromP1363(raw))
+  results.push(
+    `DER with a padded r and a short s reads back: ${
+      roundTrip?.length === 64 && roundTrip.every((byte, index) => byte === raw[index])
+    }`,
+    `DER with a wrong length: ${signatureFromDer(new Uint8Array([0x30, 9, 2, 1, 1, 2, 1, 1]))}`,
+  )
+  await assertSnapshot('install-signature-check', `${results.join('\n')}\n`)
+})
+
+Deno.test('imp install puts every package in place, or none', async (t) => {
+  const encode = (text) => new TextEncoder().encode(text)
+  const release = (alias, text) => ({
+    alias,
+    specifier: `npm:${alias}@2.0.0`,
+    files: [{ name: `${alias}.js`, contents: encode(text) }],
+    manifest: { alias, specifier: `npm:${alias}@2.0.0`, packages: [] },
+  })
+  const dependencies = [release('events', 'export const version = 2\n'), release('fresh', 'new\n')]
+  const configChanges = dependencies.map(({ alias, specifier }) => ({
+    path: ['dependencies', alias],
+    value: specifier,
+  }))
+  const originalConfig = '{\n  "dependencies": { "events": "npm:events@1.0.0" }\n}\n'
+
+  const project = async () => {
+    const root = await Deno.makeTempDir()
+    await Deno.writeTextFile(join(root, 'imp.json'), originalConfig)
+    await Deno.mkdir(join(root, 'dependencies', 'events'), { recursive: true })
+    await Deno.writeTextFile(
+      join(root, 'dependencies', 'events', 'events.js'),
+      'export const version = 1\n',
+    )
+    await Deno.writeTextFile(join(root, 'dependencies', 'events', 'manifest.json'), '{}\n')
+    return root
+  }
+
+  const state = async (root) => {
+    const files = []
+    for (const path of (await listFiles(root)).sort()) {
+      files.push(`${path}: ${JSON.stringify(await Deno.readTextFile(join(root, path)))}`)
+    }
+    return files.join('\n')
+  }
+
+  const real = projectFileSystem
+
+  const failing = {
+    'a write of the second package fails': {
+      ...real,
+      writeFile: (path, bytes) =>
+        basename(path) === 'fresh.js'
+          ? Promise.reject(new Error('No space left on device'))
+          : Deno.writeFile(path, bytes),
+    },
+    'the second package cannot move into place': {
+      ...real,
+      rename: (from, to) =>
+        basename(to) === 'fresh'
+          ? Promise.reject(new Error('Access is denied'))
+          : Deno.rename(from, to),
+    },
+    'imp.json cannot be written': {
+      ...real,
+      updateConfig: async (path) => {
+        await Deno.writeTextFile(path, '{ "dependencies": {')
+        throw new Error('No space left on device')
+      },
+    },
+  }
+
+  for (const [failure, fileSystem] of Object.entries(failing)) {
+    await t.step(failure, async () => {
+      const root = await project()
+      const before = await state(root)
+      const error = await commitDependencies({ root, dependencies, configChanges, fileSystem })
+        .then(() => null, (thrown) => thrown.message)
+      const after = await state(root)
+      await Deno.remove(root, { recursive: true })
+      check(error?.endsWith(' - nothing was installed'), `unexpected error: ${error}`)
+      check(
+        after === before,
+        `the project changed:\n--- before ---\n${before}\n--- after ---\n${after}`,
+      )
+    })
+  }
+
+  await t.step('every step succeeds', async () => {
+    const root = await project()
+    await commitDependencies({ root, dependencies, configChanges, fileSystem: real })
+    const after = await state(root)
+    await Deno.remove(root, { recursive: true })
+    await assertSnapshot('install-commit-state', `${after}\n`)
+  })
+
+  await t.step('a failure in a new project leaves no dependencies folder', async () => {
+    const root = await Deno.makeTempDir()
+    await commitDependencies({
+      root,
+      dependencies,
+      configChanges,
+      fileSystem: failing['imp.json cannot be written'],
+    }).catch(() => {})
+    const left = await listFiles(root)
+    await Deno.remove(root, { recursive: true })
+    check(left.length === 0, `files were left behind: ${left.join(', ')}`)
+  })
 })
 
 Deno.test('imp test', async (t) => {
@@ -1457,6 +1806,43 @@ Deno.test('imp build', async (t) => {
   }
 })
 
+Deno.test('imp build carries the notice of the QR code encoder only where qrCode is bundled', async () => {
+  const project = await Deno.makeTempDir()
+  const write = (name, text) => Deno.writeTextFile(join(project, name), text)
+  const buildWith = async (component, output) => {
+    await write(
+      'app.js',
+      `import { mount } from 'imp'\nimport { ${component.name} } from '${component.from}'\n\n` +
+        `mount(document.body, ${component.call})\n`,
+    )
+    const result = await runImp(['build', '--output', output], project)
+    check(result.code === 0, `imp build failed:\n${result.stdout}\n${result.stderr}`)
+    return await Deno.readTextFile(join(project, output, 'LICENSES.txt'))
+  }
+  try {
+    await write('index.html', '<!doctype html>\n<script type="module" src="app.js"></script>\n')
+    const drawing = await buildWith(
+      { name: 'qrCode', from: 'imp/std/display', call: "qrCode({ value: 'https://imp.dev' })" },
+      'drawing',
+    )
+    const plain = await buildWith(
+      { name: 'button', from: 'imp/std', call: "button('Save')" },
+      'plain',
+    )
+    check(
+      drawing.includes('Copyright (c) Project Nayuki. (MIT License)') &&
+        drawing.includes('The above copyright notice and this permission notice shall be included'),
+      'an app that draws a qrCode carries the MIT notice of the QR Code generator library',
+    )
+    check(
+      !plain.includes('Project Nayuki'),
+      'an app that draws no qrCode carries no notice of the QR Code generator library',
+    )
+  } finally {
+    await Deno.remove(project, { recursive: true })
+  }
+})
+
 Deno.test('imp build reads adversarial HTML the way a browser does', async (t) => {
   const dir = await Deno.makeTempDir()
   await copyDirectory(fixture('build-html-edge'), dir)
@@ -1493,13 +1879,75 @@ Deno.test('imp build reads adversarial HTML the way a browser does', async (t) =
   }
 })
 
+Deno.test('imp build writes the same files from any folder', async () => {
+  const shallowRoot = await Deno.makeTempDir()
+  const deepRoot = await Deno.makeTempDir()
+  const projects = [
+    { cwd: shallowRoot, folder: 'app' },
+    { cwd: deepRoot, folder: join('a', 'longer', 'path', 'to', 'the', 'app') },
+  ]
+  const builds = []
+  try {
+    for (const { cwd, folder } of projects) {
+      const dir = join(cwd, folder)
+      await Deno.mkdir(dir, { recursive: true })
+      await copyDirectory(fixture('build'), dir)
+      const { code, stderr } = await runImp(
+        ['build', join(folder, 'index.html'), '--output', join(folder, 'dist')],
+        cwd,
+      )
+      check(code === 0, `imp build failed in ${dir}: ${stderr}`)
+      const dist = join(dir, 'dist')
+      const files = (await listFiles(dist)).sort()
+      builds.push(
+        await Promise.all(
+          files.map(async (file) => `${file}\n${await Deno.readTextFile(join(dist, file))}`),
+        ),
+      )
+    }
+  } finally {
+    await Deno.remove(shallowRoot, { recursive: true })
+    await Deno.remove(deepRoot, { recursive: true })
+  }
+  const [first, second] = builds
+  check(first.length > 3, `the build wrote ${first.length} files`)
+  check(
+    JSON.stringify(first) === JSON.stringify(second),
+    `the two folders built different files:\n${first.map((file) => file.split('\n')[0])}\n${
+      second.map((file) => file.split('\n')[0])
+    }`,
+  )
+})
+
+Deno.test('imp build rewrites every url of the page and reports its inline code', async () => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('build-page'), dir)
+  try {
+    const result = await runImp(['build'], dir)
+    const html = await Deno.readTextFile(join(dir, 'dist', 'index.html')).catch(() => '(none)')
+    await assertSnapshot(
+      'build-page',
+      `${
+        commandTranscript('imp build  (cwd: <tmp>)', {
+          ...result,
+          stdout: result.stdout.replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)'),
+        })
+      }\n${section('dist/index.html', html)}\n`.replace(/-[A-Z0-9]{8}\.(js|css)/g, '-<hash>.$1'),
+    )
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
 const workerReport = (source) => {
   const worker = runServiceWorker(source)
   const precache = worker.scope.__IMP_PRECACHE__
   return [
     `precache version: ${/^[0-9a-f]{16}$/.test(precache?.version) ? '<16 hex digits>' : '(none)'}`,
-    `precache files: ${JSON.stringify(precache?.files ?? null)}`,
     `precache shell: ${JSON.stringify(precache?.shell ?? null)}`,
+    `precache hashed: ${JSON.stringify(precache?.hashed ?? null)}`,
+    `precache required: ${JSON.stringify(precache?.required ?? null)}`,
+    `precache optional: ${JSON.stringify(precache?.optional ?? null)}`,
     `listeners: ${Object.keys(worker.listeners).sort().join(', ')}`,
   ].join('\n')
 }
@@ -1511,7 +1959,6 @@ Deno.test('imp build --pwa', async (t) => {
   const mask = (text) =>
     text
       .replaceAll(dir, '<tmp>')
-      .replace(/imp-pwa-[0-9a-f]{16}/g, 'imp-pwa-<hash>')
       .replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js')
       .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
 
@@ -1723,7 +2170,7 @@ Deno.test('imp build --pwa keeps the previous build for a running page', async (
     })
   const buildCaches = (page) =>
     page.evaluate(async () =>
-      (await caches.keys()).filter((key) => key.startsWith('imp-pwa-')).length
+      (await caches.keys()).filter((key) => key.startsWith('imp-pwa / ')).length
     )
   try {
     const page = await browser.newPage()
@@ -1751,11 +2198,13 @@ Deno.test('imp build --pwa keeps the previous build for a running page', async (
 
     deployed = releases[2]
     await updateWorker(next)
-    check(await buildCaches(next) === 3, 'the update removed a build cache before a navigation')
-    await next.goto(`${base}/`)
-    await next.waitForFunction(async () =>
-      (await caches.keys()).filter((key) => key.startsWith('imp-pwa-')).length === 2
+    check(await buildCaches(next) === 2, 'the update did not remove the build before the previous')
+    check(
+      await next.evaluate(() => globalThis.loadPanel()) === 'panel of two',
+      'a lazy chunk of the previous release did not load after the update',
     )
+    await next.goto(`${base}/`)
+    check(await buildCaches(next) === 2, 'a navigation removed the previous build cache')
     check(
       await next.evaluate(() => globalThis.release) === 'three',
       'the third release did not load',
@@ -1810,6 +2259,438 @@ Deno.test('precacheBuild in a project worker serves the app offline', async () =
     await server.shutdown().catch(() => {})
     await Deno.remove(dir, { recursive: true })
   }
+})
+
+Deno.test('imp build --pwa precaches only the files that the app loads from the host', async () => {
+  const dir = await Deno.makeTempDir()
+  await copyDirectory(fixture('build-pwa'), dir)
+  const publicFiles = {
+    'robots.txt': 'robots',
+    'docs/guide.txt': 'guide',
+    'a#b.txt': 'hash sign',
+    '100%.txt': 'percent sign',
+    'space name.txt': 'space',
+    [`caf${String.fromCharCode(0xe9)}.txt`]: 'non-ascii',
+    '_redirects': '/*  /app/index.html  200',
+    '_headers': '/app/chunks/*\n  Cache-Control: immutable',
+    '404.html': 'not found',
+    'CNAME': 'app.example.com',
+    'vercel.json': '{}',
+    '.nojekyll': '',
+    '.well-known/assetlinks.json': '[]',
+  }
+  for (const [name, text] of Object.entries(publicFiles)) {
+    await Deno.mkdir(dirname(join(dir, 'public', name)), { recursive: true })
+    await Deno.writeTextFile(join(dir, 'public', name), text)
+  }
+  await Deno.mkdir(join(dir, 'env'))
+  await Deno.writeTextFile(join(dir, 'env', 'prod.json'), JSON.stringify({ IMP_BASEPATH: '/app' }))
+  const config = JSON.parse(await Deno.readTextFile(join(dir, 'imp.json')))
+  await Deno.writeTextFile(
+    join(dir, 'imp.json'),
+    JSON.stringify({ ...config, environments: { default: 'env/prod.json' } }),
+  )
+  const result = await runImp(['build', '--pwa', '--output', join('site', 'app')], dir)
+  check(result.code === 0, `the build failed:\n${result.stderr}`)
+  const worker = runServiceWorker(await Deno.readTextFile(join(dir, 'site', 'app', 'sw.js')))
+  const { shell, hashed, required, optional } = worker.scope.__IMP_PRECACHE__
+  const masked = (urls) => urls.map((url) => url.replace(/-[A-Z0-9]{8}\.js$/, '-<hash>.js')).sort()
+  const same = (actual, expected, label) =>
+    check(
+      JSON.stringify(masked(actual)) === JSON.stringify(expected),
+      `${label}: ${JSON.stringify(masked(actual))}`,
+    )
+  check(shell === '/app/index.html', `the shell is ${shell}`)
+  same(
+    hashed,
+    [
+      '/app/chunks/app-<hash>.js',
+      '/app/chunks/env-<hash>.js',
+      '/app/chunks/register-service-worker-<hash>.js',
+    ],
+    'hashed',
+  )
+  same(
+    required,
+    [
+      '/app/icons/apple-touch-icon.png',
+      '/app/icons/icon-192.png',
+      '/app/icons/icon-512.png',
+      '/app/icons/icon-maskable-512.png',
+      '/app/index.html',
+      '/app/manifest.webmanifest',
+    ],
+    'required',
+  )
+  same(
+    optional,
+    [
+      '/app/100%25.txt',
+      '/app/a%23b.txt',
+      '/app/caf%C3%A9.txt',
+      '/app/docs/guide.txt',
+      '/app/robots.txt',
+      '/app/space%20name.txt',
+    ],
+    'optional',
+  )
+  const { server, base } = serveFolder(() => join(dir, 'site'))
+  try {
+    for (const url of [...hashed, ...required, ...optional]) {
+      const response = await fetch(`${base}${url}`)
+      await response.body?.cancel()
+      check(response.status === 200, `the host answered ${response.status} for ${url}`)
+    }
+    const served = await (await fetch(`${base}/app/a%23b.txt`)).text()
+    check(served === 'hash sign', `the encoded url served ${served}`)
+  } finally {
+    await server.shutdown()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+const PWA_ORIGIN = 'https://pwa.test'
+
+function fakeCacheStorage() {
+  const stores = new Map()
+  const keyOf = (request) => (typeof request === 'string' ? request : request.url)
+  const usage = () =>
+    [...stores.values()].flatMap((entries) => [...entries.values()])
+      .reduce((sum, { body }) => sum + body.length, 0)
+  const answer = ({ body, status, headers }) => new Response(body, { status, headers })
+  const cacheOf = (entries) => ({
+    put: async (request, response) => {
+      const body = new Uint8Array(await response.arrayBuffer())
+      const replaced = entries.get(keyOf(request))?.body.length ?? 0
+      if (usage() - replaced + body.length > storage.quota) {
+        throw new DOMException('the storage quota is full', 'QuotaExceededError')
+      }
+      entries.set(keyOf(request), { body, status: response.status, headers: [...response.headers] })
+    },
+    match: (request) => {
+      const entry = entries.get(keyOf(request))
+      return Promise.resolve(entry ? answer(entry) : undefined)
+    },
+  })
+  const storage = {
+    quota: Infinity,
+    names: () => [...stores.keys()],
+    keys: () => Promise.resolve([...stores.keys()]),
+    has: (name) => Promise.resolve(stores.has(name)),
+    open: (name) => {
+      if (!stores.has(name)) stores.set(name, new Map())
+      return Promise.resolve(cacheOf(stores.get(name)))
+    },
+    delete: (name) => Promise.resolve(stores.delete(name)),
+    match: (request, { cacheName } = {}) => {
+      for (const name of cacheName ? [cacheName] : stores.keys()) {
+        const entry = stores.get(name)?.get(keyOf(request))
+        if (entry) return Promise.resolve(answer(entry))
+      }
+      return Promise.resolve(undefined)
+    },
+  }
+  return storage
+}
+
+function pwaOrigin(source) {
+  const caches = fakeCacheStorage()
+  const served = new Map()
+  const origin = {
+    caches,
+    served,
+    requests: [],
+    warnings: [],
+    clients: [],
+    unreachable: new Set(),
+    offline: false,
+    now: 0,
+  }
+  const network = (input, init) => {
+    const url = typeof input === 'string' ? input : input.url
+    origin.requests.push({ url, cache: init?.cache ?? 'default' })
+    if (origin.offline || origin.unreachable.has(url)) {
+      return Promise.reject(new TypeError('Failed to fetch'))
+    }
+    return Promise.resolve(
+      served.has(url) ? new Response(served.get(url)) : new Response('not found', { status: 404 }),
+    )
+  }
+  const workerConsole = {
+    log: () => {},
+    warn: (...parts) => origin.warnings.push(parts.join(' ')),
+    error: (...parts) => origin.warnings.push(parts.join(' ')),
+  }
+  class WorkerDate extends Date {
+    static now() {
+      return origin.now
+    }
+  }
+  const url = (path) => `${PWA_ORIGIN}${path}`
+
+  origin.upload = (scopePath, { version, files, optional = {} }) => {
+    for (const key of [...served.keys()]) {
+      if (key.startsWith(url(scopePath))) served.delete(key)
+    }
+    for (const [name, body] of Object.entries({ ...files, ...optional })) {
+      served.set(url(`${scopePath}${name}`), body)
+    }
+    const names = Object.keys(files)
+    const paths = (list) => list.map((name) => `${scopePath}${name}`)
+    return {
+      version,
+      shell: `${scopePath}index.html`,
+      hashed: paths(names.filter((name) => name.startsWith('chunks/'))),
+      required: paths(names.filter((name) => !name.startsWith('chunks/'))),
+      optional: paths(Object.keys(optional)),
+    }
+  }
+
+  origin.startWorker = (scopePath, precache) => {
+    const listeners = {}
+    const scope = {
+      __IMP_PRECACHE__: precache,
+      registration: { scope: url(scopePath) },
+      location: new URL(url(`${scopePath}sw.js`)),
+      addEventListener: (type, handler) => {
+        listeners[type] = handler
+      },
+      skipWaiting: () => Promise.resolve(),
+      clients: {
+        claim: () => Promise.resolve(),
+        matchAll: () => Promise.resolve(origin.clients.map((client) => ({ ...client }))),
+      },
+    }
+    new Function('self', 'fetch', 'caches', 'globalThis', 'console', 'Date', source)(
+      scope,
+      network,
+      caches,
+      scope,
+      workerConsole,
+      WorkerDate,
+    )
+    const lifecycle = async (type) => {
+      const pending = []
+      listeners[type]({ waitUntil: (promise) => pending.push(promise) })
+      await Promise.all(pending)
+    }
+    const dispatchFetch = async (path, mode) => {
+      const pending = []
+      let answered = null
+      listeners.fetch({
+        request: { url: url(path), method: 'GET', mode },
+        respondWith: (value) => answered = value,
+        waitUntil: (promise) => pending.push(promise),
+      })
+      try {
+        const response = await (answered ?? network(url(path)))
+        return response.type === 'error' ? null : await response.text()
+      } catch {
+        return null
+      } finally {
+        await Promise.all(pending)
+      }
+    }
+    return {
+      install: () => lifecycle('install'),
+      activate: () => lifecycle('activate'),
+      load: (path) => dispatchFetch(path, 'no-cors'),
+      navigate: (path) => dispatchFetch(path, 'navigate'),
+    }
+  }
+
+  origin.deploy = async (scopePath, release) => {
+    const worker = origin.startWorker(scopePath, origin.upload(scopePath, release))
+    await worker.install()
+    await worker.activate()
+    return worker
+  }
+
+  origin.buildCaches = (scopePath) =>
+    caches.names().filter((name) => name.startsWith(`imp-pwa ${scopePath} `))
+
+  return origin
+}
+
+async function offlineWorkerSource() {
+  const dir = await Deno.makeTempDir()
+  try {
+    await copyDirectory(fixture('build-pwa'), dir)
+    const result = await runImp(['build', '--pwa'], dir)
+    check(result.code === 0, `the build failed:\n${result.stderr}`)
+    const source = await Deno.readTextFile(join(dir, 'dist', 'sw.js'))
+    return source.replace(/globalThis\.__IMP_PRECACHE__ = [^\n]*;\n/, '')
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+}
+
+const appBuild = (tag, extra = {}) => ({
+  version: tag,
+  files: {
+    'index.html': `page ${tag}`,
+    'manifest.webmanifest': `manifest ${tag}`,
+    [`chunks/app-${tag}.js`]: `app ${tag}`,
+    [`chunks/lazy-${tag}.js`]: `lazy ${tag}`,
+    ...extra,
+  },
+})
+
+Deno.test('the offline worker of imp build --pwa', async (t) => {
+  const source = await offlineWorkerSource()
+
+  await t.step('apps on one origin keep the caches of each other', async () => {
+    const origin = pwaOrigin(source)
+    origin.clients = ['/a/', '/b/', '/c/'].map((path) => ({
+      id: path,
+      url: `${PWA_ORIGIN}${path}`,
+    }))
+    await origin.deploy('/b/', appBuild('b1'))
+    const c = await origin.deploy('/c/', appBuild('c1'))
+    const b = await origin.deploy('/b/', appBuild('b2'))
+    let a = null
+    for (const tag of ['a1', 'a2', 'a3', 'a4']) {
+      a = await origin.deploy('/a/', appBuild(tag))
+      await a.navigate('/a/')
+    }
+    check(origin.buildCaches('/a/').length === 2, `app a has ${origin.buildCaches('/a/')}`)
+    check(origin.buildCaches('/b/').length === 2, `app b has ${origin.buildCaches('/b/')}`)
+    check(origin.buildCaches('/c/').length === 1, `app c has ${origin.buildCaches('/c/')}`)
+    origin.offline = true
+    const loaded = [
+      await a.load('/a/chunks/lazy-a4.js'),
+      await a.load('/a/chunks/lazy-a3.js'),
+      await b.load('/b/chunks/lazy-b2.js'),
+      await b.load('/b/chunks/lazy-b1.js'),
+      await c.load('/c/chunks/lazy-c1.js'),
+      await b.navigate('/b/deep/link'),
+    ]
+    const expected = ['lazy a4', 'lazy a3', 'lazy b2', 'lazy b1', 'lazy c1', 'page b2']
+    check(JSON.stringify(loaded) === JSON.stringify(expected), `offline: ${loaded}`)
+  })
+
+  await t.step('an optional file that fails does not block the install', async () => {
+    const origin = pwaOrigin(source)
+    const precache = origin.upload('/', {
+      ...appBuild('v1'),
+      optional: { 'robots.txt': 'robots', 'gone.txt': 'gone', 'far.txt': 'far' },
+    })
+    origin.served.delete(`${PWA_ORIGIN}/gone.txt`)
+    origin.unreachable.add(`${PWA_ORIGIN}/far.txt`)
+    const worker = origin.startWorker('/', precache)
+    await worker.install()
+    await worker.activate()
+    check(
+      origin.warnings.some((line) => line.includes('/gone.txt') && line.includes('404')),
+      `no warning for the missing file: ${origin.warnings}`,
+    )
+    check(
+      origin.warnings.some((line) => line.includes('/far.txt')),
+      `no warning for the unreachable file: ${origin.warnings}`,
+    )
+    origin.offline = true
+    check(await worker.load('/robots.txt') === 'robots', 'an optional file was not cached')
+    check(await worker.load('/chunks/lazy-v1.js') === 'lazy v1', 'a chunk was not cached')
+  })
+
+  await t.step('a required file that fails keeps the previous build', async () => {
+    const origin = pwaOrigin(source)
+    const current = await origin.deploy('/', appBuild('v1'))
+    const precache = origin.upload('/', appBuild('v2'))
+    origin.served.delete(`${PWA_ORIGIN}/chunks/lazy-v2.js`)
+    const failed = await origin.startWorker('/', precache).install().then(
+      () => 'installed',
+      (error) => error.message,
+    )
+    check(failed.includes('/chunks/lazy-v2.js'), `the install did not fail: ${failed}`)
+    check(
+      origin.buildCaches('/').length === 1,
+      `the failed install left a cache: ${origin.caches.names()}`,
+    )
+    origin.offline = true
+    check(await current.navigate('/') === 'page v1', 'the previous build did not serve offline')
+  })
+
+  await t.step('a full storage does not stop the updates', async () => {
+    const origin = pwaOrigin(source)
+    await origin.deploy('/', appBuild('v1'))
+    origin.caches.quota = 400
+    const big = 'x'.repeat(500)
+    const worker = await origin.deploy('/', appBuild('v2', { 'chunks/big-v2.js': big }))
+    check(
+      origin.warnings.some((line) => line.includes('could not store')),
+      `no warning for the full storage: ${origin.warnings}`,
+    )
+    check(await worker.load('/chunks/big-v2.js') === big, 'a file that did not fit did not load')
+    const next = await origin.deploy('/', appBuild('v3'))
+    origin.offline = true
+    check(await next.navigate('/') === 'page v3', 'the next build did not install')
+  })
+
+  await t.step('a rollback keeps the build that the open tabs run', async () => {
+    const origin = pwaOrigin(source)
+    origin.clients = [{ id: 'tab', url: `${PWA_ORIGIN}/` }]
+    for (const tag of ['v1', 'v2', 'v3']) await origin.deploy('/', appBuild(tag))
+    await origin.deploy('/', appBuild('v2'))
+    const worker = await origin.deploy('/', appBuild('v4'))
+    origin.offline = true
+    const loaded = [
+      await worker.load('/chunks/lazy-v4.js'),
+      await worker.load('/chunks/lazy-v2.js'),
+      await worker.load('/chunks/lazy-v3.js'),
+    ]
+    check(
+      JSON.stringify(loaded) === JSON.stringify(['lazy v4', 'lazy v2', null]),
+      `after the rollback: ${JSON.stringify(loaded)}`,
+    )
+  })
+
+  await t.step('the build caches stay bounded without a navigation', async () => {
+    const origin = pwaOrigin(source)
+    origin.clients = [{ id: 'tab', url: `${PWA_ORIGIN}/` }]
+    let worker = null
+    for (const tag of ['v1', 'v2', 'v3', 'v4', 'v5', 'v6']) {
+      worker = await origin.deploy('/', appBuild(tag))
+      check(origin.buildCaches('/').length <= 2, `after ${tag}: ${origin.buildCaches('/')}`)
+    }
+    origin.now += 60000
+    await worker.load('/chunks/app-v6.js')
+    check(origin.buildCaches('/').length === 2, 'the grace cache went while its tab is open')
+    origin.clients = []
+    origin.now += 1000
+    await worker.load('/chunks/app-v6.js')
+    check(origin.buildCaches('/').length === 2, 'the worker checked the clients on every request')
+    origin.now += 60000
+    await worker.load('/chunks/app-v6.js')
+    check(
+      origin.buildCaches('/').length === 1,
+      `the grace cache stayed after its tab closed: ${origin.buildCaches('/')}`,
+    )
+    await origin.deploy('/', appBuild('v7'))
+    check(
+      origin.buildCaches('/').length === 1,
+      `an update with no open tab kept the grace cache: ${origin.buildCaches('/')}`,
+    )
+  })
+
+  await t.step('an update copies the unchanged hashed files', async () => {
+    const origin = pwaOrigin(source)
+    await origin.deploy('/', appBuild('v1', { 'chunks/shared-1.js': 'shared' }))
+    origin.requests.length = 0
+    const worker = await origin.deploy('/', appBuild('v2', { 'chunks/shared-1.js': 'shared' }))
+    const requested = origin.requests
+      .map(({ url, cache }) => `${url.slice(PWA_ORIGIN.length)} ${cache}`)
+      .sort()
+    const expected = [
+      '/chunks/app-v2.js default',
+      '/chunks/lazy-v2.js default',
+      '/index.html reload',
+      '/manifest.webmanifest reload',
+    ]
+    check(JSON.stringify(requested) === JSON.stringify(expected), `requests: ${requested}`)
+    origin.offline = true
+    check(await worker.load('/chunks/shared-1.js') === 'shared', 'the copied file did not load')
+  })
 })
 
 const STRICT_POLICY = "script-src 'self'; style-src 'self'"
@@ -2060,6 +2941,8 @@ Deno.test('imp start', async (t) => {
   }
 })
 
+const DECLARED_MOCK_DELAY = 250
+
 function runServiceWorker(source, port = null) {
   const listeners = {}
   const telemetry = []
@@ -2069,6 +2952,8 @@ function runServiceWorker(source, port = null) {
     },
     skipWaiting: () => {},
     clients: { claim: () => {} },
+    registration: { scope: 'http://app.test/' },
+    location: new URL('http://app.test/sw.js'),
   }
   const network = (input, init) => {
     if (input === '/@imp/log') {
@@ -2092,7 +2977,7 @@ function runServiceWorker(source, port = null) {
     try {
       const response = await answered
       const type = response.headers.get('content-type') ?? '(none)'
-      const slow = Date.now() - started >= 20 ? ' after the declared delay' : ''
+      const slow = Date.now() - started >= DECLARED_MOCK_DELAY ? ' after the declared delay' : ''
       return `${init?.method ?? 'GET'} ${path} -> ${response.status} ${type} ${await response
         .text()}${slow}`
     } catch (error) {
@@ -2524,6 +3409,109 @@ Deno.test('the mocks of the imp process report problems and keep their state', a
       '',
     ].join('\n'),
   )
+})
+
+const askMocks = async (mocks) => {
+  const response = await mocks.answer(
+    new Request('http://app.test/@imp/mock', {
+      method: 'POST',
+      body: JSON.stringify({ method: 'GET', path: '/api/value' }),
+    }),
+  )
+  return await response.text()
+}
+
+const valueMock = (value) =>
+  `export const mocks = [{ match: () => true, handler: () => ({ body: ${
+    JSON.stringify(value)
+  } }) }]\n`
+
+Deno.test('an edit to a mock file during a rebuild wins over the rebuild', async () => {
+  const root = await Deno.makeTempDir()
+  const directory = join(root, 'mocks')
+  await Deno.mkdir(directory)
+  const file = join(directory, 'value.mock.js')
+  let holdNextBundle = false
+  let bundleHeld = null
+  let releaseBundle = null
+  const bundle = async (...args) => {
+    const bundled = await bundleMockFiles(...args)
+    if (holdNextBundle) {
+      holdNextBundle = false
+      await new Promise((resolve) => {
+        releaseBundle = resolve
+        bundleHeld()
+      })
+    }
+    return bundled
+  }
+  const mocks = createMocks({ root, directory, bundle })
+  try {
+    await Deno.writeTextFile(file, valueMock('one'))
+    const first = await askMocks(mocks)
+    await Deno.writeTextFile(file, valueMock('two'))
+    holdNextBundle = true
+    const held = new Promise((resolve) => bundleHeld = resolve)
+    const running = mocks.refresh()
+    await held
+    await Deno.writeTextFile(file, valueMock('three'))
+    const during = mocks.refresh()
+    releaseBundle()
+    await running
+    await during
+    const after = await askMocks(mocks)
+    check(first === 'one', `the first answer is ${first}`)
+    check(after === 'three', `after the edit during the rebuild, the mocks answer ${after}`)
+  } finally {
+    await Deno.remove(root, { recursive: true })
+  }
+})
+
+Deno.test('a mock that throws outside its handler stops only the mocks, and they load again', async () => {
+  const root = await Deno.makeTempDir()
+  const directory = join(root, 'mocks')
+  await Deno.mkdir(directory)
+  const reported = []
+  const mocks = createMocks({
+    root,
+    directory,
+    onChange: (state) => reported.push(`${state.entries.length} entry`),
+  })
+  await Deno.writeTextFile(
+    join(directory, 'late.mock.js'),
+    [
+      'let calls = 0',
+      'export const mocks = [{',
+      '  match: () => true,',
+      '  handler: (request) => {',
+      '    calls++',
+      "    if (request.path === '/crash') setTimeout(() => { throw new Error('late failure') })",
+      '    return { body: calls }',
+      '  },',
+      '}]',
+      '',
+    ].join('\n'),
+  )
+  const ask = async (path) => {
+    const response = await mocks.answer(
+      new Request('http://app.test/@imp/mock', {
+        method: 'POST',
+        body: JSON.stringify({ method: 'GET', path }),
+      }),
+    )
+    return await response.text().catch((error) => error.message)
+  }
+  try {
+    const first = await ask('/api/value')
+    await ask('/crash')
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    const afterCrash = await ask('/api/value')
+    check(first === '1', `the first answer is ${first}`)
+    check(afterCrash === '1', `a reloaded mock set starts again, and answers ${afterCrash}`)
+    check(reported.length === 2, `the mocks loaded ${reported.length} time(s)`)
+  } finally {
+    await Deno.remove(root, { recursive: true })
+  }
 })
 
 const startPreviewServer = (cwd, extraArgs = []) => startServer(cwd, extraArgs, ['preview'])
@@ -4556,6 +5544,128 @@ Deno.test('bundleDependency keeps bare imp imports external', async () => {
   } finally {
     await shutdownBundler()
     await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('a Windows path turns into a path that esbuild accepts, and back', () => {
+  const pairs = [
+    [
+      'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\happy-dom.js',
+      '/C:/Users/RUNNER~1/AppData/Local/Temp/happy-dom.js',
+    ],
+    ['d:\\app\\index.html', '/d:/app/index.html'],
+    ['C:\\', '/C:/'],
+    ['\\\\server\\share\\app\\main.js', '/UNC/server/share/app/main.js'],
+  ]
+  for (const [native, esbuildPath] of pairs) {
+    check(
+      toEsbuildPath(native, 'windows') === esbuildPath,
+      `${native} -> ${toEsbuildPath(native, 'windows')}`,
+    )
+    check(
+      fromEsbuildPath(esbuildPath, 'windows') === native,
+      `${esbuildPath} -> ${fromEsbuildPath(esbuildPath, 'windows')}`,
+    )
+  }
+  const oneWay = [
+    ['C:/Users/app/main.js', '/C:/Users/app/main.js'],
+    ['\\\\?\\C:\\Users\\app\\main.js', '/C:/Users/app/main.js'],
+    ['\\\\?\\UNC\\server\\share\\main.js', '/UNC/server/share/main.js'],
+    ['//server/share/main.js', '/UNC/server/share/main.js'],
+  ]
+  for (const [native, esbuildPath] of oneWay) {
+    check(
+      toEsbuildPath(native, 'windows') === esbuildPath,
+      `${native} -> ${toEsbuildPath(native, 'windows')}`,
+    )
+  }
+  for (const untouched of ['/bundle', 'npm:happy-dom@20.10.6', 'file:///C:/app.js', './a.js', '']) {
+    check(toEsbuildPath(untouched, 'windows') === untouched, `${untouched} stays as it is`)
+    check(fromEsbuildPath(untouched, 'windows') === untouched, `${untouched} comes back as it is`)
+  }
+  for (const path of ['C:\\app\\main.js', '/C:/app/main.js', '/home/app/main.js']) {
+    check(toEsbuildPath(path, 'linux') === path, `${path} stays as it is on Linux`)
+    check(fromEsbuildPath(path, 'linux') === path, `${path} comes back as it is on Linux`)
+  }
+})
+
+Deno.test('runEsbuild on Windows gives plugins and callers native paths only', async () => {
+  const files = new Map([
+    [
+      'C:\\proj\\src\\app.js',
+      "import { b } from './b.js'\nimport './app.css'\nexport const lazy = () => import('./lazy.js')\nconsole.log(b)\n",
+    ],
+    ['C:\\proj\\src\\b.js', "export { shared as b } from 'shared'\n"],
+    ['D:\\shared\\index.js', "export const shared = 'shared'\n"],
+    ['C:\\proj\\src\\lazy.js', 'export default 1\n'],
+    ['C:\\proj\\src\\app.css', '.a { color: red }\n'],
+  ])
+  const seen = []
+  const plugin = {
+    name: 'windows-files',
+    setup(build) {
+      build.onResolve({ filter: /^shared$/ }, (args) => {
+        seen.push(args.importer, args.resolveDir)
+        return build.resolve('D:\\shared\\index.js', {
+          kind: args.kind,
+          importer: args.importer,
+          resolveDir: args.resolveDir,
+        })
+      })
+      build.onResolve({ filter: /.*/ }, (args) => {
+        seen.push(args.importer, args.resolveDir)
+        if (args.kind === 'entry-point') seen.push(args.path)
+        if (args.kind === 'entry-point' || files.has(args.path)) return { path: args.path }
+        return { path: win32Join(args.resolveDir, args.path) }
+      })
+      build.onLoad({ filter: /.*/ }, (args) => {
+        seen.push(args.path)
+        return {
+          contents: files.get(args.path),
+          loader: args.path.endsWith('.css') ? 'css' : 'js',
+          resolveDir: win32Dirname(args.path),
+        }
+      })
+    },
+  }
+  try {
+    const result = await runEsbuild({
+      plugins: [plugin],
+      entryPoints: ['C:\\proj\\src\\app.js'],
+      absWorkingDir: 'C:\\proj',
+      bundle: true,
+      splitting: true,
+      format: 'esm',
+      metafile: true,
+      write: false,
+      outdir: 'C:\\proj\\dist',
+      entryNames: 'chunks/[name]-[hash]',
+      chunkNames: 'chunks/[name]-[hash]',
+    }, { os: 'windows' })
+    const nativePath = /^[A-Z]:\\[^/]*$/
+    const loaded = seen.filter(Boolean)
+    check(loaded.every((path) => nativePath.test(path)), `plugins saw ${loaded.join(', ')}`)
+    check(loaded.includes('D:\\shared\\index.js'), `the resolved file loaded: ${loaded.join(', ')}`)
+    const outputs = result.outputFiles.map((file) => file.path)
+    check(
+      outputs.every((path) => /^C:\\proj\\dist\\chunks\\[\w-]+\.(js|css)$/.test(path)),
+      `the output files are ${outputs.join(', ')}`,
+    )
+    const { inputs, outputs: metaOutputs } = result.metafile
+    check(
+      [...Object.keys(inputs), ...Object.keys(metaOutputs)].every((key) => nativePath.test(key)),
+      `the metafile names ${[...Object.keys(inputs), ...Object.keys(metaOutputs)].join(', ')}`,
+    )
+    check(Object.hasOwn(inputs, 'D:\\shared\\index.js'), 'the metafile keeps the other drive')
+    const entry = Object.values(metaOutputs).find((output) => output.cssBundle)
+    check(entry?.entryPoint === 'C:\\proj\\src\\app.js', `the entry point is ${entry?.entryPoint}`)
+    check(outputs.includes(entry.cssBundle), `the CSS bundle ${entry.cssBundle} is an output`)
+    check(
+      Object.keys(metaOutputs).every((key) => outputs.includes(key)),
+      'every metafile output names an output file',
+    )
+  } finally {
+    await shutdownBundler()
   }
 })
 

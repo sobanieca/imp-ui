@@ -25,12 +25,16 @@ built index.html -> dist/
 registration: serviceWorker.register("/sw.js")
 dist/sw.js is the project worker: yes
 precache version: <16 hex digits>
-precache files: ["/chunks/app-<hash>.js","/LICENSES.txt","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/chunks/register-service-worker-<hash>.js","/index.html"]
 precache shell: "/index.html"
+precache hashed: ["/chunks/app-<hash>.js","/chunks/register-service-worker-<hash>.js"]
+precache required: ["/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/index.html"]
+precache optional: []
 listeners: activate, fetch, install
 
 without --pwa:
 precache version: (none)
-precache files: null
 precache shell: null
+precache hashed: null
+precache required: null
+precache optional: null
 listeners:

@@ -1,6 +1,6 @@
-import { fromFileUrl, isAbsolute, SEPARATOR, toFileUrl } from '@std/path'
+import { toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
+import { bundledFiles, DATAURL_ASSET_LOADERS, runEsbuild } from './deps.js'
 import { impResolverPlugin } from './bundling.js'
 import { describeBundleProblem } from './mocks.js'
 
@@ -53,8 +53,25 @@ export function workerEntryPlugin(root, source) {
   }
 }
 
-export const precacheValues = ({ version, files, shell }) =>
-  `globalThis.__IMP_PRECACHE__ = ${JSON.stringify({ version, files, shell })};\n`
+export const precacheValues = (precache) =>
+  `globalThis.__IMP_PRECACHE__ = ${JSON.stringify(precache)};\n`
+
+const HOST_FILES = new Set([
+  '404.html',
+  'CNAME',
+  '_headers',
+  '_redirects',
+  '_routes.json',
+  'netlify.toml',
+  'staticwebapp.config.json',
+  'vercel.json',
+])
+
+export const precachedPublicFile = (name) =>
+  !HOST_FILES.has(name) && !name.split('/').some((part) => part.startsWith('.'))
+
+export const precacheUrl = (base, name) =>
+  `${base}/${name.split('/').map((part) => encodeURIComponent(part)).join('/')}`
 
 async function bundleWorker({ root, entry, dependencies }) {
   const result = await runEsbuild({
@@ -64,6 +81,7 @@ async function bundleWorker({ root, entry, dependencies }) {
       denoPlugin(),
     ],
     entryPoints: [entry ? toFileUrl(entry).href : WORKER_ENTRY],
+    absWorkingDir: root,
     bundle: true,
     format: 'iife',
     platform: 'browser',
@@ -74,16 +92,8 @@ async function bundleWorker({ root, entry, dependencies }) {
     outdir: '/imp-service-worker',
     loader: DATAURL_ASSET_LOADERS,
   })
-  return { source: result.outputFiles[0].text, inputs: inputFiles(result.metafile) }
+  return { source: result.outputFiles[0].text, inputs: bundledFiles(result.metafile) }
 }
-
-const inputFiles = (metafile) =>
-  Object.keys(metafile.inputs).flatMap((input) => {
-    if (input.startsWith('file://')) return [fromFileUrl(input)]
-    if (/^[a-z][\w-]*:/i.test(input)) return []
-    const file = [input, SEPARATOR + input].find((candidate) => isAbsolute(candidate))
-    return file ? [file] : []
-  })
 
 const stampOf = async (files) => {
   const stamps = await Promise.all(files.map(async (file) => {
@@ -110,7 +120,7 @@ export function createServiceWorkerBundler({ root, entry = null, dependencies = 
         key: entry ? `${await stampOf([entry])}!` : '',
         inputs: entry ? [entry] : [],
         source: '',
-        problem: describeBundleProblem(error, root),
+        problem: describeBundleProblem(error),
       }
     }
   }

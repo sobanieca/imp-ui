@@ -38,6 +38,13 @@ repository. `imp install` and `imp uninstall` manage that.
   argument resolves and bundles every declared dependency again. imp assumes `npm:` when you give no
   scheme. The command prints the top-level package, and every transitive package, as `name@version`,
   that went into the bundle.
+- **An install is all or nothing.** `imp install` resolves, bundles and checks every package before
+  it writes. Then it writes the new folders into a staging folder under `.imp/`, on the same file
+  system as `dependencies/`. It moves each old folder aside, moves each new folder into place, and
+  updates `imp.json`. When one step fails, imp moves the new folders out, moves the old folders
+  back, and restores `imp.json`. So a failure, such as a full disk, never leaves old and new
+  versions mixed. When the rollback itself fails, imp keeps the staging folder and names it, so no
+  old version is lost.
 - **There is no separate command for an update of a dependency.** imp folds the update into
   `imp install`, and gives it no verb of its own. To install the latest version, and to update to
   the latest version, are the same operation, which resolves and vendors again. A separate command

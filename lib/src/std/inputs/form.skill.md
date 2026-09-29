@@ -19,12 +19,12 @@ form are ordinary named state**, and they live at the position of the form in th
 inside the form names the field that it owns with a dot path. It reads and writes that state
 directly. There is nothing to connect. When the form unmounts, the state goes with it.
 
-| Prop            | Values                                   | Default      | Notes                                            |
-| --------------- | ---------------------------------------- | ------------ | ------------------------------------------------ |
-| `initialValues` | plain object                             | `null`       | Seeds `imp.form`; also what `resetForm` restores |
-| `onSubmit`      | `(values) => void \| Promise`            | -            | Runs only when every field is valid              |
-| `layout`        | `'vertical'`, `'horizontal'`, `'inline'` | `'vertical'` | Where each field's label sits                    |
-| `gap`           | spacing step `0`-`6`                     | `4`          | Space between children                           |
+| Prop            | Values                                   | Default      | Notes                                          |
+| --------------- | ---------------------------------------- | ------------ | ---------------------------------------------- |
+| `initialValues` | plain object                             | `null`       | Seeds `imp.form`, and is the first clean state |
+| `onSubmit`      | `(values) => void \| Promise`            | -            | Runs only when every field is valid            |
+| `layout`        | `'vertical'`, `'horizontal'`, `'inline'` | `'vertical'` | Where each field's label sits                  |
+| `gap`           | spacing step `0`-`6`                     | `4`          | Space between children                         |
 
 ## The states it owns
 
@@ -36,8 +36,8 @@ directly. There is nothing to connect. When the form unmounts, the state goes wi
 | `imp.form.submitting` | `true` while an async `onSubmit` is in flight          |
 | `imp.form.submits`    | How many times submit has been attempted               |
 | `imp.form.validating` | `{ [path]: true }` for fields with a check in flight   |
-| `imp.form.dirty`      | `true` while the values differ from `initialValues`    |
-| `imp.form.formError`  | `null`, or the message of the error `onSubmit` threw   |
+| `imp.form.dirty`      | `true` while the values differ from the clean state    |
+| `imp.form.formError`  | `null`, the message of a `FormError`, or `''`          |
 
 `imp.form`, `imp.form.submitting`, `imp.form.dirty` and `imp.form.formError` are the states for your
 code. The others are how the controls and the form agree with each other. A state of the form
@@ -45,12 +45,14 @@ reaches only the subtree of the form. So read it from a component inside the for
 
 ## Submitting and resetting
 
-`imp/std/inputs` exports two functions beside the components:
+`imp/std/inputs` exports two functions and one error class beside the components:
 
-| Function             | Does                                                                                |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `submitForm(source)` | Validates every field, then runs `onSubmit` when every field passes                 |
-| `resetForm(source)`  | Puts `initialValues` back, and clears the errors, the touched state and the failure |
+| Export                      | Does                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `submitForm(source)`        | Validates every field, then runs `onSubmit` when every field passes                 |
+| `resetForm(source)`         | Puts the clean state back, and clears the errors, the touched state and the failure |
+| `resetForm(source, values)` | Makes `values` the clean state, then does the same                                  |
+| `new FormError(message)`    | An error from `onSubmit` whose message the form shows to the person                 |
 
 `source` is the click event, or any node inside the form. So a plain `button` is the submit button:
 `button({ events: { click: submitForm } }, 'Save')`. The function finds the form by position, at any
@@ -65,12 +67,20 @@ depth, so the button can sit inside a `flex`, a `card` or a component of yours.
   check, the submit happens in the same tick.
 - **While `onSubmit` runs, a second submit is ignored.** Return the promise, so the form knows when
   the work finished.
-- **When `onSubmit` throws, or its promise rejects, the form shows the failure.** It writes the
-  first line of the message of the error into `imp.form.formError`. An error `notice` above the
-  **last child** of the form shows it, and a screen reader announces it. An error with no message
-  shows `imp.form.submitFailed`. The next submit and `resetForm` clear it.
-- `imp.form.dirty` compares the values with `initialValues`, not with the last saved values. A form
-  that stays on the page after a save stays dirty. Mount it again with the saved values.
+- **When `onSubmit` throws, or its promise rejects, the form shows the failure.** An error `notice`
+  above the **last child** of the form shows it, and a screen reader announces it. The next submit
+  and `resetForm` clear it.
+- **Only a `FormError` shows its own message.** The form writes the first line of its message into
+  `imp.form.formError`. Any other error shows the translated `imp.form.submitFailed`, and
+  `imp.form.formError` is `''`. imp logs the original error with its logger.
+- **A successful submit makes the submitted values the clean state.** So `imp.form.dirty` is `false`
+  after a save. An edit made while the save runs keeps the form dirty. A failed submit changes
+  nothing.
+- **`resetForm` puts the clean state back.** Before the first save, that is `initialValues`. A
+  `resetForm` during `onSubmit` wins over the save. So an "add" form that clears itself in
+  `onSubmit` is clean again.
+- **`resetForm(source, values)` sets a new clean state.** Use it when data arrives after the mount,
+  or to mark a save that happened outside `onSubmit`.
 - A `resetForm` does not ask first. Add your own confirmation when the loss of the edits matters.
 
 Rules an agent gets wrong:
@@ -85,8 +95,9 @@ Rules an agent gets wrong:
   `useState(self, 'imp.form')` again.
 - **Put the buttons in the last child.** The failure notice goes above the last child. A row of
   buttons is one `flex`, so the notice sits above the whole row.
-- **Do not catch the error in `onSubmit` to show it yourself.** Throw an error whose message a
-  person can read, and route it through `t()`. The form shows it.
+- **Do not catch the error in `onSubmit` to show it yourself.** To show a specific message, throw
+  `new FormError(t('...'), { cause })`. A plain `Error`, an `HttpError` or a `TypeError` shows only
+  the generic message, because its text is not written for a person.
 - **Use one form per `initialValues`.** Two forms on a page each own their own `imp.form`, and imp
   resolves each one by position. So in a nested form, the inner form wins for its own children.
 - imp warns about `submitForm` or `resetForm` called with something that is not an event or a node,
@@ -95,9 +106,11 @@ Rules an agent gets wrong:
 
 ```js
 import { component } from 'imp'
+import { HttpError } from 'imp/http'
+import { t } from 'imp/i18n'
 import { useState } from 'imp/state'
 import { button } from 'imp/std'
-import { form, resetForm, select, submitForm, textField } from 'imp/std/inputs'
+import { form, FormError, resetForm, select, submitForm, textField } from 'imp/std/inputs'
 import { flex } from 'imp/std/layout'
 
 const saveButton = component('myapp-save-button', {
@@ -115,7 +128,16 @@ const saveButton = component('myapp-save-button', {
 form(
   {
     initialValues: { email: '', plan: 'free' },
-    onSubmit: async (values) => await post('/signup', values),
+    onSubmit: async (values) => {
+      try {
+        await post('/signup', values)
+      } catch (error) {
+        if (error instanceof HttpError && error.status === 409) {
+          throw new FormError(t('signup.emailTaken'), { cause: error })
+        }
+        throw error
+      }
+    },
   },
   textField({ field: 'email', label: 'Email', type: 'email', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro'] }),

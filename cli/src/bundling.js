@@ -11,6 +11,8 @@ import {
 
 export const IMP_LIBRARY_ROOT = import.meta.resolve('../../lib/src/')
 
+const IMP_SOURCE_ROOT = import.meta.resolve('../../')
+
 export const impModuleUrl = (specifier) => new URL(IMP_MODULES[specifier], IMP_LIBRARY_ROOT).href
 
 export const LIBRARY_NAMESPACE = 'imp-library'
@@ -280,7 +282,12 @@ export async function collectMocks(file, { root, dependencies }) {
   return mocks
 }
 
-const libraryModule = (url) => ({ path: url, namespace: LIBRARY_NAMESPACE })
+export const libraryModule = (url) => ({
+  path: `/${url.slice(IMP_SOURCE_ROOT.length)}`,
+  namespace: LIBRARY_NAMESPACE,
+})
+
+const libraryUrl = (path) => new URL(path.slice(1), IMP_SOURCE_ROOT)
 
 export function resolveImpLibrary(build, { tooling }) {
   build.onResolve({ filter: /^imp(\/|$)/ }, ({ path }) => {
@@ -294,10 +301,10 @@ export function resolveImpLibrary(build, { tooling }) {
   })
   build.onResolve(
     { filter: /.*/, namespace: LIBRARY_NAMESPACE },
-    (args) => libraryModule(new URL(args.path, args.importer).href),
+    (args) => libraryModule(new URL(args.path, libraryUrl(args.importer)).href),
   )
   build.onLoad({ filter: /.*/, namespace: LIBRARY_NAMESPACE }, async (args) => ({
-    contents: await Deno.readTextFile(new URL(args.path)),
+    contents: await Deno.readTextFile(libraryUrl(args.path)),
     loader: 'js',
   }))
 }

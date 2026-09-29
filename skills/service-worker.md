@@ -39,11 +39,17 @@ It adds nothing else. Your own listeners stay as written.
 It gives your worker the offline behaviour of the worker that `imp build --pwa` writes when the
 project has none. `imp build --pwa` writes the file list of the build into your bundle.
 
-| Listener   | Effect                                                                         |
-| ---------- | ------------------------------------------------------------------------------ |
-| `install`  | caches every file of the build, then `skipWaiting()`                           |
-| `activate` | `clients.claim()`; keeps the cache of the previous build for an open tab       |
-| `fetch`    | navigation network-first with the cached shell as fallback; other files cached |
+| Listener   | Effect                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------- |
+| `install`  | caches the files of the build, reuses unchanged `chunks/` files, then `skipWaiting()`   |
+| `activate` | `clients.claim()`; keeps the build that was active before, deletes older build caches   |
+| `fetch`    | navigation network-first with the cached shell as fallback; a build file from the cache |
+
+The install fails only when a file that the build writes does not load. A file of `public/` that
+does not load, and a file that does not fit in the storage, give a warning. The cache names hold the
+scope of the worker, so apps under `/a/` and `/b/` on one origin keep their own caches. The worker
+deletes the kept build cache when no tab that was open at the update remains. See [build](build.md)
+for the precache list.
 
 A build without `--pwa`, and `imp start`, write no list. The call then adds no listener.
 

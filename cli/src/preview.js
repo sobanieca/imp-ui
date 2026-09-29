@@ -19,7 +19,7 @@ import {
   collectMocks,
   IMP_LIBRARY_ROOT,
   impResolverPlugin,
-  LIBRARY_NAMESPACE,
+  libraryModule,
   resolveModuleFile,
 } from './bundling.js'
 import {
@@ -285,10 +285,10 @@ function previewEntryPlugin(
         loader: 'js',
         resolveDir: root,
       }))
-      build.onResolve({ filter: new RegExp(`^${RUNTIME_SPECIFIER}$`) }, () => ({
-        path: PREVIEW_RUNTIME_URL,
-        namespace: LIBRARY_NAMESPACE,
-      }))
+      build.onResolve(
+        { filter: new RegExp(`^${RUNTIME_SPECIFIER}$`) },
+        () => libraryModule(PREVIEW_RUNTIME_URL),
+      )
       build.onLoad({ filter: PREVIEW_SUFFIX, namespace: 'file' }, async (args) => ({
         contents: await withSkill(args.path, await Deno.readTextFile(args.path)),
         loader: 'js',
@@ -504,6 +504,7 @@ export async function bundlePreviewApp(
       const result = await runEsbuild({
         plugins: [plugin, impResolverPlugin({ root, dependencies, mocks }), denoPlugin()],
         entryPoints: [{ in: ENTRY_NAMESPACE, out: APP_BUNDLE_NAME }, ...groupEntryPoints],
+        absWorkingDir: root,
         ...(embedded ? { define: productionDefines() } : {}),
         bundle: true,
         splitting: true,

@@ -44,27 +44,29 @@ a theme is complete. It does the following:
 - **The list of token keys is frozen, and `applyTheme` checks a theme against it.** The list is the
   set of keys that the built-in themes carry, written out as one constant. When an applied theme has
   no value for a key on the list, `applyTheme` warns through the shared logger. The warning names
-  the missing keys and the count. It is not fatal: imp still applies the tokens that the theme has.
-  A component reads every token with its built-in value as the CSS fallback, so a missing token
-  degrades to the default look, or to the value of the previous theme. The check costs one pass over
-  63 keys per call. A theme with a `base` never warns, because the base fills every key. A new token
-  must go into the list and into every built-in theme in the same change, and a test asserts that
-  the two agree.
+  the missing keys and the count. It warns once for each key of each theme name for the life of the
+  page, so a theme toggle does not repeat the warning in production. It is not fatal: imp still
+  applies the tokens that the theme has. A component reads every token with its built-in value as
+  the CSS fallback, so a missing token degrades to the default look, or to the value of the previous
+  theme. The check costs one pass over 63 keys per call. A theme with a `base` never warns, because
+  the base fills every key. A new token must go into the list and into every built-in theme in the
+  same change, and a test asserts that the two agree.
 - It sets `color-scheme` on the same root, from the lightness of `color-surface`. A theme carries no
   mode field. A dark theme is a theme whose surface is dark, so imp reads that fact from the colour
-  instead of a second field that can disagree with it. `colorSchemeOf(tokens)` parses the hex value,
-  converts it to OKLCH, and returns `'dark'` below a lightness of 0.5, else `'light'`. The built-in
-  surfaces sit at 0.995 and 0.205, far from the boundary. The token must be a hex colour, because
-  imp parses it without the browser. When it is absent, or not hex, imp warns and clears the
-  property. `colorSchemeOf` is public, so a component that must branch on the scheme uses the same
-  test. CSS inherits `color-scheme`. So a value on `:root` reaches a native control, a scrollbar,
-  and CSS that reads `prefers-color-scheme`, also **inside** the shadow root of a component. Nobody
-  stamps a value on each `:host`. imp writes **no attribute for a mode** on the root. A descendant
-  selector in the light DOM is the only thing that can reach such an attribute. A standard
-  component, and any component with shadow DOM, cannot use it. So the attribute would be a hook that
-  works exactly where theming matters least. A branch between light and dark belongs in the tokens
-  themselves, where two themes carry different values under the same names. The inherited
-  `color-scheme` covers what the browser renders.
+  instead of a second field that can disagree with it. `colorSchemeOf(tokens)` parses the colour
+  value, converts it to OKLCH, and returns `'dark'` below a lightness of 0.5, else `'light'`. The
+  built-in surfaces sit at 0.995 and 0.205, far from the boundary. imp parses the token without the
+  browser, with the same colour parser as the contrast check. So the token must be an opaque colour
+  in a CSS colour syntax, or a `var()` reference to another token. When it is absent, translucent or
+  unreadable, imp warns once per theme name and clears the property. `colorSchemeOf` is public, so a
+  component that must branch on the scheme uses the same test. CSS inherits `color-scheme`. So a
+  value on `:root` reaches a native control, a scrollbar, and CSS that reads `prefers-color-scheme`,
+  also **inside** the shadow root of a component. Nobody stamps a value on each `:host`. imp writes
+  **no attribute for a mode** on the root. A descendant selector in the light DOM is the only thing
+  that can reach such an attribute. A standard component, and any component with shadow DOM, cannot
+  use it. So the attribute would be a hook that works exactly where theming matters least. A branch
+  between light and dark belongs in the tokens themselves, where two themes carry different values
+  under the same names. The inherited `color-scheme` covers what the browser renders.
 - It updates the reactive `theme` state to the applied theme object, and returns that object.
 
 **`theme`** is a readable state for the lifetime of the app. It has `get`, `watch`, `text`, `view`

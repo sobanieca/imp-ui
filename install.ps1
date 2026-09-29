@@ -25,8 +25,14 @@ try {
   $Checksum = Join-Path $TempDir 'imp.exe.sha256'
 
   Write-Host 'Downloading imp...'
-  Invoke-WebRequest -UseBasicParsing -Uri $DownloadUrl -OutFile $Binary
-  Invoke-WebRequest -UseBasicParsing -Uri "$DownloadUrl.sha256" -OutFile $Checksum
+  $PreviousProgressPreference = $ProgressPreference
+  $ProgressPreference = 'SilentlyContinue'
+  try {
+    Invoke-WebRequest -UseBasicParsing -Uri $DownloadUrl -OutFile $Binary
+    Invoke-WebRequest -UseBasicParsing -Uri "$DownloadUrl.sha256" -OutFile $Checksum
+  } finally {
+    $ProgressPreference = $PreviousProgressPreference
+  }
 
   Write-Host 'Verifying the checksum...'
   $Expected = ((Get-Content -Raw $Checksum).Trim() -split '\s+')[0].ToLower()
@@ -42,12 +48,37 @@ try {
   Remove-Item -Recurse -Force $TempDir -ErrorAction SilentlyContinue
 }
 
-$UserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-$Entries = if ($UserPath) { $UserPath -split ';' } else { @() }
-if ($Entries -notcontains $InstallDir) {
-  $NewPath = (@($Entries | Where-Object { $_ }) + $InstallDir) -join ';'
-  [Environment]::SetEnvironmentVariable('Path', $NewPath, 'User')
-  Write-Host "Added $InstallDir to your user PATH. Open a new terminal to use it." -ForegroundColor Yellow
+function Send-EnvironmentChange {
+  if (-not ('Win32.EnvironmentBroadcast' -as [Type])) {
+    Add-Type -Namespace Win32 -Name EnvironmentBroadcast -MemberDefinition @'
+[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+public static extern IntPtr SendMessageTimeout(
+  IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out UIntPtr lpdwResult);
+'@
+  }
+  $BroadcastToAllWindows = [IntPtr] 0xffff
+  $SettingChange = 0x1a
+  $AbortIfHung = 0x2
+  $Result = [UIntPtr]::Zero
+  [Win32.EnvironmentBroadcast]::SendMessageTimeout(
+    $BroadcastToAllWindows, $SettingChange, [UIntPtr]::Zero, 'Environment', $AbortIfHung, 5000, [ref] $Result
+  ) | Out-Null
+}
+
+$EnvironmentKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+try {
+  $UserPath = $EnvironmentKey.GetValue(
+    'Path', '', [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames
+  )
+  $Entries = @($UserPath -split ';' | Where-Object { $_ })
+  if ($Entries -notcontains $InstallDir) {
+    $NewPath = (@($Entries) + $InstallDir) -join ';'
+    $EnvironmentKey.SetValue('Path', $NewPath, [Microsoft.Win32.RegistryValueKind]::ExpandString)
+    Send-EnvironmentChange
+    Write-Host "Added $InstallDir to your user PATH. Open a new terminal to use it." -ForegroundColor Yellow
+  }
+} finally {
+  $EnvironmentKey.Close()
 }
 
 Write-Host ''

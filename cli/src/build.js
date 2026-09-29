@@ -24,7 +24,7 @@ import { envValuesScript, resolveEnvironment } from './environments.js'
 import { foldFlagCalls, splitEnvAndFlags } from './flags.js'
 import { formatSize } from './file-size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
-import { namesSameFile, withoutUnreachableChunks } from './unreachable-chunks.js'
+import { withoutUnreachableChunks } from './unreachable-chunks.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
@@ -42,6 +42,8 @@ import { productionDefines } from './development-checks.js'
 import {
   assertServiceWorkerSource,
   OFFLINE_WORKER_SOURCE,
+  precachedPublicFile,
+  precacheUrl,
   precacheValues,
   runtimeValues,
   WORKER_ENTRY,
@@ -203,6 +205,7 @@ function buildEntryPoints(
       denoPlugin(),
     ],
     entryPoints,
+    absWorkingDir: root,
     external: impProvidedByHost ? ['imp', 'imp/*'] : [],
     define: productionDefines(),
     bundle: true,
@@ -243,6 +246,7 @@ function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags, ba
       in: worker ? toFileUrl(worker).href : WORKER_ENTRY,
       out: withoutExtension(SERVICE_WORKER_FILE),
     }],
+    absWorkingDir: root,
     define: productionDefines(),
     bundle: true,
     minify: true,
@@ -262,8 +266,8 @@ function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags, ba
 function entryOutputs({ metafile, outputFiles }, inputs) {
   const outputs = new Map()
   for (const [output, { entryPoint }] of Object.entries(metafile.outputs)) {
-    const input = entryPoint && inputs.find((path) => namesSameFile(path, entryPoint))
-    const file = input && outputFiles.find(({ path }) => namesSameFile(path, output))
+    const input = entryPoint && inputs.find((path) => path === entryPoint)
+    const file = input && outputFiles.find(({ path }) => path === output)
     if (file) outputs.set(input, file.path)
   }
   return outputs
@@ -394,8 +398,7 @@ function urlEdits(document, { base, renamed }) {
 
 function staticImportsOf(metafile, entryOutputs) {
   const outputs = metafile.outputs
-  const keyOf = (path) => Object.keys(outputs).find((key) => namesSameFile(path, key))
-  const pending = entryOutputs.map(keyOf).filter(Boolean)
+  const pending = entryOutputs.filter((path) => Object.hasOwn(outputs, path))
   const entries = new Set(pending)
   const reached = new Set()
   while (pending.length) {
@@ -410,9 +413,25 @@ function staticImportsOf(metafile, entryOutputs) {
   return [...reached]
 }
 
+function stylesheetTags({ metafile, entries, outdir, base }) {
+  const scripts = [...new Set([...entries.values(), ...Object.keys(metafile.outputs)])]
+  const bundles = scripts.map((path) => metafile.outputs[path]?.cssBundle)
+  return [...new Set(bundles.filter(Boolean))].map((path) =>
+    `<link rel="stylesheet" href="${siteUrl(base, asPosix(relative(outdir, path)))}">`
+  )
+}
+
+const inlineCodeWarning = (entryName, inlineCode) =>
+  [
+    `${entryName} has inline code that the Content Security Policy script-src 'self'; style-src 'self' blocks:`,
+    ...inlineCode.map(({ line, construct, advice }) =>
+      `  ${entryName}:${line} - ${construct} - ${advice}`
+    ),
+  ].join('\n')
+
 function modulePreloadTags({ metafile, outputFiles, entries, outdir, base }) {
   return staticImportsOf(metafile, [...entries.values()]).flatMap((key) => {
-    const file = outputFiles.find(({ path }) => namesSameFile(path, key))
+    const file = outputFiles.find(({ path }) => path === key)
     if (!file) return []
     const href = siteUrl(base, asPosix(relative(outdir, file.path)))
     return [`<link rel="modulepreload" href="${href}">`]
@@ -437,18 +456,23 @@ async function assertWithinBudget({ imp, outdirPath, written }) {
   )
 }
 
-async function precacheOfBuild({ outdirPath, base, written, shell }) {
-  const precached = written.filter((name) => name !== SERVICE_WORKER_FILE)
+async function precacheOfBuild({ outdirPath, base, emitted, copied, shell }) {
+  const app = emitted.filter((name) => name !== LICENSE_NOTICES_FILE)
+  const optional = copied.filter(precachedPublicFile)
   const files = await Promise.all(
-    precached.map(async (name) => ({
-      path: siteUrl(base, name),
+    [...app, ...optional].map(async (name) => ({
+      path: precacheUrl(base, name),
       bytes: await Deno.readFile(join(outdirPath, name)),
     })),
   )
+  const isHashed = (name) => name.startsWith(`${HASHED_FOLDER}/`)
+  const urls = (names) => names.map((name) => precacheUrl(base, name))
   return precacheValues({
     version: await cacheVersion(files),
-    files: precached.map((name) => siteUrl(base, name)),
-    shell: siteUrl(base, shell),
+    shell: precacheUrl(base, shell),
+    hashed: urls(app.filter(isHashed)),
+    required: urls(app.filter((name) => !isHashed(name))),
+    optional: urls(optional),
   })
 }
 
@@ -485,6 +509,9 @@ export async function build(
   if (isHtmlEntry) {
     html = await Deno.readTextFile(entryPath)
     document = readHtml(html)
+    if (document.inlineCode.length) {
+      logger.warn(inlineCodeWarning(entryName, document.inlineCode))
+    }
     const parsed = parseHtmlEntryPoints(document, root, entryName)
     scripts = parsed.scripts
     inlineSources = parsed.inlineSources
@@ -562,13 +589,21 @@ export async function build(
     written.push(LICENSE_NOTICES_FILE)
   }
   if (isHtmlEntry) {
-    const headTags = modulePreloadTags({
-      metafile: result.metafile,
-      outputFiles,
-      entries: result.entries,
-      outdir: outdirPath,
-      base,
-    })
+    const headTags = [
+      ...stylesheetTags({
+        metafile: result.metafile,
+        entries: result.entries,
+        outdir: outdirPath,
+        base,
+      }),
+      ...modulePreloadTags({
+        metafile: result.metafile,
+        outputFiles,
+        entries: result.entries,
+        outdir: outdirPath,
+        base,
+      }),
+    ]
     if (Object.keys(resolvedEnv).length) {
       const file = await writeHashedScript({
         outdir: outdirPath,
@@ -619,6 +654,7 @@ export async function build(
     const builtHtml = applyEdits(html, edits)
     await Deno.writeTextFile(join(outdirPath, entryName), builtHtml)
     written.push(entryName)
+    const emitted = [...written]
     await copyPublicFiles({
       publicDir: publicDirectory(root),
       outdir: outdirPath,
@@ -627,7 +663,13 @@ export async function build(
     })
     if (workerFile) {
       const precache = pwa
-        ? await precacheOfBuild({ outdirPath, base, written, shell: entryName })
+        ? await precacheOfBuild({
+          outdirPath,
+          base,
+          emitted,
+          copied: written.slice(emitted.length),
+          shell: entryName,
+        })
         : ''
       const values = serviceWorker ? runtimeValues({ env: resolvedEnv }) : ''
       await Deno.writeFile(workerPath, withNoticeReference(values + precache + workerFile.text))

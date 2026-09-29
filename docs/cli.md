@@ -522,8 +522,9 @@ like any other request, with the file and the entry that answered it:
 ```
 
 An edit to a mock file, or to a file that it imports, reloads the browser like any other change. imp
-then loads the mocks again, so their state starts again from the files. imp reports a file that it
-cannot build, with its line, in the terminal, and the rest of the app continues to run.
+then loads the mocks again, so their state starts again from the files. An edit that you save while
+imp loads the mocks is not lost. imp loads them one more time. imp reports a file that it cannot
+build, with its line, in the terminal, and the rest of the app continues to run.
 
 Mocking works through a service worker that `imp start` registers for you. So it covers _every_
 request that the page makes: `fetch`, `XMLHttpRequest` and a third-party SDK, not only the requests
@@ -531,10 +532,14 @@ that imp issues. The worker sends each request to the `imp start` process, and y
 there. The browser can stop an idle service worker at any time and start it again from nothing. So
 the worker keeps no state, and a list that a mock remembers stays correct for the whole run.
 
-The mock code runs outside the page. In a `*.mock.js` file there is no `document`, and there is no
-access to the state of your app. The code runs with the same access to your machine as `imp start`,
-as any other script in your project does. `imp preview` and the e2e server of `imp test` are the
-same dev server, so your mocks apply there as well.
+The mock code runs outside the page, in a worker thread of the `imp start` process. In a `*.mock.js`
+file there is no `document`, and there is no access to the state of your app. The code runs with the
+same access to your machine as `imp start`, as any other script in your project does. Each load of
+the mocks gets a new thread, and imp stops the old thread after its last answer. So a long session
+with many edits does not grow the memory of the server. An error that your mock code throws outside
+a handler, for example in a timer, stops only the mocks. imp reports it, and the next request loads
+the mocks again. `imp preview` and the e2e server of `imp test` are the same dev server, so your
+mocks apply there as well.
 
 ### Dependencies
 
@@ -578,6 +583,11 @@ the module scripts of the page. It bundles each one into minified, self-containe
   HTML file keeps its own name. So a browser can cache every script for a long time, and a deploy
   never serves an old script under a new page. imp also bundles an inline `<script type="module">`
   block, and writes it to its own hashed file under `chunks/`. The built page has no inline script.
+  The names depend only on your sources. The same project gives the same names in any folder.
+- **CSS that a script imports is linked from the page.** An `import './card.css'` in a script puts
+  that CSS into a hashed file under `chunks/`, and imp adds a `<link rel="stylesheet">` for it to
+  the `<head>`. imp also links the CSS of a chunk that loads through `import()`, at page load,
+  because nothing else loads it.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
   several entry points share once, instead of a copy in each bundle. imp writes a chunk only when an
@@ -659,6 +669,15 @@ only the scripts that your own server sends. imp builds for it:
   that registers the service worker of `--pwa` goes into a hashed file too.
 - **A classic inline `<script>` in your page stays as you wrote it**, and the policy blocks it. Move
   its code into a module.
+- **`imp build` warns about each inline construct in your page that the policy blocks.** That is a
+  classic inline `<script>`, an event handler attribute such as `onclick`, a `javascript:` URL, a
+  `<style>` element and a `style` attribute. The warning names the line of each case:
+
+  ```
+  [WARN] index.html has inline code that the Content Security Policy script-src 'self'; style-src 'self' blocks:
+    index.html:12 - an inline classic <script> - move the code into a module
+    index.html:19 - an inline event handler onclick= - add the listener in a module
+  ```
 - **A `style` prop works under the policy**, as an object and as a string. imp sets the style
   through the CSS object model, which the policy does not block. The styles of the components are
   constructed stylesheets, which it does not block either.
@@ -812,9 +831,11 @@ domain root, set the `IMP_BASEPATH` environment value for that deployment. See
 
 `imp build` then puts the base in front of every root-absolute URL that it emits, so the whole site
 keeps working one level down. A `href="/styles.css"` in your page becomes
-`href="/my-imp-app/styles.css"`. The PWA manifest, the icons, the service worker and its precache
-list all move with it. imp leaves an external URL (such as `https://...`), a protocol-relative URL
-(such as `//...`), and a path that is already relative exactly as you wrote it.
+`href="/my-imp-app/styles.css"`. That holds for an `href`, a `src` and a `poster` attribute, for
+each image in a `srcset` or an `imagesrcset`, and for the `content` of an `og:image` or a
+`twitter:image` meta tag. The PWA manifest, the icons, the service worker and its precache list all
+move with it. imp leaves an external URL (such as `https://...`), a protocol-relative URL (such as
+`//...`), and a path that is already relative exactly as you wrote it.
 
 The router reads the same value. It removes and adds the prefix when it matches a route and when it
 builds a link, so one setting covers your assets and your navigation. Inside a stylesheet, write an
@@ -906,17 +927,39 @@ that they open the day after you deploy. imp gets this right, because it builds 
 knows the exact set of files the app is made of:
 
 - **The precache list is exact.** The service worker precaches exactly the files that this build
-  produced: every hashed script and chunk, every asset, and the manifest and the icons. imp derives
-  the list from the build itself. It does not scan a folder and guess afterwards. imp misses nothing
-  that the app needs to run offline, and it caches nothing stale.
+  produced: every hashed script and chunk, every asset, the page, the manifest and the icons. imp
+  derives the list from the build itself. It does not scan a folder and guess afterwards. imp misses
+  nothing that the app needs to run offline, and it caches nothing stale.
+- **The files of `public/` are precached too, except the files of your host.** A host reads some
+  files as its own settings and does not serve them. imp leaves out `_redirects`, `_headers`,
+  `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json` and `staticwebapp.config.json`
+  at the root of `public/`. It also leaves out every file or folder whose name starts with a dot,
+  such as `.well-known/`. `LICENSES.txt` stays out as well, because the app never loads it. imp
+  encodes each file name in its URL, so a name with a space, a `#`, a `%` or a non-ASCII letter
+  loads.
+- **One missing file does not stop the install.** A precached file that the build writes is
+  required. When one of them does not load, the worker does not install, and the browser tries again
+  on the next visit. So a user never gets a partial deploy. A file from `public/` is optional. When
+  it does not load, the worker logs a warning and installs without it. When the storage of the
+  browser is full, the worker installs with the files that fit, and loads the other files from the
+  network. So a full storage never stops an update.
 - **A deploy is never stuck.** The cache key comes from the content of the build, so a new deploy is
   a new cache. The new worker takes control at once, and a user moves to the new version
   automatically. Their own cache does not hold them on an old version.
+- **An update downloads only what changed.** A file under `chunks/` has a content hash in its name,
+  so its content never changes. The new worker copies such a file from the cache of an earlier build
+  when it is there. It downloads the other hashed files, and it downloads the page, the manifest,
+  the icons and the files of `public/` again, past the HTTP cache of the browser.
 - **A deploy does not break an open tab.** A tab that runs the previous build can still load a lazy
   chunk of that build after the deploy, although the server no longer has it. The new worker keeps
-  the cache of the previous build, and deletes older caches on the next page load. You write no code
-  for this, and the app shows no prompt. Two deploys while one tab stays open can still remove a
-  chunk of the first build. A reload of that tab fixes it.
+  the cache of the build that was active before it, also after a rollback to an older build. It
+  deletes every older cache of the app when it activates. It deletes the kept cache when no tab that
+  was open at the update remains. So an app keeps at most two build caches, also when it never loads
+  a new page. You write no code for this, and the app shows no prompt. Two deploys while one tab
+  stays open can still remove a chunk of the first build. A reload of that tab fixes it.
+- **Apps on one origin keep their own caches.** The worker names its caches after its scope, such as
+  `/app/`. It deletes only the caches of its own app. So two apps under `/a/` and `/b/` on one host
+  do not delete the caches of each other. The worker also keeps every cache that your app makes.
 - **The defaults are safe, and there is no configuration.** imp serves your page and its deep links
   network-first, and falls back to the cached app shell when the connection is lost. It serves a
   hashed asset cache-first. It never caches a cross-origin response, a request that is not a `GET`,
@@ -965,6 +1008,10 @@ its bare alias, as in `import mitt from 'mitt'`. A package that imports `imp` it
 import bare, because your app provides the imp library. imp never treats `imp` as a registry
 package. The bundle keeps the licence notice of the package where the package put it, so the notice
 is there for `imp build` to collect into the [`LICENSES.txt`](#license-notices) of your app.
+
+Before it writes, `imp install` checks each npm package against the hash that the npm registry signs
+for it. It then puts every package in place, or none of them. `imp audit` checks the vendored
+packages for known vulnerabilities.
 
 **[Managing dependencies](dependencies.md)** gives the full story: how to pin a version, how to
 update, aliases, a jsr package and a subpath, what imp prints, and why you commit the vendored

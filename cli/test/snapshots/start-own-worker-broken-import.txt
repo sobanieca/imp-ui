@@ -2,7 +2,7 @@
 [INFO] mocks - 1 file(s) from mocks/ answering requests
 ✘ [ERROR] Import 'file://<tmp>/src/missing.js' failed, not found. [plugin deno]
 
-    <tmp>/src/sw.js:8:7:
+    src/sw.js:8:7:
       8 │ import './missing.js'
         ╵        ~~~~~~~~~~~~~~
 

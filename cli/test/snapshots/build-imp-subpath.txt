@@ -19,13 +19,13 @@ exit code: 1
 --- stdout ---
 ✘ [ERROR] 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview' [plugin imp]
 
-    <tmp>/std-entry.js:1:25:
+    std-entry.js:1:25:
       1 │ import { barChart } from 'imp/std/charts'
         ╵                          ~~~~~~~~~~~~~~~~
 
 --- stderr ---
 [ERROR] Build failed with 1 error:
-<tmp>/std-entry.js:1:25: ERROR: [plugin: imp] 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
+std-entry.js:1:25: ERROR: [plugin: imp] 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
 
 
 $ imp build std-entry.js --output std  (cwd: <tmp>, tooling-only subpath)
@@ -34,11 +34,11 @@ exit code: 1
 --- stdout ---
 ✘ [ERROR] 'imp/test' is only resolved by imp test - it cannot be bundled into an app [plugin imp]
 
-    <tmp>/std-entry.js:1:23:
+    std-entry.js:1:23:
       1 │ import { expect } from 'imp/test'
         ╵                        ~~~~~~~~~~
 
 --- stderr ---
 [ERROR] Build failed with 1 error:
-<tmp>/std-entry.js:1:23: ERROR: [plugin: imp] 'imp/test' is only resolved by imp test - it cannot be bundled into an app
+std-entry.js:1:23: ERROR: [plugin: imp] 'imp/test' is only resolved by imp test - it cannot be bundled into an app
 

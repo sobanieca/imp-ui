@@ -1,6 +1,7 @@
-import { basename } from '@std/path'
+import { basename, isAbsolute } from '@std/path'
 import * as esbuild from 'esbuild-wasm/esm/browser.js'
 import { denoPlugin } from '@deno/esbuild-plugin'
+import { esbuildOptions, nativeResult } from './esbuild-paths.js'
 
 const ESBUILD_WASM_URL = import.meta.resolve('esbuild-wasm/esbuild.wasm')
 
@@ -83,9 +84,14 @@ export function bundledPackages(metafile) {
   return [...packages.values()].sort((a, b) => packageId(a).localeCompare(packageId(b)))
 }
 
-export async function runEsbuild(options) {
+export const bundledFiles = (metafile) =>
+  Object.keys(metafile.inputs).filter((input) => isAbsolute(input))
+
+export async function runEsbuild(options, { os = Deno.build.os } = {}) {
   await initEsbuild()
-  return esbuild.build(options)
+  const translated = esbuildOptions(options, { os, cwd: Deno.cwd() })
+  const result = await esbuild.build(translated)
+  return nativeResult(result, { os, absWorkingDir: translated.absWorkingDir })
 }
 
 function keptImpImports(metafile) {

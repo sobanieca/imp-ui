@@ -47,7 +47,8 @@ key, and the `--env` environment files.
   `imp test --e2e`, whether imp answers a request from the mocks folder. With no flag, the `mocks`
   block in `imp.json` decides. See [mocks](mocks.md).
 - **The exit code is the interface.** It is `0` on success and `1` on failure. A failure is a failed
-  lint, a failing test file, a build error, or an unknown skill subject.
+  lint, a failing test file, a build error, or an unknown skill subject. `imp audit` also exits `2`
+  when the audit did not complete.
 - **`.imp/` is imp's working directory for the project.** It holds `dev.log`, `reviews/`,
   `screenshots/` and `videos/`. Put it in `.gitignore`, with `dist/` and every `.env` file.
 - **A pinned `version` in `imp.json` wins against the binary that you invoke.** Every command that

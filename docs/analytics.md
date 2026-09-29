@@ -74,9 +74,9 @@ Each number answers one question and points at one action:
 | Number                  | Meaning                                                     | Action                                     |
 | ----------------------- | ----------------------------------------------------------- | ------------------------------------------ |
 | **broken**              | share of views with one or more `error` records             | open the page, and fix the top error       |
-| **slow p75**            | the 75th percentile of `readyMs`, entry views excluded      | reduce the area chunk, the wait, the fetch |
+| **slow p75**            | the 75th percentile of the ready time, entry views excluded | reduce the area chunk, the wait, the fetch |
 | **not found**           | paths off the map, with a count each                        | fix the link, or add a redirect            |
-| **cold start p75**      | the 75th percentile of `readyMs` of the entry views         | reduce the bundle and the first fetch      |
+| **cold start p75**      | the 75th percentile of the ready time of the entry views    | reduce the bundle and the first fetch      |
 | **bounce**              | visits with one view and less than 10 s of engaged time     | fix the entry pages                        |
 | **reach**               | share of visits that opened the page                        | find a feature that is hidden or unwanted  |
 | **engaged**             | median of the engaged time per view                         | compare it with the purpose of the page    |
@@ -105,8 +105,10 @@ mount('#app', app())
 ```
 
 Collection starts when you register the first sink, and it stops when the last sink goes. When a
-sink arrives after `mount`, imp sends the view of the current screen at once. The engaged time
-before that moment is lost. An app with no sink pays nothing: the collection code is not in its
+sink arrives after the current view started, imp sends it the `view` record of that view at once.
+This is also true when another sink runs already. `imp start` registers its own sink for the session
+log first, so in development each sink of your app gets this record. A late sink does not get the
+records that went out before it. An app with no sink pays nothing: the collection code is not in its
 bundle.
 
 `onAnalytics(sink)` returns a function that unregisters the sink. `onAnalytics(self, sink)` ends the
@@ -122,14 +124,28 @@ the record.
 {"type":"time","visit":"k3v9","view":"A","page":"/invoices/:id","ms":25000}
 {"type":"zone","visit":"k3v9","view":"A","page":"/invoices/:id","name":"due-date","seen":true,"activeMs":6000}
 {"type":"action","visit":"k3v9","view":"A","page":"/invoices/:id","name":"invoice-form","value":"invalid"}
-{"type":"error","visit":"k3v9","view":"A","page":"/invoices/:id","source":"render","message":"TypeError: total is undefined"}
+{"type":"error","visit":"k3v9","view":"A","page":"/invoices/:id","source":"render","message":"TypeError: total is undefined","count":1}
 ```
 
 - **`visit`** is one random id per document load. A reload starts a new visit.
 - **`view`** is one random id per view. Every record between two views carries the same `view`.
 - **`page`** is the route pattern of the screen, from your application map, such as `/invoices/:id`.
   It holds no param value. A path that is not on the map has `page: null`. Its `view` record also
-  carries the `path`, with no query. There, the path is the only fact that helps.
+  carries the `path`, with no query. There, the path is the only fact that helps. Put each screen on
+  the map, so that its records carry the pattern and never a value from the URL.
+
+imp removes personal data from every URL that it records: the `path` of a `view` record, and the
+text of an `error` message. It replaces each part that is personal data:
+
+| Part of the path                                                                    | Becomes  |
+| ----------------------------------------------------------------------------------- | -------- |
+| an email address, also as `%40`: `/users/ann@example.com`                           | `:email` |
+| a JSON Web Token: `/reset/eyJhbGciOi...`                                            | `:token` |
+| a word with 16 or more letters and digits in a row, with a digit and a letter in it | `:token` |
+
+So `/users/ann@example.com/reset/4f9c2a7e1b3d5f60718293a4b5c6d7e8` becomes
+`/users/:email/reset/:token`. A number, a UUID and a slug stay as they are, because they are ids and
+names, not personal data. The query and the origin of a URL are never recorded.
 
 ### `view`
 
@@ -144,7 +160,17 @@ The router records each screen that it shows. You write no code for it. See
 - **`readyMs`** is the time from the start of the navigation to the moment the screen replaces its
   loading content. It includes a guard `wait`, the download of an area, and the data that the screen
   awaits in its `setup`. For the entry view, it starts at the start of the document load. imp sends
-  the record when the screen is ready. When the person leaves before that, `readyMs` is `null`.
+  the record when the screen is ready.
+- **`waitedMs`** is only on a view that was not ready. Then `readyMs` is `null`, and `waitedMs` is
+  the time from the start of the navigation to the moment the person left. The person left with a
+  new navigation, or the page became hidden or closed.
+
+imp sends a view that is not ready when the page becomes hidden, and when the browser unloads the
+page. A browser can close a hidden page with no further event, so imp does not wait. It sends each
+view only once. So when the person comes back and the screen becomes ready, the view keeps
+`readyMs: null`. This is also true while a guard waits: a guard that redirects after the page was
+hidden leaves a view with `readyMs: null`. The slowest loads are often the loads that people give
+up. Because imp sends them, the ready times and the bounce rate include them.
 
 ### `time`
 
@@ -237,9 +263,25 @@ imp sends an `error` record for three sources:
 | `request` | an `imp/http` request that fails on the network, times out, or answers a 5xx | `request failed: 500 POST /path` |
 
 The message is one line of 200 characters or fewer. It never carries the origin or the query of a
-URL, because a query often holds personal data. imp writes each URL in a message as its path only.
-An error of `imp/http` always gets the request message, also as a `script` or `render` record, such
-as `request failed: 404 GET /missing`.
+URL, because a query often holds personal data. imp writes each URL in a message as its path only,
+and removes the emails and the tokens from that path, see [The records](#the-records). An error of
+`imp/http` always gets the request message, also as a `script` or `render` record, such as
+`request failed: 404 GET /missing`.
+
+**`count`** is the number of times that the error happened. imp sends the first error of a kind in a
+view at once, with `count: 1`. Errors of the same kind are the same `source` and the same `message`.
+imp counts the next errors of that kind in the view, and sends them as one record with their
+`count`. It sends that record when the document hides, and when the view ends. So the sum of `count`
+is the number of errors, and one broken loop gives few records.
+
+A view sends 10 kinds of errors or fewer. imp drops a new kind of error after the tenth. imp also
+sends no record for two messages that browsers report but that are not errors of your app:
+
+- `ResizeObserver loop limit exceeded` and
+  `ResizeObserver loop completed with undelivered notifications`. The browser only tells you that it
+  moved a resize notification to the next frame.
+- `Script error.` with no file. The browser writes this message for an error in a script from
+  another origin, and it hides the real message. You cannot act on it.
 
 One failed request gives one record. A request that fails on the network, times out, or answers a
 5xx gives a `request` record. When your code does not catch that error, imp sends no second `script`
@@ -262,30 +304,58 @@ imp catches a sink that throws or rejects, logs it, and goes on. A failed sink n
 Turn off the automatic page views of your provider. imp sends a view on each navigation, so the
 store otherwise counts each page twice.
 
+Give each event of the store the `view` id of its record. The per-view numbers of the report, such
+as broken, engaged and zone seen, count views. The store can count them only when each event names
+its view.
+
 ### Google Analytics 4
 
 ```js
 gtag('config', GA_ID, { send_page_view: false })
 
 onAnalytics((record) => {
+  const view = { view_id: record.view }
   if (record.type === 'view') {
-    gtag('event', 'page_view', { page_location: location.origin + (record.page ?? record.path) })
+    gtag('event', 'page_view', {
+      ...view,
+      page_location: location.origin + (record.page ?? record.path),
+      from_page: record.from ?? '(entry)',
+      ready: record.readyMs !== null,
+      ready_ms: record.readyMs ?? record.waitedMs,
+    })
   }
+  if (record.type === 'time') gtag('event', 'engaged_time', { ...view, engaged_ms: record.ms })
   if (record.type === 'zone') {
-    gtag('event', 'zone', { zone: record.name, seen: record.seen, active_ms: record.activeMs })
+    gtag('event', 'zone', {
+      ...view,
+      zone: record.name,
+      seen: record.seen,
+      active_ms: record.activeMs,
+    })
   }
   if (record.type === 'action') {
-    gtag('event', record.name.replaceAll('-', '_'), { outcome: record.value })
+    gtag('event', record.name.replaceAll('-', '_'), { ...view, outcome: record.value })
   }
   if (record.type === 'error') {
-    gtag('event', 'exception', { description: record.message, fatal: false })
+    gtag('event', 'exception', {
+      ...view,
+      description: record.message,
+      fatal: false,
+      error_count: record.count,
+    })
   }
 })
 ```
 
+- Register `view_id`, `from_page` and `ready` as custom dimensions with the event scope. Register
+  `ready_ms`, `engaged_ms`, `active_ms` and `error_count` as custom metrics. GA4 shows only the
+  parameters that you register.
+- `ready_ms` is the ready time. When `ready` is `false`, it is the time that the person waited
+  before they left.
+- The engaged time of a view is the sum of `engaged_ms` for its `view_id`. A view is broken when one
+  `exception` event has its `view_id`.
 - A GA4 event name uses letters, numbers and underscores only. So the sink replaces each hyphen.
 - GA4 reads a `value` parameter as a monetary amount. So the sink sends the value as `outcome`.
-- The sink skips `time`. GA4 measures the engaged time itself.
 - GA4 writes cookies, so in Europe it needs consent. See [Consent](#consent).
 
 ### PostHog
@@ -294,21 +364,39 @@ onAnalytics((record) => {
 posthog.init(POSTHOG_KEY, { capture_pageview: false, capture_exceptions: false })
 
 onAnalytics((record) => {
+  const view = { view_id: record.view }
   if (record.type === 'view') {
-    posthog.capture('$pageview', { $current_url: location.origin + (record.page ?? record.path) })
+    posthog.capture('$pageview', {
+      ...view,
+      $current_url: location.origin + (record.page ?? record.path),
+      from: record.from,
+      ready: record.readyMs !== null,
+      ready_ms: record.readyMs ?? record.waitedMs,
+    })
   }
+  if (record.type === 'time') posthog.capture('engaged_time', { ...view, engaged_ms: record.ms })
   if (record.type === 'zone') {
-    posthog.capture('zone', { zone: record.name, seen: record.seen, active_ms: record.activeMs })
+    posthog.capture('zone', {
+      ...view,
+      zone: record.name,
+      seen: record.seen,
+      active_ms: record.activeMs,
+    })
   }
-  if (record.type === 'action') posthog.capture(record.name, { value: record.value })
+  if (record.type === 'action') posthog.capture(record.name, { ...view, value: record.value })
   if (record.type === 'error') {
-    posthog.captureException(new Error(record.message), { source: record.source })
+    posthog.captureException(new Error(record.message), {
+      ...view,
+      source: record.source,
+      count: record.count,
+    })
   }
 })
 ```
 
-Turn off the automatic exceptions of PostHog, so each failure arrives once. PostHog writes a cookie
-by default, so in Europe it needs consent. See [Consent](#consent).
+Break down an insight by the `view_id` property to get a number per view. The engaged time of a view
+is the sum of `engaged_ms`. Turn off the automatic exceptions of PostHog, so each failure arrives
+once. PostHog writes a cookie by default, so in Europe it needs consent. See [Consent](#consent).
 
 ### Your own endpoint
 
@@ -322,22 +410,24 @@ onAnalytics(batch((records) => navigator.sendBeacon('/collect', JSON.stringify(r
 ```
 
 **Send with `navigator.sendBeacon`, or with `fetch(url, { keepalive: true })`.** The `time` and
-`zone` records fire as the page hides, and the browser can cancel a plain `fetch` there.
+`zone` records, and a `view` that is not ready, fire as the page hides. The browser can cancel a
+plain `fetch` there.
 
 `batch(send, { size, ms })` returns a sink. It holds the records, and calls `send` with an array of
-them. It sends in four cases:
+them. It sends in these cases:
 
 - the array reaches `size`,
 - `ms` passes after the first held record,
-- the page becomes hidden,
+- the page becomes hidden, or the browser unloads it,
 - the `when` state of the sink stops being `true`,
 - the sink is unregistered.
 
-imp flushes a batch after it dispatches the `time` and `zone` records of that hide, in the same
-task. So a batch is empty at each moment when the browser can freeze or discard the page. The
-defaults are `size: 20` and `ms: 5000`. The browser limits the data in flight to about 64 KiB, and
-20 records are about 4 KB. imp does not retry a failed batch, because a retry needs storage. The SDK
-of a provider batches its own events, so do not wrap it in `batch`.
+imp flushes a batch after it dispatches the records of that hide, in the same task. These are a
+`view` that is not ready, the `time` and `zone` records, and the `count` of repeated errors. So a
+batch is empty at each moment when the browser can freeze or discard the page. The defaults are
+`size: 20` and `ms: 5000`. The browser limits the data in flight to about 64 KiB, and 20 records are
+about 4 KB. imp does not retry a failed batch, because a retry needs storage. The SDK of a provider
+batches its own events, so do not wrap it in `batch`.
 
 ### Errors only
 
@@ -362,7 +452,7 @@ Add the segments of the app in the sink. Hold the records until the app knows th
 
 ```js
 const user = useState(self, 'myapp.user')
-const contextReady = computed([user], (value) => value !== undefined)
+const contextReady = computed([user], (value) => value === undefined ? null : true)
 const send = batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records)))
 
 onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }), {
@@ -372,6 +462,8 @@ onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }
 
 - `myapp.user` is `undefined` while it loads, and `null` when nobody is signed in. So a signed-out
   page is ready at once, with `plan: null`.
+- `contextReady` is `null` while the user loads, so imp holds the records. Do not use `false` for
+  "not yet". `false` drops the records, see [Consent](#consent).
 - The hold keeps the entry view. So the first screen gets the plan too.
 - Other good segments are the role, the language, the version of the app, and a size bucket such as
   `'10-50 seats'`.
@@ -416,7 +508,8 @@ and no personal data. Such first-party statistics can usually use legitimate int
 basis, not consent. Your app must then do these things:
 
 - Describe the analytics in your privacy policy.
-- Give the person a way to object. A `when` state that starts as `true` is an opt-out switch.
+- Give the person a way to object. A `when` state that starts as `true` is an opt-out switch. Set it
+  to `false` when the person objects.
 - Do not keep the full IP address of a request. Remove it or shorten it when the request arrives.
 - Delete the records after a fixed period.
 
@@ -425,26 +518,39 @@ CCPA applies when you sell or share the records.
 
 ### Hold the records until consent
 
-`onAnalytics(sink, { when: consent })` holds the records for that sink while the state `consent` is
-not `true`. When it becomes `true`, imp delivers the held records in order, and the next records at
-once. When it becomes `false` again, imp holds again.
+`onAnalytics(sink, { when: consent })` uses the value of the state `consent` to decide what to do
+with each record of that sink:
+
+| Value of the state              | Meaning   | imp does this with a record        |
+| ------------------------------- | --------- | ---------------------------------- |
+| `true`                          | granted   | sends it to the sink at once       |
+| `false`                         | refused   | drops it                           |
+| any other value, such as `null` | not known | holds it until the value is `true` |
+
+When the value becomes `true`, imp sends the held records in order, and the next records at once.
+When it becomes `false`, imp drops the held records. A record that comes while consent is refused
+never reaches the sink, also when the person agrees later. After a refusal, the sink starts again
+like a new sink: it gets the `view` record of the current screen, and the next records.
 
 ```js
-const consent = initState(self, 'myapp.consent', false)
+const consent = initState(self, 'myapp.consent', null)
 onAnalytics(self, sendToStore, { when: consent })
 ```
 
+- Start the state as `null` while the person has not answered. A state that starts as `false` drops
+  the entry view.
 - imp does not decide what consent means. Your app owns the banner and the state. imp only holds the
   records, so the entry view is not lost while the banner is open.
 - The hold keeps the first view that it holds, and the newest 199 records. So a `track()` call or an
   error before the first screen does not push the entry view out.
 - To remember the choice of the person, save it, for example in `localStorage`. This entry is part
   of the consent, so it needs no consent of its own.
-- The same option covers an SDK that loads late: `{ when: providerReady }`.
+- The same option covers an SDK that loads late: `{ when: providerReady }`, where `providerReady` is
+  `null` until the SDK loads, then `true`.
 - The hold is per sink. To report errors with no consent, register a second sink with no `when`,
   which forwards only the `error` records. You decide if your error reports need consent.
 - `batch` works with `when`. The hold comes first, and the batch gets the records when the hold
-  releases them.
+  releases them. When the value stops being `true`, the batch sends the records that it already has.
 
 ### Stop the SDK until consent
 
@@ -458,9 +564,9 @@ For GA4, use the consent mode of Google. In the `denied` state, GA4 writes no co
 gtag('consent', 'default', { analytics_storage: 'denied' })
 gtag('config', GA_ID, { send_page_view: false })
 
-const consent = initState(self, 'myapp.consent', false)
+const consent = initState(self, 'myapp.consent', null)
 consent.watch(self, (granted) => {
-  gtag('consent', 'update', { analytics_storage: granted ? 'granted' : 'denied' })
+  gtag('consent', 'update', { analytics_storage: granted === true ? 'granted' : 'denied' })
 })
 onAnalytics(self, sendToGa, { when: consent })
 ```
@@ -474,9 +580,9 @@ posthog.init(POSTHOG_KEY, {
   persistence: 'memory',
 })
 
-const consent = initState(self, 'myapp.consent', false)
+const consent = initState(self, 'myapp.consent', null)
 consent.watch(self, (granted) => {
-  posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' })
+  posthog.set_config({ persistence: granted === true ? 'localStorage+cookie' : 'memory' })
 })
 onAnalytics(self, sendToPosthog, { when: consent })
 ```
@@ -490,13 +596,17 @@ Load the records into one table, one row per record. These queries use SQL for P
 table `records` with a `received_at` column that your store adds. Adapt them to the query language
 of your store.
 
+The ready time of a view is `readyMs`. For a view that the person left before it was ready, the
+queries use `waitedMs`. The real ready time is longer, so the percentile is a lower limit. A query
+that skips these views hides the slowest loads.
+
 ```sql
 -- views per page, broken and slow p75 (entry views excluded from slow)
 select coalesce(v.page, 'not found') as page,
        count(*) as views,
        avg(case when exists (select 1 from records e
                              where e.type = 'error' and e.view = v.view) then 1 else 0 end) as broken,
-       percentile_cont(0.75) within group (order by v."readyMs")
+       percentile_cont(0.75) within group (order by coalesce(v."readyMs", v."waitedMs"))
          filter (where v."from" is not null) as slow_p75
 from records v
 where v.type = 'view'
@@ -506,7 +616,7 @@ group by 1;
 select path, count(*) from records where type = 'view' and page is null group by path;
 
 -- cold start p75
-select percentile_cont(0.75) within group (order by "readyMs")
+select percentile_cont(0.75) within group (order by coalesce("readyMs", "waitedMs"))
 from records where type = 'view' and "from" is null;
 
 -- reach: share of visits that opened the page
@@ -549,8 +659,8 @@ group by name, views.n;
 select name, value, count(distinct view) from records
 where type = 'action' and page = '/invoices/:id' group by name, value;
 
--- errors of a page, by message
-select message, count(distinct view) from records
+-- errors of a page, by message: the views with the error, and the number of errors
+select message, count(distinct view), sum(count) from records
 where type = 'error' and page = '/invoices/:id' group by message order by 2 desc;
 ```
 

@@ -40,6 +40,9 @@ of rendered pages.
 - imp has one rendering model. No code path renders a component outside a browser, and no hydration
   step must match the markup of a server.
 - A built app is a set of static files, with no server runtime. Any static host serves it.
+- An open tab runs the build that it loaded, until it loads the page again. So a deploy keeps the
+  hashed files of the previous build for open tabs. When a lazy chunk is gone anyway, imp loads the
+  page again once, see `production-bundling.md`.
 - A page that must rank in a search engine, or that must show its text with JavaScript off, needs
   another tool. A team can build the content pages with a static site generator, and the app with
   imp, on the same domain.

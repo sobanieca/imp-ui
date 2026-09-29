@@ -20,16 +20,24 @@ Every record has `type`, `visit`, `view` and `page`. `visit` is one random id pe
 memory only. `view` is one random id per view. `page` is the route pattern of the matched node, such
 as `/invoices/:id`, or `null` for a path off the map.
 
-| `type`   | Other fields                                                   | Sent                                            |
-| -------- | -------------------------------------------------------------- | ----------------------------------------------- |
-| `view`   | `from` (previous page, `null` on entry), `readyMs`, `path`     | when the screen is ready, or when the view ends |
-| `time`   | `ms` - engaged time, visible and focused, as a delta           | when the document hides, and when the view ends |
-| `zone`   | `name`, `seen`, `activeMs`, as a delta                         | when the document hides, and when the view ends |
-| `action` | `name`, `value` (only when given)                              | at the `track()` call                           |
-| `error`  | `source` (`script`, `render`, `request`), `message` (one line) | at the failure                                  |
+| `type`   | Other fields                                                            | Sent                                                             |
+| -------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `view`   | `from` (previous page, `null` on entry), `readyMs`, `waitedMs`, `path`  | when the screen is ready, or the view ends, or the page hides    |
+| `time`   | `ms` - engaged time, visible and focused, as a delta                    | when the document hides, and when the view ends                  |
+| `zone`   | `name`, `seen`, `activeMs`, as a delta                                  | when the document hides, and when the view ends                  |
+| `action` | `name`, `value` (only when given)                                       | at the `track()` call                                            |
+| `error`  | `source` (`script`, `render`, `request`), `message` (one line), `count` | at the failure; repeats when the document hides or the view ends |
 
 - `path` is on a `view` with `page: null` only. It has no query.
-- `readyMs` is `null` when the person left before the screen was ready.
+- `readyMs` is `null` when the person left before the screen was ready. Then `waitedMs` is the time
+  from the navigation to the leave. A page that hides or unloads before the screen is ready sends
+  its view at once, and only once.
+- imp scrubs `path` and the text of `message`: an email (also `%40`) becomes `:email`, a JSON Web
+  Token or a word with 16+ letters and digits in a row, with a digit and a letter, becomes `:token`.
+  Numbers, UUIDs and slugs stay. Put each screen on the map, so that it records the route pattern.
+- `error` is one record per kind (`source` + `message`) per view, with `count: 1`. Repeats of that
+  kind go out as one record with their `count`. A view sends 10 kinds or fewer. The
+  `ResizeObserver loop ...` messages and a cross-origin `Script error.` give no record.
 - A change of the query only is no view. A guard redirect or a `redirect()` binding is no view.
 - `error` sources: `script` is an uncaught error, an unhandled rejection, or a state subscriber that
   throws. `render` is an error in a component. `request` is an `imp/http` request that fails on the
@@ -49,14 +57,19 @@ as `/invoices/:id`, or `null` for a path off the map.
 | `zone({ name }, ...children)`         | wraps any content; records `seen` and the active time per view          |
 | `track(name, value?)`                 | records an outcome; `value` is a string or a number from code           |
 
-`batch` sends when the array reaches `size`, when `ms` passes, when the page hides (after the `time`
-and `zone` records of that hide), when its `when` state stops being `true`, and when the sink is
-unregistered. `when` is a state. imp holds the records for that sink while the state is not `true`:
-the first held view and the newest 199 records.
+`batch` sends when the array reaches `size`, when `ms` passes, when the page hides or unloads (after
+the records of that hide), when its `when` state stops being `true`, and when the sink is
+unregistered.
+
+`when` is a state. `true` sends the records to the sink. `false` drops them, and drops the held
+records. Any other value (`null`) holds them: the first held view and the newest 199 records. After
+`false`, the sink starts again with the `view` record of the current screen.
 
 ## Rules an agent gets wrong
 
-- **Register the sink before `mount`.** A late sink loses the engaged time before it.
+- **Register the sink before `mount`.** A sink that registers later gets the `view` record of the
+  current screen at once, but no other record from before it. `imp start` registers a log sink
+  first, so each app sink joins a running collection in development.
 - **`zone({ name: 'due-date' }, child)`, never `zone('due-date', child)`.** The name is kebab case.
   `track` names are kebab case too. imp logs a bad name, and records nothing for it.
 - **A zone around text only is never seen.** It observes its child elements. Wrap the text in an
@@ -74,15 +87,20 @@ the first held view and the newest 199 records.
 - **Add `when: consent` only when the store needs consent.** imp stores nothing on the device. A
   provider SDK that writes cookies (GA4, PostHog), an id kept across reloads, or personal data needs
   it. A sink to an own endpoint with none of these does not. Do not add a banner by default.
+- **Start a `when` state as `null`, never `false`.** `null` holds the records until the person
+  answers. `false` means refused, and drops the entry view. An opt-out switch starts as `true`.
+- **Put `view_id: record.view` on every event of a provider SDK.** Map `time` to an event with
+  `engaged_ms: record.ms`, and put `ready_ms: record.readyMs ?? record.waitedMs` on the page view.
+  The store needs them for the per-view numbers.
 - **`when` does not stop a provider SDK.** Start GA4 after
   `gtag('consent', 'default', { analytics_storage: 'denied' })`. Start PostHog with
   `persistence: 'memory'`. Update the SDK in `consent.watch(self, ...)`, and call it before
-  `onAnalytics`, so the SDK gets the consent before the held records.
+  `onAnalytics`, so the SDK gets the consent before the held records. Test `granted === true`.
 - **Add segments, not ids.** In the sink:
   `onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }), { when: contextReady })`,
-  where `contextReady` is `true` once the user state has loaded. Add the country on the server from
-  the request, and discard the IP address. Do not add a user id or an organization id. They usually
-  need consent in Europe.
+  where `contextReady` is `null` while the user state loads and `true` after, never `false`. Add the
+  country on the server from the request, and discard the IP address. Do not add a user id or an
+  organization id. They usually need consent in Europe.
 - **Gate the sink and the SDK on a flag**, so a build with the flag off has none of it. See
   [feature-flags](feature-flags.md).
 - **Do not add `onError`, a log sink, or a `data-track` attribute.** They do not exist. Forward the

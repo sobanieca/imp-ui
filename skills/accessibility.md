@@ -36,8 +36,8 @@ key handlers or a focus trap to a standard component. There is no prop that tune
 | ----------------------------------------------- | --------------------------------------------------------------------------------- |
 | `imp lint` rule `imp/img-alt`                   | an `img` call with no `alt` key                                                   |
 | `imp lint` rule `imp/icon-button-name`          | a `button` with no name whose only children are `icon(...)` calls with no `label` |
-| `await expect(page).toHaveAccessibleControls()` | e2e: a control with no name, a focusable element with no role                     |
-| `contrastProblems(tokens)` from `imp/theme`     | a text and background token pair below 4.5:1                                      |
+| `await expect(page).toHaveAccessibleControls()` | e2e: a control with no name, a focusable element with no role, in the a11y tree   |
+| `contrastProblems(tokens)` from `imp/theme`     | a text and background token pair below 4.5:1, or a pair it cannot read            |
 
 - The matcher takes the page or an element from `page.$()`. Always `await` it. See
   [testing](testing.md).

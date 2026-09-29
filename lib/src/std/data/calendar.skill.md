@@ -58,6 +58,10 @@ Rules an agent gets wrong:
   the last slot of the day, and a move past the edge of the week shows the next week. Enter, or a
   click, fires `slotSelect` with a start and an end one hour later. The day number in the month view
   and the day header fire `slotSelect` with `allDay: true`.
+- **The slots follow the wall clock of the day.** On a day when the clock skips an hour, the time
+  grid has no slot in that hour, and the arrow keys go over the gap. On a day that repeats an hour,
+  each half hour has one slot. The `end` of a slot is one hour later on the wall clock, and it is
+  never equal to the `start`.
 - **An entry over several days is one bar per week in the month view.** The bar keeps one lane on
   every day that it covers. A bar that goes on into the next week has square ends on that side.
 - **The month view shows 3 lanes for each day.** On a day with more entries, the last lane is a "+N

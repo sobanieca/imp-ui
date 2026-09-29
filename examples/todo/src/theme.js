@@ -1,6 +1,6 @@
 const shared = {
-  'font-family': "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
-  'font-family-heading': "'Sora', 'Inter', system-ui, sans-serif",
+  'font-family': "'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif",
+  'font-family-heading': "'Sora', 'IBM Plex Sans', system-ui, sans-serif",
   'radius-item': '0.75rem',
   'radius-container': '1.25rem',
   loader: 'dots',

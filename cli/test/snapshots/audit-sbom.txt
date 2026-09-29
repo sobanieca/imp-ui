@@ -105,7 +105,7 @@ $ imp audit  (cwd: <tmp with no dependencies>)
 exit code: 0
 
 --- stdout ---
-nothing to audit - no dependencies declared in imp.json
+nothing to audit - imp.json declares no dependencies, so imp vendors no package
 
 --- stderr ---
 (empty)

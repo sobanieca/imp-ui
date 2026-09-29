@@ -43,7 +43,7 @@ export const statTile = component('todo-stat-tile', {
     }
     .words { display: flex; flex-direction: column; gap: 0.125rem; }
     .value {
-      font: 700 1.75rem / 1.1 var(--imp-font-family-heading);
+      font: 600 1.75rem / 1.1 var(--imp-font-family-heading);
       letter-spacing: -0.02em;
       color: var(--imp-color-text);
       font-variant-numeric: tabular-nums;

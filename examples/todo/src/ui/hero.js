@@ -22,7 +22,7 @@ export const hero = component('todo-hero', {
     h1 {
       margin: 0;
       font-family: var(--imp-font-family-heading);
-      font-weight: 700;
+      font-weight: 600;
       font-size: clamp(2rem, 1.5rem + 2.2dvi, 3.25rem);
       line-height: 1.05;
       letter-spacing: -0.03em;

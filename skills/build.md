@@ -23,7 +23,12 @@ help the build.
   **`chunks/<name>-<hash>.js`**, and points the `src` of the built page at it. The HTML keeps its
   name. imp writes an inline module script to `chunks/inline-<n>-<hash>.js`, and the environment
   values to `chunks/env-<hash>.js`. imp writes no inline script. A classic inline `<script>` that
-  you write stays, and a strict Content Security Policy blocks it.
+  you write stays, and a strict Content Security Policy blocks it. `imp build` warns about it, see
+  below.
+- A hashed name depends only on the sources. The same project gives the same names in any folder.
+- CSS that a script imports goes to **`chunks/<name>-<hash>.css`**, and imp adds a
+  `<link rel="stylesheet">` for it to `<head>`. The CSS of an `import()` chunk gets a link too, at
+  page load.
 - **Never reference a built script by its source name**, such as `/src/main.js` in a host config or
   a test of the output. Only the built HTML knows the hashed name.
 - imp adds `<link rel="modulepreload">` to `<head>` for every chunk that a page script imports
@@ -111,9 +116,10 @@ the imp binary. None of those tools ship in an app. See [update](update.md).
 ## How to deploy under a sub-path
 
 Set the `IMP_BASEPATH` environment value, see [config](config.md). `imp build` then prefixes every
-root-absolute URL that it emits. This covers the `href="/styles.css"` of your page, the PWA
-manifest, the icons, the worker and its precache list. imp leaves an external `https://...` URL, a
-protocol-relative `//...` URL and a relative URL as they are. The router reads the same value, so
+root-absolute URL that it emits. This covers `href`, `src` and `poster` in your page, each image of
+a `srcset` or an `imagesrcset`, the `content` of an `og:image` or a `twitter:image` meta tag, the
+PWA manifest, the icons, the worker and its precache list. imp leaves an external `https://...` URL,
+a protocol-relative `//...` URL and a relative URL as they are. The router reads the same value, so
 the assets and the navigation move together. See [routing](routing.md).
 
 ## JS entry - a component
@@ -144,14 +150,31 @@ the assets and the navigation move together. See [routing](routing.md).
   from the build and not from a folder scan. imp also injects the manifest link, the theme-color
   meta tag, the apple-touch-icon link and a script tag for the registration into `<head>`.
 
+The precache list has three parts:
+
+| Part     | Files                                                                                | When a file does not load                 |
+| -------- | ------------------------------------------------------------------------------------ | ----------------------------------------- |
+| hashed   | every file under `chunks/`; copied from an earlier build cache when the name matches | the install fails, the next visit retries |
+| required | the page, `manifest.webmanifest`, the icons; always downloaded again                 | the install fails, the next visit retries |
+| optional | the files of `public/`; always downloaded again                                      | a warning, the install goes on            |
+
+imp leaves out `LICENSES.txt`, and the host files at the root of `public/`: `_redirects`,
+`_headers`, `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json`,
+`staticwebapp.config.json`. It also leaves out every path with a part that starts with a dot. imp
+URL-encodes each file name. A file that does not fit in a full storage gives a warning, and the
+worker loads it from the network.
+
 The caching defaults are fixed and you cannot configure them. The page and its deep links are
 network-first, and fall back to the cached shell. A hashed asset is cache-first. imp never caches a
 cross-origin response, a request that is not a `GET`, or an error response. A new deploy is a new
 cache, so a user is never held on a stale version.
 
-The update is automatic. The new worker takes control at once, and keeps the cache of the previous
-build. So a tab that still runs the old build loads its lazy chunks. The worker deletes older build
-caches on the next navigation. Write no update prompt and no reload code for this.
+The update is automatic. The new worker takes control at once, and keeps the cache of the build that
+was active before it. So a tab that still runs the old build loads its lazy chunks. On `activate`,
+the worker deletes every older build cache of its app. It deletes the kept cache when no tab that
+was open at the update remains. So an app has at most two build caches. The cache names hold the
+scope of the worker, and a worker deletes only the caches of its own scope. Write no update prompt
+and no reload code for this.
 
 Without the flag, a PWA project still builds normally. In development, installability needs no flag.
 But the **offline** worker comes only from `imp build --pwa`. See [start](start.md).
@@ -165,12 +188,18 @@ When `imp.json` names a `serviceWorker`, every page build bundles that source an
 
 Give the host these rules. imp writes no host config.
 
-| Rule                                                                       | Why                                        |
-| -------------------------------------------------------------------------- | ------------------------------------------ |
-| serve `index.html` for a path with no file                                 | a deep link and a refresh reach the router |
-| `Cache-Control: public, max-age=31536000, immutable` on `/chunks/`         | every file there has a content hash        |
-| `Cache-Control: no-cache` on every other file                              | `index.html` names the current build       |
-| `Content-Security-Policy: script-src 'self'; style-src 'self'` on the page | see below                                  |
+| Rule                                                                        | Why                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------ |
+| serve `index.html` for a path with no file, except under `/chunks/`         | a deep link and a refresh reach the router       |
+| a `404` for a missing file under `/chunks/`                                 | a fallback page must never get the chunk cache   |
+| `Cache-Control: public, max-age=31536000, immutable` on a file in `chunks/` | every file there has a content hash              |
+| `Cache-Control: no-cache` on every other file                               | `index.html` names the current build             |
+| keep the `chunks/` files of the previous build                              | an open tab loads its lazy chunks from its build |
+| `Content-Security-Policy: script-src 'self'; style-src 'self'` on the page  | see below                                        |
+
+When a lazy chunk of an open tab is gone, the router and the translations fetch the page. If the
+page names a newer build, imp loads the current URL again, once per build. See
+[routing](routing.md).
 
 Under a sub-path, prefix every path of the rules. Upload `LICENSES.txt` with the rest. A PWA update
 needs no rule of its own: `sw.js` is `no-cache` under the rules above. The errors of a live app
@@ -179,7 +208,10 @@ reach the app as `error` records of an analytics sink, see [analytics](analytics
 ## Content Security Policy
 
 A built app works under `script-src 'self'; style-src 'self'` with no setting, no hash and no nonce.
-imp writes no policy and no host file. The host sends the header.
+imp writes no policy and no host file. The host sends the header. `imp build` warns about each
+inline construct in the entry HTML that the policy blocks, with its line: a classic inline
+`<script>`, an `on*` handler attribute, a `javascript:` URL, a `<style>` element and a `style`
+attribute.
 
 | Works under the policy                   | Blocked by the policy                                  |
 | ---------------------------------------- | ------------------------------------------------------ |
@@ -197,6 +229,10 @@ imp writes no policy and no host file. The host sends the header.
   provider in `script-src` and its endpoint in `connect-src`. imp never writes the policy.
 - **Never put a `chunks` folder in `public/`.** imp writes its hashed files there, and the build
   stops.
+- **Never delete `chunks/` on the host before a deploy.** Upload the new files next to the old ones.
+  A missing chunk costs an open tab a reload.
+- **Never let the fallback to `index.html` answer under `/chunks/`.** A missing chunk must get a
+  `404`. See [routing](routing.md) for the setting of each host.
 - **Never edit a file in the output directory.** imp deletes and writes the directory again on every
   run.
 - **Deploy `LICENSES.txt` with the rest of the output.** The licenses that produce the file forbid

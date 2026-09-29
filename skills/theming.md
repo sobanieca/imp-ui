@@ -26,8 +26,10 @@ colorSchemeOf(theme.get().tokens) // 'light' | 'dark' | undefined
 
 There is no mode field. imp reads light or dark from the lightness of `color-surface`, and sets
 `color-scheme` on the root to match. So native controls and `prefers-color-scheme` follow the theme.
-`color-surface` must be a hex colour. When it is absent, or not hex, imp warns and leaves
-`color-scheme` unset. `colorSchemeOf(tokens)` is the same test, for a component that must branch.
+`color-surface` must be an opaque CSS colour: hex, a name, `rgb()`, `hsl()`, `oklch()` and the other
+colour functions, or a `var(--imp-...)` token reference. When it is absent, translucent or
+unreadable, such as `color-mix()`, imp warns once per theme and leaves `color-scheme` unset.
+`colorSchemeOf(tokens)` is the same test, for a component that must branch.
 
 Apply a theme at the entry point, or through `init({ theme })`, see [i18n](i18n.md). Do it before
 `mount`. The page then does not flash the wrong theme.
@@ -99,8 +101,8 @@ await init({
 ## The tokens
 
 The list is fixed. A theme with no `base` must give every token a value. When one is missing,
-`applyTheme` warns and names it, then applies the theme anyway. A theme with a `base` is always
-complete.
+`applyTheme` warns and names it, then applies the theme anyway. It warns once per token and theme
+name, not on each toggle. A theme with a `base` is always complete.
 
 | Group      | Tokens                                                                                                                                                                                                                                                   |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -216,13 +218,18 @@ test('the brand theme keeps every text readable', () => {
 ```
 
 - It returns `[{ text, background, ratio }]`, such as
-  `{ text: 'color-secondary', background: 'color-surface-sunken', ratio: 4.35 }`, or `[]`.
+  `{ text: 'color-secondary', background: 'color-surface-sunken', ratio: 4.35 }`, or `[]`. A pair
+  that it cannot read has `ratio: null` and a `reason` string.
 - It checks `color-text` on `color-surface`, `color-surface-sunken`, `color-surface-hover` and
   `background-app`; `color-secondary` on `color-surface`, `color-surface-sunken` and
   `background-app`; `color-primary` on `color-surface` and `color-surface-sunken`; `color-danger` on
   `color-surface`; `color-on-primary` on `color-primary`; `color-on-danger` on `color-danger`.
-- It follows a `var(--imp-...)` reference and skips a pair whose side is not hex, such as a
-  gradient.
+- It reads hex, color names, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()` and
+  `color()`, converts to sRGB, and clips a color outside sRGB. It follows a `var(--imp-...)`
+  reference. It puts translucent text over its background.
+- **An unreadable side never passes.** A gradient, `color-mix()`, `currentColor`, an unknown
+  `var()`, or a translucent background gives a `ratio: null` entry. Check that pair by eye, then
+  filter it out in the test.
 - Pass resolved tokens: the return value of `applyTheme`, not a `{ base, tokens }` object.
 
 ## Forced colours

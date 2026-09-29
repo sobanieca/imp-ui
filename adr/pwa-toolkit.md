@@ -53,16 +53,39 @@ With `--pwa` on an HTML entry, the build also does the following:
 - **imp writes an offline service worker, `sw.js`, and derives its precache list from the build
   graph.** imp does not glob a directory. The list is exactly the files that this build emitted,
   which are the hashed scripts, the chunks and the assets, plus the HTML entry, the manifest, the
-  icons and the copied files from `public/`. Every URL that imp emits is root-absolute, and it
-  carries the `IMP_BASEPATH` prefix, see `public-folder-static-assets.md`. That covers the manifest
-  link, the icon links, the registration, the `start_url`, the `scope`, a precache entry, and the
-  shell. A relative URL would resolve against the current document, and it would break on a deep
-  link. imp keys the name of the cache to a content hash of that list. So each deploy is a new
-  cache, and a deploy is never stuck on a stale version. The lifecycle of an update is below. The
-  caching strategy is a small set of opinionated defaults, and not a collection of strategies to
-  configure. A navigation is network-first, and falls back to the cached app shell, so a deep link
-  works offline. A precached asset is cache-first. imp never caches a cross-origin or opaque
-  response, a request that is not a `GET`, or an error response.
+  icons and the copied files from `public/`, less the files that the next item names. Every URL that
+  imp emits is root-absolute, and it carries the `IMP_BASEPATH` prefix, see
+  `public-folder-static-assets.md`. That covers the manifest link, the icon links, the registration,
+  the `start_url`, the `scope`, a precache entry, and the shell. A relative URL would resolve
+  against the current document, and it would break on a deep link. imp keys the name of the cache to
+  a content hash of that list. So each deploy is a new cache, and a deploy is never stuck on a stale
+  version. The lifecycle of an update is below. The caching strategy is a small set of opinionated
+  defaults, and not a collection of strategies to configure. A navigation is network-first, and
+  falls back to the cached app shell, so a deep link works offline. A precached asset is
+  cache-first. imp never caches a cross-origin or opaque response, a request that is not a `GET`, or
+  an error response.
+- **The precache list has three parts, and only a file that the build writes can stop the install.**
+  An all-or-nothing install fails on every visit when the host does not serve one file. An installed
+  worker then never updates. The parts are these:
+  - `hashed`: every file under `chunks/`. Its name holds a content hash, so the worker copies it
+    from an earlier build cache of the same app when the name matches, and downloads only a new one.
+    It is required.
+  - `required`: the HTML entry, the manifest and the icons. The worker downloads each one with
+    `cache: 'reload'`, past the HTTP cache of the browser. So a file with a plain name is never
+    precached from a stale copy. When a hashed or a required file does not load, the install fails,
+    the worker deletes the cache that it began, and the browser tries again on the next visit. So a
+    user never gets a partial deploy.
+  - `optional`: the files from `public/`, downloaded with `cache: 'reload'`. A file that does not
+    load gives a warning, and the install goes on.
+
+  The list leaves out `LICENSES.txt`, which the app never loads. It also leaves out the files that a
+  host reads as its settings and does not serve: `_redirects`, `_headers`, `_routes.json`,
+  `404.html`, `CNAME`, `netlify.toml`, `vercel.json` and `staticwebapp.config.json` at the root of
+  `public/`, and every path with a part that starts with a dot. imp URL-encodes each part of a path,
+  so a name with a space, a `#`, a `?`, a `%` or a non-ASCII letter loads. A file that the worker
+  cannot store, for example because the storage is full, gives a warning, and the worker loads it
+  from the network. A quota error repeats on every visit, so a failed install would hold the user on
+  the old build forever.
 
 Installability in development is automatic, and it needs no flag. When a `pwa` block is present,
 `imp start` injects the tags for the manifest, the theme colour and the apple-touch-icon. It also
@@ -74,7 +97,7 @@ telemetry, and production gets the offline behaviour.
 
 **The offline worker is one library call, `precacheBuild()` from `imp/service-worker`.** For a
 project with no worker of its own, `imp build --pwa` bundles a two-line entry that calls it. The
-build writes the precache values in front of the bundle: the version, the file list and the shell.
+build writes the precache values in front of the bundle: the version, the shell and the three lists.
 The build writes `sw.js` last, after `public/` is copied, so the list holds every file of the build.
 `sw.js` is never in its own list.
 
@@ -110,8 +133,8 @@ the boundary. So nobody reads the decision as "offline is fully solved".
 
 The emitted worker **does** cover the model of a precached app shell. That is a precache of the
 exact build graph at install, a cache name with a content hash per build, a grace cache for the
-previous build, a navigation that is network-first with a fallback to the cached shell, and a
-cache-first strategy for a hashed asset on the same origin.
+build that was active before, a navigation that is network-first with a fallback to the cached
+shell, and a cache-first strategy for a hashed asset on the same origin.
 
 These are **deliberately out of scope**, and they stay out until a concrete need from a user argues
 otherwise:
@@ -136,19 +159,42 @@ otherwise:
   offline always gets a page that the app draws, and a separate offline page would never show. An
   app that wants to say "you are offline" shows it from its own state.
 
-**The update lifecycle is automatic, with a grace cache for the previous build.** A new worker calls
-`skipWaiting()` in `install` and `clients.claim()` in `activate`, so a deploy takes control in the
-middle of a session. The build splits a lazy module into a hashed chunk, see
+**The update lifecycle is automatic, with a grace cache for the build that was active before.** A
+new worker calls `skipWaiting()` in `install` and `clients.claim()` in `activate`, so a deploy takes
+control in the middle of a session. The build splits a lazy module into a hashed chunk, see
 `production-bundling.md`. A page of the previous build that still runs can request a chunk that is
-gone from the server. So `activate` deletes no cache. The worker looks up a request in the cache of
-the current build first, then in the cache of the previous build. On the next navigation request, it
-deletes every build cache except those two. It deletes only its own caches, whose names start with
-`imp-pwa-`, and never a cache that the app made.
+gone from the server. So the worker looks up a request in the cache of the current build first, then
+in the grace cache.
+
+- **The names of the build caches hold the scope of the worker.** A name is `imp-pwa`, the path of
+  `registration.scope` and the version, separated by spaces, for example `imp-pwa /app/ 1a2b...`. A
+  worker reads and deletes only the caches of its own scope. So several apps on one origin, such as
+  `/a/` and `/b/` on GitHub Pages, keep the caches of each other. A worker never deletes a cache
+  that the app made.
+- **Each build cache records the order of its activation.** On `activate`, the worker writes an
+  entry `.imp-pwa-activation` under its scope into its own cache, with a number one above the
+  highest number of the app. The grace cache is the other cache with the highest number. So after a
+  rollback to an older build, which reuses the name of its old cache, the grace cache is still the
+  build that the open tabs run. The order of creation of the caches does not decide it.
+- **`activate` deletes every build cache of the app except the current and the grace cache.** An app
+  that never loads a new page, such as a single-page app, reaches `activate` on every update too. So
+  an app has at most two activated build caches. `install` deletes the caches of the app that never
+  became active, such as the cache of an install that the browser stopped, before it begins.
+- **The grace cache goes when no tab of the old build remains.** On `activate`, the worker records
+  the ids of the clients in its scope into the grace cache. Every page that is open at that moment
+  can run the old build. The worker compares that list with `clients.matchAll()` on `activate`, and
+  on a `fetch` event at most every ten seconds. When no recorded client remains, it deletes the
+  grace cache.
 
 - The app does nothing. There is no prompt, no event and no script on the client.
-- Only one previous build stays. Two deploys during one open session can still remove a chunk of the
+- Only one earlier build stays. Two deploys during one open session can still remove a chunk of the
   first build. That case is rare, and imp accepts it.
 - A wait for the next load, and a prompt to reload, were not chosen. Both need a script on the
   client and a signal for the app, for a race that is narrow. Many apps do not split by route.
-- The precache requests bypass the HTTP cache of the browser. So a file with a plain name, such as
-  the HTML entry, is never precached from a stale copy.
+- The recorded clients include the page that found the update, which can already run the new build.
+  So the grace cache can stay until that page closes. A kept cache costs storage, and a deleted one
+  costs a chunk of an open tab, so imp keeps it.
+- A new install can start while the previous worker still activates. That install can then delete
+  the cache of that worker before the worker records its activation. This needs a second deploy
+  within milliseconds of the first activation, so imp accepts it. That worker then loads its files
+  from the network.

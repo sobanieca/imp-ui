@@ -1,4 +1,4 @@
-import { isAbsolute, join } from '@std/path'
+import { join } from '@std/path'
 import { packageId } from './deps.js'
 
 export const DEPENDENCY_MANIFEST_FILE = 'manifest.json'
@@ -6,8 +6,6 @@ export const DEPENDENCY_MANIFEST_FILE = 'manifest.json'
 const JSR_REGISTRY = 'https://jsr.io'
 
 const LICENSE_FILE = /^(licen[sc]e|copying)([.-][a-z0-9]+)*$/i
-
-const absoluteCachePath = (path) => isAbsolute(path) ? path : `/${path}`
 
 function spdxFrom(packageJson) {
   const { license, licenses } = packageJson
@@ -18,14 +16,13 @@ function spdxFrom(packageJson) {
 }
 
 async function npmLicense(directory) {
-  const root = absoluteCachePath(directory)
-  const packageJson = await Deno.readTextFile(join(root, 'package.json'))
+  const packageJson = await Deno.readTextFile(join(directory, 'package.json'))
     .then(JSON.parse)
     .catch(() => ({}))
   let text = null
-  for await (const entry of Deno.readDir(root)) {
+  for await (const entry of Deno.readDir(directory)) {
     if (entry.isFile && LICENSE_FILE.test(entry.name)) {
-      text = (await Deno.readTextFile(join(root, entry.name))).trimEnd()
+      text = (await Deno.readTextFile(join(directory, entry.name))).trimEnd()
       break
     }
   }
@@ -55,10 +52,10 @@ const licenseOf = (record) =>
 
 export async function recordPackageLicenses(packages) {
   return await Promise.all(
-    packages.map(async ({ registry, name, version, directory, integrity, provenance }) => {
+    packages.map(async ({ registry, name, version, directory, integrity, attestationListed }) => {
       const { license, licenseText } = await licenseOf({ registry, name, version, directory })
         .catch(() => ({ license: null, licenseText: null }))
-      return { registry, name, version, integrity, provenance, license, licenseText }
+      return { registry, name, version, integrity, attestationListed, license, licenseText }
     }),
   )
 }
