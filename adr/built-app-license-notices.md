@@ -33,8 +33,8 @@ The notice travels with the code, to what a user downloads. Two changes make one
   that file into blocks, one per comment, and drops a duplicate. It writes the blocks into
   `LICENSES.txt`, at the root of the output directory, **exactly as they are. imp never reformats,
   cuts or summarizes them.** Nothing configures this, and nothing turns it off. Those comments are
-  one of the two sources that the file merges. The other source is the SPDX identifier and the
-  licence text that imp recorded for every bundled package at vendor time, see
+  one of the sources that the file merges. Another source is the SPDX identifier and the licence
+  text that imp recorded for every bundled package at vendor time, see
   `vendored-dependency-manifest.md`. That source covers a package that carries no header comment.
 - **Every script with bundled code points at the file.** Each `.js` output of the bundler starts
   with `/*! Third-party license notices: /LICENSES.txt */`. That covers an entry bundle, a chunk
@@ -42,12 +42,20 @@ The notice travels with the code, to what a user downloads. Two changes make one
   registration of the service worker hold no third-party code, so they carry no reference. imp puts
   `IMP_BASEPATH` in front of that path, like any other root-absolute URL. So a reader who arrives at
   a minified bundle can go from there to the notices.
-- **When imp bundles no notice, it writes none.** With no notice from either source, imp produces no
+- **The notice of imp travels too.** The imp library is MIT, and every app bundles the parts of it
+  that the app uses. When the metafile of the build holds a module of the imp library, the file
+  starts with the `LICENSE` of imp, under the heading of the library. The binary includes that
+  `LICENSE`. An app under `targetImpHost` bundles no imp code, so its file leaves the notice out.
+- **When imp bundles no notice, it writes none.** With no notice from any source, imp produces no
   file and adds no reference comment. So a build that redistributes nothing does not pretend that it
   does.
-- **The bundlers for development still remove the comments.** `imp start`, `imp preview`, `imp test`
-  and the mock bundler stay on `legalComments: 'none'`. Their output never goes to a user, and the
-  noise buys nothing.
+- **The export of the gallery carries the same file.** `imp preview --output` writes a folder that a
+  site serves, so it is a redistribution too. It collects the notices in the same way, and writes
+  `LICENSES.txt` at the root of the folder. Its folder can live under any path of a site, so each
+  script points at the file with a relative path.
+- **The bundlers for development still remove the comments.** `imp start`, the preview server,
+  `imp test` and the mock bundler stay on `legalComments: 'none'`. Their output never goes to a
+  user, and the noise buys nothing.
 
 imp writes one aggregate file. It does not scatter the `*.LEGAL.txt` files that esbuild emits per
 output. The notices are a legal artifact. A person reads them, and a deploy ships them. To tie them
@@ -59,8 +67,9 @@ user. `LICENSES.txt` covers only what the app serves. Neither file derives from 
 
 ## Consequences
 
-- A deployed imp app carries the attribution that its dependencies require, and the author does
-  nothing. The set is exact, because imp derives it from the build graph, and not from a list of
+- A deployed imp app carries the attribution that imp and its dependencies require, and the author
+  does nothing. Almost every build now writes `LICENSES.txt`, because almost every app bundles imp.
+  The set is exact, because imp derives it from the build graph, and not from a list of
   dependencies.
 - The detection of a comment is the detection of esbuild. A comment is legal when it is
   `/*! ... */`, or `//!`, or when it contains `@license` or `@preserve`. A package whose header uses

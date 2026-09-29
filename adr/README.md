@@ -116,8 +116,8 @@ These are the conventions:
 | [preview-export](preview-export.md)                                   | imp preview --output: the gallery as one element that any page embeds                |
 | [in-page-review-capture](in-page-review-capture.md)                   | One capture engine: dev review files and the bugReport component                     |
 | [prebundled-npm-dependencies](prebundled-npm-dependencies.md)         | Runtime npm deps pre-bundled at build time                                           |
-| [third-party-attribution](third-party-attribution.md)                 | Bundled deps ship license notices; THIRD-PARTY-LICENSES                              |
-| [built-app-license-notices](built-app-license-notices.md)             | imp build writes LICENSES.txt; every script points at it                             |
+| [third-party-attribution](third-party-attribution.md)                 | THIRD-PARTY-LICENSES records every bundled package; prebundle generates it           |
+| [built-app-license-notices](built-app-license-notices.md)             | imp build writes LICENSES.txt, imp's own notice included; scripts point at it        |
 | [agent-skills](agent-skills.md)                                       | imp skill: skills/ + *.skill.md sidecars as agent manuals                            |
 | [binary-distribution](binary-distribution.md)                         | GitHub Releases for Linux, macOS and Windows, compiled on push                       |
 | [release-policy](release-policy.md)                                   | No guarantee before 1.0; semantic versioning and a deprecation window from 1.0       |

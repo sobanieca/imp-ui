@@ -3,8 +3,10 @@ exit code: 0
 
 --- stdout ---
 built index.html -> dist/
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
   PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
   installable - name, 192 + 512 icons, display, start_url all present
+  LICENSES.txt (<size>)
   chunks/app-<hash>.js (<size>)
   chunks/register-service-worker-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)
@@ -19,6 +21,7 @@ built index.html -> dist/
 (empty)
 
 --- output files ---
+dist/LICENSES.txt
 dist/chunks/app-<hash>.js
 dist/chunks/register-service-worker-<hash>.js
 dist/icons/apple-touch-icon.png
@@ -62,7 +65,7 @@ dist/sw.js
 
 --- dist/sw.js ---
 precache version: <16 hex digits>
-precache files: ["/chunks/app-<hash>.js","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/chunks/register-service-worker-<hash>.js","/index.html"]
+precache files: ["/chunks/app-<hash>.js","/LICENSES.txt","/icons/icon-192.png","/icons/icon-512.png","/icons/icon-maskable-512.png","/icons/apple-touch-icon.png","/manifest.webmanifest","/chunks/register-service-worker-<hash>.js","/index.html"]
 precache shell: "/index.html"
 listeners: activate, fetch, install
 

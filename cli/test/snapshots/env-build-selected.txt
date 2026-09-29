@@ -3,6 +3,8 @@ exit code: 0
 
 --- stdout ---
 built index.html -> dist/
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
+  LICENSES.txt (<size>)
   chunks/app-<hash>.js (<size>)
   chunks/env-<hash>.js (<size>)
   index.html (<size>)

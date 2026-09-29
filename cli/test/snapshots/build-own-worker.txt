@@ -4,7 +4,9 @@ exit code: 0
 --- stdout ---
 built index.html -> dist/
   mocks/ left out - mocks serve in imp start
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
   sw.js - your service worker, bundled from src/sw.js
+  LICENSES.txt (<size>)
   chunks/app-<hash>.js (<size>)
   chunks/env-<hash>.js (<size>)
   index.html (<size>)
@@ -14,7 +16,7 @@ built index.html -> dist/
 (empty)
 
 --- dist/sw.js ---
-first line: globalThis.__IMP_ENV__ = {"IMP_LOG_LEVEL":"info","DEV_TOOLS":"on"};
+first line: /*! Third-party license notices: /LICENSES.txt */
 bare imports left: no
 worker code ran: {"greeting":"hello from the worker","devTools":"on"}
 listeners: activate, fetch, install

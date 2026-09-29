@@ -3,7 +3,9 @@ exit code: 0
 
 --- stdout ---
 built index.html -> dist/
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
   flags folded in - CHECKOUT_V2 on, NEW_NAV on
+  LICENSES.txt (<size>)
   chunks/app-<hash>.js (<size>)
   chunks/checkout-<hash>.js (<size>)
   chunks/env-<hash>.js (<size>)

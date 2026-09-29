@@ -1,9 +1,20 @@
 import { builtinModules } from 'node:module'
-import { dirname, fromFileUrl, join, toFileUrl } from '@std/path'
+import { dirname, fromFileUrl, join, resolve, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { runEsbuild, shutdownBundler } from '../cli/src/deps.js'
+import { bundledPackages, packageId, runEsbuild, shutdownBundler } from '../cli/src/deps.js'
+import { recordPackageLicenses } from '../cli/src/dependency-manifest.js'
 
 const VENDOR_DIR = fromFileUrl(new URL('../cli/src/vendor/', import.meta.url))
+const LICENSES_FILE = fromFileUrl(new URL('../THIRD-PARTY-LICENSES.md', import.meta.url))
+
+const PACKAGES_HEADING = '## Packages inside the prebundled tools'
+const PACKAGES_INTRO = [
+  'Each prebundled tool below contains the npm packages that it depends on. This list is generated when',
+  'the tool is bundled. Each line gives a package, its license, and its copyright lines. imp reads',
+  'those lines from the license file and from the header comments of the bundled files of the package.',
+  'The text of each license is above.',
+].join('\n')
+const TOOL_HEADING = '### '
 
 const VERSIONS = {
   'happy-dom': '20.10.6',
@@ -75,8 +86,68 @@ const PREBUNDLES = [
   },
 ]
 
-const versionBanner = (packages) =>
-  `// ${packages.map((name) => `${name}@${VERSIONS[name]}`).join(' ')}`
+const toolName = (packages) => packages.map((name) => `${name}@${VERSIONS[name]}`).join(' ')
+
+const versionBanner = (packages) => `// ${toolName(packages)}`
+
+const COPYRIGHT_LINE = /copyright\s+\S|\(c\)\s*\d|©\s*\d/i
+const LICENSE_TERMS =
+  /(above|the|own) copyright|copyright (notice|holder|owner|license|statement|in it)|must retain|\[yyyy\]|\{yyyy\}/i
+
+const LEADING_COMMENTS = /^(?:#![^\n]*)?((?:\s*(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*))+)/
+
+const copyrightLinesIn = (text) =>
+  text.split('\n')
+    .map((line) =>
+      line.replace(/^[\s#*/-]+/, '').replace(/\*\/\s*$/, '').replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>').trim()
+    )
+    .filter((line) => COPYRIGHT_LINE.test(line) && !LICENSE_TERMS.test(line))
+
+const readPackageFile = (directory, file) =>
+  Deno.readTextFile(resolve('/', directory, file)).catch(() => '')
+
+async function copyrightLines({ directory, files }, licenseText) {
+  const headers = await Promise.all(
+    files.map(async (file) =>
+      (await readPackageFile(directory, file)).match(LEADING_COMMENTS)?.[1] ?? ''
+    ),
+  )
+  const lines = [licenseText ?? '', ...headers].flatMap(copyrightLinesIn)
+  if (!lines.length) lines.push(...copyrightLinesIn(await readPackageFile(directory, 'README.md')))
+  return [...new Set(lines)]
+}
+
+const packageLine = ({ name, version, license, copyrights }) =>
+  [packageId({ name, version }), license ?? 'license not declared', ...copyrights].join(' - ')
+
+const toolSection = (spec, packages) =>
+  [
+    `${TOOL_HEADING}${toolName(spec.packages)}`,
+    ['```', ...packages.map(packageLine), '```'].join('\n'),
+  ]
+    .join('\n\n')
+
+async function readToolSections() {
+  const text = await Deno.readTextFile(LICENSES_FILE)
+  const start = text.indexOf(`\n${PACKAGES_HEADING}\n`)
+  const handWritten = (start === -1 ? text : text.slice(0, start)).trimEnd().replace(/\n---$/, '')
+  const sections = new Map()
+  if (start !== -1) {
+    const generated = text.slice(start + 1)
+    for (const section of generated.split(`\n${TOOL_HEADING}`).slice(1)) {
+      const name = section.slice(0, section.indexOf('\n'))
+      sections.set(name, `${TOOL_HEADING}${section.trimEnd()}`)
+    }
+  }
+  return { handWritten, sections }
+}
+
+async function writeToolSections({ handWritten, sections }) {
+  const ordered = PREBUNDLES.map((spec) => sections.get(toolName(spec.packages)))
+  const generated = [PACKAGES_HEADING, PACKAGES_INTRO, ...ordered].join('\n\n')
+  await Deno.writeTextFile(LICENSES_FILE, `${handWritten}\n\n---\n\n${generated}\n`)
+}
 
 const REQUIRE_SHIM = [
   "import { createRequire as __impCreateRequire } from 'node:module'",
@@ -128,6 +199,7 @@ const prebundle = async (spec, entryDir) => {
     platform: 'node',
     target: 'es2022',
     legalComments: 'eof',
+    metafile: true,
     banner: { js: `${versionBanner(spec.packages)}\n${REQUIRE_SHIM}` },
     write: false,
     outdir: '/prebundle',
@@ -138,13 +210,23 @@ const prebundle = async (spec, entryDir) => {
   const temporary = `${target}.tmp`
   await Deno.writeFile(temporary, output.contents)
   await Deno.rename(temporary, target)
-  return output.contents.length
+  const bundled = bundledPackages(result.metafile)
+  const licenses = await recordPackageLicenses(bundled)
+  const packages = await Promise.all(
+    bundled.map(async (entry, index) => ({
+      ...licenses[index],
+      copyrights: await copyrightLines(entry, licenses[index].licenseText),
+    })),
+  )
+  return { size: output.contents.length, section: toolSection(spec, packages) }
 }
 
+const licenses = await readToolSections()
 const pending = []
 for (const spec of PREBUNDLES) {
   const existing = await firstLine(join(VENDOR_DIR, spec.file))
-  if (existing !== versionBanner(spec.packages)) pending.push(spec)
+  const recorded = licenses.sections.has(toolName(spec.packages))
+  if (existing !== versionBanner(spec.packages) || !recorded) pending.push(spec)
 }
 
 if (pending.length) {
@@ -152,9 +234,11 @@ if (pending.length) {
   try {
     for (const spec of pending) {
       console.error(`prebundling ${spec.file}...`)
-      const size = await prebundle(spec, entryDir)
+      const { size, section } = await prebundle(spec, entryDir)
+      licenses.sections.set(toolName(spec.packages), section)
       console.error(`  ${spec.file} (${(size / 1024 / 1024).toFixed(2)} MB)`)
     }
+    await writeToolSections(licenses)
   } finally {
     await shutdownBundler()
     await Deno.remove(entryDir, { recursive: true })

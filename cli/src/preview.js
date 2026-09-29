@@ -50,6 +50,15 @@ import {
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { productionDefines } from './development-checks.js'
 import { formatSize } from './file-size.js'
+import {
+  collectLicenseNotices,
+  LICENSE_NOTICES_FILE,
+  licenseNoticeCount,
+  licenseNoticesFile,
+  licenseNoticesReference,
+  splitLicenseNotices,
+  unrecordedLicensesWarning,
+} from './license-notices.js'
 
 const PREVIEW_RUNTIME_URL = import.meta.resolve('./preview-runtime.js')
 
@@ -502,14 +511,16 @@ export async function bundlePreviewApp(
         format: 'esm',
         platform: 'browser',
         target: 'es2022',
-        legalComments: embedded ? 'inline' : 'none',
+        legalComments: embedded ? 'external' : 'none',
+        metafile: embedded,
         write: false,
         outdir: BUNDLE_PREFIX,
         chunkNames: 'chunks/[name]-[hash]',
         loader: DATAURL_ASSET_LOADERS,
       })
-      const files = new Map(result.outputFiles.map((file) => [file.path, file.text]))
-      return { files, failed }
+      const { code, notices } = splitLicenseNotices(result.outputFiles)
+      const files = new Map(code.map((file) => [file.path, file.text]))
+      return { files, failed, metafile: result.metafile, embeddedNotices: notices }
     } catch (error) {
       const culprits = culpritsOf(error, entries)
       if (culprits.length === 0) throw error
@@ -711,16 +722,32 @@ async function exportPreview({ root, imp, previews, dependencies, output, env })
     )
   }
   const page = await embeddedPage(entry, resolvedEnv)
+  const { notices, unrecorded } = await collectLicenseNotices({
+    root,
+    dependencies,
+    metafile: built.metafile,
+    embedded: built.embeddedNotices,
+  })
+  if (unrecorded.length) logger.warn(unrecordedLicensesWarning(unrecorded))
+  const noticeCount = licenseNoticeCount(notices)
+  const withNoticeReference = (name, text) =>
+    noticeCount && name.endsWith('.js')
+      ? licenseNoticesReference(
+        `${'../'.repeat(name.split('/').length - 1)}${LICENSE_NOTICES_FILE}`,
+      ) +
+        text
+      : text
   await Deno.remove(outdir, { recursive: true }).catch(() => {})
   await Deno.mkdir(outdir, { recursive: true })
   const written = []
   const write = async (name, text) => {
     const path = join(outdir, name)
     await Deno.mkdir(dirname(path), { recursive: true })
-    await Deno.writeTextFile(path, text)
+    await Deno.writeTextFile(path, withNoticeReference(name, text))
     written.push(name)
   }
   await write(PREVIEW_ELEMENT_FILE, previewElementScript(page))
+  if (noticeCount) await write(LICENSE_NOTICES_FILE, licenseNoticesFile(notices))
   for (const [path, code] of built.files) await write(path.slice(BUNDLE_PREFIX.length), code)
   const shown = relative(Deno.cwd(), outdir).replaceAll('\\', '/') || '.'
   logger.info(`imp preview exported ${previewCount(previews)} -> ${shown}/`)

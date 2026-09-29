@@ -3302,6 +3302,8 @@ Deno.test('imp preview --output writes the element script and the group bundles'
   const app = await Deno.readTextFile(join(output, 'app.js')).catch(() => '')
   const chunk = files.find((name) => name.startsWith('chunks/')) ?? null
   const widgets = await Deno.readTextFile(join(output, 'groups', 'widgets.js')).catch(() => '')
+  const licenses = await Deno.readTextFile(join(output, 'LICENSES.txt')).catch(() => '')
+  const chunkText = chunk ? await Deno.readTextFile(join(output, chunk)) : ''
   await Deno.remove(outdir, { recursive: true })
   const page = script.match(/^const PAGE = (".*")$/m)
   const html = page ? JSON.parse(page[1]) : ''
@@ -3356,6 +3358,18 @@ Deno.test('imp preview --output writes the element script and the group bundles'
       [
         `holds the counter: ${widgets.includes('demo-counter')}`,
         `not the todos: ${!widgets.includes('demo-todos')}`,
+      ].join('\n'),
+    ),
+    section(
+      'LICENSES.txt',
+      [
+        `carries the notice of imp: ${licenses.includes('imp@') && licenses.includes('MIT')}`,
+        `app.js points at it: ${
+          app.startsWith('/*! Third-party license notices: LICENSES.txt */')
+        }`,
+        `a chunk points one folder up: ${
+          chunkText.startsWith('/*! Third-party license notices: ../LICENSES.txt */')
+        }`,
       ].join('\n'),
     ),
   ].join('\n\n')
@@ -4892,6 +4906,46 @@ Deno.test('the lint prose documents exactly the rules that run', async () => {
     }
   }
   if (problems.length) throw new Error(`lint prose is out of date:\n  ${problems.join('\n  ')}`)
+})
+
+Deno.test('THIRD-PARTY-LICENSES.md lists every package inside each prebundled tool', async () => {
+  const licenses = await Deno.readTextFile(join(REPO_ROOT, 'THIRD-PARTY-LICENSES.md'))
+  const tableRows = licenses.split('\n')
+    .filter((line) => line.startsWith('|'))
+    .map((line) => line.split('|').map((cell) => cell.trim()))
+  const vendor = join(REPO_ROOT, 'cli', 'src', 'vendor')
+  const problems = []
+  for await (const entry of Deno.readDir(vendor)) {
+    if (!entry.name.endsWith('.js')) continue
+    const text = await Deno.readTextFile(join(vendor, entry.name))
+    const tool = text.slice('// '.length, text.indexOf('\n'))
+    if (!licenses.includes(`\n### ${tool}\n`)) {
+      problems.push(`${entry.name}: no generated section '### ${tool}'`)
+    }
+    for (const id of tool.split(' ')) {
+      const at = id.lastIndexOf('@')
+      const [name, version] = [id.slice(0, at), id.slice(at + 1)]
+      if (!tableRows.some((cells) => cells[1] === name && cells[2] === version)) {
+        problems.push(`${entry.name}: no table row for ${name} ${version}`)
+      }
+    }
+  }
+  const generatedStart = licenses.indexOf('\n## Packages inside the prebundled tools\n')
+  const handWritten = licenses.slice(0, generatedStart)
+  const packageLines = licenses.slice(generatedStart).split('\n')
+    .filter((line) => /^\S+@\S+ - /.test(line))
+  for (const license of new Set(packageLines.map((line) => line.split(' - ')[1]))) {
+    if (!handWritten.includes(`lists under ${license}.`)) {
+      problems.push(`no license text says it applies to the packages listed under ${license}`)
+    }
+  }
+  if (problems.length) {
+    throw new Error(
+      `THIRD-PARTY-LICENSES.md is out of date - run tools/prebundle-npm-deps.js:\n  ${
+        problems.join('\n  ')
+      }`,
+    )
+  }
 })
 
 Deno.test('the dev server serves every bundled asset type with a content type', () => {

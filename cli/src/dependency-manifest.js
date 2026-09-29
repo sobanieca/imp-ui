@@ -5,7 +5,7 @@ export const DEPENDENCY_MANIFEST_FILE = 'manifest.json'
 
 const JSR_REGISTRY = 'https://jsr.io'
 
-const LICENSE_FILE = /^(licen[sc]e|copying)(\.[a-z]+)?$/i
+const LICENSE_FILE = /^(licen[sc]e|copying)([.-][a-z0-9]+)*$/i
 
 const absoluteCachePath = (path) => isAbsolute(path) ? path : `/${path}`
 

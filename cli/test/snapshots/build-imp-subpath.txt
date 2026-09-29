@@ -3,6 +3,8 @@ exit code: 0
 
 --- stdout ---
 built std-entry.js -> std/
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
+  LICENSES.txt (<size>)
   std-entry.js (<size>)
 
 --- stderr ---

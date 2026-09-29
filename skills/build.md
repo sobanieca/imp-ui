@@ -75,11 +75,12 @@ my-app/
 
 ## License notices - `LICENSES.txt`
 
-imp writes `LICENSES.txt` at the root of the output directory, without a change. It merges two
+imp writes `LICENSES.txt` at the root of the output directory, without a change. It merges three
 sources:
 
 | Source                                                                        | Covers                                          |
 | ----------------------------------------------------------------------------- | ----------------------------------------------- |
+| The MIT license of imp, when the bundle contains imp library code             | The imp library inside the bundle               |
 | `dependencies/<alias>/manifest.json` recorded by `imp install`                | SPDX id + license text of every bundled package |
 | Legal comments in the bundled code (`/*! */`, `//!`, `@license`, `@preserve`) | Notices the source itself must carry            |
 
@@ -91,8 +92,9 @@ below. This covers a bundle, a chunk, and the file of an inline module script:
 /*! Third-party license notices: /LICENSES.txt */
 ```
 
-Under `IMP_BASEPATH`, imp prefixes that reference like any other root-absolute URL. When neither
-source gives a notice, imp emits no file and no comment. There is no configuration for this.
+Under `IMP_BASEPATH`, imp prefixes that reference like any other root-absolute URL. When no source
+gives a notice, imp emits no file and no comment. That happens only when the bundle contains no imp
+code and no third-party code, as with `targetImpHost`. There is no configuration for this.
 
 - Only a dependency that the build links contributes. imp drops a dependency that you declare but do
   not import, and that dependency contributes nothing.

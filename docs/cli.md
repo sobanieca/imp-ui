@@ -682,8 +682,11 @@ The copyright notice and the permission notice must travel with the code. A mini
 notices by default. So the build that you deploy is not compliant, and nothing tells you.
 
 `imp build` keeps the notices, and writes them to **`LICENSES.txt`** at the root of the output
-directory. It uses two sources, because neither one alone is complete:
+directory. It uses three sources, because no one of them alone is complete:
 
+- **The licence of imp itself.** Your bundle contains the parts of the imp library that your app
+  uses. imp is MIT-licensed, so its notice travels with them. When the host page provides imp, as
+  with `targetImpHost`, the bundle contains no imp code and the file leaves this notice out.
 - **The licence that imp recorded for every package that you vendored.** `imp install` reads the
   licence identifier and the full licence text of each package when it resolves the package, and
   records them beside the bundle. This half catches the common case: a small package whose licence
@@ -698,6 +701,15 @@ Every license notice carried by the code bundled into this build is reproduced
 below, one block per notice, exactly as its authors wrote it. Ship this file
 alongside the build: the licenses it lists require the notice to travel with the
 code. Every script imp emitted points back here.
+
+The imp library bundled into this build
+
+imp@0.1.0 - MIT
+
+MIT License
+
+Copyright (c) 2026 Adam Sobaniec
+...
 
 Packages bundled into this build
 
@@ -738,7 +750,8 @@ reference, like every other root-absolute URL, so it still points at the correct
 `LICENSES.txt` is part of the output. Upload it with the rest of the directory, and keep it there.
 The notices ask you not to remove it.
 
-When nothing in the bundle carries a notice, imp writes no file and adds no comment.
+When nothing in the bundle carries a notice, imp writes no file and adds no comment. This happens
+only when the bundle contains no imp code and no third-party code.
 
 This file is separate from `imp licenses`. That command prints the notices for the tools that imp
 compiles into its own binary. Those are the bundler, the formatter and the test runner that you
@@ -1465,6 +1478,11 @@ loads that group, so a visitor downloads the components that they look at. Uploa
 is, next to the page that embeds it. Every host that serves static files serves it, because nothing
 in it needs a server.
 
+The folder also holds `LICENSES.txt`, with the licence notices of the code in the bundles: the
+notice of imp, and the notices of your dependencies and of the icons. imp writes it the same way as
+`imp build`, see [License notices](#license-notices). Each script points at it. Upload it with the
+rest of the folder.
+
 The gallery keeps its place in the address of your page. A component is `#/<group>/<name>`, and a
 scenario adds `?scenario=<name>`. So `https://example.com/components#/inputs/button` opens the
 button. A reload keeps it, and a link shares it. The element writes the fragment as the visitor
@@ -1866,10 +1884,12 @@ imp licenses
 ```
 
 imp is one binary, and it contains several open-source tools: the browser automation, the formatter
-engine, the linter engine, the image encoder, the video encoder and more. `imp licenses` prints the
-third-party licence notices for everything that the binary ships. For each component it prints the
-name, the version and the full text of its licence, so the attribution that those licences require
-comes straight out of the binary. The command takes no argument.
+engine, the linter engine, the image encoder, the video encoder and more. It also contains the
+JavaScript runtime that executes imp. `imp licenses` prints the third-party licence notices for
+everything that the binary ships. For each component it prints the name, the version and the full
+text of its licence. A tool that imp bundles from npm packages lists every one of those packages,
+with its licence and its copyright lines. So the attribution that those licences require comes
+straight out of the binary. The command takes no argument.
 
 This covers the tools that you _develop_ with, not the code that you _ship_. None of it reaches your
 app. `imp build` collects the notices for what your users download, into

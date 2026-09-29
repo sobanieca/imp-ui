@@ -4,8 +4,10 @@ exit code: 0
 --- stdout ---
 [WARN] pwa icon assets/icon-small.png is 192x192 - icons up to 512x512 will be upscaled, so some quality loss is expected; use an SVG or a source at least 512px on its longest edge for sharp icons
 built index.html -> dist/
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
   PWA: manifest, icons (192, 512, maskable, apple-touch), offline service worker
   installable - name, 192 + 512 icons, display, start_url all present
+  LICENSES.txt (<size>)
   chunks/app-<hash>.js (<size>)
   chunks/register-service-worker-<hash>.js (<size>)
   icons/apple-touch-icon.png (<size>)

@@ -71,6 +71,8 @@ await run(
   'skills',
   '--include',
   'THIRD-PARTY-LICENSES.md',
+  '--include',
+  'LICENSE',
   ...(target === null ? ['-o', 'imp'] : ['--target', target, '-o', output]),
   'cli/src/main.js',
 )

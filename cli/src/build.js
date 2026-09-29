@@ -28,13 +28,14 @@ import { namesSameFile, withoutUnreachableChunks } from './unreachable-chunks.js
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
 import {
+  collectLicenseNotices,
   LICENSE_NOTICES_FILE,
   licenseNoticeCount,
   licenseNoticesFile,
   licenseNoticesReference,
   splitLicenseNotices,
+  unrecordedLicensesWarning,
 } from './license-notices.js'
-import { readDependencyManifest, recordedNotices } from './dependency-manifest.js'
 import { licenseViolationProblem, reviewLicenses } from './license-policy.js'
 import { logger } from './logger.js'
 import { productionDefines } from './development-checks.js'
@@ -288,19 +289,6 @@ async function bundleApp(options, { inputs, serviceWorker, offlineWorker }) {
   }
 }
 
-async function bundledDependencyManifests({ root, dependencies, metafile }) {
-  const inputs = Object.keys(metafile.inputs).map(asPosix)
-  const manifests = []
-  const unrecorded = []
-  for (const alias of Object.keys(dependencies)) {
-    if (!inputs.some((input) => input.endsWith(`dependencies/${alias}/${alias}.js`))) continue
-    const manifest = await readDependencyManifest(root, alias)
-    if (manifest) manifests.push(manifest)
-    else unrecorded.push(alias)
-  }
-  return { manifests, unrecorded }
-}
-
 function assertEveryFlagFolded(outputFiles) {
   const unfolded = outputFiles.find((file) =>
     file.path.endsWith('.js') && file.text.includes(FLAGS_GLOBAL)
@@ -536,22 +524,16 @@ export async function build(
   assertEveryFlagFolded(result.outputFiles)
 
   const { code: outputFiles, notices: embedded } = splitLicenseNotices(result.outputFiles)
-  const { manifests, unrecorded } = await bundledDependencyManifests({
+  const { notices, manifests, unrecorded } = await collectLicenseNotices({
     root,
     dependencies,
     metafile: result.metafile,
+    embedded,
   })
-  if (unrecorded.length) {
-    logger.warn(
-      `no manifest.json for ${unrecorded.join(', ')} - the licenses of ${
-        unrecorded.length === 1 ? 'that dependency are' : 'those dependencies are'
-      } missing from ${LICENSE_NOTICES_FILE}; run 'imp install' to record them`,
-    )
-  }
+  if (unrecorded.length) logger.warn(unrecordedLicensesWarning(unrecorded))
   const policy = licensePolicy(imp)
   const { violations } = reviewLicenses(manifests, policy)
   if (violations.length) throw new Error(licenseViolationProblem(violations, policy))
-  const notices = { recorded: recordedNotices(manifests), embedded }
   const noticeCount = licenseNoticeCount(notices)
   const noticeReference = noticeCount
     ? licenseNoticesReference(siteUrl(base, LICENSE_NOTICES_FILE))

@@ -1,13 +1,15 @@
 # Third-party licenses
 
 imp is distributed as a single self-contained binary. That binary, and the vendored files it is
-compiled from, **redistribute** other people's work - pre-bundled npm packages, WebAssembly
-formatter plugins, the Lucide icon set, and (downloaded on first use) a Chrome for Testing build.
-Every one of those carries a license whose notice obligations imp must honor to stay distributable.
+compiled from, **redistribute** other people's work - the JavaScript runtime that executes imp,
+pre-bundled npm packages, WebAssembly formatter plugins, the Lucide icon set, and (downloaded on
+first use) a Chrome for Testing build. Every one of those carries a license whose notice obligations
+imp must honor to stay distributable.
 
 This file lists every third-party component imp bundles or downloads, its version, and its license,
-followed by the full text of each license. imp's own code is licensed under the MIT License (see
-`LICENSE`); the terms below apply only to the bundled components.
+followed by the full text of each license. The last section lists every npm package inside each
+prebundled tool, with its license and its copyright lines. imp's own code is licensed under the MIT
+License (see `LICENSE`); the terms below apply only to the bundled components.
 
 Run `imp licenses` to print this notice from the binary.
 
@@ -15,6 +17,7 @@ Run `imp licenses` to print this notice from the binary.
 
 | Component                     | Version | License       | Source                                                 |
 | ----------------------------- | ------- | ------------- | ------------------------------------------------------ |
+| Deno (runtime)                | -       | MIT           | https://github.com/denoland/deno                       |
 | happy-dom                     | 20.10.6 | MIT           | https://github.com/capricorn86/happy-dom               |
 | puppeteer-core                | 24.43.1 | Apache-2.0    | https://github.com/puppeteer/puppeteer                 |
 | eslint                        | 10.6.0  | MIT           | https://eslint.org                                     |
@@ -28,18 +31,20 @@ Run `imp licenses` to print this notice from the binary.
 | dprint-plugin-json            | 0.22.0  | MIT           | https://github.com/dprint/dprint-plugin-json           |
 | dprint-plugin-markdown        | 0.22.1  | MIT           | https://github.com/dprint/dprint-plugin-markdown       |
 | malva (CSS)                   | 0.16.0  | MIT           | https://github.com/g-plane/malva                       |
+| jsonc-parser                  | 3.3.1   | MIT           | https://github.com/microsoft/node-jsonc-parser         |
 | marked                        | 18.0.12 | MIT           | https://github.com/markedjs/marked                     |
 | parse5                        | 8.0.1   | MIT           | https://github.com/inikulin/parse5                     |
 | entities                      | 8.1.0   | BSD-2-Clause  | https://github.com/fb55/entities                       |
 | markup_fmt (HTML)             | 0.27.3  | MIT           | https://github.com/g-plane/markup_fmt                  |
 | pretty_yaml (YAML)            | 0.6.0   | MIT           | https://github.com/g-plane/pretty_yaml                 |
 | lax-sql (SQL)                 | 0.3.0   | MIT           | https://github.com/bartlomieju/dprint-plugin-lax-sql   |
-| @zip-js/zip-js                | 2.8.7   | BSD-3-Clause  | https://github.com/gildas-lormeau/zip.js               |
+| @zip-js/zip-js                | 2.8.26  | BSD-3-Clause  | https://github.com/gildas-lormeau/zip.js               |
 | @resvg/resvg-wasm             | 2.6.2   | MPL-2.0       | https://github.com/yisibl/resvg-js                     |
 | Lucide (icons)                | 1.38.0  | ISC, MIT      | https://lucide.dev                                     |
 | Natural Earth (map data)      | 5.1.2   | Public domain | https://www.naturalearthdata.com                       |
 | @std (Deno standard library)  | -       | MIT           | https://github.com/denoland/std                        |
-| @deno/esbuild-plugin          | -       | MIT           | https://github.com/denoland/deno_esbuild               |
+| @deno/esbuild-plugin          | 1.2.1   | MIT           | https://github.com/denoland/deno_esbuild               |
+| @deno/loader                  | 0.3.14  | MIT           | https://github.com/denoland/deno-js-loader             |
 | Chrome for Testing (download) | pinned  | BSD-3-Clause  | https://github.com/GoogleChromeLabs/chrome-for-testing |
 
 The Chrome for Testing build is not embedded in the binary; imp downloads a pinned,
@@ -69,13 +74,11 @@ reproduced below.
 
 ## MIT License
 
-Applies to: happy-dom (© David Ortner and contributors), eslint and @eslint/js (© OpenJS Foundation
-and other contributors), globals (© Sindre Sorhus), gifenc (© Matt DesLauriers), esbuild-wasm (©
-Evan Wallace), marked (© MarkedJS and Christopher Jeffrey), parse5 ((c) 2013-2019 Ivan Nikulin),
-@dprint/formatter and dprint-plugin-typescript / -json / -markdown (© David Sherret and dprint
-contributors), malva / markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (© Bartłomiej
-Iwańczuk and dprint contributors), @std (© the Deno authors), @deno/esbuild-plugin (© the Deno
-authors), and the Feather-derived Lucide icons (© 2013-present Cole Bemis).
+Applies to: Deno (© the Deno authors), esbuild-wasm (© Evan Wallace), @dprint/formatter and
+dprint-plugin-typescript / -json / -markdown (© David Sherret and dprint contributors), malva /
+markup_fmt / pretty_yaml (© Pig Fang / g-plane), lax-sql (© Bartłomiej Iwańczuk and dprint
+contributors), @std, @deno/esbuild-plugin and @deno/loader (© the Deno authors), the Feather-derived
+Lucide icons (© 2013-present Cole Bemis), and every package that the last section lists under MIT.
 
 ```
 MIT License
@@ -103,8 +106,9 @@ SOFTWARE.
 
 ## ISC License
 
-Applies to: the Lucide icons (© 2026 Lucide Icons and Contributors). The icons Lucide inherited from
-Feather are additionally covered by the MIT License above.
+Applies to: the Lucide icons (© 2026 Lucide Icons and Contributors), and every package that the last
+section lists under ISC. The icons Lucide inherited from Feather are additionally covered by the MIT
+License above.
 
 ```
 ISC License
@@ -128,29 +132,37 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ## BSD-2-Clause License
 
-Applies to: entities ((c) Felix Böhm), which parse5 bundles to decode character references.
+Applies to: every package that the last section lists under BSD-2-Clause.
 
 ```
-Copyright (c) Felix Böhm
-All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
 
-Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
 
-Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ---
 
 ## BSD-3-Clause License
 
-Applies to: jpeg-js (© 2014 Eugene Ware and contributors, derived work © notmasteryet and Adobe
-Systems Incorporated), @zip-js/zip-js (© Gildas Lormeau), and Chrome for Testing / Chromium (© The
-Chromium Authors).
+Applies to: @zip-js/zip-js (© Gildas Lormeau), Chrome for Testing / Chromium (© The Chromium
+Authors), and every package that the last section lists under BSD-3-Clause.
 
 ```
 Redistribution and use in source and binary forms, with or without
@@ -183,7 +195,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Apache License 2.0
 
-Applies to: puppeteer-core (© The Chromium Authors).
+Applies to: every package that the last section lists under Apache-2.0.
 
 ```
                                  Apache License
@@ -372,6 +384,89 @@ Applies to: puppeteer-core (© The Chromium Authors).
 
 ---
 
+## Blue Oak Model License 1.0.0
+
+Applies to: every package that the last section lists under BlueOak-1.0.0.
+
+```
+# Blue Oak Model License
+
+Version 1.0.0
+
+## Purpose
+
+This license gives everyone as much permission to work with
+this software as possible, while protecting contributors
+from liability.
+
+## Acceptance
+
+In order to receive this license, you must agree to its
+rules. The rules of this license are both obligations
+under that agreement and conditions to your license.
+You must not do anything with this software that triggers
+a rule that you cannot or will not follow.
+
+## Copyright
+
+Each contributor licenses you to do everything with this
+software that would otherwise infringe that contributor's
+copyright in it.
+
+## Notices
+
+You must ensure that everyone who gets a copy of
+any part of this software from you, with or without
+changes, also gets the text of this license or a link to
+<https://blueoakcouncil.org/license/1.0.0>.
+
+## Excuse
+
+If anyone notifies you in writing that you have not
+complied with [Notices](#notices), you can keep your
+license by taking all practical steps to comply within 30
+days after the notice. If you do not do so, your license
+ends immediately.
+
+## Patent
+
+Each contributor licenses you to do everything with this
+software that would otherwise infringe any patent claims
+they can license or become able to license.
+
+## Reliability
+
+No contributor can revoke this license.
+
+## No Liability
+
+**_As far as the law allows, this software comes as is,
+without any warranty or condition, and no contributor
+will be liable to anyone for any damages related to this
+software or this license, under any kind of legal claim._**
+```
+
+---
+
+## Zero-Clause BSD License
+
+Applies to: every package that the last section lists under 0BSD.
+
+```
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+```
+
+---
+
 ## Mozilla Public License 2.0
 
 Applies to: @resvg/resvg-wasm.
@@ -396,4 +491,149 @@ merchantable, fit for a particular purpose or non-infringing. The entire risk as
 to the quality and performance of the Covered Software is with You.
 
 For the complete terms and conditions, see https://mozilla.org/MPL/2.0/.
+```
+
+---
+
+## Packages inside the prebundled tools
+
+Each prebundled tool below contains the npm packages that it depends on. This list is generated when
+the tool is bundled. Each line gives a package, its license, and its copyright lines. imp reads
+those lines from the license file and from the header comments of the bundled files of the package.
+The text of each license is above.
+
+### happy-dom@20.10.6
+
+```
+buffer-image-size@0.6.4 - MIT - Copyright © 2017 Aditya Yadav, http://netroy.in
+entities@7.0.1 - BSD-2-Clause - Copyright (c) Felix Böhm
+happy-dom@20.10.6 - MIT - Copyright (c) 2019 David Ortner (capricorn86)
+whatwg-mimetype@3.0.0 - MIT - Copyright © Domenic Denicola <d@domenic.me>
+ws@8.21.0 - MIT - Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com> - Copyright (c) 2013 Arnout Kazemier and contributors - Copyright (c) 2016 Luigi Pinca and contributors
+```
+
+### puppeteer-core@24.43.1
+
+```
+@puppeteer/browsers@2.13.2 - Apache-2.0 - Copyright 2023 Google Inc. - Copyright 2026 Google Inc. - Copyright 2017 Google Inc.
+@tootallnate/quickjs-emscripten@0.23.0 - MIT - quickjs-emscripten copyright (c) 2019 Jake Teton-Landis
+agent-base@7.1.4 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+ast-types@0.13.4 - MIT - Copyright (c) 2013 Ben Newman <bn@cs.stanford.edu>
+b4a@1.8.1 - Apache-2.0
+basic-ftp@5.3.1 - MIT - Copyright (c) 2019 Patrick Juchli
+buffer-crc32@0.2.13 - MIT - Copyright (c) 2013 Brian J. Brennan
+chromium-bidi@14.0.0 - Apache-2.0
+cliui@8.0.1 - ISC - Copyright (c) 2015, Contributors - Copyright (c) npm, Inc. and Contributors
+data-uri-to-buffer@6.0.2 - MIT - Copyright (c) 2014 Nathan Rajlich <nathan@tootallnate.net>
+debug@4.4.3 - MIT - Copyright (c) 2014-2017 TJ Holowaychuk <tj@vision-media.ca> - Copyright (c) 2018-2021 Josh Junon
+degenerator@5.0.1 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+end-of-stream@1.4.5 - MIT - Copyright (c) 2014 Mathias Buus
+escalade@3.2.0 - MIT - Copyright (c) Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+escodegen@2.1.0 - BSD-2-Clause - Copyright (C) 2012 Yusuke Suzuki (twitter: @Constellation) and other contributors. - Copyright (C) 2012-2014 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2015 Ingvar Stepanyan <me@rreverser.com> - Copyright (C) 2014 Ivan Nikulin <ifaaan@gmail.com> - Copyright (C) 2012-2013 Michael Ficarra <escodegen.copyright@michael.ficarra.me> - Copyright (C) 2012-2013 Mathias Bynens <mathias@qiwi.be> - Copyright (C) 2013 Irakli Gozalishvili <rfobic@gmail.com> - Copyright (C) 2012 Robert Gust-Bardon <donate@robert.gust-bardon.org> - Copyright (C) 2012 John Freeman <jfreeman08@gmail.com> - Copyright (C) 2011-2012 Ariya Hidayat <ariya.hidayat@gmail.com> - Copyright (C) 2012 Joost-Wim Boekesteijn <joost-wim@boekesteijn.nl> - Copyright (C) 2012 Kris Kowal <kris.kowal@cixar.com> - Copyright (C) 2012 Arpad Borsos <arpad.borsos@googlemail.com> - Copyright (C) 2020 Apple Inc. All rights reserved.
+esprima@4.0.1 - BSD-2-Clause - Copyright JS Foundation and other contributors, https://js.foundation/
+estraverse@5.3.0 - BSD-2-Clause - Copyright (C) 2012-2013 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2012 Ariya Hidayat <ariya.hidayat@gmail.com>
+esutils@2.0.3 - BSD-2-Clause - Copyright (C) 2013 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2013-2014 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2014 Ivan Nikulin <ifaaan@gmail.com>
+events-universal@1.0.1 - Apache-2.0
+extract-zip@2.0.1 - BSD-2-Clause - Copyright (c) 2014 Max Ogden and other contributors
+fast-fifo@1.3.2 - MIT - Copyright (c) 2019 Mathias Buus
+fd-slicer@1.1.0 - MIT - Copyright (c) 2014 Andrew Kelley
+get-stream@5.2.0 - MIT - Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
+get-uri@6.0.5 - MIT - Copyright (c) 2014 Nathan Rajlich <nathan@tootallnate.net>
+http-proxy-agent@7.0.2 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+https-proxy-agent@7.0.6 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+ip-address@10.2.0 - MIT - Copyright (C) 2011 by Beau Gunderson
+lru-cache@7.18.3 - ISC - Copyright (c) 2010-2023 Isaac Z. Schlueter and Contributors
+mitt@3.0.1 - MIT - Copyright (c) 2021 Jason Miller
+ms@2.1.3 - MIT - Copyright (c) 2020 Vercel, Inc.
+netmask@2.1.1 - MIT - Copyright (c) 2011 Olivier Poitrey rs@rhapsodyk.net
+once@1.4.0 - ISC - Copyright (c) Isaac Z. Schlueter and Contributors
+pac-proxy-agent@7.2.0 - MIT - Copyright (c) 2014 Nathan Rajlich <nathan@tootallnate.net>
+pac-resolver@7.0.1 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+pend@1.2.0 - MIT - Copyright (c) 2014 Andrew Kelley
+progress@2.0.3 - MIT - Copyright (c) 2017 TJ Holowaychuk <tj@vision-media.ca> - Copyright(c) 2011 TJ Holowaychuk <tj@vision-media.ca>
+proxy-agent@6.5.0 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+proxy-from-env@1.1.0 - MIT - Copyright (C) 2016-2018 Rob Wu <rob@robwu.nl>
+pump@3.0.4 - MIT - Copyright (c) 2014 Mathias Buus
+puppeteer-core@24.43.1 - Apache-2.0 - Copyright (c) 2015-2018 Google, Inc., Netflix, Inc., Microsoft Corp. and contributors - Copyright (c) 2021 Jason Miller - Copyright 2023 Google Inc. - Copyright 2020 Google Inc. - Copyright 2024 Google Inc. - Copyright 2025 Google Inc. - Copyright 2018 Google Inc. - Copyright 2017 Google Inc. - Copyright 2022 Google Inc. - Copyright (c) 2020 Lea Verou - Copyright 2026 Google Inc. - Copyright 2019 Google Inc. - Copyright 2020 Intel Corporation - Copyright 2021 Google Inc.
+semver@7.8.5 - ISC - Copyright (c) Isaac Z. Schlueter and Contributors
+smart-buffer@4.2.0 - MIT - Copyright (c) 2013-2017 Josh Glazebrook
+socks-proxy-agent@8.0.5 - MIT - Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+socks@2.8.9 - MIT - Copyright (c) 2013 Josh Glazebrook
+source-map@0.6.1 - BSD-3-Clause - Copyright (c) 2009-2011, Mozilla Foundation and contributors - Copyright 2011 Mozilla Foundation and contributors - Copyright 2011 The Closure Compiler Authors. All rights reserved. - Copyright 2014 Mozilla Foundation and contributors - Copyright 2009-2011 Mozilla Foundation and contributors
+streamx@2.28.0 - MIT - Copyright (c) 2019 Mathias Buus
+tar-fs@3.1.3 - MIT - Copyright (c) 2014 Mathias Buus
+tar-stream@3.2.0 - MIT - Copyright (c) 2014 Mathias Buus
+text-decoder@1.2.7 - Apache-2.0
+tslib@2.8.1 - 0BSD - Copyright (c) Microsoft Corporation.
+wrappy@1.0.2 - ISC - Copyright (c) Isaac Z. Schlueter and Contributors
+ws@8.21.0 - MIT - Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com> - Copyright (c) 2013 Arnout Kazemier and contributors - Copyright (c) 2016 Luigi Pinca and contributors
+y18n@5.0.8 - ISC - Copyright (c) 2015, Contributors
+yargs-parser@21.1.1 - ISC - Copyright (c) 2016, Contributors
+yargs@17.7.3 - MIT - Copyright 2010 James Halliday (mail@substack.net); Modified work Copyright 2014 Contributors (ben@npmjs.com)
+yauzl@2.10.0 - MIT - Copyright (c) 2014 Josh Wolfe
+```
+
+### eslint@10.6.0 @eslint/js@10.0.1 globals@17.7.0
+
+```
+@eslint-community/eslint-utils@4.9.1 - MIT - Copyright (c) 2018 Toru Nagashima
+@eslint-community/regexpp@4.12.2 - MIT - Copyright (c) 2018 Toru Nagashima
+@eslint/config-array@0.23.5 - Apache-2.0
+@eslint/js@10.0.1 - MIT - Copyright OpenJS Foundation and other contributors, <www.openjsf.org>
+@eslint/object-schema@3.0.5 - Apache-2.0
+@eslint/plugin-kit@0.7.2 - Apache-2.0
+acorn-jsx@5.3.2 - MIT - Copyright (C) 2012-2017 by Ingvar Stepanyan
+acorn@8.17.0 - MIT - Copyright (C) 2012-2022 by various contributors (see AUTHORS)
+ajv@6.15.0 - MIT - Copyright (c) 2015-2017 Evgeny Poberezkin
+balanced-match@4.0.4 - MIT - Original code Copyright Julian Gruber <julian@juliangruber.com> - Port to TypeScript Copyright Isaac Z. Schlueter <i@izs.me>
+brace-expansion@5.0.7 - MIT - Copyright Julian Gruber <julian@juliangruber.com> - TypeScript port Copyright Isaac Z. Schlueter <i@izs.me>
+debug@4.4.3 - MIT - Copyright (c) 2014-2017 TJ Holowaychuk <tj@vision-media.ca> - Copyright (c) 2018-2021 Josh Junon
+escape-string-regexp@4.0.0 - MIT - Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
+eslint-scope@9.1.2 - BSD-2-Clause - Copyright JS Foundation and other contributors, https://js.foundation - Copyright (C) 2012-2013 Yusuke Suzuki (twitter: @Constellation) and other contributors.
+eslint-visitor-keys@3.4.3 - Apache-2.0 - Copyright contributors
+eslint-visitor-keys@5.0.1 - Apache-2.0 - Copyright contributors
+eslint@10.6.0 - MIT - Copyright OpenJS Foundation and other contributors, <www.openjsf.org>
+espree@11.2.0 - BSD-2-Clause - Copyright (c) Open JS Foundation
+esquery@1.7.0 - BSD-3-Clause - Copyright (c) 2013, Joel Feenstra
+esrecurse@4.3.0 - BSD-2-Clause - Copyright (C) 2014 Yusuke Suzuki <utatane.tea@gmail.com>
+estraverse@5.3.0 - BSD-2-Clause - Copyright (C) 2012-2013 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2012 Ariya Hidayat <ariya.hidayat@gmail.com>
+esutils@2.0.3 - BSD-2-Clause - Copyright (C) 2013 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2013-2014 Yusuke Suzuki <utatane.tea@gmail.com> - Copyright (C) 2014 Ivan Nikulin <ifaaan@gmail.com>
+fast-deep-equal@3.1.3 - MIT - Copyright (c) 2017 Evgeny Poberezkin
+fast-json-stable-stringify@2.1.0 - MIT - Copyright (c) 2017 Evgeny Poberezkin - Copyright (c) 2013 James Halliday
+globals@17.7.0 - MIT - Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
+ignore@5.3.2 - MIT - Copyright (c) 2013 Kael Zhang <i@kael.me>, contributors
+json-schema-traverse@0.4.1 - MIT - Copyright (c) 2017 Evgeny Poberezkin
+levn@0.4.1 - MIT - Copyright (c) George Zahariev
+minimatch@10.2.5 - BlueOak-1.0.0
+ms@2.1.3 - MIT - Copyright (c) 2020 Vercel, Inc.
+natural-compare@1.4.0 - MIT - Copyright (c) 2012-2015 Lauri Rooden <lauri@rooden.ee>
+prelude-ls@1.2.1 - MIT - Copyright (c) George Zahariev
+type-check@0.4.0 - MIT - Copyright (c) George Zahariev
+uri-js@4.4.1 - BSD-2-Clause - Copyright 2011 Gary Court. All rights reserved. - @license URI.js v4.4.1 (c) 2011 Gary Court. License: http://github.com/garycourt/uri-js
+```
+
+### jpeg-js@0.4.4 gifenc@1.0.3
+
+```
+gifenc@1.0.3 - MIT - Copyright (c) 2017 Matt DesLauriers
+jpeg-js@0.4.4 - BSD-3-Clause - Copyright (c) 2014, Eugene Ware - Copyright (c) 2008, Adobe Systems Incorporated - Copyright 2011 notmasteryet
+```
+
+### jsonc-parser@3.3.1
+
+```
+jsonc-parser@3.3.1 - MIT - Copyright (c) Microsoft - Copyright (c) Microsoft Corporation. All rights reserved.
+```
+
+### marked@18.0.12
+
+```
+marked@18.0.12 - MIT - Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/) - Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/) - Copyright © 2004, John Gruber - Copyright (c) 2018-2026, MarkedJS. (MIT License) - Copyright (c) 2011-2018, Christopher Jeffrey. (MIT License)
+```
+
+### parse5@8.0.1
+
+```
+entities@8.1.0 - BSD-2-Clause - Copyright (c) Felix Böhm
+parse5@8.0.1 - MIT - Copyright (c) 2013-2019 Ivan Nikulin (ifaaan@gmail.com, https://github.com/inikulin)
 ```

@@ -276,6 +276,8 @@ and one bundle per group, loaded when a visitor opens the group. A page embeds i
   attribute. A pick inside the gallery writes the attribute back and dispatches `imp-preview-theme`
   with the name as `detail`. Bind the attribute to the theme of the host page, and listen to the
   event, to keep both in step.
+- The folder holds `LICENSES.txt`, the same notices file that `imp build` writes, see
+  [build](build.md). Each script points at it with a relative path. Upload it with the folder.
 - imp empties the output folder before it writes. Point it at a folder inside `public/`, and
   `imp build` ships it with the app.
 - The element resolves each link of the entry page against the host page. A root-relative link, such
