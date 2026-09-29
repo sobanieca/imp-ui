@@ -64,18 +64,16 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   imp always compiles a declared dependency in, at the vendored, pinned version. That keeps the
   option one boolean, and not a list per import. An HTML entry compiles imp in anyway. The page is
   its own host, and its production output has no import map that could resolve a bare import.
-- **A built page runs under a strict Content Security Policy**,
-  `script-src 'self'; style-src
-  'self'`, with no hash, no nonce and no setting. The build output
-  has no inline script. An inline module script becomes a hashed file under `chunks/`. The
-  environment values go into a hashed `chunks/env-<hash>.js`, and the registration of the service
-  worker goes into a hashed file too. A `style` prop that is a string sets `node.style.cssText`,
-  which a policy does not check. The constructed stylesheets of the components are not checked
-  either. An e2e test serves a built app, with the PWA and environment values, under that policy,
-  and fails on any report of a violation. imp writes no policy. It emits no `<meta http-equiv>` tag
-  and no host file, because the app owns its origins and the host owns the format of its headers.
-  Trusted Types are out of scope: `require-trusted-types-for 'script'` blocks the `innerHTML` of
-  `html()`.
+- **A built page runs under a strict Content Security Policy**, with no hash, no nonce and no
+  setting. The policy is `script-src 'self'; style-src 'self'`. The build output has no inline
+  script. An inline module script becomes a hashed file under `chunks/`. The environment values go
+  into a hashed `chunks/env-<hash>.js`, and the registration of the service worker goes into a
+  hashed file too. A `style` prop that is a string sets `node.style.cssText`, which a policy does
+  not check. The constructed stylesheets of the components are not checked either. An e2e test
+  serves a built app, with the PWA and environment values, under that policy, and fails on any
+  report of a violation. imp writes no policy. It emits no `<meta http-equiv>` tag and no host file,
+  because the app owns its origins and the host owns the format of its headers. Trusted Types are
+  out of scope: `require-trusted-types-for 'script'` blocks the `innerHTML` of `html()`.
 - **A page build adds a `modulepreload` hint** for each chunk that an entry script imports
   statically, directly or through another chunk. A chunk behind `import()` gets no hint.
 - **`build.maxSize` in `imp.json` is a budget for the whole output.** A build over it fails, names

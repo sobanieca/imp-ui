@@ -25,13 +25,12 @@ mirrors the release mechanism of jsonr.
   change of the version does nothing, because the guard for an existing tag skips the release. So
   the pipeline is safe to run on every push.
 - **There are five targets.** They are `x86_64` and `aarch64` for `linux` and `macos`, and `x86_64`
-  for `windows`. The release job compiles each one with
-  `tools/compile.js --target <triple>
-  --output <file>`. So a release binary has exactly the
-  include set of the binary that the tests ran: the CLI, the library without its `public/` fonts,
-  the skills and the licence notices. It also gets the same preparation of the prebundled fmt
-  plugins and npm dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe` on Windows.
-  `{os}` is `linux`, `macos` or `windows`. `{arch}` is `x64` or `arm64`.
+  for `windows`. The release job compiles each one with a command of this form:
+  `tools/compile.js --target <triple> --output <file>`. So a release binary has exactly the include
+  set of the binary that the tests ran: the CLI, the library without its `public/` fonts, the skills
+  and the licence notices. It also gets the same preparation of the prebundled fmt plugins and npm
+  dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe` on Windows. `{os}` is `linux`,
+  `macos` or `windows`. `{arch}` is `x64` or `arm64`.
 - **Windows is tested in CI.** The test job runs `deno task test` on Ubuntu and on Windows. A
   release waits for both. So a change that breaks Windows cannot ship, although no maintainer runs
   Windows day to day.

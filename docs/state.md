@@ -514,9 +514,8 @@ div(session.view((user) => (user === undefined ? spinner() : user ? profile(user
   initialized that name. The order follows the mount: the `setup` of a parent runs before its
   children mount, so a child can always `useState` what its ancestors initialized.
 - **Initialize once per scope.** A call to `initState` with a name the same scope already provides
-  throws. Each scope initializes a name exactly once. Reach an existing state with
-  `useState(self,
-  name)` instead.
+  throws. Each scope initializes a name exactly once. Reach an existing state with a call to
+  `useState(self, name)` instead.
 - **The position decides, also after a move.** When you move a mounted component, imp resolves its
   `useState` bindings again, against the ancestors at its new position. A state the component
   initialized itself travels with it. See _Moving components_ in [Components](components.md).

@@ -4,9 +4,8 @@
 
 Every app needs an icon, and the three usual ways to get one all cost something that imp will not
 pay. An icon font is a download that blocks the render, and it uses a `content` trick that no screen
-reader reads. A sprite sheet on a CDN is a third-party request on every page load.
-`npm install
-lucide` puts a package manager in front of a user, and imp otherwise asks a user to
+reader reads. A sprite sheet on a CDN is a third-party request on every page load. A package install
+such as `npm install lucide` puts a package manager in front of a user. imp otherwise asks a user to
 install nothing.
 
 The first answer of imp was a set of about forty line glyphs, drawn by hand, and addressed by a
