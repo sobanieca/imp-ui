@@ -354,24 +354,40 @@ often?". A team that needs a stream of logs uses the SDK of its provider directl
 
 ## Your own context
 
-imp does not know who the person is, so no record has a user id or an organization id. Your app
-knows it. Add the context in the sink:
+imp does not know your plans, your regions or your people. To compare usage across them, add
+**segments** to the records: values that describe a group, such as `plan: 'pro'` or `country: 'PL'`.
+A segment is not an id, so it does not make a record personal data, and it needs no consent.
+
+Add the segments of the app in the sink. Hold the records until the app knows them:
 
 ```js
 const user = useState(self, 'myapp.user')
+const contextReady = computed([user], (value) => value !== undefined)
 const send = batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records)))
 
-onAnalytics(self, (record) => send({ ...record, orgId: user.get()?.orgId, plan: user.get()?.plan }))
+onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }), {
+  when: contextReady,
+})
 ```
 
-With a provider, use the calls of its SDK instead: `gtag('config', GA_ID, { user_id })`, or
-`posthog.identify(userId)` and `posthog.group('org', orgId)`.
+- `myapp.user` is `undefined` while it loads, and `null` when nobody is signed in. So a signed-out
+  page is ready at once, with `plan: null`.
+- The hold keeps the entry view. So the first screen gets the plan too.
+- Other good segments are the role, the language, the version of the app, and a size bucket such as
+  `'10-50 seats'`.
 
-- **A user id is personal data, also when you hash it.** In Europe, it usually needs consent. See
-  [Consent](#consent).
-- An organization id or a plan is usually not personal data, unless the organization is one person.
-- The sink reads the context when it gets the record. A record that `when` held gets the context of
-  the moment of the release.
+Add the country on the server, not in the browser. The endpoint that receives the records reads it
+from the request, for example from a header of your CDN such as `CF-IPCountry`, or from a lookup of
+the IP address. Then it writes the country into the records and discards the IP address. The time
+zone and the language of the browser do not tell you the country.
+
+Keep the segments coarse:
+
+- **Do not add a user id or an organization id.** A user id is personal data, also when you hash it.
+  An organization id can point at one person in a small organization. Both usually need consent in
+  Europe, see [Consent](#consent). The plan and the country give the trends without them.
+- **Hide a small group in the report.** "Enterprise plan in Iceland" can be one customer. Show a
+  number only when its group has 10 visits or more.
 
 ## Consent
 
@@ -563,7 +579,7 @@ Each of these failed the test "one number, one action":
 - **Props on an action, the full path, the query, and the component chain.** The report groups by
   page, zone name, action name and action value only.
 - **A user id and a session across tabs.** One visit per document load gives reach, bounce and "left
-  here". Your sink can add a user id, see [Your own context](#your-own-context).
+  here". Your sink can add segments such as the plan, see [Your own context](#your-own-context).
 - **Web Vitals.** `readyMs` measures what your app controls, from the navigation to a ready screen.
 - **A stack trace.** imp writes no source map, so a stack from production has no reader.
 - **A transport, a retry and sampling.** They are the job of the sink.

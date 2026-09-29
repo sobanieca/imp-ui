@@ -78,9 +78,11 @@ the first held view and the newest 199 records.
   `gtag('consent', 'default', { analytics_storage: 'denied' })`. Start PostHog with
   `persistence: 'memory'`. Update the SDK in `consent.watch(self, ...)`, and call it before
   `onAnalytics`, so the SDK gets the consent before the held records.
-- **imp sends no user id or organization id.** Add them in the sink:
-  `onAnalytics(self, (record) => send({ ...record, orgId: user.get()?.orgId }))`. A user id is
-  personal data, also when hashed, so it needs `when: consent` in Europe.
+- **Add segments, not ids.** In the sink:
+  `onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }), { when: contextReady })`,
+  where `contextReady` is `true` once the user state has loaded. Add the country on the server from
+  the request, and discard the IP address. Do not add a user id or an organization id. They usually
+  need consent in Europe.
 - **Gate the sink and the SDK on a flag**, so a build with the flag off has none of it. See
   [feature-flags](feature-flags.md).
 - **Do not add `onError`, a log sink, or a `data-track` attribute.** They do not exist. Forward the
