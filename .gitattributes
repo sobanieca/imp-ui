@@ -1,0 +1,3 @@
+* text=auto eol=lf
+lib/src/public/fonts/ibm-plex-ofl.txt -text
+examples/todo/public/fonts/ibm-plex-ofl.txt -text

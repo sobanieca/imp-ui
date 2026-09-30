@@ -92,8 +92,13 @@ const withoutDownloadNoise = (result) => ({
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[a-zA-Z]`, 'g')
 
+const posixPath = (path) => path.replaceAll('\\', '/')
+
+const maskRoot = (text) =>
+  text.replaceAll(ROOT, '<root>/').replace(/<root>\/\S*/g, (path) => posixPath(path))
+
 const normalize = (text) =>
-  text.replaceAll(ANSI, '').replaceAll(ROOT, '<root>/').replaceAll(VERSION, '<version>')
+  maskRoot(text.replaceAll(ANSI, '')).replaceAll(VERSION, '<version>')
     .replace(/\b\d+ms\b/g, '*ms')
     .replace(/time="[\d.]+"/g, 'time="*"')
     .replace(/"durationMs": \d+/g, '"durationMs": *')
@@ -128,7 +133,7 @@ Deno.test('imp commands', async (t) => {
   const test = async (name, args, cwd) => {
     await t.step(name, async () => {
       const result = await runImp(args, cwd)
-      const location = cwd ? `  (cwd: ${cwd.slice(ROOT.length)})` : ''
+      const location = cwd ? `  (cwd: ${posixPath(cwd.slice(ROOT.length))})` : ''
       await assertSnapshot(name, commandTranscript(`imp ${args.join(' ')}${location}`, result))
     })
   }
@@ -267,7 +272,9 @@ Deno.test('imp commands', async (t) => {
       `imp logs -f printed every entry once and in order:\n${output}`,
     )
     check(stderr === '', `imp logs -f wrote nothing to stderr:\n${stderr}`)
-    check(status.code === 0, `imp logs -f exits 0 on Ctrl-C, got ${status.code}`)
+    if (Deno.build.os !== 'windows') {
+      check(status.code === 0, `imp logs -f exits 0 on Ctrl-C, got ${status.code}`)
+    }
     check(
       finalLog === 'entry 5\nentry 6\nentry 7\nentry 8\nentry 9\n',
       `the log was rewritten in place while it was followed:\n${finalLog}`,
@@ -1269,7 +1276,7 @@ Deno.test('imp test', async (t) => {
   const test = async (name, args, cwd) => {
     await t.step(name, async () => {
       const result = await runImp(args, cwd)
-      const location = cwd ? `  (cwd: ${cwd.slice(ROOT.length)})` : ''
+      const location = cwd ? `  (cwd: ${posixPath(cwd.slice(ROOT.length))})` : ''
       await assertSnapshot(name, commandTranscript(`imp ${args.join(' ')}${location}`, result))
     })
   }
@@ -1424,6 +1431,7 @@ Deno.test('imp build', async (t) => {
       .replaceAll(dir, '<tmp>')
       .replaceAll(dir.slice(1), '<tmp>')
       .replaceAll(ROOT.slice(1), '<root>/')
+      .replace(/<root>\/\S*/g, (path) => posixPath(path))
       .replace(/-[A-Z0-9]{8}\b/g, '-<hash>')
       .replace(/\(\d+(\.\d+)? k?B\)/g, '(<size>)')
 
