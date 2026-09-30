@@ -6,7 +6,8 @@ are part of the binary.
 - **`*.test.js`** holds a unit test or an integration test. It runs in process, against a simulated
   browser environment.
 - **`*.spec.js`** holds an end-to-end test. imp serves the app as `imp start` does, launches
-  headless Chrome, and gives each spec a Puppeteer `page`.
+  headless Chrome, and gives each spec a Puppeteer `page`. The page reports no reduced-motion
+  preference on every machine.
 
 ```
 imp test <file>              run one file (exit 0/1)

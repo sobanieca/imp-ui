@@ -426,7 +426,8 @@ Every spec file gets a fresh, fully isolated instance of the app. imp does four 
 
 1. It serves your app, on an ephemeral port. That is the same `index.html` that `imp start` serves.
 2. It launches a headless browser.
-3. It opens a page on your app.
+3. It opens a page on your app. The page reports no reduced-motion preference, whatever the machine
+   is set to, so a test of an animation runs the same on every machine and on CI.
 4. It runs your tests in order, and passes `{ page, browser, baseUrl }` to each one.
 
 ```js

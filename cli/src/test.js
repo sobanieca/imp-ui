@@ -224,6 +224,7 @@ async function runSpecFile(
   try {
     browser = await launchBrowser(browserPath)
     page = await browser.newPage()
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }])
     await page.goto(baseUrl, { waitUntil: 'load' })
     if (videoDir) recording = await startScreencast(page, videoOptions)
 
