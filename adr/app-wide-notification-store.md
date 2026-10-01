@@ -43,8 +43,9 @@ functions that write to it. `toast` and `notifications` are two independent watc
   the list in the order of the time.
 - **An open list takes its entries out of the corner.** The drawer of the bell and the popups use
   the same edge of the screen. So when the drawer opens, every listed entry leaves the corner, read.
-  A listed entry that arrives while the drawer is open goes to the list only, unread. The page
-  behind a modal is inert, so a popup there would cover the list and take no click.
+  A listed entry that arrives while the drawer is open goes to the list only, read, because the
+  person sees it there. The page behind a modal is inert, so a popup there would cover the list and
+  take no click.
 - **An entry with `ttl: 0` is a plain toast.** The store holds it only while its popup is in the
   corner. The bell never lists it and never counts it.
 - **The store lives in memory, for the session.** A pending action is a promise at a call site, and

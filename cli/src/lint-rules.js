@@ -9,6 +9,7 @@ import {
 } from './specifiers.js'
 import { stateNameProblem } from '../../lib/src/state.js'
 import { httpClientNameProblem } from '../../lib/src/http.js'
+import { analyticsNameProblem } from '../../lib/src/analytics-bus.js'
 import { componentNameProblem } from '../../lib/src/component.js'
 import * as impModule from '../../lib/src/imp.js'
 import * as htmlModule from '../../lib/src/api/html.js'
@@ -248,6 +249,67 @@ const createLiteralNameRule = ({ source, helpers, nameProblem }) => ({
     }
   },
 })
+
+const ANALYTICS_HELPERS = new Set(['zone', 'track'])
+
+const ANALYTICS_SUBJECTS = new Map([['zone', 'zone'], ['track', 'outcome']])
+
+const ANALYTICS_EXAMPLES = new Map([
+  ['zone', 'myapp.invoice-summary'],
+  ['track', 'myapp.invoice-sent'],
+])
+
+const analyticsNameArgument = (helper, node) => {
+  const [first] = node.arguments
+  if (helper === 'track') return { known: true, argument: first }
+  if (first?.type !== 'ObjectExpression') return { known: false }
+  if (first.properties.some((property) => property.type === 'SpreadElement')) {
+    return { known: false }
+  }
+  const property = first.properties.find((entry) => propertyKeyName(entry) === 'name')
+  return { known: true, argument: property?.value }
+}
+
+export const analyticsNameProblemOf = (helper, name) =>
+  analyticsNameProblem(name, ANALYTICS_SUBJECTS.get(helper), ANALYTICS_EXAMPLES.get(helper))
+
+export const createAnalyticsNameVisitor = (onName) => {
+  const helperLocals = new Map()
+  const namespaceLocals = new Set()
+  const calls = []
+
+  const calledHelper = (callee) => {
+    if (callee.type === 'Identifier') return helperLocals.get(callee.name) ?? null
+    const name = namespaceCalleeName(callee, namespaceLocals)
+    return name !== null && ANALYTICS_HELPERS.has(name) ? name : null
+  }
+
+  return {
+    ImportDeclaration(node) {
+      collectImpImports(
+        node,
+        'imp/analytics',
+        (name) => ANALYTICS_HELPERS.has(name) ? name : null,
+        helperLocals,
+        namespaceLocals,
+      )
+    },
+    CallExpression(node) {
+      calls.push(node)
+    },
+    'Program:exit'() {
+      for (const node of calls) {
+        const helper = calledHelper(node.callee)
+        if (helper === null) continue
+        const found = analyticsNameArgument(helper, node)
+        if (!found.known) continue
+        const { known, name } = literalArgumentName(found.argument)
+        if (!known) continue
+        onName({ helper, name, node: found.argument ?? node })
+      }
+    },
+  }
+}
 
 const RESOLUTION_HELPERS = new Map([
   ['imp/state', new Set(['initState', 'useState'])],
@@ -653,6 +715,13 @@ export default {
       helpers: HTTP_CLIENT_HELPERS,
       nameProblem: httpClientNameProblem,
     }),
+    'analytics-name-namespace': {
+      create: (context) =>
+        createAnalyticsNameVisitor(({ helper, name, node }) => {
+          const problem = analyticsNameProblemOf(helper, name)
+          if (problem) context.report({ node, message: problem })
+        }),
+    },
     'watch-with-self': {
       create(context) {
         const handles = createHandleTracker()

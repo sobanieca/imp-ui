@@ -92,8 +92,8 @@ case, where a worker from the previous page load is already active, it does no w
 ## Consequences
 
 - A mock fixture lives beside the app, and not inside it, and it cannot ship. There is no gated
-  branch to remove, because there is no branch. No feature flag, see `adr/feature-flags.md`, is
-  needed to keep a mock out of a production build.
+  branch to remove, because there is no branch. No build flag, see `adr/build-flags.md`, is needed
+  to keep a mock out of a production build.
 - imp mocks everything, and not only the HTTP client of imp. That covers a third-party SDK, an image
   and an `XMLHttpRequest`. The cost is that the mock set is global to the served origin. Two clients
   that call two different APIs share one list, and the matcher separates them.

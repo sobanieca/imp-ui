@@ -47,12 +47,13 @@ reaches only the subtree of the form. So read it from a component inside the for
 
 `imp/std/inputs` exports two functions and one error class beside the components:
 
-| Export                      | Does                                                                                |
-| --------------------------- | ----------------------------------------------------------------------------------- |
-| `submitForm(source)`        | Validates every field, then runs `onSubmit` when every field passes                 |
-| `resetForm(source)`         | Puts the clean state back, and clears the errors, the touched state and the failure |
-| `resetForm(source, values)` | Makes `values` the clean state, then does the same                                  |
-| `new FormError(message)`    | An error from `onSubmit` whose message the form shows to the person                 |
+| Export                               | Does                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `submitForm(source)`                 | Validates every field, then runs `onSubmit` when every field passes                         |
+| `resetForm(source)`                  | Puts the clean state back, and clears the errors, the touched state and the failure         |
+| `resetForm(source, values)`          | Makes `values` the clean state, then does the same                                          |
+| `new FormError(message)`             | An error from `onSubmit` whose message the form shows to the person                         |
+| `new FormError(message, { fields })` | `fields` is `{ [path]: message }`; each message shows on its field, focus goes to the first |
 
 `source` is the click event, or any node inside the form. So a plain `button` is the submit button:
 `button({ events: { click: submitForm } }, 'Save')`. The function finds the form by position, at any
@@ -73,6 +74,14 @@ depth, so the button can sit inside a `flex`, a `card` or a component of yours.
 - **Only a `FormError` shows its own message.** The form writes the first line of its message into
   `imp.form.formError`. Any other error shows the translated `imp.form.submitFailed`, and
   `imp.form.formError` is `''`. imp logs the original error with its logger.
+- **A `FormError` with `fields` maps a server error to its fields.** `fields` is
+  `{ 'user.email': t('signup.emailTaken') }`. Each message goes into `imp.form.errors` under its
+  path, its field shows it, and the focus moves to the first such field. With an empty message,
+  `imp.form.formError` stays `null` and no notice shows. A change of the field clears its message.
+  The next submit forgets every server message, so a path with no control never blocks a submit.
+- **A field path can index an array.** `items.0.name` reads and writes the first row of `items`. imp
+  creates the array when it is missing. Render one control per row with `rows.each`, and put the
+  index of the row in its path.
 - **A successful submit makes the submitted values the clean state.** So `imp.form.dirty` is `false`
   after a save. An edit made while the save runs keeps the form dirty. A failed submit changes
   nothing.

@@ -44,16 +44,19 @@ import { shell } from 'imp/std/shell'
 import { luFolder, luShield } from 'imp/icons'
 import { app } from './app-map.js'
 
-const access = guard(['acme.session'], (session, { need }) => {
+const access = guard(['acme.session'], (session, { need, path }) => {
   if (session === undefined) return wait
-  if (!session) return '/login'
+  if (!session) return `/login?next=${encodeURIComponent(path)}`
   return session.roles.includes(need) || '/forbidden'
 })
 
 mount(
   '#app',
   shell(
-    { navbar: { map: app, icons: { [app.projects]: luFolder, [app.admin]: luShield } } },
+    {
+      navbar: { map: app, icons: { [app.projects]: luFolder, [app.admin]: luShield } },
+      signIn: app.login,
+    },
     router({
       map: app,
       access,
@@ -219,6 +222,9 @@ decides the nav: a row shows only on an allow verdict, and `wait` hides it until
 - **Every `access` on the chain runs, root first.** `settings` under `projects` needs both. A node
   with no `access` is open, so `/login` never loops. A map with `access` and no `router({ access })`
   throws at startup.
+- **Put the requested path in the login redirect.** Return `/login?next=<path>`, and navigate to
+  `next` with `{ replace: true }` after the sign-in. Pass the node as
+  `shell({ signIn: app.login })`, so the frame shows it without the chrome.
 - **imp has no pending state.** `initState(self, 'myapp.session')` with no initial value is
   `undefined`. Return `wait` for it explicitly. A guard that reads `undefined` without a check
   denies the route or throws, and it never waits.
@@ -269,14 +275,19 @@ A screen is a component. Its loading is `loading` and an async `setup`, its erro
 and then to the `error` of the router, and its cleanup is `onRemove`. Put the state of a screen in
 the root component of that screen. Put only app-wide state above the router.
 
-With an analytics sink registered, the router records each screen as a `view` record keyed by the
+With an analytics sink registered, the router records each screen as a `page` record keyed by the
 route pattern. Never send a page view from a `useRoute().watch`. See [analytics](analytics.md).
 
-imp manages the scroll. **The focus is yours to manage.** Focus a heading in `onMount`, or wrap the
-router slot once, for every screen: a `div` with `tabindex: '-1'`, `role: 'region'` and
-`:focus { outline: none }`. From `useRoute().watch(self, ...)`, one microtask later, set its
-`aria-label` to `document.title`, then focus it when the **path** changed. Never focus on a query
-change or on the first call. Pass `title` to `router` so that there is a title to read.
+imp manages the scroll: to the top on a forward navigation, back to the saved place on a back or a
+forward button. It scrolls the page and the screen region. `shell` names its content area as the
+region. A frame of your own calls `screenRegion(self, box, { effect })` from the component that
+renders the scrolling box. `effect` is `'none'`, `'fade'`, `'slide'` or `'zoom'`, and animates a
+change of screen with a view transition. **The focus is yours to manage.** Focus a heading in
+`onMount`, or wrap the router slot once, for every screen: a `div` with `tabindex: '-1'`,
+`role: 'region'` and `:focus { outline: none }`. From `useRoute().watch(self, ...)`, one microtask
+later, set its `aria-label` to `document.title`, then focus it when the **path** changed. Never
+focus on a query change or on the first call. Pass `title` to `router` so that there is a title to
+read.
 
 - A focused element with no name is read with all of its text. Always set the `aria-label`.
 - Focus in the microtask, not in the watch. An open dialog on the old screen makes the page inert

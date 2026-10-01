@@ -6,6 +6,7 @@ import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './
 import { collectFiles } from './walk.js'
 import { isJavaScriptType, readHtml } from './html-document.js'
 import { reportDeadCode } from './dead-code.js'
+import { reportDuplicateAnalyticsNames } from './analytics-names.js'
 
 const LINT_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
 
@@ -130,6 +131,7 @@ export async function lint({ root, paths, fix = false }) {
 
   errors += await reportOversizedFiles(root, imp)
   errors += await reportDeadCode({ root, config: imp, configName })
+  errors += await reportDuplicateAnalyticsNames({ root, config: imp })
 
   const reportMessages = (file, messages, lineOffset = 0) => {
     for (const message of messages) {

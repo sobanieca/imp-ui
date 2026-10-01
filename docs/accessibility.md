@@ -56,8 +56,8 @@ The components cannot know some facts about your app. These five are yours.
   around the router slot does it for every screen. See
   **[Routing](routing.md#accessibility-scroll-and-focus)**.
 - **Keep your theme readable.** The built-in themes reach the WCAG AA contrast for every text color.
-  A custom theme is where contrast breaks. See
-  **[Theming](theming.md#how-to-check-the-contrast-of-a-theme)**.
+  A custom theme is where contrast breaks, so the theme editor reports every pair below that bar.
+  See **[Theming](theming.md#how-the-theme-editor-checks-contrast)**.
 - **Build your own components to the same contract.** See
   **[Custom components](custom-components.md#make-it-accessible)**.
 
@@ -73,10 +73,9 @@ clear fix.
   the accessibility tree of the browser. It reports every control with no accessible name, and every
   focusable element with no role. It skips an element that a screen reader cannot reach, such as a
   hidden or an inert one. See **[Testing](testing.md#how-to-check-what-a-screen-reader-gets)**.
-- **The theme editor checks contrast.** It lists every text color of the theme that reads below
-  4.5:1 on its background, and every pair that it cannot check. `contrastProblems` from `imp/theme`
-  runs the same check in a unit test. See
-  **[Theming](theming.md#how-to-check-the-contrast-of-a-theme)**.
+- **The theme editor checks contrast.** It lists every text color of the draft that reads below
+  4.5:1 on its background, and every pair that it cannot check, beside the edit that caused it. See
+  **[Theming](theming.md#how-the-theme-editor-checks-contrast)**.
 
 imp does not bundle a full audit engine, such as axe-core, and it does not audit the markup of your
 app beyond these checks. A full audit reports many findings that need a person to judge them. The

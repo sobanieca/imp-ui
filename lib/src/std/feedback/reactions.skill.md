@@ -15,7 +15,7 @@ no content, it renders the bar alone.
 | ----------- | ----------------------------------------------------- | ----------------------------------------------- |
 | `items`     | array of `{ emoji, count, reacted }`, or a state      | The reactions. `reacted` marks the person's own |
 | `onReact`   | `(emoji, reacted) => void \| Promise`                 | Sends the change to the server                  |
-| `emojis`    | array of emoji strings or `{ emoji, name, keywords }` | The set that the panel offers                   |
+| `emojis`    | array of emoji strings or `{ emoji, name, keywords }` | The allowed set. Default: the built-in set      |
 | `disabled`  | boolean, or a state holding one - **live**            | Shows the counts and hides the add button       |
 | `ariaLabel` | string, or a state holding one                        | Names the bar. Default `imp.reactions.label`    |
 
@@ -36,8 +36,9 @@ Rules an agent gets wrong:
   1000 or more shows short, such as `1.2K`, in the language of the page.
 - **The content moves into a shadow root.** Your `styles` do not reach it. Pass a standard component
   such as `card`, or a component of your own.
-- **`emojis` replaces the built-in set of the panel.** See `imp skill std/emojiPicker` for the set,
-  the search and the keys.
+- **`emojis` is the allowed set.** The panel offers only these. A chip with an emoji outside the set
+  shows its count, and nobody can add to it. The person can still take their own reaction back. See
+  `imp skill std/emojiPicker` for the built-in set, the search and the keys.
 - **Write an emoji in source as an escape**, `'\u{1F44D}'`, not as the glyph.
 
 ```js

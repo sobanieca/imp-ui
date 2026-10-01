@@ -185,6 +185,21 @@ const installAnimationsApi = (window) => {
   }
 }
 
+const installViewTransitions = (window) => {
+  const prototype = Object.getPrototypeOf(window.document)
+  if (prototype.startViewTransition) return
+  prototype.startViewTransition = function startViewTransition(update) {
+    const updateCallbackDone = Promise.resolve().then(() => update?.())
+    const settled = updateCallbackDone.then(() => undefined)
+    return {
+      updateCallbackDone,
+      ready: settled,
+      finished: settled,
+      skipTransition: () => {},
+    }
+  }
+}
+
 const MODAL_STATE = Symbol('imp.test.modalState')
 
 const deepActiveElement = (document) => {
@@ -255,6 +270,7 @@ export function installDomEnvironment() {
   installPopoverApi(window)
   installMoveBefore(window)
   installAnimationsApi(window)
+  installViewTransitions(window)
   installTopLayer(window)
   const replaced = new Map()
 

@@ -1,0 +1,2 @@
+--- imp start --mock --no-reload ---
+mock endpoint /@imp/mock | GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay

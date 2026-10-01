@@ -12,7 +12,7 @@ imp is not released yet. Until version `1.0.0`, any part of it can change.
 curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
 ```
 
-The script supports Linux and macOS. On Windows x64, run this command in PowerShell:
+The script supports Linux and macOS. On Windows, run this command in PowerShell:
 
 ```
 irm https://sobanieca.github.io/imp-ui/install.ps1 | iex
@@ -36,7 +36,7 @@ downloads a pinned Chrome into `~/.imp/browser/`, when the machine has no Chrome
 
 | Task                | What it does                                                             |
 | ------------------- | ------------------------------------------------------------------------ |
-| `deno task example` | serves the todo example from `examples/todo` on <http://localhost:4507/> |
+| `deno task example` | serves the todo example from `examples` on <http://localhost:4507/>      |
 | `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/> |
 | `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm` |
 | `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests   |
@@ -56,7 +56,7 @@ than the source.
 | `skills/`   | the pages that `imp skill` prints for an AI agent               |
 | `adr/`      | the accepted architectural decisions, see `adr/README.md`       |
 | `todo/`     | the planned work, one item per file                             |
-| `examples/` | example apps                                                    |
+| `examples/` | the todo example app                                            |
 | `site/`     | the home page                                                   |
 | `tools/`    | maintainer scripts: compile, site build, vendoring, size checks |
 | `perf/`     | the performance apps and scenarios                              |

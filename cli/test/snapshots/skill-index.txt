@@ -29,8 +29,8 @@ WRITING AN APP
   theming              themes as plain token modules, applied at the entry point and swappable
   i18n                 t() lookups, per-language messages, and the lang attribute that drives them
   logging              the built-in logger and the per-environment log level
-  analytics            page views, zones and outcomes as plain records, sent to a sink of the app
-  feature-flags        flag() gates a feature per environment and imp build folds the branch away
+  analytics            page views, zones, outcomes and errors as counted records, sent to a sink of the app
+  build-flags          flag() reads a boolean fixed per environment and imp build folds the branch away
 
 WORKING IN AN IMP PROJECT
   cli                  every command, and which skill covers it

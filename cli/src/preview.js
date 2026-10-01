@@ -27,6 +27,7 @@ import {
   createRequestHandler,
   injectImp,
   loadApp,
+  reloadBannerLine,
   watchForChanges,
 } from './start.js'
 import { PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
@@ -776,6 +777,7 @@ export async function preview(
     list = false,
     json = false,
     mocks = null,
+    reload = true,
     output = null,
   } = {},
 ) {
@@ -831,6 +833,10 @@ export async function preview(
     cache.build = null
     previews = await discover().catch(() => previews)
     catalog = await buildPreviewCatalog(root, previews, groups)
+    if (!reload) {
+      logger.debug('change detected -> no reload')
+      return
+    }
     logger.debug('change detected -> reload')
     broadcast('reload')
   })
@@ -858,7 +864,7 @@ export async function preview(
         }
         if (groups !== null) console.log(dim(`  groups -> ${groups.source}`))
         if (entry !== null) console.log(dim(`  entry -> ${entry.source}`))
-        console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
+        console.log(reloadBannerLine(reload))
       },
     },
     createPreviewHandler({

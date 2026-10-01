@@ -31,12 +31,12 @@ export default {
   tokens over it. Without a `base`, a theme must give a value to every token, see
   [Token names](#token-names).
 - **`name`** labels the theme. It helps in a theme switcher UI, and when you store a choice.
-- **imp reads light or dark from `color-surface`.** imp checks the lightness of that token. A dark
-  surface makes a dark theme. imp then sets the `color-scheme` of the page to match. A native form
-  control, a scrollbar, and CSS that reads `prefers-color-scheme` follow your palette. You declare
-  no mode. The value must be an opaque CSS color, such as `#1f2028` or `oklch(0.25 0.01 270)`. When
-  the token is missing, or imp cannot read it, imp warns and leaves the color scheme unset. imp
-  warns one time for each theme.
+- **The `color-scheme` token is `light` or `dark`.** imp sets the `color-scheme` of the page to that
+  value. A native form control, a scrollbar, and CSS that reads `prefers-color-scheme` then follow
+  your palette. A theme with a `base` takes the value from the built-in theme. A theme that sets a
+  dark surface over `imp-light` must set `color-scheme` to `dark` as well. When the token is
+  missing, or has another value, imp warns and leaves the color scheme unset. imp warns one time for
+  each theme.
 
 An app can ship as many theme files as it wants. There is no registry to register them in. A theme
 is a module that you import.
@@ -60,7 +60,7 @@ applyTheme(dark)
 
 `applyTheme` writes the tokens of the theme as `--imp-*` custom properties on the document root.
 From there they inherit into everything: your components, their shadow DOM, and any content that imp
-adds to the page. It also sets the color scheme from the lightness of `color-surface`.
+adds to the page. It also sets the `color-scheme` of the page from the token of that name.
 
 **A change of theme re-skins the app immediately.** A token is a CSS custom property. A new theme
 rewrites the variables in one pass. Every rule that references a token re-skins at the same time.
@@ -88,11 +88,9 @@ the theme changes. Most of your app never needs this, because the re-skin happen
 variables. Use it only for the rare component that must branch on the active theme, and to build a
 theme switcher.
 
-To branch on light against dark, call `colorSchemeOf(tokens)` from `imp/theme`. It returns `'light'`
-or `'dark'` from the lightness of `color-surface`, the same way `applyTheme` does. So
-`colorSchemeOf(theme.get().tokens)` is the scheme of the active theme. It returns `undefined` when
-the token is missing, translucent, or not a color that imp can read, such as a gradient or
-`color-mix()`.
+To branch on light against dark, call `colorSchemeOf(tokens)` from `imp/theme`. It returns the
+`color-scheme` token, `'light'` or `'dark'`. So `colorSchemeOf(theme.get().tokens)` is the scheme of
+the active theme. It returns `undefined` when the token is missing or has another value.
 
 ## Built-in starter themes
 
@@ -151,6 +149,12 @@ is code and other monospaced text. `font-family-heading` is the text of `heading
 `appLogo`. The built-in themes set the first two to a system font stack, and they point
 `font-family-heading` at `font-family`. An app ships no font file, and the text renders in the font
 of the platform. Set `font-family-heading` only when the headings need a display font of their own.
+
+The colour of a heading is its own token, `color-heading`. It colours the text of `heading`, the
+name in `appLogo` and every heading that `markdown` renders. The built-in themes point it at
+`color-text`, so a theme that does not set it has one text colour. Set it when the headings need a
+colour of their own, such as a brand ink on a neutral body. The contrast report of the theme editor
+reads it against the surfaces, the same way as `color-text`.
 
 To use a web font, do two things. Load the font in `index.html`, and name it in the theme. imp does
 not load a font for you. A `<link>` in the page is what the browser needs. The font then reaches
@@ -263,14 +267,15 @@ behind the imp mark in the corner of your app. Press the mark, then **Theme edit
 same editor. The first shows the standard components under your theme. The second shows your own
 screens. It edits the theme that is applied: in `imp preview` that is the theme in the sidebar, and
 in your app it is the theme that `init` applied. To write a dark theme, select a dark theme first.
-In `imp preview` the editor has two tabs. **Knobs** asks for eight things. **Tokens** holds the
-whole theme as JSON. In your app the widget shows **Tokens** alone, because that is where you tune
-one token against your real screens:
+In `imp preview` the editor has two tabs. **Knobs** asks for nine things. **Tokens** holds the whole
+theme as JSON. In your app the widget shows **Tokens** alone, because that is where you tune one
+token against your real screens:
 
 | Knob              | Choices                    | What it drives                                             |
 | ----------------- | -------------------------- | ---------------------------------------------------------- |
 | **Primary**       | any color, with a picker   | The accent: buttons, links, focus rings                    |
 | **Secondary**     | any color, with a picker   | The muted tone, and the hue of every surface, border, text |
+| **Heading color** | any color, with a picker   | `color-heading`, the text of every heading                 |
 | **Font**          | a suggestion, or any stack | `font-family`, the text of every component                 |
 | **Mono font**     | a suggestion, or any stack | `font-family-mono`, code and monospaced text               |
 | **Border radius** | none, small, medium, large | `radius-item` and `radius-container`, as one step          |
@@ -304,8 +309,8 @@ every pair of a text token and a background token that is below 4.5:1, the WCAG 
 text. A pair reads as `color-primary on color-surface: 1.4:1`. A knob always derives readable
 colors, so a problem comes from a hand edit in the JSON, such as an exact brand color. When every
 pair passes, the editor says so. See
-**[How to check the contrast of a theme](#how-to-check-the-contrast-of-a-theme)** for the list of
-pairs, and for the same check in a test.
+**[How the theme editor checks contrast](#how-the-theme-editor-checks-contrast)** for the list of
+pairs.
 
 **Tokens** is the second tab. It holds the whole theme as JSON, in a code editor that grows with the
 text. Every token that the knobs drive is there, and so is every token that they do not, such as
@@ -331,57 +336,36 @@ passes the second one to `applyTheme`. From that point the generated file is you
 A web font that you name in the editor shows on the page only when it is loaded there. See
 **[Fonts](#fonts)**. The file is a starting point, not a format that the editor owns.
 
-## How to check the contrast of a theme
+## How the theme editor checks contrast
 
-A custom theme is where contrast breaks. `contrastProblems(tokens)` from `imp/theme` runs the same
-check as the theme editor. It returns one entry for each pair that is below 4.5:1, and one entry for
-each pair that it cannot check. It returns an empty array when every pair passes:
-
-```js
-import { applyTheme, contrastProblems } from 'imp/theme'
-import { expect, test } from 'imp/test'
-import brand from '../src/theme.js'
-
-test('the brand theme keeps every text readable', () => {
-  expect(contrastProblems(applyTheme(brand).tokens)).toEqual([])
-})
-```
-
-An entry has the shape
-`{ text: 'color-secondary', background: 'color-surface-sunken', ratio: 4.35 }`. The check reads
-these pairs, because the standard components draw text in these combinations:
+A custom theme is where contrast breaks. So the theme editor lists every text and background pair of
+the draft that reads below 4.5:1, the WCAG AA level, under its tabs. The report changes with each
+edit. It blocks no edit and no export, because a brand can accept a pair on purpose, for example for
+large text only. The editor checks these pairs, because the standard components draw text in these
+combinations:
 
 | Text               | Background                                                                       |
 | ------------------ | -------------------------------------------------------------------------------- |
 | `color-text`       | `color-surface`, `color-surface-sunken`, `color-surface-hover`, `background-app` |
+| `color-heading`    | `color-surface`, `color-surface-sunken`, `background-app`                        |
 | `color-secondary`  | `color-surface`, `color-surface-sunken`, `background-app`                        |
 | `color-primary`    | `color-surface`, `color-surface-sunken`, for a link                              |
 | `color-danger`     | `color-surface`, for an error message                                            |
 | `color-on-primary` | `color-primary`, for the label of a primary button                               |
 | `color-on-danger`  | `color-danger`, for the label of a danger button                                 |
 
-The check reads every CSS color syntax: a hex color, a color name, `rgb()`, `hsl()`, `hwb()`,
+The editor reads every CSS color syntax: a hex color, a color name, `rgb()`, `hsl()`, `hwb()`,
 `lab()`, `lch()`, `oklab()`, `oklch()` and `color()`. It converts the color to sRGB, as the screen
-shows it. A color outside sRGB is clipped to the nearest sRGB value. The check follows a
-`var(--imp-...)` reference to another token. Translucent text is measured over its background.
+shows it. A color outside sRGB is clipped to the nearest sRGB value. It follows a `var(--imp-...)`
+reference to another token. Translucent text is measured over its background.
 
-**A pair that the check cannot read does not pass.** A gradient, `color-mix()`, `currentColor`, a
-`var()` that is not a token of the theme, and a translucent background all give an entry with
-`ratio: null` and a `reason`:
+**A pair that the editor cannot read does not pass.** A gradient, `color-mix()`, `currentColor`, a
+`var()` that is not a token of the theme, and a translucent background all show in the report, with
+the reason. Check such a pair by eye. The report does not measure the text of your own components,
+or a color that a component mixes at runtime.
 
-```js
-{
-  text: 'color-text',
-  background: 'background-app',
-  ratio: null,
-  reason: "cannot check contrast - background-app is 'linear-gradient(#fff, #eee)', not a colour",
-}
-```
-
-Check such a pair by eye, then leave it out of the test with a filter on `background`. Pass the
-tokens of the resolved theme. `applyTheme` returns that theme, with a `base` already filled in. The
-check does not measure the text of your own components, or a color that a component mixes at
-runtime.
+The check lives in the editor only. An app ships no color parser, so a theme file costs an app
+nothing beyond its tokens.
 
 ## Token names
 
@@ -405,10 +389,11 @@ theme of your own must define all of them:
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Typography | `font-family`, `font-family-mono`, `font-family-heading`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                           |
 | Color      | `color-primary`, `color-on-primary`, `color-secondary`, `color-danger`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                |
-| Surface    | `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                    |
+| Surface    | `color-text`, `color-heading`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                   |
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
+| Scheme     | `color-scheme`                                                                                                                                                                                                                                           |
 
 **imp tells you when a theme is not complete.** When an applied theme has no value for one of these
 tokens, `applyTheme` logs a warning that names the missing tokens. imp warns about each missing

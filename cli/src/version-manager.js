@@ -16,6 +16,7 @@ const PLATFORM_SLUGS = {
   'linux-x86_64': 'linux-x64',
   'linux-aarch64': 'linux-arm64',
   'windows-x86_64': 'windows-x64',
+  'windows-aarch64': 'windows-arm64',
 }
 
 const EXECUTABLE = Deno.build.os === 'windows' ? 'imp.exe' : 'imp'
@@ -24,7 +25,7 @@ function platformSlug() {
   const slug = PLATFORM_SLUGS[`${Deno.build.os}-${Deno.build.arch}`]
   if (!slug) {
     throw new Error(
-      `imp does not ship a binary for ${Deno.build.os}/${Deno.build.arch} - supported platforms are macOS and Linux on x64 or arm64, and Windows on x64`,
+      `imp does not ship a binary for ${Deno.build.os}/${Deno.build.arch} - supported platforms are macOS, Linux and Windows on x64 or arm64`,
     )
   }
   return slug

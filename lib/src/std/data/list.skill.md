@@ -23,6 +23,7 @@ The call shape is `list(props)`. It takes **no children**. imp warns about a chi
 | ------------ | ------------------------------------------------- | ------- | --------------------------------------------- |
 | `label`      | string, or a state - **live**                     | -       | Necessary. The accessible name of the list    |
 | `items`      | array of items, or a state holding one - **live** | `[]`    | Plain data - see below                        |
+| `leading`    | `(item) => content`                               | -       | The leading control of each row - see below   |
 | `actions`    | `(item) => content`                               | -       | The trailing controls of each row             |
 | `hasMore`    | boolean, or a state - **live**                    | -       | More items exist. Necessary with `onLoadMore` |
 | `onLoadMore` | `async () => void`                                | -       | Loads the next items. Append them to `items`  |
@@ -48,11 +49,16 @@ Rules an agent gets wrong:
   Build the controls of a row in the `actions` function of the list.
 - **The title is the only control of a row.** With `href` it is a real link. Without `href` it is a
   real `<button>` when you pass `events.select`, and plain text when you do not. The row itself is
-  never a click target, so the `actions` stay separate controls.
+  never a click target, so `leading` and `actions` stay separate controls.
+- **`leading` replaces the visual.** With `leading`, a row shows its result in place of the avatar
+  and the icon, and ignores `picture`, `name` and `icon`. Use it for a control at the start of a
+  row, such as a toggle button or a `checkbox`. Give it a name, as you give one to an action.
 - **`select` fires on the host with `detail: { id, item }`**, before imp follows an `href`. It is
   cancelable. Call `event.preventDefault()` to stop the navigation.
 - **The decorative visual has no name.** The avatar and the icon are hidden from a screen reader.
   Put the meaning in `title`.
+- **A long list costs what is on screen.** Each row has `content-visibility: auto`, so the browser
+  skips the layout and the paint of the rows outside the viewport. There is no virtualizer.
 - **There is no pagination.** Paging is infinite scroll. Pass `hasMore` and `onLoadMore`, and append
   to the `items` state: `items.set((loaded) => [...loaded, ...page])`. imp redraws only the rows
   whose object changed.

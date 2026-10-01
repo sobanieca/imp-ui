@@ -11,7 +11,7 @@ share a class name. The runtime knows the truth: which component created a node,
 ended up, and whether a rule of the creator matches it.
 
 Such a check costs work on every render, and a production bundle must not carry it. imp already
-folds a feature flag out of the build, see `feature-flags.md`. So there is a precedent for code that
+folds a build flag out of the build, see `build-flags.md`. So there is a precedent for code that
 exists in development only.
 
 ## Decision

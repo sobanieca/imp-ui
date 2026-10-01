@@ -1,0 +1,24 @@
+$ imp lint src/main.js  (cwd: test/fixtures/lint-analytics)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/unique-analytics-name]: zone name 'myapp.summary' is also used in src/invoice.js:6:13 - give each zone its own name, so that the report can tell them apart
+ --> src/invoice.js:8:18
+
+error[imp/unique-analytics-name]: zone name 'myapp.summary' is also used in src/invoice.js:6:13 - give each zone its own name, so that the report can tell them apart
+ --> src/main.js:10:36
+
+error[imp/unique-analytics-name]: outcome name 'myapp.invoice-sent' is also used in src/invoice.js:7:40 - give each outcome its own name, so that the report can tell them apart
+ --> src/main.js:14:9
+
+error[imp/analytics-name-namespace]: zone name 'home' must include a namespace - use dot-separated segments like 'myapp.invoice-summary'
+ --> src/main.js:8:33
+
+error[imp/analytics-name-namespace]: outcome name 'invoiceSent' must include a namespace - use dot-separated segments like 'myapp.invoice-sent'
+ --> src/main.js:13:9
+
+Found 5 problems
+Checked 1 file

@@ -215,13 +215,13 @@ imp skill ./components/counter.js`,
     key: 'analytics',
     eyebrow: 'Analytics',
     title: 'See which parts of the UI work',
-    lead: 'imp records the pages, the zones and the outcomes of your app, and gives each record ' +
+    lead: 'imp counts the pages, the zones and the outcomes of your app, and gives each record ' +
       'to a sink that you register.',
     points: [
-      'Every view of a page is recorded, with no code per route.',
-      'A zone measures any part of a screen, with no code in the component.',
+      'Every page view is recorded, with no code per route.',
+      'A zone counts how often any part of a screen is seen and used, with no code in the component.',
       'The records go to any store: Google Analytics, PostHog or your own endpoint.',
-      'imp stores no id on the device.',
+      'A record carries no personal data, and imp stores no id on the device.',
     ],
     code: {
       language: 'js',
@@ -229,9 +229,9 @@ imp skill ./components/counter.js`,
 
 onAnalytics((record) => console.log(record))
 
-zone({ name: 'due-date' }, dueDatePicker())
+zone({ name: 'myapp.due-date' }, dueDatePicker())
 
-track('invoice-sent')`,
+track('myapp.invoice-sent')`,
     },
   },
   {

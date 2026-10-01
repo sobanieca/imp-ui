@@ -14,7 +14,7 @@ Each case has the same cause. imp, or the app, replaced or disabled the element 
   disables itself when its work is done, loses the focus at that moment.
 - **A keyed `each` renders a changed item again.** The new DOM of the item replaces the old DOM, and
   the focused element inside it goes with it.
-- **The sign-in gate of `shell` replaces the whole app.** The focused element is removed.
+- **The sign-in layout of `shell` replaces the chrome.** The focused element is removed.
 
 ## Decision
 
@@ -25,13 +25,16 @@ Each case has the same cause. imp, or the app, replaced or disabled the element 
   `disabled`. A button that turns disabled while it has no focus takes the native `disabled` at
   once.
 - **A keyed `each` restores the focus into an item that it renders again.** Before the update, it
-  records the path from the item root to the focused element. After the update, it focuses the
-  element at the same path in the new DOM. When the item goes away, it uses the item that now holds
-  the same position, or the last item. The host of a component delegates the focus, so the path can
-  end at a component. See `focus-delegation.md`.
-- **`shell` moves the focus when the session changes.** On a sign-out, the focus goes to the gate.
-  On a sign-in, it goes to the main region. The first value of `signedIn`, and the end of the
-  loading state, move nothing, so the skip link stays the first stop after a page load.
+  finds the item of the focused element by a walk up from that element, through a map from each top
+  node to its item, so the cost does not grow with the number of items. It records the path from the
+  item root to the focused element. After the update, it focuses the element at the same path in the
+  new DOM. When the item goes away, it uses the item that now holds the same position, or the last
+  item. The host of a component delegates the focus, so the path can end at a component. See
+  `focus-delegation.md`.
+- **`shell` moves the focus when its layout changes.** When the chrome goes away, the focus goes to
+  the centred region. When the chrome comes back, it goes to the main region. The first layout, and
+  the end of a `wait` verdict, move nothing, so the skip link stays the first stop after a page
+  load.
 
 ## Consequences
 
@@ -41,11 +44,14 @@ Each case has the same cause. imp, or the app, replaced or disabled the element 
   takes over as soon as the focus leaves.
 - A busy button stays in the Tab order while it has the focus. A screen reader announces it as
   unavailable and busy.
-- A focus restore in `each` finds the element by its place, not by identity. At each level of the
-  path, it matches the tag and the class, and then the count among such siblings. So an optional
-  element in one item, such as a description, does not shift the match in the next item. When a
-  change moves the focused control to another place inside the item, the focus goes to the element
-  that now has that place.
+- A focus restore in `each` finds the element by its place, not by identity. Each step of the path
+  holds the position among the children, the tag and the class. A step first takes the child at the
+  same position when its tag and class match. So a class that toggles on the focused control, such
+  as a done marker, does not break the match, because the position still fits. When the position
+  does not fit, it takes the first sibling with the same tag and class. So an optional element in
+  one item, such as a description or a tag, does not shift the match in the next item. When neither
+  fits, it takes the child at the same position when at least the tag matches, and it stops at the
+  last element it found otherwise.
 - An app that moves the focus on a route change must do it after the router has put the new screen
   in place. An open dialog on the old screen makes the page inert until then. The routing docs show
   the frame that does this in a microtask.

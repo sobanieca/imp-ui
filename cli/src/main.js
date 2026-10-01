@@ -16,6 +16,7 @@ USAGE
                      [--mock]           answer requests from the *.mock.js files in
                      [--no-mock]        the "mocks" folder instead of the network
                                         (--no-mock forces a run against the real API)
+                     [--no-reload]      keep the page as it is when a file changes
   imp build [file.html] [--output dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -28,7 +29,8 @@ USAGE
                      [--env <name>]     file renders its named exports as labeled, drag-resizable
                      [--list] [--json]  stages with a live state editor (no path: every preview,
                      [--mock]           listed on an index page | --list prints what was found |
-                     [--no-mock]        --mock serves the "mocks" folder to previewed components)
+                     [--no-mock]        --mock serves the "mocks" folder to previewed components |
+                     [--no-reload]      --no-reload keeps the page as it is when a file changes)
                      [--output <dir>]   --output writes the same page as static files, with one
                                         bundle per group and a script that defines <imp-preview>,
                                         the element that embeds the catalog in any web page
@@ -99,6 +101,7 @@ function portFlag(args) {
 }
 
 const MOCK_FLAGS = ['--mock', '--no-mock']
+const RELOAD_FLAG = '--no-reload'
 
 function mockFlag(args) {
   let chosen = null
@@ -153,17 +156,20 @@ try {
       const { start } = await import('./start.js')
       notifyUpdate(rest)
       await start({
-        entry: positional(rest.filter((arg) => !MOCK_FLAGS.includes(arg)))[0] ?? 'index.html',
+        entry: positional(rest.filter((arg) => !MOCK_FLAGS.includes(arg) && arg !== RELOAD_FLAG))[
+          0
+        ] ?? 'index.html',
         port: portFlag(rest),
         env: flag(rest, 'env', null),
         mocks: mockFlag(rest),
+        reload: !rest.includes(RELOAD_FLAG),
       })
       break
     }
     case 'preview': {
       const { preview } = await import('./preview.js')
       notifyUpdate(rest)
-      const booleanFlags = ['--list', '--json', ...MOCK_FLAGS]
+      const booleanFlags = ['--list', '--json', RELOAD_FLAG, ...MOCK_FLAGS]
       const args = rest.filter((arg) => !booleanFlags.includes(arg))
       await preview({
         root: await projectRoot(Deno.cwd()),
@@ -173,6 +179,7 @@ try {
         list: rest.includes('--list'),
         json: rest.includes('--json'),
         mocks: mockFlag(rest),
+        reload: !rest.includes(RELOAD_FLAG),
         output: flag(rest, 'output', null),
       })
       break

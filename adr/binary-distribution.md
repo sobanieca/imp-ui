@@ -27,22 +27,22 @@ mirrors the release mechanism of jsonr.
   every push.
 - **Each binary is built and run on its own platform.** A cross-compiled binary that no job runs can
   ship broken. So each target has a build job on a GitHub runner of the same OS and architecture:
-  `ubuntu-latest`, `ubuntu-24.04-arm`, `macos-15-intel`, `macos-latest` and `windows-latest`. The
-  job compiles the binary, then runs it as a smoke test. The binary must print the release version
-  with `--version`. Then `init`, `build` and `test --unit` must pass in a temporary folder. The job
-  uploads the binary and its checksum as a workflow artifact. The release job downloads the five
-  artifacts, verifies each checksum, and publishes them.
+  `ubuntu-latest`, `ubuntu-24.04-arm`, `macos-15-intel`, `macos-latest`, `windows-latest` and
+  `windows-11-arm`. The job compiles the binary, then runs it as a smoke test. The binary must print
+  the release version with `--version`. Then `init`, `build` and `test --unit` must pass in a
+  temporary folder. The job uploads the binary and its checksum as a workflow artifact. The release
+  job downloads the six artifacts, verifies each checksum, and publishes them.
 - **Only one release job runs at a time.** The release job is in the concurrency group `release`,
   and it never cancels a release in progress. It checks for the tag again before it publishes. So
   two pushes of the same version cannot publish twice. GitHub keeps one waiting job per group, so a
   newer waiting release job replaces an older one that waits.
-- **There are five targets.** They are `x86_64` and `aarch64` for `linux` and `macos`, and `x86_64`
-  for `windows`. Each build job compiles its target with a command of this form:
-  `tools/compile.js --target <triple> --output <file>`. So a release binary has exactly the include
-  set of the binary that the tests ran: the CLI, the library without its `public/` fonts, the skills
-  and the licence notices. It also gets the same preparation of the prebundled fmt plugins and npm
-  dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe` on Windows. `{os}` is `linux`,
-  `macos` or `windows`. `{arch}` is `x64` or `arm64`.
+- **There are six targets.** They are `x86_64` and `aarch64` for `linux`, `macos` and `windows`.
+  There is no `musl` target, because `deno compile` has none. Each build job compiles its target
+  with a command of this form: `tools/compile.js --target <triple> --output <file>`. So a release
+  binary has exactly the include set of the binary that the tests ran: the CLI, the library without
+  its `public/` fonts, the skills and the licence notices. It also gets the same preparation of the
+  prebundled fmt plugins and npm dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe`
+  on Windows. `{os}` is `linux`, `macos` or `windows`. `{arch}` is `x64` or `arm64`.
 - **Windows is tested in CI.** The test job runs `deno task test` on Ubuntu and on Windows. A
   release waits for both. So a change that breaks Windows cannot ship, although no maintainer runs
   Windows day to day.
@@ -72,11 +72,13 @@ mirrors the release mechanism of jsonr.
 - A release is fully automated from one change to the version in `deno.json`. Nobody can forget to
   tag, or to build a platform. A push with no change of the version does not release again by
   mistake.
-- Windows on arm64 has no binary. The CLI fails immediately, with a clear message, on a platform
-  that has no binary. The e2e tests on Windows use the pinned Chrome build for `win64`.
+- Linux with musl, such as Alpine, has no binary. The CLI fails immediately, with a clear message,
+  on a platform that has no binary. The e2e tests on Windows use the pinned Chrome build for
+  `win64`, on both architectures.
 - The CI of every push takes longer, because the tests run twice.
-- A release needs five runners, two of them macOS. When GitHub retires a runner image, the build job
-  for that target fails, and no release ships until the workflow names a current image.
+- A release needs six runners, two of them macOS and two of them Windows. When GitHub retires a
+  runner image, the build job for that target fails, and no release ships until the workflow names a
+  current image.
 - imp checks the integrity of a downloaded binary against its published SHA-256. So imp rejects an
   asset that is corrupt or changed, instead of running it. The trade is that imp cannot fetch a
   release that has no `.sha256` asset on demand. The workflow guarantees that this never happens.

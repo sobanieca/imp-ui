@@ -58,7 +58,7 @@ const PAGE_ORDER = [
   'http',
   'logging',
   'analytics',
-  'feature-flags',
+  'build-flags',
   'testing',
   'lint',
   'fmt',

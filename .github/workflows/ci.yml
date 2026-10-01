@@ -109,6 +109,9 @@ jobs:
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
             asset: imp-windows-x64.exe
+          - runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            asset: imp-windows-arm64.exe
     runs-on: ${{ matrix.runner }}
     defaults:
       run:
@@ -189,7 +192,7 @@ jobs:
         if: steps.tag.outputs.exists == 'false'
         working-directory: release
         run: |
-          test "$(ls *.sha256 | wc -l)" -eq 5
+          test "$(ls *.sha256 | wc -l)" -eq 6
           sha256sum --check --strict *.sha256
 
       - name: Create release
@@ -212,3 +215,5 @@ jobs:
             release/imp-macos-arm64.sha256
             release/imp-windows-x64.exe
             release/imp-windows-x64.exe.sha256
+            release/imp-windows-arm64.exe
+            release/imp-windows-arm64.exe.sha256

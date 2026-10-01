@@ -120,18 +120,21 @@ approves.**
   is a strip of icons, or it is not a rail. **imp deliberately does not build a drag to resize.** A
   width is a custom property. A splitter that a pointer drives is a component of its own, if
   somebody ever wants one.
-- **The frame knows one thing about the session: whether there is one.** `signedIn` is a flag or a
-  state, and `signIn` is the content of the app for a visitor with no session, as DOM or as a
-  function that builds it once. While `signedIn` is `undefined`, the frame shows a `loader` on the
-  ground of the app, because the app does not know yet. While it is `null` or `false`, the frame
-  shows the `signIn` content and the `logo` in the middle of the screen, and nothing else: no bar,
-  no column, no drawer, no `extras`, and the main content is not mounted. So no router runs and no
-  screen loads for a visitor who has not signed in. When it becomes truthy, the frame mounts the
-  app. The frame knows nothing else. It holds no account prop, it renders no form, and it talks to
-  no identity provider. The sign-in page is the app's, because it differs with every app: a password
-  form, social buttons, a magic link, a passkey. `userCard` in `extras` displays the person, and the
-  sign-out action is a button or a `menuButton` of the app beside it. Whether a signed-in person
-  sees a section is still the `access` of the map, see `route-guards.md`.
+- **The frame knows nothing about the session. Its layout follows the route.** The sign-in page is a
+  node of the map, and the `access` guard redirects a visitor with no session to it, see
+  `route-guards.md`. `signIn` names that node. On it and on its children, the frame shows the main
+  content and the `logo` in the middle of the screen, and nothing else: no bar, no column, no
+  drawer, no `extras`. The frame does the same while the verdict of the current node is `wait`,
+  because the app does not know yet who may see the page, and the main content is the loading
+  content of the router. A redirect verdict keeps the layout, so the move from the loading content
+  to the sign-in page never paints the chrome. The router stays mounted in both layouts, so the
+  sign-in page is an ordinary page for the nav, the title and analytics. A session flag on the frame
+  would hide the sign-in page from the router: it would have no URL, no page view in analytics, and
+  no return path for a deep link. The frame holds no account prop, it renders no form, and it talks
+  to no identity provider. The sign-in page is the app's, because it differs with every app: a
+  password form, social buttons, a magic link, a passkey, or the return URL of an external identity
+  provider under the sign-in node. `userCard` in `extras` displays the person, and the sign-out
+  action is a button or a `menuButton` of the app beside it.
 - **The shell owns the drawer, and the drawer is a `<dialog>`.** The top layer, `inert` on the rest
   of the page, the entry of the focus, the restore of the focus, and Escape, all belong to the
   platform. The shell adds a dismissal from the backdrop. It closes itself when the viewport crosses
@@ -185,9 +188,11 @@ approves.**
 - **The trail is chrome of the frame, and the rest of the furniture of a page is not.** The trail is
   data derived from the same tree as the nav, and it has a phone form, which is the two-line title
   of the folded bar. So the shell renders `breadcrumbs` above the main content when a map is
-  present, and `breadcrumbs: false` turns the strip off. There is no `header` region, and there is
-  no `footer`. A page title and a toolbar of actions go at the top of the main content. They change
-  with the screen, and the frame does not.
+  present, and `breadcrumbs: false` turns the strip off. The strip shows only when the trail has two
+  or more crumbs. A top-level page has one crumb, which repeats the nav row, so the strip hides
+  there and the content takes its place. There is no `header` region, and there is no `footer`. A
+  page title and a toolbar of actions go at the top of the main content. They change with the
+  screen, and the frame does not.
 - **`gap` is the one knob for a frame that floats, and it carries the radius with it.** Step `0` is
   the edge-to-edge frame, with hairline dividers. Any other step, on the shared spacing scale,
   insets the frame. It pulls the bar, the column and the bottom bar apart, into bordered panels,
@@ -226,6 +231,22 @@ approves.**
   `shell` first, and to customize it, in place of replacing it. An imp app must put the nav where a
   nav goes. To write your own frame is a supported result, and not a failure, and imp says that as
   plainly.
+
+- **The `<main>` of the shell is the screen region of the router.** The frame is `100dvb` tall and
+  scrolls each region on its own, so the window never scrolls. A router that restored the window
+  scroll would restore nothing. The shell claims its `<main>` through `claimScreen`, from
+  `lib/src/screen.js`, and releases it on unmount. The router reads that region, scrolls it to the
+  top on a push and back to the saved place on a back or a forward, see `client-side-router.md`.
+- **A change of screen animates inside the `<main>`, and `effect` picks the animation.** The claim
+  also names the region `imp-screen` for a view transition, and installs the keyframes of the effect
+  in one document-level stylesheet. `fade` cross-fades. `slide` follows the reading direction, and
+  turns around on a back navigation. `zoom` scales the new screen in. The default is `none`, because
+  the browser takes no input while a transition runs: a hit test during the animation lands on the
+  root element, also with `pointer-events: none` on `::view-transition`. A default animation would
+  drop a click in the first 200ms after every navigation, in every app and in every e2e spec. So
+  motion is a choice of the app. The bar, the column and the trail are outside the named region, so
+  they stay still. The shell imports `screen.js` and not the router, so a frame with no router
+  carries no router code.
 
 ## Consequences
 

@@ -10,7 +10,14 @@ import {
   toFileUrl,
 } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
-import { licensePolicy, loadImpConfig, mocksSetting, publicDirectory } from './config.js'
+import {
+  licensePolicy,
+  loadImpConfig,
+  mocksSetting,
+  projectRoot,
+  publicDirectory,
+} from './config.js'
+import { loadMaps, routePatternsOf } from './map.js'
 import { resolveEntryPath } from './entry.js'
 import {
   applyEdits,
@@ -142,6 +149,10 @@ async function withComponentSkill(path) {
   return `${source}\nexport const impSkill = ${JSON.stringify(skill.trimEnd())}\n`
 }
 
+const cssImportMessage = ({ path, importer }) =>
+  `${relative(Deno.cwd(), importer) || importer} imports '${path}' - a script cannot import CSS. ` +
+  'A component carries its styles in its \'styles\', and a page links a stylesheet from public/ with <link rel="stylesheet">'
+
 function impResolverPlugin(
   { root, dependencies, inlineSources, impProvidedByHost, isHtmlEntry, flags },
 ) {
@@ -150,6 +161,9 @@ function impResolverPlugin(
     setup(build) {
       if (!impProvidedByHost) resolveImpLibrary(build, { tooling: false })
       resolveDependencyAliases(build, { root, dependencies })
+      build.onResolve({ filter: /\.css$/ }, (args) => ({
+        errors: [{ text: cssImportMessage(args) }],
+      }))
       build.onResolve({ filter: new RegExp(`^${INLINE_ENTRY_SCHEME}\\d+$`) }, (args) => ({
         path: join(root, inlineModuleName(args.path.slice(INLINE_ENTRY_SCHEME.length))),
         namespace: 'file',
@@ -228,6 +242,32 @@ function buildEntryPoints(
 
 const SERVICE_WORKER_FILE = 'sw.js'
 
+const APP_MAP_FILE = 'app-map.txt'
+
+const appMapFile = (patterns) => `${patterns.join('\n')}\n`
+
+async function routePatternsOfProject({ root, map, dependencies }) {
+  const target = resolve(await projectRoot(root), map)
+  try {
+    await Deno.stat(target)
+  } catch {
+    throw new Error(
+      `no map at ${
+        relative(Deno.cwd(), target) || target
+      } - the 'map' of imp.json names the file that exports appMap(), and imp build writes its route patterns to ${APP_MAP_FILE}`,
+    )
+  }
+  const maps = await loadMaps(target, { root, dependencies })
+  if (maps.length === 0) {
+    throw new Error(
+      `${
+        relative(Deno.cwd(), target) || target
+      } exports no map - export the value of appMap(), like export const app = appMap({ ... })`,
+    )
+  }
+  return routePatternsOf(maps)
+}
+
 function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags, base }) {
   return runEsbuild({
     plugins: [
@@ -273,11 +313,16 @@ function entryOutputs({ metafile, outputFiles }, inputs) {
   return outputs
 }
 
-async function bundleApp(options, { inputs, serviceWorker, offlineWorker }) {
+async function bundleApp(options, { inputs, serviceWorker, offlineWorker, map }) {
   try {
+    const routePatterns = map === null ? null : await routePatternsOfProject({ ...options, map })
     const bundled = await buildEntryPoints(options)
     const entries = entryOutputs(bundled, inputs)
-    const page = { ...withoutUnreachableChunks(bundled, [...entries.values()]), entries }
+    const page = {
+      ...withoutUnreachableChunks(bundled, [...entries.values()]),
+      entries,
+      routePatterns,
+    }
     if (!serviceWorker && !offlineWorker) return page
     const worker = await buildServiceWorkerEntry({ ...options, worker: serviceWorker })
     return {
@@ -301,7 +346,7 @@ function assertEveryFlagFolded(outputFiles) {
     throw new Error(
       `${
         basename(unfolded.path)
-      } still reads a feature flag at runtime - every flag must be called as flag('NAME') with a literal name, from a module that imports flag from 'imp', so the build can fold it away`,
+      } still reads a build flag at runtime - every flag must be called as flag('NAME') with a literal name, from a module that imports flag from 'imp', so the build can fold it away`,
     )
   }
 }
@@ -413,14 +458,6 @@ function staticImportsOf(metafile, entryOutputs) {
   return [...reached]
 }
 
-function stylesheetTags({ metafile, entries, outdir, base }) {
-  const scripts = [...new Set([...entries.values(), ...Object.keys(metafile.outputs)])]
-  const bundles = scripts.map((path) => metafile.outputs[path]?.cssBundle)
-  return [...new Set(bundles.filter(Boolean))].map((path) =>
-    `<link rel="stylesheet" href="${siteUrl(base, asPosix(relative(outdir, path)))}">`
-  )
-}
-
 const inlineCodeWarning = (entryName, inlineCode) =>
   [
     `${entryName} has inline code that the Content Security Policy script-src 'self'; style-src 'self' blocks:`,
@@ -456,8 +493,10 @@ async function assertWithinBudget({ imp, outdirPath, written }) {
   )
 }
 
+const NOT_PRECACHED = [LICENSE_NOTICES_FILE, APP_MAP_FILE]
+
 async function precacheOfBuild({ outdirPath, base, emitted, copied, shell }) {
-  const app = emitted.filter((name) => name !== LICENSE_NOTICES_FILE)
+  const app = emitted.filter((name) => !NOT_PRECACHED.includes(name))
   const optional = copied.filter(precachedPublicFile)
   const files = await Promise.all(
     [...app, ...optional].map(async (name) => ({
@@ -546,6 +585,7 @@ export async function build(
     inputs: [...scripts, ...inlineSources.map((_, index) => join(root, inlineModuleName(index)))],
     serviceWorker,
     offlineWorker: pwa && isHtmlEntry,
+    map: isHtmlEntry && typeof imp.map === 'string' ? imp.map : null,
   })
 
   assertEveryFlagFolded(result.outputFiles)
@@ -588,14 +628,12 @@ export async function build(
     await Deno.writeTextFile(join(outdirPath, LICENSE_NOTICES_FILE), licenseNoticesFile(notices))
     written.push(LICENSE_NOTICES_FILE)
   }
+  if (result.routePatterns !== null) {
+    await Deno.writeTextFile(join(outdirPath, APP_MAP_FILE), appMapFile(result.routePatterns))
+    written.push(APP_MAP_FILE)
+  }
   if (isHtmlEntry) {
     const headTags = [
-      ...stylesheetTags({
-        metafile: result.metafile,
-        entries: result.entries,
-        outdir: outdirPath,
-        base,
-      }),
       ...modulePreloadTags({
         metafile: result.metafile,
         outputFiles,
@@ -690,6 +728,14 @@ export async function build(
   if (noticeCount) {
     const count = `${noticeCount} third-party license notice${noticeCount === 1 ? '' : 's'}`
     console.log(`  ${LICENSE_NOTICES_FILE} - ${count}, referenced from every script emitted`)
+  }
+  if (result.routePatterns !== null) {
+    const count = result.routePatterns.length
+    console.log(
+      `  ${APP_MAP_FILE} - ${count} route pattern${
+        count === 1 ? '' : 's'
+      } of the map, one per line, for an analytics store`,
+    )
   }
   const flagNames = Object.keys(flags)
   if (flagNames.length) {

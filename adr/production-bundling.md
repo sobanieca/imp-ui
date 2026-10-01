@@ -48,9 +48,10 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   the hash by its path inside the project, and a library module by its path inside the binary. The
   same sources give the same names and the same bytes in any folder, and from a binary at any path.
   A test builds one project in two folders and compares the output.
-- **CSS that a script imports ships as `chunks/<name>-<hash>.css`.** The page links it with a
-  `<link rel="stylesheet">` in `<head>`, under the base path. The CSS of a lazy chunk gets a link
-  too, at page load, because esbuild emits no code that loads it later.
+- **A script cannot import CSS.** A component holds its styles in its shadow root, see
+  `shadow-dom-isolation.md`, and a page links a stylesheet from `public/`. A CSS import in a script
+  would work in the build and fail in the dev server, where the browser rejects a stylesheet as a
+  module. So the build rejects it too, with a message that names the script and the file.
 - **A JS entry keeps its plain name.** A consumer imports that file by name, so a hash would break
   every import of it.
 - **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of

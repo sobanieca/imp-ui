@@ -40,7 +40,8 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   then keeps the `imp` imports bare, for that host to provide. See
   **[Targeting an imp host](cli.md#targeting-an-imp-host---sharing-the-hosts-imp)**.
 - **`map`** is the path of the file that exports your application map, such as `src/app-map.js`.
-  `imp init` writes the key. See **[Routing](routing.md)**.
+  `imp init` writes the key. `imp build` writes the route patterns of that map to `app-map.txt` in
+  the output. See **[Routing](routing.md)**.
 - **`build`** holds the options for `imp build`. `maxSize` is the budget, in bytes, for the whole
   output folder. A build that writes more fails, names its largest files, and leaves no output. See
   **[`imp build`](cli.md#imp-build)**.
@@ -61,9 +62,9 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   **[Progressive Web App](cli.md#progressive-web-app---imp-build---pwa)**.
 - **`environments`** lists the named configuration sets you select with `--env`. Each name maps to a
   JSON file of values. See _Environments_ below.
-- **`flags`** lists, by name, the feature flags your app can check. Each environment says whether a
+- **`flags`** lists, by name, the build flags your app can check. Each environment says whether a
   flag is on. `imp build` folds the answer into the code, so a disabled feature never ships. See
-  **[Feature flags](feature-flags.md)**.
+  **[Build flags](build-flags.md)**.
 - **`mocks`** sets where your `*.mock.js` files live, and whether they answer by default. Both
   `folder` and `enabled` are required. `--mock` and `--no-mock` override `enabled` for one run.
   `imp build` never copies the folder. See **[Mock responses](cli.md#mock-responses---mockjs)**.
@@ -163,7 +164,7 @@ fetch(`${env.API_URL}/users`)
 
 `env` is a frozen object. It is empty when you select no environment.
 
-A value that turns a feature on or off is a **[feature flag](feature-flags.md)**, not an environment
+A value that turns a feature on or off is a **[build flag](build-flags.md)**, not an environment
 value. Declare its name in the `flags` key of `imp.json`, set it to `true` or `false` per
 environment, and read it with `flag('NAME')`. The difference matters at build time: imp reads an
 `env` value while the app runs, but it resolves a flag during `imp build` and drops the code behind
@@ -177,8 +178,8 @@ here.
 
 ### The values that imp reads itself
 
-Three names in an environment file configure imp, not your code. For this reason, a feature flag
-must not use an `IMP_` prefix:
+Three names in an environment file configure imp, not your code. For this reason, a build flag must
+not use an `IMP_` prefix:
 
 | Value           | What it does                                                                                            |
 | --------------- | ------------------------------------------------------------------------------------------------------- |

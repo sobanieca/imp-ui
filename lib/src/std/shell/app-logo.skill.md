@@ -31,9 +31,9 @@ Rules an agent gets wrong:
   leaves a click with a modifier key to the browser. `href: null` makes the logo a plain box. Use
   that on a page that is already the home page.
 - **`src` as `{ light, dark }` follows the colour scheme of the active theme.** imp reads the scheme
-  from the lightness of the `color-surface` token, see `imp skill theming`. The dark image shows
-  under a dark surface, the light one otherwise. The name of the theme plays no part. One entry
-  alone serves both schemes. `applyTheme` swaps the image, so no re-render is needed.
+  from the `color-scheme` token, see `imp skill theming`. The dark image shows under a dark theme,
+  the light one otherwise. The name of the theme plays no part. One entry alone serves both schemes.
+  `applyTheme` swaps the image, so no re-render is needed.
 - **`image` is the whole logo, with the name drawn inside the picture.** Use it when the brand sets
   its name in a font of its own, as an SVG or a PNG. imp renders one `<img>` and no words. `label`
   becomes its `alt`, so pass it. `src`, `icon` and `tagline` are ignored beside `image`, and imp

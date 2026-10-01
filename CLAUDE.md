@@ -146,7 +146,7 @@ skips the freshness check and runs whatever was compiled last.
 
 | Task                | What it does                                                             |
 | ------------------- | ------------------------------------------------------------------------ |
-| `deno task start`   | serves the todo example from `examples/todo` on <http://localhost:4507/> |
+| `deno task example` | serves the todo example from `examples` on <http://localhost:4507/>      |
 | `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/> |
 | `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm` |
 | `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests   |
@@ -362,7 +362,7 @@ Two rules follow, and they apply to every change:
 
 **A component that cannot be built without the second kind does not get built.** Do not approximate
 it. Do not ship it behind a caveat. Leave it out, and say in `docs/` what to use instead. This scope
-rule has already removed `virtualList` from the catalog and parked `carousel`.
+rule has already kept `virtualList` and `carousel` out of the catalog.
 
 The rule needs a boundary, so here is the judgement call. A modal's scroll lock is **allowed**.
 `showModal()` does not stop the page behind it from scrolling, on purpose. So `overflow: hidden` on

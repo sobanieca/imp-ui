@@ -59,10 +59,9 @@ scope.**
 
 ## Consequences
 
-- **RTL costs a naming convention, and nothing else.** There is no branch, no feature flag, no
-  second stylesheet, and no matrix of builds. You pay the cost once, when you write a declaration.
-  That is what makes the guarantee affordable, and it is why it is a guarantee, and not a best
-  effort.
+- **RTL costs a naming convention, and nothing else.** There is no branch, no build flag, no second
+  stylesheet, and no matrix of builds. You pay the cost once, when you write a declaration. That is
+  what makes the guarantee affordable, and it is why it is a guarantee, and not a best effort.
 - **The rule pays off in plain horizontal LTR.** That is the argument that holds even when nobody
   runs imp vertically. `100vw` includes the classic scrollbar, and `100dvi` does not. So a
   `max-inline-size` that you clamp in `vw` over-reports the space that it bounds. It then pushes the

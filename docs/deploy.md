@@ -12,9 +12,9 @@ dist/
   index.html                  <- the page, with its plain name
   chunks/main-4ZDAFRFX.js     <- every script, with a content hash in its name
   chunks/chunk-QX3J7M2A.js
-  chunks/main-5KQW2M7T.css    <- the CSS that your scripts import, linked from the page
   chunks/logo-7CWPN3KD.svg    <- every file that a script imports, with a hash too
   LICENSES.txt                <- the licence notices of the code in your bundle
+  app-map.txt                 <- the route patterns of your map, for an analytics store
   styles.css                  <- a copy of each file in public/
   manifest.webmanifest        <- with --pwa: the manifest, the icons and sw.js
   icons/icon-192.png
@@ -138,9 +138,9 @@ rules above already do. See [Progressive Web App](cli.md#progressive-web-app---i
 ## The errors of a live app
 
 A built app has no source map, so a stack trace from production points into minified code. imp
-reports each failure with its message and its context instead: the page, the view and the source.
-Register an analytics sink that forwards the `error` records to your store, and you learn what
-breaks, where and how often. See [Errors only](analytics.md#errors-only).
+counts each failure on its page instead. Register an analytics sink that forwards the `error`
+records to your store, and you learn which page breaks and how often. The browser console and the
+logs of your server hold the message. See [Errors only](analytics.md#errors-only).
 
 ## Checklist
 

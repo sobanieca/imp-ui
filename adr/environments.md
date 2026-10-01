@@ -55,7 +55,7 @@ Two constraints shaped the mechanism:
   `imp.json`.
 - **A value that turns a feature on or off is a flag, not an env value.** imp removes a name that
   `flags` lists in `imp.json` from the injected `env` object. You read such a name through `flag()`,
-  which `imp build` resolves and folds away. See `adr/feature-flags.md`.
+  which `imp build` resolves and folds away. See `adr/build-flags.md`.
 
 ## Consequences
 

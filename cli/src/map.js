@@ -91,6 +91,28 @@ const renderMap = (name, internals) => {
   return lines.join('\n')
 }
 
+export async function loadMaps(target, { root, dependencies }) {
+  const { installDomEnvironment } = await import('./test-dom.js')
+  const restore = installDomEnvironment()
+  let module
+  try {
+    module = await importCode(await bundleMapFile(target, { root, dependencies }))
+  } finally {
+    await restore()
+  }
+  return Object.entries(module).filter(([, value]) => value?.[MAP] !== undefined)
+}
+
+export const routePatternsOf = (maps) => {
+  const patterns = new Set()
+  for (const [, map] of maps) {
+    const internals = map[MAP]
+    if (internals.graftedInto !== null) continue
+    for (const node of internals.nodes) patterns.add(node.pattern)
+  }
+  return [...patterns].sort()
+}
+
 export async function printMap({ cwd, file = null }) {
   const root = await projectRoot(cwd)
   const config = await loadImpConfig(root)
@@ -111,18 +133,12 @@ export async function printMap({ cwd, file = null }) {
       }`,
     )
   }
-  const { installDomEnvironment } = await import('./test-dom.js')
-  const restore = installDomEnvironment()
-  let module
+  let maps
   try {
-    module = await importCode(
-      await bundleMapFile(target, { root, dependencies: config.dependencies ?? {} }),
-    )
+    maps = await loadMaps(target, { root, dependencies: config.dependencies ?? {} })
   } finally {
-    await restore()
     await shutdownBundler()
   }
-  const maps = Object.entries(module).filter(([, value]) => value?.[MAP] !== undefined)
   if (maps.length === 0) {
     throw new Error(
       `${

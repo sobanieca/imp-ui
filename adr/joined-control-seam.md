@@ -58,7 +58,9 @@ Three further points follow from the boxless host:
 
 - **A control lifts itself.** `seamLift()` gives the control `z-index: 1` on hover and on focus, in
   its own stylesheet. The negative shift puts the next neighbour's border over the focus ring of the
-  one before it, and a `z-index` on the host could not fix that.
+  one before it, and a `z-index` on the host could not fix that. A pressed button and a checked
+  segment take `z-index: 2` through `seamKeep()`, so a hovered neighbour never covers the coloured
+  border of the chosen control.
 - **A panel anchors to a box of its own root, never to a host.** `anchor-name` goes on the `.box`
   element that `menuButton` owns and which has a box. The box and the trigger share every edge, so
   the geometry is the same as anchoring to the trigger, and the anchor name never has to cross a
@@ -76,8 +78,8 @@ toggle, the light dismiss, Escape and the top layer. imp still writes `aria-expa
 The seam properties inherit without limit, so they would reach a control inside a panel that a row
 member opens. Every nested surface resets them with `seamReset()`: the panel of `anchoredStyles`,
 and the panel of `dialog` and `drawer`. A component that adds a nested surface must do the same. The
-lift is scoped the same way. `seamLift()` reads `--imp-seam-lift`, which only a row sets, so a
-control outside a row keeps `z-index: auto` on hover.
+lift is scoped the same way. `seamLift()` reads `--imp-seam-lift` and `seamKeep()` reads
+`--imp-seam-keep`, which only a row sets, so a control outside a row keeps `z-index: auto`.
 
 ## Consequences
 

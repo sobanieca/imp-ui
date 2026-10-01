@@ -7,14 +7,16 @@ Write-Host 'Installing imp...'
 Write-Host ''
 
 $Architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-if ($Architecture -ne [System.Runtime.InteropServices.Architecture]::X64) {
-  throw "Unsupported architecture: $Architecture - imp supports x64 on Windows"
+$ArchitectureName = switch ($Architecture) {
+  ([System.Runtime.InteropServices.Architecture]::X64) { 'x64' }
+  ([System.Runtime.InteropServices.Architecture]::Arm64) { 'arm64' }
+  default { throw "Unsupported architecture: $Architecture - imp supports x64 and arm64 on Windows" }
 }
 
-$BinaryFile = 'imp-windows-x64.exe'
+$BinaryFile = "imp-windows-$ArchitectureName.exe"
 $DownloadUrl = "https://github.com/$Repo/releases/latest/download/$BinaryFile"
 
-Write-Host 'Detected system: windows-x64'
+Write-Host "Detected system: windows-$ArchitectureName"
 Write-Host "Download URL: $DownloadUrl"
 Write-Host ''
 

@@ -68,8 +68,8 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect
 - **`userCard` displays the person, and nothing else.** It has no sign-in button, no sign-out button
   and no menu, because how a person signs in and out differs with every app, and a button with a
   fixed label in the card was the wrong place for that decision. The app renders its own `button` or
-  `menuButton` beside the card. Whether anybody is signed in is the `signedIn` gate of `shell`, see
-  `app-shell-component.md`, and the sign-in page is the `signIn` content of the app.
+  `menuButton` beside the card. Whether anybody is signed in is the `access` guard of the router,
+  and the sign-in page is a node of the map, see `app-shell-component.md`.
 
 ## Consequences
 

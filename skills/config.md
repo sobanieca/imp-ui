@@ -25,7 +25,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 | `preview`           | object                                 | `{}`         | `imp preview`                                                     |
 | `pwa`               | object                                 | -            | `imp start`, `imp build --pwa`                                    |
 | `environments`      | alias -> env file path                 | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)                 |
-| `flags`             | array of feature flag names            | `[]`         | `imp start`, `imp build` (folds them), `imp preview`              |
+| `flags`             | array of build flag names              | `[]`         | `imp start`, `imp build` (folds them), `imp preview`              |
 | `mocks`             | `{ folder, enabled }`, both required   | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)      |
 | `serviceWorker`     | path of your service worker source     | -            | `imp start` (serves it at `/sw.js`), `imp build` (writes `sw.js`) |
 | `maxFileSize`       | bytes                                  | `204800`     | `imp lint` (errors), `imp install` (warns)                        |
@@ -152,9 +152,9 @@ comments, an optional `export` and a quoted value. **Every value in a `.env` fil
 - **An environment value is not secret.** It ships to the browser. `$env.` only keeps the value out
   of the repository. Put a publishable key and public config there. Never put a server-side secret
   there.
-- A key that you name in `flags` is a **feature flag**, not an env value. imp removes it from `env`.
+- A key that you name in `flags` is a **build flag**, not an env value. imp removes it from `env`.
   Read it with `flag('CHECKOUT_V2')`, which `imp build` folds to a literal. See
-  [feature-flags](feature-flags.md).
+  [build-flags](build-flags.md).
 - Three names configure imp itself, not your code. `IMP_LOG_LEVEL` takes `debug`, `info`, `warn` or
   `error`, see [logging](logging.md). `IMP_BASEPATH` is the sub-path that the app is served under,
   and `IMP_ROUTING: "hash"` keeps the route in the fragment for an app inside a page it does not

@@ -27,8 +27,9 @@ Rules an agent gets wrong:
   state. A press opens a modal drawer titled "Notifications", and Escape closes it.
 - **To open the drawer takes the listed popups out of the corner.** While the drawer is open, a new
   listed entry goes to the list only, with no popup.
-- **To open the drawer marks every entry as read.** So the count is the number of entries that
-  arrived since the person last looked. There is no unread toggle per entry.
+- **To open the drawer marks every entry as read, and so does an arrival while it is open.** So the
+  count is the number of entries that arrived since the person last looked. There is no unread
+  toggle per entry, and no "mark all as read" control.
 - **The name carries the count.** It is "Notifications", or "Notifications, 3 unread". imp updates
   it in place, and the bell is not a live region. A `label` of your own replaces the whole name. Put
   the count in it yourself, from a state.
@@ -43,14 +44,13 @@ Rules an agent gets wrong:
 - The relative time of a row comes from `Intl.RelativeTimeFormat` in the active language. imp
   refreshes it while the drawer is open.
 - The wording is under `imp.notifications.label`, `imp.notifications.labelUnread` with `{count}`,
-  `imp.notifications.empty`, `imp.notifications.markAllRead`, `imp.notifications.clearAll` and
-  `imp.toast.dismiss`.
+  `imp.notifications.empty`, `imp.notifications.clearAll` and `imp.toast.dismiss`.
 
 ```js
 shell(
   {
     logo: appLogo({ label: 'Acme' }),
-    extras: [notifications({ variant: 'ghost' }), userCard({ signedIn, name })],
+    extras: [notifications({ variant: 'ghost' }), userCard({ name })],
   },
   toast({ client: 'acme.api' }),
   router(routes),

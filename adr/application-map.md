@@ -125,15 +125,18 @@ handle per node.**
   and a crumb takes `options`: a disclosure button beside the crumb opens an anchored panel of
   links.
 
-- **Authentication is outside the shell.** The frame does not know who is signed in. `userCard` owns
-  both halves of that story through its own `signedIn` prop, and an app puts it in `extras`. Whether
-  a signed-out visitor sees a section is the decision of `access`.
+- **The sign-in page is a node of the map.** The map has no default `access`, so the node is open,
+  and every private section carries its own `access`. The guard redirects a visitor with no session
+  to the sign-in node, and the router, the nav, `imp map`, `app-map.txt` and analytics treat it as
+  an ordinary page. `shell` shows it without the chrome, see `app-shell-component.md`. `userCard` in
+  `extras` displays the person.
 
 - **`imp map` prints the tree.** `imp.json` names the map file under `map`. The file imports
   `appMap` and its parts, so the CLI bundles it, runs it in the test DOM, and prints every node with
   its path, label, access and description. `imp map <file>` prints a part on its own. `imp init`
   writes `src/app-map.js`, names it in `imp.json`, and writes a frame that binds the one screen it
-  ships.
+  ships. `imp build` reads the same file and writes the pattern of every node to `app-map.txt` in
+  the output, for an analytics store, see `product-analytics.md`.
 
 ## Consequences
 

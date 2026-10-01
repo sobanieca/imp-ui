@@ -290,11 +290,10 @@ const results = component('app-results', {
 
 ### Each screen is a page view
 
-When your app registers an analytics sink, the router records each screen that it shows as a `view`
-record. The record carries the route pattern of the node, such as `/invoices/:id`, the page that the
-person came from, and the time until the screen was ready. You write no code per route. A change of
-the query only is no view, because the screen stays mounted. A redirect is no view. See
-**[Analytics](analytics.md)**.
+When your app registers an analytics sink, the router records each screen that it shows as a `page`
+record. The record carries the route pattern of the node, such as `/invoices/:id`, and the time
+until the screen was ready. You write no code per route. A change of the query only is no page view,
+because the screen stays mounted. A redirect is no page view. See **[Analytics](analytics.md)**.
 
 ### A tenant in the URL
 
@@ -491,15 +490,18 @@ import { guard, wait } from 'imp/router'
 
 const access = guard(
   ['myapp.session'],
-  (session, { need }) => {
+  (session, { need, path }) => {
     if (session === undefined) return wait
-    if (!session) return '/login'
+    if (!session) return `/login?next=${encodeURIComponent(path)}`
     return session.roles.includes(need) || '/forbidden'
   },
 )
 
 router({ map: app, access, screens })
 ```
+
+The redirect to `/login` carries the requested path in `next`. The login screen reads it from the
+query and navigates there after the sign-in, so a deep link works for a signed-out visitor too.
 
 Read that from the inside out. `['myapp.session']` declares **which states this guard reads**. The
 router looks them up for you, and passes their values in, in the same order. After the values comes
@@ -522,7 +524,9 @@ is not an allow wins. So `settings` under a `projects` node with `access: 'user'
 to be a user and, with its own `access: 'admin'`, an admin as well.
 
 **A node with no `access` is open.** So `/login` never loops, and there is no default to exclude a
-page from. A map with an `access` and a router with no `access` guard is an error at startup.
+page from. A map with an `access` and a router with no `access` guard is an error at startup. Pass
+the login node to `shell` as `signIn`, and the frame shows that page without the navbar. See
+**[Standard components](std-components.md)**.
 
 The same guard decides what the nav shows. A section or a row appears only when the guard allows it.
 While the guard waits, the row stays hidden, and it appears when the state arrives. So the nav and
@@ -832,7 +836,10 @@ that the host serves.
 ## Accessibility: scroll and focus
 
 - **imp manages the scroll for you.** A forward navigation scrolls to the top of the new screen. The
-  back and forward buttons restore the scroll position where you left each page.
+  back and forward buttons restore the scroll position where you left each page. imp restores the
+  page scroll and the scroll of the screen region. The `shell` names its content area as that
+  region. A frame of your own names its scrolling box with `screenRegion(self, element)`, from the
+  component that renders the box. Without a region, imp restores the page scroll only.
 - **The focus is yours to manage.** A move of the focus on a navigation is disruptive when it is not
   wanted, and correct when it is. Only your screens know which case applies. A screen that must take
   the focus can focus its own heading in `onMount`. You can also keep one live region that is hidden
@@ -890,6 +897,39 @@ that screen, and its dialog, first. `preventScroll` leaves the scroll to the rou
 already put the new screen at the top. A change of the query string keeps the path, so the frame
 does not move the focus, and a search box keeps its focus while the reader types.
 
+## Screen transitions
+
+A change of screen can animate. The `effect` prop of the `shell` picks the animation of its content
+area. `'fade'` cross-fades from the old screen to the new one, `'slide'` moves the old screen out
+and the new one in, along the reading direction, and back the other way on a back navigation, and
+`'zoom'` scales the new screen in. Each one takes the medium duration of the theme. The default is
+`'none'`. The bar, the column and the trail stay still. Only the content area moves. The animation
+is a view transition of the browser. The browser takes a picture of the old screen, the DOM changes,
+and the pictures move. A click during the animation reaches nothing, because the pictures cover the
+page for that time. So an app that turns an effect on accepts a short pause after each navigation,
+and a test that clicks right after a navigation waits for the animation. A person who asks the
+system for reduced motion gets no animation.
+
+```js
+shell({ navbar: { map: app }, effect: 'slide' }, router({ map: app, screens }))
+```
+
+A frame of your own gets the same animation from `screenRegion`. Pass the box that holds the
+screens, and the effect:
+
+```js
+const frame = component('myapp-frame', {
+  setup: (self) => {
+    const content = main(router({ map: app, screens }))
+    screenRegion(self, content, { effect: 'fade' })
+    return content
+  },
+})
+```
+
+The call also makes the box the scroll region of the router, see
+**[Accessibility: scroll and focus](#accessibility-scroll-and-focus)**.
+
 ## Deployment: a deep link and a refresh
 
 A client router owns a URL such as `/todos/42` in the browser. But a visit to that URL, or a refresh
@@ -919,16 +959,17 @@ So a deep link and a refresh work while you build.
 
 ## API summary
 
-| Export                                    | Returns            | What it does                                                                                                                               |
-| ----------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `appMap(nodes)` / `appMap(props, nodes)`  | the handle tree    | Builds the application map, or a part of one; validates every node at startup. Imported from `imp`.                                        |
-| `router(options)`                         | a live router slot | Renders the matched screen; `options`: `map` (required), `screens`, `options`, `access`, `scope`, `title`, `loading`, `error`, `notFound`. |
-| `redirect(to)`                            | a screen binding   | Binds a node to a forward: `to` is a handle, or a path.                                                                                    |
-| `router()`                                | a live router slot | Inside the `root` of an area, renders the screens of that area; inherits the options of the parent router.                                 |
-| `area({ screens, root?, translations? })` | an area definition | Declares the screens of a section, the component its screens render inside, and its translations, for its `export default`.                |
-| `area(() => import(...))`                 | an area marker     | Binds a node to a lazily-loaded area - the one on-demand unit.                                                                             |
-| `guard(states, check)`                    | a guard            | A synchronous check over the values of the states it names and the `need` of the node; returns `true`, `wait`, `false`, or a path.         |
-| `wait`                                    | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `loading` up and re-runs the guard when a declared state changes.        |
-| `navigate(path, { replace? })`            | -                  | Navigates programmatically; `replace` swaps the current history entry.                                                                     |
-| `useRoute()`                              | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
-| `url(path)`                               | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |
+| Export                                     | Returns            | What it does                                                                                                                               |
+| ------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `appMap(nodes)` / `appMap(props, nodes)`   | the handle tree    | Builds the application map, or a part of one; validates every node at startup. Imported from `imp`.                                        |
+| `router(options)`                          | a live router slot | Renders the matched screen; `options`: `map` (required), `screens`, `options`, `access`, `scope`, `title`, `loading`, `error`, `notFound`. |
+| `redirect(to)`                             | a screen binding   | Binds a node to a forward: `to` is a handle, or a path.                                                                                    |
+| `router()`                                 | a live router slot | Inside the `root` of an area, renders the screens of that area; inherits the options of the parent router.                                 |
+| `area({ screens, root?, translations? })`  | an area definition | Declares the screens of a section, the component its screens render inside, and its translations, for its `export default`.                |
+| `area(() => import(...))`                  | an area marker     | Binds a node to a lazily-loaded area - the one on-demand unit.                                                                             |
+| `guard(states, check)`                     | a guard            | A synchronous check over the values of the states it names and the `need` of the node; returns `true`, `wait`, `false`, or a path.         |
+| `wait`                                     | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `loading` up and re-runs the guard when a declared state changes.        |
+| `navigate(path, { replace? })`             | -                  | Navigates programmatically; `replace` swaps the current history entry.                                                                     |
+| `useRoute()`                               | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
+| `url(path)`                                | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |
+| `screenRegion(self, element, { effect? })` | -                  | Names the box that scrolls the screens, so imp restores its scroll; `effect` animates a change of screen, see below.                       |

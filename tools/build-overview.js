@@ -61,16 +61,31 @@ export const installCommand = (origin) => `curl -fsSL ${origin}/install.sh | bas
 
 export const windowsInstallCommand = (origin) => `irm ${origin}/install.ps1 | iex`
 
-export const renderInstall = (origin) =>
-  `<div class="install">` +
-  `<div class="install-command">` +
-  `<code>${escape(installCommand(origin))}</code>` +
+const INSTALL_TABS = [
+  { id: 'unix', label: 'macOS and Linux', prompt: '$', command: installCommand },
+  { id: 'windows', label: 'Windows', prompt: '>', command: windowsInstallCommand },
+]
+
+const installTab = ({ id, label }, index) =>
+  `<button class="install-tab" type="button" role="tab" id="install-tab-${id}" ` +
+  `aria-controls="install-panel-${id}" aria-selected="${index === 0}" ` +
+  `tabindex="${index === 0 ? 0 : -1}">${label}</button>`
+
+const installPanel = ({ id, prompt, command }, origin, index) =>
+  `<div class="install-command" role="tabpanel" id="install-panel-${id}" ` +
+  `aria-labelledby="install-tab-${id}"${index === 0 ? '' : ' hidden'}>` +
+  `<code data-prompt="${prompt} ">${escape(command(origin))}</code>` +
   `<button class="copy" type="button" aria-label="Copy the install command">` +
   `${svgIcon('copy-icon', luCopy)}${svgIcon('copied-icon', luCheck)}</button>` +
+  `</div>`
+
+export const renderInstall = (origin) =>
+  `<div class="install">` +
+  `<div class="install-tabs" role="tablist" aria-label="Operating system">` +
+  INSTALL_TABS.map(installTab).join('') +
   `</div>` +
-  `<p class="install-note">macOS and Linux, x64 and arm64. On Windows, run ` +
-  `<code>${escape(windowsInstallCommand(origin))}</code> in PowerShell. Then run ` +
-  `<code>imp init my-app</code>.</p>` +
+  INSTALL_TABS.map((tab, index) => installPanel(tab, origin, index)).join('') +
+  `<p class="install-note">x64 and arm64. Then run <code>imp init my-app</code>.</p>` +
   `</div>`
 
 const stateFigure = () =>
@@ -264,6 +279,8 @@ export const overviewStyles = `
   color: #ffffff;
 }
 
+.install-command[hidden] { display: none }
+
 :root[data-scheme='dark'] .install-command {
   border: var(--imp-border-width) solid var(--imp-color-border);
   background: var(--imp-color-surface);
@@ -283,8 +300,34 @@ export const overviewStyles = `
 }
 
 .install-command code::before {
-  content: '$ ';
+  content: attr(data-prompt);
   color: ${MAIN_1};
+}
+
+.install-tabs {
+  display: flex;
+  gap: var(--imp-space-1);
+  margin-block-end: var(--imp-space-2);
+}
+
+.install-tab {
+  padding-block: var(--imp-space-1);
+  padding-inline: var(--imp-space-3);
+  border: var(--imp-border-width) solid transparent;
+  border-radius: var(--imp-radius-item);
+  background: transparent;
+  color: var(--imp-color-secondary);
+  font-family: var(--imp-font-family-mono);
+  font-size: var(--imp-font-size-sm);
+  cursor: pointer;
+}
+
+.install-tab:hover { background: var(--imp-color-surface-hover) }
+
+.install-tab[aria-selected='true'] {
+  border-color: var(--imp-color-border);
+  background: var(--imp-color-surface);
+  color: var(--imp-color-text);
 }
 
 .copy {
@@ -482,6 +525,7 @@ export const overviewStyles = `
 .tour-dots button:focus-visible,
 .tour-prev:focus-visible,
 .tour-next:focus-visible,
+.install-tab:focus-visible,
 .copy:focus-visible {
   outline: var(--imp-focus-ring-width) solid ${MAIN_1};
   outline-offset: 2px;
@@ -965,19 +1009,49 @@ track.addEventListener('keydown', (event) => {
   }
 })
 
-const copy = document.querySelector('.copy')
-copy.addEventListener('click', async () => {
-  const command = copy.previousElementSibling.textContent
-  try {
-    await navigator.clipboard.writeText(command)
-  } catch {
-    return
-  }
-  copy.classList.add('is-copied')
-  copy.setAttribute('aria-label', 'Copied')
-  setTimeout(() => {
-    copy.classList.remove('is-copied')
-    copy.setAttribute('aria-label', 'Copy the install command')
-  }, 1600)
+const tabs = [...document.querySelectorAll('.install-tab')]
+const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')))
+
+const select = (index, focus) => {
+  tabs.forEach((tab, position) => {
+    const selected = position === index
+    tab.setAttribute('aria-selected', String(selected))
+    tab.tabIndex = selected ? 0 : -1
+    panels[position].hidden = !selected
+  })
+  if (focus) tabs[index].focus()
+}
+
+tabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => select(index, false))
+  tab.addEventListener('keydown', (event) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1, Home: -index, End: tabs.length - 1 - index }[
+      event.key
+    ]
+    if (step === undefined) return
+    event.preventDefault()
+    select((index + step + tabs.length) % tabs.length, true)
+  })
 })
+
+if (navigator.platform.startsWith('Win')) {
+  select(tabs.findIndex((tab) => tab.id === 'install-tab-windows'), false)
+}
+
+for (const copy of document.querySelectorAll('.copy')) {
+  copy.addEventListener('click', async () => {
+    const command = copy.previousElementSibling.textContent
+    try {
+      await navigator.clipboard.writeText(command)
+    } catch {
+      return
+    }
+    copy.classList.add('is-copied')
+    copy.setAttribute('aria-label', 'Copied')
+    setTimeout(() => {
+      copy.classList.remove('is-copied')
+      copy.setAttribute('aria-label', 'Copy the install command')
+    }, 1600)
+  })
+}
 `

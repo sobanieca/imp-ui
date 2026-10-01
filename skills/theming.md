@@ -24,12 +24,11 @@ theme.get().name // the active theme; also theme.watch/text/view
 colorSchemeOf(theme.get().tokens) // 'light' | 'dark' | undefined
 ```
 
-There is no mode field. imp reads light or dark from the lightness of `color-surface`, and sets
-`color-scheme` on the root to match. So native controls and `prefers-color-scheme` follow the theme.
-`color-surface` must be an opaque CSS colour: hex, a name, `rgb()`, `hsl()`, `oklch()` and the other
-colour functions, or a `var(--imp-...)` token reference. When it is absent, translucent or
-unreadable, such as `color-mix()`, imp warns once per theme and leaves `color-scheme` unset.
-`colorSchemeOf(tokens)` is the same test, for a component that must branch.
+The `color-scheme` token is `light` or `dark`. `applyTheme` sets `color-scheme` on the root to that
+value, so native controls and `prefers-color-scheme` follow the theme. A theme with a `base` takes
+it from the built-in theme. A dark theme over `base: 'imp-light'` must set `'color-scheme': 'dark'`
+itself. When the token is absent or has another value, imp warns once per theme and leaves
+`color-scheme` unset. `colorSchemeOf(tokens)` returns that token, for a component that must branch.
 
 Apply a theme at the entry point, or through `init({ theme })`, see [i18n](i18n.md). Do it before
 `mount`. The page then does not flash the wrong theme.
@@ -52,9 +51,10 @@ applyTheme({ base: 'imp-dark', name: 'midnight', tokens: { 'color-primary': '#a7
 ## Fonts
 
 `font-family` is the text of every component. `font-family-mono` is code. `font-family-heading` is
-the text of `heading` and the name in `appLogo`, and it defaults to `font-family`. The built-in
-themes set system stacks. imp loads no font. Load a web font with a `<link>` in `index.html`, then
-name it in the theme:
+the text of `heading` and the name in `appLogo`, and it defaults to `font-family`. `color-heading`
+is the colour of the same text and of every heading in `markdown`. It defaults to
+`var(--imp-color-text)`. The built-in themes set system stacks. imp loads no font. Load a web font
+with a `<link>` in `index.html`, then name it in the theme:
 
 ```html
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -108,16 +108,18 @@ name, not on each toggle. A theme with a `base` is always complete.
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Typography | `font-family`, `font-family-mono`, `font-family-heading`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                           |
 | Color      | `color-primary`, `color-on-primary`, `color-secondary`, `color-danger`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                |
-| Surface    | `color-text`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                                    |
+| Surface    | `color-text`, `color-heading`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                   |
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
+| Scheme     | `color-scheme`                                                                                                                                                                                                                                           |
 
-`loader` is the shape of every loading state: the `loading` of a `button`, the `loader` component,
-the row of a `table` or a `list` that loads more, and the image upload of `richTextEditor`. The
-values are `spinner`, `dots`, `bar` and `pulse`. The built-in themes set `spinner`. Any other value
-logs a warning and draws the spinner. The loader takes `currentColor` and the size of its place. To
-show the loader of the theme on its own, write `loader({ label: 'Loading' })`.
+`color-scheme` is `light` or `dark`, see above. `loader` is the shape of every loading state: the
+`loading` of a `button`, the `loader` component, the row of a `table` or a `list` that loads more,
+and the image upload of `richTextEditor`. The values are `spinner`, `dots`, `bar` and `pulse`. The
+built-in themes set `spinner`. Any other value logs a warning and draws the spinner. The loader
+takes `currentColor` and the size of its place. To show the loader of the theme on its own, write
+`loader({ label: 'Loading' })`.
 
 `radius-item` rounds a button, an input, a tag, a nav row and a tab. `radius-container` rounds a
 dialog, a drawer, a menu and the frame of a `shell`. Set `radius-item` and `radius-container`
@@ -164,16 +166,16 @@ imp has one theme editor. In `imp preview`, open it with _edit theme_ in the top
 `imp start`, press the imp mark in the corner of the app, then **Theme editor**. It edits the theme
 the app applied, so a dark theme is edited with a dark theme selected. It keeps a draft per theme
 name in `localStorage` across reloads, until the person presses _reset_. It exposes **primary**,
-**secondary**, **font**, **mono font**, **border radius**, which is `none`, `small`, `medium` or
-`large`, **shadow**, which is `none`, `soft` or `strong`, **shadow colour**, which is
-`color-shadow`, and **loader**, which is `spinner`, `dots`, `bar` or `pulse`, with a live sample
-beside it. A colour is a `colorPicker`, a font is a `comboBox` with suggestions that accepts any
-stack, and a step is a `segmented` row. It derives every other colour token from the two base
-colours. The knobs sit on the **Knobs** tab. The **Tokens** tab is the whole theme as JSON, in a
-`codeEditor` that grows with the text. An edit there applies as soon as the JSON parses. A knob
-rewrites the tokens it drives, and it leaves every other token as edited. The widget of `imp start`
-shows the **Tokens** view alone, with no knobs. It copies or downloads a complete `theme.js`, one
-theme per file:
+**secondary**, **heading colour**, which is `color-heading`, **font**, **mono font**, **border
+radius**, which is `none`, `small`, `medium` or `large`, **shadow**, which is `none`, `soft` or
+`strong`, **shadow colour**, which is `color-shadow`, and **loader**, which is `spinner`, `dots`,
+`bar` or `pulse`, with a live sample beside it. A colour is a `colorPicker`, a font is a `comboBox`
+with suggestions that accepts any stack, and a step is a `segmented` row. It derives every other
+colour token from the two base colours. The knobs sit on the **Knobs** tab. The **Tokens** tab is
+the whole theme as JSON, in a `codeEditor` that grows with the text. An edit there applies as soon
+as the JSON parses. A knob rewrites the tokens it drives, and it leaves every other token as edited.
+The widget of `imp start` shows the **Tokens** view alone, with no knobs. It copies or downloads a
+complete `theme.js`, one theme per file:
 
 ```js
 // theme.js - generated, then edited by hand
@@ -204,33 +206,21 @@ for error text there. So every text pair of a derived theme reaches 4.5:1.
 
 ## Contrast check
 
-The editor lists every text and background pair below 4.5:1, the WCAG AA level, under its tabs.
-`contrastProblems(tokens)` from `imp/theme` is the same check. Guard a custom theme with it in a
-unit test:
+The editor lists every text and background pair of the draft below 4.5:1, the WCAG AA level, under
+its tabs. The report changes with each edit. It blocks nothing.
 
-```js
-import { applyTheme, contrastProblems } from 'imp/theme'
-import brand from '../src/theme.js'
-
-test('the brand theme keeps every text readable', () => {
-  expect(contrastProblems(applyTheme(brand).tokens)).toEqual([])
-})
-```
-
-- It returns `[{ text, background, ratio }]`, such as
-  `{ text: 'color-secondary', background: 'color-surface-sunken', ratio: 4.35 }`, or `[]`. A pair
-  that it cannot read has `ratio: null` and a `reason` string.
 - It checks `color-text` on `color-surface`, `color-surface-sunken`, `color-surface-hover` and
-  `background-app`; `color-secondary` on `color-surface`, `color-surface-sunken` and
-  `background-app`; `color-primary` on `color-surface` and `color-surface-sunken`; `color-danger` on
-  `color-surface`; `color-on-primary` on `color-primary`; `color-on-danger` on `color-danger`.
+  `background-app`; `color-heading` on `color-surface`, `color-surface-sunken` and `background-app`;
+  `color-secondary` on `color-surface`, `color-surface-sunken` and `background-app`; `color-primary`
+  on `color-surface` and `color-surface-sunken`; `color-danger` on `color-surface`;
+  `color-on-primary` on `color-primary`; `color-on-danger` on `color-danger`.
 - It reads hex, color names, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()` and
   `color()`, converts to sRGB, and clips a color outside sRGB. It follows a `var(--imp-...)`
   reference. It puts translucent text over its background.
 - **An unreadable side never passes.** A gradient, `color-mix()`, `currentColor`, an unknown
-  `var()`, or a translucent background gives a `ratio: null` entry. Check that pair by eye, then
-  filter it out in the test.
-- Pass resolved tokens: the return value of `applyTheme`, not a `{ base, tokens }` object.
+  `var()`, or a translucent background is listed with the reason. Check that pair by eye.
+- The check is part of the editor only. `imp/theme` exports no contrast function, and an app ships
+  no colour parser.
 
 ## Forced colours
 

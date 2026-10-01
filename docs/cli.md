@@ -19,9 +19,9 @@ development does, so what you tested is what you ship.
 
 ## Installation
 
-`imp` ships as one self-contained binary, for macOS and Linux on x64 and arm64, and for Windows on
-x64. On macOS and on Linux, the install script detects your platform, downloads the latest binary,
-and puts it on your `PATH`:
+`imp` ships as one self-contained binary, for macOS, Linux and Windows, on x64 and on arm64. On
+macOS and on Linux, the install script detects your platform, downloads the latest binary, and puts
+it on your `PATH`:
 
 ```sh
 curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
@@ -37,7 +37,7 @@ curl -fsSL -o imp https://github.com/sobanieca/imp-ui/releases/latest/download/i
 chmod +x imp
 ```
 
-On Windows x64, run this command in PowerShell. It installs `imp.exe` into
+On Windows, run this command in PowerShell. It installs `imp.exe` into
 `%LOCALAPPDATA%\Programs\imp`, and adds that folder to your `PATH`. It needs no administrator
 rights. To choose another folder, set `INSTALL_DIR`.
 
@@ -45,9 +45,10 @@ rights. To choose another folder, set `INSTALL_DIR`.
 irm https://sobanieca.github.io/imp-ui/install.ps1 | iex
 ```
 
-The asset names are `imp-linux-x64`, `imp-linux-arm64`, `imp-macos-x64`, `imp-macos-arm64` and
-`imp-windows-x64.exe`. Each asset has a `.sha256` file beside it, and both scripts verify it. To
-confirm the install, run `imp --version`. It prints the version that the binary runs.
+The asset names are `imp-linux-x64`, `imp-linux-arm64`, `imp-macos-x64`, `imp-macos-arm64`,
+`imp-windows-x64.exe` and `imp-windows-arm64.exe`. Each asset has a `.sha256` file beside it, and
+both scripts verify it. There is no binary for Linux with musl, such as Alpine. To confirm the
+install, run `imp --version`. It prints the version that the binary runs.
 
 ## Commands
 
@@ -55,12 +56,13 @@ confirm the install, run `imp --version`. It prints the version that the binary 
 imp init [dir] [--pwa]                scaffold a new project (--pwa: installable app)
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
           [--mock | --no-mock]        answer from the mocks folder, or from the real API
+          [--no-reload]               keep the page as it is when a file changes
 imp build [file.html] [--output dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
 imp preview [path] [--port 4517]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
             [--output <dir>]          export the gallery as static files that any page embeds
-            [--mock | --no-mock]
+            [--mock | --no-mock] [--no-reload]
 imp review [clear]                    list the reviews written from the browser
                                       (clear: delete every saved review)
 imp logs [-n <count>] [-f]            print the log of the dev server session
@@ -212,7 +214,7 @@ for the map itself.
 ## `imp start`
 
 ```
-imp start [file.html] [--port 4507]
+imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-reload]
 ```
 
 `imp start` serves the directory that contains the HTML file that you give. The default file is
@@ -249,10 +251,6 @@ path. imp skips the injection for a document that already contains the item:
   behaviour in the terminal, with no developer tools open. An AI coding agent that drives the
   session reads it the same way.
 
-- **Analytics records.** imp writes every record of [Analytics](analytics.md) as a
-  `[BROWSER:analytics]` line, with or without a sink of your app. So you check the views, the zones
-  and the outcomes of a screen while you click through it: `imp logs | grep analytics`.
-
 - **Network telemetry.** A service worker, registered at root scope, intercepts _every_ kind of
   request. That covers `fetch`, `XMLHttpRequest`, an image, a script and a navigation. It reports
   each one as `[HTTP] METHOD url -> status ms`. imp passes a request under `/@imp/` through without
@@ -280,7 +278,10 @@ directory of imp for that project, and git must ignore it. A fresh `imp init` pr
 ignores it.
 
 Live reload is included. A file change under the served directory reloads the browser. imp ignores a
-change inside `.git/`, `node_modules/`, `dist/` and its own `.imp/` working directory.
+change inside `.git/`, `node_modules/`, `dist/` and its own `.imp/` working directory. A reload
+loses the state that the page does not store, such as text in a field or an open dialog. Pass
+`--no-reload` to keep the page as it is while you edit. The server still serves every saved file, so
+the next reload that you make yourself shows the new code.
 
 imp serves a static file with the correct content type for a common web asset. imp serves your
 `public/` folder at the site root, so `public/styles.css` answers `/styles.css`, exactly as it does
@@ -307,9 +308,18 @@ other at root scope. Name your worker in `imp.json`, and imp steps aside:
 ```
 
 With that key, the dev server registers no worker of its own. It bundles your source and serves the
-bundle at `/sw.js`, so your worker can import from imp and from your own modules. Your app registers
-`/sw.js` itself, in development and in production alike. `imp build` writes the same bundle as
-`sw.js` in the output folder.
+bundle at `/sw.js`, so your worker can import from imp and from your own modules. `imp build` writes
+the same bundle as `sw.js` in the output folder.
+
+Your app registers `/sw.js` itself, in development and in production alike. Put the call in the
+entry module of your app, so that it runs once on every page load:
+
+```js
+navigator.serviceWorker.register('/sw.js')
+```
+
+Register `/sw.js`, not the path of your source. The source imports from imp, and only the bundle can
+resolve those imports.
 
 Dev mode is one call inside your worker. `startDevMode` from `imp/service-worker` adds the network
 telemetry, the answers from your `*.mock.js` files, and the immediate activation that an edit needs.
@@ -327,10 +337,22 @@ self.addEventListener('push', (event) => {
 if (env.DEV_TOOLS === 'on') startDevMode()
 ```
 
+`DEV_TOOLS` is not a value that imp defines. It is an ordinary environment value, and you choose its
+name. Set it in the file of your development environment only, see
+**[Environments](config.md#environments---per-target-config)**:
+
+```json
+{
+  "DEV_TOOLS": "on"
+}
+```
+
+The gate is necessary. The build keeps the call, and a production worker with the call would report
+every request to a dev server that does not exist. Your production environment does not set
+`DEV_TOOLS`, so the call does not run there.
+
 Call `startDevMode` at the top level of the worker, not inside an event. A browser only honours a
-listener that a worker adds while the script first runs. A production build with the call still in
-it would report every request to a dev server that does not exist. Gate the call on a value that the
-production environment does not set.
+listener that a worker adds while the script first runs.
 
 An edit to the worker, or to a file that it imports, reloads the browser like any other change. The
 new bundle installs on that navigation. When the bundle cannot be built, imp reports the file and
@@ -584,10 +606,10 @@ the module scripts of the page. It bundles each one into minified, self-containe
   never serves an old script under a new page. imp also bundles an inline `<script type="module">`
   block, and writes it to its own hashed file under `chunks/`. The built page has no inline script.
   The names depend only on your sources. The same project gives the same names in any folder.
-- **CSS that a script imports is linked from the page.** An `import './card.css'` in a script puts
-  that CSS into a hashed file under `chunks/`, and imp adds a `<link rel="stylesheet">` for it to
-  the `<head>`. imp also links the CSS of a chunk that loads through `import()`, at page load,
-  because nothing else loads it.
+- **A script cannot import CSS.** A component carries its styles in its `styles`, inside its own
+  shadow root. A stylesheet for the page itself lives in `public/`, and the page links it with
+  `<link rel="stylesheet">`. So an `import './card.css'` has no place to go, and the build stops
+  with a message that names the script.
 - **imp splits the code.** imp puts a module that you load lazily with `import()` into a separate
   chunk, under `chunks/`, with a content hash. That chunk loads on demand. imp emits code that
   several entry points share once, instead of a copy in each bundle. imp writes a chunk only when an
@@ -617,10 +639,14 @@ the module scripts of the page. It bundles each one into minified, self-containe
   notice that the code in the bundle carries, into one `LICENSES.txt` at the root of the output.
   Each emitted script starts with a comment of one line that points at that file. See
   [License notices](#license-notices) below.
-- **imp resolves a feature flag and folds it away.** imp answers every `flag('NAME')` check for the
+- **imp writes the route patterns of your map to `app-map.txt`.** When `imp.json` names a `map`, the
+  build runs that file and writes the pattern of every node, one per line, to `app-map.txt` at the
+  root of the output. The file has no label and no description. An analytics store reads it from
+  your site and accepts a record only for a page that exists. See
+  [Analytics](analytics.md#your-own-endpoint).
+- **imp resolves a build flag and folds it away.** imp answers every `flag('NAME')` check for the
   environment that you build. It removes the branch behind a disabled flag, with everything that
-  only that branch used. The build prints what it decided. See
-  **[Feature flags](feature-flags.md)**.
+  only that branch used. The build prints what it decided. See **[Build flags](build-flags.md)**.
 - **Your `public/` folder becomes the site root.** imp copies anything that you put in `public/`
   without a change, and removes `public/` from the path. That covers a stylesheet, an image, a font,
   `favicon.ico` and `robots.txt`. So `public/logo.png` ships as `logo.png`, and it answers at
@@ -634,10 +660,10 @@ the module scripts of the page. It bundles each one into minified, self-containe
     a route or a dashboard card. See [Error boundaries](components.md#error-boundaries).
   - Catch the rejection of async work that runs outside a mount, such as a fetch in an event
     handler. Show the failure to the user.
-  - Report each error with a clear message and its context. imp does this for you when you register
-    an analytics sink: every uncaught error, render error and failed request becomes an `error`
-    record with its page and its view. A sink that forwards those records to your store identifies
-    the failure without a map back to your source. See [Analytics](analytics.md#errors-only).
+  - Count each error on its page. imp does this for you when you register an analytics sink: every
+    uncaught error, render error and failed request becomes an `error` record with its page. A sink
+    that forwards those records to your store tells you which page breaks and how often, without a
+    map back to your source. See [Analytics](analytics.md#errors-only).
 
 With a JavaScript module in place of a page, `imp build` emits that module as one self-contained
 file. imp compiles in imp itself and every dependency. You can drop the result into any application,
@@ -934,9 +960,9 @@ knows the exact set of files the app is made of:
   files as its own settings and does not serve them. imp leaves out `_redirects`, `_headers`,
   `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json` and `staticwebapp.config.json`
   at the root of `public/`. It also leaves out every file or folder whose name starts with a dot,
-  such as `.well-known/`. `LICENSES.txt` stays out as well, because the app never loads it. imp
-  encodes each file name in its URL, so a name with a space, a `#`, a `%` or a non-ASCII letter
-  loads.
+  such as `.well-known/`. `LICENSES.txt` and `app-map.txt` stay out as well, because the app never
+  loads them. imp encodes each file name in its URL, so a name with a space, a `#`, a `%` or a
+  non-ASCII letter loads.
 - **One missing file does not stop the install.** A precached file that the build writes is
   required. When one of them does not load, the worker does not install, and the browser tries again
   on the next visit. So a user never gets a partial deploy. A file from `public/` is optional. When
@@ -1076,7 +1102,7 @@ resolution, the recording, and the pattern for parallel runs in CI.
 ## `imp preview`
 
 ```
-imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
+imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock] [--no-reload]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]
 ```
@@ -1092,7 +1118,9 @@ screen. You edit the component, the page reloads, and you see it. A preview file
 shows its error in place of its panels, and the rest of the catalog stays up.
 
 Underneath, this is the same dev server as `imp start`. The console and the network activity of the
-browser still stream to your terminal, and a save of any file reloads the page. Your
+browser still stream to your terminal, and a save of any file reloads the page. Pass `--no-reload`
+to keep the page and its state, such as a stage that you resized, while you edit. imp still reads
+the catalog again on a save, so the next reload that you make yourself shows the new files. Your
 `public/favicon.svg` marks the tab, as it does in your running app. When the project has none, the
 mark of imp stands in. The imp mark in the corner is the review widget. Select a part of the
 component that you preview, comment on it, and the note arrives in `.imp/reviews/`, with the preview

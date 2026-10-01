@@ -19,6 +19,7 @@
       "std/shell/index.js",
       "std/feedback/index.js",
       "std/data/index.js",
+      "analytics-bus.js#analyticsNameProblem",
       "component.js#componentNameProblem",
       "http.js#httpClientNameProblem",
       "nodes.js#asNodes",

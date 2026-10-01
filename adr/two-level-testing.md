@@ -154,6 +154,16 @@ discovery.
   server and the assertions all run in process. A unit worker starts nothing. The subprocesses are
   the browser under test, and copies of imp itself. They are never an external toolchain.
 
+- **There is no watch mode.** The code of an imp app is written by an AI agent for the most part. An
+  agent edits, finishes a portion of work, and then runs the tests once. Nobody observes a test
+  result between two edits, so a watcher that reruns the suite on every save reports on a state of
+  the code that is not finished, and nobody reads the report. `imp test` runs once and exits.
+- **Chrome is the only e2e browser, and there is no coverage report.** Puppeteer drives Chrome over
+  the DevTools protocol, and imp vendors nothing that drives Firefox or Safari. A spec proves one
+  engine. The browser-support policy, see `browser-support-baseline.md`, holds for the library, and
+  imp checks the other engines by hand. A coverage report would count the lines of a bundled test
+  file, not of the source, so imp does not print one. The docs state both limits.
+
 ## Consequences
 
 - A unit test runs fast, and offline, anywhere that the binary runs. Development mode and the

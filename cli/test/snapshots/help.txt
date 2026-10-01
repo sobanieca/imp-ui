@@ -15,6 +15,7 @@ USAGE
                      [--mock]           answer requests from the *.mock.js files in
                      [--no-mock]        the "mocks" folder instead of the network
                                         (--no-mock forces a run against the real API)
+                     [--no-reload]      keep the page as it is when a file changes
   imp build [file.html] [--output dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -27,7 +28,8 @@ USAGE
                      [--env <name>]     file renders its named exports as labeled, drag-resizable
                      [--list] [--json]  stages with a live state editor (no path: every preview,
                      [--mock]           listed on an index page | --list prints what was found |
-                     [--no-mock]        --mock serves the "mocks" folder to previewed components)
+                     [--no-mock]        --mock serves the "mocks" folder to previewed components |
+                     [--no-reload]      --no-reload keeps the page as it is when a file changes)
                      [--output <dir>]   --output writes the same page as static files, with one
                                         bundle per group and a script that defines <imp-preview>,
                                         the element that embeds the catalog in any web page

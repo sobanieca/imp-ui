@@ -1,4 +1,4 @@
-import { dirname, join, relative, resolve } from '@std/path'
+import { basename, dirname, join, relative, resolve } from '@std/path'
 import { loadImpConfig } from './config.js'
 import { DEFAULT_MAX_LOG_ENTRIES, devLogPath } from './dev-log.js'
 
@@ -70,29 +70,24 @@ async function readWholeLog(path, root) {
   }
 }
 
-async function readFrom(path, offset) {
-  const file = await Deno.open(path, { read: true })
-  try {
-    await file.seek(offset, Deno.SeekMode.Start)
-    const chunks = []
-    let total = 0
-    while (true) {
-      const chunk = new Uint8Array(READ_CHUNK)
-      const read = await file.read(chunk)
-      if (read === null) break
-      chunks.push(chunk.subarray(0, read))
-      total += read
-    }
-    const bytes = new Uint8Array(total)
-    let at = 0
-    for (const chunk of chunks) {
-      bytes.set(chunk, at)
-      at += chunk.length
-    }
-    return bytes
-  } finally {
-    file.close()
+async function readFrom(file, offset) {
+  await file.seek(offset, Deno.SeekMode.Start)
+  const chunks = []
+  let total = 0
+  while (true) {
+    const chunk = new Uint8Array(READ_CHUNK)
+    const read = await file.read(chunk)
+    if (read === null) break
+    chunks.push(chunk.subarray(0, read))
+    total += read
   }
+  const bytes = new Uint8Array(total)
+  let at = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, at)
+    at += chunk.length
+  }
+  return bytes
 }
 
 const completeLength = (bytes) => bytes.lastIndexOf(NEWLINE) + 1
@@ -111,7 +106,7 @@ const alreadyPrintedPrefix = (fileEntries, printed) => {
   return 0
 }
 
-async function follow({ root, path, remember, startOffset, printed }) {
+async function follow({ path, remember, startOffset, printed }) {
   let offset = startOffset
   const recent = printed.slice(-remember)
 
@@ -122,8 +117,8 @@ async function follow({ root, path, remember, startOffset, printed }) {
     await print(entries.join('\n') + '\n')
   }
 
-  const rewrittenLog = async () => {
-    const bytes = await readWholeLog(path, root)
+  const rewrittenLog = async (file) => {
+    const bytes = await readFrom(file, 0)
     const complete = completeLength(bytes)
     const entries = entriesOf(decoder.decode(bytes.subarray(0, complete)))
     offset = complete
@@ -131,33 +126,38 @@ async function follow({ root, path, remember, startOffset, printed }) {
   }
 
   const advance = async () => {
-    let size
+    let file
     try {
-      size = (await Deno.stat(path)).size
+      file = await Deno.open(path, { read: true })
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) return
       throw error
     }
-    if (size === offset) return
-    if (size < offset || offset === 0) {
-      await rewrittenLog()
-      return
+    try {
+      const { size } = await file.stat()
+      if (size === offset) return
+      if (size < offset || offset === 0) {
+        await rewrittenLog(file)
+        return
+      }
+      const bytes = await readFrom(file, offset)
+      const complete = completeLength(bytes)
+      if (!complete) return
+      offset += complete
+      await emit(entriesOf(decoder.decode(bytes.subarray(0, complete))))
+    } finally {
+      file.close()
     }
-    const bytes = await readFrom(path, offset)
-    const complete = completeLength(bytes)
-    if (!complete) return
-    offset += complete
-    await emit(entriesOf(decoder.decode(bytes.subarray(0, complete))))
   }
 
-  const watched = await Deno.realPath(path)
-  const watcher = Deno.watchFs(dirname(watched))
+  const name = basename(path)
+  const watcher = Deno.watchFs(dirname(path), { recursive: false })
   const stop = () => watcher.close()
   Deno.addSignalListener('SIGINT', stop)
   try {
     await advance()
     for await (const event of watcher) {
-      if (!event.paths.some((changed) => resolve(changed) === watched)) continue
+      if (!event.paths.some((changed) => basename(changed) === name)) continue
       await advance()
     }
   } finally {
@@ -175,5 +175,5 @@ export async function logs({ root, count = null, follow: keepOpen = false }) {
   if (!keepOpen) return
   const config = await loadImpConfig(root)
   const remember = Math.max(config.maxLogEntries ?? DEFAULT_MAX_LOG_ENTRIES, entries.length)
-  await follow({ root, path, remember, startOffset: complete, printed: entries })
+  await follow({ path, remember, startOffset: complete, printed: entries })
 }

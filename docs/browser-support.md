@@ -42,9 +42,13 @@ you what to use.
 
 The clearest example is a virtualized list. To window a long list in JavaScript, you take scrolling,
 measurement, and rendering away from the browser. That is a large amount of code, and it only
-approximates a job the browser already does natively. imp does not ship such a list. Use
-`content-visibility: auto` with `contain-intrinsic-size` instead. It is CSS, and it does the same
-job.
+approximates a job the browser already does natively. imp does not ship such a list. The rows of
+`list`, and the cards of `table` on a narrow screen, carry `content-visibility: auto` with a
+`contain-intrinsic-block-size`. So the browser skips the layout and the paint of the rows outside
+the viewport, and the list costs what is on screen. A row of a `<table>` cannot skip its rendering,
+because containment does not apply to a table row. So a `table` with thousands of rows pages them
+with `hasMore` and `onLoadMore`. In a component of your own, put the same two declarations on each
+row.
 
 A component with **no** platform counterpart is a different case, and it is in scope. A combo box, a
 date picker, and a tree view replace nothing, because the platform has no such control. imp builds

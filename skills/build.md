@@ -26,9 +26,8 @@ help the build.
   you write stays, and a strict Content Security Policy blocks it. `imp build` warns about it, see
   below.
 - A hashed name depends only on the sources. The same project gives the same names in any folder.
-- CSS that a script imports goes to **`chunks/<name>-<hash>.css`**, and imp adds a
-  `<link rel="stylesheet">` for it to `<head>`. The CSS of an `import()` chunk gets a link too, at
-  page load.
+- **A script cannot import CSS.** `import './card.css'` stops the build. A component holds its
+  styles in `styles`. A page stylesheet lives in `public/` and the page links it.
 - **Never reference a built script by its source name**, such as `/src/main.js` in a host config or
   a test of the output. Only the built HTML knows the hashed name.
 - imp adds `<link rel="modulepreload">` to `<head>` for every chunk that a page script imports
@@ -113,6 +112,21 @@ code and no third-party code, as with `targetImpHost`. There is no configuration
 Do not confuse this file with `imp licenses`. That command prints the notices for the tools inside
 the imp binary. None of those tools ship in an app. See [update](update.md).
 
+## Route patterns - `app-map.txt`
+
+When `imp.json` names a `map`, imp writes `app-map.txt` at the root of the output: the route pattern
+of every node of the application map, one per line, sorted, with no label and no description. The
+file is for the server of an analytics endpoint. It fetches the file from the site and drops a
+record whose `page` is not a line of it, see [analytics](analytics.md). A project without a `map`
+gets no file. A `public/app-map.txt` is a collision and stops the build.
+
+```
+/
+/invoices
+/invoices/:id
+/settings
+```
+
 ## How to deploy under a sub-path
 
 Set the `IMP_BASEPATH` environment value, see [config](config.md). `imp build` then prefixes every
@@ -158,8 +172,8 @@ The precache list has three parts:
 | required | the page, `manifest.webmanifest`, the icons; always downloaded again                 | the install fails, the next visit retries |
 | optional | the files of `public/`; always downloaded again                                      | a warning, the install goes on            |
 
-imp leaves out `LICENSES.txt`, and the host files at the root of `public/`: `_redirects`,
-`_headers`, `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json`,
+imp leaves out `LICENSES.txt`, `app-map.txt`, and the host files at the root of `public/`:
+`_redirects`, `_headers`, `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json`,
 `staticwebapp.config.json`. It also leaves out every path with a part that starts with a dot. imp
 URL-encodes each file name. A file that does not fit in a full storage gives a warning, and the
 worker loads it from the network.
@@ -201,9 +215,9 @@ When a lazy chunk of an open tab is gone, the router and the translations fetch 
 page names a newer build, imp loads the current URL again, once per build. See
 [routing](routing.md).
 
-Under a sub-path, prefix every path of the rules. Upload `LICENSES.txt` with the rest. A PWA update
-needs no rule of its own: `sw.js` is `no-cache` under the rules above. The errors of a live app
-reach the app as `error` records of an analytics sink, see [analytics](analytics.md).
+Under a sub-path, prefix every path of the rules. Upload `LICENSES.txt` and `app-map.txt` with the
+rest. A PWA update needs no rule of its own: `sw.js` is `no-cache` under the rules above. The errors
+of a live app are counted as `error` records of an analytics sink, see [analytics](analytics.md).
 
 ## Content Security Policy
 
@@ -256,7 +270,7 @@ attribute.
 - `--env` selects an environment, exactly as on `imp start`, see [config](config.md). A shell
   variable that is missing behind a `$env.` value stops the build. imp does not ship an app that is
   half configured.
-- **imp resolves a feature flag here, not at runtime.** Every `flag('NAME')` becomes a literal. imp
+- **imp resolves a build flag here, not at runtime.** Every `flag('NAME')` becomes a literal. imp
   drops the dead branch, and the chunks that only that branch reached. The output holds no flag name
   and no value. The build prints `flags folded in - NAME off, ...`. An undeclared flag name, or a
-  computed one, fails the build. See [feature-flags](feature-flags.md).
+  computed one, fails the build. See [build-flags](build-flags.md).

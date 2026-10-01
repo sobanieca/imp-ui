@@ -66,8 +66,6 @@ function printEntry(entry) {
     logger.browser(entry.level, entry.text)
   } else if (entry.type === 'page') {
     logger.browser('uncaught', entry.text)
-  } else if (entry.type === 'analytics') {
-    logger.browser('analytics', JSON.stringify(entry.record))
   } else if (entry.type === 'net') {
     const status = entry.error
       ? red(entry.error)
@@ -440,7 +438,15 @@ export function watchForChanges(root, onChange) {
   })()
 }
 
-export async function start({ entry = 'index.html', port = null, env = null, mocks = null } = {}) {
+export function reloadBannerLine(reload) {
+  return dim(
+    `  imp auto-injected | ${reload ? 'live reload' : 'no reload'} | console + network telemetry`,
+  )
+}
+
+export async function start(
+  { entry = 'index.html', port = null, env = null, mocks = null, reload = true } = {},
+) {
   let entryPath
   try {
     entryPath = await resolveEntryPath(entry, { expected: 'an HTML file' })
@@ -485,6 +491,10 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
 
   const broadcast = createBroadcaster(clients)
   watchForChanges(root, () => {
+    if (!reload) {
+      logger.debug('change detected -> no reload')
+      return
+    }
     logger.debug('change detected -> reload')
     broadcast('reload')
   })
@@ -496,7 +506,7 @@ export async function start({ entry = 'index.html', port = null, env = null, moc
         logger.info(`imp start serving ${entryName} from ${root}`)
         console.log(`  -> http://localhost:${port}/`)
         console.log(dim('  logs -> imp logs (-f follows the session)'))
-        console.log(dim('  imp auto-injected | live reload | console + network telemetry'))
+        console.log(reloadBannerLine(reload))
       },
     },
     createRequestHandler({

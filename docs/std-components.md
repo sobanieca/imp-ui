@@ -86,6 +86,11 @@ Pass one props object per call. Compose the props into a single object before th
 element. imp logs a prop that it does not recognize, and a value outside the allowed list, and the
 component uses its default. Your app keeps running.
 
+**Every control is as tall as a button of the same size.** A text field, a select, a date picker, a
+combo box and a button share one height, so a form row has one top edge and one bottom edge. A
+button is wider inside than an input, because it centres a short label, but the height is the same.
+A multi-line editor keeps its own line height.
+
 **A prop that changes takes a state.** A prop that the gallery marks as **live** accepts a value or
 a state. With a state, the component subscribes and updates that one attribute in place. Nothing
 renders again, and imp disturbs nothing that you focused or typed into:
@@ -142,20 +147,44 @@ shell(
     navbar: { label: 'Sections', map: app, icons: { [app.reports]: luChartColumn } },
     sidebar: { label: 'Pages' },
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
-    signedIn: session,
-    signIn: () => signInPage(),
+    signIn: app.signIn,
   },
   router({ map: app, access, screens }),
 )
 ```
 
-**The frame gates the app behind a session.** `signedIn` is a boolean or a state. While it is
-`undefined`, the app does not know yet, and the frame shows a loader. While it is `null` or `false`,
-the frame shows your `signIn` content and the logo in the middle of the screen, and nothing else.
-The main content is not mounted, so no screen loads and no router runs. When it becomes truthy, the
-frame mounts the app. The sign-in page is yours, because it differs with every app: a form with a
-password, buttons for social providers, a magic link, or a passkey. imp renders no form and talks to
-no identity provider. Sign-out is a plain `button` or a `menuButton` that you put beside `userCard`.
+**The sign-in page is a page of your map.** Add a node for it, and give an `access` value to every
+section that needs a session. The `access` guard of the router returns `wait` while the session is
+not known yet, and redirects a visitor with no session to the sign-in page. Put the requested path
+in the redirect, such as `/sign-in?next=/todos/3`, and navigate there after the sign-in. A deep link
+then works for a signed-out visitor too.
+
+```js
+export const app = appMap({
+  signIn: { nav: false },
+  reports: { access: 'user' },
+  directory: { access: 'admin' },
+})
+
+const access = guard(['acme.session'], (session, { need, path }) => {
+  if (session === undefined) return wait
+  if (!session) return `/sign-in?next=${encodeURIComponent(path)}`
+  return need === 'user' || session.roles.includes(need) || '/forbidden'
+})
+```
+
+**The frame shows no chrome until it knows who may see the page.** Pass the sign-in node to the
+frame as `signIn`. On that node, and on its children, the frame shows the screen and the logo in the
+middle of the screen, and nothing else: no bar, no column, no extras. It does the same while the
+guard of the current page waits, with the loading content of the router. A redirect keeps the layout
+until the next screen shows. So a signed-out visitor goes from the loading content to the sign-in
+page and never sees the navbar.
+
+**The sign-in page is yours, because it differs with every app.** Write a form with a password,
+buttons for social providers, a magic link, or a passkey. For an external identity provider, put its
+return URL under the sign-in node, so that it also shows without the chrome. imp renders no form and
+talks to no identity provider. Sign-out is a plain `button` or a `menuButton` that you put beside
+`userCard`. The sign-in page is an ordinary page, so analytics counts its views.
 
 **Keep the bar light, and group the account controls.** The sections and the extras share the top
 bar. A language picker, a theme picker and a user card side by side take the place of two or three
@@ -174,8 +203,9 @@ to, shows the current one on its trigger, and reports a choice. Put it beside th
 **The application map drives the whole nav.** You describe the app once, as a map. See
 **[Routing](routing.md)**. The top-level nodes are the sections in the bar. The children of the
 current section fill the column. The trail above the content lists the levels down to the current
-page. A section with no children gets no column, and the content takes the full width. You declare
-nothing twice, and a change to the map arrives everywhere at once.
+page, and it hides on a top-level page, where it would repeat the one word in the bar. A section
+with no children gets no column, and the content takes the full width. You declare nothing twice,
+and a change to the map arrives everywhere at once.
 
 **The frame folds on a phone.** The bar becomes a hamburger and a title. The column becomes a bottom
 bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.
@@ -184,6 +214,12 @@ and the extras move into the drawer of the hamburger. imp drops nothing. A scree
 hamburger and its drawer "Menu". When the bottom bar holds every section, the drawer has no
 navigation region, so the reader does not find an empty one. On a desktop the column collapses to an
 icon rail when every row has an icon.
+
+**The content area is the screen region of the router, and it can animate.** A forward navigation
+scrolls it to the top, and the back button puts it back where it was. The change itself can animate
+with a view transition of the browser: `effect: 'fade'` cross-fades, `'slide'` moves the screens
+along the reading direction, and `'zoom'` scales the new screen in. The default is `'none'`. The
+bar, the column and the trail never move. See **[Routing](routing.md#screen-transitions)**.
 
 **There is no aside region, on purpose.** A contextual side column has no phone form. Content that
 comes and goes, such as filters or an inspector, is a `drawer` that you mount in the main content.
@@ -309,7 +345,10 @@ form(
 
 There is no store to create, no field to register, and no `onChange` to pass through your code. Each
 control finds the form by its position in the tree, however deep you nest it. `field` is a dot path
-into the values, so a nested shape needs nothing more.
+into the values, so a nested shape needs nothing more. A segment that is a number indexes an array.
+So `items.0.name` is the name of the first row, and imp builds the array when it is not there yet. A
+form with repeatable rows keeps the rows in one array, and renders a control per row with
+`items.each`, where the path of each control carries the index of its row.
 
 **Every control shares one contract.** It takes `field` inside a `form`, or `value` outside one. It
 takes `label`, `help`, `required`, `disabled`, `validate` and `validateAsync`. It renders its own
@@ -354,6 +393,16 @@ const save = async (values) => {
     throw error
   }
 }
+```
+
+**A server that rejects one field names the field.** Pass `fields` to the `FormError`, an object
+from a field path to a message. The form shows each message on its field, exactly as a failed
+`validate` does, and moves the focus to the first of them. A message that you leave empty shows no
+notice above the buttons, because the fields carry the message. The next change of a field clears
+its message, and the next submit forgets every message from the server:
+
+```js
+throw new FormError('', { fields: { email: t('signup.emailTaken') } })
 ```
 
 **The form knows when the values changed.** The state `imp.form.dirty` is `true` while the values
@@ -517,6 +566,21 @@ the emoji and with `true` for an added reaction or `false` for a removed one. Re
 the request. When the request fails, imp takes the change back, so the screen never shows a reaction
 that the server does not have. Pass a state as `items` to keep the reactions in your app, and imp
 writes each change into it.
+
+**`emojis` limits the reactions to an allowed set.** The panel then offers only those emoji, in one
+grid without categories. A reaction that the server sends with an emoji outside the set still shows
+its count, but nobody can add to it. A person can still take their own reaction back.
+
+```js
+reactions(
+  {
+    items: post.reactions,
+    emojis: ['\u{1F44D}', '\u{2764}\u{FE0F}', '\u{1F389}', '\u{1F440}'],
+    onReact: (emoji, reacted) => api.post('/posts/42/reactions', { body: { emoji, reacted } }),
+  },
+  card(markdown(post.body)),
+)
+```
 
 ## Show what happened, in order
 

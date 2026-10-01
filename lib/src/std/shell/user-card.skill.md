@@ -24,9 +24,9 @@ Rules an agent gets wrong:
   The app renders those controls itself, beside the card, and decides what a sign-in and a sign-out
   do. Write `flex(userCard(person), button({ events: { click: signOut } }, 'Sign out'))`, or a
   `menuButton` with the account actions.
-- **Render the card only for a signed-in person.** Whether somebody is signed in is the `signedIn`
-  prop of `shell`, see imp skill std/shell. A signed-out visitor sees the `signIn` content of the
-  frame, and the frame does not show the `extras` that hold this card.
+- **Render the card only for a signed-in person.** Put it in `extras` through `session.view(...)`,
+  so it shows nothing when the session is `null`. The frame does not show `extras` on the sign-in
+  node, see imp skill std/shell.
 - **Inside `shell`, put it in `extras`.** The frame places `extras` at the end of the bar on a
   desktop, at the foot of the column in the sidebar-only layout, and in the drawer on a phone.
 - **imp holds no session.** The component reads `name`, `description` and `picture`, and nothing
@@ -59,6 +59,6 @@ flex(
 )
 ```
 
-Related: imp skill std/shell - the frame whose `extras` usually hold one, and its `signedIn` gate;
-imp skill std/avatar - the same avatar, as a component of its own; imp skill std/menuButton - the
+Related: imp skill std/shell - the frame whose `extras` usually hold one, and its sign-in node; imp
+skill std/avatar - the same avatar, as a component of its own; imp skill std/menuButton - the
 account actions beside the card.

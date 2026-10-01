@@ -1,0 +1,8 @@
+--- before the save ---
+components/counter.preview.js
+components/todos.preview.js
+
+--- after the save ---
+components/counter.preview.js
+components/extra.preview.js
+components/todos.preview.js

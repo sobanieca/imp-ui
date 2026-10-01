@@ -1,8 +1,4 @@
 import { reviewWidgetScript, TELEMETRY_ENTRIES } from './review.js'
-import { IMP_MODULES } from './specifiers.js'
-
-const ANALYTICS_MODULE = `/@imp/${IMP_MODULES['imp/analytics']}`
-
 const THEME_DRAFT_MODULE = '/@imp/theme-draft.js'
 
 const THEME_DRAFT_PREFIX = 'imp.theme-draft.'
@@ -93,10 +89,6 @@ export const clientScript = (
     send(entry)
   }
   globalThis.__impFlushTelemetry = flush
-
-  import('${ANALYTICS_MODULE}')
-    .then(({ onAnalytics }) => onAnalytics((record) => send({ type: 'analytics', record })))
-    .catch((error) => console.error('imp: analytics records do not reach the log -', error))
 
   for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
     const orig = console[level]

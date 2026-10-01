@@ -88,6 +88,12 @@ router({ map: app, access, screens })
   computed, and the nav and the route can never disagree about who may see what. A check that throws
   during that derivation hides the node and logs the error. It cannot allow the node.
 
+- **The same computed decides whether `shell` shows its chrome.** The router reports the verdict of
+  the current node with the nav. While it is `wait`, `shell` shows the loading content without the
+  bar, the column or the extras, because the app does not know yet who may see the page. While it is
+  a redirect, `shell` keeps its layout, because the next screen decides it. So a signed-out visitor
+  goes from the loading content to the sign-in page, and the chrome never paints.
+
 - **imp watches the declared states for the life of the route, and not only while it decides.** The
   first verdict that is not `wait` resolves the entry. After that, the same subscriptions run the
   check again, on every change. So a sign-out on a guarded screen redirects, and the app writes

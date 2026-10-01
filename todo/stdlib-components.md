@@ -1,22 +1,7 @@
 # Standard component library - what is left
 
 The catalog is built, and `adr/short-component-catalog.md` records its shape. This file lists the
-work that waits for a consumer, for a browser, or for a person.
-
-## Responsive
-
-- **A `breakpoint` value with the shape of a state** is still owed. A person must be able to read it
-  and to watch it. It serves the structural swap that CSS cannot express. `table` switches to cards
-  through a container query. `shell` swaps its navigation at the one breakpoint, and it reads its
-  own media query, because nothing outside it needs the value. So no consumer exists yet. Build the
-  state with the first consumer outside `shell`.
-
-## Components that wait
-
-- **`carousel` waits** until `::scroll-button()` and `::scroll-marker()` work in every browser. To
-  write JavaScript for a scroll button in the meantime is what `adr/browser-support-baseline.md`
-  forbids.
-- **`image` with a zoom** is not built. It waits for a call site.
+work that waits for a browser, or for a person.
 
 ## Platform features that wait
 

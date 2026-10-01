@@ -11,9 +11,7 @@ exit code: 0
 built index.html -> dist/
   base path /base - root-absolute urls prefixed for a sub-path deployment
   chunks/app-<hash>.js (<size>)
-  chunks/app-<hash>.css (<size>)
   chunks/env-<hash>.js (<size>)
-  chunks/lazy-<hash>.css (<size>)
   chunks/lazy-<hash>.js (<size>)
   images/a.svg (<size>)
   images/b.svg (<size>)
@@ -28,8 +26,6 @@ built index.html -> dist/
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<link rel="stylesheet" href="/base/chunks/app-<hash>.css">
-<link rel="stylesheet" href="/base/chunks/lazy-<hash>.css">
 <script src="/base/chunks/env-<hash>.js"></script>
     <title>page urls</title>
     <meta property="og:image" content="/base/images/a.svg">

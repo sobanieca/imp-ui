@@ -57,6 +57,9 @@ Events:
 Rules an agent gets wrong:
 
 - **Import the component from `imp/std/data`**, not from `imp/std`.
+- **A table row cannot skip its rendering.** Containment does not apply to a `<tr>`, so the table
+  layout renders every row. The card layout on a narrow container has `content-visibility: auto` per
+  row. For thousands of rows, page with `hasMore` and `onLoadMore`.
 - **There is no pagination.** Paging is infinite scroll. Pass `hasMore` and `onLoadMore`, and append
   the new rows to the `rows` state. imp calls `onLoadMore` when the end of the rows comes into view.
 - **`onLoadMore` needs `hasMore`.** Without it imp warns and loads nothing. Set the state to `false`

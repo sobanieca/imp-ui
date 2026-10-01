@@ -1,7 +1,7 @@
 # preview - one component at a time, from a `*.preview.js` file
 
 ```
-imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock]
+imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock] [--no-reload]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]
 ```
@@ -12,7 +12,8 @@ of the component at the top of its Skill tab. Then it shows a vertical tab per n
 holds the component in a resizable stage, with the code of the call site and a state editor behind
 two toggle buttons. A **Skill** tab renders the component's `*.skill.md`. There is no app boot, no
 backend, and no navigation to the right screen. It is the same dev server as [start](start.md)
-underneath, with terminal telemetry and reload on save.
+underneath, with terminal telemetry and reload on save. `--no-reload` keeps the page as it is on a
+save. imp still reads the catalog again, and a reload made by the user shows the new files.
 
 ## The preview file
 

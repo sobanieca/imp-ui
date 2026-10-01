@@ -1,0 +1,5 @@
+--- default ---
+[DEBUG] change detected -> reload
+
+--- --no-reload ---
+[DEBUG] change detected -> no reload

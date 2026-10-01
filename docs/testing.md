@@ -38,6 +38,10 @@ that fails prints its full output, so you see exactly what broke. See _How to re
 command exits `1` when a file failed. imp always skips `.git`, `node_modules`, `dist` and `.imp`
 during the discovery.
 
+There is no watch mode. `imp test` runs once and exits. Run it when a piece of work is done, and
+read the result. A watcher that reruns the suite on every save gives a result for a state of the
+code that is not finished, and imp has no reason to report on that.
+
 A bare `imp test` with no level, and with more than one candidate file, does not guess. It asks you
 to select `--unit`, `--e2e` or a single file. It runs nothing, and it **exits with a non-zero
 code**. This stops imp from running a partial or unintended subset in silence. It also makes a stray
@@ -601,6 +605,15 @@ A recording adds a little capture time and encoding time per spec. So it stays o
 it. A plain `imp test --e2e` records nothing.
 
 ### The browser
+
+An e2e spec runs in Chrome, and only in Chrome. imp supports the current stable version of Chrome,
+Edge, Firefox and Safari, see **[Browser support](browser-support.md)**, but it drives one browser
+in a test. Puppeteer drives Chrome through the DevTools protocol, and Firefox and Safari do not
+speak that protocol the same way. So a spec proves the behaviour in one engine. imp tests its own
+components in every engine by hand, and a bug in another engine is a bug.
+
+imp reports no coverage. A test file is bundled before it runs, so a line count of the bundle would
+not point at your source. Use the test names as the record of what is covered.
 
 An e2e test needs a Chrome or Chromium binary. imp resolves one in this order:
 

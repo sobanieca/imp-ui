@@ -85,6 +85,18 @@ added to the kernel.
   that arrives after the mount, and a save outside `onSubmit`. A reset while a submit runs wins over
   that submit. So a form that clears itself inside `onSubmit`, to take the next record, is clean
   when the save resolves.
+- **A path segment that is a number indexes an array.** `items.0.name` reads and writes the first
+  row of `items`. A write along a missing segment creates an array for a numeric next segment, and
+  an object for a named one. So a form with repeatable rows keeps the rows in one array, and a
+  control per row carries the index of its row in its path. A row added or removed is a change of
+  the array, and `each` over the rows renders the controls for it.
+- **A server error that names a field reaches that field.** `FormError` takes `fields`, an object
+  from a field path to a message. The form writes each message into `imp.form.errors` under its
+  path. So the field shows it the same way it shows a failed `validate`, and the focus moves to the
+  first such field. With an empty message the form writes no `imp.form.formError`, because the
+  fields carry the message. A change of a field runs its own validation, which replaces the server
+  message. The next submit removes every server message first, so a message on a path with no
+  control cannot block the form for good.
 - **A failure that belongs to no single field is state too.** When `onSubmit` throws, or its promise
   rejects, the form writes into `imp.form.formError`. The next submit and `resetForm` write `null`.
   The form shows the failure in an error `notice` that it renders above its last child, where the

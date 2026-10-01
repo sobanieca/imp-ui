@@ -201,10 +201,30 @@ lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` 
 
 - **imp manages the scroll, and leaves the focus to the app.** The router sets
   `history.scrollRestoration = 'manual'`. It marks each history entry with a key, and records the
-  scroll position. On a push it scrolls to the top, after the new screen mounts. On a back or a
-  forward it restores the saved position for that entry. The focus, and an announcement through a
-  live region, are **not** a feature of the router. A screen focuses its own heading in `onMount`.
-  It can also drive a shared live region from `useRoute().watch`. The app owns the focus.
+  scroll position of the page and of the screen region when the entry is left. On a push it scrolls
+  both to the top, after the new screen mounts. On a back or a forward it restores the saved
+  positions for that entry. The screen region is the box that scrolls the screens. The `shell`
+  claims its `<main>`, because the shell is a fixed frame whose regions scroll on their own, so the
+  page scroll never moves there. A frame of an app claims its own box with
+  `screenRegion(self, element)`. The claim ends when the component unmounts. The focus, and an
+  announcement through a live region, are **not** a feature of the router. A screen focuses its own
+  heading in `onMount`. It can also drive a shared live region from `useRoute().watch`. The app owns
+  the focus.
+
+- **A change of screen can run inside a view transition.** The router swaps the screen inside
+  `document.startViewTransition` when the screen region has an effect other than `'none'`. The
+  region carries `view-transition-name: imp-screen`, so only the region animates and the rest of the
+  page stays still. The effects are `fade`, `slide` and `zoom`. Their keyframes live in one
+  document-level stylesheet, because the `::view-transition` pseudo-elements belong to the document,
+  not to a shadow root. That stylesheet sets `pointer-events: none` on `::view-transition`, which is
+  the advice of the browser vendors, but a hit test during the animation still lands on the root
+  element. So the page takes no click while a transition runs, and an effect is a choice of the app,
+  see `app-shell-component.md`. A `slide` follows the reading direction, and turns around on a back
+  navigation, which the router marks on the root element for the duration of the transition. With
+  `prefers-reduced-motion: reduce`, or with the page hidden, the swap runs with no transition.
+  Inside a transition the route state updates in the update callback, which the browser runs after
+  it captured the old screen. So `navigate` returns before the route changed. Code that reads the
+  route after a `navigate` reads it from `useRoute().watch`, not right after the call.
 
 - **An app that is served under a sub-path sets the `IMP_BASEPATH` environment value.** There is no
   call to configure that in app code. imp removes the base from the location before it matches, and

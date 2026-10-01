@@ -1,5 +1,6 @@
 {
   "dependencies": {
     "mitt": "npm:mitt@3.0.1"
-  }
+  },
+  "map": "app-map.js"
 }

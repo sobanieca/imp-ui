@@ -84,9 +84,9 @@ text must never be the only name of a control.
   or `<dialog>`. Such an element is not a problem that a person meets. The same walk runs over the
   showcases of the standard library, so the library and an app use one check.
 - **The theme editor checks contrast.** It lists every text and background token pair below 4.5:1,
-  and every pair whose colour it cannot read, and `contrastProblems` in `imp/theme` is the same
-  function for a unit test, see `theme-editor.md`. The derivation of a theme keeps the built-in
-  themes above that line.
+  and every pair whose colour it cannot read, see `theme-editor.md`. The check is part of the editor
+  and not of the library an app ships. The derivation of a theme keeps the built-in themes above
+  that line.
 
 imp does not bundle axe-core or another wide audit engine. A wide audit reports many findings that
 need a person to judge them, and an agent that reads such a report fixes the wrong ones. Each of the

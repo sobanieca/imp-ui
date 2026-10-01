@@ -101,6 +101,7 @@ export const markdownStyles = `
   .md h3,
   .md h4 {
     margin-block: var(--imp-space-5, 24px) var(--imp-space-3, 12px);
+    color: var(--imp-color-heading, var(--imp-color-text, inherit));
     font-weight: var(--imp-font-weight-bold, 600);
     line-height: var(--imp-line-height-tight, 1.25);
   }

@@ -1,7 +1,7 @@
 # start - the dev server, and imp logs to read the browser from the terminal
 
 ```
-imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock]
+imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-reload]
 ```
 
 `imp start` serves the directory that holds the entry HTML file. The default entry is `index.html`
@@ -20,8 +20,6 @@ imp skips an item that the document already contains. You never reference the li
   alias in `dependencies` resolves to its vendored bundle. See [imports](imports.md).
 - **Console and error telemetry.** imp forwards `console.*`, an uncaught error and an unhandled
   rejection to the terminal as a `[BROWSER:*]` line.
-- **Analytics records.** Every record goes to the log as a `[BROWSER:analytics]` line, with or
-  without a sink of the app: `imp logs | grep analytics`. See [analytics](analytics.md).
 - **Network telemetry.** A service worker at root scope reports every request as
   `[HTTP] METHOD url -> status ms`. This covers `fetch`, XHR, images, scripts and navigations. A
   `/@imp/` request passes through. When `imp.json` names a `serviceWorker`, imp registers no worker
@@ -86,6 +84,8 @@ changes. See [theming](theming.md).
   the session with `imp logs`. Do not wait for `imp start` to exit.
 - **Live reload is included.** Never restart the server after you edit a file. A change under the
   served directory reloads the browser. imp ignores `.git/`, `node_modules/`, `dist/` and `.imp/`.
+  `--no-reload` turns the reload off for that run. The server still serves every saved file, and a
+  reload made by the user shows the new code.
 - **A declared dependency with no vendored bundle gives a warning only.** The warning points at
   `imp install`. Run that command, see [dependencies](dependencies.md). Do not edit `imp.json` by
   hand.

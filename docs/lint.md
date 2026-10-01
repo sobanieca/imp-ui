@@ -105,6 +105,40 @@ error[imp/http-client-name-namespace]: http client name 'api' must include a nam
  --> src/app.js:1:30
 ```
 
+### `imp/analytics-name-namespace`
+
+A zone name and an outcome name follow the same rule as a state name. They need two or more
+dot-separated segments that are not empty, such as `myapp.due-date`. See
+**[Analytics](analytics.md)**. The rule checks every `zone` call whose `name` is a literal, and
+every `track` call whose name is a literal:
+
+```js
+zone({ name: 'due-date' }, datePicker({ field: 'due' }))
+track('invoiceSent')
+```
+
+```
+error[imp/analytics-name-namespace]: zone name 'due-date' must include a namespace - use dot-separated segments like 'myapp.invoice-summary'
+ --> src/invoice.js:1:15
+
+error[imp/analytics-name-namespace]: outcome name 'invoiceSent' must include a namespace - use dot-separated segments like 'myapp.invoice-sent'
+ --> src/invoice.js:2:7
+```
+
+### `imp/unique-analytics-name`
+
+Each zone and each outcome has one name, in one place of your code. The report groups the records by
+name, so two zones that share a name are one row that nobody can read. This rule judges the project
+as a whole, like the dead code checks below. It collects every literal zone name and every literal
+outcome name from every file, and it reports each name that two calls share:
+
+```
+error[imp/unique-analytics-name]: zone name 'myapp.summary' is also used in src/invoice.js:6:13 - give each zone its own name, so that the report can tell them apart
+ --> src/main.js:10:36
+```
+
+The rule skips a test, a preview and a mock file. A name that you build dynamically is not checked.
+
 ### `imp/watch-with-self`
 
 `watch(fn)` subscribes at once and registers no cleanup. So a `watch` in the `setup` of a component

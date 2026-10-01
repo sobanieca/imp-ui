@@ -4,28 +4,28 @@ imp resolves these specifiers itself. In development it uses the import map that
 injects. In production `imp build` resolves them. There is nothing to install and nothing to
 configure. Never import imp by a relative path, by a URL, or with a version.
 
-| Specifier            | Exports                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                       |
-| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)                       |
-| `imp/state`          | `initState`, `useState`, `computed`                                                         |
-| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute`, `url` |
-| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                          |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`, `contrastProblems`                                  |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                         |
-| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                         |
-| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                    |
-| `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                   |
-| `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                     |
-| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                   |
-| `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                    |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                   |
-| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                       |
-| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, ...              |
-| `imp/std/feedback`   | `loader`, `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, ...               |
-| `imp/std/data`       | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                    |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                         |
-| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                                     |
+| Specifier            | Exports                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                                       |
+| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)                                       |
+| `imp/state`          | `initState`, `useState`, `computed`                                                                         |
+| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute`, `url`, `screenRegion` |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                                          |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                                                      |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                                         |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                                         |
+| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                                    |
+| `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                                   |
+| `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                                     |
+| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                   |
+| `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                    |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                                   |
+| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                                       |
+| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, ...                              |
+| `imp/std/feedback`   | `loader`, `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, ...                               |
+| `imp/std/data`       | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                    |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                                         |
+| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                                                     |
 
 ```js
 import { component } from 'imp'
@@ -39,7 +39,7 @@ Each specifier is one subject, and each subject has a manual. Read [rendering](r
 `imp/theme`, [i18n](i18n.md) for `imp/i18n`, [logging](logging.md) for `imp/log`, [std](std.md) for
 `imp/std`, [icons](icons.md) for `imp/icons`, [service-worker](service-worker.md) for
 `imp/service-worker`, [analytics](analytics.md) for `imp/analytics`, [testing](testing.md) for
-`imp/test`, and [feature-flags](feature-flags.md) for `flag`.
+`imp/test`, and [build-flags](build-flags.md) for `flag`.
 
 Rules an agent gets wrong:
 

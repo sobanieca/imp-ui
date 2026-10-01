@@ -7,7 +7,8 @@ are part of the binary.
   browser environment.
 - **`*.spec.js`** holds an end-to-end test. imp serves the app as `imp start` does, launches
   headless Chrome, and gives each spec a Puppeteer `page`. The page reports no reduced-motion
-  preference on every machine.
+  preference on every machine. Chrome is the only e2e browser. There is no Firefox and no Safari
+  run, and no coverage report.
 
 ```
 imp test <file>              run one file (exit 0/1)
@@ -19,8 +20,9 @@ imp test --e2e --video vid   record each spec as an animated GIF into ./vid
 imp test --e2e --mock        answer the app's requests from the *.mock.js files (--no-mock forces real)
 ```
 
-One test file per process is the unit of isolation. A bare `imp test` with several candidate files
-runs nothing and exits with a non-zero code. Always name a level or a file.
+There is no watch mode. Run the tests when a piece of work is done. One test file per process is the
+unit of isolation. A bare `imp test` with several candidate files runs nothing and exits with a
+non-zero code. Always name a level or a file.
 
 ## How to write a test
 

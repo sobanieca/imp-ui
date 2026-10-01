@@ -48,18 +48,19 @@ a theme is complete. It does the following:
   page, so a theme toggle does not repeat the warning in production. It is not fatal: imp still
   applies the tokens that the theme has. A component reads every token with its built-in value as
   the CSS fallback, so a missing token degrades to the default look, or to the value of the previous
-  theme. The check costs one pass over 63 keys per call. A theme with a `base` never warns, because
+  theme. The check costs one pass over 64 keys per call. A theme with a `base` never warns, because
   the base fills every key. A new token must go into the list and into every built-in theme in the
   same change, and a test asserts that the two agree.
-- It sets `color-scheme` on the same root, from the lightness of `color-surface`. A theme carries no
-  mode field. A dark theme is a theme whose surface is dark, so imp reads that fact from the colour
-  instead of a second field that can disagree with it. `colorSchemeOf(tokens)` parses the colour
-  value, converts it to OKLCH, and returns `'dark'` below a lightness of 0.5, else `'light'`. The
-  built-in surfaces sit at 0.995 and 0.205, far from the boundary. imp parses the token without the
-  browser, with the same colour parser as the contrast check. So the token must be an opaque colour
-  in a CSS colour syntax, or a `var()` reference to another token. When it is absent, translucent or
-  unreadable, imp warns once per theme name and clears the property. `colorSchemeOf` is public, so a
-  component that must branch on the scheme uses the same test. CSS inherits `color-scheme`. So a
+- It sets `color-scheme` on the same root, from the token `color-scheme`. The token is `light` or
+  `dark`, and it is a token like every other: the derivation writes it from the `mode` knob, a theme
+  with a `base` inherits it, and a theme file lists it. imp does not read the scheme from the
+  lightness of `color-surface`. That read needs a parser for every CSS colour syntax, and the parser
+  is 8 KB of minified code that every app would ship for one boolean. The author of a theme knows
+  its scheme, so the theme states it, as every stylesheet on the web does. A theme can set a dark
+  surface and keep `color-scheme: light`. That is a bug of the author of that theme, like a missing
+  token. When the token is absent or has another value, imp warns once per theme name and clears the
+  property. `colorSchemeOf(tokens)` returns the token or `undefined`, and it is public, so a
+  component that must branch on the scheme uses the same read. CSS inherits `color-scheme`. So a
   value on `:root` reaches a native control, a scrollbar, and CSS that reads `prefers-color-scheme`,
   also **inside** the shadow root of a component. Nobody stamps a value on each `:host`. imp writes
   **no attribute for a mode** on the root. A descendant selector in the light DOM is the only thing
@@ -111,13 +112,15 @@ applies a theme, and no component can state a default that the themes disagree w
 **The fonts are three tokens, and the page loads them.** `font-family` and `font-family-mono` hold a
 font stack each, and the built-in themes set system stacks. `font-family-heading` is the font of
 `heading` and of the name in `appLogo`. Its default is `var(--imp-font-family)`, so a theme that
-does not set it has one text font. A design with a display face sets this one token. imp loads no
-font, injects no `<link>`, and reads no font from a config. A `<link>` or an `@font-face` rule in
-`index.html` is what the browser needs, and a font face that the document declares reaches every
-shadow root. So the platform owns the loading, and the theme owns the name. The standard components
-use two weights, `font-weight-normal` at 400 and `font-weight-bold` at 600. There is no medium
-weight. Two weights keep a web font to two files, and a label at 600 reads as a control without the
-heaviness of 700. A weight token that no component uses would ask an app to load a file for nothing.
+does not set it has one text font. A design with a display face sets this one token. The colour of
+the same text is `color-heading`, with the default `var(--imp-color-text)`, so a heading takes the
+text colour until a theme gives it one of its own. imp loads no font, injects no `<link>`, and reads
+no font from a config. A `<link>` or an `@font-face` rule in `index.html` is what the browser needs,
+and a font face that the document declares reaches every shadow root. So the platform owns the
+loading, and the theme owns the name. The standard components use two weights, `font-weight-normal`
+at 400 and `font-weight-bold` at 600. There is no medium weight. Two weights keep a web font to two
+files, and a label at 600 reads as a control without the heaviness of 700. A weight token that no
+component uses would ask an app to load a file for nothing.
 
 The **scheme for a token name is fixed.** It holds semantic colour roles, numeric scales such as
 `space-*`, `radius-*`, `shadow-*` and `font-size-*`, and font families. The **exact list is not

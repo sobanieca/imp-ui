@@ -116,13 +116,13 @@ export const SKILLS = [
     name: 'analytics',
     group: 'app',
     aliases: ['imp/analytics', 'zone', 'zones', 'track', 'onanalytics', 'tracking', 'metrics'],
-    summary: 'page views, zones and outcomes as plain records, sent to a sink of the app',
+    summary: 'page views, zones, outcomes and errors as counted records, sent to a sink of the app',
   },
   {
-    name: 'feature-flags',
+    name: 'build-flags',
     group: 'app',
-    aliases: ['flag', 'flags', 'feature-flag', 'toggles'],
-    summary: 'flag() gates a feature per environment and imp build folds the branch away',
+    aliases: ['flag', 'flags', 'build-flag', 'toggles'],
+    summary: 'flag() reads a boolean fixed per environment and imp build folds the branch away',
   },
   {
     name: 'cli',

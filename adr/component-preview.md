@@ -216,10 +216,10 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   export is passed to `applyTheme` as an object. So a theme file stays an ordinary module with
   nothing preview-specific in it, and it needs no name registry. Project themes are listed before
   the built-ins, and the first one is applied by default, so a preview opens in the app's own skin.
-  A project theme is layered over the built-in that matches the lightness of its `color-surface`,
-  not applied alone. `applyTheme` writes only the tokens a theme names, so a partial theme alone
-  would leave the rest at whatever the previous selection set. The page wears the theme too, so that
-  would be a half-styled workbench, and not only a half-styled component.
+  A project theme is layered over the built-in that matches its `color-scheme` token, not applied
+  alone. `applyTheme` writes only the tokens a theme names, so a partial theme alone would leave the
+  rest at whatever the previous selection set. The page wears the theme too, so that would be a
+  half-styled workbench, and not only a half-styled component.
 - **A project can frame every preview with its own page, through `preview.entry`.** The generated
   page holds no stylesheet of the app. So a web font that the app links in `index.html` does not
   load in a preview, and the theme editor cannot show it. `preview.entry` in `imp.json` names an

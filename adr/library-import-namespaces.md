@@ -28,7 +28,7 @@ exactly the public names. An implementation module stays internal, and app code 
 | `imp/html`           | `el`, `html`, one factory per HTML tag                                    |
 | `imp/state`          | `initState`, `useState`, `computed`                                       |
 | `imp/router`         | `router`, `area`, `route`, `guard`, `wait`, `navigate`, `useRoute`, `url` |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`, `contrastProblems`                |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                    |
 | `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`       |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                       |
 | `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`        |
@@ -41,8 +41,8 @@ exactly the public names. An implementation module stays internal, and app code 
 
 - **`imp` keeps what defines an app, and not what defines a subject.** That is `component`, which is
   the centre of the framework, `mount` and `init`, which are the entry point, `env` and `flag`,
-  which read the build configuration, see `environments.md` and `feature-flags.md`. Everything with
-  a subject of its own moves out. `init` reaches into theming and i18n, to apply what an app is
+  which read the build configuration, see `environments.md` and `build-flags.md`. Everything with a
+  subject of its own moves out. `init` reaches into theming and i18n, to apply what an app is
   configured with. So both of those modules initialize their state lazily. An app that never calls
   `init` pays for neither one in its bundle.
 - **One name has one home, and there is no alias.** imp re-exports nothing from a second specifier.

@@ -7,15 +7,15 @@ key handlers or a focus trap to a standard component. There is no prop that tune
 
 ## What the app owes
 
-| Duty                           | Write                                                                           |
-| ------------------------------ | ------------------------------------------------------------------------------- |
-| name an icon-only button       | `button({ label: t('Delete') }, icon(luTrash))`                                 |
-| name an image                  | `img({ src, alt: t('Sales per month') })`, or `alt: ''` for decoration          |
-| name a field                   | `textField({ field: 'email', label: t('Email') })` - every input takes `label`  |
-| move the focus on a navigation | one frame around the router slot, see [routing](routing.md)                     |
-| first focus inside an overlay  | the native `autofocus` attribute on that element                                |
-| a readable custom theme        | `contrastProblems(applyTheme(brand).tokens)` is `[]`, see [theming](theming.md) |
-| a component of your own        | the same contract, see [custom-components](custom-components.md)                |
+| Duty                           | Write                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| name an icon-only button       | `button({ label: t('Delete') }, icon(luTrash))`                                |
+| name an image                  | `img({ src, alt: t('Sales per month') })`, or `alt: ''` for decoration         |
+| name a field                   | `textField({ field: 'email', label: t('Email') })` - every input takes `label` |
+| move the focus on a navigation | one frame around the router slot, see [routing](routing.md)                    |
+| first focus inside an overlay  | the native `autofocus` attribute on that element                               |
+| a readable custom theme        | the contrast report of the theme editor is empty, see [theming](theming.md)    |
+| a component of your own        | the same contract, see [custom-components](custom-components.md)               |
 
 ## Rules an agent gets wrong
 
@@ -37,11 +37,11 @@ key handlers or a focus trap to a standard component. There is no prop that tune
 | `imp lint` rule `imp/img-alt`                   | an `img` call with no `alt` key                                                   |
 | `imp lint` rule `imp/icon-button-name`          | a `button` with no name whose only children are `icon(...)` calls with no `label` |
 | `await expect(page).toHaveAccessibleControls()` | e2e: a control with no name, a focusable element with no role, in the a11y tree   |
-| `contrastProblems(tokens)` from `imp/theme`     | a text and background token pair below 4.5:1, or a pair it cannot read            |
+| the contrast report of the theme editor         | a text and background token pair below 4.5:1, or a pair it cannot read            |
 
 - The matcher takes the page or an element from `page.$()`. Always `await` it. See
   [testing](testing.md).
-- The theme editor shows the same contrast report while a person edits a theme.
+- The contrast report sits under the tabs of the editor, and changes with each edit.
 - imp ships no full audit such as axe-core. Do not add one to satisfy these checks.
 
 ```js

@@ -65,6 +65,7 @@ These are the conventions:
 | [short-component-catalog](short-component-catalog.md)                                     | One component per job; a prop covers a variant; paging is an infinite scroll        |
 | [accessible-by-default-stdlib](accessible-by-default-stdlib.md)                           | One accessibility contract per component; lint, an e2e matcher and a contrast check |
 | [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box       |
+| [control-box-per-size](control-box-per-size.md)                                           | Every single-line control has one height per size, from one shared box              |
 | [image-upload-client-side-crop](image-upload-client-side-crop.md)                         | `imageUpload` crops and resizes in the browser; the value is a data URL             |
 | [responsive-fluid-values-only](responsive-fluid-values-only.md)                           | Fluid theme values only; no per-screen props - an app writes its own media query    |
 | [layout-two-flex-primitives](layout-two-flex-primitives.md)                               | Layout is `flex` and `stack` only - CSS flexbox, gap off the theme scale            |
@@ -88,7 +89,7 @@ These are the conventions:
 | [library-import-namespaces](library-import-namespaces.md) | Per-subject specifiers: imp, imp/html, imp/state, imp/router, imp/theme, imp/i18n, imp/log |
 | [tree-shakeable-library](tree-shakeable-library.md)       | Nothing runs at module scope; unused library code is dropped from app bundles              |
 | [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, bindable request state                |
-| [product-analytics](product-analytics.md)                 | imp collects views, zones, outcomes and errors; the app forwards them through a sink       |
+| [product-analytics](product-analytics.md)                 | imp counts pages, zones, outcomes and errors as records; the app forwards them via a sink  |
 
 ## CLI
 
@@ -124,5 +125,5 @@ These are the conventions:
 | [version-pinning-self-delegation](version-pinning-self-delegation.md) | `"version"` pin in imp.json, self-delegating binary                                  |
 | [config-discovery](config-discovery.md)                               | JSONC config, imp.json/imp.jsonc, upward search, safe edits                          |
 | [environments](environments.md)                                       | Named env files, `$env.` shell refs, one injected `env` global                       |
-| [feature-flags](feature-flags.md)                                     | `flags` declared in imp.json, `flag()` folded out by the build                       |
+| [build-flags](build-flags.md)                                         | `flags` declared in imp.json, `flag()` folded out by the build                       |
 | [development-checks](development-checks.md)                           | Checks behind `globalThis.__IMP_DEV__`, folded out by the build                      |

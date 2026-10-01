@@ -24,6 +24,12 @@ if (env.DEV_TOOLS === 'on') startDevMode()
 navigator.serviceWorker.register('/sw.js')
 ```
 
+`DEV_TOOLS` is not built in. Set it in the development environment file only:
+
+```json
+{ "DEV_TOOLS": "on" }
+```
+
 ## What startDevMode() does
 
 | Listener   | Effect                                                                       |

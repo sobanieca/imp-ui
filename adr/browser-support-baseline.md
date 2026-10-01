@@ -66,8 +66,10 @@ the focus.
 - Some entries in the catalog fall outside the boundary. `virtualList` is one. To window a list
   implements again what the scrolling and the rendering of the browser do.
   `content-visibility: auto` with `contain-intrinsic-size` is the answer of the platform. So imp
-  documents that, and it ships no virtualizer. `carousel` waits until `::scroll-button()` and
-  `::scroll-marker()` are interoperable. imp does not ship JavaScript for a scroll button now.
+  puts both on the rows of `list` and on the cards of `table`, and it ships no virtualizer. A `<tr>`
+  cannot take containment, so the table layout pages long data with `onLoadMore` instead. `carousel`
+  is another. A scroll button and a scroll marker are `::scroll-button()` and `::scroll-marker()`,
+  and imp ships no JavaScript in their place.
 - A component with **no** native counterpart stays in scope. `comboBox`, `datePicker` and `tree` are
   the examples. They replace nothing, because the platform has no such control. They remain the
   largest surfaces of ARIA and of keyboard work in the library. The accessibility contract, and not

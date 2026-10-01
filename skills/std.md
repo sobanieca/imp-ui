@@ -44,6 +44,9 @@ section(
 - **The words of a component are translatable, and imp already wrote them.** imp finds them under an
   `imp.` key and falls back to English. Your translation of that key wins. See [i18n](i18n.md).
 - **A component has no outer margin.** Spacing is the job of whatever lays the components out.
+- **Every single-line control is as tall as a button of the same size**: `textField`, `select`,
+  `comboBox`, `datePicker`, `emojiPicker`, `segmented` and `button`. Put them in one row as they
+  are. Do not set a height on a control to line it up with another.
 - **The `imp-` element prefix is reserved.** Name your own components `my-app-*`.
 - **The content lives in a shadow root.** `host.textContent` is empty by design. A unit test walks
   the `shadowRoot`. An e2e selector goes through a shadow root on its own. See
@@ -217,27 +220,26 @@ shell(
     },
     sidebar: { label: 'Pages' },
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
-    signedIn: session,
-    signIn: () => signInPage(),
+    signIn: app.signIn,
   },
   router({ map: app, access, screens, options }),
 )
 ```
 
-| Prop          | Values                          | Default  | Notes                                                |
-| ------------- | ------------------------------- | -------- | ---------------------------------------------------- |
-| `logo`        | DOM                             | -        | Heads the bar, the column, or the drawer             |
-| `navbar`      | **data** `{ map, icons, tags }` | -        | The map; or plain `items` for a frame with no router |
-| `sidebar`     | **data** `{ label, ... }`       | -        | Names and foots the second level                     |
-| `extras`      | DOM, or an array of it          | -        | Theme/language pickers, `userCard`, anything         |
-| `signedIn`    | boolean, or a state - **live**  | -        | The gate: `undefined` waits, falsy shows `signIn`    |
-| `signIn`      | DOM, or `() => DOM`             | -        | The sign-in page of the app, shown while signed out  |
-| `breadcrumbs` | `false`                         | shown    | Drops the trail the frame renders from the map       |
-| `navOpen`     | boolean, or a state - **live**  | `false`  | Drawer state; shell-owned when omitted               |
-| `gap`         | spacing step `0`-`6`            | `0`      | Floats the chrome apart as rounded, bordered panels  |
-| `maxWidth`    | CSS length, or `'none'`         | `125rem` | Caps column and content, centred on a wider screen   |
-| `background`  | DOM                             | -        | Decorative layer under everything, e.g. an animation |
-| `events`      | `{ navToggle, select }`         | -        | `{ open }` on every drawer change; `{ id, item }`    |
+| Prop          | Values                                  | Default  | Notes                                                |
+| ------------- | --------------------------------------- | -------- | ---------------------------------------------------- |
+| `logo`        | DOM                                     | -        | Heads the bar, the column, or the drawer             |
+| `navbar`      | **data** `{ map, icons, tags }`         | -        | The map; or plain `items` for a frame with no router |
+| `sidebar`     | **data** `{ label, ... }`               | -        | Names and foots the second level                     |
+| `extras`      | DOM, or an array of it                  | -        | Theme/language pickers, `userCard`, anything         |
+| `signIn`      | a node handle of the map                | -        | The sign-in node; it shows without the chrome        |
+| `breadcrumbs` | `false`                                 | shown    | Drops the trail; it hides on a one-crumb page anyway |
+| `navOpen`     | boolean, or a state - **live**          | `false`  | Drawer state; shell-owned when omitted               |
+| `gap`         | spacing step `0`-`6`                    | `0`      | Floats the chrome apart as rounded, bordered panels  |
+| `maxWidth`    | CSS length, or `'none'`                 | `125rem` | Caps column and content, centred on a wider screen   |
+| `background`  | DOM                                     | -        | Decorative layer under everything, e.g. an animation |
+| `effect`      | `'none'`, `'fade'`, `'slide'`, `'zoom'` | `'none'` | Animates a change of screen in the content area      |
+| `events`      | `{ navToggle, select }`                 | -        | `{ open }` on every drawer change; `{ id, item }`    |
 
 `navbar` takes `map`, `icons` and `tags` keyed by handle, and `label`. With no map it takes `items`,
 which are the sections and are live, and `selected`. `sidebar` takes `label`, an app-wide `extras`
@@ -273,13 +275,15 @@ Rules an agent gets wrong:
   shell draws the rows, because it draws each level more than once. The main content is the
   children, as in `shell({ navbar }, page())`. There is no `header`, `footer` or `layout` prop. Put
   a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
-- **`signedIn` gates the whole app, and `signIn` is your page.** While `signedIn` is `undefined`,
-  the frame shows a `loader`. While it is `null` or `false`, it shows the `signIn` content and the
-  logo, centred, and nothing else: the main content is not mounted, so no router runs. When it is
-  truthy, the frame mounts the app. Pass the session state, with `null` for nobody. Write the
-  sign-in page yourself, as a `form` or as buttons of the providers; imp renders no form and holds
-  no session. `signIn` as a function is called once, the first time the gate shows. Without
-  `signedIn`, everybody sees the app.
+- **Sign-in is a node of the map, and `access` guards the rest.** Give every private section an
+  `access` value. The guard returns `wait` while the session is `undefined`, and
+  `/sign-in?next=<path>` while it is `null`. The sign-in screen navigates to `next` after it sets
+  the session. Pass the node as `signIn: app.signIn`. Do not put `access` on it.
+- **The frame shows no chrome while it cannot know who may see the page.** While the verdict of the
+  current node is `wait`, or the current node is the `signIn` node or one of its children, the frame
+  shows the router content and the logo, centred, and nothing else. A redirect keeps the layout, so
+  a signed-out visitor never sees the chrome. Write the sign-in page yourself; imp renders no form
+  and holds no session.
 - **The frame has no account prop.** `userCard` in `extras` displays the person, and the sign-out
   action is a `button` or a `menuButton` of yours beside it. Whether a person sees a section is the
   `access` of the map.
@@ -794,7 +798,7 @@ Rules an agent gets wrong:
   `submitForm` function as its click handler. There is no `submitButton` and no `resetButton`
   component. Enter in a single-line field also submits. Enter in a multi-line `textField` does not.
 - **A `field` with no `form` around it is an error.** A path that is not dot-separated is also an
-  error.
+  error. A numeric segment indexes an array: `items.0.name` is the first row of `items`.
 - **`field` and `value` are alternatives.** With both, imp warns and `field` wins.
 - **A label belongs to the control, not around it.** `label[for]` cannot cross a shadow root. So
   pass `label` as a prop. Your own `<label>` around a control names nothing.
@@ -841,7 +845,7 @@ Rules an agent gets wrong:
   save.
 - **Only a `FormError` shows its own message.** Throw `new FormError(t('...'))` for a message that
   the person must read. Any other error shows the translated `imp.form.submitFailed`, and imp logs
-  it.
+  it. `new FormError('', { fields: { email: t('...') } })` shows a server message on its field.
 - **`imp.form.dirty` is `true` while the values differ from the clean state.** The clean state is
   `initialValues`, then the values of the last successful submit. Read it with `useState`, from a
   component inside the form, for a save button or a `beforeLeave` guard.
@@ -1057,8 +1061,8 @@ list({
 An item is plain data:
 `{ id, title, description, picture, name, icon, tag: { text, color }, href }`. The title is a link
 with `href`, and a button when you pass `events.select`. `select` is cancelable, with
-`detail: { id, item }`. `actions` is a function that returns the trailing controls of a row.
-Infinite scroll works as in `table`.
+`detail: { id, item }`. `leading` is a function that returns a control in place of the visual of a
+row, and `actions` one that returns the trailing controls. Infinite scroll works as in `table`.
 
 Full manual: `imp skill std/list`.
 
@@ -1169,7 +1173,7 @@ Rules an agent gets wrong:
 - **`userCard` displays. It does not act.** It has no sign-in button, no sign-out button and no
   menu. Render a `button` or a `menuButton` of your own beside it for the account actions, and
   decide there how a sign-out works. imp holds no session, and it talks to no identity provider.
-  Whether anybody is signed in is the `signedIn` gate of `shell`.
+  Whether anybody is signed in is the `access` guard of the router.
 - **`themeSelect`, `langSelect` and `orgSelect` are menus.** Each renders a `menuButton` with the
   current choice on the trigger and a `menuitemradio` per option. There is no `<select>` in the
   frame.
@@ -1325,7 +1329,7 @@ reactions({ items, onReact: (emoji, reacted) => send(emoji, reacted) }, card(tex
 | ----------- | ------------------------------------------------ | --------------------- | ----------------------------- |
 | `items`     | array of `{ emoji, count, reacted }`, or a state | `[]`                  | A writable state gets changes |
 | `onReact`   | `(emoji, reacted) => void \| Promise`            | -                     | Sends a change to the server  |
-| `emojis`    | array of emoji or `{ emoji, name, keywords }`    | the built-in set      | What the add panel offers     |
+| `emojis`    | array of emoji or `{ emoji, name, keywords }`    | the built-in set      | The allowed set               |
 | `disabled`  | boolean, or a state - **live**                   | `false`               | Counts only, no add button    |
 | `ariaLabel` | string, or a state                               | `imp.reactions.label` | Names the bar                 |
 
@@ -1334,5 +1338,6 @@ reactions({ items, onReact: (emoji, reacted) => send(emoji, reacted) }, card(tex
 - **imp changes the count at once, then calls `onReact`.** Return the promise. When it rejects, imp
   takes the change back.
 - **A pick from the add panel only adds.** A click on a pressed chip takes the reaction back.
+- **`emojis` limits what a person can add.** A chip outside the set shows its count only.
 
 Full manual: `imp skill std/reactions`.
