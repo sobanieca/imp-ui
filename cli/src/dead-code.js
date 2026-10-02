@@ -188,7 +188,7 @@ export async function reportDeadCode({ root, config, configName }) {
   if (!scripts.length) return 0
   const publicFolder = publicDirectory(projectRoot)
 
-  const linter = new Linter()
+  const linter = new Linter({ cwd: projectRoot })
   const modules = new Map()
   const roots = new Set()
   const findings = []

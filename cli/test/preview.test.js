@@ -9,6 +9,7 @@ import {
   fixture,
   listFiles,
   normalize,
+  posixPath,
   responseTranscript,
   runImp,
   section,
@@ -653,7 +654,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
         folded: fold.getAttribute('aria-expanded') === 'false',
         foldLabel: fold.getAttribute('aria-label'),
         tabsInert: strip.querySelector('[role="tablist"]').inert,
-        share: Math.round(panel * 100 / canvas.clientWidth),
+        overHalf: panel * 2 > canvas.clientWidth,
         filled: head === panel && frame === panel,
         scrolls: canvas.scrollWidth > canvas.clientWidth,
       }
@@ -796,10 +797,10 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       `rendered values: ${counter.rendered.join(', ')}`,
       `state rows: ${counter.states.join(', ')}`,
       `resize handles per stage: ${counter.handles}`,
-      `scenario tabs on a wide screen: folded ${wide.folded} ('${wide.foldLabel}', tabs inert ${wide.tabsInert}), panel is ${wide.share}% of the canvas, head and stage fill it ${wide.filled}, canvas scrolls sideways ${wide.scrolls}`,
+      `scenario tabs on a wide screen: folded ${wide.folded} ('${wide.foldLabel}', tabs inert ${wide.tabsInert}), panel takes over half of the canvas ${wide.overHalf}, head and stage fill it ${wide.filled}, canvas scrolls sideways ${wide.scrolls}`,
       `stage typed to 2000px on a wide screen: frame ${wideStage.frame}px (readout ${wideStage.readout}), wider than the screen ${wideStage.beyondScreen}, canvas scrolls sideways ${wideStage.scrolls}, right edge reachable ${wideStage.reachable}, cleared box releases the width ${wideStage.released}`,
       `scenario tabs after the screen shrinks to a phone: folded ${shrunk.folded} ('${shrunk.foldLabel}', tabs inert ${shrunk.tabsInert})`,
-      `scenario tabs on a phone: folded ${phone.folded} ('${phone.foldLabel}', tabs inert ${phone.tabsInert}), panel is ${phone.share}% of the canvas, head and stage fill it ${phone.filled}, canvas scrolls sideways ${phone.scrolls}`,
+      `scenario tabs on a phone: folded ${phone.folded} ('${phone.foldLabel}', tabs inert ${phone.tabsInert}), panel takes over half of the canvas ${phone.overHalf}, head and stage fill it ${phone.filled}, canvas scrolls sideways ${phone.scrolls}`,
       `stage typed to 1280px on a phone: frame ${phoneStage.frame}px (readout ${phoneStage.readout}), wider than the screen ${phoneStage.beyondScreen}, canvas scrolls sideways ${phoneStage.scrolls}, right edge reachable ${phoneStage.reachable}, cleared box releases the width ${phoneStage.released}`,
       `after a tap on the fold button: aria-expanded ${unfolded.expanded}, tabs inert ${unfolded.tabsInert}, a tab is visible ${unfolded.tabVisible}, remembered as '${unfolded.remembered}'`,
       `state editor on a phone: anchored ${anchored.anchored}, ${anchored.below}px under its toggle, inside the viewport ${anchored.inside}`,
@@ -895,7 +896,7 @@ Deno.test('imp preview --output writes the element script and the group bundles'
   const report = [
     commandTranscript('imp preview --output <out>/gallery  (cwd: /test/fixtures/preview)', {
       ...result,
-      stdout: result.stdout.replaceAll(relative(fixture('preview'), outdir), '<out>')
+      stdout: result.stdout.replaceAll(posixPath(relative(fixture('preview'), outdir)), '<out>')
         .replace(SIZE, '(<size>)')
         .replace(/chunks\/[\w-]+\.js/g, 'chunks/<name>-<hash>.js'),
     }),

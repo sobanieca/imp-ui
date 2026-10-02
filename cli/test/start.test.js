@@ -1,4 +1,4 @@
-import { join } from '@std/path'
+import { join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
 import { bundleMockFiles, createMocks } from '../src/mocks.js'
@@ -409,7 +409,9 @@ Deno.test('a project with its own service worker gets dev mode from startDevMode
     try {
       const path = '/sw.js'
       const response = await fetch(`http://127.0.0.1:${broken.port}${path}`)
-      const withoutTmp = (text) => text.replaceAll(dir, '<tmp>').replaceAll(dir.slice(1), '<tmp>')
+      const withoutTmp = (text) =>
+        text.replaceAll(toFileUrl(dir).href, 'file://<tmp>').replaceAll(dir, '<tmp>')
+          .replaceAll(dir.slice(1), '<tmp>')
       const banner = withoutTmp(normalize(broken.banner).replaceAll(`:${broken.port}`, ':<port>'))
       await assertSnapshot(
         'start-own-worker-broken-import',

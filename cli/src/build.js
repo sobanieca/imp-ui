@@ -34,6 +34,7 @@ import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { withoutUnreachableChunks } from './unreachable-chunks.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
 import { skillFileFor } from './skill.js'
+import { posixPath } from './walk.js'
 import {
   collectLicenseNotices,
   LICENSE_NOTICES_FILE,
@@ -253,7 +254,7 @@ async function routePatternsOfProject({ root, map, dependencies }) {
   } catch {
     throw new Error(
       `no map at ${
-        relative(Deno.cwd(), target) || target
+        posixPath(relative(Deno.cwd(), target) || target)
       } - the 'map' of imp.json names the file that exports appMap(), and imp build writes its route patterns to ${APP_MAP_FILE}`,
     )
   }
@@ -261,7 +262,7 @@ async function routePatternsOfProject({ root, map, dependencies }) {
   if (maps.length === 0) {
     throw new Error(
       `${
-        relative(Deno.cwd(), target) || target
+        posixPath(relative(Deno.cwd(), target) || target)
       } exports no map - export the value of appMap(), like export const app = appMap({ ... })`,
     )
   }

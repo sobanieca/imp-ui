@@ -3,7 +3,7 @@ import { scanGroupsModule } from '../src/preview-source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import { IMP_MODULE_EXPORTS } from '../src/lint-rules.js'
 import { IMP_MODULES } from '../src/specifiers.js'
-import { check, fixture, REPO_ROOT, runImp } from './helpers.js'
+import { check, fixture, normalize, REPO_ROOT, runImp } from './helpers.js'
 
 Deno.test('imp skill', async (t) => {
   await t.step('every skills page is registered as a subject', async () => {
@@ -103,7 +103,7 @@ Deno.test('imp skill', async (t) => {
 
   await t.step('a std component prints its skill file verbatim', async () => {
     for (const component of await standardComponentSubjects()) {
-      const source = (await Deno.readTextFile(component.url)).trimEnd()
+      const source = normalize((await Deno.readTextFile(component.url)).trimEnd())
       const { code, stdout } = await runImp(['skill', component.name])
       check(code === 0, `imp skill ${component.name} exited ${code}`)
       check(

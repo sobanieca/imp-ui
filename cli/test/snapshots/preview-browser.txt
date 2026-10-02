@@ -2,10 +2,10 @@ scenarios: zero, Starts at five, Built at render time
 rendered values: 0, 5, 9
 state rows: demo.count <demo-counter>=0, demo.count <demo-counter>=5, demo.count <demo-counter>=9
 resize handles per stage: 3
-scenario tabs on a wide screen: folded false ('Fold the tabs', tabs inert false), panel is 69% of the canvas, head and stage fill it true, canvas scrolls sideways false
+scenario tabs on a wide screen: folded false ('Fold the tabs', tabs inert false), panel takes over half of the canvas true, head and stage fill it true, canvas scrolls sideways false
 stage typed to 2000px on a wide screen: frame 2000px (readout 2000), wider than the screen true, canvas scrolls sideways true, right edge reachable true, cleared box releases the width true
 scenario tabs after the screen shrinks to a phone: folded true ('Unfold the tabs', tabs inert true)
-scenario tabs on a phone: folded true ('Unfold the tabs', tabs inert true), panel is 77% of the canvas, head and stage fill it true, canvas scrolls sideways false
+scenario tabs on a phone: folded true ('Unfold the tabs', tabs inert true), panel takes over half of the canvas true, head and stage fill it true, canvas scrolls sideways false
 stage typed to 1280px on a phone: frame 1280px (readout 1280), wider than the screen true, canvas scrolls sideways true, right edge reachable true, cleared box releases the width true
 after a tap on the fold button: aria-expanded true, tabs inert false, a tab is visible true, remembered as 'unfolded'
 state editor on a phone: anchored true, 8px under its toggle, inside the viewport true

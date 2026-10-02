@@ -5,6 +5,7 @@ import { loadImpConfig, projectRoot } from './config.js'
 import { DATAURL_ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { impResolverPlugin } from './bundling.js'
 import { bold, dim } from './colors.js'
+import { posixPath } from './walk.js'
 
 const MAP = Symbol.for('imp.appMap')
 
@@ -127,7 +128,7 @@ export async function printMap({ cwd, file = null }) {
   } catch {
     throw new Error(
       `no map at ${
-        relative(cwd, target) || target
+        posixPath(relative(cwd, target) || target)
       } - imp map reads the file that exports appMap(), ${
         file === null ? "the 'map' of imp.json" : 'the file you pass'
       }`,
@@ -142,7 +143,7 @@ export async function printMap({ cwd, file = null }) {
   if (maps.length === 0) {
     throw new Error(
       `${
-        relative(cwd, target)
+        posixPath(relative(cwd, target))
       } exports no map - export the value of appMap(), like export const app = appMap({ ... })`,
     )
   }

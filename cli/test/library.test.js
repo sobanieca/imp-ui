@@ -1,4 +1,9 @@
-import { dirname, join, normalize as normalizePath } from '@std/path'
+import { join } from '@std/path'
+import {
+  dirname as posixDirname,
+  join as posixJoin,
+  normalize as posixNormalize,
+} from '@std/path/posix'
 import { assertSnapshot } from './snapshot.js'
 import { BINARY_ASSET_EXTENSIONS } from '../src/deps.js'
 import { CONTENT_TYPES } from '../src/start.js'
@@ -19,7 +24,7 @@ import {
 import { UNIQUE_ANALYTICS_NAME_RULE } from '../src/analytics-names.js'
 import { buildTokens, colorSchemeOf, defaultTokens, THEME_DEFAULTS } from '../../lib/src/theme.js'
 import { contrastProblems } from '../../lib/src/theme-contrast.js'
-import { check, copyDirectory, fixture, normalize, REPO_ROOT, runImp, tempDir } from './helpers.js'
+import { check, copyDirectory, fixture, REPO_ROOT, runImp, tempDir } from './helpers.js'
 
 Deno.test('a derived primary reads as text on the surface and carries readable text', () => {
   const derived = (primary, mode) => buildTokens({ ...THEME_DEFAULTS, primary, mode })
@@ -407,7 +412,7 @@ const RELATIVE_IMPORT = /^import\b[^'"]*['"](\.{1,2}\/[^'"]*)['"]/
 
 const libraryGroupsModule = async () => {
   const config = JSON.parse(await Deno.readTextFile(join(REPO_ROOT, 'lib', 'src', 'imp.json')))
-  return normalizePath(config.preview.groups)
+  return posixNormalize(config.preview.groups)
 }
 
 Deno.test('a library preview imports imp through its entry points only', async () => {
@@ -416,7 +421,7 @@ Deno.test('a library preview imports imp through its entry points only', async (
   for (const { path, source } of await libraryPreviews()) {
     for (const [index, line] of source.split('\n').entries()) {
       const relativeImport = line.match(RELATIVE_IMPORT)?.[1]
-      if (relativeImport && normalize(join(dirname(path), relativeImport)) === groupsModule) {
+      if (relativeImport && posixJoin(posixDirname(path), relativeImport) === groupsModule) {
         continue
       }
       if (relativeImport) {

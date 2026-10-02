@@ -143,6 +143,7 @@ Deno.test('the review widget picks an element in the preview page', async () => 
   })
   try {
     const page = await browser.newPage()
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }])
     await page.setViewport({ width: 900, height: 700 })
     await page.goto(
       `http://localhost:${server.port}/widgets/counter`,
@@ -334,7 +335,8 @@ Deno.test('the review widget picks an element in the preview page', async () => 
         .replace(/^element: .*(?=demo-counter)/m, 'element: ... ')
         .replace(/^rect: \d+x\d+ at \d+,\d+$/m, 'rect: <w>x<h> at <x>,<y>')
         .replaceAll(`:${server.port}`, ':<port>')
-        .replaceAll(dir, '<tmp>'),
+        .replaceAll(dir, '<tmp>')
+        .replaceAll(dir.replaceAll('/', '\\'), '<tmp>'),
     ].join('\n')
     await assertSnapshot('preview-review-widget', report)
   } finally {
