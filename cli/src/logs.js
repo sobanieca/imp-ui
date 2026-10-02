@@ -1,4 +1,4 @@
-import { basename, dirname, join, relative, resolve } from '@std/path'
+import { join, relative, resolve } from '@std/path'
 import { loadImpConfig } from './config.js'
 import { DEFAULT_MAX_LOG_ENTRIES, devLogPath } from './dev-log.js'
 
@@ -40,6 +40,8 @@ async function noLogMessage(root, path) {
 const NEWLINE = 10
 
 const READ_CHUNK = 65536
+
+const FOLLOW_INTERVAL_MS = 200
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -150,15 +152,24 @@ async function follow({ path, remember, startOffset, printed }) {
     }
   }
 
-  const name = basename(path)
-  const watcher = Deno.watchFs(dirname(path), { recursive: false })
-  const stop = () => watcher.close()
+  let stopped = false
+  let timer = null
+  let wake = () => {}
+  const stop = () => {
+    stopped = true
+    clearTimeout(timer)
+    wake()
+  }
+  const pause = () =>
+    new Promise((resolve) => {
+      wake = resolve
+      timer = setTimeout(resolve, FOLLOW_INTERVAL_MS)
+    })
   Deno.addSignalListener('SIGINT', stop)
   try {
-    await advance()
-    for await (const event of watcher) {
-      if (!event.paths.some((changed) => basename(changed) === name)) continue
+    while (!stopped) {
       await advance()
+      await pause()
     }
   } finally {
     Deno.removeSignalListener('SIGINT', stop)
