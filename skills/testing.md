@@ -190,7 +190,8 @@ test('increments on click', async ({ page }) => {
 ```
 
 The e2e server is the dev server. So `--mock`, or `mocks.enabled` in `imp.json`, feeds the whole
-suite from your `*.mock.js` files. You need no stub of any kind. See [mocks](mocks.md).
+suite from your `*.mock.js` files. You need no stub of any kind. The first test starts after the
+mocks answer, so a request at page load also gets its mock. See [mocks](mocks.md).
 
 **Write a plain CSS selector. It already reaches inside a component.** Never put `>>>` at the front
 of a selector, because the search goes deep from the page down. Use `>>>` only _between_ parts, when

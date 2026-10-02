@@ -1,6 +1,7 @@
 import { join } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import {
+  check,
   commandTranscript,
   copyDirectory,
   fixture,
@@ -117,6 +118,35 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
             withoutTelemetry(result),
           )
         }\n[screenshot written: ${screenshot}]\n`,
+      )
+    })
+
+    await t.step('test-e2e-level-forwards-mock', async () => {
+      await Deno.mkdir(join(dir, 'mocks'))
+      await Deno.writeTextFile(
+        join(dir, 'imp.json'),
+        JSON.stringify({ mocks: { folder: 'mocks', enabled: false } }),
+      )
+      await Deno.writeTextFile(
+        join(dir, 'mocks', 'ping.mock.js'),
+        "export const mocks = [{ match: (request) => request.path === '/api/ping', " +
+          'handler: () => ({ body: { pong: true } }) }]\n',
+      )
+      await Deno.writeTextFile(
+        join(dir, 'ping.spec.js'),
+        "import { expect, test } from 'imp/test'\n\n" +
+          "test('answers from a mocked endpoint', async ({ page }) => {\n" +
+          "  const body = await page.evaluate(() => fetch('/api/ping').then((response) => response.json()))\n" +
+          '  expect(body).toEqual({ pong: true })\n' +
+          '})\n',
+      )
+      const result = await runImp(['test', '--e2e', '--mock', '--filter', 'mocked'], dir)
+      await Deno.remove(join(dir, 'ping.spec.js'))
+      await Deno.remove(join(dir, 'mocks'), { recursive: true })
+      await Deno.remove(join(dir, 'imp.json'))
+      check(
+        result.code === 0 && result.stdout.includes('\u2713 ping.spec.js'),
+        `the level run must forward --mock to every spec:\n${result.stdout}\n${result.stderr}`,
       )
     })
 

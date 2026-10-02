@@ -67,10 +67,12 @@ command. The docs describe each number of the report and the query behind it.
   cross-origin `Script error.` with no file give no record. imp has no `onError` and no log sink.
   The browser console and the server logs hold the message.
 - **A name carries a namespace, and is used once.** `myapp.due-date` follows the rule of a state
-  name, see `event-propagated-state.md`. imp logs a name without a namespace and records nothing for
-  it. `imp lint` checks every literal name with `imp/analytics-name-namespace`, and reports a
-  literal that two calls share with `imp/unique-analytics-name`, across the project, so that the
-  report can tell two zones apart.
+  name, see `event-propagated-state.md`. It also has only ASCII letters, digits, `-` and `_` between
+  the dots, and at most 128 characters, so a name is safe to show in a terminal, a page or a log,
+  and an analytics server with an allowlist accepts it. imp logs a name that breaks a rule and
+  records nothing for it. `imp lint` checks every literal name with `imp/analytics-name-namespace`,
+  and reports a literal that two calls share with `imp/unique-analytics-name`, across the project,
+  so that the report can tell two zones apart.
 - **imp calls a sink at once, and never awaits it.** imp catches a sink that throws or rejects, logs
   it through the built-in logger, see `built-in-logger.md`, and goes on. A failed sink never becomes
   an `error` record, because that record would go to the same sink and fail again.

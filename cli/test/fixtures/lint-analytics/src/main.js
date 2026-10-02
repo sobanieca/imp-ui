@@ -12,6 +12,7 @@ const summary = () => zone({ name: 'myapp.summary' }, div('summary'))
 const send = () => {
   track('invoiceSent')
   track('myapp.invoice-sent')
+  track('myapp.<b>sent</b>')
 }
 
 const dynamic = (name) => zone({ name }, div(name))

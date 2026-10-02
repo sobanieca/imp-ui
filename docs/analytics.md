@@ -216,7 +216,13 @@ To count an error that you catch, rethrow it after your UI shows the failure.
 
 A zone name and an outcome name carry a namespace: two or more dot-separated segments, such as
 `myapp.invoice-summary`. The first segment is the name of your app. The rule is the same as for a
-state name. imp logs a name without a namespace, and that zone or outcome records nothing.
+state name, with one more limit. A name has only ASCII letters, digits, `-` and `_` between the
+dots, and at most 128 characters. imp logs a name that breaks a rule, and that zone or outcome
+records nothing.
+
+The limit keeps a name safe in every place that shows it: a terminal, a report page or a log. A name
+cannot hold HTML, a quote, a space or a Unicode character that changes the look of the text. An
+analytics server can reject such a name, so imp stops it in the browser first.
 
 Give each zone and each outcome its own name, in one place of your code. The report groups the
 records by name, so two zones of one name on different pages are still two rows, but two zones of
@@ -232,8 +238,10 @@ way in your sink:
 - **Do not add a user id or an organization id.** A user id is personal data, also when you hash it.
   An organization id can point at one person in a small organization.
 - **Add segments, not ids.** A segment describes a group, such as `plan: 'pro'`. Other good segments
-  are the role, the language and the version of the app. Hide a small group in the report, because
-  "Enterprise plan in Iceland" can be one customer.
+  are the role, the language and the version of the app. Use short values of ASCII letters, digits,
+  `.`, `-` and `_`, such as `pro`, `en-US` or `1.2.3`. A strict analytics server rejects a value
+  with other characters, such as a space, a quote or an accented letter. Hide a small group in the
+  report, because "Enterprise plan in Iceland" can be one customer.
 - **Add the country on the server**, from a header of your CDN such as `CF-IPCountry`, and discard
   the IP address. Do not keep the full IP address of a request.
 - **Delete the records after a fixed period.**
@@ -345,6 +353,9 @@ const user = useState(self, 'myapp.user')
 
 onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }))
 ```
+
+A segment value is a key from your code, not a text that the person sees or types. Send `pro`, not
+`Pro plan`. Send `en-US`, not `English (US)`.
 
 ### Errors only
 

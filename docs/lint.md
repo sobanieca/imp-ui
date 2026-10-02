@@ -108,13 +108,15 @@ error[imp/http-client-name-namespace]: http client name 'api' must include a nam
 ### `imp/analytics-name-namespace`
 
 A zone name and an outcome name follow the same rule as a state name. They need two or more
-dot-separated segments that are not empty, such as `myapp.due-date`. See
+dot-separated segments that are not empty, such as `myapp.due-date`. A segment has only ASCII
+letters, digits, `-` and `_`, and the name has at most 128 characters. See
 **[Analytics](analytics.md)**. The rule checks every `zone` call whose `name` is a literal, and
 every `track` call whose name is a literal:
 
 ```js
 zone({ name: 'due-date' }, datePicker({ field: 'due' }))
 track('invoiceSent')
+track('myapp.invoice sent')
 ```
 
 ```
@@ -123,6 +125,9 @@ error[imp/analytics-name-namespace]: zone name 'due-date' must include a namespa
 
 error[imp/analytics-name-namespace]: outcome name 'invoiceSent' must include a namespace - use dot-separated segments like 'myapp.invoice-sent'
  --> src/invoice.js:2:7
+
+error[imp/analytics-name-namespace]: outcome name 'myapp.invoice sent' must use only ASCII letters, digits, '-' and '_' between the dots, up to 128 characters, like 'myapp.invoice-sent'
+ --> src/invoice.js:3:7
 ```
 
 ### `imp/unique-analytics-name`

@@ -62,7 +62,8 @@ when the sink is unregistered.
 
 - **Register the sink before `mount`.** A sink that registers later gets the `page` record of the
   current screen at once, but no other record from before it.
-- **Names carry a namespace: `myapp.due-date`, never `due-date`.** The same rule as a state name.
+- **Names carry a namespace: `myapp.due-date`, never `due-date`.** The same rule as a state name,
+  plus only ASCII letters, digits, `-` and `_` between the dots, at most 128 characters.
   `zone({ name: 'myapp.due-date' }, child)`, never `zone('myapp.due-date', child)`. imp logs a bad
   name and records nothing for it. `imp lint` checks every literal name, see [lint](lint.md).
 - **One name, one place.** Give each zone and each outcome its own literal name, used once in the
@@ -83,8 +84,9 @@ when the sink is unregistered.
   server fetches the file from the site and drops a record whose `page` is not a line of it. See
   [build](build.md).
 - **Add no personal data in the sink.** No user id, no organization id, no email, no value that the
-  person typed. Add segments: `send({ ...record, plan: user.get()?.plan ?? null })`. Add the country
-  on the server from the request, and discard the IP address.
+  person typed. Add segments: `send({ ...record, plan: user.get()?.plan ?? null })`. A segment value
+  is a short key of ASCII letters, digits, `.`, `-` and `_`: `pro`, `en-US`, `1.2.3`, never
+  `Pro plan`. Add the country on the server from the request, and discard the IP address.
 - **imp needs no consent banner.** It stores nothing on the device. A provider SDK that writes
   cookies (GA4, PostHog) needs consent in Europe: register the sink and start the SDK when the
   person has answered. The late sink gets the current `page` record. There is no `when` option.

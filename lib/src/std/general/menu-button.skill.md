@@ -38,7 +38,7 @@ Rules an agent gets wrong:
   imp then calls the `onClick({ id, item })` of that item. A call to `preventDefault()` on `select`
   stops the `onClick`.
 - **`id` defaults to the index.** `label` is necessary: a string, a state, or a DOM node for a
-  richer row. `icon` is a node.
+  richer row. `icon` is a Lucide export from `imp/icons`, or a node.
 - **An item with `checked` is a choice.** Pass a boolean, or a state that holds one, and imp renders
   the option as `role="menuitemradio"` with `aria-checked`, and a check mark after the label of the
   checked one. Use it for a menu that picks one of several settings, such as a sort order. The menu

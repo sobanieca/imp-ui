@@ -729,7 +729,7 @@ Deno.test('imp preview renders scenarios in a browser', async () => {
       for (let attempt = 0; attempt < 40 && !panel.matches(':popover-open'); attempt++) {
         await new Promise((resolve) => setTimeout(resolve, 50))
       }
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      await Promise.all(panel.getAnimations().map(({ finished }) => finished.catch(() => {})))
       const toggleBox = toggle.getBoundingClientRect()
       const box = panel.getBoundingClientRect()
       const result = {

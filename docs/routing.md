@@ -810,6 +810,11 @@ call adds the base, so a middle-click and a "copy link address" stay correct. It
 a({ href: url('/todos') }, 'All todos')
 ```
 
+`url()` leaves a path that already starts with the base as it is. So you can pass the result of
+`handle.href()` to `navigate`, to `link` and to a plain `<a>`, and the base appears once. For the
+same reason, do not give a top-level node the name of the base. Under `IMP_BASEPATH` `/app`, a node
+`app` serves `/app/app`, and imp reads a link to it as a path that already has the base.
+
 ## Hash routing: when the app does not own the path
 
 Some apps run inside a page that they do not own. Examples are a widget in a host page, and a

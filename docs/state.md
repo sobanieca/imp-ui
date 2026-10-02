@@ -127,7 +127,10 @@ as noise.
 `watch` reacts to the state. It runs `fn(value)` immediately with the current value, then again
 after every `set`. It is the general-purpose hook. Use it to change DOM you already hold, to keep
 `localStorage` in step, to drive a chart, or for anything else. Inside a component, pass `self`
-first. imp then stops the subscription when the component unmounts:
+first. imp then stops the subscription when the component unmounts. A component unmounts at the end
+of the task in which it leaves the document, so a move keeps it mounted. In that short time
+`watch(self, fn)` does not call `fn`. For example, a screen that the router removes does not see the
+route of the next screen:
 
 ```js
 const themeWatcher = component('my-app-theme-watcher', {

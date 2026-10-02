@@ -20,5 +20,8 @@ error[imp/analytics-name-namespace]: zone name 'home' must include a namespace -
 error[imp/analytics-name-namespace]: outcome name 'invoiceSent' must include a namespace - use dot-separated segments like 'myapp.invoice-sent'
  --> src/main.js:13:9
 
-Found 5 problems
+error[imp/analytics-name-namespace]: outcome name 'myapp.<b>sent</b>' must use only ASCII letters, digits, '-' and '_' between the dots, up to 128 characters, like 'myapp.invoice-sent'
+ --> src/main.js:15:9
+
+Found 6 problems
 Checked 1 file

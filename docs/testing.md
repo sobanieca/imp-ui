@@ -552,8 +552,10 @@ When the entry page of your app is not `index.html`, set it in `imp.json`:
 A spec runs against the same server as `imp start`. So a project with
 **[mock responses](cli.md#mock-responses---mockjs)** can point a spec at a fixture in place of a
 backend. `imp test --e2e --mock` makes the `*.mock.js` files answer the requests of your app during
-the spec. There is no stub, and there is no configuration in the test. `--no-mock` forces a run
-against the real API. With neither flag, the suite follows the default in your `imp.json`.
+the spec. imp starts the first test only after the mocks answer, so a request that your app sends at
+page load also gets its mock answer. There is no stub, and there is no configuration in the test.
+`--no-mock` forces a run against the real API. With neither flag, the suite follows the default in
+your `imp.json`.
 
 ### How to record a spec as a GIF
 

@@ -226,6 +226,14 @@ async function runSpecFile(
     page = await browser.newPage()
     await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }])
     await page.goto(baseUrl, { waitUntil: 'load' })
+    if (app.mockServer) {
+      await page.waitForFunction(() =>
+        navigator.serviceWorker.getRegistration().then((registration) =>
+          Boolean(registration?.active)
+        )
+      )
+      await page.goto(baseUrl, { waitUntil: 'load' })
+    }
     if (videoDir) recording = await startScreencast(page, videoOptions)
 
     const registry = freshRegistry()
@@ -427,6 +435,7 @@ export async function runTests(
     if (filter) passthroughArgs.push('--filter', filter)
     if (screenshotDir) passthroughArgs.push('--screenshots', screenshotDir)
     if (videoDir) passthroughArgs.push('--video', videoDir)
+    if (mocks !== null) passthroughArgs.push(mocks ? '--mock' : '--no-mock')
     return await orchestrate({
       root,
       files,

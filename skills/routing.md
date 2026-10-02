@@ -321,7 +321,10 @@ screenFrame(router({ map: app, screens, title: ({ crumbs }) => `${crumbs.at(-1)}
 
 To serve the app under a sub-path, set the `IMP_BASEPATH` environment value of [config](config.md).
 `navigate` and `handle.href()` add the prefix. Only an `href` that you write as a string needs
-`url('/todos')`.
+`url('/todos')`. `url()` leaves a path that already starts with the base as it is. So the result of
+`handle.href()` is correct in `navigate`, in `link` and in a plain `a`. Do not give a top-level node
+the name of the base, such as a node `app` under `IMP_BASEPATH` `/app`: imp reads `/app/...` as a
+path that already has the base.
 
 For an app inside a page that it does not own, set the `IMP_ROUTING` environment value to `hash`.
 The route then lives in the fragment, `#/todos/42?tab=notes`, and the path stays. Code changes
