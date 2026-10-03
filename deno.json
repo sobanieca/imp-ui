@@ -4,7 +4,7 @@
     "example": "cd examples && deno run -A ../tools/imp.js start --no-reload",
     "preview": "cd lib/src && deno run -A ../../tools/imp.js preview --no-reload",
     "site": "deno run -A tools/build-site.js && cd site/dist && rfm",
-    "test": "cd lib/test && deno run -A ../../tools/imp.js test --unit && deno run -A ../../tools/imp.js test --e2e && cd ../.. && deno test -A cli/test/ --",
+    "test": "cd lib/test && deno run -A ../../tools/imp.js test --unit && deno run -A ../../tools/imp.js test --e2e && cd ../.. && deno test -A --parallel cli/test/ --",
     "check": "deno lint && deno fmt && cd lib/src && deno run -A ../../tools/imp.js lint"
   },
   "imports": {

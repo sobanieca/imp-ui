@@ -41,7 +41,7 @@ function parseDotenv(text) {
   return values
 }
 
-function resolveValues(alias, filePath, raw) {
+function resolveValues(alias, filePath, raw, shellEnv) {
   if (!isPlainObject(raw)) {
     throw new Error(`environment '${alias}' - ${filePath} must be a flat JSON object of values`)
   }
@@ -51,7 +51,7 @@ function resolveValues(alias, filePath, raw) {
       const reference = value.match(SHELL_REFERENCE)
       if (reference) {
         const variable = reference[1]
-        const fromShell = Deno.env.get(variable)
+        const fromShell = shellEnv.get(variable)
         if (fromShell === undefined) {
           throw new Error(
             `environment '${alias}' - key '${key}' references shell variable '${variable}', which is not set`,
@@ -72,17 +72,19 @@ function resolveValues(alias, filePath, raw) {
   return resolved
 }
 
-function selectAlias(requestedAlias, environments) {
+function selectAlias(requestedAlias, environments, shellEnv) {
   if (requestedAlias) return requestedAlias
-  const fromShell = Deno.env.get('IMP_ENV')
+  const fromShell = shellEnv.get('IMP_ENV')
   if (fromShell) return fromShell
   if (Object.hasOwn(environments, DEFAULT_ALIAS)) return DEFAULT_ALIAS
   return null
 }
 
-export async function resolveEnvironment({ root, config, requestedAlias = null }) {
+export async function resolveEnvironment(
+  { root, config, requestedAlias = null, shellEnv = Deno.env },
+) {
   const environments = config.environments ?? {}
-  const alias = selectAlias(requestedAlias, environments)
+  const alias = selectAlias(requestedAlias, environments, shellEnv)
   if (alias === null) return {}
   const filePath = environments[alias]
   if (filePath === undefined) {
@@ -106,7 +108,7 @@ export async function resolveEnvironment({ root, config, requestedAlias = null }
       throw new Error(`environment '${alias}' - invalid JSON in ${filePath}: ${error.message}`)
     }
   }
-  return resolveValues(alias, filePath, raw)
+  return resolveValues(alias, filePath, raw, shellEnv)
 }
 
 export const scriptSafeJson = (value) => JSON.stringify(value).replaceAll('<', '\\u003c')

@@ -28,11 +28,12 @@ jobs:
           pwsh -NoProfile -Command '$errors = $null; [System.Management.Automation.Language.Parser]::ParseFile("install.ps1", [ref] $null, [ref] $errors) | Out-Null; if ($errors) { $errors; exit 1 }'
 
   test:
-    name: Tests (${{ matrix.os }})
+    name: Tests ${{ matrix.suite }} (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        suite: [unit, e2e, cli]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -43,8 +44,19 @@ jobs:
       - name: Use a time zone with daylight saving time
         if: runner.os == 'Windows'
         run: tzutil /s "Central European Standard Time"
-      - name: Tests
-        run: deno task test
+      - name: Compile imp
+        run: deno run -A tools/compile.js
+      - name: Library unit tests
+        if: matrix.suite == 'unit'
+        working-directory: lib/test
+        run: deno run -A ../../tools/imp.js test --unit
+      - name: Library e2e tests
+        if: matrix.suite == 'e2e'
+        working-directory: lib/test
+        run: deno run -A ../../tools/imp.js test --e2e
+      - name: CLI tests
+        if: matrix.suite == 'cli'
+        run: deno test -A --parallel cli/test/
 
   size:
     name: Binary size

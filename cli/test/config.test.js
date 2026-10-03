@@ -63,17 +63,11 @@ Deno.test('an injected value cannot end its script', () => {
 
 Deno.test('IMP_CACHE_DIR resolves a relative folder against the current folder', async () => {
   const { impCacheDirectory } = await import('../src/cache-dir.js')
-  const saved = Deno.env.get('IMP_CACHE_DIR')
-  try {
-    Deno.env.set('IMP_CACHE_DIR', '.imp/cache')
-    check(
-      impCacheDirectory() === join(Deno.cwd(), '.imp', 'cache'),
-      `a relative cache folder stayed relative: ${impCacheDirectory()}`,
-    )
-  } finally {
-    if (saved === undefined) Deno.env.delete('IMP_CACHE_DIR')
-    else Deno.env.set('IMP_CACHE_DIR', saved)
-  }
+  const resolved = impCacheDirectory(new Map([['IMP_CACHE_DIR', '.imp/cache']]))
+  check(
+    resolved === join(Deno.cwd(), '.imp', 'cache'),
+    `a relative cache folder stayed relative: ${resolved}`,
+  )
 })
 
 Deno.test('injectImp', async () => {
@@ -168,19 +162,21 @@ Deno.test('resolveEnvironment', async () => {
     },
   }
 
-  const savedImpEnv = Deno.env.get('IMP_ENV')
-
   const run = async (
     label,
     { config: cfg = config, requestedAlias = null, impEnv, token } = {},
   ) => {
-    if (impEnv === undefined) Deno.env.delete('IMP_ENV')
-    else Deno.env.set('IMP_ENV', impEnv)
-    if (token === undefined) Deno.env.delete('IMP_TEST_TOKEN')
-    else Deno.env.set('IMP_TEST_TOKEN', token)
+    const shellEnv = new Map()
+    if (impEnv !== undefined) shellEnv.set('IMP_ENV', impEnv)
+    if (token !== undefined) shellEnv.set('IMP_TEST_TOKEN', token)
     let outcome
     try {
-      const resolved = await resolveEnvironment({ root: dir, config: cfg, requestedAlias })
+      const resolved = await resolveEnvironment({
+        root: dir,
+        config: cfg,
+        requestedAlias,
+        shellEnv,
+      })
       outcome = `ok: ${JSON.stringify(resolved)}`
     } catch (error) {
       outcome = `error: ${error.message}`
@@ -211,9 +207,6 @@ Deno.test('resolveEnvironment', async () => {
     ].join('\n')
     await assertSnapshot('resolve-environment', transcript)
   } finally {
-    if (savedImpEnv === undefined) Deno.env.delete('IMP_ENV')
-    else Deno.env.set('IMP_ENV', savedImpEnv)
-    Deno.env.delete('IMP_TEST_TOKEN')
     await Deno.remove(dir, { recursive: true })
   }
 })
@@ -243,7 +236,6 @@ Deno.test('imp build and start with environments', async (t) => {
     environments: { dev: 'env/dev.json', prod: 'env/prod.json', default: 'env/dev.json' },
   })
 
-  const savedToken = Deno.env.get('IMP_DEMO_TOKEN')
   const savedImpEnv = Deno.env.get('IMP_ENV')
   Deno.env.delete('IMP_ENV')
 
@@ -255,7 +247,6 @@ Deno.test('imp build and start with environments', async (t) => {
 
   try {
     await t.step('build-default-env', async () => {
-      Deno.env.delete('IMP_DEMO_TOKEN')
       const result = await runImp(['build'], dir)
       const html = await withBuiltScripts(
         join(dir, 'dist'),
@@ -272,8 +263,9 @@ Deno.test('imp build and start with environments', async (t) => {
     })
 
     await t.step('build-selected-env-with-secret', async () => {
-      Deno.env.set('IMP_DEMO_TOKEN', 'prod-secret')
-      const result = await runImp(['build', '--env', 'prod'], dir)
+      const result = await runImp(['build', '--env', 'prod'], dir, {
+        IMP_DEMO_TOKEN: 'prod-secret',
+      })
       const html = await withBuiltScripts(
         join(dir, 'dist'),
         await Deno.readTextFile(join(dir, 'dist', 'index.html')),
@@ -287,7 +279,6 @@ Deno.test('imp build and start with environments', async (t) => {
     })
 
     await t.step('build-missing-shell-variable', async () => {
-      Deno.env.delete('IMP_DEMO_TOKEN')
       const result = await runImp(['build', '--env', 'prod'], dir)
       await assertSnapshot(
         'env-build-missing-variable',
@@ -326,8 +317,6 @@ Deno.test('imp build and start with environments', async (t) => {
       }
     })
   } finally {
-    if (savedToken === undefined) Deno.env.delete('IMP_DEMO_TOKEN')
-    else Deno.env.set('IMP_DEMO_TOKEN', savedToken)
     if (savedImpEnv === undefined) Deno.env.delete('IMP_ENV')
     else Deno.env.set('IMP_ENV', savedImpEnv)
     await Deno.remove(dir, { recursive: true })

@@ -43,9 +43,10 @@ mirrors the release mechanism of jsonr.
   its `public/` fonts, the skills and the licence notices. It also gets the same preparation of the
   prebundled fmt plugins and npm dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe`
   on Windows. `{os}` is `linux`, `macos` or `windows`. `{arch}` is `x64` or `arm64`.
-- **Windows is tested in CI.** The test job runs `deno task test` on Ubuntu and on Windows. A
-  release waits for both. So a change that breaks Windows cannot ship, although no maintainer runs
-  Windows day to day.
+- **Windows is tested in CI.** The test job runs the library unit tests, the library e2e tests and
+  the CLI tests on Ubuntu and on Windows. Each suite runs in its own job, at the same time as the
+  other suites. A release waits for all of them. So a change that breaks Windows cannot ship,
+  although no maintainer runs Windows day to day.
 - **The download URLs follow from that.** For a pinned version, it is
   `https://github.com/sobanieca/imp-ui/releases/download/v{version}/imp-{os}-{arch}`. For the newest
   version, it is `.../releases/latest/download/imp-{os}-{arch}`. imp resolves the latest version

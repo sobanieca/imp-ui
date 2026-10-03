@@ -60,10 +60,11 @@ export const commandTranscript = (display, { code, stdout, stderr }) =>
     section('stderr', stderr)
   }\n`
 
-export async function runImp(args, cwd = ROOT) {
+export async function runImp(args, cwd = ROOT, env = undefined) {
   const { code, stdout, stderr } = await new Deno.Command(IMP, {
     args,
     cwd,
+    env,
     stdout: 'piped',
     stderr: 'piped',
   }).output()
