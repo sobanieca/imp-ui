@@ -315,12 +315,12 @@ export const nameBadge = component('my-app-name-badge', {
 ```
 
 The result is a **read-only state**. It has `get()`, `watch(fn)`, `text(select?)`, `view(render)`
-and `each(renderItem)`. A call to `set` on it throws. To change it, set the source states. Write
-`compute` as a pure function of the values it receives. imp calls it when a source changes, and
-reuses the result in between, so anything it reads beyond its arguments can go stale. It notifies
-only when the computed result changes, compared by **content**. So a `compute` that builds a fresh
-object or array each time stays quiet, as long as what it built is the same. A computation from a
-single state is one way to watch part of a larger state, without reacting to an unrelated change:
+and `each(renderItem)`. It has no `set`. To change it, set the source states. Write `compute` as a
+pure function of the values it receives. imp calls it when a source changes, and reuses the result
+in between, so anything it reads beyond its arguments can go stale. It notifies only when the
+computed result changes, compared by **content**. So a `compute` that builds a fresh object or array
+each time stays quiet, as long as what it built is the same. A computation from a single state is
+one way to watch part of a larger state, without reacting to an unrelated change:
 
 ```js
 const theme = computed([user], (u) => u.theme)

@@ -133,7 +133,7 @@ const fullName = computed([first, last], (f, l) => `${f} ${l}`)
 const rowClass = computed([selection], (selected) => ({ row: true, selected }))
 ```
 
-A computed is read-only. It has `get`, `watch`, `text`, `view` and `each`, and `set` throws. Write
+A computed is read-only. It has `get`, `watch`, `text`, `view` and `each`. It has no `set`. Write
 `compute` as a pure function of its arguments. imp runs it again only when a source changes. It
 notifies only when the **content** of the result changes, so it is safe to build a fresh array every
 time. To watch one field of a larger state, compute from that one state. A computed is a local

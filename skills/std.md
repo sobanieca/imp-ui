@@ -72,7 +72,7 @@ button({ variant: 'primary', size: 'lg', events: { click: save } }, 'Save change
 | `block`         | boolean                                                   | `false`     | Fills its container's width                |
 | `square`        | boolean                                                   | `false`     | Equal padding both ways, for an icon       |
 | `label`         | string - **live**                                         | -           | `aria-label`, for an icon-only button      |
-| `pressed`       | boolean - **live**                                        | -           | A toggle button, `aria-pressed`            |
+| `pressed`       | boolean, or a state holding one - **live**                | -           | A toggle button, `aria-pressed`            |
 | `expanded`      | boolean - **live**                                        | -           | Paints `aria-expanded`                     |
 | `haspopup`      | `'menu'`, `'listbox'`                                     | -           | Paints `aria-haspopup`                     |
 | `popoverTarget` | an element with `popover`                                 | -           | The button invokes that popover            |
