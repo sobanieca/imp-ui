@@ -35,6 +35,7 @@ exactly the public names. An implementation module stays internal, and app code 
 | `imp/icons`          | One export per Lucide icon, see `bundled-icon-set.md`                     |
 | `imp/service-worker` | `startDevMode` and `precacheBuild`, see `service-worker-dev-mode.md`      |
 | `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`, see `product-analytics.md`       |
+| `imp/analytics/aly`  | `alySink`, the sink for imp-aly servers, see `imp-aly-sink.md`            |
 | `imp/std`            | The standard component library, split by group                            |
 | `imp/test`           | The test library, resolved by `imp test` only                             |
 | `imp/preview`        | `mockModule` for a preview file, resolved by `imp preview` only           |

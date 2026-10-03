@@ -2,10 +2,12 @@
 
 ```js
 import { batch, onAnalytics, track, zone } from 'imp/analytics'
+import { alySink } from 'imp/analytics/aly'
 ```
 
-imp counts. The app registers a sink that forwards each record to a store. imp bundles no provider,
-makes no network call, and records no personal data.
+imp counts. The app registers a sink that forwards each record to a store. imp bundles no
+third-party provider, makes no network call of its own, and records no personal data. `alySink` is
+the sink for imp-aly, the analytics server of imp that the owner runs on a VPS.
 
 | Level      | Tool                                   | Records               |
 | ---------- | -------------------------------------- | --------------------- |
@@ -47,16 +49,33 @@ record. No record carries a path, a message or a value from the person.
 
 ## Calls
 
-| Call                                  | Does                                                                    |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| `onAnalytics(sink)`                   | registers a sink for the page; returns the function that unregisters it |
-| `onAnalytics(self, sink)`             | the same, and unregisters when the component unmounts                   |
-| `batch(send, { size: 20, ms: 5000 })` | returns a sink that calls `send(records)` in batches                    |
-| `zone({ name }, ...children)`         | wraps any content; records `seen` and `interaction`                     |
-| `track(name)`                         | records an outcome; takes the name only                                 |
+| Call                                  | Does                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `onAnalytics(sink)`                   | registers a sink for the page; returns the function that unregisters it  |
+| `onAnalytics(self, sink)`             | the same, and unregisters when the component unmounts                    |
+| `batch(send, { size: 20, ms: 5000 })` | returns a sink that calls `send(records)` in batches                     |
+| `alySink({ app, servers, segments })` | returns a `batch` sink that posts to `<server>/collect/<app>` of imp-aly |
+| `zone({ name }, ...children)`         | wraps any content; records `seen` and `interaction`                      |
+| `track(name)`                         | records an outcome; takes the name only                                  |
 
 `batch` sends when the array reaches `size`, when `ms` passes, when the page hides or unloads, and
 when the sink is unregistered.
+
+`alySink` options:
+
+| Option     | Value                                                                               |
+| ---------- | ----------------------------------------------------------------------------------- |
+| `app`      | required; the app name on the servers: lowercase letters, digits, `-`               |
+| `servers`  | required; an array of server URLs: `['https://aly-1.myapp.example']`, or `['/aly']` |
+| `segments` | optional; `(record) => ({ plan: 'pro' })`, called once per record                   |
+| `size`     | as for `batch`, default `20`                                                        |
+| `ms`       | as for `batch`, default `5000`                                                      |
+
+- One visit goes to one server, picked from the visit id. Every `alySink` with the same list picks
+  the same server.
+- The first record of a visit goes out at once. Later records go in batches.
+- No answer or a 5xx: the batch goes to the next server, which then keeps the visit. A 4xx or a 429
+  drops the batch and logs it. A `202` with rejected records logs a warning.
 
 ## Rules an agent gets wrong
 
@@ -77,6 +96,13 @@ when the sink is unregistered.
 - **Turn off the automatic page views of the provider.** GA4: `send_page_view: false`. PostHog:
   `capture_pageview: false`. imp sends a `page` record on each navigation, so the store counts each
   page twice otherwise.
+- **For imp-aly, use `alySink`, never a hand-written `batch` sink.** Put segments in the `segments`
+  option, never in a wrapper sink: `onAnalytics((record) => sink({ ...record }))` loses the flush on
+  hide. Register the app and every segment name on every server:
+  `imp-aly app add myapp <app-map URL> --segments plan`. A server rejects a record with an unknown
+  segment.
+- **`servers` is an array**, also for one server. Pass the server base URL, never the `/collect`
+  URL.
 - **A sink that posts to an own endpoint uses `navigator.sendBeacon` or `fetch` with
   `keepalive: true`,** and `batch`. A provider SDK batches itself, so do not wrap it in `batch`.
 - **The server of an own endpoint filters by `app-map.txt`.** `imp build` writes the route patterns
@@ -106,6 +132,24 @@ import { app } from './app.js'
 
 if (flag('ANALYTICS')) {
   onAnalytics(batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records))))
+}
+mount('#app', app())
+```
+
+```js
+// main.js - the imp-aly sink, with two servers and a segment
+import { flag, mount } from 'imp'
+import { onAnalytics } from 'imp/analytics'
+import { alySink } from 'imp/analytics/aly'
+import { app } from './app.js'
+import { currentPlan } from './plan.js'
+
+if (flag('ANALYTICS')) {
+  onAnalytics(alySink({
+    app: 'myapp',
+    servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
+    segments: () => ({ plan: currentPlan() }),
+  }))
 }
 mount('#app', app())
 ```

@@ -115,7 +115,18 @@ export const SKILLS = [
   {
     name: 'analytics',
     group: 'app',
-    aliases: ['imp/analytics', 'zone', 'zones', 'track', 'onanalytics', 'tracking', 'metrics'],
+    aliases: [
+      'imp/analytics',
+      'imp/analytics/aly',
+      'alysink',
+      'imp-aly',
+      'zone',
+      'zones',
+      'track',
+      'onanalytics',
+      'tracking',
+      'metrics',
+    ],
     summary: 'page views, zones, outcomes and errors as counted records, sent to a sink of the app',
   },
   {

@@ -22,7 +22,9 @@ token. Scrubbing them is code that must be right, and a reader cannot see that i
 
 **imp sends counted records, and the app forwards them to its store through a sink.** The home is
 `imp/analytics`, see `library-import-namespaces.md`. It exports `onAnalytics`, `batch`, `zone` and
-`track`. imp bundles no provider, loads no script and makes no network call. imp ships no report
+`track`. imp bundles no third-party provider and loads no script. The one sink that imp ships is
+`alySink` for its own server, imp-aly, in the separate module `imp/analytics/aly`, see
+`imp-aly-sink.md`. No other part of imp makes a network call for analytics. imp ships no report
 command. The docs describe each number of the report and the query behind it.
 
 - **Every number of the report is a count of records.** A store counts rows, or distinct visit ids,

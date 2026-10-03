@@ -12,6 +12,7 @@
       "api/icons.js",
       "api/service-worker.js",
       "api/analytics.js",
+      "api/analytics-aly.js",
       "std/index.js",
       "std/layout/index.js",
       "std/display/index.js",

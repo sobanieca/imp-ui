@@ -2,13 +2,14 @@
 
 imp tells you which parts of your UI people see and use. It counts each page view, each zone that
 comes into view, each interaction, each outcome that you name, and each failure. It gives each count
-to a function that you register, a **sink**. The sink forwards the record to your store: Google
-Analytics, PostHog, your own endpoint, or the console.
+to a function that you register, a **sink**. The sink forwards the record to your store: your own
+[imp-aly](#imp-aly) servers, Google Analytics, PostHog, your own endpoint, or the console.
 
-imp bundles no provider and makes no network call. It stores no id on the device. It writes no
-cookie, and nothing to `localStorage` or `sessionStorage`. A record carries no personal data: only a
-route pattern from your application map, a name from your code, a time, and a random id of the
-visit. imp encourages you to keep it that way. Do not add personal data in your sink.
+imp bundles no third-party provider. It makes no network call until you register a sink that sends
+one. It stores no id on the device. It writes no cookie, and nothing to `localStorage` or
+`sessionStorage`. A record carries no personal data: only a route pattern from your application map,
+a name from your code, a time, and a random id of the visit. imp encourages you to keep it that way.
+Do not add personal data in your sink.
 
 ```js
 import { batch, onAnalytics, track, zone } from 'imp/analytics'
@@ -263,6 +264,73 @@ imp catches a sink that throws or rejects, logs it, and goes on. A failed sink n
 Turn off the automatic page views of your provider. imp sends a `page` record on each navigation, so
 the store otherwise counts each page twice.
 
+### imp-aly
+
+[imp-aly](https://github.com/sobanieca/imp-aly) is an analytics server for imp apps. You run it on
+your own VPS. It checks each record against `app-map.txt`, stores it on the disk of the server, and
+answers the queries of the report. imp ships the sink for it in a separate module:
+
+```js
+import { flag, mount } from 'imp'
+import { onAnalytics } from 'imp/analytics'
+import { alySink } from 'imp/analytics/aly'
+import { app } from './app.js'
+
+if (flag('ANALYTICS')) {
+  onAnalytics(alySink({
+    app: 'myapp',
+    servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
+  }))
+}
+
+mount('#app', app())
+```
+
+An app that does not import `imp/analytics/aly` does not contain the sink. The bundler removes it.
+
+| Option     | Value                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| `app`      | The name of the app on the servers: lowercase letters, digits and `-`. Required.                  |
+| `servers`  | The list of the URLs of your imp-aly servers. Required. A URL can have a path, such as `/aly`.    |
+| `segments` | A function that returns the segments of a record, such as `() => ({ plan: 'pro' })`. Optional.    |
+| `size`     | The number of records in one batch, as for `batch`. The default is `20`.                          |
+| `ms`       | The time in milliseconds that a batch waits for more records, as for `batch`. The default `5000`. |
+
+`alySink` returns a `batch` sink. It posts each batch to `<server>/collect/<app>` with `fetch` and
+`keepalive`, so a batch also goes out when the page hides. The request sends no cookie. Its
+`Referer` header holds only the origin of the page, never the path. The first record of a visit goes
+out at once, so the sink finds a server that is down while the page is still open.
+
+**One visit goes to one server.** The sink picks the server from the visit id, so every record of a
+visit goes to the same server. Two `alySink` calls with the same list pick the same server. The
+visits of two servers do not overlap, so `imp-aly query` adds up their counts exactly. Add a server
+to the list when one server is not sufficient for the traffic.
+
+When the server of a visit does not answer, or answers with a 5xx, the sink sends the batch to the
+next server of the list. It then keeps that server for the rest of the visit. Such a visit has
+records on two servers, and the report counts it twice. When no server takes a batch, the sink logs
+a warning and drops the batch.
+
+The sink logs each problem that the server reports:
+
+| Answer           | What the sink does                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| `202`            | It logs a warning when the server rejected some records. `imp-aly app show` gives why. |
+| `404`            | It logs an error. Register the app on that server.                                     |
+| `429`            | It logs a warning. The rate limit of the server dropped the batch.                     |
+| other `4xx`      | It logs an error and drops the batch. The visit stays on the same server.              |
+| `5xx`, no answer | It sends the batch to the next server.                                                 |
+
+Register the app on every server of the list, with the segments that `segments` returns:
+
+```sh
+imp-aly app add myapp https://myapp.example/app-map.txt --segments plan -s aly-1,aly-2
+```
+
+**A segment that a server does not know makes it reject the record.** Declare each segment name on
+every server before you deploy the sink. When a server runs with `--allow-origin`, add the origin of
+your app to that list. Otherwise the browser blocks the request, and the sink tries the next server.
+
 ### Google Analytics 4
 
 ```js
@@ -372,8 +440,9 @@ stream of logs, uses the SDK of its provider directly.
 
 ## The queries
 
-Load the records into one table, one row per record. These queries use SQL for PostgreSQL, over a
-table `records`. Adapt them to the query language of your store.
+imp-aly answers the queries of the report itself, with `imp-aly query`. For another store, load the
+records into one table, one row per record. These queries use SQL for PostgreSQL, over a table
+`records`. Adapt them to the query language of your store.
 
 ```sql
 -- visits

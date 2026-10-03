@@ -215,19 +215,27 @@ imp skill ./components/counter.js`,
     key: 'analytics',
     eyebrow: 'Analytics',
     title: 'See which parts of the UI work',
-    lead: 'imp counts the pages, the zones and the outcomes of your app, and gives each record ' +
-      'to a sink that you register.',
+    lead: 'imp helps you build the UI, and also measure how well it works for your users. It ' +
+      'counts the pages, the zones and the outcomes of your app.',
     points: [
       'Every page view is recorded, with no code per route.',
       'A zone counts how often any part of a screen is seen and used, with no code in the component.',
-      'The records go to any store: Google Analytics, PostHog or your own endpoint.',
+      [
+        'imp comes with its own analytics server, ',
+        { href: 'https://github.com/sobanieca/imp-aly', label: 'imp-aly' },
+        '. Run it on your own VPS. Google Analytics, PostHog or your own endpoint also work.',
+      ],
       'A record carries no personal data, and imp stores no id on the device.',
     ],
     code: {
       language: 'js',
       source: `import { onAnalytics, track, zone } from 'imp/analytics'
+import { alySink } from 'imp/analytics/aly'
 
-onAnalytics((record) => console.log(record))
+onAnalytics(alySink({
+  app: 'myapp',
+  servers: ['https://aly.myapp.example'],
+}))
 
 zone({ name: 'myapp.due-date' }, dueDatePicker())
 

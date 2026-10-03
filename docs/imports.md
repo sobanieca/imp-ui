@@ -19,6 +19,7 @@ The library is split by subject, so an import line shows which part of imp a fil
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... from the Lucide icon set                                                 | [Standard components](std-components.md) |
 | `imp/service-worker` | `startDevMode`, `precacheBuild`, for a service worker of your own                                           | [CLI](cli.md#your-own-service-worker)    |
 | `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                                     | [Analytics](analytics.md)                |
+| `imp/analytics/aly`  | `alySink`, a sink that sends the records to your imp-aly servers                                            | [Analytics](analytics.md#imp-aly)        |
 | `imp/std`            | The standard component library, split by group                                                              | [Standard components](std-components.md) |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, and the hooks                                                        | [Testing](testing.md)                    |
 | `imp/preview`        | `mockModule`, for a `*.preview.js` file                                                                     | [CLI](cli.md#imp-preview)                |

@@ -90,6 +90,7 @@ These are the conventions:
 | [tree-shakeable-library](tree-shakeable-library.md)       | Nothing runs at module scope; unused library code is dropped from app bundles              |
 | [http-client](http-client.md)                             | Component-scoped HTTP client: retries, interceptors, bindable request state                |
 | [product-analytics](product-analytics.md)                 | imp counts pages, zones, outcomes and errors as records; the app forwards them via a sink  |
+| [imp-aly-sink](imp-aly-sink.md)                           | `imp/analytics/aly` sends the records to imp-aly servers, one server per visit             |
 
 ## CLI
 

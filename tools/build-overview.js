@@ -125,12 +125,19 @@ const slideMedia = (slide, highlight) => {
   return `<pre class="code"><code>${highlight(source, language)}</code></pre>`
 }
 
+const pointPart = (part) =>
+  typeof part === 'string'
+    ? escape(part)
+    : `<a href="${escape(part.href)}">${escape(part.label)}</a>`
+
+const pointHtml = (point) => [point].flat().map(pointPart).join('')
+
 const slideText = (slide) =>
   `<div class="tour-text">` +
   `<p class="tour-eyebrow">${escape(slide.eyebrow)}</p>` +
   `<h3>${escape(slide.title)}</h3>` +
   `<p class="tour-lead">${escape(slide.lead)}</p>` +
-  `<ul>${slide.points.map((point) => `<li>${escape(point)}</li>`).join('')}</ul>` +
+  `<ul>${slide.points.map((point) => `<li>${pointHtml(point)}</li>`).join('')}</ul>` +
   `</div>`
 
 export const renderTour = (slides, highlight) =>
@@ -482,6 +489,8 @@ export const overviewStyles = `
 }
 
 .tour-text li::marker { color: ${MAIN_2} }
+
+.tour-text a { color: var(--imp-color-primary) }
 
 .tour-media {
   display: flex;
