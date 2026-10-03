@@ -3,7 +3,7 @@ import { scanGroupsModule } from '../src/preview-source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import { IMP_MODULE_EXPORTS } from '../src/lint-rules.js'
 import { IMP_MODULES } from '../src/specifiers.js'
-import { check, fixture, IMP, normalize, REPO_ROOT, runImp, tempDir } from './helpers.js'
+import { check, fixture, IMP, normalize, posixPath, REPO_ROOT, runImp, tempDir } from './helpers.js'
 import { agentSkill, findSkillRoot } from '../src/skill-init.js'
 
 Deno.test('imp skill', async (t) => {
@@ -190,15 +190,21 @@ Deno.test('imp skill --init', async (t) => {
     await t.step('in a repository the root is the git root, also from a package', async () => {
       for (const start of ['repo/packages/app/src', 'repo/packages', 'repo']) {
         const found = await findSkillRoot(`${home}/${start}`, home)
-        check(found.dir === `${home}/repo`, `from ${start} the skill goes to ${found.dir}`)
+        check(
+          posixPath(found.dir) === `${home}/repo`,
+          `from ${start} the skill goes to ${found.dir}`,
+        )
       }
     })
 
     await t.step('outside a repository the root is the home folder', async () => {
       const notes = await findSkillRoot(`${home}/notes`, home)
-      check(notes.dir === home && notes.global, 'a folder outside a repository is not home')
       check(
-        (await findSkillRoot(home, home)).dir === home,
+        posixPath(notes.dir) === home && notes.global,
+        'a folder outside a repository is not home',
+      )
+      check(
+        posixPath((await findSkillRoot(home, home)).dir) === home,
         'a .git above the home folder counts',
       )
     })

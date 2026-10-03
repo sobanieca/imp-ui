@@ -1,4 +1,4 @@
-import { dirname, join } from '@std/path'
+import { dirname, join, resolve } from '@std/path'
 import { bold, dim, green } from './colors.js'
 
 const SKILL_NAME = 'imp'
@@ -51,15 +51,16 @@ const exists = async (path) => {
 const homeDirectory = () => Deno.env.get('HOME') ?? Deno.env.get('USERPROFILE')
 
 export async function findSkillRoot(start = Deno.cwd(), home = homeDirectory()) {
-  let dir = start
+  const homeDir = home ? resolve(home) : null
+  let dir = resolve(start)
   while (true) {
     if (await exists(join(dir, '.git'))) return { dir, reason: 'git root', global: false }
     const parent = dirname(dir)
-    if (dir === home || parent === dir) break
+    if (dir === homeDir || parent === dir) break
     dir = parent
   }
-  if (!home) throw new Error('not in a git repository and the home folder is unknown - set HOME')
-  return { dir: home, reason: 'not in a git repository', global: true }
+  if (!homeDir) throw new Error('not in a git repository and the home folder is unknown - set HOME')
+  return { dir: homeDir, reason: 'not in a git repository', global: true }
 }
 
 export async function installAgentSkill(root) {
