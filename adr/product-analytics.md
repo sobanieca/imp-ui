@@ -78,9 +78,14 @@ command. The docs describe each number of the report and the query behind it.
 - **imp calls a sink at once, and never awaits it.** imp catches a sink that throws or rejects, logs
   it through the built-in logger, see `built-in-logger.md`, and goes on. A failed sink never becomes
   an `error` record, because that record would go to the same sink and fail again.
-- **`batch` flushes on hide.** `batch(send, { size, ms })` returns a sink that holds the records. It
-  sends at `size`, after `ms`, when the page hides or unloads, and when the sink is unregistered.
-  imp does not retry, because a retry needs storage.
+- **`batch` flushes on hide.** `batch(send, { size, ms, segments })` returns a sink that holds the
+  records. It sends at `size`, after `ms`, when the page hides or unloads, and when the sink is
+  unregistered. imp does not retry, because a retry needs storage.
+- **`batch` adds the segments as each record arrives.** `segments(record)` returns the segments of
+  the app, such as `{ plan: 'pro' }`. `batch` adds them under the fields of imp, so a segment cannot
+  replace `type`, `visit`, `at` or `page`. In `send`, the segments come up to `ms` too late: a
+  record from before a sign-in gets the plan of after it. A wrapper sink around `batch` hides the
+  flush on hide from imp, and the last records of the visit are lost.
 - **A late sink gets the current page.** A sink that registers after the current screen is ready
   gets its `page` record at once. There is no consent gate in imp. An app that waits for consent
   registers the sink when the person has answered, and the late `page` record keeps the first

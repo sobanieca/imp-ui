@@ -60,7 +60,9 @@ open.
 ## Setup
 
 Register the sink in your entry module, **before `mount`**. Put it behind a build flag. Then a build
-with the flag off contains no sink and no SDK. See **[Build flags](build-flags.md)**.
+with the flag off contains no sink and no SDK. See **[Build flags](build-flags.md)**. A sink that
+adds the plan or the role of the person reads your app state, so it registers in your root component
+instead. See **[Segments](#segments)**.
 
 ```js
 import { flag, mount } from 'imp'
@@ -242,7 +244,7 @@ way in your sink:
   are the role, the language and the version of the app. Use short values of ASCII letters, digits,
   `.`, `-` and `_`, such as `pro`, `en-US` or `1.2.3`. A strict analytics server rejects a value
   with other characters, such as a space, a quote or an accented letter. Hide a small group in the
-  report, because "Enterprise plan in Iceland" can be one customer.
+  report, because "Enterprise plan in Iceland" can be one customer. See **[Segments](#segments)**.
 - **Add the country on the server**, from a header of your CDN such as `CF-IPCountry`, and discard
   the IP address. Do not keep the full IP address of a request.
 - **Delete the records after a fixed period.**
@@ -292,7 +294,7 @@ An app that does not import `imp/analytics/aly` does not contain the sink. The b
 | ---------- | ------------------------------------------------------------------------------------------------- |
 | `app`      | The name of the app on the servers: lowercase letters, digits and `-`. Required.                  |
 | `servers`  | The list of the URLs of your imp-aly servers. Required. A URL can have a path, such as `/aly`.    |
-| `segments` | A function that returns the segments of a record, such as `() => ({ plan: 'pro' })`. Optional.    |
+| `segments` | A function that returns the segments of a record. See [Segments](#segments). Optional.            |
 | `size`     | The number of records in one batch, as for `batch`. The default is `20`.                          |
 | `ms`       | The time in milliseconds that a batch waits for more records, as for `batch`. The default `5000`. |
 
@@ -324,12 +326,22 @@ The sink logs each problem that the server reports:
 Register the app on every server of the list, with the segments that `segments` returns:
 
 ```sh
-imp-aly app add myapp https://myapp.example/app-map.txt --segments plan -s aly-1,aly-2
+imp-aly app add myapp https://myapp.example/app-map.txt --segments plan,role,lang -s aly-1,aly-2
 ```
 
 **A segment that a server does not know makes it reject the record.** Declare each segment name on
 every server before you deploy the sink. When a server runs with `--allow-origin`, add the origin of
 your app to that list. Otherwise the browser blocks the request, and the sink tries the next server.
+
+imp-aly accepts these segments:
+
+- A name has 1 to 32 letters and digits, and starts with a letter. So `plan` and `appVersion` are
+  correct, and `app-version` is not.
+- A name is not `type`, `visit`, `at`, `page`, `readyMs`, `zone`, `name`, `country`, `day`,
+  `records` or `visits`, in any case.
+- An app has at most 16 segments.
+- A value is `null`, a number, a boolean, or a text of 1 to 64 ASCII letters, digits, `.`, `-` and
+  `_`. imp-aly stores a record with a `null` value without that segment.
 
 ### Google Analytics 4
 
@@ -378,17 +390,18 @@ onAnalytics(batch((records) => navigator.sendBeacon('/collect', JSON.stringify(r
 **Send with `navigator.sendBeacon`, or with `fetch(url, { keepalive: true })`.** A batch goes out as
 the page hides, and the browser can cancel a plain `fetch` there.
 
-`batch(send, { size, ms })` returns a sink. It holds the records, and calls `send` with an array of
-them. It sends in these cases:
+`batch(send, { size, ms, segments })` returns a sink. It holds the records, and calls `send` with an
+array of them. It sends in these cases:
 
 - the array reaches `size`,
 - `ms` passes after the first held record,
 - the page becomes hidden, or the browser unloads it,
 - the sink is unregistered.
 
-The defaults are `size: 20` and `ms: 5000`. The browser limits the data in flight to about 64 KiB,
-and 20 records are about 2 KB. imp does not retry a failed batch, because a retry needs storage. The
-SDK of a provider batches its own events, so do not wrap it in `batch`.
+The defaults are `size: 20` and `ms: 5000`. The optional `segments` function adds the segments to
+each record when it arrives. See [Segments](#segments). The browser limits the data in flight to
+about 64 KiB, and 20 records are about 2 KB. imp does not retry a failed batch, because a retry
+needs storage. The SDK of a provider batches its own events, so do not wrap it in `batch`.
 
 **Check each record against `app-map.txt` on the server.** Anyone can post to a public endpoint, so
 your store must know which pages exist. `imp build` writes the route patterns of your application
@@ -412,19 +425,6 @@ const accepted = records.filter((record) => pages.has(record.page))
 Read the file again after each deploy, or on a timer. A record always carries a `page`, so a record
 without one is spam too.
 
-### Segments
-
-To compare usage across plans or regions, add the segments in the sink:
-
-```js
-const user = useState(self, 'myapp.user')
-
-onAnalytics(self, (record) => send({ ...record, plan: user.get()?.plan ?? null }))
-```
-
-A segment value is a key from your code, not a text that the person sees or types. Send `pro`, not
-`Pro plan`. Send `en-US`, not `English (US)`.
-
 ### Errors only
 
 An app that wants only its errors forwards the records where `type` is `'error'`:
@@ -437,6 +437,138 @@ onAnalytics((record) => {
 
 imp has no other error hook and no log sink. A team that needs the message of each error, or a
 stream of logs, uses the SDK of its provider directly.
+
+## Segments
+
+A segment splits the report by a group of people, such as the plan, the role or the language. imp
+does not know these groups. Your app knows them, because it holds the session of the signed-in
+person in its state. The sink reads that state and adds the segments to each record:
+
+```jsonl
+{"type":"outcome","visit":"k3v9a1c2","at":1759300019400,"page":"/invoices/:id","name":"myapp.invoice-sent","plan":"pro","role":"admin","lang":"en"}
+```
+
+Then the report can answer questions such as "do people on the free plan reach the send button?" or
+"do admins use the settings page?".
+
+### Read the segments from the state
+
+A state belongs to a component, so your entry module cannot read it. Register the sink in the
+`setup` of the component that holds the session state. In most apps, that is the root component.
+This example sends to imp-aly:
+
+```js
+// app.js
+import { component, flag } from 'imp'
+import { onAnalytics } from 'imp/analytics'
+import { alySink } from 'imp/analytics/aly'
+import { lang } from 'imp/i18n'
+import { initState } from 'imp/state'
+
+const roleOf = (session) => {
+  if (!session) return null
+  return session.roles.includes('admin') ? 'admin' : 'member'
+}
+
+const sessionSegments = (session) => ({
+  plan: session?.plan ?? null,
+  role: roleOf(session),
+  lang: lang.get(),
+})
+
+export const root = component('myapp-root', {
+  setup: (self) => {
+    const session = initState(self, 'myapp.session')
+    loadSession().then(session.set, () => session.set(null))
+
+    if (flag('ANALYTICS')) {
+      onAnalytics(
+        self,
+        alySink({
+          app: 'myapp',
+          servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
+          segments: () => sessionSegments(session.get()),
+        }),
+      )
+    }
+
+    return shell({ navbar: { map: app } }, appRouter())
+  },
+})
+```
+
+Register the three segments on each server: `--segments plan,role,lang`. See
+**[imp-aly](#imp-aly)**.
+
+**Register the sink once, when the app starts. Do not wait for the sign-in.** The sink calls
+`segments` for each record when the record arrives. So each record carries the state at that moment.
+After a sign-in, the next record carries the plan. After a sign-out, the next record has no plan.
+The root component sets up before the router shows the first screen, so the sink gets every record
+of the visit.
+
+**A record without a session has `null` segments.** This applies to a signed-out person, and to the
+time while the session loads. A screen behind a guard that waits for the session is ready only after
+the session loads, so its `page` record carries the plan. A public screen, such as `/login`, sends
+its records with `plan: null`. imp-aly stores such a record without the segment. A query that groups
+by `plan` gives these records as one group with a `null` plan.
+
+**A visit can be in two groups.** A person can upgrade from `free` to `pro` during a visit. The
+records before the change carry `free`, and the records after it carry `pro`. A count of visits per
+plan counts that visit once in each plan.
+
+**Keep the sink in a component that stays mounted and has one instance.** `onAnalytics(self, sink)`
+ends the registration when the component unmounts. A sink in a screen stops when the person leaves
+the screen. A sink in a component with several instances sends each record once per instance.
+
+**Register the sink late only to wait for consent.** A sink in the signed-in part of the app gets no
+record from before the sign-in, other than the `page` record of the current screen. It loses the
+sign-in page, and every visitor who does not sign in. See **[No personal data](#no-personal-data)**.
+
+### Choose the segments
+
+- **A segment is a group, never an id.** Good segments are the plan, the role, the language, the
+  version of the app, and the size class of the organization. A user id or an organization id is
+  personal data. See **[No personal data](#no-personal-data)**.
+- **A value is a key from your code, never a text that the person sees.** Send `pro`, not
+  `Pro plan`. Send `en-US`, not `English (US)`. Use the key that your API returns, not its label.
+- **A segment has one value.** Reduce a list to one key, such as the roles of a person to `admin` or
+  `member`.
+- **Keep the number of values small.** A segment with many different values, such as the number of
+  seats, splits the report into many small groups. Put the values in classes, such as `1`, `2-10`,
+  `11-50` and `51+`. A small group can also point at one customer.
+
+### Segments in other sinks
+
+The `segments` option belongs to `alySink`. For another sink, add the segments in the sink, and
+register it in the same component. For a provider SDK, spread them into the properties of each
+event. This is the PostHog sink with segments:
+
+```js
+onAnalytics(self, ({ type, ...fields }) => {
+  const properties = { ...fields, ...sessionSegments(session.get()) }
+  if (type === 'page') {
+    posthog.capture('$pageview', { ...properties, $current_url: location.origin + fields.page })
+  } else {
+    posthog.capture(type, properties)
+  }
+})
+```
+
+For your own endpoint, give `batch` the same `segments` function as `alySink`:
+
+```js
+onAnalytics(
+  self,
+  batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records)), {
+    segments: () => sessionSegments(session.get()),
+  }),
+)
+```
+
+**Do not add the segments in `send`, and do not wrap a `batch` sink in another sink.** `send` runs
+when the batch goes out, up to `ms` after a record. So a record on `/login` from before the sign-in
+gets the plan of after the sign-in. imp sends the held records of a `batch` sink when the page
+hides. It cannot do that through a wrapper, so the last records of the visit are lost.
 
 ## The queries
 

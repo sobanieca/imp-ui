@@ -53,13 +53,15 @@ record. No record carries a path, a message or a value from the person.
 | ------------------------------------- | ------------------------------------------------------------------------ |
 | `onAnalytics(sink)`                   | registers a sink for the page; returns the function that unregisters it  |
 | `onAnalytics(self, sink)`             | the same, and unregisters when the component unmounts                    |
-| `batch(send, { size: 20, ms: 5000 })` | returns a sink that calls `send(records)` in batches                     |
+| `batch(send, { size, ms, segments })` | returns a sink that calls `send(records)` in batches                     |
 | `alySink({ app, servers, segments })` | returns a `batch` sink that posts to `<server>/collect/<app>` of imp-aly |
 | `zone({ name }, ...children)`         | wraps any content; records `seen` and `interaction`                      |
 | `track(name)`                         | records an outcome; takes the name only                                  |
 
-`batch` sends when the array reaches `size`, when `ms` passes, when the page hides or unloads, and
-when the sink is unregistered.
+`batch` sends when the array reaches `size` (default `20`), when `ms` (default `5000`) passes, when
+the page hides or unloads, and when the sink is unregistered. `segments` is optional:
+`(record) => ({ plan: 'pro' })`, called for each record when it arrives. Its fields go under the
+fields of imp, so a segment never replaces `type`, `visit`, `at` or `page`.
 
 `alySink` options:
 
@@ -67,7 +69,7 @@ when the sink is unregistered.
 | ---------- | ----------------------------------------------------------------------------------- |
 | `app`      | required; the app name on the servers: lowercase letters, digits, `-`               |
 | `servers`  | required; an array of server URLs: `['https://aly-1.myapp.example']`, or `['/aly']` |
-| `segments` | optional; `(record) => ({ plan: 'pro' })`, called once per record                   |
+| `segments` | as for `batch`                                                                      |
 | `size`     | as for `batch`, default `20`                                                        |
 | `ms`       | as for `batch`, default `5000`                                                      |
 
@@ -79,8 +81,10 @@ when the sink is unregistered.
 
 ## Rules an agent gets wrong
 
-- **Register the sink before `mount`.** A sink that registers later gets the `page` record of the
-  current screen at once, but no other record from before it.
+- **Register the sink before `mount`, or in the `setup` of the root component.** A sink that
+  registers later gets the `page` record of the current screen at once, but no other record from
+  before it. Never register the sink only after the sign-in. That loses the sign-in page and every
+  signed-out visit.
 - **Names carry a namespace: `myapp.due-date`, never `due-date`.** The same rule as a state name,
   plus only ASCII letters, digits, `-` and `_` between the dots, at most 128 characters.
   `zone({ name: 'myapp.due-date' }, child)`, never `zone('myapp.due-date', child)`. imp logs a bad
@@ -99,8 +103,26 @@ when the sink is unregistered.
 - **For imp-aly, use `alySink`, never a hand-written `batch` sink.** Put segments in the `segments`
   option, never in a wrapper sink: `onAnalytics((record) => sink({ ...record }))` loses the flush on
   hide. Register the app and every segment name on every server:
-  `imp-aly app add myapp <app-map URL> --segments plan`. A server rejects a record with an unknown
+  `imp-aly app add myapp <app-map URL> --segments plan,role`. A server rejects a record with an
+  unknown segment.
+- **Segments come from state, so the sink registers where the state is.** `main.js` cannot read a
+  state. Call
+  `onAnalytics(self, alySink({ ..., segments: () => ({ plan: session.get()?.plan ?? null }) }))` in
+  the `setup` of the component that calls `initState(self, 'myapp.session')`, usually the root. Use
+  a component with one instance that stays mounted. Never one per screen or per list row.
+- **`segments` reads the state on each call.** Never read the state once into a constant. A record
+  before the session loads, or after a sign-out, has `null` segments. imp-aly stores it without the
   segment.
+- **A segment name is 1 to 32 letters and digits, and starts with a letter:** `appVersion`, never
+  `app-version`. It is never a record field (`type`, `visit`, `at`, `page`, `readyMs`, `zone`,
+  `name`, `country`), nor `day`, `records`, `visits`. At most 16 segments. A value is `null`, a
+  number, a boolean, or 1 to 64 of `A-Za-z0-9._-`.
+- **A segment holds one key of a small set.** Reduce a list of roles to `admin` or `member`. Put a
+  count, such as seats, in classes: `1`, `2-10`, `11-50`, `51+`.
+- **For an own endpoint, pass `segments` to `batch`:**
+  `batch(send, { segments: () => sessionSegments(session.get()) })`. Never add segments in `send`,
+  which runs up to `ms` later and tags a pre-sign-in record with the post-sign-in plan. Never wrap
+  the `batch` sink, which loses the flush on hide.
 - **`servers` is an array**, also for one server. Pass the server base URL, never the `/collect`
   URL.
 - **A sink that posts to an own endpoint uses `navigator.sendBeacon` or `fetch` with
@@ -110,9 +132,9 @@ when the sink is unregistered.
   server fetches the file from the site and drops a record whose `page` is not a line of it. See
   [build](build.md).
 - **Add no personal data in the sink.** No user id, no organization id, no email, no value that the
-  person typed. Add segments: `send({ ...record, plan: user.get()?.plan ?? null })`. A segment value
-  is a short key of ASCII letters, digits, `.`, `-` and `_`: `pro`, `en-US`, `1.2.3`, never
-  `Pro plan`. Add the country on the server from the request, and discard the IP address.
+  person typed. Add segments, such as `plan`, `role` and `lang`. A segment value is a short key of
+  ASCII letters, digits, `.`, `-` and `_`: `pro`, `en-US`, `1.2.3`, never `Pro plan`. Add the
+  country on the server from the request, and discard the IP address.
 - **imp needs no consent banner.** It stores nothing on the device. A provider SDK that writes
   cookies (GA4, PostHog) needs consent in Europe: register the sink and start the SDK when the
   person has answered. The late sink gets the current `page` record. There is no `when` option.
@@ -137,21 +159,37 @@ mount('#app', app())
 ```
 
 ```js
-// main.js - the imp-aly sink, with two servers and a segment
-import { flag, mount } from 'imp'
+// app.js - the imp-aly sink in the root component, with segments from the session state
+import { component, flag } from 'imp'
 import { onAnalytics } from 'imp/analytics'
 import { alySink } from 'imp/analytics/aly'
-import { app } from './app.js'
-import { currentPlan } from './plan.js'
+import { lang } from 'imp/i18n'
+import { initState } from 'imp/state'
 
-if (flag('ANALYTICS')) {
-  onAnalytics(alySink({
-    app: 'myapp',
-    servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
-    segments: () => ({ plan: currentPlan() }),
-  }))
-}
-mount('#app', app())
+const sessionSegments = (session) => ({
+  plan: session?.plan ?? null,
+  role: session ? (session.roles.includes('admin') ? 'admin' : 'member') : null,
+  lang: lang.get(),
+})
+
+export const root = component('myapp-root', {
+  setup: (self) => {
+    const session = initState(self, 'myapp.session')
+    loadSession().then(session.set, () => session.set(null))
+    if (flag('ANALYTICS')) {
+      onAnalytics(
+        self,
+        alySink({
+          app: 'myapp',
+          servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
+          segments: () => sessionSegments(session.get()),
+        }),
+      )
+    }
+    return shell({ navbar: { map: app } }, appRouter())
+  },
+})
+// on each server: imp-aly app add myapp <app-map URL> --segments plan,role,lang
 ```
 
 ```js

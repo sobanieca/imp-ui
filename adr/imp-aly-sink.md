@@ -8,8 +8,7 @@ are, checks them against `app-map.txt`, and answers the queries of the report.
 
 A sink for imp-aly is the same code in every app that uses it. It must post the batches to the right
 URL, keep each visit on one server, add the segments without the loss of the flush on hide, and
-report the answers of the server. A hand-written sink gets these details wrong. A wrapper around
-`batch` that adds a segment loses the flush of the batch when the page hides.
+report the answers of the server. A hand-written sink gets these details wrong.
 
 A large app runs several imp-aly servers. The servers do not know each other. A query adds up the
 counts of all servers. A count of distinct visits adds up only when no visit has records on two
@@ -51,9 +50,8 @@ size, ms })` returns a `batch` sink that posts each batch to
   `navigator.sendBeacon`, so the sink can see a 5xx. The referrer policy `strict-origin` keeps the
   path of the page out of the `Referer` header, and keeps the `Origin` header that the
   `--allow-origin` check of imp-aly reads.
-- **Segments are an option, not a wrapper.** `segments(record)` returns the segments of each record
-  when it arrives. The sink adds them under the fields of imp, so a segment cannot replace `type`,
-  `visit`, `at` or `page`.
+- **Segments are the option of `batch`.** `alySink` passes `segments` to `batch` as it is, see
+  `product-analytics.md`.
 - **A server URL can have a path or be relative.** A proxy can serve imp-aly under `/aly` of the
   origin of the app. The sink rejects a URL with a query or a fragment, and a list with the same
   server twice.
