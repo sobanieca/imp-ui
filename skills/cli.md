@@ -25,6 +25,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp resize <image>`                 | downscale an oversized PNG/JPEG asset                    | [resize](resize.md)             |
 | `imp map [file]`                     | print the application map: paths, labels, access, notes  | [routing](routing.md)           |
 | `imp skill [...subject]`             | print a manual for an AI agent                           | [skill](skill.md)               |
+| `imp skill --init`                   | create the `/imp` skill for Claude Code, Codex, Cursor   | [skill](skill.md)               |
 | `imp update [version]`               | update and pin the version in `imp.json`                 | [update](update.md)             |
 | `imp prune`                          | delete cached versions unused for 30+ days               | [update](update.md)             |
 | `imp licenses`                       | third-party license notices for bundled tools            | [update](update.md)             |

@@ -85,9 +85,16 @@ loads a pre-built component lazily would otherwise ship the prose.
   file itself. imp bundles nothing, and imports nothing, to answer. It reads the sidecar off disk. A
   missing skill file exits with a non-zero code, and imp names the file to write. So a tool can tell
   "no skill yet" from a real failure.
-- **There is no flag, and there is stdout only.** Skill text is the only thing on stdout. A
+- **Reading takes no flag, and there is stdout only.** Skill text is the only thing on stdout. A
   diagnostic goes to stderr, with exit code 1. To run the command and to read the output is the
   whole interface.
+- **`imp skill --init` makes the agent run the command.** An agent that does not know imp does not
+  know to run `imp skill`. So `--init` writes a `SKILL.md` for Claude Code, Codex and Cursor, to
+  `.agents/skills/imp/` and `.claude/skills/imp/`. It only points the agent at `imp skill`, so it
+  does not go stale when imp updates. imp looks for `.git` from the current folder up to the home
+  folder. In a repository, the skill goes to the git root, so one skill serves every package of a
+  monorepo. Outside a repository, it goes to the home folder, where every project sees it. jsonr,
+  sqlr and imp-aly place their skills by the same rule. imp never replaces a skill that exists.
 - **`imp` with no argument points an agent at the command.** The last line of the usage text is
   addressed to an AI agent. It tells the agent to run `imp skill` before it writes code. So the
   entry point is discoverable from the one command that anything runs first.

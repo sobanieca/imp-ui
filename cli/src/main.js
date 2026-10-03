@@ -76,6 +76,9 @@ USAGE
                                         (a path prints that component's own skill,
                                         from the .skill.md file next to it |
                                         no argument: an index of everything there is)
+  imp skill --init                      create the /imp skill for Claude Code, Codex and
+                                        Cursor: at the git root (searched up to the
+                                        home folder), or else in the home folder
   imp update [version] [--check]        update to the latest release (or a given version) and
                                         pin it in imp.json (--check only reports if one is available)
   imp prune                             delete cached imp versions unused for 30+ days
@@ -302,6 +305,13 @@ try {
       break
     }
     case 'skill': {
+      if (rest.includes('--init')) {
+        const stray = rest.find((arg) => arg !== '--init')
+        if (stray) throw new Error(`unknown argument '${stray}' - imp skill --init takes no other`)
+        const { initAgentSkill } = await import('./skill-init.js')
+        await initAgentSkill()
+        break
+      }
       const { printSkill } = await import('./skill.js')
       await printSkill({
         subjects: positional(rest),

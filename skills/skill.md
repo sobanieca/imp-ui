@@ -5,13 +5,14 @@ imp skill                          the index: every subject and component, one l
 imp skill state routing            one or more subjects in full
 imp skill std/button               a standard component
 imp skill ./components/counter.js  a component of this project, by path to its module
+imp skill --init                   create the /imp skill, so the agent reads these manuals
 ```
 
 Every page prints out of the binary. The command works offline and needs no network. It prints at
-the exact imp version that the project runs, so you read what the project executes. The command has
-**no flags**. Skill text is the only output on stdout. Diagnostics go to stderr with exit code 1. So
-you can tell "no skill yet" from a failure, and `imp skill state > state.md` captures the manual
-only.
+the exact imp version that the project runs, so you read what the project executes. The only flag is
+`--init`, see below. Skill text is the only output on stdout. Diagnostics go to stderr with exit
+code 1. So you can tell "no skill yet" from a failure, and `imp skill state > state.md` captures the
+manual only.
 
 ## How to use it
 
@@ -27,6 +28,19 @@ only.
   the page. So you can go from one manual to the next without a path or a URL.
 - **Ask for a component by file**, not by name: `imp skill ./components/counter.js`, or the skill
   file itself. imp imports and bundles nothing to answer. It reads the file off disk.
+
+## How to make the agent find imp - `--init`
+
+`imp skill --init` writes one `SKILL.md` to `.agents/skills/imp/` (Codex, Cursor) and
+`.claude/skills/imp/` (Claude Code, Cursor). The skill tells the agent to run `imp skill` before it
+writes code. Then the person asks with `/imp` (Claude Code, Cursor) or `$imp` (Codex).
+
+- imp looks for `.git` from the current folder up to the home folder.
+- In a git repository, the files go to the git root. The agent sees the skill in every folder of the
+  repository.
+- Outside a git repository, the files go to the home folder. Then the agent sees the skill in every
+  project.
+- imp does not replace a skill that exists. It exits 1 and names the file to delete.
 
 ## How to write the skill of a component
 

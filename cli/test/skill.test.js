@@ -3,7 +3,8 @@ import { scanGroupsModule } from '../src/preview-source.js'
 import { findSkill, skillIndex, SKILLS, standardComponentSubjects } from '../src/skill.js'
 import { IMP_MODULE_EXPORTS } from '../src/lint-rules.js'
 import { IMP_MODULES } from '../src/specifiers.js'
-import { check, fixture, normalize, REPO_ROOT, runImp } from './helpers.js'
+import { check, fixture, IMP, normalize, REPO_ROOT, runImp, tempDir } from './helpers.js'
+import { agentSkill, findSkillRoot } from '../src/skill-init.js'
 
 Deno.test('imp skill', async (t) => {
   await t.step('every skills page is registered as a subject', async () => {
@@ -160,4 +161,78 @@ Deno.test('imp skill', async (t) => {
     check(stdout.includes('THIS PROJECT'), 'the project section is missing when nothing is found')
     check(stdout.includes('counter.skill.md'), 'the empty project section names no file to write')
   })
+})
+
+Deno.test('imp skill --init', async (t) => {
+  const root = await tempDir()
+  const home = `${root}/home`
+  const mkdir = (path) => Deno.mkdir(`${root}/${path}`, { recursive: true })
+  await mkdir('home/repo/.git')
+  await mkdir('home/repo/packages/app/src')
+  await mkdir('home/notes')
+  await mkdir('.git')
+  await Deno.writeTextFile(`${home}/repo/packages/app/AGENTS.md`, '# app\n')
+  await Deno.writeTextFile(`${home}/notes/CLAUDE.md`, '# notes\n')
+  const init = async (cwd) => {
+    const { code, stdout, stderr } = await new Deno.Command(IMP, {
+      args: ['skill', '--init'],
+      cwd,
+      env: { HOME: home },
+      stdout: 'piped',
+      stderr: 'piped',
+    }).output()
+    const decode = (bytes) => normalize(new TextDecoder().decode(bytes))
+    return { code, stdout: decode(stdout), stderr: decode(stderr) }
+  }
+  const read = (path) => Deno.readTextFile(`${path}/SKILL.md`).catch(() => null)
+
+  try {
+    await t.step('in a repository the root is the git root, also from a package', async () => {
+      for (const start of ['repo/packages/app/src', 'repo/packages', 'repo']) {
+        const found = await findSkillRoot(`${home}/${start}`, home)
+        check(found.dir === `${home}/repo`, `from ${start} the skill goes to ${found.dir}`)
+      }
+    })
+
+    await t.step('outside a repository the root is the home folder', async () => {
+      const notes = await findSkillRoot(`${home}/notes`, home)
+      check(notes.dir === home && notes.global, 'a folder outside a repository is not home')
+      check(
+        (await findSkillRoot(home, home)).dir === home,
+        'a .git above the home folder counts',
+      )
+    })
+
+    await t.step('the binary writes the skill for each agent', async () => {
+      const { code, stdout, stderr } = await init(`${home}/repo/packages/app/src`)
+      check(code === 0, `imp skill --init exited ${code}: ${stderr}`)
+      check(stdout.includes('.claude/skills/imp/SKILL.md'), 'the output names no skill file')
+      for (const dir of ['.agents', '.claude']) {
+        const text = await read(`${home}/repo/${dir}/skills/imp`)
+        check(text === agentSkill, `${dir}/skills/imp/SKILL.md is missing or different`)
+      }
+      check(
+        await read(`${home}/repo/packages/app/.claude/skills/imp`) === null,
+        'a skill went to the package',
+      )
+      check(agentSkill.startsWith('---\nname: imp\n'), 'the skill has no name')
+    })
+
+    await t.step('outside a repository the binary writes to the home folder', async () => {
+      const { code } = await init(`${home}/notes`)
+      check(code === 0, 'imp skill --init failed outside a repository')
+      check(await read(`${home}/.claude/skills/imp`) === agentSkill, 'no skill in the home folder')
+      check(await read(`${home}/notes/.claude/skills/imp`) === null, 'a skill went to the folder')
+    })
+
+    await t.step('an existing skill is not replaced', async () => {
+      await Deno.remove(`${home}/.agents/skills/imp/SKILL.md`)
+      const { code, stderr } = await init(`${home}/notes`)
+      check(code === 1, `a second imp skill --init exited ${code}`)
+      check(stderr.includes('already exists'), `the error does not name the file: ${stderr}`)
+      check(await read(`${home}/.agents/skills/imp`) === null, 'a partial skill was written')
+    })
+  } finally {
+    await Deno.remove(root, { recursive: true })
+  }
 })

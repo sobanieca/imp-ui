@@ -88,6 +88,7 @@ imp map   [file]                      print the application map of the app: ever
                                       (the 'map' file of imp.json, or a part you pass)
 imp skill [...subject]                print imp's manual for a subject, for an AI agent to
                                       read (no subject: the index of every subject)
+imp skill --init                      create the /imp skill for Claude Code, Codex and Cursor
 imp update [version] [--check]        update to the latest release and pin it in imp.json
 imp prune                             delete cached imp versions unused for 30+ days
 imp licenses                          print third-party license notices for bundled tools
@@ -1854,8 +1855,8 @@ learn the part it needs.
 
 With one or more subjects, the command prints those manuals in full. Skill text is the only thing on
 standard output, and every diagnostic goes to standard error. So `imp skill state > state.md`
-captures the manual and nothing else. There are no flags. The whole interface is to run the command
-and read the output.
+captures the manual and nothing else. The only flag is `--init`, see below. Otherwise the whole
+interface is to run the command and read the output.
 
 A subject answers to the name that you already have. The import specifier works, as in
 `imp skill imp/state` and `imp skill imp/std/button`. The plain subject works, as in `state`,
@@ -1872,6 +1873,29 @@ same convention that the components of imp follow. So `imp skill std/button` and
 no skill file exits with code 1, and imp names the file to write, so a tool can tell "no skill yet"
 from a real failure. See **[Components](components.md)** to learn how to write a skill file, and
 what happens to it at build time.
+
+### `imp skill --init` - the `/imp` skill for your agent
+
+An agent learns imp from `imp skill` only when it knows to run the command. `imp skill --init`
+writes a small skill that tells it so. Claude Code, Codex and Cursor load the skill. Then you ask
+for work with `/imp` (Claude Code, Cursor) or `$imp` (Codex):
+
+```
+/imp add a settings page with a theme switch
+```
+
+The command writes the same `SKILL.md` to two folders: `.agents/skills/imp/` (Codex, Cursor) and
+`.claude/skills/imp/` (Claude Code, Cursor). It finds the place in this order:
+
+1. imp looks for `.git` in the current folder and in each parent folder, up to your home folder.
+2. In a git repository, the skill goes to the git root, also when you run the command in a
+   subfolder. One skill serves the whole repository. An agent that you start in a package of a
+   monorepo finds it too.
+3. Outside a git repository, the skill goes to your home folder, such as `~/.claude/skills/imp/`.
+   Then the agents see the skill in every project.
+
+imp does not replace a skill that exists. It exits with code 1 and names the file. Delete both files
+to write the skill again, for example after an update of imp.
 
 ## `imp update` - pinning the imp version
 
