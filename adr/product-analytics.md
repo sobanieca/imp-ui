@@ -13,10 +13,11 @@ component lifecycle catches a render error. The HTTP client knows when a request
 layer catches a subscriber that throws.
 
 A number that a store must derive from several records is a number that a developer cannot explain
-to the team. A time on a page that is the sum of deltas, a zone use that is an active time above
-zero, and a ready time that is one of two fields were each correct and each hard to explain. A
-message of an error, and the path of a page off the map, can carry a query, an email address or a
-token. Scrubbing them is code that must be right, and a reader cannot see that it is.
+to the team. A time is such a number: a store must sum or rank it, and a time in a zone means a
+different thing for a mouse, touch and the keyboard. A share is honest only when its numerator can
+never be larger than its denominator. A message of an error, and the path of a page off the map, can
+carry a query, an email address or a token. Scrubbing them is code that must be right, and a reader
+cannot see that it is.
 
 ## Decision
 
@@ -28,9 +29,9 @@ token. Scrubbing them is code that must be right, and a reader cannot see that i
 command. The docs describe each number of the report and the query behind it.
 
 - **Every number of the report is a count of records.** A store counts rows, or distinct visit ids,
-  and never sums, joins or takes a percentile, except the ready time. One record stands for one
-  event, or for up to 5 seconds of events of one kind.
-- **Five record types, with fixed fields.** `page` with `readyMs`, `seen` with `zone`, `interaction`
+  and never sums, joins or takes a percentile. One record stands for one event, for the first event
+  of its kind in a page view, or for up to 5 seconds of errors.
+- **Five record types, with fixed fields.** `page` with nothing else, `seen` with `zone`, `used`
   with `zone` or `null`, `outcome` with `name`, and `error` with nothing else. Every record carries
   `type`, `visit`, `at` and `page`. A record is plain data that `JSON.stringify` accepts.
 - **No record carries personal data, so imp scrubs nothing.** `page` is the route pattern of the
@@ -45,10 +46,9 @@ command. The docs describe each number of the report and the query behind it.
   `page` is not a line of it. A forged record then needs a real pattern, and a record for a page
   that does not exist is spam by definition.
 - **The route page is the page view.** The internal route page of the router, see
-  `client-side-router.md`, reports its mount and its readiness. `readyMs` is the time from the
-  navigation to the moment the screen replaces its loading content, and from the document load for
-  the entry page. A screen that the person leaves before it is ready sends no record. A change of
-  the query only, a guard redirect and a `redirect()` binding are no page view.
+  `client-side-router.md`, reports its mount and its readiness. The `page` record goes out when the
+  screen replaces its loading content. A screen that the person leaves before it is ready sends no
+  record. A change of the query only, a guard redirect and a `redirect()` binding are no page view.
 - **A visit is one document load, with no stored id.** imp writes no cookie, and nothing to
   `localStorage` or `sessionStorage`. A reload is a new visit. There is no view id. A visit and a
   page group every record that the report needs.
@@ -57,11 +57,17 @@ command. The docs describe each number of the report and the query behind it.
   `IntersectionObserver` on the boxes of its content sends one `seen` record the first time some
   part is in the viewport while the document is visible. Zones of one name on one page send one
   record per page view, so a list of rows is one zone.
-- **An interaction is one record per 5 seconds.** One capture listener on the document reads
-  `pointerdown`, `keydown`, `input` and `wheel`. The composed path names the zones that hold the
-  event, and each gets a record, or the page gets one with `zone: null`. A second interaction of the
-  same zone within 5 seconds sends nothing. A navigation starts the window again. The count of
-  records is a measure of time spent, with no sum.
+- **A zone sends `used` once per page view.** One passive capture listener on the document reads
+  `click`, `input` and `keydown`, and ignores an event whose `isTrusted` is false. A key that does
+  not use the zone is no use: Tab, Shift, Control, Alt, Meta, CapsLock, Escape and F1 to F24. A Tab
+  through a zone only moves the focus. The composed path names the zones that hold the event, and
+  each zone gets one `used` record per page view. The first such event anywhere on the page also
+  sends one `used` record with `zone: null`. `click` covers a mouse, touch and a pen, and the
+  browser fires none for a scroll. So a finger that lands on a zone to scroll is no use, and a
+  pointer press or a wheel turn is not read.
+- **A used zone is a seen zone.** When a zone is used before its `seen` record went out, `seen` goes
+  out first. With one record of each per page view, `used` is never more than `seen`, and "used when
+  seen" is a share that a store gets from two counts.
 - **An error is one record per 5 seconds, with no message.** The sources are an uncaught error, an
   unhandled rejection, a state subscriber that throws, a render error, and an `imp/http` request
   that fails on the network, times out, or answers 5xx. All feed one counter per page. A loop that
@@ -101,9 +107,10 @@ command. The docs describe each number of the report and the query behind it.
 - The seam works with any store. A sink is a plain function, so it can call `gtag`,
   `posthog.capture`, or `sendBeacon`, with one event per record type. The app must turn off the
   automatic page views of its provider.
-- The time on a page, the flow between pages, a bounce rate, the message of an error, a value on an
-  outcome, a heatmap, a user id and a record per component are out of scope. Each one either needs a
-  derived number or carries personal data.
+- A time, such as the time until a screen is ready, the time on a page or the time in a zone, is out
+  of scope. So are the flow between pages, a bounce rate, the message of an error, a value on an
+  outcome, a heatmap, a user id and a record per component. Each one either needs a derived number
+  or carries personal data.
 - A page that fails is found in the browser, not in the record. The record says where and how often.
 - An app without a map, or a screen off the map, sends nothing. The report has no row for a path
   that is not a feature of the app.

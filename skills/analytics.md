@@ -9,12 +9,12 @@ imp counts. The app registers a sink that forwards each record to a store. imp b
 third-party provider, makes no network call of its own, and records no personal data. `alySink` is
 the sink for imp-aly, the analytics server of imp that the owner runs on a VPS.
 
-| Level      | Tool                                   | Records               |
-| ---------- | -------------------------------------- | --------------------- |
-| a page     | nothing - the router records each view | `page`, `interaction` |
-| a zone     | `zone({ name }, ...children)`          | `seen`, `interaction` |
-| an outcome | `track(name)`                          | `outcome`             |
-| a failure  | nothing - imp reports it               | `error`               |
+| Level      | Tool                                   | Records        |
+| ---------- | -------------------------------------- | -------------- |
+| a page     | nothing - the router records each view | `page`, `used` |
+| a zone     | `zone({ name }, ...children)`          | `seen`, `used` |
+| an outcome | `track(name)`                          | `outcome`      |
+| a failure  | nothing - imp reports it               | `error`        |
 
 ## Records
 
@@ -23,26 +23,34 @@ memory only. `at` is `Date.now()` of the record. `page` is the route pattern of 
 such as `/invoices/:id`. A path off the map, and the time before the router shows a screen, send no
 record. No record carries a path, a message or a value from the person.
 
-| `type`        | Other fields     | Sent                                                                     |
-| ------------- | ---------------- | ------------------------------------------------------------------------ |
-| `page`        | `readyMs`        | when the screen is ready; a screen left before it is ready sends nothing |
-| `seen`        | `zone`           | once per zone name per page view, when some part enters the viewport     |
-| `interaction` | `zone` or `null` | pointer press, key, input or wheel; one per zone per 5 s; `null` = page  |
-| `outcome`     | `name`           | at the `track()` call                                                    |
-| `error`       |                  | uncaught error, rejection, render error, 5xx or network; one per 5 s     |
+| `type`    | Other fields     | Sent                                                                     |
+| --------- | ---------------- | ------------------------------------------------------------------------ |
+| `page`    |                  | when the screen is ready; a screen left before it is ready sends nothing |
+| `seen`    | `zone`           | once per zone name per page view, when some part enters the viewport     |
+| `used`    | `zone` or `null` | once per zone name per page view, at a click, input or key in it         |
+| `outcome` | `name`           | at the `track()` call                                                    |
+| `error`   |                  | uncaught error, rejection, render error, 5xx or network; one per 5 s     |
 
-- `readyMs` counts from the navigation, or from the document load for the entry page, to the moment
-  the screen replaces its loading content. A change of the query only, a guard redirect and a
-  `redirect()` binding are no page view.
-- Zones nest, and an interaction counts for every zone that holds it. A navigation starts the 5 s
-  again, for interactions and for errors.
+- The screen is ready when it replaces its loading content. A change of the query only, a guard
+  redirect and a `redirect()` binding are no page view.
+- `used` comes from `click`, `input` and `keydown` on the document, in the capture phase. These keys
+  are no use: Tab, Shift, Control, Alt, Meta, CapsLock, Escape, F1 to F24. So moving the focus with
+  Tab, or pressing only a modifier key, is no use. A letter, Enter or an arrow key is a use. A
+  pointer press, a wheel turn and a scroll are no use. An event that code dispatches (`isTrusted`
+  false, for example `element.click()`) is no use.
+- `used` with `zone: null` is one per page view, at the first such event anywhere on the page.
+- Zones nest, and an event counts for every zone that holds it. A used zone whose `seen` did not go
+  out yet sends `seen` first, so `used` is never more than `seen`.
+- There is no time on a page, time in a zone or time to ready a screen. Do not add one.
+- A navigation starts the 5 s of the errors again.
 - A 4xx answer gives no `error`. The `ResizeObserver loop ...` messages and a cross-origin
   `Script error.` give no `error`.
 
 ```jsonl
-{"type":"page","visit":"k3v9a1c2","at":1759300006100,"page":"/invoices/:id","readyMs":420}
+{"type":"page","visit":"k3v9a1c2","at":1759300006100,"page":"/invoices/:id"}
 {"type":"seen","visit":"k3v9a1c2","at":1759300006150,"page":"/invoices/:id","zone":"myapp.send"}
-{"type":"interaction","visit":"k3v9a1c2","at":1759300015000,"page":"/invoices/:id","zone":"myapp.send"}
+{"type":"used","visit":"k3v9a1c2","at":1759300015000,"page":"/invoices/:id","zone":null}
+{"type":"used","visit":"k3v9a1c2","at":1759300015000,"page":"/invoices/:id","zone":"myapp.send"}
 {"type":"outcome","visit":"k3v9a1c2","at":1759300019400,"page":"/invoices/:id","name":"myapp.invoice-sent"}
 {"type":"error","visit":"k3v9a1c2","at":1759300015300,"page":"/invoices/:id"}
 ```
@@ -55,7 +63,7 @@ record. No record carries a path, a message or a value from the person.
 | `onAnalytics(self, sink)`             | the same, and unregisters when the component unmounts                    |
 | `batch(send, { size, ms, segments })` | returns a sink that calls `send(records)` in batches                     |
 | `alySink({ app, servers, segments })` | returns a `batch` sink that posts to `<server>/collect/<app>` of imp-aly |
-| `zone({ name }, ...children)`         | wraps any content; records `seen` and `interaction`                      |
+| `zone({ name }, ...children)`         | wraps any content; records `seen` and `used`                             |
 | `track(name)`                         | records an outcome; takes the name only                                  |
 
 `batch` sends when the array reaches `size` (default `20`), when `ms` (default `5000`) passes, when
@@ -114,9 +122,10 @@ fields of imp, so a segment never replaces `type`, `visit`, `at` or `page`.
   before the session loads, or after a sign-out, has `null` segments. imp-aly stores it without the
   segment.
 - **A segment name is 1 to 32 letters and digits, and starts with a letter:** `appVersion`, never
-  `app-version`. It is never a record field (`type`, `visit`, `at`, `page`, `readyMs`, `zone`,
-  `name`, `country`), nor `day`, `records`, `visits`. At most 16 segments. A value is `null`, a
-  number, a boolean, or 1 to 64 of `A-Za-z0-9._-`.
+  `app-version`. It is never a record field (`type`, `visit`, `at`, `page`, `zone`, `name`,
+  `country`), nor `day`, `week`, `month`, `records`, `visits`, nor a built-in property name of a
+  JavaScript object (`constructor`, `toString`, `valueOf`). At most 16 segments. A value is `null`,
+  a number, a boolean, or 1 to 64 of `A-Za-z0-9._-`.
 - **A segment holds one key of a small set.** Reduce a list of roles to `admin` or `member`. Put a
   count, such as seats, in classes: `1`, `2-10`, `11-50`, `51+`.
 - **For an own endpoint, pass `segments` to `batch`:**
@@ -222,6 +231,6 @@ onAnalytics(({ type, ...fields }) => {
 
 The dev server registers no sink. To read the records in development, register a sink that calls
 `console.log`, which `imp start` forwards to the session log: `imp logs | grep analytics`. In a unit
-test, register `onAnalytics(self, sink)` and assert on the records. `fakeTimers` moves `readyMs`,
-`at` and the 5 s of the interactions and the errors. See [testing](testing.md), [start](start.md),
-[lint](lint.md) and [routing](routing.md).
+test, register `onAnalytics(self, sink)` and assert on the records. `fakeTimers` moves `at` and the
+5 s of the errors. An event that a unit test dispatches sends no `used`; test `used` in an e2e spec.
+See [testing](testing.md), [start](start.md), [lint](lint.md) and [routing](routing.md).

@@ -291,9 +291,9 @@ const results = component('app-results', {
 ### Each screen is a page view
 
 When your app registers an analytics sink, the router records each screen that it shows as a `page`
-record. The record carries the route pattern of the node, such as `/invoices/:id`, and the time
-until the screen was ready. You write no code per route. A change of the query only is no page view,
-because the screen stays mounted. A redirect is no page view. See **[Analytics](analytics.md)**.
+record when the screen is ready. The record carries the route pattern of the node, such as
+`/invoices/:id`. You write no code per route. A change of the query only is no page view, because
+the screen stays mounted. A redirect is no page view. See **[Analytics](analytics.md)**.
 
 ### A tenant in the URL
 

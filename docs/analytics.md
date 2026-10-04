@@ -1,9 +1,10 @@
 # imp-ui - Analytics
 
 imp tells you which parts of your UI people see and use. It counts each page view, each zone that
-comes into view, each interaction, each outcome that you name, and each failure. It gives each count
-to a function that you register, a **sink**. The sink forwards the record to your store: your own
-[imp-aly](#imp-aly) servers, Google Analytics, PostHog, your own endpoint, or the console.
+comes into view, each zone that the person uses, each outcome that you name, and each failure. It
+gives each count to a function that you register, a **sink**. The sink forwards the record to your
+store: your own [imp-aly](#imp-aly) servers, Google Analytics, PostHog, your own endpoint, or the
+console.
 
 imp bundles no third-party provider. It makes no network call until you register a sink that sends
 one. It stores no id on the device. It writes no cookie, and nothing to `localStorage` or
@@ -31,31 +32,31 @@ with the queries in [The queries](#the-queries) below. This is the report for on
 ```
 visits 12,000
 
-pages            views   visits   interactions   errors
-/invoices        9,800    8,400         31,000       12
-/invoices/:id    7,100    6,200         52,000      310
-/settings          400      390            900        0
+pages            views   visits    used   errors
+/invoices        9,800    8,400   7,900       12
+/invoices/:id    7,100    6,200   6,600      310
+/settings          400      390     210        0
 
 /invoices/:id
-  zones                    seen   interactions
-  myapp.invoice-summary   6,900          1,200
-  myapp.due-date          5,300          4,100
-  myapp.send              5,300          6,800
-  myapp.payment-options   1,500            200
+  zones                    seen    used
+  myapp.invoice-summary   6,900     900
+  myapp.due-date          5,300   3,100
+  myapp.send              5,300   2,900
+  myapp.payment-options   1,500     200
   outcomes
   myapp.invoice-sent      2,900
 ```
 
 Every number is a count of records. **views** is the number of `page` records. **visits** is the
 number of different visit ids. **seen** is the number of `seen` records of the zone, and it is at
-most one per page view. **interactions** is the number of `interaction` records, and one record
-stands for up to 5 seconds of activity. **errors** is the number of `error` records, and one record
-stands for up to 5 seconds of failures. **outcomes** is the number of `outcome` records.
+most one per page view. **used** is the number of `used` records, and it is also at most one per
+page view. For a page, it counts the page views where the person used the page at all. **errors** is
+the number of `error` records, and one record stands for up to 5 seconds of failures. **outcomes**
+is the number of `outcome` records.
 
-Read the report by comparison. A zone with many `seen` and few `interactions` is a part of the
-screen that people look at and do not use. A page with many views and few outcomes is a flow that
-people start and do not end. A page with errors is a page to open in the browser, with the console
-open.
+Read the report by comparison. A zone with many `seen` and few `used` is a part of the screen that
+people look at and do not use. A page with many views and few outcomes is a flow that people start
+and do not end. A page with errors is a page to open in the browser, with the console open.
 
 ## Setup
 
@@ -95,19 +96,19 @@ Every record carries `type`, `visit`, `at` and `page`:
   It holds no param value. A path that is not on the map sends no record, so no record carries a
   path. A record before the router shows a screen is dropped too.
 
-| `type`        | Other fields     | One record per                                         |
-| ------------- | ---------------- | ------------------------------------------------------ |
-| `page`        | `readyMs`        | screen that the router shows                           |
-| `seen`        | `zone`           | zone that enters the viewport, once per page view      |
-| `interaction` | `zone` or `null` | 5 seconds of activity in a zone, or outside every zone |
-| `outcome`     | `name`           | `track(name)` call                                     |
-| `error`       |                  | 5 seconds of failures on the page                      |
+| `type`    | Other fields     | One record per                                                     |
+| --------- | ---------------- | ------------------------------------------------------------------ |
+| `page`    |                  | screen that the router shows, when it is ready                     |
+| `seen`    | `zone`           | zone that enters the viewport, once per page view                  |
+| `used`    | `zone` or `null` | zone that the person uses, once per page view; `null` for the page |
+| `outcome` | `name`           | `track(name)` call                                                 |
+| `error`   |                  | 5 seconds of failures on the page                                  |
 
 ```jsonl
-{"type":"page","visit":"k3v9a1c2","at":1759300006100,"page":"/invoices/:id","readyMs":420}
+{"type":"page","visit":"k3v9a1c2","at":1759300006100,"page":"/invoices/:id"}
 {"type":"seen","visit":"k3v9a1c2","at":1759300006150,"page":"/invoices/:id","zone":"myapp.send"}
-{"type":"interaction","visit":"k3v9a1c2","at":1759300009800,"page":"/invoices/:id","zone":null}
-{"type":"interaction","visit":"k3v9a1c2","at":1759300015000,"page":"/invoices/:id","zone":"myapp.send"}
+{"type":"used","visit":"k3v9a1c2","at":1759300009800,"page":"/invoices/:id","zone":null}
+{"type":"used","visit":"k3v9a1c2","at":1759300009800,"page":"/invoices/:id","zone":"myapp.send"}
 {"type":"error","visit":"k3v9a1c2","at":1759300015300,"page":"/invoices/:id"}
 {"type":"outcome","visit":"k3v9a1c2","at":1759300019400,"page":"/invoices/:id","name":"myapp.invoice-sent"}
 ```
@@ -117,9 +118,8 @@ Every record carries `type`, `visit`, `at` and `page`:
 The router records each screen that it shows, when the screen is ready. You write no code for it.
 See **[Routing](routing.md)**.
 
-- **`readyMs`** is the time from the start of the navigation to the moment the screen replaces its
-  loading content. It includes a guard `wait`, the download of an area, and the data that the screen
-  awaits in its `setup`. For the entry page, it starts at the start of the document load.
+- A screen is ready when it replaces its loading content. This is after a guard `wait`, the download
+  of an area, and the data that the screen awaits in its `setup`.
 - A screen that the person leaves before it is ready sends no record.
 - A change of the query only is no page view, because the screen stays mounted.
 - A navigation inside an area is a page view.
@@ -171,14 +171,35 @@ tabs({
 
 No standard component records anything of its own. A zone measures it from the outside.
 
-### `interaction`
+### `used`
 
-An interaction is a pointer press, a key, an input or a wheel turn. imp sends one `interaction`
-record for the zone that holds it, and then no other for that zone for 5 seconds. So one record
-stands for up to 5 seconds of activity, and a store that counts the records gets a measure of the
-time that people spend in a zone. An interaction outside every zone is an interaction of the page,
-with `zone: null`. Zones nest, and an interaction counts for every zone that holds it. A navigation
-starts the 5 seconds again.
+A zone is used when the person clicks, taps or types inside it. imp listens for three events on the
+document: `click`, `input` and `keydown`. imp sends one `used` record for a zone the first time in a
+page view. Zones nest, and an event counts for every zone that holds it.
+
+A key that does not use the zone is no use. These keys are Tab, Shift, Control, Alt, Meta, CapsLock,
+Escape and the function keys F1 to F24. So a person who moves the focus through a zone with Tab, or
+presses only a modifier key, does not use it. Each other key is a use, such as a letter, Enter or an
+arrow key.
+
+imp also sends one `used` record with `zone: null` per page view. It goes out for the first event
+anywhere on the page, inside a zone or not. So `zone: null` says that the person used the page at
+all.
+
+A used zone is also a seen zone. When the person uses a zone before its `seen` record went out, imp
+sends the `seen` record first. imp counts only the events of the person. An event that your code
+dispatches, such as `element.click()`, is no use.
+
+These rules keep the number honest:
+
+- **`click` covers a mouse, touch and a pen.** The browser fires no `click` when a finger scrolls
+  the page. So a finger that lands on a zone to scroll does not use it. For the same reason, a
+  pointer press and a wheel turn are no use.
+- **One record per zone per page view.** So `used` is never more than `seen` for a zone. The share
+  "used when seen" is `used` divided by `seen`: the part of the page views that showed the zone and
+  had a use of it.
+- **No time in a zone.** A dwell time needs a pointer that stays over the zone. Touch and the
+  keyboard have no such pointer, so the time means a different thing for each person.
 
 ### `outcome`
 
@@ -337,8 +358,10 @@ imp-aly accepts these segments:
 
 - A name has 1 to 32 letters and digits, and starts with a letter. So `plan` and `appVersion` are
   correct, and `app-version` is not.
-- A name is not `type`, `visit`, `at`, `page`, `readyMs`, `zone`, `name`, `country`, `day`,
+- A name is not `type`, `visit`, `at`, `page`, `zone`, `name`, `country`, `day`, `week`, `month`,
   `records` or `visits`, in any case.
+- A name is not a built-in property name of a JavaScript object, such as `constructor`, `toString`
+  or `valueOf`.
 - An app has at most 16 segments.
 - A value is `null`, a number, a boolean, or a text of 1 to 64 ASCII letters, digits, `.`, `-` and
   `_`. imp-aly stores a record with a `null` value without that segment.
@@ -357,8 +380,8 @@ onAnalytics(({ type, ...fields }) => {
 })
 ```
 
-Register `visit`, `page`, `zone` and `name` as custom dimensions with the event scope, and `readyMs`
-as a custom metric. GA4 shows only the parameters that you register.
+Register `visit`, `page`, `zone` and `name` as custom dimensions with the event scope. GA4 shows
+only the parameters that you register.
 
 ### PostHog
 
@@ -580,23 +603,19 @@ records into one table, one row per record. These queries use SQL for PostgreSQL
 -- visits
 select count(distinct visit) from records;
 
--- pages: views, visits, interactions and errors
-select p.page,
-       count(*) filter (where p.type = 'page') as views,
-       count(distinct p.visit) filter (where p.type = 'page') as visits,
-       count(*) filter (where p.type = 'interaction') as interactions,
-       count(*) filter (where p.type = 'error') as errors
-from records p
-group by 1;
+-- pages: views, visits, used and errors
+select page,
+       count(*) filter (where type = 'page') as views,
+       count(distinct visit) filter (where type = 'page') as visits,
+       count(*) filter (where type = 'used' and zone is null) as used,
+       count(*) filter (where type = 'error') as errors
+from records
+group by page;
 
--- ready time of a page, 75th percentile
-select page, percentile_cont(0.75) within group (order by "readyMs")
-from records where type = 'page' group by page;
-
--- zones of a page: seen and interactions
+-- zones of a page: seen and used
 select zone,
        count(*) filter (where type = 'seen') as seen,
-       count(*) filter (where type = 'interaction') as interactions
+       count(*) filter (where type = 'used') as used
 from records where page = '/invoices/:id' and zone is not null
 group by zone;
 
@@ -622,8 +641,9 @@ imp logs | grep analytics
 ```
 
 In a unit test, register a sink with `onAnalytics(self, sink)` and assert on the records. With
-`fakeTimers`, the virtual clock moves `readyMs`, `at` and the 5 seconds of the interactions and the
-errors. See **[Testing](testing.md)**.
+`fakeTimers`, the virtual clock moves `at` and the 5 seconds of the errors. An event that a unit
+test dispatches is not an event of the person, so it sends no `used` record. Check `used` in an e2e
+test, where the browser gets real input. See **[Testing](testing.md)**.
 
 ## What imp does not record
 
@@ -633,8 +653,8 @@ Each of these failed the test "one number, one action", or carries personal data
   The record says that the page failed, and the browser console says why.
 - **A page off the map.** A path can carry personal data, so a screen off the map sends no record at
   all. Put each screen on the map, so that its records carry the route pattern.
-- **The time on a page and the time in a zone.** The count of `interaction` records, one per 5
-  seconds of activity, answers the same question.
+- **A time.** imp does not record the time until a screen is ready, the time on a page, the time in
+  a zone or a Web Vital. A time is not a count of records.
 - **A record per component**, such as a `data-track` attribute. A zone measures any component from
   the outside.
 - **A heatmap and a rage click.** They are noisy. The zones and the outcomes answer the same
@@ -643,5 +663,4 @@ Each of these failed the test "one number, one action", or carries personal data
   personal data.
 - **A user id and a session across tabs.** One visit per document load gives reach. Your sink can
   add segments such as the plan.
-- **Web Vitals.** `readyMs` measures what your app controls, from the navigation to a ready screen.
 - **A transport, a retry and sampling.** They are the job of the sink.
