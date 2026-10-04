@@ -212,8 +212,9 @@ bar, where a thumb can reach it. A tap on a row with children opens them in a sh
 The title of that sheet is a link to the page of the row itself, when the row has one. The pickers
 and the extras move into the drawer of the hamburger. imp drops nothing. A screen reader names the
 hamburger and its drawer "Menu". When the bottom bar holds every section, the drawer has no
-navigation region, so the reader does not find an empty one. On a desktop the column collapses to an
-icon rail when every row has an icon.
+navigation region, so the reader does not find an empty one. The drawer is as tall as its content,
+up to the height of the screen, so a drawer with only the extras leaves no empty panel. On a desktop
+the column collapses to an icon rail when every row has an icon.
 
 **The content area is the screen region of the router, and it can animate.** A forward navigation
 scrolls it to the top, and the back button puts it back where it was. The change itself can animate
@@ -512,8 +513,9 @@ open while a request runs, with `() => !saving.get()`. The router asks the same 
 it leaves a screen, see **[Routing](routing.md)**.
 
 A `drawer` slides in from the end of the line, the right edge in English and the left edge under
-`dir="rtl"`. A `menuButton` opens its `items` as a menu that the browser places under the trigger,
-and flips when there is no room.
+`dir="rtl"`. On a desktop it is as tall as the screen. On a phone it is as tall as its content, up
+to the height of the screen, so a short list leaves no empty panel. A `menuButton` opens its `items`
+as a menu that the browser places under the trigger, and flips when there is no room.
 
 ## Tell the person what is happening
 

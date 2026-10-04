@@ -52,7 +52,9 @@ Rules an agent gets wrong:
   contextual panel has one place. A menu from the start of the line is the drawer of the `shell`.
 - **One drawer serves every width.** It is the same panel on a desktop and on a phone. Its width is
   `min(--imp-drawer-inline-size, 85dvi)`. So it fills most of a phone, and it stays a column on a
-  wide screen. There is no breakpoint, no bottom-sheet mode, and nothing to configure per width.
+  wide screen. On a desktop it is full height. Below `48rem` it is as tall as its content, up to the
+  full height, and its content scrolls when it does not fit. There is no bottom-sheet mode, and
+  nothing to configure per width.
 - **`open` is the whole API for opening the drawer.** There is no `show()` and no ref. Pass a
   **writable** state, never a `computed`, and set it. The drawer writes `false` back when the person
   dismisses it, so the state stays correct.

@@ -138,14 +138,17 @@ approves.**
 - **The shell owns the drawer, and the drawer is a `<dialog>`.** The top layer, `inert` on the rest
   of the page, the entry of the focus, the restore of the focus, and Escape, all belong to the
   platform. The shell adds a dismissal from the backdrop. It closes itself when the viewport crosses
-  back to a desktop width. It closes when a person chooses a row inside it. `navOpen` belongs to the
-  shell by default, and a writable state overrides it. `navToggle` reports every change that the
-  shell makes itself. **The drawer is the first consumer of the overlay seam**, see
-  `overlay-top-layer.md`. So the dismissal from the backdrop, the hold on the page scroll, and the
-  motion, are shared code, and not code of the shell. **The More sheet is a plain `popover`**, with
-  a `popovertarget` invoker. So its light dismissal, its Escape, and its focus order, belong to the
-  platform. It is in the top layer. So it sits at the foot of the viewport, and not at the foot of
-  an embedded frame. That is the positioning of the platform, and the shell does not fight it.
+  back to a desktop width. It closes when a person chooses a row inside it. It is as tall as its
+  content, up to the height of the frame, and its nav scrolls when the rows do not fit. A drawer
+  that holds only the logo and the extras would otherwise be a full-height panel that is mostly
+  empty. `navOpen` belongs to the shell by default, and a writable state overrides it. `navToggle`
+  reports every change that the shell makes itself. **The drawer is the first consumer of the
+  overlay seam**, see `overlay-top-layer.md`. So the dismissal from the backdrop, the hold on the
+  page scroll, and the motion, are shared code, and not code of the shell. **The More sheet is a
+  plain `popover`**, with a `popovertarget` invoker. So its light dismissal, its Escape, and its
+  focus order, belong to the platform. It is in the top layer. So it sits at the foot of the
+  viewport, and not at the foot of an embedded frame. That is the positioning of the platform, and
+  the shell does not fight it.
 - **imp builds every row once, and afterwards it only moves that row.** imp builds the sidebar of
   each section when the data of the items changes. So a change of section, a crossing of the
   breakpoint, and an expansion of a parent row, all reparent an existing node, or unhide one. This

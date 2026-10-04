@@ -206,7 +206,8 @@ Rules an agent gets wrong:
   `--imp-shell-bottom-bar-items` rows with a **More** sheet, and the sections, the footer rows and
   both `extras` move into the drawer. The trail strip hides, and the title carries the crumbs. The
   hamburger and the drawer are named "Menu" (`imp.shell.menu`). When the bottom bar holds every
-  section, the drawer has no `<nav>`.
+  section, the drawer has no `<nav>`. The drawer is as tall as its content, up to the full height,
+  and its nav scrolls when it does not fit.
 - **The desktop sidebar collapses to an icon rail** from a toggle in its head. That head names the
   context, which is the param crumb when there is one. imp shows the toggle only when every row has
   an `icon`. In the rail, every row keeps its label for a screen reader and shows it as a tooltip on
