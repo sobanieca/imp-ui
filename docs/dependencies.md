@@ -197,13 +197,35 @@ imp bundles in everything else that a package imports, at install time, from the
 the package, exactly as its author declared it. The aliases in your `imp.json` play no part in how
 the internals of a package resolve. `imp` is the only external.
 
+**A package that keeps a bare `imp` import is an imp component, and it ships its manual.** Its
+author builds it with `imp build`, which writes `imp-skill.md` beside the bundle. The author
+publishes that file next to the entry module of the package, which is the file that the specifier
+resolves to. `imp install` copies it into `dependencies/<alias>/`, beside the bundle and
+`manifest.json`. A missing `imp-skill.md` stops the install, and the message names it:
+
+```
+npm:some-imp-counter@1.0.0 imports imp, so it is an imp component, and it has no imp-skill.md next to its entry module - its author builds it with imp build, which writes imp-skill.md beside the bundle, and publishes it with the bundle
+```
+
+A package that does not import imp gets no `imp-skill.md`. In your app, `imp skill counter` prints
+the manual of the component, as it is. See
+**[`imp skill`](cli.md#imp-skill---the-manuals-for-an-ai-agent)**. The manual is only as current as
+the release that shipped it.
+
+The `zones` and `outcomes` of the `app-analytics.json` of your app hold only the names in your own
+code. They do not hold the zone and outcome names of an installed component. So your analytics store
+drops the records of a zone or an outcome that only an installed component sends, see
+**[Analytics](analytics.md)**.
+
 When a package expects imp, the install listing says so:
 
 ```
 installed counter (npm:some-imp-counter@1.0.0)
   dependencies/counter/counter.js (2.1 kB)
+  dependencies/counter/imp-skill.md (1.4 kB)
+  dependencies/counter/manifest.json (packages, versions, licenses)
   bundled packages:
-    some-imp-counter@1.0.0
+    some-imp-counter@1.0.0 - MIT
   imp imports kept bare (resolved by this app at runtime): imp
     note: this package runs against the imp version this app provides, not the one it was built with
 ```

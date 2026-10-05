@@ -41,22 +41,21 @@ markdown. imp executes nothing to read it. A reviewer sees it in the same diff a
 it describes. `imp fmt` formats it like any other markdown file. Its first line is its summary.
 
 **`imp build` decides where that text goes, from the entry that you gave it, and not from a
-configuration.** A JS entry is a component that somebody else programs against. imp appends the
-sidecar of each module as `export const impSkill = '...'`. So the skill travels inside the bundle,
-and there is no second file to distribute. An HTML entry is a finished app. imp injects nothing. It
-copies no skill file into the output. It also removes the skill text that a module already carries,
-for every module that enters the build. imp empties the initializer of an
-`export const impSkill = <literal>` declaration. It also removes an `impSkill` specifier from the
-export clause of a bundled module, so a bundler shakes the string behind it away. A module that
-declares `impSkill` itself, beside a sidecar, is a build error, and the message points at the
-sidecar. That keeps one concept, and not two.
+configuration.** A JS entry is a component that somebody else programs against. imp copies the
+sidecar of the entry module to `imp-skill.md` in the output folder, beside the bundle. A JS entry
+with no sidecar is a build error, and the message names the sidecar to write. The author publishes
+`imp-skill.md` with the bundle, next to the entry module of the package. So one output folder holds
+one entry. A package with several components builds each one into its own folder, or describes them
+all in the sidecar beside its one entry. An HTML entry is a finished app, and imp copies no skill
+file into its output.
 
-To do both, and to inject nothing and remove what arrives, is what makes the guarantee for an app
-structural, in place of a best effort. Tree-shaking alone is not enough. A bundler drops an
-`impSkill` that nothing references from a module that somebody imports statically. But a module that
-somebody imports **dynamically** becomes its own chunk, and the bundler keeps the exports of that
-chunk. imp measured that on esbuild 0.28.1, with code splitting on, as imp builds it. So an app that
-loads a pre-built component lazily would otherwise ship the prose.
+**imp injects no skill text into any bundle, and so it strips nothing.** The manual of a component
+is a file beside the bundle, and not an export of it. Two things follow from that:
+
+- No byte of skill text can reach an app, whatever the app is assembled from. A bundler keeps the
+  exports of a chunk that loads through `import()`, so an export would reach a lazy chunk, and imp
+  would have to strip it there. A file that is never in the bundle needs no strip step.
+- `imp skill` reads a plain file. It runs no code and parses no code.
 
 `imp skill` is the one surface for reading both corpora:
 
@@ -72,9 +71,10 @@ loads a pre-built component lazily would otherwise ship the prose.
   standard component, cannot land without a skill.
 - **With no argument, imp prints an index.** That is one line per subject and per component, plus
   every module in the project that has a skill file beside it. imp discovers those with the shared
-  walker. To discover what exists costs one cheap call, and to learn one part costs one more call.
-  To print a whole catalog would cost a few hundred kB of context, to answer the question "what
-  exists?".
+  walker. A section `INSTALLED COMPONENTS` lists every `dependencies/<alias>/imp-skill.md` by alias,
+  with its first line. To discover what exists costs one cheap call, and to learn one part costs one
+  more call. To print a whole catalog would cost a few hundred kB of context, to answer the question
+  "what exists?".
 - **For a subject, imp prints its manual with a banner.** The page prints without a change, except
   for two rewrites. imp rewrites a link between two documents into the command that prints the
   target, as in `Rendering (imp skill rendering)`. imp gathers those targets again into a `Related:`
@@ -85,6 +85,9 @@ loads a pre-built component lazily would otherwise ship the prose.
   file itself. imp bundles nothing, and imports nothing, to answer. It reads the sidecar off disk. A
   missing skill file exits with a non-zero code, and imp names the file to write. So a tool can tell
   "no skill yet" from a real failure.
+- **You ask for an installed imp component by its alias**, as in `imp skill widget`. imp prints
+  `dependencies/widget/imp-skill.md` without a change. A subject with the same name as an alias
+  wins, so an alias never hides a manual of imp.
 - **Reading takes no flag, and there is stdout only.** Skill text is the only thing on stdout. A
   diagnostic goes to stderr, with exit code 1. To run the command and to read the output is the
   whole interface.
@@ -118,11 +121,12 @@ loads a pre-built component lazily would otherwise ship the prose.
   components of an app, and nothing forces it. A component with no skill file is simply absent from
   the index.
 - No byte of skill text reaches an app of an end user, whatever that app is assembled from. imp
-  injects nothing into a page build. It excludes a skill file from what it copies into the output.
-  It removes a skill that a third-party bundle carries, on the way in.
-- A published bundle carries the skill of its **entry module** only. A component that a barrel
-  re-exports loses its skill. Two `export *` sources that export `impSkill` make the name ambiguous,
-  and a bundler drops an ambiguous star export. So a package with several components either
-  describes itself in the skill beside its entry, or publishes one entry per component.
-- The skill of a published component is only as fresh as the bundle that it shipped in. imp bakes
-  the text in at build time, like the code beside it.
+  injects no skill text into a bundle, and it copies no skill file into the output of a page.
+- A published component is one more file than its bundle. Its author must publish it, and
+  `imp install` stops for an imp component that lacks it, see `vendored-dependencies.md`.
+- A published component carries the skill of its **entry module** only. The sidecar of a module that
+  a barrel re-exports does not go into the output. So a package with several components either
+  describes itself in the skill beside its entry, or builds one entry per component.
+- A JS entry cannot build without a sidecar. That is the price of a manual that always travels.
+- The skill of a published component is only as fresh as the files that it shipped with. imp copies
+  the text at build time, like the code beside it.

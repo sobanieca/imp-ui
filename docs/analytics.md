@@ -250,8 +250,25 @@ analytics server can reject such a name, so imp stops it in the browser first.
 
 Give each zone and each outcome its own name, in one place of your code. The report groups the
 records by name, so two zones of one name on different pages are still two rows, but two zones of
-one name on one page are one row. `imp lint` checks both rules on every literal name. See
+one name on one page are one row. `imp lint` checks both rules on every name. See
 **[Lint](lint.md)**.
+
+**Write each name as a literal.** `imp build` reads every name from your code and lists them for
+your store, see [Check each record on the server](#check-each-record-on-the-server). So the name
+must be a string, or a template literal with no `${...}` in it. `zone()` must get an object literal
+with a literal `name`, and no spread. A name that the build cannot read stops the build:
+
+```js
+zone({ name: 'myapp.invoice-summary' }, summary()) // correct
+track('myapp.invoice-sent') // correct
+zone({ name: `myapp.${part}` }, summary()) // stops the build
+zone(options, summary()) // stops the build
+```
+
+```
+imp build cannot read every analytics name:
+  src/invoice.js:8:14 - zone name is not a literal - imp build lists every zone name for the analytics store, so write the name as a string, like zone({ name: 'myapp.invoice-summary' })
+```
 
 ## No personal data
 
@@ -290,8 +307,9 @@ the store otherwise counts each page twice.
 ### imp-aly
 
 [imp-aly](https://github.com/sobanieca/imp-aly) is an analytics server for imp apps. You run it on
-your own VPS. It checks each record against `app-map.txt`, stores it on the disk of the server, and
-answers the queries of the report. imp ships the sink for it in a separate module:
+your own VPS. It checks each record against the lists that `imp build` writes, stores it on the disk
+of the server, and answers the queries of the report. imp ships the sink for it in a separate
+module:
 
 ```js
 import { flag, mount } from 'imp'
@@ -344,10 +362,12 @@ The sink logs each problem that the server reports:
 | other `4xx`      | It logs an error and drops the batch. The visit stays on the same server.              |
 | `5xx`, no answer | It sends the batch to the next server.                                                 |
 
-Register the app on every server of the list, with the segments that `segments` returns:
+Register the app on every server of the list, with the segments that `segments` returns. Give the
+URL of the folder of your build output. imp-aly reads `app-analytics.json` from there. A local build
+folder, such as `dist`, also works.
 
 ```sh
-imp-aly app add myapp https://myapp.example/app-map.txt --segments plan,role,lang -s aly-1,aly-2
+imp-aly app add myapp https://myapp.example/ --segments plan,role,lang -s aly-1,aly-2
 ```
 
 **A segment that a server does not know makes it reject the record.** Declare each segment name on
@@ -426,27 +446,57 @@ each record when it arrives. See [Segments](#segments). The browser limits the d
 about 64 KiB, and 20 records are about 2 KB. imp does not retry a failed batch, because a retry
 needs storage. The SDK of a provider batches its own events, so do not wrap it in `batch`.
 
-**Check each record against `app-map.txt` on the server.** Anyone can post to a public endpoint, so
-your store must know which pages exist. `imp build` writes the route patterns of your application
-map to `app-map.txt` at the root of the output, one pattern per line, next to the bundle. See
-**[Deploying an app](deploy.md)**. Your server reads that file from your site, and drops a record
-whose `page` is not one of its lines:
+#### Check each record on the server
 
+**Anyone can post to a public endpoint, so your store must know which records are real.** When
+`imp.json` names a `map`, `imp build` writes `app-analytics.json` at the root of the output, next to
+the bundle. See **[Deploying an app](deploy.md)**. The file holds three lists:
+
+```json
+{
+  "pages": ["/", "/invoices", "/invoices/:id"],
+  "zones": ["myapp.invoice-summary"],
+  "outcomes": ["myapp.invoice-sent"]
+}
 ```
-/
-/invoices
-/invoices/:id
-/settings
-```
+
+| Key        | Entries                                                |
+| ---------- | ------------------------------------------------------ |
+| `pages`    | the route pattern of each page of your application map |
+| `zones`    | the name of each zone that the app can send, sorted    |
+| `outcomes` | the name of each outcome that the app can send, sorted |
+
+The two name lists hold every name from `zone({ name })` and `track(name)` in each module of your
+app. They do not hold the names of an imp component in `dependencies/`, so your store drops the
+records of such a component. See **[Dependencies](dependencies.md)**. An app with no zone gets an
+empty `zones` list.
+
+Your server reads the file from your site, and drops a record that is not on its lists:
+
+- a record whose `page` is not in `pages`,
+- a `seen` or `used` record whose `zone` is not in `zones`,
+- an `outcome` record whose `name` is not in `outcomes`.
+
+A `used` record with `zone: null` is always correct. It is the use of the page.
 
 ```js
-const response = await fetch('https://myapp.example/app-map.txt')
-const pages = new Set((await response.text()).split('\n').filter(Boolean))
-const accepted = records.filter((record) => pages.has(record.page))
+const response = await fetch('https://myapp.example/app-analytics.json')
+const lists = await response.json()
+const [pages, zones, outcomes] = [lists.pages, lists.zones, lists.outcomes].map((list) =>
+  new Set(list)
+)
+const isKnown = (record) => {
+  if (!pages.has(record.page)) return false
+  if (record.type === 'seen') return zones.has(record.zone)
+  if (record.type === 'used') return record.zone === null || zones.has(record.zone)
+  if (record.type === 'outcome') return outcomes.has(record.name)
+  return true
+}
+const accepted = records.filter(isKnown)
 ```
 
 Read the file again after each deploy, or on a timer. A record always carries a `page`, so a record
-without one is spam too.
+without one is spam too. So a false record must name a real page and a real zone or outcome.
 
 ### Errors only
 

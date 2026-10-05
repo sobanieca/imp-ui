@@ -4,10 +4,12 @@ exit code: 0
 --- stdout ---
 built app.js -> component/
   LICENSES.txt - 4 third-party license notices, referenced from every script emitted
+  imp-skill.md - the manual of the component, from app.skill.md
   LICENSES.txt (<size>)
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
+  imp-skill.md (<size>)
 
 --- stderr ---
 (empty)
@@ -17,5 +19,6 @@ component/LICENSES.txt
 component/app.js
 component/chunks/chunk-<hash>.js
 component/chunks/lazy-<hash>.js
+component/imp-skill.md
 
 [bundled module: message='hello from the bundle', lazy loadShout()='HELLO FROM THE BUNDLE']

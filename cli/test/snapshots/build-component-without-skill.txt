@@ -1,0 +1,8 @@
+$ imp build widget.js  (cwd: <tmp>, no widget.skill.md)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] no skill for widget.js - a JS entry is a component, and imp build writes its manual to imp-skill.md from widget.skill.md next to it

@@ -46,7 +46,7 @@ Deno.test('imp build', async (t) => {
       const result = await runImp(['build'], dir)
       const html = await Deno.readTextFile(join(dir, 'dist', 'index.html'))
       const licenses = await Deno.readTextFile(join(dir, 'dist', 'LICENSES.txt'))
-      const appMap = await Deno.readTextFile(join(dir, 'dist', 'app-map.txt'))
+      const appAnalytics = await Deno.readTextFile(join(dir, 'dist', 'app-analytics.json'))
       const entry = html.match(/src="\/(chunks\/app-[A-Z0-9]{8}\.js)"/)[1]
       const { server, base } = serveFolder(() => join(dir, 'dist'))
       const probe = `const module = await import(${JSON.stringify(`${base}/${entry}`)})\n` +
@@ -70,7 +70,7 @@ Deno.test('imp build', async (t) => {
             'dist',
           )}\n\n${section('dist/index.html', html)}\n\n${
             section('dist/LICENSES.txt', licenses)
-          }\n\n${section('dist/app-map.txt', appMap)}\n\n${usage}\n`,
+          }\n\n${section('dist/app-analytics.json', appAnalytics)}\n\n${usage}\n`,
         ),
       )
     })
@@ -93,11 +93,13 @@ Deno.test('imp build', async (t) => {
     await t.step('build-unreachable-chunks', async () => {
       const chunksOf = async (entry, source) => {
         await Deno.writeTextFile(join(dir, entry), source)
+        await Deno.writeTextFile(join(dir, entry.replace(/\.js$/, '.skill.md')), '# probe\n')
         const result = await runImp(['build', entry, '--output', 'chunks-probe'], dir)
         const chunks = join(dir, 'chunks-probe', 'chunks')
         const entries = await Array.fromAsync(Deno.readDir(chunks)).catch(() => [])
         const files = entries.map((file) => file.name.replace(/-[A-Z0-9]{8}\.js/, '-<hash>.js'))
         await Deno.remove(join(dir, entry))
+        await Deno.remove(join(dir, entry.replace(/\.js$/, '.skill.md')))
         await Deno.remove(join(dir, 'chunks-probe'), { recursive: true })
         return `${entry}: exit ${result.code}, chunks: ${files.sort().join(', ') || 'none'}`
       }
@@ -116,6 +118,7 @@ Deno.test('imp build', async (t) => {
 
     await t.step('build-imp-subpath', async () => {
       const entry = join(dir, 'std-entry.js')
+      await Deno.writeTextFile(join(dir, 'std-entry.skill.md'), '# std-entry - a probe\n')
       await Deno.writeTextFile(
         entry,
         "import { mount } from 'imp'\nimport { button } from 'imp/std'\n\n" +
@@ -134,6 +137,7 @@ Deno.test('imp build', async (t) => {
       )
       const tooling = await runImp(['build', 'std-entry.js', '--output', 'std'], dir)
       await Deno.remove(entry)
+      await Deno.remove(join(dir, 'std-entry.skill.md'))
       await Deno.remove(join(dir, 'std'), { recursive: true })
       await assertSnapshot(
         'build-imp-subpath',
@@ -177,108 +181,99 @@ Deno.test('imp build', async (t) => {
       )
     })
 
-    await t.step('build-component-skill', async () => {
-      const marker = 'WIDGETSKILLMARKER'
-      const project = await tempDir()
-      const write = (name, text) => Deno.writeTextFile(join(project, name), text)
-      await write('eager.js', "export const eager = () => 'eager'\n")
-      await write('eager.skill.md', `# eager - ${marker} a statically imported component\n`)
-      await write('lazy.js', "export const lazy = () => 'lazy'\n")
-      await write('lazy.skill.md', `# lazy - ${marker} a lazily imported component\n`)
-      await write(
-        'app.js',
-        "import { eager } from './eager.js'\n\n" +
-          "export const boot = async () => eager() + (await import('./lazy.js')).lazy()\n",
-      )
-      await write('index.html', '<!doctype html>\n<script type="module" src="app.js"></script>\n')
-      const componentOut = await tempDir()
-      const component = await runImp(['build', 'eager.js', '--output', componentOut], project)
-      const { impSkill } = await import(toFileUrl(join(componentOut, 'eager.js')).href)
-      const app = await runImp(['build', '--output', 'app'], project)
-      const appFiles = []
-      const walkOutput = async (directory, prefix) => {
-        for await (const entry of Deno.readDir(directory)) {
-          const path = join(directory, entry.name)
-          if (entry.isDirectory) await walkOutput(path, `${prefix}${entry.name}/`)
-          else appFiles.push({ name: prefix + entry.name, text: await Deno.readTextFile(path) })
-        }
+    await t.step('build-component-files', async () => {
+      const component = await tempDir()
+      const app = await tempDir()
+      const writeIn = async (folder, name, text) => {
+        await Deno.mkdir(dirname(join(folder, name)), { recursive: true })
+        await Deno.writeTextFile(join(folder, name), text)
       }
-      await walkOutput(join(project, 'app'), '')
-      appFiles.sort((one, other) => one.name.localeCompare(other.name))
-      const carrying = appFiles.filter((file) => file.text.includes(marker)).map((file) =>
-        file.name
+      await writeIn(component, 'imp.json', '{ "targetImpHost": true }\n')
+      await writeIn(
+        component,
+        'widget.js',
+        "import { track, zone } from 'imp/analytics'\n\n" +
+          "export const widget = (children) => zone({ name: 'widget.panel' }, children)\n" +
+          "export const widgetSent = () => track('widget.sent')\n",
       )
-      const bundled = appFiles.filter((file) => file.name.endsWith('.js')).map((file) => file.name)
-      await Deno.remove(project, { recursive: true })
-      await Deno.remove(componentOut, { recursive: true })
-      const maskOutdir = (text) => text.replace(/-> \.\.[/\\]\S+[/\\]/g, '-> <component-out>/')
+      await writeIn(component, 'widget.skill.md', '# widget - a panel that sends a message\n')
+      const out = join(component, 'out')
+      const built = await runImp(['build', 'widget.js', '--output', 'out'], component)
+      const read = (folder, name) => Deno.readTextFile(join(folder, name))
+      const componentSkill = section('out/imp-skill.md', await read(out, 'imp-skill.md'))
+      for (const name of ['widget.js', 'imp-skill.md']) {
+        await writeIn(app, join('dependencies', 'widget', name), await read(out, name))
+      }
+      await writeIn(
+        app,
+        'imp.json',
+        '{ "dependencies": { "widget": "npm:widget@1.0.0" }, "map": "app-map.js" }\n',
+      )
+      await writeIn(app, 'app-map.js', await read(dir, 'app-map.js'))
+      await writeIn(
+        app,
+        'app.js',
+        "import { track, zone } from 'imp/analytics'\nimport { widget } from 'widget'\n\n" +
+          "export const page = () => zone({ name: 'shop.page' }, widget())\n" +
+          "export const bought = () => track('shop.bought')\n",
+      )
+      await writeIn(
+        app,
+        'index.html',
+        '<!doctype html>\n<script type="module" src="app.js"></script>\n<script type="module">\n' +
+          "  import { track } from 'imp/analytics'\n" +
+          "  globalThis.shopReady = () => track('shop.ready')\n</script>\n",
+      )
+      const appBuilt = await runImp(['build'], app)
+      const appAnalytics = section(
+        'dist/app-analytics.json',
+        await read(join(app, 'dist'), 'app-analytics.json'),
+      )
+      const skill = await runImp(['skill', 'widget'], app)
+      await Deno.remove(component, { recursive: true })
+      await Deno.remove(app, { recursive: true })
       await assertSnapshot(
-        'build-component-skill',
-        maskOutdir(mask(
+        'build-component-files',
+        mask(
           `${
-            commandTranscript(
-              'imp build eager.js --output <component-out>  (cwd: <tmp>, component build)',
-              component,
-            )
-          }\n${section('impSkill exported by the component bundle', String(impSkill))}\n\n${
-            commandTranscript('imp build --output app  (cwd: <tmp>, app build)', app)
-          }\n${
-            section(
-              'app bundles (eager imported statically, lazy dynamically)',
-              bundled.join('\n'),
-            )
-          }\n\n[app files carrying skill text: ${carrying.join(', ') || 'none'}]\n` +
-            `[skill files copied into the app output: ${
-              appFiles.some((file) => file.name.endsWith('.skill.md'))
-            }]\n`,
-        )),
+            commandTranscript('imp build widget.js --output out  (cwd: <component>)', built)
+          }\n${componentSkill}\n\n${
+            commandTranscript('imp build  (cwd: <app>, widget vendored)', appBuilt)
+          }\n${appAnalytics}\n\n${commandTranscript('imp skill widget  (cwd: <app>)', skill)}`,
+        ),
       )
     })
 
-    await t.step('build-app-strips-existing-skills', async () => {
-      const marker = 'PREBUILTSKILLMARKER'
+    await t.step('build-component-without-skill', async () => {
       const project = await tempDir()
-      const write = (name, text) => Deno.writeTextFile(join(project, name), text)
-      await Deno.mkdir(join(project, 'dependencies', 'widget'), { recursive: true })
-      await write(
-        join('dependencies', 'widget', 'widget.js'),
-        `var s="# widget - ${marker} a published component";var w=()=>"widget";` +
-          'export{s as impSkill,w as widget};\n',
-      )
-      await write('imp.json', '{ "dependencies": { "widget": "npm:widget@1.0.0" } }\n')
-      await write(
-        'hand.js',
-        `export const impSkill = "# hand - ${marker} written into the module by hand"\n` +
-          "export const hand = () => 'hand'\n",
-      )
-      await write(
-        'app.js',
-        'export const boot = async () =>\n' +
-          "  (await import('widget')).widget() + (await import('./hand.js')).hand()\n",
-      )
-      await write('index.html', '<!doctype html>\n<script type="module" src="app.js"></script>\n')
-      const result = await runImp(['build'], project)
-      const chunks = []
-      for await (const entry of Deno.readDir(join(project, 'dist', 'chunks'))) {
-        if (entry.name.startsWith('app-')) continue
-        chunks.push({
-          name: entry.name,
-          text: await Deno.readTextFile(join(project, 'dist', 'chunks', entry.name)),
-        })
-      }
-      chunks.sort((one, other) => one.name.localeCompare(other.name))
-      const carrying = chunks.filter((chunk) => chunk.text.includes(marker)).map((c) => c.name)
-      const transcript = `${commandTranscript('imp build  (cwd: <tmp>, app build)', result)}\n` +
-        `${
-          section(
-            'lazy chunks (a vendored pre-built component and a hand-written impSkill)',
-            chunks.map((chunk) => chunk.text.trim()).join('\n'),
-          )
-        }\n\n[chunks carrying skill text: ${carrying.join(', ') || 'none'}]\n`
+      await Deno.writeTextFile(join(project, 'widget.js'), "export const widget = () => 'widget'\n")
+      const result = await runImp(['build', 'widget.js'], project)
       await Deno.remove(project, { recursive: true })
       await assertSnapshot(
-        'build-app-strips-existing-skills',
-        mask(transcript).replace(/-[A-Z0-9]{8}\.js/g, '-<hash>.js'),
+        'build-component-without-skill',
+        mask(commandTranscript('imp build widget.js  (cwd: <tmp>, no widget.skill.md)', result)),
+      )
+    })
+
+    await t.step('build-unreadable-analytics-name', async () => {
+      const project = await tempDir()
+      const write = (name, text) => Deno.writeTextFile(join(project, name), text)
+      await write('imp.json', '{ "map": "app-map.js" }\n')
+      await write('app-map.js', await Deno.readTextFile(join(dir, 'app-map.js')))
+      await write(
+        'widget.js',
+        "import { track, zone } from 'imp/analytics'\n\n" +
+          'export const widget = (name) => zone({ name }, track(`widget.${name}`))\n',
+      )
+      await write(
+        'index.html',
+        '<!doctype html>\n<script type="module" src="widget.js"></script>\n',
+      )
+      const result = await runImp(['build'], project)
+      await Deno.remove(project, { recursive: true })
+      await assertSnapshot(
+        'build-unreadable-analytics-name',
+        mask(commandTranscript('imp build  (cwd: <tmp>)', result)),
       )
     })
 

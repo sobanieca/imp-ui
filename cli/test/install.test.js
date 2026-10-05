@@ -19,7 +19,7 @@ import {
   strongestSri,
   tarballFiles,
 } from '../src/integrity.js'
-import { commitDependencies, projectFileSystem } from '../src/install.js'
+import { commitDependencies, componentSkill, projectFileSystem } from '../src/install.js'
 import {
   check,
   commandTranscript,
@@ -730,4 +730,36 @@ Deno.test('imp install puts every package in place, or none', async (t) => {
     await Deno.remove(root, { recursive: true })
     check(left.length === 0, `files were left behind: ${left.join(', ')}`)
   })
+})
+
+Deno.test('imp install takes the skill of an imp component from beside its entry module', async (t) => {
+  const folder = await tempDir()
+  const entry = join(folder, 'dist', 'widget.js')
+  const specifier = 'npm:widget@1.0.0'
+  const problemOf = (run) => run().then(() => null, (error) => error.message)
+  await Deno.mkdir(join(folder, 'dist'))
+  await Deno.writeTextFile(entry, 'export const widget = 1\n')
+  try {
+    await t.step('a component with its skill', async () => {
+      await Deno.writeTextFile(join(folder, 'dist', 'imp-skill.md'), '# widget - a panel\n')
+      const file = await componentSkill({ specifier, entry })
+      check(file.name === 'imp-skill.md', `unexpected file: ${file.name}`)
+      check(
+        new TextDecoder().decode(file.contents) === '# widget - a panel\n',
+        'the skill was not copied verbatim',
+      )
+    })
+    await t.step('a component that ships no skill', async () => {
+      await Deno.remove(join(folder, 'dist', 'imp-skill.md'))
+      const problem = await problemOf(() => componentSkill({ specifier, entry }))
+      check(
+        problem?.startsWith(
+          'npm:widget@1.0.0 imports imp, so it is an imp component, and it has no imp-skill.md next to its entry module',
+        ),
+        `unexpected problem: ${problem}`,
+      )
+    })
+  } finally {
+    await Deno.remove(folder, { recursive: true })
+  }
 })

@@ -156,6 +156,21 @@ Deno.test('imp skill', async (t) => {
     )
   })
 
+  await t.step('the index lists the imp components in dependencies/', async () => {
+    const { stdout } = await runImp(['skill'], fixture('skill-project'))
+    check(stdout.includes('INSTALLED COMPONENTS'), 'the index has no installed components section')
+    check(
+      /\n {2}widget\s+widget - a panel that an installed package ships/.test(stdout),
+      'the installed component is missing from the index',
+    )
+    const printed = await runImp(['skill', 'widget'], fixture('skill-project'))
+    check(printed.code === 0, `imp skill widget exited ${printed.code}: ${printed.stderr}`)
+    check(
+      printed.stdout === '# widget - a panel that an installed package ships\n',
+      `imp skill widget did not print imp-skill.md verbatim: ${printed.stdout}`,
+    )
+  })
+
   await t.step('a project with no skill files still explains the convention', async () => {
     const { stdout } = await runImp(['skill'], fixture('basic'))
     check(stdout.includes('THIS PROJECT'), 'the project section is missing when nothing is found')

@@ -65,8 +65,13 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   directory, which is `dist/` by default and which imp replaces on each run, is the complete site to
   upload.
 - **A JS entry emits a self-contained module.** imp compiles in imp and every dependency. So you can
-  drop an imp component into any application, and it needs no runtime. imp copies no file in this
-  mode.
+  drop an imp component into any application, and it needs no runtime. imp copies no `public/` file
+  in this mode.
+- **A JS entry is a component, and its output folder always holds its manual.** That is
+  `imp-skill.md`, a copy of the sidecar `<entry>.skill.md` of the entry module. A missing sidecar is
+  a build error. The author publishes the file with the bundle, next to the entry module of the
+  package, see `agent-skills.md`. A JS entry gets no analytics name lists, see
+  `product-analytics.md`.
 - **`targetImpHost: true` in `imp.json`, for a JS entry only, keeps an `imp` import out of the
   bundle**, as a bare specifier for the host context to resolve. The import map of the dev server,
   and the `imp build` of a host app, both resolve a bare `imp`. So a component can share the single
@@ -140,7 +145,8 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   `transitive-duplication-accepted.md`.
 - `imp install` closes the consumer side of this contract. While it vendors a package, it treats
   `imp` as external. So a published bundle that somebody built with `targetImpHost` keeps its bare
-  `imp` imports. imp does not resolve them against a registry. See `vendored-dependencies.md`.
+  `imp` imports. imp does not resolve them against a registry. It copies the `imp-skill.md` that the
+  author published beside the entry module. See `vendored-dependencies.md`.
 - A stack trace from a production build points into minified code. So the app must implement proper
   error handling. It puts an error boundary around each subtree that can fail on its own, see
   `error-boundaries.md`. It catches the rejection of async work that is not part of a mount. It

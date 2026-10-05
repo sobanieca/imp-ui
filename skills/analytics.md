@@ -96,7 +96,11 @@ fields of imp, so a segment never replaces `type`, `visit`, `at` or `page`.
 - **Names carry a namespace: `myapp.due-date`, never `due-date`.** The same rule as a state name,
   plus only ASCII letters, digits, `-` and `_` between the dots, at most 128 characters.
   `zone({ name: 'myapp.due-date' }, child)`, never `zone('myapp.due-date', child)`. imp logs a bad
-  name and records nothing for it. `imp lint` checks every literal name, see [lint](lint.md).
+  name and records nothing for it. `imp lint` checks every name, see [lint](lint.md).
+- **Write each name as a literal.** A string, or a template literal with no `${...}`. `zone()` gets
+  an object literal with a literal `name`, no spread. `imp build` lists every name for the store, so
+  ``zone({ name: `myapp.${part}` })``, `zone(options)` and `track(outcomeName)` stop the build. Pick
+  one literal per case: `ok ? track('myapp.sent') : track('myapp.failed')`.
 - **One name, one place.** Give each zone and each outcome its own literal name, used once in the
   project. `imp lint` reports a name that two calls share.
 - **`track(name)` takes one argument.** `track('myapp.invoice-form-invalid')` is correct.
@@ -111,8 +115,9 @@ fields of imp, so a segment never replaces `type`, `visit`, `at` or `page`.
 - **For imp-aly, use `alySink`, never a hand-written `batch` sink.** Put segments in the `segments`
   option, never in a wrapper sink: `onAnalytics((record) => sink({ ...record }))` loses the flush on
   hide. Register the app and every segment name on every server:
-  `imp-aly app add myapp <app-map URL> --segments plan,role`. A server rejects a record with an
-  unknown segment.
+  `imp-aly app add myapp https://myapp.example/ --segments plan,role`. Pass the folder URL of the
+  build output, or a local build folder such as `dist`, never the URL of one file. A server rejects
+  a record with an unknown segment.
 - **Segments come from state, so the sink registers where the state is.** `main.js` cannot read a
   state. Call
   `onAnalytics(self, alySink({ ..., segments: () => ({ plan: session.get()?.plan ?? null }) }))` in
@@ -136,9 +141,13 @@ fields of imp, so a segment never replaces `type`, `visit`, `at` or `page`.
   URL.
 - **A sink that posts to an own endpoint uses `navigator.sendBeacon` or `fetch` with
   `keepalive: true`,** and `batch`. A provider SDK batches itself, so do not wrap it in `batch`.
-- **The server of an own endpoint filters by `app-map.txt`.** `imp build` writes the route patterns
-  of the map there, one per line, at the root of the output, when `imp.json` names a `map`. The
-  server fetches the file from the site and drops a record whose `page` is not a line of it. See
+- **The server of an own endpoint filters by the lists of the build.** When `imp.json` names a
+  `map`, `imp build` writes `app-analytics.json` at the root of the output:
+  `{ "pages": [...], "zones": [...], "outcomes": [...] }`, with route patterns, zone names and
+  outcome names. The name lists hold only the names in the code of the app, never the names of a
+  component in `dependencies/`. The server fetches the file from the site. It drops a record whose
+  `page` is not in `pages`, a `seen` or `used` whose `zone` is not in `zones`, and an `outcome`
+  whose `name` is not in `outcomes`. A `used` with `zone: null` is always valid. See
   [build](build.md).
 - **Add no personal data in the sink.** No user id, no organization id, no email, no value that the
   person typed. Add segments, such as `plan`, `role` and `lang`. A segment value is a short key of
@@ -198,7 +207,7 @@ export const root = component('myapp-root', {
     return shell({ navbar: { map: app } }, appRouter())
   },
 })
-// on each server: imp-aly app add myapp <app-map URL> --segments plan,role,lang
+// on each server: imp-aly app add myapp https://myapp.example/ --segments plan,role,lang
 ```
 
 ```js

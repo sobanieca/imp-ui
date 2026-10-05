@@ -1,4 +1,4 @@
-import { join } from '@std/path'
+import { dirname, join } from '@std/path'
 import { configTargetPath, licensePolicy, loadImpConfig, updateConfigFile } from './config.js'
 import { bundleDependency, packageId, shutdownBundler } from './deps.js'
 import { verifyPackages } from './integrity.js'
@@ -14,6 +14,7 @@ import { defaultAlias, EXACT_VERSION, parseSpecifier, VALID_ALIAS } from './spec
 import { formatSize, isFileSizeIgnored, maxFileBytes, maxFileSizeHint } from './file-size.js'
 import { logger } from './logger.js'
 import { LICENSE_NOTICES_FILE } from './license-notices.js'
+import { COMPONENT_SKILL_FILE } from './skill.js'
 
 const NPM_REGISTRY = 'https://registry.npmjs.org'
 const JSR_REGISTRY = 'https://jsr.io'
@@ -38,10 +39,35 @@ async function latestVersion(scheme, name) {
   return latest
 }
 
+const REMOTE_ENTRY = /^https?:(https?:\/\/.+)$/
+
+async function readBesideEntry(entry, file) {
+  const remote = entry.match(REMOTE_ENTRY)?.[1]
+  if (!remote) return await Deno.readTextFile(join(dirname(entry), file)).catch(() => null)
+  const response = await fetch(new URL(file, remote))
+  if (response.ok) return await response.text()
+  await response.body?.cancel()
+  return null
+}
+
+export async function componentSkill({ specifier, entry }) {
+  const text = entry === null ? null : await readBesideEntry(entry, COMPONENT_SKILL_FILE)
+  if (text === null) {
+    throw new Error(
+      `${specifier} imports imp, so it is an imp component, and it has no ${COMPONENT_SKILL_FILE} next to its entry module - its author builds it with imp build, which writes ${COMPONENT_SKILL_FILE} beside the bundle, and publishes it with the bundle`,
+    )
+  }
+  return { name: COMPONENT_SKILL_FILE, contents: new TextEncoder().encode(text) }
+}
+
 async function prepareOne({ alias, scheme, name, version, subpath, policy }) {
   const resolvedVersion = version ?? await latestVersion(scheme, name)
   const specifier = `${scheme}:${name}@${resolvedVersion}${subpath}`
-  const { files, packages, impImports } = await bundleDependency({ specifier, alias })
+  const bundled = await bundleDependency({ specifier, alias })
+  const { packages, impImports } = bundled
+  const files = impImports.length
+    ? [...bundled.files, await componentSkill({ specifier, entry: bundled.entry })]
+    : bundled.files
   const manifest = dependencyManifest({
     alias,
     specifier,

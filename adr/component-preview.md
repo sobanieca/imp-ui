@@ -73,14 +73,14 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   wants the code sees it on every panel.
 - **The skill of the component is a tab on its page.** The page has two tabs, _Scenarios_ and
   _Skill_. The skill is the component's `*.skill.md`, the same file that `imp skill` prints and that
-  `imp build` folds into a bundle as `impSkill` (`agent-skills.md`). The preview bundler folds it
-  into the chunk of the preview file as `impPreviewSkill`, rendered to HTML at bundle time, so the
-  runtime receives HTML and the entry module stays small. The renderer is the vendored `marked`
-  (`in-process-dependency-bundling.md`). Subject links are retargeted first, exactly as `imp skill`
-  prints them, so a link to a sibling skill reads `state (imp skill state)` on the page too. The
-  page styles the HTML with the same `--imp-*` tokens as the rest of the workbench, and it renders
-  every fenced code block as a `codeBlock`, highlighted in the language of its fence. A component
-  without a sidecar gets an empty state that names the file to write.
+  `imp build` copies to `imp-skill.md` beside the bundle of a JS entry (`agent-skills.md`). The
+  preview bundler folds it into the chunk of the preview file as `impPreviewSkill`, rendered to HTML
+  at bundle time, so the runtime receives HTML and the entry module stays small. The renderer is the
+  vendored `marked` (`in-process-dependency-bundling.md`). Subject links are retargeted first,
+  exactly as `imp skill` prints them, so a link to a sibling skill reads `state (imp skill state)`
+  on the page too. The page styles the HTML with the same `--imp-*` tokens as the rest of the
+  workbench, and it renders every fenced code block as a `codeBlock`, highlighted in the language of
+  its fence. A component without a sidecar gets an empty state that names the file to write.
 - **Module mocking reuses the seam of the test runner.** `mockModule(specifier, factory)` is
   imported from `imp/preview` and behaves as in `imp test`. It uses the same `imp-mock` esbuild
   namespace, the same `orig`/`spy` helpers, and the same rule that a specifier is a relative module

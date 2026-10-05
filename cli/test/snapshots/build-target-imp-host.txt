@@ -4,11 +4,13 @@ exit code: 0
 --- stdout ---
 built app.js -> shared/
   LICENSES.txt - 3 third-party license notices, referenced from every script emitted
+  imp-skill.md - the manual of the component, from app.skill.md
   imp imports kept bare - resolved by the imp host at runtime
   LICENSES.txt (<size>)
   app.js (<size>)
   chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
+  imp-skill.md (<size>)
 
 --- stderr ---
 (empty)
@@ -18,6 +20,7 @@ shared/LICENSES.txt
 shared/app.js
 shared/chunks/chunk-<hash>.js
 shared/chunks/lazy-<hash>.js
+shared/imp-skill.md
 
 --- shared/app.js ---
 /*! Third-party license notices: /LICENSES.txt */

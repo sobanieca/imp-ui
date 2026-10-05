@@ -358,6 +358,7 @@ Deno.test('a bundle of codeBlock alone carries no editor', async () => {
   await copyDirectory(fixture('build'), dir)
   const build = async (entry, source) => {
     await Deno.writeTextFile(join(dir, entry), source)
+    await Deno.writeTextFile(join(dir, entry.replace(/\.js$/, '.skill.md')), '# probe\n')
     const result = await runImp(['build', entry, '--output', 'code'], dir)
     if (result.code !== 0) throw new Error(`imp build ${entry} failed:\n${result.stderr}`)
     return Deno.readTextFile(join(dir, 'code', entry))
@@ -460,6 +461,7 @@ Deno.test('an app carries only the parts of imp it imports', async () => {
     const size = {}
     for (const [name, source] of Object.entries(entries)) {
       await Deno.writeTextFile(join(dir, `${name}.js`), source)
+      await Deno.writeTextFile(join(dir, `${name}.skill.md`), '# probe\n')
       const { code, stderr } = await runImp(['build', `${name}.js`, '--output', name], dir)
       check(code === 0, `imp build ${name}.js exited ${code}: ${stderr}`)
       size[name] = (await Deno.stat(join(dir, name, `${name}.js`))).size

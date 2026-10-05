@@ -14,7 +14,7 @@ dist/
   chunks/chunk-QX3J7M2A.js
   chunks/logo-7CWPN3KD.svg    <- every file that a script imports, with a hash too
   LICENSES.txt                <- the licence notices of the code in your bundle
-  app-map.txt                 <- the route patterns of your map, for an analytics store
+  app-analytics.json          <- the pages, zones and outcomes of your app, for an analytics store
   styles.css                  <- a copy of each file in public/
   manifest.webmanifest        <- with --pwa: the manifest, the icons and sw.js
   icons/icon-192.png

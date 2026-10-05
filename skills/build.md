@@ -40,9 +40,7 @@ help the build.
   `import()` in code that the build drops, such as the world data of an unused `map`, ships no file.
 - **`public/` is the only folder that imp copies**, and its contents arrive at the site root. See
   below.
-- **imp removes all skill text.** It injects none, copies no `*.skill.md`, and removes any
-  `impSkill` that arrives from a pre-built component. It does this in a lazy chunk as well as in the
-  main bundle.
+- **imp puts no skill text into any bundle**, and copies no `*.skill.md` into the output of a page.
 
 ## The `public/` folder - static assets
 
@@ -112,19 +110,37 @@ code and no third-party code, as with `targetImpHost`. There is no configuration
 Do not confuse this file with `imp licenses`. That command prints the notices for the tools inside
 the imp binary. None of those tools ship in an app. See [update](update.md).
 
-## Route patterns - `app-map.txt`
+## Analytics lists - `app-analytics.json`
 
-When `imp.json` names a `map`, imp writes `app-map.txt` at the root of the output: the route pattern
-of every node of the application map, one per line, sorted, with no label and no description. The
-file is for the server of an analytics endpoint. It fetches the file from the site and drops a
-record whose `page` is not a line of it, see [analytics](analytics.md). A project without a `map`
-gets no file. A `public/app-map.txt` is a collision and stops the build.
+When `imp.json` names a `map`, imp writes `app-analytics.json` at the root of the output: an object
+of three sorted lists. It is for the server of an analytics store. It fetches the file from the site
+and drops a record that is not on its lists, see [analytics](analytics.md).
+
+```json
+{ "pages": ["/", "/invoices/:id"], "zones": ["myapp.invoice-summary"], "outcomes": ["myapp.sent"] }
+```
+
+| Key        | Entries                                                                  |
+| ---------- | ------------------------------------------------------------------------ |
+| `pages`    | the route pattern of every node of the map, with no label or description |
+| `zones`    | every zone name of `zone({ name })` that the app can send                |
+| `outcomes` | every outcome name of `track(name)` that the app can send                |
+
+- The names come from every module in the bundle, inline module scripts of the page included. imp
+  does not read the names of a vendored component in `dependencies/`. The store drops its records.
+- An app with no zone gets an empty `zones` list. A project without a `map` gets no
+  `app-analytics.json`.
+- **Each name must be a literal**: a string, or a template literal with no `${...}`. `zone()` gets
+  an object literal with a literal `name`, no spread. Otherwise the build stops and lists every
+  call:
+  `src/invoice.js:8:14 - zone name is not a literal - imp build lists every zone name for the analytics store, so write the name as a string, like zone({ name: 'myapp.invoice-summary' })`.
+- A literal name that breaks the namespace rule is left out of the lists. imp records nothing for
+  it.
+- A `public/app-analytics.json` is a collision and stops the build.
 
 ```
-/
-/invoices
-/invoices/:id
-/settings
+built index.html -> dist/
+  app-analytics.json - 4 route patterns, 3 zone names and 1 outcome name, for an analytics store
 ```
 
 ## How to deploy under a sub-path
@@ -140,11 +156,16 @@ the assets and the navigation move together. See [routing](routing.md).
 
 - imp writes one self-contained file. It compiles in imp and every dependency. You can drop the file
   into any app, on any framework.
-- imp folds a sibling `*.skill.md` in as an `export const impSkill`. So the manual travels with the
-  component. Only the skill of the **entry module** survives. A barrel that re-exports several
-  components loses their skills, because imp drops an ambiguous star export. So publish one entry
-  per component, or describe every component in the skill of the barrel. See
-  [components](components.md).
+- **imp always writes `imp-skill.md` beside the bundle**, in the output folder. It is a copy of the
+  sidecar `<entry>.skill.md` of the entry module.
+
+- **A JS entry needs its sidecar.** Without it the build stops:
+  `no skill for widget.js - a JS entry is a component, and imp build writes its manual to imp-skill.md from widget.skill.md next to it`.
+- A JS entry gets no analytics name lists. Only an HTML entry with a `map` gets them.
+- **Publish `imp-skill.md` with the bundle, next to the entry module of the package.** `imp install`
+  of an imp component needs it, see [dependencies](dependencies.md). So one output folder holds one
+  entry. Build each component into its own folder (`imp build alpha.js --output alpha`), or describe
+  every component of a barrel in the sidecar of the barrel. See [components](components.md).
 - **`targetImpHost: true`** in `imp.json`, see [config](config.md), leaves every `imp` and `imp/...`
   import **bare**. A host imp app then provides the library, and the page holds one shared copy of
   imp instead of two. The host must really provide it, through an import map or a bundler alias.
@@ -172,7 +193,7 @@ The precache list has three parts:
 | required | the page, `manifest.webmanifest`, the icons; always downloaded again                 | the install fails, the next visit retries |
 | optional | the files of `public/`; always downloaded again                                      | a warning, the install goes on            |
 
-imp leaves out `LICENSES.txt`, `app-map.txt`, and the host files at the root of `public/`:
+imp leaves out `LICENSES.txt`, `app-analytics.json`, and the host files at the root of `public/`:
 `_redirects`, `_headers`, `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json`,
 `staticwebapp.config.json`. It also leaves out every path with a part that starts with a dot. imp
 URL-encodes each file name. A file that does not fit in a full storage gives a warning, and the
@@ -215,9 +236,10 @@ When a lazy chunk of an open tab is gone, the router and the translations fetch 
 page names a newer build, imp loads the current URL again, once per build. See
 [routing](routing.md).
 
-Under a sub-path, prefix every path of the rules. Upload `LICENSES.txt` and `app-map.txt` with the
-rest. A PWA update needs no rule of its own: `sw.js` is `no-cache` under the rules above. The errors
-of a live app are counted as `error` records of an analytics sink, see [analytics](analytics.md).
+Under a sub-path, prefix every path of the rules. Upload `LICENSES.txt` and `app-analytics.json`
+with the rest. A PWA update needs no rule of its own: `sw.js` is `no-cache` under the rules above.
+The errors of a live app are counted as `error` records of an analytics sink, see
+[analytics](analytics.md).
 
 ## Content Security Policy
 

@@ -640,11 +640,13 @@ the module scripts of the page. It bundles each one into minified, self-containe
   notice that the code in the bundle carries, into one `LICENSES.txt` at the root of the output.
   Each emitted script starts with a comment of one line that points at that file. See
   [License notices](#license-notices) below.
-- **imp writes the route patterns of your map to `app-map.txt`.** When `imp.json` names a `map`, the
-  build runs that file and writes the pattern of every node, one per line, to `app-map.txt` at the
-  root of the output. The file has no label and no description. An analytics store reads it from
-  your site and accepts a record only for a page that exists. See
-  [Analytics](analytics.md#your-own-endpoint).
+- **imp writes the pages, zones and outcomes of your app to `app-analytics.json`.** When `imp.json`
+  names a `map`, the build runs that file and writes `app-analytics.json` at the root of the output.
+  Its `pages` list holds the pattern of every node. Its `zones` and `outcomes` lists hold, sorted,
+  every zone name and every outcome name that the app can send. The names come from each module of
+  the bundle, and not from `dependencies/`. An analytics store reads the file from your site, and
+  accepts a record only for a page, a zone and an outcome that exist. A `public/` file with this
+  name stops the build. See [Analytics](analytics.md#check-each-record-on-the-server).
 - **imp resolves a build flag and folds it away.** imp answers every `flag('NAME')` check for the
   environment that you build. It removes the branch behind a disabled flag, with everything that
   only that branch used. The build prints what it decided. See **[Build flags](build-flags.md)**.
@@ -671,14 +673,12 @@ file. imp compiles in imp itself and every dependency. You can drop the result i
 on any framework. It needs no imp runtime and no other runtime. A web component that you wrote with
 imp is an example.
 
-**A JS build carries its skill. A page build removes it.** A module entry is something that other
-developers program against. So when a `counter.skill.md` file sits beside it, imp folds that text
-into the output as an `impSkill` export. The text travels with the component to whoever installs it.
-An HTML entry is a finished app, and nobody writes code against it. So imp adds no skill text and
-copies no skill file into the output. It removes any `impSkill` that it finds on the way in,
-including the skill of a pre-built component that you installed, and of your own modules. It removes
-it from a chunk that loads lazily as well as from the main bundle. See
-**[Components](components.md)**.
+**A JS entry is a component, and its build writes its manual beside the bundle.** Other developers
+program against a component. So the output folder also gets `imp-skill.md`, a copy of the skill file
+beside the entry, such as `counter.skill.md`. A JS entry with no skill file stops the build, and the
+message names the file to write. Publish `imp-skill.md` with the bundle, next to the entry module of
+your package. Then `imp install` copies it into the app that installs the component. imp puts no
+skill text into any bundle. See **[Components](components.md)**.
 
 ### Content Security Policy
 
@@ -961,8 +961,8 @@ knows the exact set of files the app is made of:
   files as its own settings and does not serve them. imp leaves out `_redirects`, `_headers`,
   `_routes.json`, `404.html`, `CNAME`, `netlify.toml`, `vercel.json` and `staticwebapp.config.json`
   at the root of `public/`. It also leaves out every file or folder whose name starts with a dot,
-  such as `.well-known/`. `LICENSES.txt` and `app-map.txt` stay out as well, because the app never
-  loads them. imp encodes each file name in its URL, so a name with a space, a `#`, a `%` or a
+  such as `.well-known/`. `LICENSES.txt` and `app-analytics.json` stay out as well, because the app
+  never loads them. imp encodes each file name in its URL, so a name with a space, a `#`, a `%` or a
   non-ASCII letter loads.
 - **One missing file does not stop the install.** A precached file that the build writes is
   required. When one of them does not load, the worker does not install, and the browser tries again
@@ -1035,6 +1035,10 @@ its bare alias, as in `import mitt from 'mitt'`. A package that imports `imp` it
 import bare, because your app provides the imp library. imp never treats `imp` as a registry
 package. The bundle keeps the licence notice of the package where the package put it, so the notice
 is there for `imp build` to collect into the [`LICENSES.txt`](#license-notices) of your app.
+
+Such a package is an **imp component**. It must ship `imp-skill.md` next to its entry module, as
+`imp build` writes it. `imp install` copies the file into the folder of the dependency. A missing
+`imp-skill.md` stops the install. `imp skill <alias>` then prints the manual of the component.
 
 Before it writes, `imp install` checks each npm package against the hash that the npm registry signs
 for it. It then puts every package in place, or none of them. `imp audit` checks the vendored
@@ -1832,6 +1836,7 @@ imp skill <subject>              one subject's manual, in full
 imp skill state routing          several manuals in one call
 imp skill std/button             one standard component's skill
 imp skill ./components/counter.js   one of your own components' skills
+imp skill widget                 the skill of an imp component installed as dependencies/widget/
 ```
 
 imp expects an AI coding agent to write much of the app code, and an agent cannot browse a
@@ -1849,9 +1854,10 @@ With no argument, the command prints an **index**: one line per subject, with a 
 groups the subjects. The first group is what you need to write an app: imports, rendering,
 components, state, routing, theming, translations and logging. The second group is what you need to
 work in the project: the CLI, testing, dependencies, linting and formatting. Then comes one line per
-standard component. Last comes every component **in your project** that has a skill file beside it.
-An index is cheap to read, so an agent spends one call to learn what exists, and one more call to
-learn the part it needs.
+standard component. Then comes every component **in your project** that has a skill file beside it.
+Last comes every imp component that you installed into `dependencies/`, by its alias. An index is
+cheap to read, so an agent spends one call to learn what exists, and one more call to learn the part
+it needs.
 
 With one or more subjects, the command prints those manuals in full. Skill text is the only thing on
 standard output, and every diagnostic goes to standard error. So `imp skill state > state.md`
@@ -1873,6 +1879,10 @@ same convention that the components of imp follow. So `imp skill std/button` and
 no skill file exits with code 1, and imp names the file to write, so a tool can tell "no skill yet"
 from a real failure. See **[Components](components.md)** to learn how to write a skill file, and
 what happens to it at build time.
+
+**Ask for an installed component by alias.** `imp skill widget` prints the `imp-skill.md` that
+`imp install` copied into `dependencies/widget/`, as it is. When a subject has the same name as an
+alias, the subject wins.
 
 ### `imp skill --init` - the `/imp` skill for your agent
 

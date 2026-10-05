@@ -131,6 +131,8 @@ export async function bundleDependency({ specifier, alias }) {
   }))
   return {
     files,
+    entry: Object.values(result.metafile.outputs).find((output) => output.entryPoint)
+      ?.entryPoint ?? null,
     packages: bundledPackages(result.metafile),
     impImports: keptImpImports(result.metafile),
   }

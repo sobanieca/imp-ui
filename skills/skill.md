@@ -5,6 +5,7 @@ imp skill                          the index: every subject and component, one l
 imp skill state routing            one or more subjects in full
 imp skill std/button               a standard component
 imp skill ./components/counter.js  a component of this project, by path to its module
+imp skill widget                   an imp component installed as dependencies/widget/
 imp skill --init                   create the /imp skill, so the agent reads these manuals
 ```
 
@@ -28,6 +29,9 @@ manual only.
   the page. So you can go from one manual to the next without a path or a URL.
 - **Ask for a component by file**, not by name: `imp skill ./components/counter.js`, or the skill
   file itself. imp imports and bundles nothing to answer. It reads the file off disk.
+- **Ask for an installed imp component by its alias:** `imp skill widget` prints
+  `dependencies/widget/imp-skill.md` verbatim. The index lists these under `INSTALLED COMPONENTS`. A
+  subject with the same name wins over the alias.
 
 ## How to make the agent find imp - `--init`
 
@@ -74,9 +78,8 @@ Emits a `change` event with the new value in `event.detail`.
 
 - **The first line is the summary.** Start it with the component name and one clause that says what
   the component is. The index shows that line.
-- **The sidecar is the only place where you write the skill of a component.** Never declare
-  `impSkill` in the module by hand. A module that declares `impSkill` and also has a sidecar is a
-  build error.
+- **The sidecar is the only place where you write the skill of a component.** Never put skill text
+  in the module.
 - **Write a sidecar for every component that you build.** A component with no sidecar is absent from
   the index, and `imp skill ./that/module.js` exits 1 and names the file to write.
 - A skill file prints **without a change**. imp adds no banner, because the author already gave the
@@ -84,8 +87,9 @@ Emits a `change` event with the new value in `event.detail`.
 
 ## What happens to the sidecar at build time
 
-`imp build counter.js` builds a JS entry, which is a component. It folds the sidecar into the bundle
-as `export const impSkill`. So the manual goes to everyone who installs the component, and there is
-no second file to distribute. `imp build` on an HTML page builds an app. It adds no skill, copies no
-skill, and removes every skill that it finds, also in a lazy chunk. Your users download your app,
-not your documentation. See [build](build.md) and [components](components.md).
+`imp build counter.js` builds a JS entry, which is a component. It copies `counter.skill.md` to
+`imp-skill.md` beside the bundle. A JS entry with no sidecar stops the build. Publish `imp-skill.md`
+with the bundle. `imp install` copies it into `dependencies/<alias>/`, and `imp skill <alias>`
+prints the manual there. `imp build` on an HTML page builds an app, and copies no skill. imp puts no
+skill text into any bundle. See [build](build.md), [dependencies](dependencies.md) and
+[components](components.md).

@@ -1,15 +1,16 @@
-import { relative } from '@std/path'
+import { extname, join, relative, SEPARATOR } from '@std/path'
 import { browserGlobals, Linter } from './vendor/eslint.js'
-import { createAnalyticsNameVisitor } from './lint-rules.js'
+import { createAnalyticsNameVisitor, unreadableAnalyticsNameProblem } from './lint-rules.js'
 import { collectFiles, posixPath } from './walk.js'
 import { isJavaScriptType, readHtml } from './html-document.js'
 import { isMockFile, isPreviewFile, isTestFile } from './project-files.js'
+import { ANALYTICS_SUBJECTS, analyticsNameProblemOf } from './analytics-files.js'
 
 export const UNIQUE_ANALYTICS_NAME_RULE = 'imp/unique-analytics-name'
 
 const NAME_EXTENSIONS = new Set(['js', 'mjs', 'cjs', 'html'])
 
-const SUBJECTS = new Map([['zone', 'zone'], ['track', 'outcome']])
+const SCANNED_EXTENSIONS = new Set(['.js', '.mjs', '.cjs'])
 
 const isDevelopmentFile = (path) => isTestFile(path) || isPreviewFile(path) || isMockFile(path)
 
@@ -72,9 +73,9 @@ export async function reportDuplicateAnalyticsNames({ root, config }) {
       findings.push({
         ...use,
         message: `${
-          SUBJECTS.get(use.helper)
+          ANALYTICS_SUBJECTS.get(use.helper)
         } name '${use.name}' is also used in ${first.path}:${first.line}:${first.column} - give each ${
-          SUBJECTS.get(use.helper)
+          ANALYTICS_SUBJECTS.get(use.helper)
         } its own name, so that the report can tell them apart`,
       })
     }
@@ -85,4 +86,34 @@ export async function reportDuplicateAnalyticsNames({ root, config }) {
     console.error(` --> ${finding.path}:${finding.line}:${finding.column}\n`)
   }
   return findings.length
+}
+
+const sortedNames = (names) => [...names].sort()
+
+export async function collectBundleNames({ root, inputs, sourceOf = Deno.readTextFile }) {
+  const dependencies = join(root, 'dependencies') + SEPARATOR
+  const zones = new Set()
+  const outcomes = new Set()
+  const unreadable = []
+  const linter = new Linter()
+  for (const input of inputs) {
+    if (input.startsWith(dependencies) || !SCANNED_EXTENSIONS.has(extname(input))) continue
+    const path = posixPath(relative(root, input))
+    collectNames(linter, await sourceOf(input), input, ({ helper, name, literal, node }) => {
+      const at = `${path}:${node.loc.start.line}:${node.loc.start.column + 1}`
+      if (!literal) {
+        unreadable.push(`  ${at} - ${unreadableAnalyticsNameProblem(helper)}`)
+        return
+      }
+      if (analyticsNameProblemOf(helper, name)) return
+      const names = helper === 'zone' ? zones : outcomes
+      names.add(name)
+    })
+  }
+  if (unreadable.length) {
+    throw new Error(
+      `imp build cannot read every analytics name:\n${unreadable.join('\n')}`,
+    )
+  }
+  return { zones: sortedNames(zones), outcomes: sortedNames(outcomes) }
 }

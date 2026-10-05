@@ -68,6 +68,12 @@ repository. `imp install` and `imp uninstall` manage that.
   part in the internal resolution of a package. So a vendored bundle depends on nothing local,
   except imp. imp lists a bare `imp` import that it kept, in the printed resolution, with a note
   about a difference of version.
+- **A package whose bundle keeps a bare `imp` import is an imp component, and it ships its manual.**
+  It must publish `imp-skill.md` next to its entry module, the file that the specifier resolves to
+  in npm or jsr. `imp build` of a JS entry writes it, see `production-bundling.md`. `imp install`
+  copies it into `dependencies/<alias>/`, beside the bundle and `manifest.json`. A missing file
+  stops the install, and the message names it. `imp skill <alias>` reads the manual from there, see
+  `agent-skills.md`. A package that does not import imp gets no `imp-skill.md`.
 - **The dev server bundles no dependency.** The injected import map maps each alias to its
   `dependencies/<alias>/` bundle, which imp serves as a plain static file. Only `imp install`
   invokes the in-process bundling engine, see `in-process-dependency-bundling.md`.
@@ -107,3 +113,6 @@ writes no derived toolchain config, no cache, and no lock file into the project.
   when the app vendors the same package under an alias. That is the deliberate duplication of
   `transitive-duplication-accepted.md`. imp chose it over a silent rewiring of the internals of a
   package to a local alias with the same name.
+- An imp component installs only when its author published `imp-skill.md` with it. In exchange, the
+  app always gets the manual of the component. The manual is only as fresh as the release that
+  shipped it.

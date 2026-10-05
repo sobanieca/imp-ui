@@ -614,32 +614,32 @@ imp skill                             # lists every component in the project tha
 
 **A published component takes its skill with it. A shipped app leaves the skill behind.** When you
 build a module, with `imp build counter.js`, the result is something that other developers program
-against. So imp folds the skill file into the bundle as an `impSkill` export. The skill travels to
-whoever installs your component. There is no second file to distribute, and nothing to configure.
+against. So imp copies the skill file to `imp-skill.md` in the output folder, beside the bundle. A
+JS entry with no skill file stops the build. Publish `imp-skill.md` with the bundle, next to the
+entry module of your package. `imp install` copies it into the app that installs your component, and
+`imp skill <alias>` prints the manual there.
+
 When you build a page, with `imp build` on your `index.html`, the result is a finished app that
-nobody writes code against. So imp adds no skill text, copies no skill file into the output, and
-**removes any skill text that is already there**. That covers a component that you installed
-pre-built with its skill inside, and an `impSkill` that somebody wrote into a module by hand. imp
-removes it from the app, and also from a chunk that loads lazily. Your users download your app, not
-your documentation.
+nobody writes code against. imp puts no skill text into any bundle, so no skill text reaches the
+users of your app. They download your app, not your documentation.
 
 The entry decides that split, and no configuration does. A JS entry is a component. An HTML entry is
 an app.
 
 **How to publish more than one component.** The skill that travels is the skill of the **entry
-module that you build**. Suppose that you publish a barrel that re-exports several components:
+module that you build**. Its `imp-skill.md` goes into one output folder, so one folder holds one
+entry. Suppose that you publish a barrel that re-exports several components:
 
 ```js
 export * from './alpha.js'
 export * from './beta.js'
 ```
 
-Then `alpha.skill.md` and `beta.skill.md` do not survive the bundle. Two modules that each export
-`impSkill` through an `export *` make the name ambiguous, and JavaScript drops an ambiguous star
-export. Only `index.skill.md`, beside the barrel itself, comes through. So do one of two things.
-Write the skill of the package beside your entry, and describe the components in it. Or publish each
-component as its own entry, with `imp build alpha.js` and `imp build beta.js`. Each one then has its
-own skill.
+Then `imp-skill.md` is a copy of `index.skill.md`, the skill file beside the barrel.
+`alpha.skill.md` and `beta.skill.md` do not go into the output. So do one of two things. Write the
+skill of the package beside your entry, and describe the components in it. Or publish each component
+as its own entry, with `imp build alpha.js --output alpha` and `imp build beta.js --output beta`.
+Each one then has its own folder and its own skill.
 
 A `*.preview.js` file shows the states of a component to a person, see
 **[the CLI](cli.md#imp-preview)**. Together with that file, a skill file is the second half of

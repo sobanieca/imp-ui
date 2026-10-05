@@ -1,0 +1,10 @@
+$ imp build  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] imp build cannot read every analytics name:
+  widget.js:3:40 - zone name is not a literal - imp build lists every zone name for the analytics store, so write the name as a string, like zone({ name: 'myapp.invoice-summary' })
+  widget.js:3:54 - outcome name is not a literal - imp build lists every outcome name for the analytics store, so write the name as a string, like track('myapp.invoice-sent')

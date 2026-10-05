@@ -2,6 +2,7 @@ import {
   basename,
   dirname,
   extname,
+  isAbsolute,
   join,
   normalize,
   relative,
@@ -33,7 +34,9 @@ import { formatSize } from './file-size.js'
 import { ASSET_LOADERS, runEsbuild, shutdownBundler } from './deps.js'
 import { withoutUnreachableChunks } from './unreachable-chunks.js'
 import { resolveDependencyAliases, resolveImpLibrary } from './bundling.js'
-import { skillFileFor } from './skill.js'
+import { COMPONENT_SKILL_FILE, skillFileFor } from './skill.js'
+import { collectBundleNames } from './analytics-names.js'
+import { APP_ANALYTICS_FILE, appAnalyticsFile } from './analytics-files.js'
 import { posixPath } from './walk.js'
 import {
   collectLicenseNotices,
@@ -108,55 +111,26 @@ const withoutExtension = (path) => path.slice(0, path.length - extname(path).len
 
 const asPosix = (path) => path.replaceAll('\\', '/')
 
-const DECLARES_IMP_SKILL = /^\s*export\s+(?:const|let|var)\s+impSkill\b/m
-
-const IMP_SKILL_INITIALIZER =
-  /(\bexport\s+(?:const|let|var)\s+impSkill\s*=\s*)(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`)/g
-
-const EXPORT_CLAUSE = /\bexport\s*\{([^{}]*)\}/g
-
-const exportedName = (specifier) => {
-  const renamed = specifier.split(/\s+as\s+/)
-  return (renamed[1] ?? renamed[0]).trim()
-}
-
-function withoutComponentSkill(source) {
-  if (!source.includes('impSkill')) return source
-  return source
-    .replace(IMP_SKILL_INITIALIZER, '$1""')
-    .replace(EXPORT_CLAUSE, (clause, specifiers) => {
-      if (!specifiers.includes('impSkill')) return clause
-      const kept = specifiers.split(',')
-        .filter((specifier) => specifier.trim() && exportedName(specifier) !== 'impSkill')
-      return `export{${kept.join(',')}}`
-    })
-}
-
-async function withComponentSkill(path) {
-  const source = await Deno.readTextFile(path)
-  let skill
+async function readEntrySkill(entryPath) {
+  const skillFile = skillFileFor(entryPath)
   try {
-    skill = await Deno.readTextFile(skillFileFor(path))
+    return (await Deno.readTextFile(skillFile)).trimEnd() + '\n'
   } catch {
-    return source
-  }
-  if (DECLARES_IMP_SKILL.test(source)) {
     throw new Error(
-      `${basename(path)} exports impSkill itself - a component's skill belongs in ${
-        basename(skillFileFor(path))
+      `no skill for ${
+        basename(entryPath)
+      } - a JS entry is a component, and imp build writes its manual to ${COMPONENT_SKILL_FILE} from ${
+        basename(skillFile)
       } next to it`,
     )
   }
-  return `${source}\nexport const impSkill = ${JSON.stringify(skill.trimEnd())}\n`
 }
 
 const cssImportMessage = ({ path, importer }) =>
   `${relative(Deno.cwd(), importer) || importer} imports '${path}' - a script cannot import CSS. ` +
   'A component carries its styles in its \'styles\', and a page links a stylesheet from public/ with <link rel="stylesheet">'
 
-function impResolverPlugin(
-  { root, dependencies, inlineSources, impProvidedByHost, isHtmlEntry, flags },
-) {
+function impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost, flags }) {
   return {
     name: 'imp',
     setup(build) {
@@ -180,12 +154,10 @@ function impResolverPlugin(
         }
       })
       build.onLoad({ filter: /\.js$/, namespace: 'file' }, async (args) => ({
-        contents: foldFlagCalls(
-          isHtmlEntry
-            ? withoutComponentSkill(await Deno.readTextFile(args.path))
-            : await withComponentSkill(args.path),
-          { flags, file: relative(root, args.path) },
-        ),
+        contents: foldFlagCalls(await Deno.readTextFile(args.path), {
+          flags,
+          file: relative(root, args.path),
+        }),
         loader: 'js',
       }))
     },
@@ -209,14 +181,7 @@ function buildEntryPoints(
 ) {
   return runEsbuild({
     plugins: [
-      impResolverPlugin({
-        root,
-        dependencies,
-        inlineSources,
-        impProvidedByHost,
-        isHtmlEntry,
-        flags,
-      }),
+      impResolverPlugin({ root, dependencies, inlineSources, impProvidedByHost, flags }),
       denoPlugin(),
     ],
     entryPoints,
@@ -243,10 +208,6 @@ function buildEntryPoints(
 
 const SERVICE_WORKER_FILE = 'sw.js'
 
-const APP_MAP_FILE = 'app-map.txt'
-
-const appMapFile = (patterns) => `${patterns.join('\n')}\n`
-
 async function routePatternsOfProject({ root, map, dependencies }) {
   const target = resolve(await projectRoot(root), map)
   try {
@@ -255,7 +216,7 @@ async function routePatternsOfProject({ root, map, dependencies }) {
     throw new Error(
       `no map at ${
         posixPath(relative(Deno.cwd(), target) || target)
-      } - the 'map' of imp.json names the file that exports appMap(), and imp build writes its route patterns to ${APP_MAP_FILE}`,
+      } - the 'map' of imp.json names the file that exports appMap(), and imp build writes its route patterns to ${APP_ANALYTICS_FILE}`,
     )
   }
   const maps = await loadMaps(target, { root, dependencies })
@@ -273,14 +234,7 @@ function buildServiceWorkerEntry({ root, worker, dependencies, outdir, flags, ba
   return runEsbuild({
     plugins: [
       workerEntryPlugin(root, OFFLINE_WORKER_SOURCE),
-      impResolverPlugin({
-        root,
-        dependencies,
-        inlineSources: [],
-        impProvidedByHost: false,
-        isHtmlEntry: true,
-        flags,
-      }),
+      impResolverPlugin({ root, dependencies, inlineSources: [], impProvidedByHost: false, flags }),
       denoPlugin(),
     ],
     entryPoints: [{
@@ -314,15 +268,29 @@ function entryOutputs({ metafile, outputFiles }, inputs) {
   return outputs
 }
 
+function analyticsNamesOfBundle({ root, inlineSources }, metafile) {
+  const inlineSourceOf = (path) => {
+    const inline = path.match(INLINE_MODULE_PATH)
+    return inline ? inlineSources[Number(inline[1])] : Deno.readTextFile(path)
+  }
+  return collectBundleNames({
+    root,
+    inputs: Object.keys(metafile.inputs).filter((input) => isAbsolute(input)),
+    sourceOf: inlineSourceOf,
+  })
+}
+
 async function bundleApp(options, { inputs, serviceWorker, offlineWorker, map }) {
   try {
-    const routePatterns = map === null ? null : await routePatternsOfProject({ ...options, map })
+    const pages = map === null ? null : await routePatternsOfProject({ ...options, map })
     const bundled = await buildEntryPoints(options)
     const entries = entryOutputs(bundled, inputs)
     const page = {
       ...withoutUnreachableChunks(bundled, [...entries.values()]),
       entries,
-      routePatterns,
+      analytics: map === null
+        ? null
+        : { pages, ...await analyticsNamesOfBundle(options, bundled.metafile) },
     }
     if (!serviceWorker && !offlineWorker) return page
     const worker = await buildServiceWorkerEntry({ ...options, worker: serviceWorker })
@@ -494,7 +462,7 @@ async function assertWithinBudget({ imp, outdirPath, written }) {
   )
 }
 
-const NOT_PRECACHED = [LICENSE_NOTICES_FILE, APP_MAP_FILE]
+const NOT_PRECACHED = [LICENSE_NOTICES_FILE, APP_ANALYTICS_FILE]
 
 async function precacheOfBuild({ outdirPath, base, emitted, copied, shell }) {
   const app = emitted.filter((name) => !NOT_PRECACHED.includes(name))
@@ -572,6 +540,8 @@ export async function build(
   ]
 
   const base = basePathOf(resolvedEnv)
+  const map = isHtmlEntry && typeof imp.map === 'string' ? imp.map : null
+  const componentSkill = isHtmlEntry ? null : await readEntrySkill(entryPath)
   const result = await bundleApp({
     root,
     entryPoints,
@@ -586,7 +556,7 @@ export async function build(
     inputs: [...scripts, ...inlineSources.map((_, index) => join(root, inlineModuleName(index)))],
     serviceWorker,
     offlineWorker: pwa && isHtmlEntry,
-    map: isHtmlEntry && typeof imp.map === 'string' ? imp.map : null,
+    map,
   })
 
   assertEveryFlagFolded(result.outputFiles)
@@ -629,9 +599,16 @@ export async function build(
     await Deno.writeTextFile(join(outdirPath, LICENSE_NOTICES_FILE), licenseNoticesFile(notices))
     written.push(LICENSE_NOTICES_FILE)
   }
-  if (result.routePatterns !== null) {
-    await Deno.writeTextFile(join(outdirPath, APP_MAP_FILE), appMapFile(result.routePatterns))
-    written.push(APP_MAP_FILE)
+  if (result.analytics !== null) {
+    await Deno.writeTextFile(
+      join(outdirPath, APP_ANALYTICS_FILE),
+      appAnalyticsFile(result.analytics),
+    )
+    written.push(APP_ANALYTICS_FILE)
+  }
+  if (componentSkill !== null) {
+    await Deno.writeTextFile(join(outdirPath, COMPONENT_SKILL_FILE), componentSkill)
+    written.push(COMPONENT_SKILL_FILE)
   }
   if (isHtmlEntry) {
     const headTags = [
@@ -730,12 +707,20 @@ export async function build(
     const count = `${noticeCount} third-party license notice${noticeCount === 1 ? '' : 's'}`
     console.log(`  ${LICENSE_NOTICES_FILE} - ${count}, referenced from every script emitted`)
   }
-  if (result.routePatterns !== null) {
-    const count = result.routePatterns.length
+  if (result.analytics !== null) {
+    const counted = (count, noun) => `${count} ${noun}${count === 1 ? '' : 's'}`
+    const { pages, zones, outcomes } = result.analytics
     console.log(
-      `  ${APP_MAP_FILE} - ${count} route pattern${
-        count === 1 ? '' : 's'
-      } of the map, one per line, for an analytics store`,
+      `  ${APP_ANALYTICS_FILE} - ${counted(pages.length, 'route pattern')}, ${
+        counted(zones.length, 'zone name')
+      } and ${counted(outcomes.length, 'outcome name')}, for an analytics store`,
+    )
+  }
+  if (componentSkill !== null) {
+    console.log(
+      `  ${COMPONENT_SKILL_FILE} - the manual of the component, from ${
+        basename(skillFileFor(entryPath))
+      }`,
     )
   }
   const flagNames = Object.keys(flags)

@@ -4,7 +4,9 @@
 
 imp counts records and gives them to a sink of the app, see `product-analytics.md`. imp-aly is the
 analytics server of imp. The owner runs it on a VPS. It takes the records of `imp/analytics` as they
-are, checks them against `app-map.txt`, and answers the queries of the report.
+are, checks them against `app-analytics.json` of the build, and answers the queries of the report.
+The owner registers an app with the URL of the folder of the build output, or with a local build
+folder, and imp-aly reads the file from there.
 
 A sink for imp-aly is the same code in every app that uses it. It must post the batches to the right
 URL, keep each visit on one server, add the segments without the loss of the flush on hide, and

@@ -40,8 +40,9 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   then keeps the `imp` imports bare, for that host to provide. See
   **[Targeting an imp host](cli.md#targeting-an-imp-host---sharing-the-hosts-imp)**.
 - **`map`** is the path of the file that exports your application map, such as `src/app-map.js`.
-  `imp init` writes the key. `imp build` writes the route patterns of that map to `app-map.txt` in
-  the output. See **[Routing](routing.md)**.
+  `imp init` writes the key. `imp build` writes the route patterns of that map, and the zone and
+  outcome names of the app, to `app-analytics.json` in the output. See **[Routing](routing.md)** and
+  **[Analytics](analytics.md)**.
 - **`build`** holds the options for `imp build`. `maxSize` is the budget, in bytes, for the whole
   output folder. A build that writes more fails, names its largest files, and leaves no output. See
   **[`imp build`](cli.md#imp-build)**.

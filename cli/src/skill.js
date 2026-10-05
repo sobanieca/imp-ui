@@ -1,12 +1,14 @@
 import { basename, dirname, join, relative, resolve } from '@std/path'
 import { VERSION } from './version.js'
 import { collectFiles } from './walk.js'
-import { IMP_MODULES, isImpStdSpecifier } from './specifiers.js'
+import { IMP_MODULES, isImpStdSpecifier, VALID_ALIAS } from './specifiers.js'
 
 const SUBJECT_SKILLS = new URL('../../skills/', import.meta.url)
 const LIBRARY = new URL('../../lib/src/', import.meta.url)
 
 export const SKILL_SUFFIX = '.skill.md'
+
+export const COMPONENT_SKILL_FILE = 'imp-skill.md'
 
 const GROUPS = [
   { id: 'app', title: 'WRITING AN APP' },
@@ -19,6 +21,9 @@ const GROUPS = [
 
 const PROJECT_TITLE =
   'THIS PROJECT - components with a skill file | read: imp skill ./path/to/component.js'
+
+const DEPENDENCIES_TITLE =
+  'INSTALLED COMPONENTS - imp components in dependencies/ | read: imp skill <alias>'
 
 const NO_PROJECT_SKILLS =
   "  (none yet - write 'counter.skill.md' next to a component and it is listed here)"
@@ -420,6 +425,20 @@ export async function projectSkills(root) {
   return skills
 }
 
+export async function dependencySkills(root) {
+  if (!root) return []
+  const folder = join(root, 'dependencies')
+  const entries = await Array.fromAsync(Deno.readDir(folder)).catch(() => [])
+  const skills = []
+  for (const entry of entries) {
+    if (!entry.isDirectory) continue
+    const text = await Deno.readTextFile(join(folder, entry.name, COMPONENT_SKILL_FILE))
+      .catch(() => null)
+    if (text !== null) skills.push({ name: entry.name, summary: firstLine(text) })
+  }
+  return skills.sort((one, other) => one.name.localeCompare(other.name))
+}
+
 const INTRO = `imp skills - the usage manuals imp ships for the agent writing the code
 
 imp is a buildless UI toolkit: your ES modules run in the browser exactly as written - no
@@ -432,6 +451,7 @@ Read one in full - no flags, the text goes to stdout:
   imp skill state                  a subject listed below (several at once is fine)
   imp skill std/button             a standard component
   imp skill ./src/counter.js       a component of this project, by path to its module
+  imp skill widget                 an imp component installed as dependencies/widget/
 `
 
 const OUTRO =
@@ -462,6 +482,8 @@ export async function skillIndex({ root = null } = {}) {
       ? section(PROJECT_TITLE, project, widthOf(project))
       : `${PROJECT_TITLE}\n${NO_PROJECT_SKILLS}`,
   )
+  const installed = await dependencySkills(root)
+  if (installed.length) sections.push(section(DEPENDENCIES_TITLE, installed, widthOf(installed)))
   return `${INTRO}\n${sections.join('\n\n')}\n\n${OUTRO}`
 }
 
@@ -473,14 +495,22 @@ async function unknownSubject(subject) {
   const names = (await allSubjects()).map(({ name }) => name).join(', ')
   return new Error(
     `unknown skill '${subject}' - run 'imp skill' for the index | subjects: ${names} | ` +
-      'for a component of this project pass its path: imp skill ./path/to/component.js',
+      'for a component of this project pass its path: imp skill ./path/to/component.js | ' +
+      'for an imp component in dependencies/ pass its alias: imp skill widget',
   )
 }
 
-async function renderRequested(subject) {
+async function renderRequested(subject, root) {
   const known = await findSkill(subject)
   if (known) return await renderSkill(known)
-  if (!looksLikeFile(subject)) throw await unknownSubject(subject)
+  if (!looksLikeFile(subject)) {
+    const installed = root && VALID_ALIAS.test(subject)
+      ? await readSkillText(join(root, 'dependencies', subject, COMPONENT_SKILL_FILE))
+        .catch(() => null)
+      : null
+    if (installed !== null) return installed
+    throw await unknownSubject(subject)
+  }
   return await readComponentSkill(resolve(subject), subject)
 }
 
@@ -490,6 +520,6 @@ export async function printSkill({ subjects = [], root = null } = {}) {
     return
   }
   const rendered = []
-  for (const subject of subjects) rendered.push(await renderRequested(subject))
+  for (const subject of subjects) rendered.push(await renderRequested(subject, root))
   console.log(rendered.join('\n\n'))
 }

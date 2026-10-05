@@ -146,3 +146,18 @@ rewrite the bundle of a package.
   network.
 - A package that is built for an imp host keeps its `imp` imports bare. The install listing says so.
   The component then runs against **your** imp version. Exercise it after an imp update.
+
+## Installed imp components - a bare `imp` import
+
+A vendored bundle that keeps a bare `imp` import is an imp component. Its package must ship
+`imp-skill.md` next to its entry module, the file that the specifier resolves to in npm or jsr.
+`imp build` of the component writes it, see [build](build.md). `imp install` copies it to
+`dependencies/<alias>/imp-skill.md`, and `imp skill <alias>` prints it, see [skill](skill.md).
+
+- **A missing `imp-skill.md` stops the install.**
+  `<specifier> imports imp, so it is an imp component, and it has no imp-skill.md next to its entry module - ...`.
+  Ask the author to publish the file. Never write it by hand into `dependencies/`.
+- A package that does not import imp gets no `imp-skill.md`.
+- Run `imp skill <alias>` before you write code against an installed imp component.
+- The `zones` and `outcomes` of `app-analytics.json` never hold the names of an installed component.
+  The analytics store drops its zone and outcome records, see [analytics](analytics.md).

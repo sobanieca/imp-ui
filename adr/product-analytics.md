@@ -38,13 +38,25 @@ command. The docs describe each number of the report and the query behind it.
   matched node of the application map, such as `/invoices/:id`, see `application-map.md`. A zone
   name and an outcome name are literals from the code. An error has no message. `visit` is a random
   id in memory, and `at` is a clock time. There is nothing in a record that a pattern must remove.
-- **Every record has a page, and `imp build` publishes the set of pages.** The collection drops a
-  record while no screen of the map shows: before the router mounts, and on a path off the map. So a
-  path never reaches a record, and a store needs no row for an unknown page. When `imp.json` names a
-  `map`, `imp build` writes `app-map.txt` at the root of the output, one route pattern per line,
-  with no label and no description. A store reads the file from the site and drops a record whose
-  `page` is not a line of it. A forged record then needs a real pattern, and a record for a page
-  that does not exist is spam by definition.
+- **Every record has a page, and `imp build` publishes the pages, zones and outcomes.** The
+  collection drops a record while no screen of the map shows: before the router mounts, and on a
+  path off the map. So a path never reaches a record, and a store needs no row for an unknown page.
+  When `imp.json` names a `map`, `imp build` writes `app-analytics.json` at the root of the output,
+  one JSON object with three lists. `pages` holds the route patterns, with no label and no
+  description. `zones` and `outcomes` hold, sorted, every zone name and every outcome name that the
+  app can send. An app with no zone gets an empty `zones` list. One file means one fetch for a
+  store, and one name to upload, to keep off the precache, and to guard against a `public/`
+  collision. The PWA worker does not precache it.
+- **The name lists come from the code of the app only.** imp reads the literal names of every module
+  that enters the bundle, the inline module scripts of the page included. It skips each module in
+  `dependencies/`. So an app build reads no third-party code, and a name in minified code never
+  stops the build. A JS-entry build writes no name lists, because only an app has a site that a
+  store reads.
+- **A store drops a record that is not on the lists.** It reads `app-analytics.json` from the site.
+  It drops a record whose `page` is not in `pages`, a `seen` or `used` record whose `zone` is not in
+  `zones`, and an `outcome` record whose `name` is not in `outcomes`. A `used` record with
+  `zone: null` is always valid. A forged record then needs a real page and a real zone or outcome
+  name. A record for a name that the app cannot send is spam by definition.
 - **The route page is the page view.** The internal route page of the router, see
   `client-side-router.md`, reports its mount and its readiness. The `page` record goes out when the
   screen replaces its loading content. A screen that the person leaves before it is ready sends no
@@ -78,9 +90,15 @@ command. The docs describe each number of the report and the query behind it.
   name, see `event-propagated-state.md`. It also has only ASCII letters, digits, `-` and `_` between
   the dots, and at most 128 characters, so a name is safe to show in a terminal, a page or a log,
   and an analytics server with an allowlist accepts it. imp logs a name that breaks a rule and
-  records nothing for it. `imp lint` checks every literal name with `imp/analytics-name-namespace`,
-  and reports a literal that two calls share with `imp/unique-analytics-name`, across the project,
-  so that the report can tell two zones apart.
+  records nothing for it. `imp lint` checks every name with `imp/analytics-name-namespace`, and
+  reports a literal that two calls share with `imp/unique-analytics-name`, across the project, so
+  that the report can tell two zones apart.
+- **A name is a literal that the build can read.** The name is a string literal, or a template
+  literal with no expression. `zone()` gets an object literal, with no spread, and a literal `name`.
+  Otherwise `imp build` fails and lists every such call with its file, line and column, and
+  `imp/analytics-name-namespace` reports it with the same message. A name that the build cannot read
+  is a name that the store would drop. A literal name that breaks the namespace rule stays out of
+  the lists, because imp records nothing for it.
 - **imp calls a sink at once, and never awaits it.** imp catches a sink that throws or rejects, logs
   it through the built-in logger, see `built-in-logger.md`, and goes on. A failed sink never becomes
   an `error` record, because that record would go to the same sink and fail again.
@@ -114,4 +132,8 @@ command. The docs describe each number of the report and the query behind it.
 - A page that fails is found in the browser, not in the record. The record says where and how often.
 - An app without a map, or a screen off the map, sends nothing. The report has no row for a path
   that is not a feature of the app.
+- A zone or outcome name built at runtime, such as `` `myapp.${kind}` ``, is not possible. An app
+  writes one literal per case.
+- The lists do not hold the names of a vendored imp component. A store drops a zone or outcome
+  record that only such a component sends.
 - The router gets a small cost per navigation: a random id and a check of the rendered screen.

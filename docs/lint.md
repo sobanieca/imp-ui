@@ -110,13 +110,18 @@ error[imp/http-client-name-namespace]: http client name 'api' must include a nam
 A zone name and an outcome name follow the same rule as a state name. They need two or more
 dot-separated segments that are not empty, such as `myapp.due-date`. A segment has only ASCII
 letters, digits, `-` and `_`, and the name has at most 128 characters. See
-**[Analytics](analytics.md)**. The rule checks every `zone` call whose `name` is a literal, and
-every `track` call whose name is a literal:
+**[Analytics](analytics.md)**. The rule checks every `zone` call and every `track` call.
+
+The name must also be a literal: a string, or a template literal with no `${...}` in it. `zone()`
+must get an object literal with a literal `name`, and no spread. `imp build` lists every name for
+your analytics store, so it must read each name from the code. A name that is not a literal stops
+`imp build`, and this rule reports it first:
 
 ```js
 zone({ name: 'due-date' }, datePicker({ field: 'due' }))
 track('invoiceSent')
 track('myapp.invoice sent')
+zone({ name: `myapp.${part}` }, summary())
 ```
 
 ```
@@ -128,6 +133,9 @@ error[imp/analytics-name-namespace]: outcome name 'invoiceSent' must include a n
 
 error[imp/analytics-name-namespace]: outcome name 'myapp.invoice sent' must use only ASCII letters, digits, '-' and '_' between the dots, up to 128 characters, like 'myapp.invoice-sent'
  --> src/invoice.js:3:7
+
+error[imp/analytics-name-namespace]: zone name is not a literal - imp build lists every zone name for the analytics store, so write the name as a string, like zone({ name: 'myapp.invoice-summary' })
+ --> src/invoice.js:4:14
 ```
 
 ### `imp/unique-analytics-name`
@@ -142,7 +150,8 @@ error[imp/unique-analytics-name]: zone name 'myapp.summary' is also used in src/
  --> src/main.js:10:36
 ```
 
-The rule skips a test, a preview and a mock file. A name that you build dynamically is not checked.
+The rule skips a test, a preview and a mock file. It does not check a name that is not a literal.
+`imp/analytics-name-namespace` reports that name.
 
 ### `imp/watch-with-self`
 

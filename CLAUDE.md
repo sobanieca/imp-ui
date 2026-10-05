@@ -99,9 +99,9 @@ prints as the doubled `(state (imp skill state))`.
 Every component also ships an agent-facing manual next to it: `button.js` -> `button.skill.md`. A
 standard component registers nothing. When an `imp/std` barrel exports the component,
 `imp skill std/button` finds the sidecar, and a test enforces that every barrel export has one. The
-first line of the sidecar is its summary, so start it with the component name. `imp build` folds the
-same file into a JS-entry bundle as `impSkill`, so the sidecar is the only place a component's skill
-is written.
+first line of the sidecar is its summary, so start it with the component name. `imp build` copies
+the sidecar of the entry module to `imp-skill.md` beside a JS-entry bundle, so the sidecar is the
+only place a component's skill is written.
 
 **When you change a feature, update both audiences in the same change**: its `docs/` page for the
 reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check

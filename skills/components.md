@@ -165,10 +165,11 @@ const userCard = component('my-app-user-card', {
 
 Put `counter.skill.md` next to `counter.js`. It gives the import, the call shape, a prop table, the
 events and the mistakes that the component invites. The first line is the summary, so start it with
-the component name. Read one with `imp skill ./components/counter.js`. `imp build counter.js` folds
-the file into the bundle as `impSkill`. An HTML build removes all skill text, see [build](build.md).
-Read [skill](skill.md) to learn how to write one. Write a sidecar for every component that you
-build. Give the component a `*.preview.js` sibling as well, so a person can look at it. The preview
-page shows the sidecar as its Skill tab, and it shows the `imp skill` command of the component. See
-[preview](preview.md). The rules that make the component fit next to a standard one, for the theme,
-the direction, the wording and accessibility, are in [custom-components](custom-components.md).
+the component name. Read one with `imp skill ./components/counter.js`. `imp build counter.js` copies
+the file to `imp-skill.md` beside the bundle. imp puts no skill text into a bundle, see
+[build](build.md). Read [skill](skill.md) to learn how to write one. Write a sidecar for every
+component that you build. Give the component a `*.preview.js` sibling as well, so a person can look
+at it. The preview page shows the sidecar as its Skill tab, and it shows the `imp skill` command of
+the component. See [preview](preview.md). The rules that make the component fit next to a standard
+one, for the theme, the direction, the wording and accessibility, are in
+[custom-components](custom-components.md).
