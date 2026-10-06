@@ -69,7 +69,8 @@ Rules an agent gets wrong:
   counted in the "+N more" of every day that it covers.
 - **A narrow container changes the layout, not the viewport.** Below 36rem of its own width, the
   month view shows a dot for each entry and a thin line for a bar, and the week view scrolls
-  sideways. Do not write a breakpoint for it.
+  sideways. Do not write a breakpoint for it. The host fills the width of its container, also in a
+  flex row.
 - **`color` is a palette name, not a CSS colour.** imp warns about another value and uses the
   primary colour.
 - **The language decides the formats and the first day of the week.** The words are the

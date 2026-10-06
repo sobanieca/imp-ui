@@ -67,8 +67,10 @@ Rules an agent gets wrong:
 - **More than eight series repeat the colours.** imp warns. Show fewer series, or draw two charts.
 - **Do not put two measures with different units in one chart.** There is one value axis. Draw two
   charts.
-- More than 12 categories on a `column` or `line` chart show only some of the category labels. More
-  than 24 points on a line hide the dots until the pointer is over them.
+- A `column` or `line` chart shows only some of the category labels when they do not fit. That
+  happens above 12 categories, and from 7 categories when the labels are wider than the space for
+  them. The chart checks again when its width changes. Fewer than 7 categories end with an ellipsis.
+  More than 24 points on a line hide the dots until the pointer is over them.
 
 ```js
 import { component } from 'imp'

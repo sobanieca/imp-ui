@@ -86,7 +86,8 @@ Rules an agent gets wrong:
 - **The table does not scroll by default, and the page does.** Set `--imp-table-max-block-size` on
   the host to make the table scroll in its own box. The header is sticky in that box only.
 - **A narrow container turns each row into a card**, with the column label before each value. This
-  is a CSS container query, so the parent must give the table its width. There is no prop for it.
+  is a CSS container query. The host fills the width of its container, also in a flex row. There is
+  no prop for it.
 - imp warns about a missing `label`, a column with no `key`, a row with no key, an unknown
   `selection` or `align`, and `selected` without a `selection`.
 

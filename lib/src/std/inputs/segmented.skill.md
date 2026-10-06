@@ -47,6 +47,8 @@ Rules an agent gets wrong:
   `dir="rtl"`. In `multiple` mode, Tab moves between the segments, and Space or Enter toggles one.
 - **imp compares the values as strings.** An option value of `1` matches a form value of `'1'`.
 - **Every option is visible at the same time.** Above five options, use `select` or `comboBox`.
+- **A row that is wider than its container wraps.** The segments that do not fit go to a second
+  line. A segment does not shrink, and the row does not scroll.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
 - **The choices go in `options`, not in the children.** imp warns about a child.
 - imp warns about an unknown prop. It warns about a `size` outside the list and uses `'md'`.

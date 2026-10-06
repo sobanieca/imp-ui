@@ -39,7 +39,7 @@ Rules an agent gets wrong:
   term, up to 40% of the list. Do not pad a term to align the values.
 - **The list adapts to its own width, not to the screen.** Below 24rem a horizontal list puts each
   term above its details. Below 40rem it uses one column. Below 60rem three columns become two. Do
-  not write a media query for it.
+  not write a media query for it. The host fills the width of its container, also in a flex row.
 - **`columns` is a number, not a string.** Write `columns: 2`. imp warns about another value and
   uses `1`.
 - **The list has no border, no title and no padding.** Put it in a `card` for a framed panel.

@@ -37,6 +37,8 @@ Rules an agent gets wrong:
   in the colour, and it mixes the colour into the text colour of the theme. That is what keeps all
   16 colours readable in a light theme and in a dark theme. So do not restyle the pill to a solid
   fill. A solid fill is readable for some hues and not for others.
+- **A tag stays on one line.** A label that is wider than the container ends with an ellipsis. A
+  screen reader still reads the full text.
 - **A count renders as a compact pill.** Each size has a fixed height, and a short label such as `4`
   is at least as wide as it is tall. The corners follow `radius-item` of the theme. Do not pad the
   text to make it wider.

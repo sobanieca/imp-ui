@@ -50,6 +50,8 @@ Rules an agent gets wrong:
   The same holds for `fold`.
 - **imp renders every panel at mount** and hides it with `hidden`. So state inside a panel survives
   a change of tab. Do not pass content that is expensive to build for every tab at once.
+- **A horizontal strip that is wider than its container scrolls sideways.** Each tab keeps its full
+  label. The focus scrolls a tab into view.
 - **`label` names the strip, not a tab.** Each tab names itself from its own `label` text.
 - **`foldable` needs `orientation: 'vertical'`.** It adds a button below the last tab that folds the
   tabs away, so the panel gets the width. The button carries `aria-expanded` and a translated label.

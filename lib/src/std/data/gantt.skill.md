@@ -48,6 +48,8 @@ Rules an agent gets wrong:
 - **Import the component from `imp/std/data`**, not from `imp/std`.
 - **A date is an ISO date string, never a `Date`.** Write `'2026-09-21'`. `end` is inclusive. imp
   warns about a task with a bad date, or with an `end` before its `start`, and skips that task.
+- **The host fills the width of its container**, also in a flex row. The label column is at most 40%
+  of that width, and the timeline scrolls sideways inside the gantt.
 - **A milestone is a task with `start` equal to `end`.** It draws a diamond. There is no `milestone`
   key.
 - **The gantt is a read-only view.** There are no dependency arrows, no drag and no resize. Do not

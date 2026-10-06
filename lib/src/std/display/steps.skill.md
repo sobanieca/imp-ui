@@ -54,6 +54,7 @@ Rules an agent gets wrong:
   make it current.
 - **The row adapts to its own width, not to the screen.** Below 40rem a horizontal row hides the
   descriptions. Below 28rem it becomes a column and shows them again. Do not write a media query.
+  The host fills the width of its container, also in a flex row.
 - **The connector lines and the order mirror under `dir="rtl"`.**
 - imp warns about an unknown prop, about an `orientation` outside the list, about an item with no
   `label`, about two items with one `id`, about a `current` that matches no item, and about a

@@ -66,7 +66,8 @@ Rules an agent gets wrong:
   shows a retry button, and imp logs the error.
 - **Give every control in `actions` a name.** An icon-only `button` needs its `label`. Include the
   title of the item, such as `Edit Ada Lovelace`.
-- An empty list shows `emptyState`. A narrow container moves the actions under the text.
+- An empty list shows `emptyState`. A narrow container moves the actions under the text. The host
+  fills the width of its container, also in a flex row.
 - imp warns about a missing `label`, an item with no `id`, a `tag` with no `text`, and an `actions`
   that is not a function.
 
