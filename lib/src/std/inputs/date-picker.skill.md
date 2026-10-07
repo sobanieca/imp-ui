@@ -1,11 +1,10 @@
-# datePicker - a form control for a date, a date range, or a date with a time
+# datePicker - a form control for one date, or one date with a time
 
 ```js
 import { datePicker, submitForm } from 'imp/std/inputs'
 import { button } from 'imp/std'
 
 datePicker({ field: 'dueDate', label: 'Due date' }) //            '2026-09-21'
-datePicker({ field: 'stay', label: 'Stay', range: true }) //      { start: '2026-09-21', end: '2026-09-25' }
 datePicker({ value: when, label: 'Starts at', time: true }) //    '2026-09-21T14:30'
 datePicker({ field: 'day', label: 'Day', min: '2026-01-01', max: '2026-12-31' })
 ```
@@ -22,7 +21,6 @@ value in the active language. A press opens a panel with a month grid.
 | `help`        | string, or a state holding one             | Hint under the control                       |
 | `required`    | boolean                                    | Validates that a date is set; hides "clear"  |
 | `disabled`    | boolean, or a state holding one - **live** | Blocks interaction and closes the panel      |
-| `range`       | boolean                                    | The value is `{ start, end }`                |
 | `time`        | boolean                                    | The value is `'YYYY-MM-DDTHH:mm'`            |
 | `min`, `max`  | `'YYYY-MM-DD'`                             | Days outside cannot be chosen                |
 | `placeholder` | string, or a state holding one             | Shown while no date is set                   |
@@ -31,11 +29,10 @@ value in the active language. A press opens a panel with a month grid.
 `validateAsync` has the same shape as `validate`, but it returns a promise. It runs when the panel
 closes and on submit.
 
-| Mode    | Value in the state or the form               | The panel closes                      |
-| ------- | -------------------------------------------- | ------------------------------------- |
-| default | `'2026-09-21'`                               | after the pick                        |
-| `range` | `{ start: '2026-09-21', end: '2026-09-25' }` | after the second pick                 |
-| `time`  | `'2026-09-21T14:30'`                         | on "Done", Escape, or a press outside |
+| Mode    | Value in the state or the form | The panel closes                      |
+| ------- | ------------------------------ | ------------------------------------- |
+| default | `'2026-09-21'`                 | after the pick                        |
+| `time`  | `'2026-09-21T14:30'`           | on "Done", Escape, or a press outside |
 
 Keys in the month grid: the arrow keys move by a day or a week, `Home` and `End` go to the start and
 the end of the week, `PageUp` and `PageDown` move by a month, and with `Shift` by a year. `Enter` or
@@ -47,10 +44,7 @@ Rules an agent gets wrong:
   `'2026-09-21'`, not `new Date()`. imp warns about text that is not a date and shows none.
 - **The empty value is `undefined`.** The clear button writes `undefined`. `required` removes the
   clear button.
-- **A range is complete or absent.** The first pick only marks the start in the panel. imp writes
-  `{ start, end }` after the second pick, and it swaps the two when the second day is earlier.
-- **`range` and `time` do not combine.** imp warns and keeps `range`. Use two controls with `time`
-  for a start and an end with times.
+- **A range of dates is `dateRangePicker`.** `datePicker` holds one date. It has no range prop.
 - **A time alone has no control.** `time: true` always includes the date. `textField` covers plain
   text only. A control for a time without a date is out of scope for now.
 - **`min` and `max` are days.** In `time` mode they limit the day, not the hour. A value outside the
@@ -68,13 +62,14 @@ Rules an agent gets wrong:
 
 ```js
 form(
-  { initialValues: { title: '', day: undefined, stay: undefined }, onSubmit: save },
+  { initialValues: { title: '', day: undefined, startsAt: undefined }, onSubmit: save },
   textField({ field: 'title', label: 'Title', required: true }),
   datePicker({ field: 'day', label: 'Day', required: true, min: '2026-09-21' }),
-  datePicker({ field: 'stay', label: 'Hotel stay', range: true, help: 'Optional' }),
+  datePicker({ field: 'startsAt', label: 'Starts at', time: true, help: 'Optional' }),
   button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )
 ```
 
-Related: imp skill std/form - the form that `field` binds to; imp skill std/calendar - shows events
-on a month, a week or a day; imp skill i18n - the active language and the `imp.` keys.
+Related: imp skill std/dateRangePicker - a range of dates, with presets and times; imp skill
+std/form - the form that `field` binds to; imp skill std/calendar - shows events on a month, a week
+or a day; imp skill i18n - the active language and the `imp.` keys.

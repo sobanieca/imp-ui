@@ -4,10 +4,10 @@
 
 The mainstream component sets hold sixty components or more. Many of them do the same job. A
 password field, a search field, a number field and a text area are one text input with a different
-`type`. A segmented control and a toggle group are one row of choices. A date picker, a date range
-picker and a time picker are one panel. A badge is a tag with a dot. Each extra name is a name that
-a person must find in the gallery of `imp preview`, and that an agent must choose between. A long
-catalog also hides the few components that an app really needs.
+`type`. A segmented control and a toggle group are one row of choices. A date picker and a time
+picker are one panel. A date range picker and a period picker are one panel. A badge is a tag with a
+dot. Each extra name is a name that a person must find in the gallery of `imp preview`, and that an
+agent must choose between. A long catalog also hides the few components that an app really needs.
 
 imp targets the 80%: a dashboard, CRUD, an internal tool, the UI of a product. The catalog must be
 short enough to read in one look at the sidebar of `imp preview`. It must still build most apps.
@@ -22,7 +22,8 @@ only when it adds behaviour of its own. These are the merges that follow from th
 | Any text input              | `textField`, with `type` and `rows`  | A password, search, number and multi-line component        |
 | A choice drawn as a row     | `segmented`, with `multiple`         | A toggle group                                             |
 | A value from a list         | `comboBox`, with `multiple`/`custom` | A tag input, a cascader, a tree select                     |
-| A date                      | `datePicker`, with `range`/`time`    | A range picker, a time picker                              |
+| A date                      | `datePicker`, with `time`            | A time picker                                              |
+| A range of dates            | `dateRangePicker`, with `presets`    | A period picker, a relative time picker                    |
 | Progress and a measurement  | `progress`, with `shape`             | A gauge, a statistic                                       |
 | A wait with no measure      | `loader`                             | A spinner component per size, and a busy overlay           |
 | A status mark               | `tag`, with `dot`                    | A badge                                                    |

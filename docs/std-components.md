@@ -429,9 +429,9 @@ save. So a form that adds a record and clears itself for the next one is clean a
 values as the second argument, `resetForm(source, values)`, to make them the new clean state. Use it
 when the data of the form arrives after the form is on the page.
 
-The controls range from `textField` and `select` to `comboBox`, `datePicker`, `slider`,
-`colorPicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor` and `richTextEditor`. The
-gallery shows each one with its props.
+The controls range from `textField` and `select` to `comboBox`, `treeSelect`, `datePicker`,
+`dateRangePicker`, `slider`, `colorPicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor`
+and `richTextEditor`. The gallery shows each one with its props.
 
 **A picture is cropped and resized before it leaves the browser.** `imageUpload` takes one picture
 and opens it in a frame with the ratio that you set, round or rectangular. The person drags the
@@ -461,6 +461,65 @@ stops typing, calls your function once with the text, and shows what it returns.
 an abort signal, so a request that a newer text replaces is cancelled. `minSearch` holds the search
 until enough letters are typed.
 
+**A choice from a hierarchy is `treeSelect`.** The control looks like a `select`. A press opens a
+panel with a search input and a tree of checkboxes. The search keeps every label that contains the
+text, together with its parents. A checkbox of a parent has three states, so one press can choose a
+whole branch. The first press chooses the parent and everything below it, and the box shows a filled
+square. The second press keeps only the parent, and the box shows a check mark. The third press
+clears the parent. A dash marks a parent that is not chosen but has a chosen item below it. The
+value is an array of the chosen values, in the order of the tree.
+
+```js
+treeSelect({
+  field: 'pages',
+  label: 'Pages',
+  placeholder: 'All pages',
+  items: [
+    {
+      value: '/users',
+      label: '/users',
+      children: [
+        { value: '/users/{id}/details', label: '/users/{id}/details' },
+        { value: '/users/invites', label: '/users/invites' },
+      ],
+    },
+    { value: '/settings', label: '/settings' },
+  ],
+})
+```
+
+**A range of dates is `dateRangePicker`.** `datePicker` holds one date. `dateRangePicker` holds a
+first and a last day, `{ start: '2026-09-08', end: '2026-10-07' }`. The panel shows a month grid,
+the two days, and an Apply button. Add `time: true` to put a start time and an end time under the
+days. The value then holds moments, such as `'2026-09-08T09:00'`. Without `time`, the panel shows
+days only.
+
+```js
+dateRangePicker({ field: 'stay', label: 'Hotel stay', min: '2026-10-07' })
+```
+
+**A report period can be a rule.** Pass `presets`, and the panel gets two tabs, "Relative" and
+"Custom". The "Relative" tab lists your presets, such as "Last 5 minutes" or "Last 30 days". Each
+preset can show the range that your app computed for it, with times when it is shorter than a day. A
+press on a preset writes `{ preset: '30d' }`. So a saved report keeps "Last 30 days" as a rule, and
+not as the dates of the day when it was saved. With no presets, the panel has no tabs.
+
+```js
+dateRangePicker({
+  field: 'period',
+  label: 'Period',
+  presets: [
+    {
+      value: '5m',
+      label: 'Last 5 minutes',
+      range: { start: '2026-10-07T14:55', end: '2026-10-07T15:00' },
+    },
+    { value: '30d', label: 'Last 30 days', range: { start: '2026-09-08', end: '2026-10-07' } },
+  ],
+  time: true,
+})
+```
+
 **An emoji is a form value like any other.** `emojiPicker` holds the emoji itself as a string. Its
 panel shows 482 emoji in eight categories, and a search field finds one by name or by a keyword such
 as "coffee" or "party". The emoji tool of `richTextEditor` opens the same panel. To offer a specific
@@ -481,8 +540,9 @@ emojiPicker({
 
 Anything that imp opens over your page is a real `<dialog>` or a popover in the **top layer** of the
 browser. This covers `dialog`, `drawer`, the menu of `menuButton`, `tooltip`, and the panels of
-`datePicker`, `emojiPicker` and `reactions`. An ancestor with `overflow: hidden` cannot clip it.
-Nothing paints over it. It needs no z-index, no portal and no placement prop.
+`datePicker`, `dateRangePicker`, `treeSelect`, `emojiPicker` and `reactions`. An ancestor with
+`overflow: hidden` cannot clip it. Nothing paints over it. It needs no z-index, no portal and no
+placement prop.
 
 ```js
 import { dialog, drawer } from 'imp/std/layout'

@@ -17,8 +17,9 @@ each point, so the contract is a guarantee, and not a habit.
   `tree` and the menu of `menuButton`. imp then writes the focus and the key handling too.
 - **A keyboard reaches every interaction.** Tab and Shift+Tab move between controls. Enter and Space
   activate a control. The arrow keys move inside a composite widget: `tabs`, `radioGroup`,
-  `menuButton`, `comboBox` and `tree`. Escape closes an overlay. The left and right arrow keys
-  follow the text direction, so they mirror in a right-to-left language.
+  `menuButton`, `comboBox`, `tree`, `treeSelect` and `dateRangePicker`. Escape closes an overlay.
+  The left and right arrow keys follow the text direction, so they mirror in a right-to-left
+  language.
 - **A modal overlay manages the focus.** A modal `dialog` and a `drawer` move the focus in when they
   open, keep Tab inside while they are open, and give the focus back to the control that opened
   them. The browser does this for a modal `<dialog>`. imp adds no focus trap of its own.
