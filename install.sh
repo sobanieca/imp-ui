@@ -52,7 +52,7 @@ echo "Download URL: ${DOWNLOAD_URL}"
 echo ""
 
 TMP_DIR="$(mktemp -d)"
-trap "rm -rf ${TMP_DIR}" EXIT
+trap 'rm -rf "${TMP_DIR}"' EXIT
 
 download() {
   if command -v curl &> /dev/null; then

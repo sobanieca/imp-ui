@@ -2,6 +2,7 @@ import { dirname, join } from '@std/path'
 import { cyan, dim } from './colors.js'
 import { findConfigFile, tryParseConfig, updateConfigFile } from './config.js'
 import { isNewer, VERSION } from './version.js'
+import { EXACT_VERSION } from './specifiers.js'
 import { formatSize } from './file-size.js'
 import { impCacheDirectory } from './cache-dir.js'
 
@@ -144,6 +145,9 @@ async function downloadVersion(version) {
 }
 
 export async function ensureVersion(version) {
+  if (typeof version !== 'string' || !EXACT_VERSION.test(version)) {
+    throw new Error(`'${version}' is not an exact imp version - expected a version like '1.2.3'`)
+  }
   const path = versionBinaryPath(version)
   if (await exists(path)) return path
   console.error(dim(`imp ${version} - downloading...`))

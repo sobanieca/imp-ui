@@ -1,6 +1,7 @@
 import { dirname, join, resolve } from '@std/path'
 import { applyEdits, modify, parse as parseJsonc, printParseErrorCode } from './vendor/jsonc.js'
 import { DEFAULT_LICENSE_POLICY, LICENSE_POLICIES } from './license-policy.js'
+import { EXACT_VERSION } from './specifiers.js'
 
 const isPlainObject = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -270,9 +271,12 @@ export async function loadImpConfig(startDir) {
       `invalid ${name} - 'serviceWorker' must be the path of your service worker source, like "src/sw.js"`,
     )
   }
-  if (config.version !== undefined && typeof config.version !== 'string') {
+  if (
+    config.version !== undefined &&
+    (typeof config.version !== 'string' || !EXACT_VERSION.test(config.version))
+  ) {
     throw new Error(
-      `invalid ${name} - 'version' must be a string (an exact imp version, e.g. '1.2.3')`,
+      `invalid ${name} - 'version' must be an exact imp version string, like '1.2.3'`,
     )
   }
   if (config.targetImpHost !== undefined && typeof config.targetImpHost !== 'boolean') {

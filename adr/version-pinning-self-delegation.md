@@ -30,7 +30,7 @@ launcher logic.
   the inherited stdio, and exits with its status.
 - **The pin is exact**, as in `"1.2.3"`, and never a range. A range would force a check over the
   network, or a policy about staleness, on every run. Both defeat reproducibility. `config.js`
-  validates that `"version"`, when it is present, is a string.
+  validates that `"version"`, when it is present, is an exact version string, such as `"1.2.3"`.
 - **`imp update`** resolves the latest release, downloads and caches it, and rewrites the
   `"version"` pin in the `imp.json` of the project. It finds that file by a walk up from the current
   directory, and it prefers the `imp.json` at the root of the git repository. So the command behaves

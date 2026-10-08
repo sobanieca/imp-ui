@@ -84,6 +84,13 @@ const moduleScriptsOf = (document) => document.scripts.filter((script) => isModu
 
 const isInlineModule = (script) => script.src === null && script.text.trim() !== ''
 
+function isWithin(parent, path) {
+  const folder = normalize(parent)
+  const target = normalize(path)
+  return target === folder ||
+    target.startsWith(folder.endsWith(SEPARATOR) ? folder : folder + SEPARATOR)
+}
+
 function scriptPathOf(src, root) {
   const path = decodeURIComponent(src.split(/[?#]/)[0])
   return normalize(join(root, path.startsWith('/') ? path.slice(1) : path))
@@ -96,7 +103,7 @@ function parseHtmlEntryPoints(document, root, entryName) {
     if (script.src !== null) {
       if (!isLocalScriptSource(script.src)) continue
       const filePath = scriptPathOf(script.src, root)
-      if (!filePath.startsWith(normalize(root))) {
+      if (!isWithin(root, filePath)) {
         throw new Error(`${entryName} references a script outside the project: ${script.src}`)
       }
       if (!scripts.includes(filePath)) scripts.push(filePath)
@@ -491,11 +498,11 @@ export async function build(
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
   const outdirPath = resolve(output)
-  const insideOutdir = (path) =>
-    normalize(path) === normalize(outdirPath) ||
-    normalize(path).startsWith(normalize(outdirPath) + SEPARATOR)
-  if (insideOutdir(root)) {
+  if (isWithin(outdirPath, root)) {
     throw new Error(`output directory must not contain the project: ${output}`)
+  }
+  if (isWithin(publicDirectory(root), outdirPath)) {
+    throw new Error(`output directory must not be inside public/: ${output}`)
   }
 
   const imp = await loadImpConfig(root)
