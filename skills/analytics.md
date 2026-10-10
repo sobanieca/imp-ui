@@ -84,6 +84,8 @@ fields of imp, so a segment never replaces `type`, `visit`, `at` or `page`.
 - One visit goes to one server, picked from the visit id. Every `alySink` with the same list picks
   the same server.
 - The first record of a visit goes out at once. Later records go in batches.
+- `navigator.webdriver` is `true` (Selenium, Puppeteer, Playwright): the sink sends nothing. A
+  prerendered page: the sink holds the records until the page shows.
 - No answer or a 5xx: the batch goes to the next server, which then keeps the visit. A 4xx or a 429
   drops the batch and logs it. A `202` with rejected records logs a warning.
 

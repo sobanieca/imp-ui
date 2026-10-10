@@ -342,6 +342,13 @@ An app that does not import `imp/analytics/aly` does not contain the sink. The b
 `Referer` header holds only the origin of the page, never the path. The first record of a visit goes
 out at once, so the sink finds a server that is down while the page is still open.
 
+**The sink skips bots and pages that nobody saw.** It sends nothing when automation software
+controls the browser, such as Selenium, Puppeteer or Playwright. The browser reports this in
+`navigator.webdriver`. So the end-to-end tests of your app do not add visits to the report. A
+browser can prerender a page before the user opens it. The sink holds the records of such a page
+until the page shows. When the user never opens the page, the sink sends nothing. The imp-aly server
+also drops the records of browsers that call themselves a bot.
+
 **One visit goes to one server.** The sink picks the server from the visit id, so every record of a
 visit goes to the same server. Two `alySink` calls with the same list pick the same server. The
 visits of two servers do not overlap, so `imp-aly query` adds up their counts exactly. Add a server

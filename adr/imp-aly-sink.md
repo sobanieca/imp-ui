@@ -52,6 +52,12 @@ size, ms })` returns a `batch` sink that posts each batch to
   `navigator.sendBeacon`, so the sink can see a 5xx. The referrer policy `strict-origin` keeps the
   path of the page out of the `Referer` header, and keeps the `Origin` header that the
   `--allow-origin` check of imp-aly reads.
+- **No records from automation software or from a page that nobody saw.** When `navigator.webdriver`
+  is `true`, the sink drops each record. Selenium, Puppeteer and Playwright set this flag, so a
+  crawler with a headless browser and the end-to-end tests of the app do not count as visits. When
+  `document.prerendering` is `true`, the sink holds each batch until the `prerenderingchange` event.
+  A prerendered page that the user never opens sends nothing. The flags are a filter for honest
+  automation, not a defense. A bot can clear them.
 - **Segments are the option of `batch`.** `alySink` passes `segments` to `batch` as it is, see
   `product-analytics.md`.
 - **A server URL can have a path or be relative.** A proxy can serve imp-aly under `/aly` of the
@@ -69,4 +75,4 @@ size, ms })` returns a `batch` sink that posts each batch to
   has records on two servers because of a deploy.
 - Each server of the list needs the app and every segment name. A server that does not know a
   segment rejects the record.
-- The sink adds about 2.7 kB, before compression, to an app that uses it, and nothing to other apps.
+- The sink adds about 2.9 kB, before compression, to an app that uses it, and nothing to other apps.
