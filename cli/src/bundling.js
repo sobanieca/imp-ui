@@ -261,8 +261,9 @@ function generateMockModule(mock) {
   lines.push(
     'const __pick = (name) => (__exports != null && name in __exports) ? __exports[name] : __spy()',
   )
-  for (const name of mock.named) {
-    lines.push(`export const ${name} = __pick(${JSON.stringify(name)})`)
+  for (const [index, name] of mock.named.entries()) {
+    lines.push(`const __export${index} = __pick(${JSON.stringify(name)})`)
+    lines.push(`export { __export${index} as ${JSON.stringify(name)} }`)
   }
   if (mock.hasDefault) lines.push("export default __pick('default')")
   return `${lines.join('\n')}\n`

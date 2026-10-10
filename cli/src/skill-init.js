@@ -21,6 +21,8 @@ memory. Read the manuals that ship with the imp version the project runs.
 ## Workflow
 
 1. Run \`imp skill\` before you write code. It prints the index of every manual.
+   In a new project from \`imp init\`, follow \`imp skill init\` first: keep the
+   font it picked and give the app a theme of its own.
 2. Run \`imp skill <subject>\` for each part you need, such as
    \`imp skill state routing\` or \`imp skill std/button\`.
 3. For a component of the project, run \`imp skill ./path/to/component.js\`.

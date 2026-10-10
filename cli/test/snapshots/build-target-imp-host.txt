@@ -16,6 +16,7 @@ built app.js -> shared/
 (empty)
 
 --- output files ---
+shared/.imp-output
 shared/LICENSES.txt
 shared/app.js
 shared/chunks/chunk-<hash>.js

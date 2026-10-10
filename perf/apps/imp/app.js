@@ -1,12 +1,16 @@
 import { component, mount } from 'imp'
 import { button, div, li, span, ul } from 'imp/html'
 import { computed, initState, useState } from 'imp/state'
+import { richTextEditor } from 'imp/std/inputs'
 import { makeRows, relabel, settle, swapEnds, withoutMiddle } from '../shared/bench-data.js'
+import { makeRichTextDocument } from './rich-text-document.js'
 
 const handles = {
   unmountList: null,
   unmountDeep: null,
   unmountCounter: null,
+  unmountEditor: null,
+  note: null,
   rows: null,
   selected: null,
   deep: null,
@@ -87,6 +91,47 @@ const counterApp = component('perf-counter-app', {
   },
 })
 
+const editorApp = component('perf-editor-app', {
+  setup: (self, { markdown }) => {
+    handles.note = initState(self, 'perf.note', markdown)
+    return richTextEditor({ value: handles.note, label: 'Note' })
+  },
+})
+
+const shadowFind = (root, selector) => {
+  const found = root.querySelector(selector)
+  if (found) return found
+  for (const node of root.querySelectorAll('*')) {
+    const inner = node.shadowRoot && shadowFind(node.shadowRoot, selector)
+    if (inner) return inner
+  }
+  return null
+}
+
+const caretAt = (area, pick) => {
+  const block = pick(area)
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
+  let last = null
+  while (walker.nextNode()) last = walker.currentNode
+  area.focus()
+  getSelection().setBaseAndExtent(last, last.length, last, last.length)
+}
+
+const middleParagraph = (area) => {
+  const paragraphs = [...area.children].filter((node) =>
+    node.localName === 'p' && !node.querySelector('img')
+  )
+  return paragraphs[paragraphs.length >> 1]
+}
+
+const imageParagraph = (area) => area.querySelector('img').parentElement
+
+const typeInto = (pick, count) => {
+  const area = shadowFind(document.body, '.area')
+  caretAt(area, pick)
+  for (let step = 0; step < count; step++) document.execCommand('insertText', false, 'x')
+}
+
 const setRows = (update) => handles.rows.set(update)
 
 const ops = {
@@ -145,6 +190,22 @@ const ops = {
   },
   burst: (count) => {
     for (let step = 1; step <= count; step++) handles.count.set(step)
+  },
+  mountEditor: async () => {
+    const markdown = await makeRichTextDocument()
+    handles.unmountEditor = mount('#app', () => editorApp({ markdown }))
+  },
+  typeInParagraph: (count) => typeInto(middleParagraph, count),
+  typeBesideImage: (count) => typeInto(imageParagraph, count),
+  checkTyped: (count) => {
+    if (!handles.note.get().includes('x'.repeat(count))) {
+      throw new Error('the value of the editor does not hold the typed text')
+    }
+  },
+  unmountEditor: async () => {
+    handles.unmountEditor()
+    handles.unmountEditor = null
+    await settle()
   },
   unmountCounter: async () => {
     handles.unmountCounter()

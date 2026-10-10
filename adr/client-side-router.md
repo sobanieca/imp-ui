@@ -26,8 +26,9 @@ anything can run. That place is the application map, see `application-map.md`.
 
 **The router is an element with the shape of a component, that you drop into your layout. You feed
 it the application map, and the screens that bind to its nodes.** The public surface is `appMap`,
-`router`, `area`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute` and `url`. There is no new
-lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` of a component.
+`router`, `area`, `guard`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute` and `url`.
+There is no new lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` of a
+component.
 
 - **`router({ map, screens, access, loading, error, notFound })` renders the matched screen.** It is
   the slot where the current screen appears. Everything around it, which is the chrome of the app,
@@ -176,10 +177,23 @@ lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` 
   writes that once, in `link` and in every component that renders a destination, see
   `standard-component-library.md`. The router stays free of any anchor. A handle gives the path, as
   in `navigate(app.todos.$id.href({ id }))`, so app code writes no path string.
-  **`navigate(path, { replace })`** resolves the path against the current URL, pushes or replaces a
-  history entry, and brings `imp.route` into step. A target on another origin becomes a full load of
-  a document. A navigation to the current URL does nothing, in place of a duplicate history entry.
-  One listener on `popstate` keeps `imp.route` in step with the back and forward buttons.
+  **`navigate(path, { replace, external })`** resolves the path against the current URL, pushes or
+  replaces a history entry, and brings `imp.route` into step. A navigation to the current URL does
+  nothing, in place of a duplicate history entry. One listener on `popstate` keeps `imp.route` in
+  step with the back and forward buttons.
+
+- **`navigate` stays on the origin of the app, and it leaves only for http and https.** A target
+  with the scheme and the origin of the current document stays in the app. A target on another
+  origin throws, unless the call passes `external: true`. Then it becomes a full load of a document.
+  A `javascript:`, `data:` or other scheme throws, also with `external: true`. A page in a `blob:`
+  frame, such as the embedded preview, keeps its own scheme, so its routes still work. The path
+  often comes from the URL, as the `next` of a login redirect. So a crafted link must not send the
+  visitor to another site, or run a script in the page. A guard redirect and a `redirect()` node
+  take the same check without `external`. `safeNext(value, fallback)` returns `value` only when it
+  is a path that resolves to the origin of the app, and `fallback` for all other values. The
+  components that follow an `href` of the app author, such as a nav row, pass `external: true`. They
+  give a `mailto:` or a `tel:` href to the browser with `location.assign`, because a contact row is
+  a normal use. `navigate` itself never takes those schemes.
 
 - **`beforeLeave(self, check)` lets a screen with unsaved work stop a navigation.** The check has
   the contract of the `beforeClose` of an overlay, see `overlay-top-layer.md`. It returns `false`,

@@ -52,9 +52,11 @@ mirrors the release mechanism of jsonr.
   version, it is `.../releases/latest/download/imp-{os}-{arch}`. imp resolves the latest version
   number from `https://api.github.com/repos/sobanieca/imp-ui/releases/latest`, from `tag_name`, with
   the leading `v` removed.
-- **An `install.sh` script detects the OS and the architecture with `uname`.** It downloads the
-  matching latest asset, and installs it to `INSTALL_DIR`. The default is `/usr/local/bin`, and the
-  script uses `sudo` when it must. That is the one-line install that `docs/cli.md` documents.
+- **An `install.sh` script detects the OS and the architecture with `uname`.** It resolves the tag
+  of the latest release once. Then it downloads the matching asset and its checksum from that same
+  tag, so a release published during the install cannot mix the two. It installs the binary to
+  `INSTALL_DIR`. The default is `/usr/local/bin`, and the script uses `sudo` when it must. That is
+  the one-line install that `docs/cli.md` documents.
 - **An `install.ps1` script does the same on Windows, in PowerShell.** It installs
   `imp-windows-x64.exe` as `imp.exe` into `%LOCALAPPDATA%\Programs\imp`, or `INSTALL_DIR`, and adds
   that folder to the `PATH` of the user. It needs no administrator rights.

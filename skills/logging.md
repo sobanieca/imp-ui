@@ -59,5 +59,9 @@ Set the level to `debug` to find why a binding updates too often, or does not up
 - **component lifecycle.** The components that imp defines, mounts, unmounts and rebinds after a
   move.
 
+**The debug log prints every state value as it is.** So never put a password, a key or a token in a
+state. In a form, set `secret: true` on its field. The form keeps the value out of `imp.form`, and
+no log line contains it. See [std](std.md).
+
 Everything at `warn` and `error` shows at the default level. This covers invalid state values,
 failed subscribers and mount failures. So a silent console means that imp found no problem.

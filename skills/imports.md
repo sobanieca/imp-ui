@@ -4,29 +4,29 @@ imp resolves these specifiers itself. In development it uses the import map that
 injects. In production `imp build` resolves them. There is nothing to install and nothing to
 configure. Never import imp by a relative path, by a URL, or with a version.
 
-| Specifier            | Exports                                                                                                     |
-| -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                                       |
-| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)                                       |
-| `imp/state`          | `initState`, `useState`, `computed`                                                                         |
-| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `beforeLeave`, `useRoute`, `url`, `screenRegion` |
-| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                                          |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                                                      |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                                         |
-| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                                         |
-| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                                    |
-| `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                                   |
-| `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                                     |
-| `imp/analytics/aly`  | `alySink` - the sink for imp-aly servers                                                                    |
-| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                   |
-| `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                    |
-| `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                                   |
-| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                                       |
-| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, ...                              |
-| `imp/std/feedback`   | `loader`, `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, ...                               |
-| `imp/std/data`       | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                    |
-| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                                         |
-| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                                                     |
+| Specifier            | Exports                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                                                   |
+| `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)                                                   |
+| `imp/state`          | `initState`, `useState`, `computed`                                                                                     |
+| `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute`, `url`, `screenRegion` |
+| `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                                                      |
+| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                                                                  |
+| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                                                     |
+| `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                                                     |
+| `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... - the Lucide icon set                                                                |
+| `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                                               |
+| `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                                                 |
+| `imp/analytics/aly`  | `alySink` - the sink for imp-aly servers                                                                                |
+| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                               |
+| `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                |
+| `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                                               |
+| `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                                                   |
+| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, ...                                          |
+| `imp/std/feedback`   | `loader`, `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, ...                                           |
+| `imp/std/data`       | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                |
+| `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                                                     |
+| `imp/preview`        | `mockModule` (for `*.preview.js` files)                                                                                 |
 
 ```js
 import { component } from 'imp'

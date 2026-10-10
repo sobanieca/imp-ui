@@ -24,7 +24,8 @@ The call shape is `card(props?, ...children)`. When a props object is present, i
 The card renders a `div`. With `label` and no `href` it renders a `section`, which is a named
 region. With `href` it renders a real `a`, so the browser gives it the link role, the keyboard and
 the middle click. A plain click on an in-app path goes to `navigate`. An absolute URL leaves the
-app.
+app. An `href` with a scheme other than `http:`, `https:`, `mailto:` or `tel:`, such as
+`javascript:`, is dropped with a warning, and the card renders as with no `href`.
 
 Rules an agent gets wrong:
 

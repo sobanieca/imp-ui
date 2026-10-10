@@ -34,6 +34,8 @@ closes and on submit.
 | default | `'2026-09-21'`                 | after the pick                        |
 | `time`  | `'2026-09-21T14:30'`           | on "Done", Escape, or a press outside |
 
+In both modes, the panel also closes when Tab moves the focus out of it.
+
 Keys in the month grid: the arrow keys move by a day or a week, `Home` and `End` go to the start and
 the end of the week, `PageUp` and `PageDown` move by a month, and with `Shift` by a year. `Enter` or
 `Space` chooses the day. `Escape` closes the panel and the focus goes back to the control.

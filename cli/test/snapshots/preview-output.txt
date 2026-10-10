@@ -19,6 +19,7 @@ exit code: 0
 
 
 --- files ---
+.imp-output
 LICENSES.txt
 app.js
 chunks/<name>-<hash>.js

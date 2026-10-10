@@ -1,14 +1,4 @@
-import {
-  dirname,
-  extname,
-  fromFileUrl,
-  join,
-  normalize,
-  relative,
-  resolve,
-  SEPARATOR,
-  toFileUrl,
-} from '@std/path'
+import { dirname, extname, fromFileUrl, join, relative, resolve, toFileUrl } from '@std/path'
 import { denoPlugin } from '@deno/esbuild-plugin'
 import { loadImpConfig } from './config.js'
 import { collectFiles } from './walk.js'
@@ -27,7 +17,9 @@ import {
   createRequestHandler,
   injectImp,
   loadApp,
+  printServerUrls,
   reloadBannerLine,
+  warnAboutExposedHost,
   watchForChanges,
 } from './start.js'
 import { PREVIEW_SKILL_EXPORT } from './preview-metadata.js'
@@ -51,6 +43,14 @@ import {
 import { envInjectionScript, resolveEnvironment } from './environments.js'
 import { productionDefines } from './development-checks.js'
 import { formatSize } from './file-size.js'
+import { assertOutputFolder, replaceOutputFolder } from './output-folder.js'
+import {
+  hasHiddenSegment,
+  isServedHost,
+  listenHostname,
+  servedHostnames,
+  unknownHostResponse,
+} from './dev-server-access.js'
 import {
   collectLicenseNotices,
   LICENSE_NOTICES_FILE,
@@ -600,7 +600,16 @@ const scriptResponse = (body) =>
     headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' },
   })
 
-const isPageRequest = (req, url) => req.method === 'GET' && extname(url.pathname) === ''
+const isHiddenPath = (url) => {
+  try {
+    return hasHiddenSegment(decodeURIComponent(url.pathname))
+  } catch {
+    return true
+  }
+}
+
+const isPageRequest = (req, url) =>
+  req.method === 'GET' && extname(url.pathname) === '' && !isHiddenPath(url)
 
 export function createPreviewHandler(
   {
@@ -614,9 +623,16 @@ export function createPreviewHandler(
     groups = null,
     entry = null,
     recentLog = null,
+    hostnames = new Set(),
   },
 ) {
-  const serveApp = createRequestHandler({ ...app, clients, historyFallback: false, recentLog })
+  const serveApp = createRequestHandler({
+    ...app,
+    clients,
+    historyFallback: false,
+    recentLog,
+    hostnames,
+  })
 
   const readEntry = async () => {
     if (entry === null) return null
@@ -651,6 +667,8 @@ export function createPreviewHandler(
 
   return async (req, info) => {
     const url = new URL(req.url)
+
+    if (!isServedHost(url, hostnames)) return unknownHostResponse(url)
 
     if (url.pathname.startsWith(BUNDLE_PREFIX)) {
       const built = await loadBuild()
@@ -691,14 +709,14 @@ const embeddedPage = async (entry, env) => {
   return entryShell(await Deno.readTextFile(entry.file), PAGE_TITLE, body)
 }
 
-const insideOf = (folder, path) =>
-  normalize(path) === normalize(folder) || normalize(path).startsWith(normalize(folder) + SEPARATOR)
-
 async function exportPreview({ root, imp, previews, dependencies, output, env }) {
   const outdir = resolve(root, output)
-  if (insideOf(outdir, root)) {
-    throw new Error(`the output folder must not contain the project: ${output}`)
-  }
+  await assertOutputFolder(outdir, {
+    output,
+    root,
+    sources: previews.map((file) => resolve(root, file)),
+    insidePublic: true,
+  })
   const { themes, translations, groups, entry } = await resolvePreviewSettings(root, imp)
   const resolvedEnv = await resolveEnvironment({ root, config: imp, requestedAlias: env })
   const catalog = await buildPreviewCatalog(root, previews, groups)
@@ -739,8 +757,7 @@ async function exportPreview({ root, imp, previews, dependencies, output, env })
       ) +
         text
       : text
-  await Deno.remove(outdir, { recursive: true }).catch(() => {})
-  await Deno.mkdir(outdir, { recursive: true })
+  await replaceOutputFolder(outdir)
   const written = []
   const write = async (name, text) => {
     const path = join(outdir, name)
@@ -773,6 +790,7 @@ export async function preview(
     root,
     paths = [],
     port = null,
+    host = null,
     env = null,
     list = false,
     json = false,
@@ -848,9 +866,11 @@ export async function preview(
   const server = Deno.serve(
     {
       port: listenPort,
+      hostname: listenHostname(host),
       onListen: ({ port }) => {
         logger.info(`imp preview serving ${previewCount(previews)} from ${root}`)
-        console.log(`  -> http://localhost:${port}${openPath}`)
+        printServerUrls(host, port, openPath)
+        warnAboutExposedHost(host)
         console.log(dim('  logs -> imp logs (-f follows the session)'))
         if (themes.length) {
           console.log(
@@ -878,6 +898,7 @@ export async function preview(
       groups,
       entry,
       recentLog: devLog.recent,
+      hostnames: servedHostnames(host),
     }),
   )
 

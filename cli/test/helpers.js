@@ -138,7 +138,9 @@ export async function startServer(cwd, extraArgs = [], command = ['start', 'inde
 export const touch = async (file) => Deno.writeTextFile(file, `${await Deno.readTextFile(file)}\n`)
 
 export const firstReloadEvent = async (port, wait) => {
-  const response = await fetch(`http://127.0.0.1:${port}/@imp/events`)
+  const response = await fetch(`http://127.0.0.1:${port}/@imp/events`, {
+    headers: { 'sec-fetch-site': 'same-origin' },
+  })
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let received = ''
@@ -191,7 +193,10 @@ export function runServiceWorker(source, port = null) {
       telemetry.push(...JSON.parse(init.body))
       return Promise.resolve(new Response('ok'))
     }
-    if (input === '/@imp/mock') return fetch(`http://127.0.0.1:${port}${input}`, init)
+    if (input === '/@imp/mock') {
+      const origin = `http://127.0.0.1:${port}`
+      return fetch(`${origin}${input}`, { ...init, headers: { ...init.headers, origin } })
+    }
     return Promise.resolve(
       new Response('from the network', { headers: { 'content-type': 'text/plain' } }),
     )

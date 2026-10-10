@@ -15,6 +15,7 @@ built app.js -> component/
 (empty)
 
 --- output files ---
+component/.imp-output
 component/LICENSES.txt
 component/app.js
 component/chunks/chunk-<hash>.js

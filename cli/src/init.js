@@ -12,6 +12,112 @@ const TEMPLATES = new URL('./templates/', import.meta.url)
 
 const readTemplate = (name) => Deno.readTextFile(new URL(name, TEMPLATES))
 
+const readBinaryTemplate = (name) => Deno.readFile(new URL(name, TEMPLATES))
+
+const OFL = 'SIL Open Font License 1.1'
+
+export const SCAFFOLD_FONTS = [
+  { name: 'Inter', slug: 'inter', license: OFL },
+  { name: 'Manrope', slug: 'manrope', license: OFL },
+  { name: 'Plus Jakarta Sans', slug: 'plus-jakarta-sans', license: OFL },
+  { name: 'DM Sans', slug: 'dm-sans', license: OFL },
+  { name: 'Outfit', slug: 'outfit', license: OFL },
+  { name: 'Space Grotesk', slug: 'space-grotesk', license: OFL },
+  { name: 'Sora', slug: 'sora', license: OFL },
+  { name: 'Figtree', slug: 'figtree', license: OFL },
+  { name: 'Nunito Sans', slug: 'nunito-sans', license: OFL },
+  { name: 'Work Sans', slug: 'work-sans', license: OFL },
+]
+
+export const pickFont = (random = Math.random) =>
+  SCAFFOLD_FONTS[Math.floor(random() * SCAFFOLD_FONTS.length)]
+
+export function fontBySlug(slug) {
+  const font = SCAFFOLD_FONTS.find((candidate) => candidate.slug === slug)
+  if (font) return font
+  const known = SCAFFOLD_FONTS.map((candidate) => candidate.slug).join(', ')
+  throw new Error(`unknown font '${slug}' - --font takes one of ${known}`)
+}
+
+const FONT_SUBSETS = [
+  {
+    name: 'latin-ext',
+    label: 'Latin Extended',
+    ranges: [
+      'U+0100-02BA',
+      'U+02BD-02C5',
+      'U+02C7-02CC',
+      'U+02CE-02D7',
+      'U+02DD-02FF',
+      'U+0304',
+      'U+0308',
+      'U+0329',
+      'U+1D00-1DBF',
+      'U+1E00-1E9F',
+      'U+1EF2-1EFF',
+      'U+2020',
+      'U+20A0-20AB',
+      'U+20AD-20C4',
+      'U+2113',
+      'U+2C60-2C7F',
+      'U+A720-A7FF',
+    ],
+  },
+  {
+    name: 'latin',
+    label: 'Latin',
+    ranges: [
+      'U+0000-00FF',
+      'U+0131',
+      'U+0152-0153',
+      'U+02BB-02BC',
+      'U+02C6',
+      'U+02DA',
+      'U+02DC',
+      'U+0304',
+      'U+0308',
+      'U+0329',
+      'U+2000-206F',
+      'U+20AC',
+      'U+2122',
+      'U+2191',
+      'U+2193',
+      'U+2212',
+      'U+2215',
+      'U+FEFF',
+      'U+FFFD',
+    ],
+  },
+]
+
+const fontFile = (font, subset) => `${font.slug}-${subset.name}.woff2`
+
+const fontFaceCss = (font) =>
+  FONT_SUBSETS.map((subset) =>
+    `@font-face {
+  font-family: "${font.name}";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(${fontFile(font, subset)}) format("woff2");
+  unicode-range:
+    ${subset.ranges.join(',\n    ')};
+}
+`
+  ).join('\n')
+
+const fontStack = (font) => `'${font.name}', system-ui, sans-serif`
+
+const themeJs = (font) =>
+  `export default {
+  name: 'app-light',
+  base: 'imp-light',
+  tokens: {
+    'font-family': "${fontStack(font)}",
+  },
+}
+`
+
 const DEFAULT_TITLE = 'My imp app'
 
 const titleFrom = (name) => {
@@ -48,6 +154,7 @@ const indexHtml = (title) =>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${title}</title>
     <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
   </head>
   <body>
     <div id="app"></div>
@@ -60,8 +167,9 @@ const quoted = (text) => text.replaceAll('\\', '\\\\').replaceAll("'", "\\'")
 
 const mainJs = `import { init, mount } from 'imp'
 import { root } from './app.js'
+import theme from './theme.js'
 
-await init({ theme: 'imp-light' })
+await init({ theme })
 
 mount('#app', root())
 `
@@ -222,7 +330,30 @@ const appendedGitignore = (existing, missing) =>
     missing.join('\n')
   }\n`
 
-async function templateFiles({ title, pwa }) {
+async function fontFiles(font) {
+  const files = [
+    {
+      path: 'public/fonts/fonts.css',
+      contents: fontFaceCss(font),
+      note: `the @font-face rules of ${font.name} - linked from index.html`,
+    },
+  ]
+  for (const subset of FONT_SUBSETS) {
+    files.push({
+      path: `public/fonts/${fontFile(font, subset)}`,
+      contents: await readBinaryTemplate(`fonts/${fontFile(font, subset)}`),
+      note: `${font.name}, ${subset.label}`,
+    })
+  }
+  files.push({
+    path: `public/fonts/${font.slug}-ofl.txt`,
+    contents: await readTemplate(`fonts/${font.slug}-ofl.txt`),
+    note: `${font.license} - ships with the font`,
+  })
+  return files
+}
+
+async function templateFiles({ title, pwa, font }) {
   const files = [
     {
       path: 'imp.json',
@@ -234,6 +365,11 @@ async function templateFiles({ title, pwa }) {
       path: 'src/main.js',
       contents: mainJs,
       note: 'entry point: applies the theme, mounts the frame',
+    },
+    {
+      path: 'src/theme.js',
+      contents: themeJs(font),
+      note: `the theme: ${font.name} over imp-light - make the palette your own`,
     },
     {
       path: 'src/app-map.js',
@@ -248,6 +384,7 @@ async function templateFiles({ title, pwa }) {
       contents: await readTemplate('favicon.svg'),
       note: 'published at the site root - replace it with your own mark',
     },
+    ...await fontFiles(font),
     {
       path: GITIGNORE,
       contents: gitignore,
@@ -281,7 +418,7 @@ function noteFor(file) {
   return `kept yours - appended the ${count} ${count > 1 ? 'entries' : 'entry'} it was missing`
 }
 
-function printSummary({ files, label, pwa }) {
+function printSummary({ files, label, pwa, font }) {
   const width = Math.max(...files.map((file) => file.path.length))
   const where = label ? ` in ${label}` : ' here'
   console.log(`${green('Created a new imp project')}${where}.\n`)
@@ -305,7 +442,11 @@ function printSummary({ files, label, pwa }) {
     console.log(`  imp build --pwa  ${dim('build an installable, offline app into dist/')}`)
   }
   console.log(`  imp skill        ${dim("read imp's manuals - an AI agent starts here")}`)
-  console.log('\nNow point your AI agent at `imp skill` and start building!')
+  console.log(
+    `\nThe font is ${font.name}, ${font.choice}. An AI agent keeps it and follows ` +
+      '`imp skill init`\nto give the app a theme of its own.',
+  )
+  console.log('Now point your AI agent at `imp skill` and start building!')
 }
 
 async function writeFile(target, file) {
@@ -317,14 +458,18 @@ async function writeFile(target, file) {
     return { ...file, appended: missing }
   }
   await Deno.mkdir(dirname(path), { recursive: true })
-  await Deno.writeTextFile(path, file.contents)
+  if (typeof file.contents === 'string') await Deno.writeTextFile(path, file.contents)
+  else await Deno.writeFile(path, file.contents)
   return file
 }
 
-export async function init({ cwd, dir = null, pwa = false }) {
+export async function init({ cwd, dir = null, pwa = false, font = null }) {
+  const chosenFont = font
+    ? { ...fontBySlug(font), choice: 'named by --font' }
+    : { ...pickFont(), choice: 'picked at random' }
   const target = dir ? resolve(cwd, dir) : cwd
   const label = dir ? relative(cwd, target) || null : null
-  const files = await templateFiles({ title: titleFrom(basename(target)), pwa })
+  const files = await templateFiles({ title: titleFrom(basename(target)), pwa, font: chosenFont })
   const conflicts = []
   for (const file of files) {
     if (!file.merge && await pathExists(join(target, file.path))) conflicts.push(file.path)
@@ -341,5 +486,5 @@ export async function init({ cwd, dir = null, pwa = false }) {
   }
   const written = []
   for (const file of files) written.push(await writeFile(target, file))
-  printSummary({ files: written, label, pwa })
+  printSummary({ files: written, label, pwa, font: chosenFont })
 }

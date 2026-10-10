@@ -32,17 +32,17 @@ the buttons Change, Adjust and Remove under it.
 | `required`  | boolean                                    | Fails while there is no picture             |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks the pick, the editor and the buttons |
 
-| Prop        | Values                          | Default       | Notes                                           |
-| ----------- | ------------------------------- | ------------- | ----------------------------------------------- |
-| `shape`     | `'rectangle'`, `'circle'`       | `'rectangle'` | The frame and the preview. Circle is 1:1        |
-| `aspect`    | number, width over height       | -             | `1`, `16 / 9`. Absent: the ratio of the picture |
-| `maxWidth`  | pixels                          | `1920`        | The output is never wider                       |
-| `maxHeight` | pixels                          | `1920`        | The output is never taller                      |
-| `maxSize`   | bytes                           | -             | The limit for the picked file                   |
-| `accept`    | string, e.g. `'image/png,.jpg'` | `'image/*'`   | MIME types, `type/*` and `.extension`           |
-| `compact`   | boolean                         | `false`       | A small box beside the prompt, for a form row   |
-| `onImage`   | `(file: File \| null) => void`  | -             | The output `File`, or `null` on removal         |
-| `validate`  | `(value) => message \| null`    | -             | `validateAsync` is the promise form             |
+| Prop        | Values                          | Default                 | Notes                                           |
+| ----------- | ------------------------------- | ----------------------- | ----------------------------------------------- |
+| `shape`     | `'rectangle'`, `'circle'`       | `'rectangle'`           | The frame and the preview. Circle is 1:1        |
+| `aspect`    | number, width over height       | -                       | `1`, `16 / 9`. Absent: the ratio of the picture |
+| `maxWidth`  | pixels                          | `1920`                  | The output is never wider                       |
+| `maxHeight` | pixels                          | `1920`                  | The output is never taller                      |
+| `maxSize`   | bytes                           | -                       | The limit for the picked file                   |
+| `accept`    | string, e.g. `'image/png,.jpg'` | `'image/*,.heic,.heif'` | MIME types, `type/*` and `.extension`           |
+| `compact`   | boolean                         | `false`                 | A small box beside the prompt, for a form row   |
+| `onImage`   | `(file: File \| null) => void`  | -                       | The output `File`, or `null` on removal         |
+| `validate`  | `(value) => message \| null`    | -                       | `validateAsync` is the promise form             |
 
 ## The contract
 
@@ -54,7 +54,15 @@ the buttons Change, Adjust and Remove under it.
   data URL from the values and decode it on the server.
 - **imp resizes on the client.** The output fits inside `maxWidth` by `maxHeight`, and it is never
   larger than the crop. A PNG, GIF, WebP or SVG source becomes a PNG. Every other source becomes a
-  JPEG. The name of the output is the name of the source with that extension.
+  JPEG, also a HEIC or HEIF photo. The name of the output is the name of the source with that
+  extension.
+- **The browser decodes the picture. imp ships no image decoder.** Safari opens a HEIC or HEIF photo
+  from an iPhone, and imp converts it to a JPEG. Chrome, Edge and Firefox cannot open HEIC. There
+  the field shows `imp.imageUpload.heifUnreadable`, which asks for a JPEG. Any other file that the
+  browser cannot decode shows `imp.imageUpload.unreadable`.
+- **A `.heic` or `.heif` file with no MIME type is a HEIC image.** Many systems give such a file an
+  empty type. imp reads the extension, so `image/*` accepts it. An `accept` of your own needs
+  `.heic,.heif` too, or the file dialog can hide these photos.
 - **The frame keeps the ratio.** With `aspect`, the frame has that ratio and the picture covers it.
   With `shape: 'circle'`, the ratio is 1. Without both, the frame has the ratio of the picture. A
   drag, or the arrow keys on the focused frame, move the frame over the picture. The slider, the

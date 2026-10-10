@@ -178,4 +178,6 @@ states for you to bind.
 
 There is no `batch()`. To coalesce updates at an expensive point, use a headless component. It
 watches the sources and sets one display state per microtask. Set `IMP_LOG_LEVEL=debug` to trace
-every read, set, subscription and notification, see [logging](logging.md).
+every read, set, subscription and notification, see [logging](logging.md). That log prints the
+values, so never put a password, a key or a token in a state. A form field with `secret: true` keeps
+its value out of the form state, see [std](std.md).

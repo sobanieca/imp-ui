@@ -13,17 +13,17 @@ appLogo({ label: 'Acme', image: '/acme-wordmark.svg' })
 
 The call shape is `appLogo(props)`. It takes no content.
 
-| Prop      | Values                        | Default | Notes                                        |
-| --------- | ----------------------------- | ------- | -------------------------------------------- |
-| `label`   | string, or a state - **live** | -       | The app name, beside the mark                |
-| `tagline` | string, or a state - **live** | -       | A second, muted line under the name          |
-| `href`    | string, or `null`             | `'/'`   | Where the logo goes; `null` renders no link  |
-| `src`     | string, or `{ light, dark }`  | -       | An image mark; wins over `icon`              |
-| `alt`     | string                        | `''`    | Alt text for `src` - empty beside a `label`  |
-| `icon`    | DOM, or a string              | -       | A mark drawn in the primary color            |
-| `image`   | string, or `{ light, dark }`  | -       | The whole logo as one picture; no words      |
-| `compact` | boolean                       | `false` | Mark only; the name stays for screen readers |
-| `events`  | event map                     | -       | Handlers, as on any element                  |
+| Prop      | Values                        | Default | Notes                                                                                 |
+| --------- | ----------------------------- | ------- | ------------------------------------------------------------------------------------- |
+| `label`   | string, or a state - **live** | -       | The app name, beside the mark                                                         |
+| `tagline` | string, or a state - **live** | -       | A second, muted line under the name                                                   |
+| `href`    | string, or `null`             | `'/'`   | Where the logo goes; `null` or an unsafe scheme such as `javascript:` renders no link |
+| `src`     | string, or `{ light, dark }`  | -       | An image mark; wins over `icon`                                                       |
+| `alt`     | string                        | `''`    | Alt text for `src` - empty beside a `label`                                           |
+| `icon`    | DOM, or a string              | -       | A mark drawn in the primary color                                                     |
+| `image`   | string, or `{ light, dark }`  | -       | The whole logo as one picture; no words                                               |
+| `compact` | boolean                       | `false` | Mark only; the name stays for screen readers                                          |
+| `events`  | event map                     | -       | Handlers, as on any element                                                           |
 
 Rules an agent gets wrong:
 

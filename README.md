@@ -20,6 +20,11 @@ irm https://sobanieca.github.io/imp-ui/install.ps1 | iex
 
 The docs are in [`docs/`](docs/). Start with [`docs/cli.md`](docs/cli.md).
 
+For complete apps that are built with imp, see
+[sobanieca/imp-examples](https://github.com/sobanieca/imp-examples). Two of them run live:
+[Beacon](https://sobanieca.github.io/imp-examples/observability/), an observability SPA, and
+[Brickfall](https://sobanieca.github.io/imp-examples/brickfall/), a game that installs as a PWA.
+
 ## Work on imp
 
 ### Prerequisites

@@ -9,6 +9,10 @@ directory is `dist/`, and imp **replaces it on every run**. The server needs no 
 import map and no installation. The build resolves imports exactly as `imp start` does, and it works
 offline. So what you tested is what you ship.
 
+imp refuses an output folder that is the project, contains it, is or holds `public/`, holds a source
+file, or holds files without the `.imp-output` marker of an earlier build. A new or empty folder is
+accepted.
+
 **The entry decides everything.** An HTML entry is a finished app. A JS entry is a module that other
 developers program against. There is no configuration switch for this.
 

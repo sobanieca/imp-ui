@@ -30,7 +30,8 @@ The validation props are `required`, `minLength`, `maxLength`, `pattern`, `valid
 
 The toolbar has these tools, in this order: bold, italic, strikethrough, code, heading 1 to 3,
 quote, code block, bulleted list, numbered list, link, image, emoji, and align start, center and
-end. Ctrl-B and Ctrl-I work as in every editor. Ctrl-Z undoes.
+end. Ctrl-B and Ctrl-I work as in every editor. Ctrl-Z undoes each change, also a tool, a paste and
+an added image.
 
 The emoji tool opens the panel of `emojiPicker`: a search field, eight categories and 482 emoji.
 Enter in the search field inserts the first match at the caret. The set is fixed. See
@@ -58,19 +59,30 @@ Rules an agent gets wrong:
   `field` wins. A `field` with no form around it is an error.
 - **The value is markdown, on every keystroke.** It is not HTML. Render it with `markdown` from
   `imp/std/display`, which reads the same dialect. Never put the value into `innerHTML`.
+- **The value is exact after each edit.** A keystroke writes only the block that it changed, so a
+  long document with images stays fast. Do not debounce the value.
 - **An image is a data URL inside the markdown.** imp resizes the image in the browser to
   `imageSize` on its longest edge, encodes it as PNG or JPEG, and embeds it. There is no upload. A
   value with images is large. Raise `maxLength` or leave it out.
-- **Images come from the toolbar, from a paste, or from a drop.** While imp resizes one, a
-  placeholder marks its place, and the person keeps typing. The placeholder is not in the value.
+- **Images come from the toolbar, from a paste, or from a drop.** While imp resizes one, the picture
+  shows dimmed in its place, and the person keeps typing. The dimmed picture is not in the value.
+  Its alternative text is `imp.richTextEditor.imageAdding`.
+- **The browser decodes the image.** The file dialog offers HEIC and HEIF photos too. Safari opens
+  them, and imp embeds a JPEG. Chrome, Edge and Firefox cannot open HEIC. There the image stays as a
+  message in its place, `imp.richTextEditor.heifFailed`, and it is not in the value. Another image
+  that fails shows `imp.richTextEditor.imageFailed`.
+- **A paste shows only what the value holds.** imp converts pasted HTML to markdown, then shows that
+  markdown. So underline, colour and tables do not show. A paste into a code block is plain text.
 - **A link or an image with a `javascript:` address is dropped.** Only `http`, `https`, `mailto` and
-  `tel` links pass. An image passes with `http`, `https` or `data:image/`.
+  `tel` links pass. An image passes with `http`, `https`, a path or `data:image/`. An image with no
+  address is dropped too.
 - **Alignment is the one thing markdown lacks.** An aligned block is written as an HTML block, so
   every markdown renderer that passes HTML through shows it. The `align` value is physical. "Align
   end" writes `right` in a left-to-right document and `left` in a right-to-left one.
 - **Tab indents a list item, and nothing else.** Outside a list, Tab moves the focus on. Inside a
   list, a person presses Escape, then Tab, to leave. The editor tells assistive technology so,
   through `imp.richTextEditor.keys`. To leave a code block, press the code block tool again.
+- **The link and emoji panels close when Tab moves the focus out of them**, as on Escape.
 - **An error shows only after the person leaves the editor, or tries to submit.**
 - **There is no underline, no table and no colour.** Markdown has no such marks.
 - **Every colour comes from the theme.** There is no theme prop.

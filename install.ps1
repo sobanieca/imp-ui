@@ -14,9 +14,17 @@ $ArchitectureName = switch ($Architecture) {
 }
 
 $BinaryFile = "imp-windows-$ArchitectureName.exe"
-$DownloadUrl = "https://github.com/$Repo/releases/latest/download/$BinaryFile"
+
+Write-Host 'Resolving the latest release...'
+$Release = Invoke-RestMethod -UseBasicParsing -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{ Accept = 'application/vnd.github+json' }
+$Tag = $Release.tag_name
+if (-not $Tag) {
+  throw 'Could not resolve the latest imp release - the GitHub response has no tag_name'
+}
+$DownloadUrl = "https://github.com/$Repo/releases/download/$Tag/$BinaryFile"
 
 Write-Host "Detected system: windows-$ArchitectureName"
+Write-Host "Release: $Tag"
 Write-Host "Download URL: $DownloadUrl"
 Write-Host ''
 

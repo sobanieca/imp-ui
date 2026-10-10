@@ -503,6 +503,17 @@ router({ map: app, access, screens })
 The redirect to `/login` carries the requested path in `next`. The login screen reads it from the
 query and navigates there after the sign-in, so a deep link works for a signed-out visitor too.
 
+Anyone can write a link to your login page with any `next` value. So pass the value through
+`safeNext(value, fallback)` before you navigate. It returns the value only when it is a path of your
+app. For any other value, such as `//evil.example` or `javascript:...`, it returns `fallback`:
+
+```js
+import { navigate, safeNext, useRoute } from 'imp/router'
+
+const next = safeNext(useRoute().get().query.next, app.todos.href())
+navigate(next, { replace: true })
+```
+
 Read that from the inside out. `['myapp.session']` declares **which states this guard reads**. The
 router looks them up for you, and passes their values in, in the same order. After the values comes
 `{ need, params, query, searchParams, path }`, where `need` is the `access` value of the node. The
@@ -641,6 +652,23 @@ button('Save', {
 Use `{ replace: true }` when you do not want the current page in the history of the back button. An
 example is a redirect after a login. A navigation to the URL that you are already on does nothing.
 It does not add a duplicate history entry.
+
+`navigate` stays on the origin of your app. A URL of another site, such as `https://example.com` or
+`//example.com`, makes it throw an error. This stops an attacker who controls a URL value from
+sending your visitors to a different site. To leave the app on purpose, pass `{ external: true }`:
+
+```js
+navigate('https://billing.example.com/checkout', { external: true })
+```
+
+`navigate` leaves the app only for an `http` or `https` URL, with or without `external`. A
+`javascript:` URL or a `data:` URL always makes it throw an error. So a value from the URL cannot
+run code in your page.
+
+The `href` of an item in a standard component, such as a nav row, a list row, a timeline entry or a
+breadcrumb, works the same way. It can be a path of your app or an `http` or `https` URL. It can
+also be a `mailto:` or a `tel:` URL, which imp gives to the browser. Any other scheme throws an
+error when the item is clicked.
 
 ### Navigation controls
 
@@ -974,7 +1002,8 @@ So a deep link and a refresh work while you build.
 | `area(() => import(...))`                  | an area marker     | Binds a node to a lazily-loaded area - the one on-demand unit.                                                                             |
 | `guard(states, check)`                     | a guard            | A synchronous check over the values of the states it names and the `need` of the node; returns `true`, `wait`, `false`, or a path.         |
 | `wait`                                     | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `loading` up and re-runs the guard when a declared state changes.        |
-| `navigate(path, { replace? })`             | -                  | Navigates programmatically; `replace` swaps the current history entry.                                                                     |
+| `navigate(path, { replace?, external? })`  | -                  | Navigates programmatically; `replace` swaps the current history entry; `external` lets it leave for another site. Only http and https.     |
+| `safeNext(value, fallback)`                | a path             | `value` when it is a path of the app, else `fallback`. Use it for a `?next=` value before you navigate.                                    |
 | `useRoute()`                               | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
 | `url(path)`                                | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |
 | `screenRegion(self, element, { effect? })` | -                  | Names the box that scrolls the screens, so imp restores its scroll; `effect` animates a change of screen, see below.                       |

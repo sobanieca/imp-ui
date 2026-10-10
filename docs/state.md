@@ -547,3 +547,7 @@ Set the `IMP_LOG_LEVEL` environment value to `debug`, and imp traces state activ
 console. It logs every read and every set, including a set it skipped because the value was
 unchanged or structurally equal. It logs every subscription that attaches and detaches, and every
 notification. See [Logging](logging.md).
+
+The log prints each value as it is. So keep a password, an API key or a token out of state. A form
+field with `secret: true` keeps its value out of the form state, and `onSubmit` still receives it.
+See _Forms_ in [Standard components](std-components.md).

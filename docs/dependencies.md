@@ -44,6 +44,10 @@ imp install mitt --alias events
 One name is reserved. `imp` always means the imp library itself, which every app can already import.
 You cannot install `imp` as a dependency, and you cannot use it as an alias.
 
+An alias is one folder name. It holds letters, digits, `.`, `_` and `-` only. It must not start with
+`.`, and it must not contain `..`, `/` or `\`. So an alias cannot point at a folder outside
+`dependencies/`. imp refuses an `imp.json` with any other alias.
+
 ## How to pin a version
 
 To install a specific version, attach the version to the package name, or pass it as a second

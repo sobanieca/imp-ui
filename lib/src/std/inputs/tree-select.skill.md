@@ -37,13 +37,15 @@ A press on a row, or Space or Enter on it, moves the row through its states:
 | ------ | -------------------------------- | -------------------------------------------- |
 | parent | not chosen, or mixed             | `all`: the parent and every descendant       |
 | parent | `all` (filled square)            | `self`: only the parent, descendants cleared |
-| parent | `self` (check mark)              | not chosen                                   |
+| parent | `self` (check mark)              | the parent leaves, chosen descendants stay   |
 | leaf   | not chosen / chosen (check mark) | chosen / not chosen                          |
 
 `all` means the parent and every descendant are in the value. `self` means the parent is in the
 value and one descendant or more is not. `mixed` (a dash) means the parent is not in the value but a
 descendant is. `aria-checked` is `true` for `all`, `self` and a chosen leaf, `mixed` for `mixed`,
-and `false` for the rest. A hidden description tells a screen reader `all` from `self`.
+and `false` for the rest. A hidden description tells a screen reader `all` from `self`. For `self`,
+it says `onlySelf` when no descendant is chosen, and `withSome` when some are. A press on `self`
+removes only the parent. The chosen descendants stay chosen.
 
 | Key                     | Where  | Effect                                                                          |
 | ----------------------- | ------ | ------------------------------------------------------------------------------- |
@@ -75,7 +77,8 @@ Rules an agent gets wrong:
   below the button, and above it when there is no room.
 - **imp compares the values as strings.**
 - **The words are `imp.treeSelect.*` keys:** `search`, `noMatches`, `more` (`{label}` and
-  `{count}`), `clear`, `selected` (`{count}`), `withChildren` and `onlySelf`. Translate those keys.
+  `{count}`), `clear`, `selected` (`{count}`), `withChildren`, `onlySelf` and `withSome`. Translate
+  those keys.
 
 ```js
 form(

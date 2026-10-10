@@ -56,15 +56,15 @@ map.
 
 The `navbar` keys are these:
 
-| Key          | Values                              | Notes                                                                 |
-| ------------ | ----------------------------------- | --------------------------------------------------------------------- |
-| `map`        | the value of `appMap()`             | The nav tree; the router in the content fills it                      |
-| `icons`      | `{ [handle]: icon }`                | An icon per node: a Lucide export, or any DOM                         |
-| `tags`       | `{ [handle]: tag }`                 | A pill per node: `{ text, color }`, or a state holding one, or `null` |
-| `label`      | string, or a state                  | Names the bar's `<nav>`; defaults to a translated "Navigation"        |
-| `items`      | array of sections - live            | Frame with no map only; see the section shape below                   |
-| `selected`   | a section's `id`, or a state - live | Frame with no map only; which section is current                      |
-| `background` | DOM                                 | Decorative layer under the bar; hidden from assistive technology      |
+| Key          | Values                              | Notes                                                                        |
+| ------------ | ----------------------------------- | ---------------------------------------------------------------------------- |
+| `map`        | the value of `appMap()`             | The nav tree; the router in the content fills it                             |
+| `icons`      | `{ [handle]: icon }`                | An icon per node: a Lucide export, or any DOM                                |
+| `tags`       | `{ [handle]: tag }`                 | A pill per node: `{ text, color, title }`, or a state holding one, or `null` |
+| `label`      | string, or a state                  | Names the bar's `<nav>`; defaults to a translated "Navigation"               |
+| `items`      | array of sections - live            | Frame with no map only; see the section shape below                          |
+| `selected`   | a section's `id`, or a state - live | Frame with no map only; which section is current                             |
+| `background` | DOM                                 | Decorative layer under the bar; hidden from assistive technology             |
 
 The `sidebar` keys are these. imp reads **`groups` and `items` only when there is no `navbar`**.
 Beside a `navbar`, imp warns and drops them, because a section declares its own:
@@ -81,8 +81,9 @@ Beside a `navbar`, imp warns and drops them, because a section declares its own:
 
 Without a map, a **section** is `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`
 and a **row** is `{ id, label, icon, href, onClick, tag, disabled, children? }`, where `children` is
-a nested array of rows. `icon` is any DOM. `tag` is `{ text, color }` data. That form is for a frame
-with no router, such as a preview.
+a nested array of rows. `icon` is any DOM. `tag` is `{ text, color, title }` data. That form is for
+a frame with no router, such as a preview. An `href` with an unsafe scheme, such as `javascript:`,
+is dropped with a warning.
 
 There is no `layout` enum. The props that you pass are the arrangement.
 
@@ -119,16 +120,23 @@ Rules an agent gets wrong:
   the column beside a map.
 - **`icons` and `tags` bind by handle, at the root.** Write `{ [app.reports]: luChartColumn }` and
   `{ [app.reports.revenue]: count }`. An icon is a Lucide export or any DOM. A tag is
-  `{ text, color }`, or a **state** that holds one, or `null`; a state keeps the pill live. Neither
-  is a prop of the map. An area file cannot supply either, because the section row renders before
-  its chunk loads.
+  `{ text, color, title }`, or a **state** that holds one, or `null`; a state keeps the pill live.
+  Neither is a prop of the map. An area file cannot supply either, because the section row renders
+  before its chunk loads.
+- **A tag `title` is the full form of a short `text`.** Write
+  `{ text: 'main +2', title: 'main,
+  backup, eu-west' }`. It shows as a tooltip on the tag and
+  becomes the `aria-describedby` description of the row, so a screen reader reads the name, then the
+  title. Do not repeat the label of the row in it. A group tag with a title describes the list of
+  the group.
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows itself, because it draws each level more than once. `logo` and `extras` are
   still any DOM that you want.
 - **Sign-in is a node of the map, and `access` guards the rest.** Give every private section an
   `access` value. The guard returns `wait` while the session is `undefined`, and a path to the
   sign-in node, with the requested path in `?next=`, while it is `null`. The sign-in screen reads
-  `next` and navigates there after it sets the session. Do not put `access` on the sign-in node.
+  `next` and navigates to `safeNext(next, app.home.href())` after it sets the session. Do not put
+  `access` on the sign-in node.
 - **The frame shows no chrome while it cannot know who may see the page.** While the verdict of the
   current node is `wait`, the frame shows the router content, which is its `loading` content, under
   the `logo`, centred, and nothing else: no bar, no column, no `extras`. While the current node is

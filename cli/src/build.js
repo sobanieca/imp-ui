@@ -38,6 +38,7 @@ import { COMPONENT_SKILL_FILE, skillFileFor } from './skill.js'
 import { collectBundleNames } from './analytics-names.js'
 import { APP_ANALYTICS_FILE, appAnalyticsFile } from './analytics-files.js'
 import { posixPath } from './walk.js'
+import { assertOutputFolder, replaceOutputFolder } from './output-folder.js'
 import {
   collectLicenseNotices,
   LICENSE_NOTICES_FILE,
@@ -498,12 +499,6 @@ export async function build(
   const root = dirname(entryPath)
   const entryName = basename(entryPath)
   const outdirPath = resolve(output)
-  if (isWithin(outdirPath, root)) {
-    throw new Error(`output directory must not contain the project: ${output}`)
-  }
-  if (isWithin(publicDirectory(root), outdirPath)) {
-    throw new Error(`output directory must not be inside public/: ${output}`)
-  }
 
   const imp = await loadImpConfig(root)
   const dependencies = imp.dependencies ?? {}
@@ -531,6 +526,11 @@ export async function build(
     scripts = parsed.scripts
     inlineSources = parsed.inlineSources
   }
+  await assertOutputFolder(outdirPath, {
+    output,
+    root,
+    sources: [entryPath, ...scripts, ...(serviceWorker ? [serviceWorker] : [])],
+  })
   if (!scripts.length && !inlineSources.length) {
     throw new Error(`${entryName} has no module scripts to bundle`)
   }
@@ -587,8 +587,7 @@ export async function build(
   const workerPath = join(outdirPath, SERVICE_WORKER_FILE)
   const workerFile = isHtmlEntry ? outputFiles.find((file) => file.path === workerPath) : null
 
-  await Deno.remove(outdirPath, { recursive: true }).catch(() => {})
-  await Deno.mkdir(outdirPath, { recursive: true })
+  await replaceOutputFolder(outdirPath)
   const written = []
   const inlineOutputs = inlineSources.map((_, index) =>
     result.entries.get(join(root, inlineModuleName(index)))

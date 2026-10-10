@@ -72,5 +72,10 @@ a binding updates too often, or does not update at all:
 - **Component lifecycle.** The components imp defines, mounts, and unmounts, and the components that
   bind their subscriptions again after a move.
 
+The debug log prints state values as they are. So a password or an API key in a state shows in the
+console of every developer who turns on debug tracing. A form field with `secret: true` keeps its
+value out of the form state, so the log never contains it. See _Forms_ in
+**[Standard components](std-components.md)**. Keep any other secret out of state.
+
 Everything at `warn` and `error` shows at the default level. That covers an invalid state value, a
 failed subscriber, a mount failure, and similar problems.

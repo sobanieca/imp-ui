@@ -31,16 +31,16 @@ The call shape is `list(props)`. It takes **no children**. imp warns about a chi
 
 Each item has these keys:
 
-| Key           | Values                   | Notes                                                         |
-| ------------- | ------------------------ | ------------------------------------------------------------- |
-| `id`          | string or number         | Necessary and unique. imp skips an item with no `id`          |
-| `title`       | string                   | The main line                                                 |
-| `description` | string                   | The second line, in the secondary colour                      |
-| `picture`     | URL string               | Draws a round avatar                                          |
-| `name`        | string                   | Draws an avatar with the initials, when there is no `picture` |
-| `icon`        | an icon from `imp/icons` | The leading visual, when there is no `picture` or `name`      |
-| `tag`         | `{ text, color }`        | A small tag before the actions. `color` is a palette name     |
-| `href`        | string                   | Makes the title a link, in the space of the app               |
+| Key           | Values                   | Notes                                                                                              |
+| ------------- | ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `id`          | string or number         | Necessary and unique. imp skips an item with no `id` or a repeated `id`                            |
+| `title`       | string                   | The main line                                                                                      |
+| `description` | string                   | The second line, in the secondary colour                                                           |
+| `picture`     | URL string               | Draws a round avatar                                                                               |
+| `name`        | string                   | Draws an avatar with the initials, when there is no `picture`                                      |
+| `icon`        | an icon from `imp/icons` | The leading visual, when there is no `picture` or `name`                                           |
+| `tag`         | `{ text, color }`        | A small tag before the actions. `color` is a palette name                                          |
+| `href`        | string                   | Makes the title a link, in the space of the app. An unsafe scheme such as `javascript:` is dropped |
 
 Rules an agent gets wrong:
 

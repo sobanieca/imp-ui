@@ -30,6 +30,7 @@ Rules an agent gets wrong:
   change that you write shows at once. A plain array is a start value that the component keeps.
 - **An item with a `count` of 0 does not show.** A count must be a whole number. Other fields of an
   item, such as an `id`, stay on the item.
+- **The panel closes on a pick, on Escape, on a press outside, and when Tab leaves it.**
 - **A pick from the panel adds a reaction.** It never takes one back. When the emoji is already in
   the bar, the pick marks it as the person's own. Only a click on a pressed chip takes it back.
 - **The person reacts once per emoji.** The chip is a toggle button with `aria-pressed`. A count of

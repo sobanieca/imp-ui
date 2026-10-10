@@ -117,6 +117,15 @@ path. Every other component that renders a destination follows that same contrac
 helper. That covers the nav rows of `shell`, and `breadcrumbs`. Each one reports a **cancelable
 `select` event** before it follows the link, and that is how an app takes the navigation back.
 
+**A component renders an `href` only when its scheme is safe.** The same shared helper checks every
+`href` before a component puts it on an anchor: `link`, `card`, `userCard`, `appLogo`,
+`breadcrumbs`, the nav rows of `shell`, `list` and `timeline`. It accepts `http:`, `https:`,
+`mailto:` and `tel:`, and a relative address. It drops every other scheme with a warning, and the
+component renders as it does with no `href`. A native click on `javascript:` runs script in the
+page, and `navigate()` cannot stop a click that the browser handles itself. So an `href` that comes
+from user data must be safe at render time. The markdown reader and the rich text editor use the
+same check for their links.
+
 ## Consequences
 
 - An app gets a button, a heading and text, with one import and no setup of CSS. Every component

@@ -200,6 +200,34 @@ const installViewTransitions = (window) => {
   }
 }
 
+const HELD_CALLBACK = Symbol('imp.test.heldCallback')
+
+const HOLDS_CALLBACKS = Symbol('imp.test.holdsCallbacks')
+
+const symbolNamed = (object, description) => {
+  for (let current = object; current; current = Object.getPrototypeOf(current)) {
+    const found = Object.getOwnPropertySymbols(current)
+      .find((symbol) => symbol.description === description)
+    if (found) return found
+  }
+  return null
+}
+
+const holdMutationCallbacks = (window) => {
+  const prototype = window.Node.prototype
+  if (prototype[HOLDS_CALLBACKS]) return
+  const observe = symbolNamed(prototype, 'observeMutations')
+  if (!observe) {
+    throw new Error('imp test: happy-dom has no observeMutations method - update test-dom.js')
+  }
+  const original = prototype[observe]
+  prototype[observe] = function observeMutations(listener) {
+    listener[HELD_CALLBACK] ??= listener.callback?.deref?.()
+    return original.call(this, listener)
+  }
+  prototype[HOLDS_CALLBACKS] = true
+}
+
 const MODAL_STATE = Symbol('imp.test.modalState')
 
 const deepActiveElement = (document) => {
@@ -272,6 +300,7 @@ export function installDomEnvironment() {
   installAnimationsApi(window)
   installViewTransitions(window)
   installTopLayer(window)
+  holdMutationCallbacks(window)
   const replaced = new Map()
 
   const names = new Set(['window', 'document', ...Object.getOwnPropertyNames(window)])

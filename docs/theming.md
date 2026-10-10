@@ -139,16 +139,22 @@ applyTheme({
 ```
 
 `base` accepts only the four built-in names. `theme.get()` returns the resolved theme, with every
-token filled in and no `base` key. An applied theme is frozen. To derive one theme from another
-theme of your own, spread its tokens into a new object. Do not edit them in place.
+token filled in and no `base` key. `applyTheme` stores a copy, so the object that you pass stays
+yours and stays editable. The applied theme that `theme.get()` returns is frozen. To derive one
+theme from another theme of your own, spread its tokens into a new object.
 
 ## Fonts
 
 The font of an app is three tokens. `font-family` is the text of every component. `font-family-mono`
 is code and other monospaced text. `font-family-heading` is the text of `heading` and the name in
 `appLogo`. The built-in themes set the first two to a system font stack, and they point
-`font-family-heading` at `font-family`. An app ships no font file, and the text renders in the font
-of the platform. Set `font-family-heading` only when the headings need a display font of their own.
+`font-family-heading` at `font-family`. With a built-in theme, the text renders in the font of the
+platform. Set `font-family-heading` only when the headings need a display font of their own.
+
+A project from `imp init` starts with a font of its own. imp picks a family at random, copies it
+into `public/fonts/`, and names it in the theme in `src/theme.js`. The app hosts the font itself, so
+the page sends no request to another origin. See
+**[`imp init`](cli.md#imp-init---your-first-command)**.
 
 The colour of a heading is its own token, `color-heading`. It colours the text of `heading`, the
 name in `appLogo` and every heading that `markdown` renders. The built-in themes point it at

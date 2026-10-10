@@ -121,6 +121,14 @@ empty table and the **Cancel** of a dialog belong to the component. Each word li
 key, with the English wording as its fallback. Write that key in your own translations, and your
 wording takes over. See **[Translations](i18n.md)**.
 
+**A link follows a safe address only.** Every component that renders a link from an `href` checks
+the address first: `link`, `card`, `userCard`, `appLogo`, `breadcrumbs`, the navigation items of the
+`shell`, `list` and `timeline`. It accepts `http:`, `https:`, `mailto:` and `tel:`, a path, a query
+and a `#` fragment. It drops any other scheme, such as `javascript:`, `data:` or `vbscript:`, and
+logs a warning. An `href` with such a scheme runs script in the page when a person clicks it. The
+component then renders as it does with no `href`. So an address that comes from user data cannot run
+script through a standard component.
+
 **Accessibility is the job of the component, not yours.** imp renders the native element wherever
 one exists, so the roles, the states and the keyboard behavior come from the browser. Every pointer
 interaction has a keyboard equivalent. Every interactive element carries an accessible name. The
@@ -153,11 +161,24 @@ shell(
 )
 ```
 
+**A nav row can carry a short tag.** Bind it in `navbar.tags`, keyed by the handle of the node, as
+`{ text, color, title }` or a state that holds one. The tag shows `text` at the small size. Give it
+a `title` when `text` is short for something longer, such as `main +2` for a list of three servers.
+The title shows as a tooltip when the pointer is on the tag. A screen reader reads it as the
+description of the row, after the name of the row:
+
+```js
+const serversTag = { text: 'main +2', title: 'main, backup, eu-west' }
+
+shell({ navbar: { label: 'Sections', map: app, tags: { [app.servers]: serversTag } } }, page())
+```
+
 **The sign-in page is a page of your map.** Add a node for it, and give an `access` value to every
 section that needs a session. The `access` guard of the router returns `wait` while the session is
 not known yet, and redirects a visitor with no session to the sign-in page. Put the requested path
-in the redirect, such as `/sign-in?next=/todos/3`, and navigate there after the sign-in. A deep link
-then works for a signed-out visitor too.
+in the redirect, such as `/sign-in?next=/todos/3`. After the sign-in, navigate to
+`safeNext(next, fallback)` from `imp/router`. It drops a `next` value that leaves your app. A deep
+link then works for a signed-out visitor too.
 
 ```js
 export const app = appMap({
@@ -362,6 +383,11 @@ it and leaves it, or after a submit. A person who moves through the form with Ta
 reader, does not hear "This field is required" from every field that they pass. A field that is back
 at its first value shows its error at the next submit.
 
+**Only the fields on the page can block a submit.** A field that leaves the page drops its error.
+This covers a field on a tab that is not open, or a field behind a condition that is now false. So
+the person never meets a blocked submit with no message on the screen. The value of the field stays
+in the form and goes to `onSubmit`. When the field comes back, the next submit validates it again.
+
 **A submit is an ordinary button.** `submitForm` and `resetForm` are functions. Pass one as the
 click handler of any `button`, at any depth inside the form, and the function finds the form. A
 submit checks every field again. When one field fails, `onSubmit` does not run, the bad fields show
@@ -424,6 +450,24 @@ const unsavedGuard = component('myapp-unsaved-guard', {
 
 Put the component inside the form, because the states of a form reach only its own subtree.
 
+**A secret stays out of the form state and out of the log.** Set `secret: true` on a field that
+holds a password, an API key or a token. Every control takes it. The form keeps that value in a
+private store of its own, not in the `imp.form` state. So no `get()` of a state returns it, and the
+debug log of imp never prints it. `onSubmit` gets the values with the secret merged in at its path:
+
+```js
+form(
+  { initialValues: { name: '' }, onSubmit: (values) => connect(values.name, values.key) },
+  textField({ field: 'name', label: 'Name', required: true }),
+  textField({ field: 'key', label: 'Key', type: 'password', secret: true, required: true }),
+  button({ variant: 'primary', events: { click: submitForm } }, 'Connect'),
+)
+```
+
+A secret field validates like any other field, and a value in it makes the form dirty. It always
+starts empty, so do not put its value in `initialValues`. A successful submit and `resetForm` empty
+it. A failed submit keeps it, so the person can try again without typing it again.
+
 **`resetForm` puts the clean state back.** A call to `resetForm` inside `onSubmit` wins over the
 save. So a form that adds a record and clears itself for the next one is clean after the save. Pass
 values as the second argument, `resetForm(source, values)`, to make them the new clean state. Use it
@@ -441,6 +485,19 @@ server never receives the original. The value is a data URL, so it sits in the f
 JSON. The output `File` is handed to `onImage` for a `FormData` upload. The control keeps one box
 for the placeholder and for the preview, so the page does not move when a picture arrives. The box
 fills the field by default, and `compact` makes it a small box beside the prompt.
+
+**The browser decodes the picture, so the browser decides which formats open.** An iPhone saves a
+photo as HEIC. `imageUpload` and the image tool of `richTextEditor` offer HEIC and HEIF files in the
+file dialog, and they also take a `.heic` file that has no MIME type. Safari opens a HEIC photo on
+macOS and on iOS, and imp converts it to a JPEG. Chrome, Edge and Firefox cannot open HEIC. In those
+browsers, the control shows a message that names the HEIC photo and asks for a JPEG. imp does not
+ship a HEIC decoder of its own. A decoder adds hundreds of kilobytes of WebAssembly to the app, and
+it does a job that the platform owns.
+
+**A long document with images stays fast in `richTextEditor`.** The value is markdown, and an
+embedded image makes it megabytes long. imp keeps the markdown of each block, so a keystroke writes
+only the block that changed. The value is exact after every edit, so a submit right after a
+keystroke sends what the person sees.
 
 ```js
 imageUpload({
@@ -497,6 +554,9 @@ days only.
 ```js
 dateRangePicker({ field: 'stay', label: 'Hotel stay', min: '2026-10-07' })
 ```
+
+`min` and `max` limit the days. A person cannot pick a day outside them, and a preset whose range
+goes outside them is disabled. A value outside the limits fails validation.
 
 **A report period can be a rule.** Pass `presets`, and the panel gets two tabs, "Relative" and
 "Custom". The "Relative" tab lists your presets, such as "Last 5 minutes" or "Last 30 days". Each

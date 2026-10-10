@@ -132,10 +132,11 @@ imp, the same one users get. There is no second "from source" mode that could be
 
 `tools/imp.js` is the only way to run it. `deno run -A tools/imp.js <args>` runs `tools/compile.js`
 at the repo root, then `./imp <args>` in the current folder. `compile.js` rebuilds only when the
-binary is older than a git-visible file. So an edit to `cli/src` or `lib/src` forces a rebuild
-before the command runs, and a green test run is never about stale code. An unchanged tree costs one
-`git ls-files`, and the script prints that it skipped. Pass `--force` to `compile.js` to rebuild
-anyway.
+stamp next to the binary (`imp.stamp`) does not match the git-visible files. The stamp is a hash of
+the file list with the time and size of each file. So an edit, a new file or a deleted file in
+`cli/src` or `lib/src` forces a rebuild before the command runs, and a green test run is never about
+stale code. An unchanged tree costs one `git ls-files`, and the script prints that it skipped. Pass
+`--force` to `compile.js` to rebuild anyway.
 
 **Never invoke `./imp` by hand** (for example `../../imp test` from `lib/test`). A bare `./imp`
 skips the freshness check and runs whatever was compiled last.
@@ -144,13 +145,13 @@ skips the freshness check and runs whatever was compiled last.
 
 `deno.json` holds five tasks. Each one is the daily command for one job:
 
-| Task                | What it does                                                             |
-| ------------------- | ------------------------------------------------------------------------ |
-| `deno task example` | serves the todo example from `examples` on <http://localhost:4507/>      |
-| `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/> |
-| `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm` |
-| `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests   |
-| `deno task check`   | runs `deno lint`, `deno fmt`, then `imp lint` on `lib/src`               |
+| Task                | What it does                                                                     |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `deno task example` | serves the todo example from `examples` on <http://localhost:4507/>              |
+| `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/>         |
+| `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm`         |
+| `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests           |
+| `deno task check`   | runs `deno lint`, `deno fmt`, then `imp lint` on `lib/src` and `cli/src/browser` |
 
 `deno task test --update` rewrites the CLI snapshots. `rfm` is a static file server installed on the
 machine, not part of the repo. Install it from <https://sobanieca.github.io/remote-file-manager/>.
@@ -160,7 +161,7 @@ Every other maintainer job is a script, run directly with `deno run -A`:
 | Script                                             | What it does                                            |
 | -------------------------------------------------- | ------------------------------------------------------- |
 | `tools/imp.js <args>`                              | compiles if needed, then runs `./imp <args>` here       |
-| `tools/compile.js`                                 | compiles `./imp` when a git-visible file is newer       |
+| `tools/compile.js`                                 | compiles `./imp` when the git-visible files changed     |
 | `tools/build-site.js`                              | writes `site/dist/`, gallery included; CI runs this     |
 | `tools/check-binary-size.js`                       | fails when `./imp` is over `binary-size-limit.json`     |
 | `tools/update-dependencies.js`                     | updates the Deno dependencies and the formatter plugins |
@@ -232,9 +233,9 @@ surface colour of the theme.
 ## After making changes
 
 After you complete a batch of code changes, run `deno task check`. It runs `deno lint`, `deno fmt`
-and `imp lint` on `lib/src`. Fix every issue it reports before you consider the work done. These
-tools operate on imp's own repo source, so it is fine to invoke Deno directly here. This is internal
-maintainer tooling, not a user-facing surface.
+and `imp lint` on `lib/src` and on `cli/src/browser`. Fix every issue it reports before you consider
+the work done. These tools operate on imp's own repo source, so it is fine to invoke Deno directly
+here. This is internal maintainer tooling, not a user-facing surface.
 
 **Keep every change that `deno fmt` makes, also in files outside your scope.** `deno fmt` runs
 repo-wide and can reformat files unrelated to your change, for example formatting drift in other
@@ -336,8 +337,13 @@ Deno only. There is no transpilation and no legacy support, so write current idi
 `const`/`let` over `var`; arrow functions and rest/spread params over `function`/`arguments`;
 template literals over string concatenation; destructuring, `for...of`, optional chaining (`?.`),
 nullish coalescing (`??`), `async`/`await`, and other current language features. This applies to
-browser-targeted code too, including scripts emitted as strings (for example the injected client and
-the service worker code).
+browser-targeted code too, including the scripts that the CLI injects into a page.
+
+**Write browser code that the CLI injects as a script in a module in `cli/src/browser/`, never in a
+template literal.** The module exports one self-contained function. The CLI injects its source with
+`browserScript(run, input)`, and the function reads every value from its one argument
+(`adr/browser-modules-as-function-source.md`). The function must not use a name from the scope of
+its module, because only the function text reaches the page.
 
 ## Browser support - call the platform, never shadow it
 

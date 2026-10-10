@@ -9,7 +9,7 @@ import {
   resolve,
   SEPARATOR,
 } from '@std/path'
-import { clientScript } from './client.js'
+import { clientScript, DEV_WORKER_PATH, EVENTS_ENDPOINT, LOG_ENDPOINT } from './client.js'
 import { loadImpConfig, mocksSetting, publicDirectory } from './config.js'
 import { publicCopyOfEntry, resolveEntryPath } from './entry.js'
 import { isSkippedPath } from './walk.js'
@@ -36,6 +36,18 @@ import {
   writeReview,
 } from './review.js'
 import { IMP_MODULES } from './specifiers.js'
+import {
+  exposedHostWarning,
+  hasHiddenSegment,
+  isJsonRequest,
+  isLoopbackHost,
+  isOwnPageRequest,
+  isServedHost,
+  listenHostname,
+  servedHostnames,
+  serverUrls,
+  unknownHostResponse,
+} from './dev-server-access.js'
 
 const FRAMEWORK_SRC = fromFileUrl(new URL('../../lib/src', import.meta.url))
 
@@ -96,8 +108,6 @@ const impImports = Object.fromEntries(
 const DEV_MANIFEST_PATH = '/@imp/manifest.webmanifest'
 const DEV_ICON_PREFIX = '/@imp/pwa/'
 
-const DEV_WORKER_PATH = '/@imp/sw.js'
-
 function buildHeadInjection(dependencies, pwa, env, flags, mocks, ownWorker, widget) {
   const importMap = {
     imports: { ...impImports, ...dependencyImports(dependencies) },
@@ -150,11 +160,14 @@ async function serveFromDir(dir, relativePath, { headInjection = null } = {}) {
   const within = resolveWithinRoot(dir, relativePath)
   if (!within) return new Response('forbidden', { status: 403 })
   const { path, fsPath } = within
+  if (hasHiddenSegment(relative(resolve(dir), fsPath))) {
+    return new Response('not found: ' + path, { status: 404 })
+  }
   let bytes
   try {
     const stat = await Deno.stat(fsPath)
     if (stat.isDirectory) {
-      return new Response(null, { status: 302, headers: { location: path + '/' } })
+      return new Response(null, { status: 302, headers: { location: relativePath + '/' } })
     }
     bytes = await Deno.readFile(fsPath)
   } catch {
@@ -304,6 +317,7 @@ export function createRequestHandler(
     runtimeValues = {},
     publicDir = null,
     recentLog = null,
+    hostnames = new Set(),
   },
 ) {
   const servedWorkerPath = serviceWorker ? SERVICE_WORKER_PATH : DEV_WORKER_PATH
@@ -316,8 +330,23 @@ export function createRequestHandler(
     }
     return serveFromDir(root, pathname, { headInjection })
   }
+  const postEndpoints = new Set([REVIEW_ENDPOINT, LOG_ENDPOINT, MOCK_ENDPOINT])
+  const refusedRequest = (req, url) => {
+    if (url.pathname === EVENTS_ENDPOINT) return !isOwnPageRequest(req, url)
+    if (req.method !== 'POST' || !postEndpoints.has(url.pathname)) return false
+    return !isOwnPageRequest(req, url) || !isJsonRequest(req)
+  }
   return async (req, info) => {
     const url = new URL(req.url)
+
+    if (!isServedHost(url, hostnames)) return unknownHostResponse(url)
+
+    if (refusedRequest(req, url)) {
+      return new Response(
+        'forbidden - this endpoint of the dev server answers only a JSON request from its own pages',
+        { status: 403, headers: { 'content-type': CONTENT_TYPES['.txt'] } },
+      )
+    }
 
     if (url.pathname === REVIEW_ENDPOINT && req.method === 'POST') {
       return saveReview(req, info, root, recentLog)
@@ -341,7 +370,7 @@ export function createRequestHandler(
       return new Response('not found: ' + url.pathname, { status: 404 })
     }
 
-    if (url.pathname === '/@imp/events') {
+    if (url.pathname === EVENTS_ENDPOINT) {
       let controller
       const body = new ReadableStream({
         start(c) {
@@ -358,7 +387,7 @@ export function createRequestHandler(
       })
     }
 
-    if (url.pathname === '/@imp/log' && req.method === 'POST') {
+    if (url.pathname === LOG_ENDPOINT && req.method === 'POST') {
       try {
         const entries = await req.json()
         for (const entry of entries) printEntry(entry)
@@ -427,15 +456,48 @@ export function createBroadcaster(clients) {
   }
 }
 
-export function watchForChanges(root, onChange) {
-  ;(async () => {
-    let timer = null
-    for await (const event of Deno.watchFs(root)) {
-      if (event.paths.every((path) => isSkippedPath(relative(root, path)))) continue
-      clearTimeout(timer)
-      timer = setTimeout(onChange, 80)
+const CHANGE_SETTLE_DELAY = 80
+
+const WATCHER_RESTART_DELAY = 1000
+
+export function watchForChanges(
+  root,
+  onChange,
+  { watch = (path) => Deno.watchFs(path), restartDelay = WATCHER_RESTART_DELAY } = {},
+) {
+  let timer = null
+  let restartTimer = null
+  let watcher = null
+  let stopped = false
+  const applyChange = async () => {
+    try {
+      await onChange()
+    } catch (error) {
+      logger.error(`the change was not applied - ${error?.message ?? error}; save again to retry`)
     }
-  })()
+  }
+  const run = async () => {
+    try {
+      watcher = watch(root)
+      for await (const event of watcher) {
+        if (event.paths.every((path) => isSkippedPath(relative(root, path)))) continue
+        clearTimeout(timer)
+        timer = setTimeout(applyChange, CHANGE_SETTLE_DELAY)
+      }
+    } catch (error) {
+      if (!stopped) {
+        logger.error(`the file watcher failed - ${error?.message ?? error}; restarting it`)
+      }
+    }
+    if (!stopped) restartTimer = setTimeout(run, restartDelay)
+  }
+  run()
+  return () => {
+    stopped = true
+    clearTimeout(timer)
+    clearTimeout(restartTimer)
+    watcher?.close?.()
+  }
 }
 
 export function reloadBannerLine(reload) {
@@ -444,8 +506,16 @@ export function reloadBannerLine(reload) {
   )
 }
 
+export function printServerUrls(host, port, path = '/') {
+  for (const address of serverUrls(host, port, path)) console.log(`  -> ${address}`)
+}
+
+export function warnAboutExposedHost(host) {
+  if (host !== null && !isLoopbackHost(host)) logger.warn(exposedHostWarning(host))
+}
+
 export async function start(
-  { entry = 'index.html', port = null, env = null, mocks = null, reload = true } = {},
+  { entry = 'index.html', port = null, host = null, env = null, mocks = null, reload = true } = {},
 ) {
   let entryPath
   try {
@@ -502,9 +572,11 @@ export async function start(
   const server = Deno.serve(
     {
       port: listenPort,
+      hostname: listenHostname(host),
       onListen: ({ port }) => {
         logger.info(`imp start serving ${entryName} from ${root}`)
-        console.log(`  -> http://localhost:${port}/`)
+        printServerUrls(host, port)
+        warnAboutExposedHost(host)
         console.log(dim('  logs -> imp logs (-f follows the session)'))
         console.log(reloadBannerLine(reload))
       },
@@ -521,6 +593,7 @@ export async function start(
       runtimeValues,
       publicDir,
       recentLog: devLog.recent,
+      hostnames: servedHostnames(host),
     }),
   )
 

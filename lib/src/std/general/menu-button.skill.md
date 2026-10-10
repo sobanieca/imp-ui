@@ -49,8 +49,9 @@ Rules an agent gets wrong:
 - **The platform owns the dismissal and the layering.** A click away, or Escape, shuts the menu and
   returns the focus to the trigger. Do not add an outside-click handler.
 - The arrow keys, `Home` and `End` walk the enabled options. imp skips a `disabled` option.
-- imp warns about an unknown prop, about a `trigger` outside the list, and about an `items` array
-  with no usable entry.
+- **An `items` array with no usable entry gives a disabled trigger with no menu.** The trigger then
+  does not announce a menu. imp warns about it.
+- imp warns about an unknown prop and about a `trigger` outside the list.
 
 ```js
 flex(

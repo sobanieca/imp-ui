@@ -2,6 +2,9 @@ import { join, toFileUrl } from '@std/path'
 import { assertSnapshot } from './snapshot.js'
 import { clientScript } from '../src/client.js'
 import { bundleMockFiles, createMocks } from '../src/mocks.js'
+import { networkAddresses } from '../src/dev-server-access.js'
+import { watchForChanges } from '../src/start.js'
+import { addLogSink } from '../src/logger.js'
 import {
   check,
   commandTranscript,
@@ -13,6 +16,7 @@ import {
   runImp,
   runServiceWorker,
   section,
+  startPreviewServer,
   startServer,
   tempDir,
   touch,
@@ -21,9 +25,14 @@ import {
   workerReport,
 } from './helpers.js'
 
-async function rawRequestStatusLine(port, target) {
+async function rawRequestStatusLine(
+  port,
+  target,
+  { method = 'GET', host = 'localhost', headers = [] } = {},
+) {
   const connection = await Deno.connect({ hostname: '127.0.0.1', port })
-  const request = `GET ${target} HTTP/1.1\r\nhost: localhost\r\nconnection: close\r\n\r\n`
+  const lines = [`${method} ${target} HTTP/1.1`, `host: ${host}`, ...headers, 'connection: close']
+  const request = `${lines.join('\r\n')}\r\n\r\n`
   await connection.write(new TextEncoder().encode(request))
   const chunks = []
   const buffer = new Uint8Array(65536)
@@ -725,5 +734,221 @@ Deno.test('a mock that throws outside its handler stops only the mocks, and they
     check(reported.length === 2, `the mocks loaded ${reported.length} time(s)`)
   } finally {
     await Deno.remove(root, { recursive: true })
+  }
+})
+
+Deno.test('the dev server answers its endpoints only for its own pages', async (t) => {
+  const dir = await tempDir()
+  await copyDirectory(fixture('start-mocks'), dir)
+  await Deno.writeTextFile(join(dir, '.env'), 'SECRET=1\n')
+  await Deno.mkdir(join(dir, '.well-known'))
+  await Deno.writeTextFile(join(dir, '.well-known', 'security.txt'), 'Contact: a@b.example\n')
+  await Deno.mkdir(join(dir, 'notes', '.drafts'), { recursive: true })
+  await Deno.writeTextFile(join(dir, 'notes', '.drafts', 'plan.txt'), 'SECRET plan\n')
+  await Deno.writeTextFile(
+    join(dir, 'note.preview.js'),
+    "import { div } from 'imp/html'\nexport const plain = div('note')\n",
+  )
+  const servers = [
+    { label: 'imp start', server: await startServer(dir, ['--mock']) },
+    { label: 'imp preview', server: await startPreviewServer(dir, ['--mock']) },
+  ]
+  const transcript = []
+  try {
+    for (const { label, server } of servers) {
+      const own = `http://localhost:${server.port}`
+      const request = async (name, path, { method = 'GET', headers = {}, body } = {}) => {
+        const response = await fetch(`http://localhost:${server.port}${path}`, {
+          method,
+          headers,
+          body,
+        })
+        const text = path === '/@imp/events' ? '' : await response.text()
+        if (path === '/@imp/events') await response.body?.cancel()
+        const leaked = text.includes('SECRET') ? ' (the file leaked)' : ''
+        transcript.push(`${label} | ${name}: ${method} ${path} -> ${response.status}${leaked}`)
+      }
+      const json = { 'content-type': 'application/json' }
+      const batch = JSON.stringify([])
+      const described = JSON.stringify({ method: 'GET', path: '/api/count' })
+      await request('a dot file', '/.env')
+      await request('a dot folder', '/notes/.drafts/plan.txt')
+      await request('an encoded dot file', '/%2Eenv')
+      await request('the .well-known folder', '/.well-known/security.txt')
+      for (const [path, body] of [['/@imp/log', batch], ['/@imp/mock', described]]) {
+        await request('from another site', path, {
+          method: 'POST',
+          headers: { ...json, origin: 'http://evil.example' },
+          body,
+        })
+        await request('from the page, as text', path, {
+          method: 'POST',
+          headers: { 'content-type': 'text/plain', origin: own },
+          body,
+        })
+        await request('with no origin', path, { method: 'POST', headers: json, body })
+        await request('from the page', path, {
+          method: 'POST',
+          headers: { ...json, origin: own },
+          body,
+        })
+        await request('same-origin fetch metadata', path, {
+          method: 'POST',
+          headers: { ...json, 'sec-fetch-site': 'same-origin' },
+          body,
+        })
+      }
+      await request('a review from another site', '/@imp/review', {
+        method: 'POST',
+        headers: { ...json, origin: 'http://evil.example' },
+        body: JSON.stringify({ element: { path: 'body' }, comment: 'x' }),
+      })
+      await request('events for another site', '/@imp/events', {
+        headers: { origin: 'http://evil.example' },
+      })
+      await request('events for a cross-site page', '/@imp/events', {
+        headers: { 'sec-fetch-site': 'cross-site' },
+      })
+      await request('events for the page', '/@imp/events', {
+        headers: { 'sec-fetch-site': 'same-origin' },
+      })
+      const rebound = await rawRequestStatusLine(server.port, '/@imp/log', {
+        method: 'POST',
+        host: `rebound.example:${server.port}`,
+        headers: [
+          `origin: http://rebound.example:${server.port}`,
+          'content-type: application/json',
+          'content-length: 2',
+        ],
+      })
+      transcript.push(`${label} | a rebound host name: POST /@imp/log -> ${rebound}`)
+      for (const path of ['/', '/app.js', '/@imp/imp.js', '/@imp/preview/app.js', '/missing']) {
+        const status = await rawRequestStatusLine(server.port, path, {
+          host: `rebound.example:${server.port}`,
+        })
+        transcript.push(`${label} | a rebound host name: GET ${path} -> ${status}`)
+      }
+      for (const host of [`localhost:${server.port}`, `127.0.0.1:${server.port}`]) {
+        const status = await rawRequestStatusLine(server.port, '/', { host })
+        transcript.push(`${label} | the host ${host.split(':')[0]}: GET / -> ${status}`)
+      }
+    }
+    const reviews = await Deno.stat(join(dir, '.imp', 'reviews')).then(() => true, () => false)
+    transcript.push(`a review was saved: ${reviews}`)
+  } finally {
+    for (const { server } of servers) await server.stop()
+    await Deno.remove(dir, { recursive: true })
+  }
+  await t.step(
+    'start-endpoint-access',
+    () => assertSnapshot('start-endpoint-access', `${transcript.join('\n')}\n`),
+  )
+})
+
+Deno.test('the dev server listens on 127.0.0.1 unless --host opens it', async () => {
+  const dir = await tempDir()
+  await copyDirectory(fixture('basic'), dir)
+  const reachable = (hostname, port) =>
+    Deno.connect({ hostname, port }).then((connection) => {
+      connection.close()
+      return true
+    }, () => false)
+  const [address] = networkAddresses()
+  const closed = await startServer(dir)
+  try {
+    check(await reachable('127.0.0.1', closed.port), 'the default server is not on 127.0.0.1')
+    if (address) {
+      check(!(await reachable(address, closed.port)), `the default server answers on ${address}`)
+    }
+    check(!closed.banner.includes('every device'), 'the default banner warns')
+  } finally {
+    await closed.stop()
+  }
+  const open = await startServer(dir, ['--host', '0.0.0.0'])
+  try {
+    check(await reachable('127.0.0.1', open.port), 'the open server is not on 127.0.0.1')
+    if (address) {
+      check(await reachable(address, open.port), `the open server is not on ${address}`)
+      check(
+        open.banner.includes(`-> http://${address}:${open.port}/`),
+        `the banner does not name ${address}:\n${open.banner}`,
+      )
+      const page = await fetch(`http://${address}:${open.port}/`)
+      await page.body?.cancel()
+      check(page.status === 200, `the open server refused ${address}: ${page.status}`)
+    }
+  } finally {
+    await open.stop()
+    await Deno.remove(dir, { recursive: true })
+  }
+  const missing = await runImp(['start', '--host'], fixture('basic'))
+  check(missing.code === 1 && missing.stderr.includes('--host needs an address'), missing.stderr)
+})
+
+Deno.test('a failed change or a failed watcher keeps the dev server watching', async () => {
+  const logged = []
+  const removeSink = addLogSink((line) => logged.push(line))
+  const root = await tempDir()
+  let watchers = 0
+  const watch = () => {
+    watchers += 1
+    const round = watchers
+    return (async function* () {
+      yield { kind: 'modify', paths: [join(root, `file-${round}.js`)] }
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      if (round === 1) throw new Error('the watcher lost its handle')
+      await new Promise(() => {})
+    })()
+  }
+  const changes = []
+  const stop = watchForChanges(root, () => {
+    changes.push(changes.length + 1)
+    if (changes.length === 1) throw new Error('the catalog could not be built')
+  }, { watch, restartDelay: 10 })
+  try {
+    const deadline = Date.now() + 5000
+    while (changes.length < 2 && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  } finally {
+    stop()
+    removeSink()
+    await Deno.remove(root, { recursive: true })
+  }
+  check(changes.length === 2, `the second change must apply, got ${changes.length} change(s)`)
+  check(watchers === 2, `the watcher must restart once, it started ${watchers} time(s)`)
+  check(
+    logged.some((line) => line.includes('the catalog could not be built')),
+    'the failed change must be logged',
+  )
+  check(
+    logged.some((line) => line.includes('the watcher lost its handle')),
+    'the failed watcher must be logged',
+  )
+})
+
+Deno.test('the dev server serves a file and a folder with a non-ASCII name', async () => {
+  const dir = await tempDir()
+  await copyDirectory(fixture('basic'), dir)
+  const folder = 'zdj\u0119cia-\u6587\u6863'
+  const file = '\u017c\u00f3\u0142w-\u732b.txt'
+  await Deno.mkdir(join(dir, folder))
+  await Deno.writeTextFile(join(dir, folder, file), 'turtle\n')
+  const server = await startServer(dir)
+  try {
+    const base = `http://127.0.0.1:${server.port}`
+    const folderPath = `/${encodeURIComponent(folder)}`
+    const filePath = `${folderPath}/${encodeURIComponent(file)}`
+    const served = await fetch(`${base}${filePath}`)
+    const text = await served.text()
+    check(served.status === 200 && text === 'turtle\n', `the file answered ${served.status}`)
+    const redirect = await fetch(`${base}${folderPath}`, { redirect: 'manual' })
+    await redirect.body?.cancel()
+    check(redirect.status === 302, `the folder answered ${redirect.status}`)
+    const location = redirect.headers.get('location')
+    check(location === `${folderPath}/`, `the folder redirects to ${location}`)
+  } finally {
+    await server.stop()
+    await Deno.remove(dir, { recursive: true })
   }
 })

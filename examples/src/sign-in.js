@@ -1,7 +1,7 @@
 import { component } from 'imp'
 import { div, h1, p } from 'imp/html'
 import { HttpError, useHttpClient } from 'imp/http'
-import { navigate, useRoute } from 'imp/router'
+import { navigate, safeNext, useRoute } from 'imp/router'
 import { t } from 'imp/i18n'
 import { useState } from 'imp/state'
 import { form, FormError, textField } from 'imp/std/inputs'
@@ -11,10 +11,6 @@ import { submitButton } from './submit-button.js'
 import { tr, translated } from './translate.js'
 import { logoMark } from './ui/logo-mark.js'
 import { app } from './app-map.js'
-
-const LOCAL_PATH = /^\/(?![/\\])/
-
-const returnPath = (next) => (LOCAL_PATH.test(next ?? '') ? next : app.todos.href())
 
 export const signInPage = component('todo-sign-in', {
   styles: `
@@ -56,7 +52,7 @@ export const signInPage = component('todo-sign-in', {
       }
       writeToken(user.token)
       session.set(user)
-      navigate(returnPath(useRoute().get().query.next), { replace: true })
+      navigate(safeNext(useRoute().get().query.next, app.todos.href()), { replace: true })
     }
     return div(
       { class: 'panel' },

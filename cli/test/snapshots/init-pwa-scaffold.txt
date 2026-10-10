@@ -1,19 +1,24 @@
-$ imp init --pwa  (cwd: <tmp>/my-shop)
+$ imp init --pwa --font work-sans  (cwd: <tmp>/my-shop)
 exit code: 0
 
 --- stdout ---
 Created a new imp project here.
 
-  imp.json            the one config file - pins imp <version>
-  index.html          the page imp serves
-  src/main.js         entry point: applies the theme, mounts the frame
-  src/app-map.js      the application map: every feature of the app, one line each
-  src/app.js          the frame, the router and the counter
-  test/app.test.js    unit test, runs in-process
-  test/app.spec.js    e2e spec, runs in a real browser
-  public/favicon.svg  published at the site root - replace it with your own mark
-  .gitignore          dist/, .imp/ and every .env file
-  icon.svg            the source image imp renders the whole PWA icon set from
+  imp.json                                the one config file - pins imp <version>
+  index.html                              the page imp serves
+  src/main.js                             entry point: applies the theme, mounts the frame
+  src/theme.js                            the theme: Work Sans over imp-light - make the palette your own
+  src/app-map.js                          the application map: every feature of the app, one line each
+  src/app.js                              the frame, the router and the counter
+  test/app.test.js                        unit test, runs in-process
+  test/app.spec.js                        e2e spec, runs in a real browser
+  public/favicon.svg                      published at the site root - replace it with your own mark
+  public/fonts/fonts.css                  the @font-face rules of Work Sans - linked from index.html
+  public/fonts/work-sans-latin-ext.woff2  Work Sans, Latin Extended
+  public/fonts/work-sans-latin.woff2      Work Sans, Latin
+  public/fonts/work-sans-ofl.txt          SIL Open Font License 1.1 - ships with the font
+  .gitignore                              dist/, .imp/ and every .env file
+  icon.svg                                the source image imp renders the whole PWA icon set from
 
 Next steps:
   imp start        serve the app with live reload
@@ -21,6 +26,8 @@ Next steps:
   imp build --pwa  build an installable, offline app into dist/
   imp skill        read imp's manuals - an AI agent starts here
 
+The font is Work Sans, named by --font. An AI agent keeps it and follows `imp skill init`
+to give the app a theme of its own.
 Now point your AI agent at `imp skill` and start building!
 
 --- stderr ---
@@ -32,9 +39,14 @@ icon.svg
 imp.json
 index.html
 public/favicon.svg
+public/fonts/fonts.css
+public/fonts/work-sans-latin-ext.woff2
+public/fonts/work-sans-latin.woff2
+public/fonts/work-sans-ofl.txt
 src/app-map.js
 src/app.js
 src/main.js
+src/theme.js
 test/app.spec.js
 test/app.test.js
 

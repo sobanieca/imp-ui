@@ -118,6 +118,25 @@ Deno.test('the theme editor exports a theme file that imports back as one theme'
   )
 })
 
+Deno.test('the theme file keeps backslashes, quotes and line breaks in a value', async () => {
+  const tokens = {
+    'icon-glyph': '"\\e900"',
+    'font-family': `'Inter', "Noto Sans", sans-serif`,
+    'path-windows': 'C:\\fonts\\',
+    'odd-value': 'it\'s a \\ "test"\nnext line',
+  }
+  const source = themeFileSource("acme's \\ theme", { tokens })
+  const module = await import(`data:text/javascript,${encodeURIComponent(source)}`)
+  const theme = module.default
+  check(theme.name === "acme's \\ theme", `unexpected theme name ${theme.name}`)
+  for (const [name, value] of Object.entries(tokens)) {
+    check(
+      theme.tokens[name] === value,
+      `${name} came back as ${JSON.stringify(theme.tokens[name])}`,
+    )
+  }
+})
+
 Deno.test('the prose export tables match what imp really exports', async () => {
   const pages = [
     'skills/imports.md',

@@ -31,7 +31,8 @@ itself. When the token is absent or has another value, imp warns once per theme 
 `color-scheme` unset. `colorSchemeOf(tokens)` returns that token, for a component that must branch.
 
 Apply a theme at the entry point, or through `init({ theme })`, see [i18n](i18n.md). Do it before
-`mount`. The page then does not flash the wrong theme.
+`mount`. The page then does not flash the wrong theme. `applyTheme` stores a copy. The object that
+you pass stays editable, and the value of `theme.get()` is frozen.
 
 ## Built-in themes
 
@@ -76,6 +77,8 @@ await init({
 - **Set the same fonts in every theme.** A font does not change between light and dark.
 - A self-hosted font goes under `public/fonts/`, with an `@font-face` stylesheet linked from
   `index.html`.
+- **A project from `imp init` already self-hosts one font**, named in `src/theme.js`. Keep it. See
+  [init](init.md).
 
 ## Rules an agent gets wrong
 

@@ -53,16 +53,17 @@ install, run `imp --version`. It prints the version that the binary runs.
 ## Commands
 
 ```
-imp init [dir] [--pwa]                scaffold a new project (--pwa: installable app)
+imp init [dir] [--pwa] [--font <name>] scaffold a new project (--pwa: installable app)
 imp start [file.html] [--port 4507]   serve a page (default: index.html)
           [--mock | --no-mock]        answer from the mocks folder, or from the real API
           [--no-reload]               keep the page as it is when a file changes
+          [--host <address>]          listen on another address than 127.0.0.1
 imp build [file.html] [--output dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
 imp preview [path] [--port 4517]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
             [--output <dir>]          export the gallery as static files that any page embeds
-            [--mock | --no-mock] [--no-reload]
+            [--mock | --no-mock] [--no-reload] [--host <address>]
 imp review [clear]                    list the reviews written from the browser
                                       (clear: delete every saved review)
 imp logs [-n <count>] [-f]            print the log of the dev server session
@@ -123,7 +124,7 @@ select with `--env`:
 ## `imp init` - your first command
 
 ```
-imp init [dir] [--pwa]
+imp init [dir] [--pwa] [--font <name>]
 ```
 
 `imp init` scaffolds a new project that you can run immediately. With no argument, it scaffolds into
@@ -133,17 +134,19 @@ an AI agent as a first step.
 
 What you get is deliberately small. It is a working app, not a template to study:
 
-| File                 | What it is                                                             |
-| -------------------- | ---------------------------------------------------------------------- |
-| `imp.json`           | your one config file: the imp version, and the path of the map         |
-| `index.html`         | the page imp serves, with the mount point and the entry module         |
-| `src/main.js`        | applies the built-in light theme and mounts the frame                  |
-| `src/app-map.js`     | the application map - the features of the app, one node per line       |
-| `src/app.js`         | the frame, the router, and a click counter bound to the home node      |
-| `test/app.test.js`   | a unit test that mounts the frame and clicks the button of the counter |
-| `test/app.spec.js`   | an end-to-end spec that drives the same app in a real browser          |
-| `public/favicon.svg` | a placeholder mark, published at the site root                         |
-| `.gitignore`         | ignores `dist/`, `.imp/`, every `.env` file, and the usual OS noise    |
+| File                 | What it is                                                              |
+| -------------------- | ----------------------------------------------------------------------- |
+| `imp.json`           | your one config file: the imp version, and the path of the map          |
+| `index.html`         | the page imp serves, with the mount point, the entry and the font       |
+| `src/main.js`        | applies the theme of the app and mounts the frame                       |
+| `src/theme.js`       | the theme of the app: the built-in light theme with the font of the app |
+| `src/app-map.js`     | the application map - the features of the app, one node per line        |
+| `src/app.js`         | the frame, the router, and a click counter bound to the home node       |
+| `test/app.test.js`   | a unit test that mounts the frame and clicks the button of the counter  |
+| `test/app.spec.js`   | an end-to-end spec that drives the same app in a real browser           |
+| `public/favicon.svg` | a placeholder mark, published at the site root                          |
+| `public/fonts/`      | one font family, its `@font-face` stylesheet, and its license           |
+| `.gitignore`         | ignores `dist/`, `.imp/`, every `.env` file, and the usual OS noise     |
 
 There is no `README`, no `src/components/` tree and no second example. The counter shows the shape
 of an imp app: a component, a namespaced state, and a live text node bound to that state. The map
@@ -154,6 +157,49 @@ placeholder until you bind a screen to it. The nav of the frame works from the f
 The scaffold is a working project when it arrives. `imp lint`, `imp fmt --check`, `imp test --unit`
 and `imp test --e2e` all pass against it before you change a line. A failure after your first edit
 is about your edit.
+
+### The font of a new app
+
+Every new app gets a font of its own. `imp init` picks one family at random from a short list, and
+writes it into the project. To choose the family yourself, give its name to `--font`:
+
+```
+imp init my-app --font space-grotesk
+```
+
+| `--font`            | Family            | License                   |
+| ------------------- | ----------------- | ------------------------- |
+| `inter`             | Inter             | SIL Open Font License 1.1 |
+| `manrope`           | Manrope           | SIL Open Font License 1.1 |
+| `plus-jakarta-sans` | Plus Jakarta Sans | SIL Open Font License 1.1 |
+| `dm-sans`           | DM Sans           | SIL Open Font License 1.1 |
+| `outfit`            | Outfit            | SIL Open Font License 1.1 |
+| `space-grotesk`     | Space Grotesk     | SIL Open Font License 1.1 |
+| `sora`              | Sora              | SIL Open Font License 1.1 |
+| `figtree`           | Figtree           | SIL Open Font License 1.1 |
+| `nunito-sans`       | Nunito Sans       | SIL Open Font License 1.1 |
+| `work-sans`         | Work Sans         | SIL Open Font License 1.1 |
+
+imp picks the font, not your AI agent. A random choice from a program is truly random, so two new
+apps rarely look the same. The choice is also part of the scaffold before the agent starts. The
+agent skill of `imp init` tells the agent to keep the font and to build a palette of its own around
+it: the colours, a gradient where it suits, the radius and the shadows. See
+**[Theming](theming.md)**.
+
+The font is **hosted by the app itself**. imp copies the font files from its own binary into
+`public/fonts/`, and `index.html` links `/fonts/fonts.css`. The page sends no request to another
+origin. This has three results:
+
+- The reader's browser does not tell a font service which pages the reader opens.
+- The app works offline, and a `--pwa` build caches the font with the rest of the app.
+- A Content Security Policy of `style-src 'self'` permits the font. You add no origin.
+
+Each family is the Latin and the Latin Extended subset, with the weights from 400 to 700. A script
+that the font does not have, such as Arabic or Chinese, uses the system font. Every family on the
+list is licensed under the SIL Open Font License 1.1. This license permits you to use the font in
+any app, also in a commercial app. It requires that the copyright notice and the license travel with
+the font. So `imp init` writes the license file of the family beside the font files, and `imp build`
+publishes it with them. Keep that file. The page does not need to show a credit.
 
 **imp does not overwrite your work.** When one file that it would write is already present,
 `imp init` writes nothing, names the conflicts, and exits with code 1. Run it in an empty directory
@@ -216,6 +262,7 @@ for the map itself.
 
 ```
 imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-reload]
+          [--host <address>]
 ```
 
 `imp start` serves the directory that contains the HTML file that you give. The default file is
@@ -230,6 +277,34 @@ the default `4507`. Set a fixed port for a project, so you do not repeat the fla
   "devServerPort": 9085
 }
 ```
+
+### The dev server is a local tool
+
+`imp start` and `imp preview` are tools for local development. Do not expose them to other machines.
+The dev server reads every file of the project, and it has no login. So it must not be the server of
+a real site. To publish the app, run `imp build` and upload the output.
+
+By default the dev server listens on `127.0.0.1`. So only programs on your own machine can open the
+page. To test the page on a phone, pass `--host 0.0.0.0`. The server then listens on every network
+address of the machine, and it prints one URL for each address:
+
+```
+imp start --host 0.0.0.0
+```
+
+> **Warning:** With `--host`, every device on that network can read the files of your project. Use
+> `--host` only on a network that you trust, and stop the server when you are done.
+
+The dev server answers only a request that names it by a loopback name, such as `localhost` or
+`127.0.0.1`, or by an address of `--host`. Any other host name gets the status `403`. This stops a
+web page that points its own domain name at your machine, a DNS rebinding attack, from reading your
+files. With `--host 0.0.0.0`, open one of the URLs that the server prints.
+
+The dev server protects its own endpoints. Live reload, the log of the page, the mock responses and
+the saved reviews answer only a request from a page of the dev server itself. A POST must send
+`application/json`. A request from another site gets the status `403`. The server does not serve a
+file or a folder whose name starts with `.`, such as `.env` or `.git`, and answers `404`. The one
+exception is `.well-known/`.
 
 imp injects three things into every served HTML document, so you never reference the imp library by
 path. imp skips the injection for a document that already contains the item:
@@ -283,6 +358,10 @@ change inside `.git/`, `node_modules/`, `dist/` and its own `.imp/` working dire
 loses the state that the page does not store, such as text in a field or an open dialog. Pass
 `--no-reload` to keep the page as it is while you edit. The server still serves every saved file, so
 the next reload that you make yourself shows the new code.
+
+A failed change does not stop the server. When imp cannot apply a change, or the file watcher fails,
+imp writes the error to the terminal and to the session log. The server keeps running, and the next
+good save applies again.
 
 imp serves a static file with the correct content type for a common web asset. imp serves your
 `public/` folder at the site root, so `public/styles.css` answers `/styles.css`, exactly as it does
@@ -587,6 +666,17 @@ imp build [file.html|file.js] [--output dist] [--pwa]
 `dist/`. You upload that directory to any static host or CDN, exactly as it is. It holds plain
 static files. There is no imp runtime, no import map, and nothing to install on the server. imp
 replaces the output directory on every run.
+
+imp deletes the output directory before it writes the build. So it refuses an output directory that
+holds your work:
+
+- the project folder, or a folder that contains it
+- `public/`, a folder that contains it, or a folder inside it
+- a folder that contains a source file of the build, such as `src/`
+- a folder that holds files that imp did not write
+
+A new folder or an empty folder is always accepted. Each build writes a `.imp-output` marker file
+into the folder, so the next build knows that it can replace the folder.
 
 The command is `build`, not `bundle`, because the output is more than a bundle of your JavaScript.
 It is the whole production build step, and it can emit more generated files beside the bundled code.
@@ -1108,6 +1198,7 @@ resolution, the recording, and the pattern for parallel runs in CI.
 
 ```
 imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock] [--no-reload]
+            [--host <address>]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]
 ```
@@ -1520,9 +1611,10 @@ case with hyphens, such as `/widgets/counter`. A reload keeps it, and a bookmark
 on a scenario tab adds `?scenario=<name>` to the address, so a link opens that scenario.
 
 `imp preview --list` prints the discovered preview files, one per line. `--list --json` prints them
-as a JSON array, for a tool to read. `--port` selects the port, and the default is 4517. `--env`
-selects an environment entry from `imp.json`, exactly as on `imp start`. To keep a folder out of the
-discovery, use a `preview.exclude` array in `imp.json`:
+as a JSON array, for a tool to read. `--port` selects the port, and the default is 4517. `--host`
+selects the address, as on `imp start`, and the same warning applies. `--env` selects an environment
+entry from `imp.json`, exactly as on `imp start`. To keep a folder out of the discovery, use a
+`preview.exclude` array in `imp.json`:
 
 ```json
 {
@@ -1590,8 +1682,9 @@ fails to build fails the export, in place of a marked card in the catalog. `--en
 environment for the components, as it does for the served page.
 
 The output folder belongs to the export. imp empties it before it writes, as `imp build` does with
-its output folder. Point `--output` at a folder inside `public/` of the app that embeds the gallery,
-and `imp build` ships it with the app.
+its output folder. It refuses the same folders as `imp build`, except a folder inside `public/`.
+Point `--output` at a folder inside `public/` of the app that embeds the gallery, and `imp build`
+ships it with the app.
 
 ## `imp review`
 

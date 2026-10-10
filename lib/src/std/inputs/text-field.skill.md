@@ -19,6 +19,7 @@ The call shape is `textField(props?)`. It takes no children.
 | `help`      | string, or a state holding one             | Hint under the control                       |
 | `required`  | boolean                                    | Marks it and validates that it is filled in  |
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                           |
+| `secret`    | boolean                                    | With `field`: keeps the value out of state   |
 
 | Prop           | Values                                                                      | Default  | Notes                                           |
 | -------------- | --------------------------------------------------------------------------- | -------- | ----------------------------------------------- |
@@ -67,6 +68,11 @@ Rules an agent gets wrong:
 - **A multi-line field resizes vertically only.** So a long note never breaks the column width.
 - **`type` sets the keyboard and the autofill of the browser. It does not validate.**
   `type: 'email'` does not check the address. Add `pattern` or `validate` for that.
+- **A password, an API key or a token needs `secret: true` as well as `type: 'password'`.** `type`
+  only hides the characters on the screen. `secret` keeps the value out of the `imp.form` state and
+  out of every debug log line. `onSubmit` still gets the value at its path. The field empties after
+  a successful submit and after `resetForm`. It ignores its path in `initialValues`. `secret` works
+  with `field` only. With `value`, imp warns, and the value stays in your state.
 - **Type `'password'` has no reveal button.** Set `autocomplete` to `'current-password'` or
   `'new-password'`, so a password manager fills the right value.
 - **The control commits on every keystroke**, so the form state is always current. imp updates the
@@ -76,7 +82,8 @@ Rules an agent gets wrong:
 textField({ field: 'name', label: 'Full name', required: true })
 textField({ field: 'user.email', label: 'Email', type: 'email', help: 'We never share it' })
 textField({ field: 'code', label: 'Code', minLength: 6, maxLength: 6 })
-textField({ field: 'password', label: 'Password', type: 'password', autocomplete: 'new-password' })
+textField({ field: 'password', label: 'Password', type: 'password', secret: true })
+textField({ field: 'apiKey', label: 'API key', type: 'password', secret: true, required: true })
 textField({ value: query, ariaLabel: 'Search invoices', type: 'search', placeholder: 'Search' })
 textField({ field: 'seats', label: 'Seats', type: 'number', min: 1, max: 50, step: 1 })
 textField({ value: zoom, ariaLabel: 'Zoom', type: 'number', stepper: true, step: 25 })

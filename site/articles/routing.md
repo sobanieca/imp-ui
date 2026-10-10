@@ -165,6 +165,10 @@ const todo = await save(draft)
 navigate(app.todos.$id.href({ id: todo.id }))
 ```
 
+It stays on your own origin. A crafted `?next=//evil.example` cannot send your users to another
+site, and a `javascript:` URL never runs. Leave the app on purpose with `{ external: true }`, and
+clean a `?next=` value with `safeNext(value, fallback)`.
+
 ### Navigation controls - the frame draws them
 
 imp doesn't ship a `<Link>` for the nav. The `shell` reads the map and draws the bar, the sidebar of

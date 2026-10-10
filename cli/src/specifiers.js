@@ -20,7 +20,7 @@ export function defaultAlias({ name, subpath }) {
   return name.split('/').at(-1)
 }
 
-export const VALID_ALIAS = /^[A-Za-z0-9._-]+$/
+export const VALID_ALIAS = /^(?!.*\.\.)[A-Za-z0-9_-][A-Za-z0-9._-]*$/
 
 export const IMP_MODULES = {
   'imp': 'imp.js',

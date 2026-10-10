@@ -20,6 +20,7 @@ built index.html -> dist/
 (empty)
 
 --- output files ---
+dist/.imp-output
 dist/LICENSES.txt
 dist/app-analytics.json
 dist/assets/note.txt

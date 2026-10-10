@@ -181,22 +181,22 @@ Deno.test('imp commands', async (t) => {
 
   await t.step('init-scaffold', async () => {
     const dir = await tempDir()
-    const created = await runImp(['init', 'app'], dir)
+    const created = await runImp(['init', 'app', '--font', 'sora'], dir)
     const project = join(dir, 'app')
     const files = (await listFiles(project)).sort()
     const sources = []
     for (const file of files) {
-      if (file.endsWith('.svg')) continue
+      if (/\.(svg|woff2|txt)$/.test(file)) continue
       const contents = await Deno.readTextFile(join(project, file))
       sources.push(`--- ${file} ---\n${contents.replaceAll(VERSION, '<version>')}`)
     }
-    const again = await runImp(['init'], project)
+    const again = await runImp(['init', '--font', 'sora'], project)
     await Deno.remove(dir, { recursive: true })
     await assertSnapshot(
       'init-scaffold',
-      `${commandTranscript('imp init app  (cwd: <tmp>)', created)}\n` +
+      `${commandTranscript('imp init app --font sora  (cwd: <tmp>)', created)}\n` +
         `--- files ---\n${files.join('\n')}\n\n${sources.join('\n')}\n` +
-        `${commandTranscript('imp init  (cwd: <tmp>/app)', again)}`,
+        `${commandTranscript('imp init --font sora  (cwd: <tmp>/app)', again)}`,
     )
   })
 
@@ -204,20 +204,20 @@ Deno.test('imp commands', async (t) => {
     const dir = await tempDir()
     const existing = '# my stuff\nnode_modules\n*.log\n.env*\n/dist\n.DS_Store\n'
     await Deno.writeTextFile(join(dir, '.gitignore'), existing)
-    const merged = await runImp(['init'], dir)
+    const merged = await runImp(['init', '--font', 'inter'], dir)
     const afterMerge = await Deno.readTextFile(join(dir, '.gitignore'))
     const covered = await tempDir()
     await Deno.writeTextFile(join(covered, '.gitignore'), afterMerge)
-    const again = await runImp(['init'], covered)
+    const again = await runImp(['init', '--font', 'inter'], covered)
     const afterSecondRun = await Deno.readTextFile(join(covered, '.gitignore'))
     await Deno.remove(dir, { recursive: true })
     await Deno.remove(covered, { recursive: true })
     await assertSnapshot(
       'init-merges-existing-gitignore',
       `--- existing .gitignore ---\n${existing}\n` +
-        `${commandTranscript('imp init  (cwd: <tmp>)', merged)}\n` +
+        `${commandTranscript('imp init --font inter  (cwd: <tmp>)', merged)}\n` +
         `--- merged .gitignore ---\n${afterMerge}\n` +
-        `${commandTranscript('imp init  (cwd: <tmp2>, already covered)', again)}\n` +
+        `${commandTranscript('imp init --font inter  (cwd: <tmp2>, already covered)', again)}\n` +
         `--- .gitignore after the second run (unchanged) ---\n${afterSecondRun}`,
     )
   })
@@ -225,15 +225,29 @@ Deno.test('imp commands', async (t) => {
   await t.step('init-pwa-scaffold', async () => {
     const dir = join(await tempDir(), 'my-shop')
     await Deno.mkdir(dir)
-    const created = await runImp(['init', '--pwa'], dir)
+    const created = await runImp(['init', '--pwa', '--font', 'work-sans'], dir)
     const files = (await listFiles(dir)).sort()
     const config = (await Deno.readTextFile(join(dir, 'imp.json')))
       .replaceAll(VERSION, '<version>')
     await Deno.remove(dirname(dir), { recursive: true })
     await assertSnapshot(
       'init-pwa-scaffold',
-      `${commandTranscript('imp init --pwa  (cwd: <tmp>/my-shop)', created)}\n` +
+      `${commandTranscript('imp init --pwa --font work-sans  (cwd: <tmp>/my-shop)', created)}\n` +
         `--- files ---\n${files.join('\n')}\n\n--- imp.json ---\n${config}`,
+    )
+  })
+
+  await t.step('init-font-flag-errors', async () => {
+    const dir = await tempDir()
+    const unknown = await runImp(['init', 'app', '--font', 'comic-sans'], dir)
+    const missing = await runImp(['init', 'app', '--font'], dir)
+    const files = await listFiles(dir)
+    await Deno.remove(dir, { recursive: true })
+    await assertSnapshot(
+      'init-font-flag-errors',
+      `${commandTranscript('imp init app --font comic-sans  (cwd: <tmp>)', unknown)}\n` +
+        `${commandTranscript('imp init app --font  (cwd: <tmp>)', missing)}\n` +
+        `--- files ---\n${files.length === 0 ? '(none)' : files.join('\n')}\n`,
     )
   })
 

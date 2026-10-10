@@ -962,6 +962,42 @@ Deno.test('imp preview --output writes the element script and the group bundles'
   await assertSnapshot('preview-output', `${report}\n`)
 })
 
+Deno.test('imp preview --output refuses a folder that holds files imp did not write', async () => {
+  const outdir = await tempDir()
+  try {
+    const folder = join(outdir, 'mine')
+    await Deno.mkdir(folder)
+    await Deno.writeTextFile(join(folder, 'notes.md'), '# notes\n')
+    const refused = await runImp(['preview', '--output', folder], fixture('preview'))
+    check(refused.code === 1, 'the export into a folder of other files did not fail')
+    check(
+      refused.stderr.includes('holds files that imp did not write'),
+      `unexpected error: ${refused.stderr}`,
+    )
+    check(
+      (await Deno.readTextFile(join(folder, 'notes.md'))) === '# notes\n',
+      'the refused export deleted a file',
+    )
+    const components = await runImp(['preview', '--output', 'components'], fixture('preview'))
+    check(components.code === 1, 'the export into the folder of the previews did not fail')
+    check(
+      components.stderr.includes('must not contain a source of the project'),
+      `unexpected error: ${components.stderr}`,
+    )
+    const gallery = join(outdir, 'gallery')
+    for (const round of [1, 2]) {
+      const result = await runImp(['preview', '--output', gallery], fixture('preview'))
+      check(result.code === 0, `export ${round} failed: ${result.stderr}`)
+    }
+    check(
+      (await Deno.stat(join(gallery, '.imp-output')).catch(() => null))?.isFile === true,
+      'the export wrote no marker',
+    )
+  } finally {
+    await Deno.remove(outdir, { recursive: true })
+  }
+})
+
 Deno.test('the exported preview embeds in a page and shares its address', async () => {
   const site = await tempDir()
   const exported = await runImp(

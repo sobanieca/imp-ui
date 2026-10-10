@@ -10,6 +10,7 @@ const REPO = 'sobanieca/imp-ui'
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
 const UPDATE_CHECK_TIMEOUT = 2000
 const STALE_AFTER = 30 * 24 * 60 * 60 * 1000
+const DELEGATED_ENV = 'IMP_DELEGATED'
 
 const PLATFORM_SLUGS = {
   'darwin-x86_64': 'macos-x64',
@@ -274,7 +275,9 @@ export async function prune() {
 
 export async function maybeDelegate(args) {
   await touchLastUsed(VERSION)
-  if (Deno.env.get('IMP_DELEGATED') === '1') return
+  const delegated = Deno.env.get(DELEGATED_ENV) === '1'
+  Deno.env.delete(DELEGATED_ENV)
+  if (delegated) return
   if (Deno.env.get('IMP_VERSION') === 'system') return
   if (isDevMode()) return
   const pin = await readPin(Deno.cwd())
@@ -289,7 +292,7 @@ export async function maybeDelegate(args) {
   }
   const child = new Deno.Command(binary, {
     args,
-    env: { IMP_DELEGATED: '1' },
+    env: { [DELEGATED_ENV]: '1' },
     stdin: 'inherit',
     stdout: 'inherit',
     stderr: 'inherit',

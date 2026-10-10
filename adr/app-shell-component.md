@@ -82,6 +82,11 @@ approves.**
   map derives rows of that shape, with the pattern of the node as the `id`, and `icons` binds an
   icon per id. imp ships no separate menu of destinations. The frame is where the destinations of an
   app live, and one renderer of a row serves every presentation of them.
+- **A tag is `{ text, color, title }`.** `text` is short, so it fits a row and the bottom bar.
+  `title` is the full form of it. The tag carries it as a native `title`, for a pointer. The row
+  points `aria-describedby` at a hidden copy of it in the same shadow root, so a screen reader reads
+  it after the name, and the name stays the visible label. A `title` attribute on the tag alone
+  would reach no screen reader, because the name of a link comes from the text of its content.
 - **A section is always activatable.** With no `href` and no `onClick`, it still renders a button,
   and reports `select`. A choice of section is what changes the sidebar. An inert section would make
   the tree unusable.

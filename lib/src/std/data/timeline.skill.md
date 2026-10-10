@@ -27,15 +27,15 @@ The call shape is `timeline(props)`. It takes **no children**. imp warns about a
 
 Each item has these keys:
 
-| Key           | Values                                   | Notes                                                    |
-| ------------- | ---------------------------------------- | -------------------------------------------------------- |
-| `id`          | string or number                         | Necessary and unique. imp skips an item with no `id`     |
-| `time`        | ISO string, `Date` or epoch milliseconds | Shown in the language of the page, in a `<time>` element |
-| `title`       | string                                   | The main line                                            |
-| `description` | string                                   | The second line, in the secondary colour                 |
-| `icon`        | an icon from `imp/icons`                 | Drawn in the marker. Without it, the marker is a dot     |
-| `color`       | `'neutral'`, or a palette name           | Tints the marker. The same names as `tag`                |
-| `href`        | string                                   | Makes the title a link, in the space of the app          |
+| Key           | Values                                   | Notes                                                                                              |
+| ------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `id`          | string or number                         | Necessary and unique. imp skips an item with no `id` or a repeated `id`                            |
+| `time`        | ISO string, `Date` or epoch milliseconds | Shown in the language of the page, in a `<time>` element                                           |
+| `title`       | string                                   | The main line                                                                                      |
+| `description` | string                                   | The second line, in the secondary colour                                                           |
+| `icon`        | an icon from `imp/icons`                 | Drawn in the marker. Without it, the marker is a dot                                               |
+| `color`       | `'neutral'`, or a palette name           | Tints the marker. The same names as `tag`                                                          |
+| `href`        | string                                   | Makes the title a link, in the space of the app. An unsafe scheme such as `javascript:` is dropped |
 
 Rules an agent gets wrong:
 

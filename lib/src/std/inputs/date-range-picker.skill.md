@@ -71,14 +71,18 @@ Rules an agent gets wrong:
 - **No `presets` means no tabs.** Leave `presets` out, or pass `[]`, for a plain range picker.
 - **Without `time`, Apply writes days only.** A seed with times shows its days, and Apply drops the
   times.
-- **`min` and `max` limit the days in the grid only.** They do not check a preset or a time.
+- **`min` and `max` are days.** Days outside cannot be picked in the grid. A preset whose `range`
+  goes outside is disabled. A preset with no `range` stays enabled, because imp cannot know its
+  dates. A value outside the limits fails validation with `imp.dateRangePicker.min` or
+  `imp.dateRangePicker.max`. They do not limit a time.
 - **The language decides the format of the dates and the first day of the week.**
 - **`field` and `value` are alternatives.** Inside a form, use `field`. A `field` with no form
   around it is an error.
 - **The panel is a popover in the top layer.** Do not wrap the control in your own popover.
 - **The words are `imp.dateRangePicker.*` keys:** `relative`, `custom`, `from`, `to`, `apply`,
-  `cancel`, `choose`, `pickDay`, `startTime`, `endTime`. The month buttons use
-  `imp.datePicker.previousMonth` and `imp.datePicker.nextMonth`. Translate those keys.
+  `cancel`, `choose`, `pickDay`, `startTime`, `endTime`, `min` (`{min}`) and `max` (`{max}`). The
+  month buttons use `imp.datePicker.previousMonth` and `imp.datePicker.nextMonth`. Translate those
+  keys.
 
 ```js
 const PRESETS = [

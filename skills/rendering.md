@@ -51,6 +51,8 @@ button({
   property. This covers `disabled`, `checked`, `value` and a prop of a custom element. If the name
   does not exist as a property, imp sets an attribute. `null`, `undefined` and `false` remove the
   attribute. `true` sets a bare attribute. `list` and `form` are always attributes.
+- **`null` on a built-in element clears the property.** A reflected attribute goes away too:
+  `a({ href: null })` has no `href`, not `href=""`.
 - **`class`** takes `'card'`, or `['card', maybe]` where imp drops a falsy entry, or
   `{ active: cond }` where a truthy key becomes a class. Each form sets the **whole** class.
 - **`style`** takes a string or an object. imp converts a camelCase key to kebab case, and keeps a

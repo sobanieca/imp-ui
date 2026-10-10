@@ -150,7 +150,8 @@ export const SKILLS = [
     name: 'init',
     group: 'toolkit',
     aliases: ['scaffold', 'new', 'create', 'starter'],
-    summary: 'scaffolding a runnable project: what imp init writes and what it refuses',
+    summary:
+      'scaffolding a runnable project: what imp init writes, and the look an agent gives a new app',
   },
   {
     name: 'config',

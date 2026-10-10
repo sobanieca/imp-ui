@@ -78,6 +78,8 @@ Rules an agent gets wrong:
   `allDay`, `view`.
 - **The time grid has a fixed height and scrolls inside.** It opens near 07:00, or at the first
   entry when that is earlier.
+- **A line marks the current time in the column of today.** It moves at the start of each minute. At
+  midnight, the mark of today moves to the next day. There is nothing to refresh.
 
 ```js
 const planner = component('app-planner', {

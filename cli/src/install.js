@@ -1,4 +1,4 @@
-import { dirname, join } from '@std/path'
+import { dirname, join, resolve } from '@std/path'
 import { configTargetPath, licensePolicy, loadImpConfig, updateConfigFile } from './config.js'
 import { bundleDependency, packageId, shutdownBundler } from './deps.js'
 import { verifyPackages } from './integrity.js'
@@ -176,10 +176,20 @@ async function rollBack({ swaps, configPath, configBefore, configTouched, create
   return problems
 }
 
+function assertInsideFolder(folder, alias) {
+  const target = resolve(folder, alias)
+  if (!VALID_ALIAS.test(alias) || dirname(target) !== resolve(folder)) {
+    throw new Error(
+      `invalid dependency alias: '${alias}' - imp writes a dependency only into its own folder of dependencies/`,
+    )
+  }
+}
+
 export async function commitDependencies(
   { root, dependencies, configChanges, fileSystem = projectFileSystem },
 ) {
   const dependenciesFolder = join(root, 'dependencies')
+  for (const { alias } of dependencies) assertInsideFolder(dependenciesFolder, alias)
   const workFolder = join(root, '.imp')
   const createdWorkFolder = !await pathExists(workFolder)
   const createdFolder = await pathExists(dependenciesFolder) ? null : dependenciesFolder

@@ -5,7 +5,7 @@ exit code: 0
 (empty)
 
 --- stderr ---
-Checked 6 files
+Checked 7 files
 
 $ imp fmt --check  (cwd: <tmp>/app)
 exit code: 0
@@ -14,7 +14,7 @@ exit code: 0
 (empty)
 
 --- stderr ---
-Checked 8 files
+Checked 10 files
 
 $ imp test --unit  (cwd: <tmp>/app)
 exit code: 0

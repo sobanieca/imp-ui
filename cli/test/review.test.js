@@ -70,7 +70,7 @@ Deno.test('imp start saves a review under .imp/reviews', async () => {
   const post = (body) =>
     fetch(endpoint, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', origin: `http://127.0.0.1:${server.port}` },
       body: typeof body === 'string' ? body : JSON.stringify(body),
     })
   try {

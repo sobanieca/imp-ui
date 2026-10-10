@@ -35,7 +35,7 @@ WRITING AN APP
 
 WORKING IN AN IMP PROJECT
   cli                  every command, and which skill covers it
-  init                 scaffolding a runnable project: what imp init writes and what it refuses
+  init                 scaffolding a runnable project: what imp init writes, and the look an agent gives a new app
   config               the imp.json file key by key, and the --env environment files
   start                the dev server: injected imports, live reload and the session log of imp logs
   build                the production build, JS entries for publishing, and the offline PWA output

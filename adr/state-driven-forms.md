@@ -40,8 +40,11 @@ added to the kernel.
   `imp.form.submits`. Every mounted control watches that counter, runs its own validators again,
   synchronously, and writes its result into `imp.form.errors`. When the notification of the counter
   returns, the form reads the errors, and runs `onSubmit` only when there is none. There is no
-  registry of controls, and there is no bookkeeping of a lifecycle. A control that unmounts stops
-  mattering, because it is no longer subscribed.
+  registry of controls. A control that unmounts removes its own entry from `imp.form.errors`, as it
+  removes its entry from `imp.form.validating`. An error that no control shows would block the
+  submit with no message on the page, for example on a tab that is not open. Its value stays in
+  `imp.form`, so a field on a closed tab still goes to `onSubmit`. When the control mounts again, it
+  validates at the next submit.
 - **A control renders its own label, its help text and its error.** `label[for]`, `aria-describedby`
   and `aria-invalid` resolve by id, and they cannot cross a shadow root. So a separate `formField`
   wrapper component could never label the control that it wraps. The wrapper is therefore not a
@@ -97,6 +100,18 @@ added to the kernel.
   fields carry the message. A change of a field runs its own validation, which replaces the server
   message. The next submit removes every server message first, so a message on a path with no
   control cannot block the form for good.
+- **A secret is the one value that is not state.** A field with `secret: true` writes to a private
+  store of its form, and not to `imp.form`. The debug log prints every value that a state reads,
+  sets and initializes. So a password or a key in `imp.form` would show in the console of every
+  developer who traces the app. A redaction inside the logger would have to know which path of which
+  state is secret, and a state has no such knowledge. The form provides the store on its host, and
+  the field resolves it by the same lookup that a state uses. The store is an object of functions
+  with no enumerable data, so nothing reaches a log through it. At submit, the form merges each
+  secret into a copy of the values at its path and passes that copy to `onSubmit`. The baseline
+  keeps the values without the secrets. A value in the store makes the form dirty. A successful
+  submit and `resetForm` empty the store. A failed submit keeps it, so the person can try again. A
+  secret field starts empty and ignores its path in `initialValues`, because a value there is
+  already in the state.
 - **A failure that belongs to no single field is state too.** When `onSubmit` throws, or its promise
   rejects, the form writes into `imp.form.formError`. The next submit and `resetForm` write `null`.
   The form shows the failure in an error `notice` that it renders above its last child, where the
@@ -129,7 +144,10 @@ added to the kernel.
   a preview panel and a dependent field are ordinary consumption of a state. They are not a form
   API.
 - Nothing is added to the kernel. All of this builds on `initState`, `useState`, `watch` and `set`.
-  That keeps the state layer complete as it is.
+  That keeps the state layer complete as it is. The secret store uses the same provider lookup, and
+  the state layer and the logger do not know that secrets exist.
+- A secret cannot be read from the subtree. A live summary or a dependent field cannot show it. That
+  is the purpose, and a secret field has no reason to drive another field.
 - Async validation cost nothing structurally. The question "who is still checking?" is another piece
   of state. So the form waits for a state to become empty. It does not wait on a set of promises
   that it would have to collect from a registry that it deliberately does not have.

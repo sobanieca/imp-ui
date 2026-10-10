@@ -1,0 +1,20 @@
+$ imp init app --font comic-sans  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] unknown font 'comic-sans' - --font takes one of inter, manrope, plus-jakarta-sans, dm-sans, outfit, space-grotesk, sora, figtree, nunito-sans, work-sans
+
+$ imp init app --font  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] --font needs a font name, like '--font inter'
+
+--- files ---
+(none)

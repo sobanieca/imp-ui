@@ -79,6 +79,10 @@ depth, so the button can sit inside a `flex`, a `card` or a component of yours.
   path, its field shows it, and the focus moves to the first such field. With an empty message,
   `imp.form.formError` stays `null` and no notice shows. A change of the field clears its message.
   The next submit forgets every server message, so a path with no control never blocks a submit.
+- **Only a mounted field can block a submit.** A field that leaves the page, such as a field on a
+  tab that is not open, drops its error. Its value stays in `imp.form` and goes to `onSubmit`. To
+  remove the value too, set the path to `undefined` yourself. When the field comes back, it
+  validates again at the next submit.
 - **A field path can index an array.** `items.0.name` reads and writes the first row of `items`. imp
   creates the array when it is missing. Render one control per row with `rows.each`, and put the
   index of the row in its path.
@@ -91,6 +95,11 @@ depth, so the button can sit inside a `flex`, a `card` or a component of yours.
 - **`resetForm(source, values)` sets a new clean state.** Use it when data arrives after the mount,
   or to mark a save that happened outside `onSubmit`.
 - A `resetForm` does not ask first. Add your own confirmation when the loss of the edits matters.
+- **A field with `secret: true` keeps its value out of `imp.form`.** The form holds it in a private
+  store, so no state and no debug log line contains it. `onSubmit` gets the values with the secret
+  merged in at its path. The secret counts for `imp.form.dirty`. A successful submit and `resetForm`
+  empty it. A failed submit keeps it. A secret field ignores its path in `initialValues`, and imp
+  warns about such a value.
 
 Rules an agent gets wrong:
 
@@ -107,6 +116,9 @@ Rules an agent gets wrong:
 - **Do not catch the error in `onSubmit` to show it yourself.** To show a specific message, throw
   `new FormError(t('...'), { cause })`. A plain `Error`, an `HttpError` or a `TypeError` shows only
   the generic message, because its text is not written for a person.
+- **Never read a password, a key or a token from `imp.form`.** Set `secret: true` on its field and
+  read it from the argument of `onSubmit`. A plain field puts the value in a state, and the debug
+  log prints every state value.
 - **Use one form per `initialValues`.** Two forms on a page each own their own `imp.form`, and imp
   resolves each one by position. So in a nested form, the inner form wins for its own children.
 - imp warns about `submitForm` or `resetForm` called with something that is not an event or a node,

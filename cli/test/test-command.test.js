@@ -170,3 +170,43 @@ Deno.test('imp test e2e', { ignore: !localBrowser }, async (t) => {
     await Deno.remove(dir, { recursive: true })
   }
 })
+
+Deno.test('mockModule mocks a module with a string export name', async () => {
+  const dir = await tempDir()
+  try {
+    await Deno.writeTextFile(
+      join(dir, 'routes.js'),
+      [
+        "const getItems = () => 'real items'",
+        "const internal = () => 'real internal'",
+        "export { getItems as 'GET /api/items', internal as __exports }",
+        'export const plain = 1',
+        '',
+      ].join('\n'),
+    )
+    await Deno.writeTextFile(
+      join(dir, 'routes.test.js'),
+      [
+        "import { expect, mockModule, test } from 'imp/test'",
+        "import { 'GET /api/items' as getItems, __exports, plain } from './routes.js'",
+        '',
+        "mockModule('./routes.js', () => ({",
+        "  'GET /api/items': () => 'mocked items',",
+        "  __exports: () => 'mocked internal',",
+        '  plain: 2,',
+        '}))',
+        '',
+        "test('the string export is mocked', () => {",
+        "  expect(getItems()).toEqual('mocked items')",
+        "  expect(__exports()).toEqual('mocked internal')",
+        '  expect(plain).toEqual(2)',
+        '})',
+        '',
+      ].join('\n'),
+    )
+    const result = await runImp(['test', 'routes.test.js'], dir)
+    check(result.code === 0, `imp test failed:\n${result.stdout}\n${result.stderr}`)
+  } finally {
+    await Deno.remove(dir, { recursive: true })
+  }
+})

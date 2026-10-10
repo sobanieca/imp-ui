@@ -48,6 +48,11 @@ section(
   `comboBox`, `treeSelect`, `datePicker`, `dateRangePicker`, `emojiPicker`, `segmented` and
   `button`. Put them in one row as they are. Do not set a height on a control to line it up with
   another.
+- **A component that renders a link from an `href` drops an unsafe scheme.** This covers `link`,
+  `card`, `userCard`, `appLogo`, `breadcrumbs`, the nav items of `shell`, `list` and `timeline`.
+  Allowed: `http:`, `https:`, `mailto:`, `tel:`, a path, a query and a `#` fragment. Any other
+  scheme, such as `javascript:` or `data:`, is dropped with a warning, and the component renders as
+  with no `href`. Do not filter the address yourself first.
 - **The `imp-` element prefix is reserved.** Name your own components `my-app-*`.
 - **The content lives in a shadow root.** `host.textContent` is empty by design. A unit test walks
   the `shadowRoot`. An e2e selector goes through a shadow root on its own. See
@@ -270,16 +275,18 @@ Rules an agent gets wrong:
   by hand. `navbar.selected` and `sidebar.selected` beside a map are dropped.
 - **`icons` and `tags` bind by handle**, as `{ [app.reports]: luChartColumn }` and
   `{ [app.reports.revenue]: count }`. An icon is a Lucide export or any DOM. A tag is
-  `{ text, color }`, a state that holds one, or `null`. Neither is a prop of the map. Bind them at
-  the root, not in an area file.
+  `{ text, color, title }`, a state that holds one, or `null`. `title` is the full form of a short
+  `text`. It is the tooltip of the tag and the description of the row for a screen reader. Neither
+  is a prop of the map. Bind them at the root, not in an area file.
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows, because it draws each level more than once. The main content is the
   children, as in `shell({ navbar }, page())`. There is no `header`, `footer` or `layout` prop. Put
   a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
 - **Sign-in is a node of the map, and `access` guards the rest.** Give every private section an
   `access` value. The guard returns `wait` while the session is `undefined`, and
-  `/sign-in?next=<path>` while it is `null`. The sign-in screen navigates to `next` after it sets
-  the session. Pass the node as `signIn: app.signIn`. Do not put `access` on it.
+  `/sign-in?next=<path>` while it is `null`. The sign-in screen navigates to
+  `safeNext(next, app.home.href())` after it sets the session. Pass the node as
+  `signIn: app.signIn`. Do not put `access` on it.
 - **The frame shows no chrome while it cannot know who may see the page.** While the verdict of the
   current node is `wait`, or the current node is the `signIn` node or one of its children, the frame
   shows the router content and the logo, centred, and nothing else. A redirect keeps the layout, so
@@ -613,7 +620,8 @@ pill stays readable in a light theme and in a dark theme. `dot: true` with no ch
 status dot with no pill. Name it with `label`. A count bubble is a small red tag,
 `tag({ color: 'red', size: 'sm' }, 12)`, next to the thing that it counts. imp has no `badge`
 component and no badge that overlaps a corner. A nav row and a group of `shell` take the same value
-as plain data, in `tag: { text, color }`. imp draws it at the small size, to match the row.
+as plain data, in `tag: { text, color, title }`. imp draws it at the small size, to match the row.
+`title` is the tooltip of the tag and the description of the row.
 
 ## tooltip - from `imp/std/display`
 
@@ -754,21 +762,26 @@ form(
 
 Every control takes the same binding props and labelling props:
 
-| Prop        | Values                         | Notes                                     |
-| ----------- | ------------------------------ | ----------------------------------------- |
-| `field`     | dot path, e.g. `'user.email'`  | Binds one path of the surrounding form    |
-| `value`     | a state, or a plain value      | Standalone use, when there is no form     |
-| `label`     | string, or a state holding one | A real `<label>`, rendered by the control |
-| `ariaLabel` | string                         | Names it when there is no visible label   |
-| `help`      | string, or a state holding one | Hint under the control                    |
-| `required`  | boolean                        | Marks it and validates it is filled in    |
-| `disabled`  | boolean, or a state - **live** | Blocks interaction                        |
+| Prop        | Values                         | Notes                                      |
+| ----------- | ------------------------------ | ------------------------------------------ |
+| `field`     | dot path, e.g. `'user.email'`  | Binds one path of the surrounding form     |
+| `value`     | a state, or a plain value      | Standalone use, when there is no form      |
+| `label`     | string, or a state holding one | A real `<label>`, rendered by the control  |
+| `ariaLabel` | string                         | Names it when there is no visible label    |
+| `help`      | string, or a state holding one | Hint under the control                     |
+| `required`  | boolean                        | Marks it and validates it is filled in     |
+| `disabled`  | boolean, or a state - **live** | Blocks interaction                         |
+| `secret`    | boolean                        | With `field`: the value never enters state |
 
 The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern` and
 `validate`. `validate` returns a message, or `null` when the value is correct. The built-in messages
 live under `imp.form.*`. `validateAsync` returns a **promise** of a message or of `null`. It runs on
 blur and on submit only. A submit waits for it. A synchronous failure skips it. A rejected promise
 blocks the submit with `imp.form.checkFailed`.
+
+**A password, a key or a token takes `secret: true`.** The form keeps that value in a private store,
+not in `imp.form`, so no state and no debug log line holds it. `onSubmit` gets it merged in at its
+path. A successful submit and `resetForm` empty the field.
 
 | Component         | What it binds                                    | Its own props                                                           |
 | ----------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |

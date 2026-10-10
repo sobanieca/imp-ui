@@ -1218,6 +1218,23 @@ Deno.test('the offline worker of imp build --pwa', async (t) => {
     check(await current.navigate('/') === 'page v1', 'the previous build did not serve offline')
   })
 
+  await t.step('a failed read of the grace cache falls back to the network', async () => {
+    const origin = pwaOrigin(source)
+    await origin.deploy('/', appBuild('v1'))
+    const precache = origin.upload('/', appBuild('v2'))
+    const deployed = origin.startWorker('/', precache)
+    await deployed.install()
+    await deployed.activate()
+    origin.served.set(`${PWA_ORIGIN}/fresh.txt`, 'from the network')
+    const restarted = origin.startWorker('/', precache)
+    origin.caches.keys = () => Promise.reject(new Error('the storage is not readable'))
+    check(
+      await restarted.load('/fresh.txt') === 'from the network',
+      'a failed grace cache did not fall back to the network',
+    )
+    check(await restarted.load('/chunks/app-v2.js') === 'app v2', 'the own cache stopped serving')
+  })
+
   await t.step('a full storage does not stop the updates', async () => {
     const origin = pwaOrigin(source)
     await origin.deploy('/', appBuild('v1'))
@@ -1404,6 +1421,51 @@ Deno.test('a built app runs under a strict Content Security Policy', async () =>
   } finally {
     await browser.close()
     await server.shutdown()
+    await Deno.remove(dir, { recursive: true })
+  }
+})
+
+Deno.test('imp build refuses an output folder that it must not delete', async () => {
+  const dir = await tempDir()
+  const exists = (path) => Deno.stat(join(dir, path)).then(() => true, () => false)
+  try {
+    await Deno.mkdir(join(dir, 'src'))
+    await Deno.mkdir(join(dir, 'public'))
+    await Deno.mkdir(join(dir, 'notes'))
+    await Deno.writeTextFile(
+      join(dir, 'index.html'),
+      '<!doctype html><script type="module" src="/src/main.js"></script>\n',
+    )
+    await Deno.writeTextFile(join(dir, 'src', 'main.js'), "console.log('hello')\n")
+    await Deno.writeTextFile(join(dir, 'public', 'robots.txt'), 'User-agent: *\n')
+    await Deno.writeTextFile(join(dir, 'notes', 'plan.md'), '# plan\n')
+    await Deno.writeTextFile(join(dir, 'file.txt'), 'a file\n')
+    const outputs = ['src', '.', '..', 'public', 'public/out', 'notes', 'file.txt']
+    const refused = []
+    for (const output of outputs) {
+      const result = await runImp(['build', '--output', output], dir)
+      check(result.code === 1, `imp build --output ${output} did not fail`)
+      refused.push(commandTranscript(`imp build --output ${output}  (cwd: <tmp>)`, result))
+    }
+    check(await exists('src/main.js'), 'a refused build deleted src/')
+    check(await exists('notes/plan.md'), 'a refused build deleted notes/')
+    check(await exists('public/robots.txt'), 'a refused build deleted public/')
+
+    await Deno.mkdir(join(dir, 'empty'))
+    const intoEmpty = await runImp(['build', '--output', 'empty'], dir)
+    check(intoEmpty.code === 0, `a build into an empty folder failed: ${intoEmpty.stderr}`)
+    check(await exists('empty/.imp-output'), 'the build wrote no marker')
+    await Deno.writeTextFile(join(dir, 'empty', 'stale.txt'), 'stale\n')
+    const again = await runImp(['build', '--output', 'empty'], dir)
+    check(again.code === 0, `a build over an earlier build failed: ${again.stderr}`)
+    check(!(await exists('empty/stale.txt')), 'the build kept a file of the earlier build')
+    check(await exists('empty/.imp-output'), 'the second build wrote no marker')
+
+    await assertSnapshot(
+      'build-output-guards',
+      refused.join('\n\n').replaceAll(dir, '<tmp>').replaceAll(dirname(dir), '<tmp>/..'),
+    )
+  } finally {
     await Deno.remove(dir, { recursive: true })
   }
 })

@@ -28,6 +28,9 @@ Rules an agent gets wrong:
   middle-click and a click with a modifier key all behave natively.
 - **`href` is necessary.** Without it, the component warns and renders text that a person cannot
   follow.
+- **`href` takes `http:`, `https:`, `mailto:`, `tel:`, a path, a query or a `#` fragment.** imp
+  drops any other scheme, such as `javascript:` or `data:`, warns, and renders text with no `href`.
+  So an address from user data is safe to pass.
 - The accessible name is the link text. Write where the link goes. Do not write "click here".
 - **A control that performs an action is not a link.** It takes no `href` and it is not an `<a>`.
   Use button (imp skill std/button) with `variant: 'link'` to get the appearance of a link on a real

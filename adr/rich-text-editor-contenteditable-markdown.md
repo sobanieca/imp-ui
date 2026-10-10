@@ -24,6 +24,14 @@ the box to markdown and commits it. When the value changes from outside, the com
 markdown into DOM nodes and replaces the content. A value equal to the last commit does not touch
 the box, so the caret stays where it is while somebody types.
 
+- **A keystroke writes only the block that it changed.** The writer keeps the markdown of each
+  top-level block of the box. A `MutationObserver` on the box forgets the kept markdown of every
+  block that holds a changed node. Before each write, the writer takes the records that the observer
+  has not delivered yet, so the value is exact at the end of the `input` handler. A change of
+  direction forgets every block. The commit stays synchronous, so a form submit, a blur or a read of
+  the state always sees the value of the last edit. The editor does not debounce the value and has
+  no flush step.
+
 - **The formatting commands are the platform's.** Every tool runs `document.execCommand`: `bold`,
   `italic`, `strikeThrough`, `formatBlock`, `insertUnorderedList`, `insertOrderedList`, `indent`,
   `outdent`, `createLink`, `unlink`, `insertText`, `insertHTML`, `removeFormat` and the three
@@ -82,5 +90,10 @@ the box, so the caret stays where it is while somebody types.
   converts on its side, with the sanitizer of its choice.
 - A value with images is large, because an image is inline. That is the price of no server. An app
   that stores images elsewhere replaces the data URLs on its side.
+- A large value must not make typing slow. The kept markdown of each block makes the cost of a
+  keystroke follow the changed block, not the document. The check of an image address accepts a
+  `data:image/` prefix without the URL parser, because the parse of an embedded image of some
+  megabytes took longer than the rest of the keystroke. The perf suite has two scenarios that type
+  into a document with five embedded images.
 - Underline, tables, colours and font sizes are not offered, because the value could not hold them.
   That is the boundary of the component, and it is stated in the docs.

@@ -1,0 +1,53 @@
+imp start | a dot file: GET /.env -> 404
+imp start | a dot folder: GET /notes/.drafts/plan.txt -> 404
+imp start | an encoded dot file: GET /%2Eenv -> 404
+imp start | the .well-known folder: GET /.well-known/security.txt -> 200
+imp start | from another site: POST /@imp/log -> 403
+imp start | from the page, as text: POST /@imp/log -> 403
+imp start | with no origin: POST /@imp/log -> 403
+imp start | from the page: POST /@imp/log -> 200
+imp start | same-origin fetch metadata: POST /@imp/log -> 200
+imp start | from another site: POST /@imp/mock -> 403
+imp start | from the page, as text: POST /@imp/mock -> 403
+imp start | with no origin: POST /@imp/mock -> 403
+imp start | from the page: POST /@imp/mock -> 204
+imp start | same-origin fetch metadata: POST /@imp/mock -> 204
+imp start | a review from another site: POST /@imp/review -> 403
+imp start | events for another site: GET /@imp/events -> 403
+imp start | events for a cross-site page: GET /@imp/events -> 403
+imp start | events for the page: GET /@imp/events -> 200
+imp start | a rebound host name: POST /@imp/log -> HTTP/1.1 403 Forbidden
+imp start | a rebound host name: GET / -> HTTP/1.1 403 Forbidden
+imp start | a rebound host name: GET /app.js -> HTTP/1.1 403 Forbidden
+imp start | a rebound host name: GET /@imp/imp.js -> HTTP/1.1 403 Forbidden
+imp start | a rebound host name: GET /@imp/preview/app.js -> HTTP/1.1 403 Forbidden
+imp start | a rebound host name: GET /missing -> HTTP/1.1 403 Forbidden
+imp start | the host localhost: GET / -> HTTP/1.1 200 OK
+imp start | the host 127.0.0.1: GET / -> HTTP/1.1 200 OK
+imp preview | a dot file: GET /.env -> 404
+imp preview | a dot folder: GET /notes/.drafts/plan.txt -> 404
+imp preview | an encoded dot file: GET /%2Eenv -> 404
+imp preview | the .well-known folder: GET /.well-known/security.txt -> 200
+imp preview | from another site: POST /@imp/log -> 403
+imp preview | from the page, as text: POST /@imp/log -> 403
+imp preview | with no origin: POST /@imp/log -> 403
+imp preview | from the page: POST /@imp/log -> 200
+imp preview | same-origin fetch metadata: POST /@imp/log -> 200
+imp preview | from another site: POST /@imp/mock -> 403
+imp preview | from the page, as text: POST /@imp/mock -> 403
+imp preview | with no origin: POST /@imp/mock -> 403
+imp preview | from the page: POST /@imp/mock -> 204
+imp preview | same-origin fetch metadata: POST /@imp/mock -> 204
+imp preview | a review from another site: POST /@imp/review -> 403
+imp preview | events for another site: GET /@imp/events -> 403
+imp preview | events for a cross-site page: GET /@imp/events -> 403
+imp preview | events for the page: GET /@imp/events -> 200
+imp preview | a rebound host name: POST /@imp/log -> HTTP/1.1 403 Forbidden
+imp preview | a rebound host name: GET / -> HTTP/1.1 403 Forbidden
+imp preview | a rebound host name: GET /app.js -> HTTP/1.1 403 Forbidden
+imp preview | a rebound host name: GET /@imp/imp.js -> HTTP/1.1 403 Forbidden
+imp preview | a rebound host name: GET /@imp/preview/app.js -> HTTP/1.1 403 Forbidden
+imp preview | a rebound host name: GET /missing -> HTTP/1.1 403 Forbidden
+imp preview | the host localhost: GET / -> HTTP/1.1 200 OK
+imp preview | the host 127.0.0.1: GET / -> HTTP/1.1 200 OK
+a review was saved: false

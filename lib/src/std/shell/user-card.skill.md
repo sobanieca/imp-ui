@@ -9,14 +9,14 @@ userCard({ name: user.name, href: '/account' })
 
 The call shape is `userCard(props)`. It takes no content.
 
-| Prop          | Values                        | Default | Notes                                          |
-| ------------- | ----------------------------- | ------- | ---------------------------------------------- |
-| `name`        | string, or a state - **live** | -       | The display name; also the avatar's initials   |
-| `description` | string, or a state - **live** | -       | Email, role or tenant, muted under the name    |
-| `picture`     | string, or a state - **live** | -       | Image URL; without one the initials are drawn  |
-| `href`        | string                        | -       | Makes the card a link (an account page)        |
-| `compact`     | boolean                       | `false` | Avatar only; the words stay for screen readers |
-| `events`      | event map                     | -       | Handlers on the card, as on any element        |
+| Prop          | Values                        | Default | Notes                                                                    |
+| ------------- | ----------------------------- | ------- | ------------------------------------------------------------------------ |
+| `name`        | string, or a state - **live** | -       | The display name; also the avatar's initials                             |
+| `description` | string, or a state - **live** | -       | Email, role or tenant, muted under the name                              |
+| `picture`     | string, or a state - **live** | -       | Image URL; without one the initials are drawn                            |
+| `href`        | string                        | -       | Makes the card a link. A `javascript:` or other unsafe scheme is dropped |
+| `compact`     | boolean                       | `false` | Avatar only; the words stay for screen readers                           |
+| `events`      | event map                     | -       | Handlers on the card, as on any element                                  |
 
 Rules an agent gets wrong:
 

@@ -2,6 +2,7 @@
 
 ```
 imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-reload]
+          [--host <address>]
 ```
 
 `imp start` serves the directory that holds the entry HTML file. The default entry is `index.html`
@@ -11,6 +12,16 @@ so the code that runs is the source that you typed.
 
 imp resolves the port in this order: `--port`, then `devServerPort` in `imp.json`, then `4507`. See
 [config](config.md).
+
+- **The dev server is a local tool.** It listens on `127.0.0.1`. Never deploy it or expose it.
+  `--host 0.0.0.0` opens it to the network, for a phone test only. Every device on that network can
+  then read the project files.
+- **It answers only a loopback host name or a `--host` address.** Any other `Host` gets `403`. With
+  `--host 0.0.0.0`, open a printed URL, not a name such as `mybox.local`.
+- **Its endpoints answer only its own pages.** `/@imp/events`, `/@imp/log`, `/@imp/mock` and
+  `/@imp/review` refuse another origin with `403`. A POST must be `application/json`.
+- **A path segment that starts with `.` is `404`**, except `.well-known/`. Do not put a served file
+  in a dot folder.
 
 ## What imp injects into every served document
 
@@ -86,6 +97,8 @@ changes. See [theming](theming.md).
   served directory reloads the browser. imp ignores `.git/`, `node_modules/`, `dist/` and `.imp/`.
   `--no-reload` turns the reload off for that run. The server still serves every saved file, and a
   reload made by the user shows the new code.
+- **A failed change does not stop the server.** imp logs the error, and the next good save applies.
+  Read the error with `imp logs`. Do not restart the server.
 - **A declared dependency with no vendored bundle gives a warning only.** The warning points at
   `imp install`. Run that command, see [dependencies](dependencies.md). Do not edit `imp.json` by
   hand.

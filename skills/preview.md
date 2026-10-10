@@ -2,6 +2,7 @@
 
 ```
 imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock] [--no-reload]
+            [--host <address>]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]
 ```
@@ -13,7 +14,8 @@ holds the component in a resizable stage, with the code of the call site and a s
 two toggle buttons. A **Skill** tab renders the component's `*.skill.md`. There is no app boot, no
 backend, and no navigation to the right screen. It is the same dev server as [start](start.md)
 underneath, with terminal telemetry and reload on save. `--no-reload` keeps the page as it is on a
-save. imp still reads the catalog again, and a reload made by the user shows the new files.
+save. imp still reads the catalog again, and a reload made by the user shows the new files. It
+listens on `127.0.0.1`, and `--host` and the endpoint rules work as on `imp start`.
 
 ## The preview file
 
@@ -280,7 +282,8 @@ and one bundle per group, loaded when a visitor opens the group. A page embeds i
 - The folder holds `LICENSES.txt`, the same notices file that `imp build` writes, see
   [build](build.md). Each script points at it with a relative path. Upload it with the folder.
 - imp empties the output folder before it writes. Point it at a folder inside `public/`, and
-  `imp build` ships it with the app.
+  `imp build` ships it with the app. imp refuses a folder that holds files without the `.imp-output`
+  marker of an earlier export, or that holds the project or a preview file.
 - The element resolves each link of the entry page against the host page. A root-relative link, such
   as `/fonts/fonts.css`, loads from the host site, so the host must serve that path. A preview file
   that fails to build fails the export. There is no reload, no telemetry and no review widget.

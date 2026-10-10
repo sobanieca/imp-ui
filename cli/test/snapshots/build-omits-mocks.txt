@@ -13,6 +13,7 @@ built index.html -> dist/
 (empty)
 
 --- output files ---
+dist/.imp-output
 dist/LICENSES.txt
 dist/chunks/app-<hash>.js
 dist/index.html

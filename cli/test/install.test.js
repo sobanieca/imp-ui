@@ -25,6 +25,7 @@ import {
   commandTranscript,
   listFiles,
   normalize,
+  REPO_ROOT,
   runImp,
   section,
   tempDir,
@@ -732,6 +733,58 @@ Deno.test('imp install puts every package in place, or none', async (t) => {
   })
 })
 
+Deno.test('a dependency alias cannot reach outside dependencies/', async (t) => {
+  const aliases = ['../escape', '..', '.hidden', 'a/b', 'a\\b', '/abs', 'x..y', '@scope/name']
+  await t.step('imp.json refuses the alias', async () => {
+    const dir = await tempDir()
+    await Deno.writeTextFile(join(dir, 'index.html'), '<!doctype html>\n')
+    try {
+      for (const alias of aliases) {
+        await Deno.writeTextFile(
+          join(dir, 'imp.json'),
+          JSON.stringify({ dependencies: { [alias]: 'npm:mitt@3.0.1' } }),
+        )
+        for (const args of [['install'], ['build']]) {
+          const result = await runImp(args, dir)
+          check(result.code === 1, `imp ${args[0]} accepted the alias '${alias}'`)
+          check(
+            result.stderr.includes(`dependency alias '${alias}' must be a package name`),
+            `unexpected error for '${alias}': ${result.stderr}`,
+          )
+        }
+      }
+    } finally {
+      await Deno.remove(dir, { recursive: true })
+    }
+  })
+
+  await t.step('commitDependencies writes nothing for the alias', async () => {
+    const parent = await tempDir()
+    const root = join(parent, 'project')
+    await Deno.mkdir(root)
+    try {
+      for (const alias of aliases) {
+        const dependency = {
+          alias,
+          specifier: 'npm:mitt@3.0.1',
+          files: [{ name: 'escape.js', contents: new TextEncoder().encode('owned\n') }],
+          manifest: { alias, specifier: 'npm:mitt@3.0.1', packages: [] },
+        }
+        const error = await commitDependencies({
+          root,
+          dependencies: [dependency],
+          configChanges: [{ path: ['dependencies', alias], value: dependency.specifier }],
+        }).then(() => null, (thrown) => thrown.message)
+        check(error?.startsWith(`invalid dependency alias: '${alias}'`), `unexpected: ${error}`)
+      }
+      const left = await listFiles(parent)
+      check(left.length === 0, `files were written: ${left.join(', ')}`)
+    } finally {
+      await Deno.remove(parent, { recursive: true })
+    }
+  })
+})
+
 Deno.test('imp install takes the skill of an imp component from beside its entry module', async (t) => {
   const folder = await tempDir()
   const entry = join(folder, 'dist', 'widget.js')
@@ -762,4 +815,64 @@ Deno.test('imp install takes the skill of an imp component from beside its entry
   } finally {
     await Deno.remove(folder, { recursive: true })
   }
+})
+
+Deno.test({
+  name: 'install.sh downloads the binary and its checksum from one resolved release tag',
+  ignore: Deno.build.os === 'windows',
+  fn: async () => {
+    const dir = await tempDir()
+    const bin = join(dir, 'bin')
+    const target = join(dir, 'target')
+    await Deno.mkdir(bin)
+    await Deno.mkdir(target)
+    const requests = join(dir, 'requests.log')
+    const fakeCurl = [
+      '#!/bin/bash',
+      'output=""',
+      'head=0',
+      'url=""',
+      'while [ $# -gt 0 ]; do',
+      '  case "$1" in',
+      '    -o) output="$2"; shift 2 ;;',
+      '    -w) shift 2 ;;',
+      '    -*I*) head=1; shift ;;',
+      '    -*) shift ;;',
+      '    *) url="$1"; shift ;;',
+      '  esac',
+      'done',
+      `echo "$url" >> '${requests}'`,
+      'if [ "$head" = 1 ]; then',
+      '  printf "https://github.com/sobanieca/imp-ui/releases/tag/v9.8.7"',
+      '  exit 0',
+      'fi',
+      'case "$url" in',
+      `  *.sha256) printf '17a815baf7efd5341b39e803d557cea4b127e125af8a5f92f0edd6322a0c38e5  imp\\n' > "$output" ;;`,
+      '  *) printf \'fake binary\' > "$output" ;;',
+      'esac',
+    ].join('\n')
+    await Deno.writeTextFile(join(bin, 'curl'), `${fakeCurl}\n`, { mode: 0o755 })
+    try {
+      const { code, stderr } = await new Deno.Command('bash', {
+        args: [join(REPO_ROOT, 'install.sh')],
+        env: { PATH: `${bin}:${Deno.env.get('PATH')}`, INSTALL_DIR: target },
+        stdout: 'null',
+        stderr: 'piped',
+      }).output()
+      check(code === 0, `install.sh failed: ${new TextDecoder().decode(stderr)}`)
+      const asked = (await Deno.readTextFile(requests)).trim().split('\n')
+      const downloads = asked.filter((url) => url.includes('/releases/download/'))
+      check(downloads.length === 2, `expected two downloads, got ${asked.join(', ')}`)
+      check(
+        downloads.every((url) => url.includes('/releases/download/v9.8.7/')),
+        `the binary and the checksum must come from one tag, got ${downloads.join(', ')}`,
+      )
+      check(
+        await Deno.readTextFile(join(target, 'imp')) === 'fake binary',
+        'the binary is installed',
+      )
+    } finally {
+      await Deno.remove(dir, { recursive: true })
+    }
+  },
 })

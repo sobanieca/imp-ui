@@ -55,7 +55,8 @@ import mitt from 'mitt'
 package needs as a sibling file. An asset can be a `.wasm` file, a stylesheet or a font. So when you
 delete the folder, you remove the dependency completely. The default alias is the package name. For
 a subpath install it is the last path segment. The alias is both the import specifier and the folder
-name.
+name. So it holds only letters, digits, `.`, `_` and `-`. It must not start with `.` or contain
+`..`, `/` or `\`.
 
 ```
 installed micromark (npm:micromark@4.0.2)

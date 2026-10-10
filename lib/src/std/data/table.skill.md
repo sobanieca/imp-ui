@@ -66,8 +66,9 @@ Rules an agent gets wrong:
   when the last page arrives. imp never calls `onLoadMore` while a call is pending.
 - **A rejected `onLoadMore` shows a retry button.** imp logs the error. Do not catch the error to
   show your own message.
-- **Sorting is client-side, over the rows that are loaded.** Numbers compare as numbers. All other
-  values compare as text in the active language, with digits in numeric order.
+- **Sorting is client-side, over the rows that are loaded.** Numbers compare as numbers, and a
+  `Date` compares by its time. All other values compare as text in the active language, with digits
+  in numeric order. An empty value, `NaN` and an invalid `Date` go last.
 - **For server-side sorting, call `event.preventDefault()` in `sort`**, then reload `rows` in the
   order that the server gives. The header keeps its arrow and its `aria-sort`.
 - **`filter` reads `row[key]` of every column, not the text that `render` draws.** A total of `1200`
@@ -90,6 +91,8 @@ Rules an agent gets wrong:
   no prop for it.
 - imp warns about a missing `label`, a column with no `key`, a row with no key, an unknown
   `selection` or `align`, and `selected` without a `selection`.
+- **A row whose key repeats is skipped.** imp shows the first row with that key and warns once for
+  each repeated key.
 
 ```js
 import { initState } from 'imp/state'

@@ -80,9 +80,11 @@ button(
   element. Otherwise the name becomes an attribute. `null`, `undefined`, and `false` remove the
   attribute. `true` sets a bare attribute. `list` and `form` are always attributes.
 - **A `null` property value.** For a **built-in** element, imp converts a `null` or `undefined`
-  property value to `''`, so the element never shows the literal text `"null"`. For a **custom
-  element**, imp passes the raw value, so a setter that expects `null` receives a real `null`. This
-  only applies once the property exists on the node. If you build the element before you call
+  property value to `''`, so the element never shows the literal text `"null"`. When that property
+  reflects an attribute, such as `href`, `src` or `id`, imp then removes the attribute. So
+  `a({ href: null })` renders an `a` with no `href`, not `href=""`. For a **custom element**, imp
+  passes the raw value, so a setter that expects `null` receives a real `null`. This only applies
+  once the property exists on the node. If you build the element before you call
   `customElements.define(...)` for it, the property does not exist yet, and the prop becomes an
   attribute instead. Define a custom element before you build a node that passes it a rich value or
   a `null`.

@@ -1,0 +1,68 @@
+$ imp build --output src  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder must not contain a source of the project: src holds src/main.js
+
+
+$ imp build --output .  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder must not be the project or contain it: .
+
+
+$ imp build --output ..  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder must not be the project or contain it: ..
+
+
+$ imp build --output public  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder must not be public/ or contain it: public
+
+
+$ imp build --output public/out  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder must not be inside public/, because imp copies public/ into it: public/out
+
+
+$ imp build --output notes  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder notes holds files that imp did not write - imp deletes the output folder before it writes into it, so pick a new or empty folder, or delete notes yourself
+
+
+$ imp build --output file.txt  (cwd: <tmp>)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] the output folder is a file: file.txt - pick a folder for the output

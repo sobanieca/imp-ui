@@ -87,7 +87,8 @@ mount(
 | `area({ screens, root?, translations? })` | an area's own definition, for its `export default`                                                                                         |
 | `guard(states, check)`                    | the one `access` guard: `(...values, { need, params, query, searchParams, path }) => true \| wait \| false \| '/path'`                     |
 | `wait`                                    | the verdict for "cannot decide yet" - the router keeps `loading` up and re-runs the guard                                                  |
-| `navigate(path, { replace? })`            | navigate programmatically, from anywhere; give it `handle.href(params)`                                                                    |
+| `navigate(path, { replace?, external? })` | navigate programmatically, from anywhere; give it `handle.href(params)`; `external: true` to leave for another site                        |
+| `safeNext(value, fallback)`               | `value` when it is a path of the app, else `fallback`; wrap every `?next=` value in it                                                     |
 | `beforeLeave(self, check)`                | in `setup`: `check()` returns `false`, or a Promise of `false`, to stay; asked before the route changes                                    |
 | `useRoute()`                              | read-only live `{ path, query, searchParams }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                         |
 | `url(path)`                               | prefixes `IMP_BASEPATH`, for an `href` you write as a string                                                                               |
@@ -185,6 +186,12 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
   `link({ href: app.x.href() }, ...)` from `imp/std`. Do not write a path string. Use
   `{ replace: true }` after a login redirect. Inside a param, `app.x.$id.y.href()` fills `id` from
   the route.
+- **`navigate` throws on another origin.** `//x.com` and `https://x.com` throw unless you pass
+  `{ external: true }`. Pass it only for a URL that the app itself chose.
+- **`navigate` leaves the app only for http and https.** `javascript:` and `data:` throw, also with
+  `external: true`.
+- **An item `href` of a standard component also takes `mailto:` and `tel:`.** A nav, list, timeline
+  or breadcrumb item gives those to the browser. Any other non-web scheme throws on click.
 - **`options` names a state, or lists the choices.** The router resolves the name with `useState` at
   its own position, so an ancestor must `initState` it. The state holds `[{ value, label }]` or
   strings. A screen fills it. The choices reach the trail as a picker, never the sidebar as rows.
@@ -222,9 +229,10 @@ decides the nav: a row shows only on an allow verdict, and `wait` hides it until
 - **Every `access` on the chain runs, root first.** `settings` under `projects` needs both. A node
   with no `access` is open, so `/login` never loops. A map with `access` and no `router({ access })`
   throws at startup.
-- **Put the requested path in the login redirect.** Return `/login?next=<path>`, and navigate to
-  `next` with `{ replace: true }` after the sign-in. Pass the node as
-  `shell({ signIn: app.login })`, so the frame shows it without the chrome.
+- **Put the requested path in the login redirect.** Return `/login?next=<path>`. After the sign-in,
+  call `navigate(safeNext(useRoute().get().query.next, app.home.href()), { replace: true })`. Never
+  pass a raw `next` to `navigate`. Pass the node as `shell({ signIn: app.login })`, so the frame
+  shows it without the chrome.
 - **imp has no pending state.** `initState(self, 'myapp.session')` with no initial value is
   `undefined`. Return `wait` for it explicitly. A guard that reads `undefined` without a check
   denies the route or throws, and it never waits.

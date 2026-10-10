@@ -47,6 +47,7 @@ Run `imp licenses` to print this notice from the binary.
 | @deno/esbuild-plugin          | 1.2.1   | MIT           | https://github.com/denoland/deno_esbuild               |
 | @deno/loader                  | 0.3.14  | MIT           | https://github.com/denoland/deno-js-loader             |
 | Chrome for Testing (download) | pinned  | BSD-3-Clause  | https://github.com/GoogleChromeLabs/chrome-for-testing |
+| Scaffold fonts (10 families)  | -       | OFL-1.1       | https://github.com/google/fonts                        |
 
 The Chrome for Testing build is not embedded in the binary; imp downloads a pinned,
 checksum-verified build once into `~/.imp/browser/` when an e2e spec needs a browser and no system
@@ -76,6 +77,13 @@ Nayuki**, as the encoder of the `qrCode` component. The encoder is a JavaScript 
 TypeScript version of that library. The source file keeps the notice of the library in a legal
 comment. So every app built with `imp build` that draws a `qrCode` carries the notice into its own
 `LICENSES.txt`. The notice is reproduced below, in the words of the library.
+
+imp bundles **ten font families for the scaffold of `imp init`**: Inter, Manrope, Plus Jakarta Sans,
+DM Sans, Outfit, Space Grotesk, Sora, Figtree, Nunito Sans and Work Sans. Each one is the Latin and
+the Latin Extended WOFF2 subset that Google Fonts serves, unchanged. All ten are licensed under the
+SIL Open Font License 1.1, with no Reserved Font Name. `imp init` copies one family into the new
+project, with its own license file beside the font files. The copyright lines and the license text
+are reproduced below.
 
 ---
 
@@ -524,6 +532,117 @@ merchantable, fit for a particular purpose or non-infringing. The entire risk as
 to the quality and performance of the Covered Software is with You.
 
 For the complete terms and conditions, see https://mozilla.org/MPL/2.0/.
+```
+
+---
+
+## SIL Open Font License 1.1
+
+Applies to: the scaffold fonts of `imp init`.
+
+- Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)
+- Copyright 2016 The Nunito Sans Project Authors (https://github.com/Fonthausen/NunitoSans)
+- Copyright 2018 The Manrope Project Authors (https://github.com/googlefonts/manrope)
+- Copyright 2019 The Sora Project Authors (https://github.com/sora-xor/sora-font)
+- Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans)
+- Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+- Copyright 2020 The Plus Jakarta Sans Project Authors (https://github.com/tokotype/PlusJakartaSans)
+- Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)
+- Copyright 2021 The Outfit Project Authors (https://github.com/Outfitio/Outfit-Fonts)
+- Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)
+
+```
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
 ---

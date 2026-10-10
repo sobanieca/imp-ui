@@ -1,5 +1,6 @@
 export const ROWS = 1000
 export const DEPTH = 50
+export const KEYSTROKES = 20
 
 const list = (name, measure, extra = {}) => ({
   name,
@@ -62,6 +63,22 @@ export const scenarios = [
     prepare: [['mountCounter']],
     measure: [['burst', 1000]],
     finish: [['unmountCounter']],
+  },
+  {
+    name: `${KEYSTROKES} keystrokes in a rich text document with images (imp only)`,
+    group: 'update',
+    frameworks: ['imp'],
+    prepare: [['mountEditor']],
+    measure: [['typeInParagraph', KEYSTROKES]],
+    finish: [['checkTyped', KEYSTROKES], ['unmountEditor']],
+  },
+  {
+    name: `${KEYSTROKES} keystrokes beside an image in a rich text document (imp only)`,
+    group: 'update',
+    frameworks: ['imp'],
+    prepare: [['mountEditor']],
+    measure: [['typeBesideImage', KEYSTROKES]],
+    finish: [['checkTyped', KEYSTROKES], ['unmountEditor']],
   },
   {
     name: 'unmount 1k rows',

@@ -668,6 +668,12 @@ const docsNav = (pages, currentSlug) =>
   ).join('') +
   `</ul></nav>`
 
+const EXAMPLES_NOTE = `<p>For complete apps that are built with imp, see ` +
+  `<a href="https://github.com/sobanieca/imp-examples">imp-examples</a>. Two of them run live: ` +
+  `<a href="https://sobanieca.github.io/imp-examples/observability/">Beacon</a>, an ` +
+  `observability SPA, and <a href="https://sobanieca.github.io/imp-examples/brickfall/">` +
+  `Brickfall</a>, a game that installs as a PWA.</p>`
+
 const docsIndex = (pages) =>
   `<ul>` +
   pages.map((page) =>
@@ -698,7 +704,7 @@ const pagesOf = ({ docs, overview }) => [
       'theming, testing and more.',
     main: `<div class="docs">${docsNav(docs, null)}<article class="paper md"><h1>Docs</h1>${
       docsIndex(docs)
-    }</article></div>`,
+    }${EXAMPLES_NOTE}</article></div>`,
   },
   ...docs.map((page) => ({
     route: `docs/${page.slug}`,

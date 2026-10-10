@@ -1,7 +1,7 @@
 import { dirname, join, resolve } from '@std/path'
 import { applyEdits, modify, parse as parseJsonc, printParseErrorCode } from './vendor/jsonc.js'
 import { DEFAULT_LICENSE_POLICY, LICENSE_POLICIES } from './license-policy.js'
-import { EXACT_VERSION } from './specifiers.js'
+import { EXACT_VERSION, VALID_ALIAS } from './specifiers.js'
 
 const isPlainObject = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -240,6 +240,11 @@ export async function loadImpConfig(startDir) {
     if (alias === 'imp') {
       throw new Error(
         `invalid ${name} - 'imp' is reserved for the imp library and cannot be a dependency alias`,
+      )
+    }
+    if (!VALID_ALIAS.test(alias)) {
+      throw new Error(
+        `invalid ${name} - dependency alias '${alias}' must be a package name of letters, digits, '.', '_' and '-', with no '/', '\\' or '..', and it must not start with '.'`,
       )
     }
     if (typeof specifier !== 'string') {

@@ -149,6 +149,8 @@ cli/src/vendor/
 # compiled binary (tools/compile.js)
 /imp
 /imp.exe
+/imp.stamp
+/imp.exe.stamp
 
 # imp working directory (dev server logs, test failure screenshots, recorded videos)
 .imp/

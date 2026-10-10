@@ -44,7 +44,7 @@ Rules an agent gets wrong:
 
 Keys: arrows move in the grid, Home and End go to the first and the last emoji. Arrow Up in the top
 row returns to the search field. Arrow Down in the search field enters the grid. Escape closes the
-panel.
+panel. Tab out of the panel also closes it.
 
 ```js
 form(

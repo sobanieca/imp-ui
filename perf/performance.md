@@ -60,7 +60,8 @@ perf/
   apps/
     imports.json          the pinned React and Vue versions
     shared/bench-data.js  the row data and the list operations that every app shares
-    imp/                  an imp project: imp.json, index.html, app.js
+    imp/                  an imp project: imp.json, env.json, index.html, app.js,
+                          and rich-text-document.js, the document of the rich text scenarios
     react/                index.html, app.js (React 19, createElement, no JSX)
     vue/                  index.html, app.js (Vue 3, render functions, no templates)
   dist/                   the built apps (not committed)
@@ -121,6 +122,8 @@ The row count is 1000 and the nesting depth is 50, set in `perf/scenarios.js`.
 | remove the middle row of 1k               | update  | Removal of one keyed item.                                                                |
 | update a value read 50 components deep    | update  | A root state changes and a leaf 50 components down shows it. Propagation through a tree.  |
 | 1000 committed updates of one text node   | update  | The fixed cost of one committed update, times 1000.                                       |
+| 20 keystrokes in a rich text document     | update  | imp only. `richTextEditor` with 5 embedded images and 3000 words. Typing in a paragraph.  |
+| 20 keystrokes beside an image             | update  | imp only. The same document. Typing in the paragraph that holds an image.                 |
 | unmount 1k rows                           | dispose | The whole app leaves the page. Time, and what remains after garbage collection.           |
 | clear 1k rows through the list            | dispose | The list state becomes empty while the app stays mounted.                                 |
 | unmount 50 nested components              | dispose | Disposal of a deep chain.                                                                 |
@@ -183,6 +186,24 @@ every standard component in the chain counts. imp now mounts a tree from one loo
 that connects mounts, every host that connects during that mount joins a list, and the loop mounts
 them next, depth first, in document order. The order of the mounts did not change. A chain of 5000
 components mounts, updates and unmounts. The suite runs the deep scenarios at 50 levels.
+
+**The rich text editor.** `richTextEditor` commits its value as markdown on every keystroke. An
+embedded image is a data URL of some hundred kilobytes, so a document with images is megabytes long.
+Two causes made a keystroke slow. The check of an image address gave the whole data URL to the URL
+parser, twice per image. And the editor wrote every block of the document again. The check now
+accepts a `data:image/` prefix at once, and the editor keeps the markdown of each unchanged block.
+The medians of 20 samples, in milliseconds for 20 keystrokes:
+
+| Scenario                              | Before | Address check | Kept blocks |
+| ------------------------------------- | -----: | ------------: | ----------: |
+| 20 keystrokes in a rich text document |    266 |            74 |          41 |
+| 20 keystrokes beside an image         |    287 |            71 |          44 |
+
+A keystroke now costs about 2 ms, and most of it is the edit of the browser itself. The value is
+still exact after each keystroke, because the commit stays synchronous.
+
+The imp app is served under `/imp/`, so its `env.json` sets `IMP_BASEPATH` to `/imp`. The build
+writes root-absolute script addresses, and without the base path the page does not load.
 
 **What stays.** A row component costs more to mount than a row in React or Vue, because every
 component is a custom element with a shadow root, and the browser charges for both. On the reference

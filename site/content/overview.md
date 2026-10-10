@@ -16,6 +16,20 @@ you build the app. You assemble nothing, and you connect nothing.
 
 <!-- positions -->
 
+## Examples
+
+The [imp-examples](https://github.com/sobanieca/imp-examples) repository holds three complete apps
+that are built with imp. Two of them run live in the browser:
+
+- [Beacon](https://sobanieca.github.io/imp-examples/observability/) is an observability SPA with a
+  shell, a router, guards, forms, charts and translations. The hosted build has no backend, so
+  sign-in fails there. Run it with `imp start` to use its mock API.
+- [Brickfall](https://sobanieca.github.io/imp-examples/brickfall/) is a brick breaker game on a
+  canvas. It installs as a PWA and plays offline.
+
+The third app is a shop that a Deno server renders, with imp components as islands. It runs locally
+only.
+
 ## Why the name imp
 
 The first name was `imperator`, for imperative code. A modern framework is declarative, and in some

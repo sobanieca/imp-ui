@@ -6,9 +6,11 @@ import { maybeDelegate, notifyUpdate, prune, update } from './version-manager.js
 const HELP = `imp - buildless UI toolkit
 
 USAGE
-  imp init [dir] [--pwa]                scaffold a runnable project: a page, a counter
-                                        component, a unit test and an e2e spec
-                                        (no dir: here | --pwa: installable, offline-ready)
+  imp init [dir] [--pwa]                scaffold a runnable project: a page, a theme,
+           [--font <name>]              a font, a counter component, a unit test and
+                                        an e2e spec (no dir: here | --pwa: installable,
+                                        offline-ready | --font: a font of imp skill
+                                        init instead of a random one)
   imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
                      [--env <name>]     live reload, console + network -> terminal
                                         (--env selects an "environments" entry
@@ -17,6 +19,9 @@ USAGE
                      [--no-mock]        the "mocks" folder instead of the network
                                         (--no-mock forces a run against the real API)
                      [--no-reload]      keep the page as it is when a file changes
+                     [--host <address>] listen on another address than 127.0.0.1, like
+                                        0.0.0.0 to test on a phone (every device on the
+                                        network can then read the project files)
   imp build [file.html] [--output dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -34,6 +39,8 @@ USAGE
                      [--output <dir>]   --output writes the same page as static files, with one
                                         bundle per group and a script that defines <imp-preview>,
                                         the element that embeds the catalog in any web page
+                     [--host <address>] --host listens on another address than 127.0.0.1, as for
+                                        imp start
   imp review [clear]                    list what was written from the browser by the review
                                         widget the dev server puts on every page - the page,
                                         the element picked and the comment left on it
@@ -91,6 +98,28 @@ If you are an AI agent, run 'imp skill' to learn more about imp before writing a
 function flag(args, name, fallback) {
   const index = args.indexOf('--' + name)
   return index !== -1 && args[index + 1] ? args[index + 1] : fallback
+}
+
+function fontFlag(args) {
+  const index = args.indexOf('--font')
+  if (index === -1) return null
+  const value = args[index + 1]
+  if (!value || value.startsWith('--')) {
+    throw new Error("--font needs a font name, like '--font inter'")
+  }
+  return value
+}
+
+function hostFlag(args) {
+  const index = args.indexOf('--host')
+  if (index === -1) return null
+  const value = args[index + 1]
+  if (!value || value.startsWith('--')) {
+    throw new Error(
+      "--host needs an address, like '--host 0.0.0.0' to open the dev server to your network",
+    )
+  }
+  return value
 }
 
 function portFlag(args) {
@@ -152,6 +181,7 @@ try {
         cwd: Deno.cwd(),
         dir: positional(rest.filter((arg) => arg !== '--pwa'))[0] ?? null,
         pwa: rest.includes('--pwa'),
+        font: fontFlag(rest),
       })
       break
     }
@@ -163,6 +193,7 @@ try {
           0
         ] ?? 'index.html',
         port: portFlag(rest),
+        host: hostFlag(rest),
         env: flag(rest, 'env', null),
         mocks: mockFlag(rest),
         reload: !rest.includes(RELOAD_FLAG),
@@ -178,6 +209,7 @@ try {
         root: await projectRoot(Deno.cwd()),
         paths: positional(args),
         port: portFlag(rest),
+        host: hostFlag(rest),
         env: flag(rest, 'env', null),
         list: rest.includes('--list'),
         json: rest.includes('--json'),

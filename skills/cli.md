@@ -6,30 +6,30 @@ is buildless.** `imp start` serves your files as written. Production is one `imp
 
 This page is the map. Each command has its own manual. Read that manual before you run the command.
 
-| Command                              | Does                                                     | Read                            |
-| ------------------------------------ | -------------------------------------------------------- | ------------------------------- |
-| `imp init [dir] [--pwa]`             | scaffold a runnable project - page, component, tests     | [init](init.md)                 |
-| `imp start [file.html]`              | serve a page with live reload and terminal telemetry     | [start](start.md)               |
-| `--mock` / `--no-mock`               | answer from `*.mock.js` files, or from the real API      | [mocks](mocks.md)               |
-| `imp build [file.html\|file.js]`     | production build; `--pwa` for an installable offline app | [build](build.md)               |
-| `imp preview [path]`                 | render components in isolation from `*.preview.js`       | [preview](preview.md)           |
-| `imp preview --output <dir>`         | export the gallery as static files that any page embeds  | [preview](preview.md)           |
-| `imp review [clear]`                 | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |
-| `imp logs [-n <count>] [-f]`         | print the log of the dev server session; `-f` follows it | [start](start.md)               |
-| `imp test <file> \| --unit \| --e2e` | `*.test.js` in-process, `*.spec.js` in a real browser    | [testing](testing.md)           |
-| `imp install [pkg[@version]]`        | vendor a dependency into `dependencies/`                 | [dependencies](dependencies.md) |
-| `imp uninstall <pkg>`                | remove one                                               | [dependencies](dependencies.md) |
-| `imp audit [--sbom]`                 | known vulnerabilities (OSV), or a CycloneDX SBOM         | [dependencies](dependencies.md) |
-| `imp lint [...paths] [--fix]`        | imp's rules plus a standard set; `--fix` autofixes       | [lint](lint.md)                 |
-| `imp fmt [...paths] [--check]`       | format every file type in the project                    | [fmt](fmt.md)                   |
-| `imp resize <image>`                 | downscale an oversized PNG/JPEG asset                    | [resize](resize.md)             |
-| `imp map [file]`                     | print the application map: paths, labels, access, notes  | [routing](routing.md)           |
-| `imp skill [...subject]`             | print a manual for an AI agent                           | [skill](skill.md)               |
-| `imp skill --init`                   | create the `/imp` skill for Claude Code, Codex, Cursor   | [skill](skill.md)               |
-| `imp update [version]`               | update and pin the version in `imp.json`                 | [update](update.md)             |
-| `imp prune`                          | delete cached versions unused for 30+ days               | [update](update.md)             |
-| `imp licenses`                       | third-party license notices for bundled tools            | [update](update.md)             |
-| `imp help` / `imp --version`         | usage, or the version this binary runs                   | -                               |
+| Command                                  | Does                                                     | Read                            |
+| ---------------------------------------- | -------------------------------------------------------- | ------------------------------- |
+| `imp init [dir] [--pwa] [--font <name>]` | scaffold a runnable project - page, theme, font, tests   | [init](init.md)                 |
+| `imp start [file.html]`                  | serve a page with live reload and terminal telemetry     | [start](start.md)               |
+| `--mock` / `--no-mock`                   | answer from `*.mock.js` files, or from the real API      | [mocks](mocks.md)               |
+| `imp build [file.html\|file.js]`         | production build; `--pwa` for an installable offline app | [build](build.md)               |
+| `imp preview [path]`                     | render components in isolation from `*.preview.js`       | [preview](preview.md)           |
+| `imp preview --output <dir>`             | export the gallery as static files that any page embeds  | [preview](preview.md)           |
+| `imp review [clear]`                     | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |
+| `imp logs [-n <count>] [-f]`             | print the log of the dev server session; `-f` follows it | [start](start.md)               |
+| `imp test <file> \| --unit \| --e2e`     | `*.test.js` in-process, `*.spec.js` in a real browser    | [testing](testing.md)           |
+| `imp install [pkg[@version]]`            | vendor a dependency into `dependencies/`                 | [dependencies](dependencies.md) |
+| `imp uninstall <pkg>`                    | remove one                                               | [dependencies](dependencies.md) |
+| `imp audit [--sbom]`                     | known vulnerabilities (OSV), or a CycloneDX SBOM         | [dependencies](dependencies.md) |
+| `imp lint [...paths] [--fix]`            | imp's rules plus a standard set; `--fix` autofixes       | [lint](lint.md)                 |
+| `imp fmt [...paths] [--check]`           | format every file type in the project                    | [fmt](fmt.md)                   |
+| `imp resize <image>`                     | downscale an oversized PNG/JPEG asset                    | [resize](resize.md)             |
+| `imp map [file]`                         | print the application map: paths, labels, access, notes  | [routing](routing.md)           |
+| `imp skill [...subject]`                 | print a manual for an AI agent                           | [skill](skill.md)               |
+| `imp skill --init`                       | create the `/imp` skill for Claude Code, Codex, Cursor   | [skill](skill.md)               |
+| `imp update [version]`                   | update and pin the version in `imp.json`                 | [update](update.md)             |
+| `imp prune`                              | delete cached versions unused for 30+ days               | [update](update.md)             |
+| `imp licenses`                           | third-party license notices for bundled tools            | [update](update.md)             |
+| `imp help` / `imp --version`             | usage, or the version this binary runs                   | -                               |
 
 The configuration of every command lives in one optional `imp.json`. [config](config.md) gives every
 key, and the `--env` environment files.

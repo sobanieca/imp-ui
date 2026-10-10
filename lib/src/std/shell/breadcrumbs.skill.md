@@ -31,14 +31,14 @@ The call shape is `breadcrumbs(props)`. It takes no content.
 
 Each crumb has these keys:
 
-| Key       | Values                          | Default   | Notes                                        |
-| --------- | ------------------------------- | --------- | -------------------------------------------- |
-| `label`   | string, or a state - **live**   | required  | The word in the trail                        |
-| `id`      | string or number                | its index | What `select` reports                        |
-| `href`    | string                          | -         | Without one the crumb is inert text          |
-| `icon`    | Lucide export, DOM, or a string | -         | Drawn before the label - usually on the root |
-| `onClick` | function                        | -         | Called with `{ id, item }` on activation     |
-| `options` | array of `{ id, label, href }`  | -         | Gives the crumb a picker of its siblings     |
+| Key       | Values                          | Default   | Notes                                                                                |
+| --------- | ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
+| `label`   | string, or a state - **live**   | required  | The word in the trail                                                                |
+| `id`      | string or number                | its index | What `select` reports                                                                |
+| `href`    | string                          | -         | Without one, or with an unsafe scheme such as `javascript:`, the crumb is inert text |
+| `icon`    | Lucide export, DOM, or a string | -         | Drawn before the label - usually on the root                                         |
+| `onClick` | function                        | -         | Called with `{ id, item }` on activation                                             |
+| `options` | array of `{ id, label, href }`  | -         | Gives the crumb a picker of its siblings                                             |
 
 Rules an agent gets wrong:
 

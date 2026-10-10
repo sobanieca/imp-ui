@@ -64,6 +64,8 @@ Rules an agent gets wrong:
   removal or submit. It does not block the submit.
 - **`maxSize` is in bytes, with decimal units.** `5_000_000` shows as `5 MB`.
 - **`accept` is checked for a dropped file too**, not only in the file dialog.
+- **A `.heic` or `.heif` file with no MIME type counts as `image/heic` or `image/heif`.** Many
+  systems give a HEIC photo an empty type, so imp reads the extension. `image/*` then accepts it.
 - **imp logs a rejected `onFiles` promise.** Show your own message for a failed upload.
 - **Do not build your own drop zone around the control.** The zone is part of it.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
