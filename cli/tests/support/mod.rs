@@ -9,7 +9,11 @@ use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+pub mod worker;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub const DECLARED_MOCK_DELAY: u128 = 250;
 
 pub fn cli_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -712,4 +716,35 @@ fn percent_decode(text: &str) -> String {
 pub fn run_spec(dir: &Path, name: &str, source: &str) -> Run {
     write(&dir.join(name), source);
     run_imp(&["test", name], dir)
+}
+
+pub fn raw_status_line(
+    port: u16,
+    target: &str,
+    method: &str,
+    host: &str,
+    headers: &[&str],
+) -> String {
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(10)))
+        .unwrap();
+    let mut lines = vec![
+        format!("{method} {target} HTTP/1.1"),
+        format!("host: {host}"),
+    ];
+    lines.extend(headers.iter().map(|header| header.to_string()));
+    lines.push("connection: close".into());
+    let mut request = format!("{}\r\n\r\n", lines.join("\r\n"));
+    if headers
+        .iter()
+        .any(|header| header.starts_with("content-length: 2"))
+    {
+        request.push_str("[]");
+    }
+    stream.write_all(request.as_bytes()).unwrap();
+    let mut reader = BufReader::new(stream);
+    let mut line = String::new();
+    let _ = reader.read_line(&mut line);
+    line.trim_end().to_string()
 }

@@ -1,7 +1,9 @@
-reported: mocks/counter.mock.js:2 - Unexpected end of file
+reported: mocks/counter.mock.js:2:0 - Expected `]` but found `EOF`
+reported: 1 file(s) from mocks/ answering nothing
 reported: mocks/counter.mock.js must export 'mocks' - an array of { match, handler }
-reported: 1 entry
-reported: 1 entry
+reported: 1 file(s) from mocks/ answering nothing
+reported: 1 file(s) from mocks/ answering requests
+reported: 1 file(s) from mocks/ answering requests
 
 answer: 200 {"count":11}
 answer: 200 {"count":12}

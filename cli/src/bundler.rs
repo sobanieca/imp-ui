@@ -1046,8 +1046,15 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
                 if relayed || problems.iter().any(|problem| text.contains(&problem.text)) {
                     continue;
                 }
+                let location = diagnostic
+                    .to_diagnostic()
+                    .get_primary_location()
+                    .map(|(_, line, column, _)| format!(":{line}:{column}"))
+                    .unwrap_or_default();
                 problems.push(Problem {
-                    file: diagnostic.id().map(|id| display_path(&options.root, &id)),
+                    file: diagnostic
+                        .id()
+                        .map(|id| format!("{}{location}", display_path(&options.root, &id))),
                     text: clean_message(&text),
                 });
             }
