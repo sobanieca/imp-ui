@@ -70,6 +70,8 @@ pub mod project_files;
 pub mod pwa;
 pub mod resize;
 pub mod review;
+#[path = "script-engine.rs"]
+pub mod script_engine;
 #[path = "service-worker.rs"]
 pub mod service_worker;
 pub mod skill;

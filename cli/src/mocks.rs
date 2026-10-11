@@ -2,6 +2,7 @@ use crate::bundler::{Assets, Format, ImpLibrary, Options, VirtualModule, bundle}
 use crate::http_server::Response;
 use crate::logger;
 use crate::paths::posix;
+use crate::script_engine::{install_console, message_of, run_jobs};
 use crate::service_worker::stamp_of;
 use rquickjs::function::Opt;
 use rquickjs::{Context, Ctx, Function, Object, Persistent, Runtime, Value};
@@ -324,51 +325,6 @@ struct Shared {
     problems: Vec<String>,
 }
 
-fn message_of(ctx: &Ctx<'_>, error: rquickjs::Error) -> String {
-    if !error.is_exception() {
-        return error.to_string();
-    }
-    let thrown = ctx.catch();
-    if let Some(object) = thrown.as_object() {
-        if let Ok(message) = object.get::<_, String>("message") {
-            return message;
-        }
-    }
-    thrown
-        .as_string()
-        .and_then(|text| text.to_string().ok())
-        .unwrap_or_else(|| format!("{thrown:?}"))
-}
-
-fn console_text<'js>(values: &[Value<'js>]) -> String {
-    let Some(ctx) = values.first().map(|value| value.ctx().clone()) else {
-        return String::new();
-    };
-    let json: Option<Object> = ctx.globals().get("JSON").ok();
-    let stringify: Option<Function> = json.and_then(|json| json.get("stringify").ok());
-    values
-        .iter()
-        .map(|value| {
-            if let Some(text) = value.as_string() {
-                return text.to_string().unwrap_or_default();
-            }
-            if value.is_object() && !value.is_function() {
-                if let Some(text) = stringify
-                    .as_ref()
-                    .and_then(|stringify| stringify.call::<_, String>((value.clone(),)).ok())
-                {
-                    return text;
-                }
-            }
-            ctx.globals()
-                .get::<_, Function>("String")
-                .and_then(|string| string.call::<_, String>((value.clone(),)))
-                .unwrap_or_default()
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
 fn install_globals(ctx: &Ctx<'_>, shared: &Rc<RefCell<Shared>>) -> rquickjs::Result<()> {
     let globals = ctx.globals();
     let timers = shared.clone();
@@ -404,45 +360,8 @@ fn install_globals(ctx: &Ctx<'_>, shared: &Rc<RefCell<Shared>>) -> rquickjs::Res
             }
         })?,
     )?;
-    let console = Object::new(ctx.clone())?;
-    for level in ["log", "info", "warn", "error", "debug"] {
-        console.set(
-            level,
-            Function::new(
-                ctx.clone(),
-                move |values: rquickjs::function::Rest<Value<'_>>| {
-                    let text = format!("mocks - {}", console_text(&values.0));
-                    match level {
-                        "error" => logger::error(&text),
-                        "warn" => logger::warn(&text),
-                        "debug" => logger::debug(&text),
-                        _ => logger::info(&text),
-                    }
-                },
-            )?,
-        )?;
-    }
-    globals.set("console", console)?;
+    install_console(ctx, "mocks - ")?;
     Ok(())
-}
-
-fn run_jobs(runtime: &Runtime) -> Result<(), String> {
-    loop {
-        match runtime.execute_pending_job() {
-            Ok(true) => continue,
-            Ok(false) => return Ok(()),
-            Err(exception) => {
-                let message = exception.0.with(|ctx| {
-                    let thrown = ctx.catch();
-                    thrown
-                        .as_object()
-                        .and_then(|object| object.get::<_, String>("message").ok())
-                        .unwrap_or_else(|| format!("{thrown:?}"))
-                });
-                return Err(message);
-            }
-        }
-    }
 }
 
 impl Engine {
