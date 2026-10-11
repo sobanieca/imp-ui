@@ -4,6 +4,7 @@ use std::time::Duration;
 pub struct Fetched {
     pub status: u16,
     pub body: Vec<u8>,
+    pub retry_after: Option<String>,
 }
 
 impl Fetched {
@@ -34,6 +35,14 @@ fn agent(timeout: Option<Duration>) -> ureq::Agent {
         .into()
 }
 
+fn retry_after_of(response: &ureq::http::Response<ureq::Body>) -> Option<String> {
+    response
+        .headers()
+        .get("retry-after")
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string)
+}
+
 pub fn get(url: &str, headers: &[(&str, &str)], timeout: Option<Duration>) -> Result<Fetched> {
     let mut request = agent(timeout).get(url);
     for (name, value) in headers {
@@ -41,13 +50,18 @@ pub fn get(url: &str, headers: &[(&str, &str)], timeout: Option<Duration>) -> Re
     }
     let mut response = request.call().map_err(|error| anyhow::anyhow!("{error}"))?;
     let status = response.status().as_u16();
+    let retry_after = retry_after_of(&response);
     let body = response
         .body_mut()
         .with_config()
         .limit(2 * 1024 * 1024 * 1024)
         .read_to_vec()
         .map_err(|error| anyhow::anyhow!("{error}"))?;
-    Ok(Fetched { status, body })
+    Ok(Fetched {
+        status,
+        body,
+        retry_after,
+    })
 }
 
 pub fn post_json(
@@ -61,11 +75,16 @@ pub fn post_json(
         .send(serde_json::to_vec(body)?)
         .map_err(|error| anyhow::anyhow!("{error}"))?;
     let status = response.status().as_u16();
+    let retry_after = retry_after_of(&response);
     let body = response
         .body_mut()
         .read_to_vec()
         .map_err(|error| anyhow::anyhow!("{error}"))?;
-    Ok(Fetched { status, body })
+    Ok(Fetched {
+        status,
+        body,
+        retry_after,
+    })
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {

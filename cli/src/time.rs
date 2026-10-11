@@ -32,3 +32,35 @@ pub fn iso_string(millis: u128) -> String {
         millis % 1000
     )
 }
+
+fn days_from_civil(year: i64, month: u32, day: u32) -> i64 {
+    let y = if month <= 2 { year - 1 } else { year };
+    let era = y.div_euclid(400);
+    let yoe = y.rem_euclid(400);
+    let mp = if month > 2 { month - 3 } else { month + 9 } as i64;
+    let doy = (153 * mp + 2) / 5 + day as i64 - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe - 719_468
+}
+
+const MONTHS: [&str; 12] = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+pub fn parse_http_date(text: &str) -> Option<u128> {
+    let parts: Vec<&str> = text.split_whitespace().collect();
+    let [_, day, month, year, time, "GMT"] = parts.as_slice() else {
+        return None;
+    };
+    let month = MONTHS.iter().position(|name| name == month)? as u32 + 1;
+    let clock: Vec<i64> = time
+        .split(':')
+        .map(|part| part.parse().ok())
+        .collect::<Option<_>>()?;
+    let [hours, minutes, seconds] = clock.as_slice() else {
+        return None;
+    };
+    let days = days_from_civil(year.parse().ok()?, month, day.parse().ok()?);
+    let total = days * 86_400 + hours * 3600 + minutes * 60 + seconds;
+    u128::try_from(total).ok().map(|seconds| seconds * 1000)
+}
