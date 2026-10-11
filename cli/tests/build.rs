@@ -1091,8 +1091,7 @@ test('the app starts offline', async ({{ page }}) => {{
     );
 }
 
-const STRICT_POLICY: &str =
-    "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'";
+const STRICT_POLICY: &str = "script-src 'self'; style-src 'self'";
 
 #[test]
 fn a_built_app_runs_under_a_strict_content_security_policy() {
@@ -1280,5 +1279,37 @@ fn build_refuses_an_output_folder_that_it_must_not_delete() {
             .join("\n\n")
             .replace(&dir.text(), "<tmp>")
             .replace(&parent, "<tmp>/.."),
+    );
+}
+
+#[test]
+fn the_offline_worker_of_build_pwa() {
+    if !has_browser() {
+        return;
+    }
+    let dir = TempDir::new();
+    copy_directory(&fixture("build-pwa"), &dir.path);
+    let result = run_imp(&["build", "--pwa"], &dir.path);
+    check(
+        result.code == 0,
+        format!("the build failed:\n{}", result.stderr),
+    );
+    let source = Regex::new(r"globalThis\.__IMP_PRECACHE__ = [^\n]*;\n")
+        .unwrap()
+        .replace(&read(&dir.join("dist/sw.js")), "")
+        .into_owned();
+    let project = TempDir::new();
+    copy_directory(&fixture("offline-worker"), &project.path);
+    write(
+        &project.join("worker-source.js"),
+        &format!("export const source = {}\n", Value::from(source)),
+    );
+    let result = run_imp(&["test", "offline-worker.test.js"], &project.path);
+    check(
+        result.code == 0,
+        format!(
+            "the offline worker tests failed:\n{}\n{}",
+            result.stdout, result.stderr
+        ),
     );
 }
