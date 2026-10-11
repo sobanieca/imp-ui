@@ -4,6 +4,14 @@ mod base_path;
 #[path = "browser-script.rs"]
 mod browser_script;
 mod build;
+mod deps;
+#[path = "dependency-manifest.rs"]
+mod dependency_manifest;
+mod integrity;
+#[path = "license-policy.rs"]
+mod license_policy;
+mod bundler;
+mod npm;
 #[path = "cache-dir.rs"]
 mod cache_dir;
 mod cli;

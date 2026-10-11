@@ -25,6 +25,9 @@ fn agent(timeout: Option<Duration>) -> ureq::Agent {
         .http_status_as_error(false)
         .timeout_global(timeout)
         .user_agent(format!("imp/{}", crate::version::VERSION))
+        .tls_config(
+            ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier).build(),
+        )
         .build()
         .into()
 }

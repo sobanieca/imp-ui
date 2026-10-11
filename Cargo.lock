@@ -1310,6 +1310,7 @@ name = "imp"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arcstr",
  "base64 0.22.1",
  "dprint-core 0.70.0",
  "dprint-plugin-json",
@@ -1319,6 +1320,7 @@ dependencies = [
  "gif 0.13.3",
  "image",
  "jsonc-parser",
+ "lax-sql",
  "malva",
  "markup_fmt",
  "nodejs-semver",
@@ -1329,9 +1331,11 @@ dependencies = [
  "pulldown-cmark",
  "regex",
  "resvg",
+ "ring",
  "rolldown",
  "rolldown_common",
  "rolldown_plugin",
+ "rustc-hash 2.1.3",
  "serde_json",
  "sha1",
  "sha2",
@@ -1533,6 +1537,27 @@ dependencies = [
  "euclid",
  "polycool",
  "smallvec",
+]
+
+[[package]]
+name = "lax-core"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31e9266de41ab34dbeb7b0176a6430b1091f1fa7f4dd9f7ccf3e430a9c5a6789"
+dependencies = [
+ "dprint-core 0.67.4",
+]
+
+[[package]]
+name = "lax-sql"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2cca919c19f0e32e8a9fe410e087fc71e4a5ce7a843f939967c643e7881981f"
+dependencies = [
+ "anyhow",
+ "dprint-core 0.67.4",
+ "lax-core",
+ "serde",
 ]
 
 [[package]]
