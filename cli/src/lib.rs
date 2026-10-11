@@ -56,6 +56,7 @@ pub mod lint_support;
 pub mod logger;
 pub mod logs;
 pub mod map;
+pub mod mocks;
 pub mod names;
 pub mod npm;
 #[path = "output-folder.rs"]

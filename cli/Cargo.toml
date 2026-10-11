@@ -51,3 +51,5 @@ tar = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ureq = { version = "3", default-features = false, features = ["rustls", "platform-verifier", "gzip"] }
 zip = { version = "9", default-features = false, features = ["deflate"] }
+rquickjs = "0.14"
+if-addrs = "0.15.0"
