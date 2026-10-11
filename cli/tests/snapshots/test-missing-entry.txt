@@ -1,4 +1,4 @@
-$ imp test login.spec.js  (cwd: test/fixtures/test-list)
+$ imp test login.spec.js  (cwd: tests/fixtures/test-list)
 exit code: 1
 
 --- stdout ---

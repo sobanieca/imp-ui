@@ -1,4 +1,4 @@
-$ imp test app.js  (cwd: test/fixtures/basic)
+$ imp test app.js  (cwd: tests/fixtures/basic)
 exit code: 1
 
 --- stdout ---

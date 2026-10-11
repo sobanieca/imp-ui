@@ -1,4 +1,4 @@
-$ imp preview http.js  (cwd: test/fixtures/preview)
+$ imp preview http.js  (cwd: tests/fixtures/preview)
 exit code: 1
 
 --- stdout ---

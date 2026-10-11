@@ -543,7 +543,8 @@ impl ImpPlugin {
         if let Some(found) = self.resolve_imp(specifier, importer)? {
             return Ok(Some(found));
         }
-        if self.config.mocks.contains_key(specifier) {
+        let mocked_by_itself = |key: &str| importer == Some(format!("\0imp-mock:{key}").as_str());
+        if self.config.mocks.contains_key(specifier) && !mocked_by_itself(specifier) {
             return Ok(Some(HookResolveIdOutput::from_id(format!(
                 "\0imp-mock:{specifier}"
             ))));
@@ -589,7 +590,7 @@ impl ImpPlugin {
                         }
                     }
                 }
-                if self.config.mocks.contains_key(&found) {
+                if self.config.mocks.contains_key(&found) && !mocked_by_itself(&found) {
                     return Ok(Some(HookResolveIdOutput::from_id(format!(
                         "\0imp-mock:{found}"
                     ))));

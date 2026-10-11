@@ -1,4 +1,4 @@
-$ imp preview --port abc  (cwd: test/fixtures/preview)
+$ imp preview --port abc  (cwd: tests/fixtures/preview)
 exit code: 1
 
 --- stdout ---

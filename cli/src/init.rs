@@ -61,15 +61,20 @@ pub const SCAFFOLD_FONTS: [Font; 10] = [
     },
 ];
 
-fn pick_font() -> &'static Font {
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|elapsed| elapsed.subsec_nanos() as usize ^ std::process::id() as usize)
-        .unwrap_or(0);
-    &SCAFFOLD_FONTS[nanos % SCAFFOLD_FONTS.len()]
+pub fn pick_font(random: f64) -> &'static Font {
+    let index = (random * SCAFFOLD_FONTS.len() as f64) as usize;
+    &SCAFFOLD_FONTS[index.min(SCAFFOLD_FONTS.len() - 1)]
 }
 
-fn font_by_slug(slug: &str) -> Result<&'static Font> {
+fn random_unit() -> f64 {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.subsec_nanos() ^ std::process::id())
+        .unwrap_or(0);
+    f64::from(nanos % 1_000_000) / 1_000_000.0
+}
+
+pub fn font_by_slug(slug: &str) -> Result<&'static Font> {
     SCAFFOLD_FONTS
         .iter()
         .find(|font| font.slug == slug)
@@ -382,7 +387,7 @@ fn note_for(file: &File) -> String {
 pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) -> Result<()> {
     let (chosen, choice) = match &font {
         Some(slug) => (font_by_slug(slug)?, "named by --font"),
-        None => (pick_font(), "picked at random"),
+        None => (pick_font(random_unit()), "picked at random"),
     };
     let target = match &dir {
         Some(dir) => resolve(cwd, dir),

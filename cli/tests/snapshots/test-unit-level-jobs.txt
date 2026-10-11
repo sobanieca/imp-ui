@@ -1,4 +1,4 @@
-$ imp test --unit --jobs 1  (cwd: test/fixtures/test-unit)
+$ imp test --unit --jobs 1  (cwd: tests/fixtures/test-unit)
 exit code: 0
 
 --- stdout ---

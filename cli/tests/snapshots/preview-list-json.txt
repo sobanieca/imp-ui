@@ -1,4 +1,4 @@
-$ imp preview --list --json  (cwd: test/fixtures/preview)
+$ imp preview --list --json  (cwd: tests/fixtures/preview)
 exit code: 0
 
 --- stdout ---

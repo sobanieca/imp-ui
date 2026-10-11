@@ -671,6 +671,11 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
     let file = &files[0];
     let browser_path = resolve_browser(get_str(&config, &["test", "browser"]))?;
     let mut totals = Counts::default();
+    let app = if is_spec_file(&file.to_string_lossy()) {
+        Some(crate::start::start_e2e_app(&root, &config, options.mocks)?)
+    } else {
+        None
+    };
     println!("{}", relative_posix(&root, file));
     let code = match bundle_test_file(file, &root, &dependencies) {
         Ok(code) => Some(code),
@@ -682,11 +687,6 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
         }
     };
     if let Some(code) = code {
-        let app = if is_spec_file(&file.to_string_lossy()) {
-            Some(crate::start::start_e2e_app(&root, &config, options.mocks)?)
-        } else {
-            None
-        };
         let result = run_in_browser(FileRun {
             root: &root,
             file,

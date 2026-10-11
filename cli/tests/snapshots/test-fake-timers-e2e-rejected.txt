@@ -4,7 +4,7 @@ exit code: 1
 --- stdout ---
 clock.spec.js
   ✗ fakeTimers unavailable in e2e (*ms)
-      fakeTimers is only available in unit tests (*.test.js) - e2e specs run in a real browser; control time through the Puppeteer page instead
+      fakeTimers is only available in unit tests (*.test.js) - e2e specs drive the app in its own page; control time through the Puppeteer page instead
 
 imp test: 0 passed, 1 failed (1 file, *ms)
 

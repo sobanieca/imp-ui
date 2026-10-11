@@ -1,4 +1,4 @@
-$ imp test profile.test.js  (cwd: test/fixtures/test-mock)
+$ imp test profile.test.js  (cwd: tests/fixtures/test-mock)
 exit code: 0
 
 --- stdout ---

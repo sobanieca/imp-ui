@@ -1,4 +1,4 @@
-$ imp test  (cwd: test/fixtures/test-fail)
+$ imp test  (cwd: tests/fixtures/test-fail)
 exit code: 1
 
 --- stdout ---

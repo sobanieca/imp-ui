@@ -1,4 +1,4 @@
-$ imp preview  (cwd: test/fixtures/preview-bad-theme)
+$ imp preview  (cwd: tests/fixtures/preview-bad-theme)
 exit code: 1
 
 --- stdout ---

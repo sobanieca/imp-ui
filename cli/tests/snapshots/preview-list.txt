@@ -1,4 +1,4 @@
-$ imp preview --list  (cwd: test/fixtures/preview)
+$ imp preview --list  (cwd: tests/fixtures/preview)
 exit code: 0
 
 --- stdout ---

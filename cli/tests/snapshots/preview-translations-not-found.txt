@@ -1,4 +1,4 @@
-$ imp preview  (cwd: test/fixtures/preview-bad-translations)
+$ imp preview  (cwd: tests/fixtures/preview-bad-translations)
 exit code: 1
 
 --- stdout ---

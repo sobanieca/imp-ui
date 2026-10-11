@@ -1,4 +1,4 @@
-$ imp test  (cwd: test/fixtures/test-fake-timers)
+$ imp test  (cwd: tests/fixtures/test-fake-timers)
 exit code: 0
 
 --- stdout ---

@@ -1,4 +1,4 @@
-$ imp preview  (cwd: test/fixtures/preview-bad-entry)
+$ imp preview  (cwd: tests/fixtures/preview-bad-entry)
 exit code: 1
 
 --- stdout ---

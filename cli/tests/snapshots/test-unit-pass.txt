@@ -1,4 +1,4 @@
-$ imp test counter.test.js  (cwd: test/fixtures/test-unit)
+$ imp test counter.test.js  (cwd: tests/fixtures/test-unit)
 exit code: 0
 
 --- stdout ---

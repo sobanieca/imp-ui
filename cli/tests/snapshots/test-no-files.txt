@@ -1,4 +1,4 @@
-$ imp test  (cwd: test/fixtures/with-config)
+$ imp test  (cwd: tests/fixtures/with-config)
 exit code: 0
 
 --- stdout ---

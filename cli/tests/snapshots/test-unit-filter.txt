@@ -1,4 +1,4 @@
-$ imp test lib.test.js --filter adds  (cwd: test/fixtures/test-unit)
+$ imp test lib.test.js --filter adds  (cwd: tests/fixtures/test-unit)
 exit code: 0
 
 --- stdout ---
