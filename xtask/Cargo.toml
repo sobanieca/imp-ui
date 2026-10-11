@@ -5,3 +5,6 @@ edition.workspace = true
 publish = false
 
 [dependencies]
+imp = { path = "../cli" }
+serde_json = { version = "1", features = ["preserve_order"] }
+anyhow = "1"

@@ -84,6 +84,17 @@ fn js_number(raw: &str) -> Option<f64> {
     trimmed.parse::<f64>().ok()
 }
 
+pub fn main() -> i32 {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match run(&args) {
+        Ok(code) => code,
+        Err(error) => {
+            crate::logger::error(&format!("{error:#}"));
+            1
+        }
+    }
+}
+
 pub fn run(args: &[String]) -> Result<i32> {
     let command = args.first().map(String::as_str).unwrap_or("");
     let rest = if args.is_empty() { &[][..] } else { &args[1..] };

@@ -8,6 +8,10 @@ repository.workspace = true
 publish.workspace = true
 build = "build.rs"
 
+[lib]
+name = "imp"
+path = "src/lib.rs"
+
 [[bin]]
 name = "imp"
 path = "src/main.rs"
@@ -36,7 +40,7 @@ pretty_yaml = "0.6"
 regex = "1"
 ring = "0.17"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
-resvg = { version = "0.48", default-features = false, features = ["text", "system-fonts", "raster-images"] }
+resvg = { version = "0.48", default-features = false, features = ["raster-images"] }
 rolldown = "1.2.13"
 rolldown_plugin = "1.2.13"
 rolldown_common = "1.2.13"

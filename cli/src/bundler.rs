@@ -85,6 +85,7 @@ pub struct Options {
     pub asset_names: String,
     pub public_path: Option<String>,
     pub external_imp: bool,
+    pub externals: Vec<String>,
     pub split: bool,
 }
 
@@ -109,6 +110,7 @@ impl Options {
             asset_names: "[name]-[hash][extname]".into(),
             public_path: None,
             external_imp: false,
+            externals: Vec::new(),
             split: false,
         }
     }
@@ -236,6 +238,7 @@ struct PluginConfig {
     assets: Assets,
     legal_external: bool,
     public_path: Option<String>,
+    externals: Vec<String>,
 }
 
 fn runtime() -> &'static tokio::runtime::Runtime {
@@ -375,6 +378,15 @@ impl ImpPlugin {
         id.to_string()
     }
 
+    fn is_external(&self, specifier: &str) -> bool {
+        self.config.externals.iter().any(|external| {
+            if external == "node:*" {
+                return npm::is_node_builtin(specifier);
+            }
+            specifier == external || specifier.starts_with(&format!("{external}/"))
+        })
+    }
+
     fn resolve_imp(&self, specifier: &str, importer: Option<&str>) -> Result<Option<HookResolveIdOutput>> {
         if !(specifier == "imp" || specifier.starts_with("imp/")) {
             return Ok(None);
@@ -406,6 +418,13 @@ impl ImpPlugin {
         let specifier = args.specifier;
         let importer = args.importer;
         let require = matches!(args.kind, ImportKind::Require);
+        if self.is_external(specifier) {
+            return Ok(Some(HookResolveIdOutput {
+                id: specifier.into(),
+                external: Some(rolldown_common::ResolvedExternal::Bool(true)),
+                ..Default::default()
+            }));
+        }
         if self.config.virtual_modules.contains_key(specifier) {
             return Ok(Some(HookResolveIdOutput::from_id(format!("{VIRTUAL_PREFIX}{specifier}"))));
         }
@@ -659,6 +678,7 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
             assets: options.assets,
             legal_external: options.legal_comments == LegalComments::External,
             public_path: options.public_path.clone(),
+            externals: options.externals.clone(),
         }),
         state: state.clone(),
     };
