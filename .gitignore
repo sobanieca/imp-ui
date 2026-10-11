@@ -143,14 +143,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 
-# vendored formatter wasm plugins (fetched by tools/download-fmt-plugins.js)
-cli/src/vendor/
-
-# compiled binary (tools/compile.js)
-/imp
-/imp.exe
-/imp.stamp
-/imp.exe.stamp
+# cargo build output
+/target/
 
 # imp working directory (dev server logs, test failure screenshots, recorded videos)
 .imp/

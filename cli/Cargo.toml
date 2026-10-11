@@ -1,0 +1,45 @@
+[package]
+name = "imp"
+description = "imp - buildless UI toolkit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[[bin]]
+name = "imp"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+base64 = "0.22"
+dprint-core = "0.70"
+dprint-plugin-json = "0.25"
+dprint-plugin-markdown = "0.26"
+dprint-plugin-typescript = "0.96.1"
+flate2 = "1"
+gif = "0.13"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+jsonc-parser = { version = "0.34", features = ["serde", "cst"] }
+malva = "0.16"
+markup_fmt = "0.27"
+nodejs-semver = "7"
+notify = "8"
+oxc = { version = "0.153", features = ["semantic", "codegen", "ast_visit"] }
+oxc_resolver = "11"
+pretty_yaml = "0.6"
+regex = "1"
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+resvg = { version = "0.48", default-features = false, features = ["text", "system-fonts", "raster-images"] }
+rolldown = "1.2.13"
+rolldown_plugin = "1.2.13"
+rolldown_common = "1.2.13"
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+sha1 = "0.10"
+tar = "0.4"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+ureq = { version = "3", default-features = false, features = ["rustls", "platform-verifier", "gzip"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }

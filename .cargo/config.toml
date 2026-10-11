@@ -1,0 +1,3 @@
+[alias]
+xtask = "run --quiet --package xtask --"
+imp = "run --quiet --profile local --package imp --"
