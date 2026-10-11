@@ -130,7 +130,7 @@ pub fn retry_delay(retry_after: Option<&str>, attempt: u32, now_millis: u128) ->
     delay.clamp(0, OSV_LONGEST_WAIT_MS as i128) as u64
 }
 
-fn request(osv: &dyn OsvTransport, path: &str, body: Option<&Value>) -> Result<Value> {
+pub fn osv_request(osv: &dyn OsvTransport, path: &str, body: Option<&Value>) -> Result<Value> {
     let url = format!("{OSV_API}{path}");
     let mut attempt = 1;
     loop {
@@ -167,7 +167,7 @@ pub fn known_vulnerability_ids(
         let mut next = Vec::new();
         for batch in pending.chunks(OSV_BATCH_SIZE) {
             let queries: Vec<Value> = batch.iter().map(|(_, query)| query.clone()).collect();
-            let answer = request(osv, "/querybatch", Some(&json!({ "queries": queries })))?;
+            let answer = osv_request(osv, "/querybatch", Some(&json!({ "queries": queries })))?;
             let results = answer["results"]
                 .as_array()
                 .filter(|results| results.len() == batch.len());
@@ -339,7 +339,7 @@ pub fn check_vulnerabilities(packages: &[Value], osv: &dyn OsvTransport) -> Resu
     let mut details = BTreeMap::new();
     for id in unique {
         let path = format!("/vulns/{}", crate::service_worker::encode_uri_component(id));
-        details.insert(id.clone(), request(osv, &path, None)?);
+        details.insert(id.clone(), osv_request(osv, &path, None)?);
     }
     let checked: Vec<(Value, Vec<Vulnerability>)> = npm
         .iter()

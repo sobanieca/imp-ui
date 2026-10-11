@@ -37,12 +37,52 @@ pub struct Prepared {
     imp_imports: Vec<String>,
 }
 
+impl Prepared {
+    pub fn new(
+        alias: &str,
+        specifier: &str,
+        files: Vec<(String, Vec<u8>)>,
+        manifest: Value,
+    ) -> Prepared {
+        Prepared {
+            alias: alias.to_string(),
+            specifier: specifier.to_string(),
+            files,
+            manifest,
+            unknown: Vec::new(),
+            imp_imports: Vec::new(),
+        }
+    }
+}
+
+pub trait ProjectFileSystem {
+    fn write_file(&self, path: &Path, bytes: &[u8]) -> std::io::Result<()>;
+    fn rename(&self, from: &Path, to: &Path) -> std::io::Result<()>;
+    fn update_config(&self, path: &Path, changes: &[ConfigChange]) -> Result<()>;
+}
+
+pub struct DiskFileSystem;
+
+impl ProjectFileSystem for DiskFileSystem {
+    fn write_file(&self, path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+        std::fs::write(path, bytes)
+    }
+
+    fn rename(&self, from: &Path, to: &Path) -> std::io::Result<()> {
+        std::fs::rename(from, to)
+    }
+
+    fn update_config(&self, path: &Path, changes: &[ConfigChange]) -> Result<()> {
+        update_config_file(path, changes)
+    }
+}
+
 fn latest_version(scheme: &str, name: &str) -> Result<String> {
     let npm = crate::npm::shared()?;
     npm.latest_version(&crate::npm::npm_name_of(scheme, name))
 }
 
-fn component_skill(specifier: &str, entry: Option<&Path>) -> Result<(String, Vec<u8>)> {
+pub fn component_skill(specifier: &str, entry: Option<&Path>) -> Result<(String, Vec<u8>)> {
     let text = entry
         .and_then(|entry| std::fs::read_to_string(entry.with_file_name(COMPONENT_SKILL_FILE)).ok());
     match text {
@@ -182,7 +222,12 @@ struct Swap {
     placed: bool,
 }
 
-fn commit_dependencies(root: &Path, prepared: &[Prepared], changes: &[ConfigChange]) -> Result<()> {
+pub fn commit_dependencies(
+    root: &Path,
+    prepared: &[Prepared],
+    changes: &[ConfigChange],
+    fs: &dyn ProjectFileSystem,
+) -> Result<()> {
     let folder = root.join("dependencies");
     for dependency in prepared {
         if !is_valid_alias(&dependency.alias) {
@@ -209,11 +254,11 @@ fn commit_dependencies(root: &Path, prepared: &[Prepared], changes: &[ConfigChan
             let target = staging.join("new").join(&dependency.alias);
             std::fs::create_dir_all(&target)?;
             for (name, bytes) in &dependency.files {
-                std::fs::write(target.join(name), bytes)?;
+                fs.write_file(&target.join(name), bytes)?;
             }
-            std::fs::write(
-                target.join(DEPENDENCY_MANIFEST_FILE),
-                manifest_file_contents(&dependency.manifest),
+            fs.write_file(
+                &target.join(DEPENDENCY_MANIFEST_FILE),
+                manifest_file_contents(&dependency.manifest).as_bytes(),
             )?;
         }
         std::fs::create_dir_all(staging.join("old"))?;
@@ -226,16 +271,16 @@ fn commit_dependencies(root: &Path, prepared: &[Prepared], changes: &[ConfigChan
                 placed: false,
             };
             if std::fs::symlink_metadata(&swap.target).is_ok() {
-                std::fs::rename(&swap.target, &swap.aside)?;
+                fs.rename(&swap.target, &swap.aside)?;
                 swap.moved_aside = true;
             }
-            let placed = std::fs::rename(staging.join("new").join(&dependency.alias), &swap.target);
+            let placed = fs.rename(&staging.join("new").join(&dependency.alias), &swap.target);
             swap.placed = placed.is_ok();
             swaps.push(swap);
             placed?;
         }
         config_touched = true;
-        update_config_file(&config_path, changes)
+        fs.update_config(&config_path, changes)
     })();
     let mut keep_staging = false;
     let outcome = match attempt {
@@ -389,7 +434,7 @@ pub fn install(
             insertion: Insertion::Alphabetical,
         })
         .collect();
-    commit_dependencies(root, &prepared, &changes)?;
+    commit_dependencies(root, &prepared, &changes, &DiskFileSystem)?;
     for dependency in &prepared {
         report_installed(dependency);
     }

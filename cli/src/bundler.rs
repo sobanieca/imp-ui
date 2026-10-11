@@ -577,6 +577,18 @@ impl ImpPlugin {
             };
             let candidate = normalize(&dir.join(specifier));
             if let Some(found) = self.resolve_file(&candidate) {
+                if let Some(importer_path) =
+                    importer.map(Path::new).filter(|path| path.is_absolute())
+                {
+                    let npm = npm::shared()?;
+                    if npm.is_cached_path(importer_path) {
+                        if let Some(resolved) =
+                            npm.browser_file_override(importer_path, Path::new(&found))
+                        {
+                            return Ok(Some(self.resolved_output(resolved)));
+                        }
+                    }
+                }
                 if self.config.mocks.contains_key(&found) {
                     return Ok(Some(HookResolveIdOutput::from_id(format!(
                         "\0imp-mock:{found}"
@@ -674,6 +686,14 @@ impl ImpPlugin {
         if let Some(importer_path) = importer.map(Path::new).filter(|path| path.is_absolute()) {
             let npm = npm::shared()?;
             if npm.is_cached_path(importer_path) {
+                if let Some(overridden) = tokio::task::block_in_place(|| {
+                    npm.browser_override(importer_path, specifier, require)
+                }) {
+                    let resolved = overridden.map_err(|error| {
+                        self.record_import_error(importer, specifier, format!("{error:#}"))
+                    })?;
+                    return Ok(Some(self.resolved_output(resolved)));
+                }
                 if npm::is_node_builtin(specifier) {
                     return Err(self.record_error(
                         importer,

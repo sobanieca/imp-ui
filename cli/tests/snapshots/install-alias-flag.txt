@@ -3,7 +3,7 @@ exit code: 0
 
 --- stdout ---
 installed bus (npm:mitt@3.0.1)
-  dependencies/bus/bus.js (323 B)
+  dependencies/bus/bus.js (337 B)
   dependencies/bus/manifest.json (packages, versions, licenses)
   bundled packages:
     mitt@3.0.1 - MIT

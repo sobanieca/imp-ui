@@ -366,6 +366,38 @@ impl Npm {
             .with_context(|| format!("could not resolve {scheme}:{name}@{version}{subpath}"))
     }
 
+    pub fn browser_override(
+        &self,
+        importer: &Path,
+        specifier: &str,
+        require: bool,
+    ) -> Option<Result<Resolved>> {
+        let package = self.package_of_path(importer)?;
+        let manifest = read_package_json(&package.directory);
+        let target = manifest.get("browser")?.as_object()?.get(specifier)?;
+        Some(match target {
+            Value::Bool(false) => Ok(Resolved::Empty),
+            Value::String(target) if target.starts_with('.') => {
+                probe(&package.directory.join(target))
+                    .map(Resolved::File)
+                    .ok_or_else(|| {
+                        anyhow!(
+                            "the browser field of {} maps '{specifier}' to a missing {target}",
+                            package.name
+                        )
+                    })
+            }
+            Value::String(target) => self.resolve_bare_from(importer, target, require),
+            _ => return None,
+        })
+    }
+
+    pub fn browser_file_override(&self, importer: &Path, file: &Path) -> Option<Resolved> {
+        let package = self.package_of_path(importer)?;
+        let manifest = read_package_json(&package.directory);
+        browser_mapping(&manifest, &package.directory, file)
+    }
+
     pub fn resolve_bare_from(
         &self,
         importer: &Path,

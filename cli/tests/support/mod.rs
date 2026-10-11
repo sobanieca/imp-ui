@@ -535,6 +535,8 @@ impl rquickjs::loader::Loader for FileLoader {
     }
 }
 
+const PROBE_PRELUDE: &str = "globalThis.TextEncoder = class { encode(text = '') { return Uint8Array.from(unescape(encodeURIComponent(text)), (char) => char.charCodeAt(0)) } }\nglobalThis.TextDecoder = class { decode(bytes = new Uint8Array()) { return decodeURIComponent(escape(String.fromCharCode(...bytes))) } }\n";
+
 pub fn run_module_probe(root: &Path, probe: &str) -> String {
     let runtime = rquickjs::Runtime::new().unwrap();
     runtime.set_loader(
@@ -546,6 +548,7 @@ pub fn run_module_probe(root: &Path, probe: &str) -> String {
     let context = rquickjs::Context::full(&runtime).unwrap();
     let name = format!("{}/__probe.js", posix(root));
     let failure = context.with(|ctx| {
+        let _ = ctx.eval::<(), _>(PROBE_PRELUDE);
         let declared = rquickjs::Module::declare(ctx.clone(), name.as_str(), probe);
         match declared.and_then(|module| module.eval()) {
             Ok(_) => None,
