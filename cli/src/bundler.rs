@@ -74,6 +74,8 @@ pub struct Options {
     pub dependencies: Vec<String>,
     pub imp: ImpLibrary,
     pub mocks: HashMap<String, Mock>,
+    pub appended: HashMap<PathBuf, String>,
+    pub embedded_aliases: HashMap<String, String>,
     pub flags: Option<Flags>,
     pub reject_css: bool,
     pub format: Format,
@@ -99,6 +101,8 @@ impl Options {
             dependencies: Vec::new(),
             imp: ImpLibrary::Tooling,
             mocks: HashMap::new(),
+            appended: HashMap::new(),
+            embedded_aliases: HashMap::new(),
             flags: None,
             reject_css: false,
             format: Format::Esm,
@@ -248,6 +252,8 @@ struct PluginConfig {
     imp: ImpLibrary,
     virtual_modules: HashMap<String, (String, PathBuf)>,
     mocks: HashMap<String, (PathBuf, String)>,
+    appended: HashMap<PathBuf, String>,
+    embedded_aliases: HashMap<String, String>,
     flags: Option<Flags>,
     reject_css: bool,
     assets: Assets,
@@ -493,6 +499,9 @@ impl ImpPlugin {
                 "{VIRTUAL_PREFIX}{specifier}"
             ))));
         }
+        if let Some(path) = self.config.embedded_aliases.get(specifier) {
+            return Ok(Some(HookResolveIdOutput::from_id(embedded_id(path))));
+        }
         if let Some(found) = self.resolve_imp(specifier, importer)? {
             return Ok(Some(found));
         }
@@ -714,6 +723,14 @@ impl ImpPlugin {
                 ..Default::default()
             }));
         }
+        if let Some(extra) = self.config.appended.get(path) {
+            let source = std::fs::read_to_string(path)?;
+            return Ok(Some(HookLoadOutput {
+                code: format!("{source}{extra}").into(),
+                module_type: Some(ModuleType::Js),
+                ..Default::default()
+            }));
+        }
         if matches!(extension.as_str(), "js" | "mjs" | "cjs") {
             if let Some(flags) = &self.config.flags {
                 let source = std::fs::read_to_string(path)?;
@@ -869,6 +886,8 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
                 .iter()
                 .map(|(key, mock)| (key.clone(), (mock.real_file.clone(), mock.code.clone())))
                 .collect(),
+            appended: options.appended.clone(),
+            embedded_aliases: options.embedded_aliases.clone(),
             flags: options.flags.clone(),
             reject_css: options.reject_css,
             assets: options.assets,

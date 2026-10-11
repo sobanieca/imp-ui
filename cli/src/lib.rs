@@ -63,6 +63,8 @@ pub mod npm;
 pub mod output_folder;
 pub mod paths;
 pub mod preview;
+#[path = "preview-source.rs"]
+pub mod preview_source;
 #[path = "project-files.rs"]
 pub mod project_files;
 pub mod pwa;
