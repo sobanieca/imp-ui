@@ -24,8 +24,8 @@ built index.html -> dist/
   app-analytics.json - 4 route patterns, 1 zone name and 2 outcome names, for an analytics store
   LICENSES.txt (<size>)
   app-analytics.json (<size>)
+  chunks/analytics-<hash>.js (<size>)
   chunks/app-<hash>.js (<size>)
-  chunks/chunk-<hash>.js (<size>)
   chunks/inline-1-<hash>.js (<size>)
   index.html (<size>)
 

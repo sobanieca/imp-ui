@@ -421,6 +421,40 @@ impl ImpPlugin {
         anyhow!(text)
     }
 
+    fn record_import_error(
+        &self,
+        importer: Option<&str>,
+        specifier: &str,
+        text: String,
+    ) -> anyhow::Error {
+        let location = importer.and_then(|importer| self.import_location(importer, specifier));
+        let file = importer.map(|importer| match location {
+            Some((line, column)) => format!("{}:{line}:{column}", self.display_id(importer)),
+            None => self.display_id(importer),
+        });
+        self.state.lock().unwrap().0.errors.push(Problem {
+            file,
+            text: text.clone(),
+        });
+        anyhow!(text)
+    }
+
+    fn import_location(&self, importer: &str, specifier: &str) -> Option<(usize, usize)> {
+        let source = match importer.strip_prefix(VIRTUAL_PREFIX) {
+            Some(key) => self.config.virtual_modules.get(key)?.0.clone(),
+            None if Path::new(importer).is_absolute() => std::fs::read_to_string(importer).ok()?,
+            None => return None,
+        };
+        let offset = ['\'', '"', '`']
+            .iter()
+            .filter_map(|quote| source.find(&format!("{quote}{specifier}{quote}")))
+            .min()?;
+        let before = &source[..offset];
+        let line = before.matches('\n').count() + 1;
+        let column = before.len() - before.rfind('\n').map_or(0, |index| index + 1);
+        Some((line, column))
+    }
+
     fn display_id(&self, id: &str) -> String {
         if let Some(path) = id.strip_prefix(EMBEDDED_PREFIX) {
             return format!("imp:{path}");
@@ -470,9 +504,13 @@ impl ImpPlugin {
             if self.config.imp == ImpLibrary::Tooling {
                 return Ok(Some(HookResolveIdOutput::from_id(embedded_id(file))));
             }
-            return Err(self.record_error(importer, imp_tooling_only_problem(specifier)));
+            return Err(self.record_import_error(
+                importer,
+                specifier,
+                imp_tooling_only_problem(specifier),
+            ));
         }
-        Err(self.record_error(importer, imp_subpath_problem(specifier)))
+        Err(self.record_import_error(importer, specifier, imp_subpath_problem(specifier)))
     }
 
     fn resolve_file(&self, path: &Path) -> Option<String> {
@@ -545,24 +583,53 @@ impl ImpPlugin {
                     ))));
                 }
                 if self.config.reject_css && found.ends_with(".css") {
-                    return Err(self.record_error(importer, css_import_message(specifier)));
+                    return Err(self.record_import_error(
+                        importer,
+                        specifier,
+                        css_import_message(
+                            &importer
+                                .map(|importer| self.display_id(importer))
+                                .unwrap_or_else(|| "a script".into()),
+                            specifier,
+                        ),
+                    ));
                 }
                 return Ok(Some(HookResolveIdOutput::from_id(found)));
             }
             if self.config.reject_css && specifier.ends_with(".css") {
-                return Err(self.record_error(importer, css_import_message(specifier)));
+                return Err(self.record_import_error(
+                    importer,
+                    specifier,
+                    css_import_message(
+                        &importer
+                            .map(|importer| self.display_id(importer))
+                            .unwrap_or_else(|| "a script".into()),
+                        specifier,
+                    ),
+                ));
             }
             if importer.is_some_and(|importer| {
                 importer.starts_with(VIRTUAL_PREFIX) || importer.starts_with("\0imp-mock:")
             }) {
-                return Err(
-                    self.record_error(importer, format!("Could not resolve \"{specifier}\""))
-                );
+                return Err(self.record_import_error(
+                    importer,
+                    specifier,
+                    format!("Could not resolve \"{specifier}\""),
+                ));
             }
             return Ok(None);
         }
         if self.config.reject_css && specifier.ends_with(".css") {
-            return Err(self.record_error(importer, css_import_message(specifier)));
+            return Err(self.record_import_error(
+                importer,
+                specifier,
+                css_import_message(
+                    &importer
+                        .map(|importer| self.display_id(importer))
+                        .unwrap_or_else(|| "a script".into()),
+                    specifier,
+                ),
+            ));
         }
         if self
             .config
@@ -577,8 +644,9 @@ impl ImpPlugin {
                 .join(specifier)
                 .join(format!("{specifier}.js"));
             if !path.is_file() {
-                return Err(self.record_error(
+                return Err(self.record_import_error(
                     importer,
+                    specifier,
                     format!(
                         "dependency '{specifier}' is declared but not vendored - run 'imp install'"
                     ),
@@ -600,7 +668,7 @@ impl ImpPlugin {
                     require,
                 )
             })
-            .map_err(|error| self.record_error(importer, format!("{error:#}")))?;
+            .map_err(|error| self.record_import_error(importer, specifier, format!("{error:#}")))?;
             return Ok(Some(self.resolved_output(resolved)));
         }
         if let Some(importer_path) = importer.map(Path::new).filter(|path| path.is_absolute()) {
@@ -626,7 +694,9 @@ impl ImpPlugin {
                 let resolved = tokio::task::block_in_place(|| {
                     npm.resolve_bare_from(importer_path, specifier, require)
                 })
-                .map_err(|error| self.record_error(importer, format!("{error:#}")))?;
+                .map_err(|error| {
+                    self.record_import_error(importer, specifier, format!("{error:#}"))
+                })?;
                 return Ok(Some(self.resolved_output(resolved)));
             }
         }
@@ -661,6 +731,7 @@ impl ImpPlugin {
             }));
         }
         if let Some(key) = id.strip_prefix(VIRTUAL_PREFIX) {
+            self.state.lock().unwrap().0.inputs.insert(id.to_string());
             let (code, _) = &self.config.virtual_modules[key];
             let code = match &self.config.flags {
                 Some(flags) => fold_flag_calls(code, flags, key)
@@ -750,9 +821,9 @@ impl ImpPlugin {
     }
 }
 
-fn css_import_message(specifier: &str) -> String {
+fn css_import_message(importer: &str, specifier: &str) -> String {
     format!(
-        "a script imports '{specifier}' - a script cannot import CSS. A component carries its styles in its 'styles', and a page links a stylesheet from public/ with <link rel=\"stylesheet\">"
+        "{importer} imports '{specifier}' - a script cannot import CSS. A component carries its styles in its 'styles', and a page links a stylesheet from public/ with <link rel=\"stylesheet\">"
     )
 }
 
@@ -909,6 +980,7 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
                 .collect(),
         ),
         cwd: Some(options.root.clone()),
+        hash_characters: Some(rolldown_common::HashCharacters::Hex),
         platform: Some(Platform::Browser),
         format: Some(match options.format {
             Format::Esm => OutputFormat::Esm,

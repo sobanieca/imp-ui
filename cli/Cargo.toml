@@ -54,3 +54,6 @@ zip = { version = "9", default-features = false, features = ["deflate"] }
 rquickjs = "0.14"
 if-addrs = "0.15.0"
 ctrlc = "3.5.2"
+
+[dev-dependencies]
+rquickjs = { version = "0.14", features = ["loader"] }

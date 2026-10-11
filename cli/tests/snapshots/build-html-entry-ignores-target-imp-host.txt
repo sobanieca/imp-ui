@@ -8,10 +8,10 @@ built index.html -> dist/
   LICENSES.txt (<size>)
   assets/note.txt (<size>)
   chunks/app-<hash>.js (<size>)
-  chunks/chunk-<hash>.js (<size>)
-  chunks/chunk-<hash>.js (<size>)
   chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
+  chunks/lib-<hash>.js (<size>)
+  chunks/log-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)
 

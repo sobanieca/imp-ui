@@ -8,11 +8,11 @@ built index.html -> dist/
   LICENSES.txt (<size>)
   assets/note.txt (<size>)
   chunks/app-<hash>.js (<size>)
-  chunks/chunk-<hash>.js (<size>)
-  chunks/chunk-<hash>.js (<size>)
   chunks/env-<hash>.js (<size>)
   chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
+  chunks/lib-<hash>.js (<size>)
+  chunks/log-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)
 
@@ -24,11 +24,11 @@ dist/.imp-output
 dist/LICENSES.txt
 dist/assets/note.txt
 dist/chunks/app-<hash>.js
-dist/chunks/chunk-<hash>.js
-dist/chunks/chunk-<hash>.js
 dist/chunks/env-<hash>.js
 dist/chunks/inline-1-<hash>.js
 dist/chunks/lazy-<hash>.js
+dist/chunks/lib-<hash>.js
+dist/chunks/log-<hash>.js
 dist/index.html
 dist/styles.css
 
@@ -37,8 +37,8 @@ dist/styles.css
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<link rel="modulepreload" href="/my-imp-app/chunks/chunk-<hash>.js">
-<link rel="modulepreload" href="/my-imp-app/chunks/chunk-<hash>.js">
+<link rel="modulepreload" href="/my-imp-app/chunks/log-<hash>.js">
+<link rel="modulepreload" href="/my-imp-app/chunks/lib-<hash>.js">
 <script src="/my-imp-app/chunks/env-<hash>.js"></script>
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/my-imp-app/styles.css">

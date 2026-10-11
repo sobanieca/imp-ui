@@ -96,7 +96,7 @@ fn inline_code_warning(entry_name: &str, inline: &[crate::html_document::InlineC
 }
 
 fn content_hash(text: &[u8]) -> String {
-    crate::http_client::sha256_hex(text)[..8].to_uppercase()
+    crate::http_client::sha256_hex(text)[..8].to_string()
 }
 
 fn write_hashed_script(

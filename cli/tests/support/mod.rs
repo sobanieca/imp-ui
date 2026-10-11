@@ -460,9 +460,8 @@ pub fn png_size(path: &Path) -> String {
     )
 }
 
-static BUILT_SCRIPT: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"chunks/(env|register-service-worker)-[A-Za-z0-9_-]{8}\.js$").unwrap()
-});
+static BUILT_SCRIPT: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"chunks/(env|register-service-worker)-[0-9a-f]{8}\.js$").unwrap());
 
 pub fn with_built_scripts(dist: &Path, html: &str) -> String {
     let mut texts = vec![html.to_string()];
@@ -475,11 +474,239 @@ pub fn with_built_scripts(dist: &Path, html: &str) -> String {
 }
 
 static SIZE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\(\d+(\.\d+)? k?B\)").unwrap());
-static HASHED: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"-[A-Za-z0-9_-]{8}\.js").unwrap());
+static HASHED: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"-[0-9a-f]{8}\.js").unwrap());
 
 pub fn mask(text: &str, dir: &TempDir) -> String {
     let text = text.replace(&dir.text(), "<tmp>");
     let text = SIZE.replace_all(&text, "(<size>)");
     HASHED.replace_all(&text, "-<hash>.js").into_owned()
+}
+
+struct FolderResolver {
+    root: PathBuf,
+}
+
+fn join_module(base: &str, name: &str) -> String {
+    let mut parts: Vec<&str> = if name.starts_with('/') {
+        Vec::new()
+    } else {
+        let mut parts: Vec<&str> = base.split('/').collect();
+        parts.pop();
+        parts
+    };
+    for segment in name.split('/') {
+        match segment {
+            "" | "." => {}
+            ".." => {
+                parts.pop();
+            }
+            other => parts.push(other),
+        }
+    }
+    parts.join("/")
+}
+
+impl rquickjs::loader::Resolver for FolderResolver {
+    fn resolve<'js>(
+        &mut self,
+        _ctx: &rquickjs::Ctx<'js>,
+        base: &str,
+        name: &str,
+        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+    ) -> rquickjs::Result<String> {
+        let root = posix(&self.root);
+        let relative = base.strip_prefix(&format!("{root}/")).unwrap_or(base);
+        Ok(format!("{root}/{}", join_module(relative, name)))
+    }
+}
+
+struct FileLoader;
+
+impl rquickjs::loader::Loader for FileLoader {
+    fn load<'js>(
+        &mut self,
+        ctx: &rquickjs::Ctx<'js>,
+        name: &str,
+        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+    ) -> rquickjs::Result<rquickjs::Module<'js, rquickjs::module::Declared>> {
+        let source = std::fs::read_to_string(name)
+            .map_err(|_| rquickjs::Error::new_loading_message(name, "unable to read"))?;
+        rquickjs::Module::declare(ctx.clone(), name, source)
+    }
+}
+
+pub fn run_module_probe(root: &Path, probe: &str) -> String {
+    let runtime = rquickjs::Runtime::new().unwrap();
+    runtime.set_loader(
+        FolderResolver {
+            root: root.to_path_buf(),
+        },
+        FileLoader,
+    );
+    let context = rquickjs::Context::full(&runtime).unwrap();
+    let name = format!("{}/__probe.js", posix(root));
+    let failure = context.with(|ctx| {
+        let declared = rquickjs::Module::declare(ctx.clone(), name.as_str(), probe);
+        match declared.and_then(|module| module.eval()) {
+            Ok(_) => None,
+            Err(error) => Some(format!("{error}: {:?}", ctx.catch())),
+        }
+    });
+    if let Some(failure) = failure {
+        return failure;
+    }
+    while runtime.execute_pending_job().unwrap_or(false) {}
+    context.with(|ctx| {
+        ctx.globals()
+            .get::<_, Option<String>>("__probe")
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| format!("(the probe reported nothing: {:?})", ctx.catch()))
+    })
+}
+
+pub struct StaticServer {
+    pub base: String,
+    pub folder: std::sync::Arc<std::sync::Mutex<PathBuf>>,
+    pub running: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl StaticServer {
+    pub fn serve(&self, folder: &Path) {
+        *self.folder.lock().unwrap() = folder.to_path_buf();
+    }
+
+    pub fn stop(&self) {
+        self.running.store(false, Ordering::SeqCst);
+    }
+}
+
+impl Drop for StaticServer {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+fn static_type(path: &str) -> &'static str {
+    match path.rsplit('.').next().unwrap_or("") {
+        "html" => "text/html; charset=utf-8",
+        "js" => "text/javascript; charset=utf-8",
+        "json" => "application/json",
+        "webmanifest" => "application/manifest+json",
+        "png" => "image/png",
+        "svg" => "image/svg+xml",
+        "txt" => "text/plain; charset=utf-8",
+        _ => "application/octet-stream",
+    }
+}
+
+pub fn serve_folder(folder: &Path, headers: &[(&str, &str)]) -> StaticServer {
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicBool;
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let folder = Arc::new(std::sync::Mutex::new(folder.to_path_buf()));
+    let running = Arc::new(AtomicBool::new(true));
+    let headers: Vec<(String, String)> = headers
+        .iter()
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect();
+    let (shared_folder, shared_running) = (folder.clone(), running.clone());
+    let releases = folder.lock().unwrap().clone();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let folder = shared_folder.lock().unwrap().clone();
+            let running = shared_running.load(Ordering::SeqCst);
+            let headers = headers.clone();
+            let control_folder = shared_folder.clone();
+            let control_running = shared_running.clone();
+            let shared_root = releases.clone();
+            std::thread::spawn(move || {
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                    return;
+                }
+                loop {
+                    let mut header = String::new();
+                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header.trim().is_empty() {
+                        break;
+                    }
+                }
+                let target = line.split(' ').nth(1).unwrap_or("/");
+                let path = target.split('?').next().unwrap_or("/");
+                if let Some(release) = path.strip_prefix("/__deploy/") {
+                    let root = shared_root.clone();
+                    *control_folder.lock().unwrap() = root.join(release);
+                    let _ = stream.write_all(b"HTTP/1.1 204 No Content\r\ncontent-length: 0\r\nconnection: close\r\n\r\n");
+                    return;
+                }
+                if path == "/__stop" {
+                    control_running.store(false, Ordering::SeqCst);
+                    let _ = stream.write_all(b"HTTP/1.1 204 No Content\r\ncontent-length: 0\r\nconnection: close\r\n\r\n");
+                    return;
+                }
+                let path = percent_decode(path);
+                let file = if path.ends_with('/') {
+                    format!("{path}index.html")
+                } else {
+                    path
+                };
+                let found = running
+                    .then(|| std::fs::read(folder.join(file.trim_start_matches('/'))).ok())
+                    .flatten();
+                let mut head = String::new();
+                let body = match &found {
+                    Some(bytes) => {
+                        head.push_str("HTTP/1.1 200 OK\r\n");
+                        head.push_str(&format!("content-type: {}\r\n", static_type(&file)));
+                        for (name, value) in &headers {
+                            head.push_str(&format!("{name}: {value}\r\n"));
+                        }
+                        bytes.clone()
+                    }
+                    None if !running => return,
+                    None => {
+                        head.push_str("HTTP/1.1 404 Not Found\r\n");
+                        b"not found".to_vec()
+                    }
+                };
+                head.push_str(&format!(
+                    "content-length: {}\r\nconnection: close\r\n\r\n",
+                    body.len()
+                ));
+                let _ = stream.write_all(head.as_bytes());
+                let _ = stream.write_all(&body);
+            });
+        }
+    });
+    StaticServer {
+        base: format!("http://127.0.0.1:{port}"),
+        folder,
+        running,
+    }
+}
+
+fn percent_decode(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let mut out = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' && index + 2 < bytes.len() {
+            if let Ok(byte) = u8::from_str_radix(&text[index + 1..index + 3], 16) {
+                out.push(byte);
+                index += 3;
+                continue;
+            }
+        }
+        out.push(bytes[index]);
+        index += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+pub fn run_spec(dir: &Path, name: &str, source: &str) -> Run {
+    write(&dir.join(name), source);
+    run_imp(&["test", name], dir)
 }

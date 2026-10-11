@@ -8,8 +8,8 @@ built app.js -> shared/
   imp imports kept bare - resolved by the imp host at runtime
   LICENSES.txt (<size>)
   app.js (<size>)
-  chunks/chunk-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
+  chunks/lib-<hash>.js (<size>)
   imp-skill.md (<size>)
 
 --- stderr ---
@@ -19,10 +19,10 @@ built app.js -> shared/
 shared/.imp-output
 shared/LICENSES.txt
 shared/app.js
-shared/chunks/chunk-<hash>.js
 shared/chunks/lazy-<hash>.js
+shared/chunks/lib-<hash>.js
 shared/imp-skill.md
 
 --- shared/app.js ---
 /*! Third-party license notices: /LICENSES.txt */
-import{a as r}from"./chunks/chunk-<hash>.js";function a(e){return{all:e=e||new Map,on:function(o,n){var t=e.get(o);t?t.push(n):e.set(o,[n])},off:function(o,n){var t=e.get(o);t&&(n?t.splice(t.indexOf(n)>>>0,1):e.set(o,[]))},emit:function(o,n){var t=e.get(o);t&&t.slice().map(function(i){i(n)}),(t=e.get("*"))&&t.slice().map(function(i){i(o,n)})}}}import{logLevel as m}from"imp/log";var s=a(),c=null;s.on("ready",e=>{c=e});s.emit("ready",r);var g=c,d=m(),v=async()=>{let{shout:e}=await import("./chunks/lazy-<hash>.js");return e()};export{d as impLogLevel,v as loadShout,g as message};
+import{t as e}from"./chunks/lib-<hash>.js";import{logLevel as t}from"imp/log";function n(e){return{all:e||=/* @__PURE__ */ new Map,on:function(t,n){var r=e.get(t);r?r.push(n):e.set(t,[n])},off:function(t,n){var r=e.get(t);r&&(n?r.splice(r.indexOf(n)>>>0,1):e.set(t,[]))},emit:function(t,n){var r=e.get(t);r&&r.slice().map(function(e){e(n)}),(r=e.get(`*`))&&r.slice().map(function(e){e(t,n)})}}}const r=n();let i=null;r.on(`ready`,e=>{i=e}),r.emit(`ready`,e);const a=i,o=t(),s=async()=>{let{shout:e}=await import(`./chunks/lazy-<hash>.js`);return e()};export{o as impLogLevel,s as loadShout,a as message};
