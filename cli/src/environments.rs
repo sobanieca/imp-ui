@@ -40,13 +40,21 @@ fn parse_dotenv(text: &str) -> Map<String, Value> {
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        let assignment = line.strip_prefix("export ").map(str::trim_start).unwrap_or(line);
-        let Some(separator) = assignment.find('=') else { continue };
+        let assignment = line
+            .strip_prefix("export ")
+            .map(str::trim_start)
+            .unwrap_or(line);
+        let Some(separator) = assignment.find('=') else {
+            continue;
+        };
         let key = assignment[..separator].trim();
         if key.is_empty() {
             continue;
         }
-        values.insert(key.to_string(), Value::String(unquote_dotenv_value(assignment[separator + 1..].trim())));
+        values.insert(
+            key.to_string(),
+            Value::String(unquote_dotenv_value(assignment[separator + 1..].trim())),
+        );
     }
     values
 }
@@ -88,16 +96,31 @@ fn select_alias(requested: Option<&str>, environments: &Map<String, Value>) -> O
             return Some(from_shell);
         }
     }
-    environments.contains_key(DEFAULT_ALIAS).then(|| DEFAULT_ALIAS.to_string())
+    environments
+        .contains_key(DEFAULT_ALIAS)
+        .then(|| DEFAULT_ALIAS.to_string())
 }
 
-pub fn resolve_environment(root: &Path, config: &crate::config::Config, requested: Option<&str>) -> Result<Env> {
+pub fn resolve_environment(
+    root: &Path,
+    config: &crate::config::Config,
+    requested: Option<&str>,
+) -> Result<Env> {
     let empty = Map::new();
-    let environments = config.get("environments").and_then(Value::as_object).unwrap_or(&empty);
-    let Some(alias) = select_alias(requested, environments) else { return Ok(Map::new()) };
+    let environments = config
+        .get("environments")
+        .and_then(Value::as_object)
+        .unwrap_or(&empty);
+    let Some(alias) = select_alias(requested, environments) else {
+        return Ok(Map::new());
+    };
     let Some(file) = environments.get(&alias).and_then(Value::as_str) else {
         let defined: Vec<&str> = environments.keys().map(String::as_str).collect();
-        let list = if defined.is_empty() { "(none defined in imp.json)".to_string() } else { defined.join(", ") };
+        let list = if defined.is_empty() {
+            "(none defined in imp.json)".to_string()
+        } else {
+            defined.join(", ")
+        };
         bail!("unknown environment '{alias}' - defined environments: {list}");
     };
     let text = std::fs::read_to_string(root.join(file))
@@ -105,23 +128,35 @@ pub fn resolve_environment(root: &Path, config: &crate::config::Config, requeste
     let raw = if is_dotenv_file(file) {
         Value::Object(parse_dotenv(&text))
     } else {
-        serde_json::from_str(&text)
-            .map_err(|error| anyhow!("environment '{alias}' - invalid JSON in {file}: {}", crate::json::describe_error(&error)))?
+        serde_json::from_str(&text).map_err(|error| {
+            anyhow!(
+                "environment '{alias}' - invalid JSON in {file}: {}",
+                crate::json::describe_error(&error)
+            )
+        })?
     };
     resolve_values(&alias, file, raw)
 }
 
 pub fn script_safe_json(value: &Value) -> String {
-    serde_json::to_string(value).unwrap().replace('<', "\\u003c")
+    serde_json::to_string(value)
+        .unwrap()
+        .replace('<', "\\u003c")
 }
 
 pub fn env_values_script(env: &Env) -> String {
-    format!("globalThis.__IMP_ENV__ = {}\n", script_safe_json(&Value::Object(env.clone())))
+    format!(
+        "globalThis.__IMP_ENV__ = {}\n",
+        script_safe_json(&Value::Object(env.clone()))
+    )
 }
 
 pub fn env_injection_script(env: &Env) -> String {
     if env.is_empty() {
         return String::new();
     }
-    format!("<script>globalThis.__IMP_ENV__ = {}</script>", script_safe_json(&Value::Object(env.clone())))
+    format!(
+        "<script>globalThis.__IMP_ENV__ = {}</script>",
+        script_safe_json(&Value::Object(env.clone()))
+    )
 }

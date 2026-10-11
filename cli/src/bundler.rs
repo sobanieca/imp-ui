@@ -11,9 +11,9 @@ use rolldown::{BundlerOptions, InputItem, OutputFormat, Platform};
 use rolldown_common::{EmittedAsset, ImportKind, ModuleType, Output, StrOrBytes};
 use rolldown_plugin::{
     HookLoadArgs, HookLoadOutput, HookLoadReturn, HookRenderChunkArgs, HookRenderChunkOutput,
-    HookRenderChunkReturn, HookResolveIdArgs, HookResolveIdOutput, HookResolveIdReturn, HookTransformArgs,
-    HookTransformReturn, HookUsage, Plugin, PluginContext, PluginHookMeta, PluginOrder, SharedLoadPluginContext,
-    SharedTransformPluginContext,
+    HookRenderChunkReturn, HookResolveIdArgs, HookResolveIdOutput, HookResolveIdReturn,
+    HookTransformArgs, HookTransformReturn, HookUsage, Plugin, PluginContext, PluginHookMeta,
+    PluginOrder, SharedLoadPluginContext, SharedTransformPluginContext,
 };
 use std::borrow::Cow;
 use std::collections::{BTreeSet, HashMap};
@@ -25,8 +25,9 @@ pub const VIRTUAL_PREFIX: &str = "\0imp-virtual:";
 const EMPTY_MODULE: &str = "\0imp-empty";
 const ASSET_PREFIX: &str = "__IMP_ASSET__#";
 
-pub const BINARY_ASSET_EXTENSIONS: [&str; 10] =
-    ["wasm", "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "woff", "woff2"];
+pub const BINARY_ASSET_EXTENSIONS: [&str; 10] = [
+    "wasm", "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "woff", "woff2",
+];
 const TEXT_ASSET_EXTENSIONS: [&str; 3] = ["css", "txt", "json"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -150,15 +151,25 @@ pub struct Bundle {
 
 impl Bundle {
     pub fn entry_code(&self) -> &str {
-        self.chunks.iter().find(|chunk| chunk.is_entry).map(|chunk| chunk.code.as_str()).unwrap_or("")
+        self.chunks
+            .iter()
+            .find(|chunk| chunk.is_entry)
+            .map(|chunk| chunk.code.as_str())
+            .unwrap_or("")
     }
 
     pub fn file_inputs(&self) -> Vec<PathBuf> {
-        self.inputs.iter().filter(|input| Path::new(input).is_absolute()).map(PathBuf::from).collect()
+        self.inputs
+            .iter()
+            .filter(|input| Path::new(input).is_absolute())
+            .map(PathBuf::from)
+            .collect()
     }
 
     pub fn bundles_imp_library(&self) -> bool {
-        self.inputs.iter().any(|input| input.starts_with(&format!("{EMBEDDED_PREFIX}lib/src/")))
+        self.inputs
+            .iter()
+            .any(|input| input.starts_with(&format!("{EMBEDDED_PREFIX}lib/src/")))
     }
 }
 
@@ -176,7 +187,11 @@ pub struct Problem {
 impl std::fmt::Display for BundleError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let count = self.problems.len();
-        writeln!(f, "Build failed with {count} error{}:", if count == 1 { "" } else { "s" })?;
+        writeln!(
+            f,
+            "Build failed with {count} error{}:",
+            if count == 1 { "" } else { "s" }
+        )?;
         let lines: Vec<String> = self
             .problems
             .iter()
@@ -244,7 +259,10 @@ struct PluginConfig {
 fn runtime() -> &'static tokio::runtime::Runtime {
     static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
     RUNTIME.get_or_init(|| {
-        tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("an async runtime for the bundler")
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("an async runtime for the bundler")
     })
 }
 
@@ -275,7 +293,10 @@ pub fn resolve_module_file(candidate: &Path) -> Option<PathBuf> {
     let mut attempts = vec![candidate.to_path_buf()];
     if candidate.extension().is_none() {
         for extension in ["js", "mjs"] {
-            attempts.push(PathBuf::from(format!("{}.{extension}", candidate.display())));
+            attempts.push(PathBuf::from(format!(
+                "{}.{extension}",
+                candidate.display()
+            )));
         }
         for extension in ["js", "mjs"] {
             attempts.push(candidate.join(format!("index.{extension}")));
@@ -288,12 +309,18 @@ pub fn resolve_module_file(candidate: &Path) -> Option<PathBuf> {
 }
 
 fn is_relative(specifier: &str) -> bool {
-    specifier.starts_with("./") || specifier.starts_with("../") || specifier == "." || specifier == ".."
+    specifier.starts_with("./")
+        || specifier.starts_with("../")
+        || specifier == "."
+        || specifier == ".."
 }
 
 fn extension_of(id: &str) -> String {
     let clean = id.split(['?', '#']).next().unwrap_or(id);
-    Path::new(clean).extension().map(|ext| ext.to_string_lossy().to_lowercase()).unwrap_or_default()
+    Path::new(clean)
+        .extension()
+        .map(|ext| ext.to_string_lossy().to_lowercase())
+        .unwrap_or_default()
 }
 
 fn mime_of(extension: &str) -> &'static str {
@@ -322,15 +349,39 @@ fn data_url(extension: &str, bytes: &[u8]) -> String {
             return format!("data:{mime};charset=utf-8,{}", percent_encode(text));
         }
     }
-    format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes))
+    format!(
+        "data:{mime};base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(bytes)
+    )
 }
 
 fn percent_encode(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for byte in text.bytes() {
         match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b' ' | b'-' | b'_' | b'.' | b'!' | b'~' | b'*' | b'\'' | b'('
-            | b')' | b'/' | b':' | b'=' | b',' | b';' | b'@' | b'+' | b'$' | b'&' | b'?' => out.push(byte as char),
+            b'A'..=b'Z'
+            | b'a'..=b'z'
+            | b'0'..=b'9'
+            | b' '
+            | b'-'
+            | b'_'
+            | b'.'
+            | b'!'
+            | b'~'
+            | b'*'
+            | b'\''
+            | b'('
+            | b')'
+            | b'/'
+            | b':'
+            | b'='
+            | b','
+            | b';'
+            | b'@'
+            | b'+'
+            | b'$'
+            | b'&'
+            | b'?' => out.push(byte as char),
             _ => out.push_str(&format!("%{byte:02X}")),
         }
     }
@@ -347,7 +398,8 @@ fn legal_comments_in(source: &str) -> Vec<String> {
         .filter_map(|comment| {
             let text = &source[comment.span.start as usize..comment.span.end as usize];
             let body = &text[2..];
-            let legal = body.starts_with('!') || text.contains("@license") || text.contains("@preserve");
+            let legal =
+                body.starts_with('!') || text.contains("@license") || text.contains("@preserve");
             legal.then(|| text.trim().to_string())
         })
         .collect()
@@ -356,7 +408,10 @@ fn legal_comments_in(source: &str) -> Vec<String> {
 impl ImpPlugin {
     fn record_error(&self, importer: Option<&str>, text: String) -> anyhow::Error {
         let file = importer.map(|importer| self.display_id(importer));
-        self.state.lock().unwrap().0.errors.push(Problem { file: file.clone(), text: text.clone() });
+        self.state.lock().unwrap().0.errors.push(Problem {
+            file: file.clone(),
+            text: text.clone(),
+        });
         anyhow!(text)
     }
 
@@ -387,7 +442,11 @@ impl ImpPlugin {
         })
     }
 
-    fn resolve_imp(&self, specifier: &str, importer: Option<&str>) -> Result<Option<HookResolveIdOutput>> {
+    fn resolve_imp(
+        &self,
+        specifier: &str,
+        importer: Option<&str>,
+    ) -> Result<Option<HookResolveIdOutput>> {
         if !(specifier == "imp" || specifier.starts_with("imp/")) {
             return Ok(None);
         }
@@ -414,7 +473,11 @@ impl ImpPlugin {
         resolve_module_file(path).map(|found| found.to_string_lossy().into_owned())
     }
 
-    async fn resolve(&self, ctx: &PluginContext, args: &HookResolveIdArgs<'_>) -> HookResolveIdReturn {
+    async fn resolve(
+        &self,
+        ctx: &PluginContext,
+        args: &HookResolveIdArgs<'_>,
+    ) -> HookResolveIdReturn {
         let specifier = args.specifier;
         let importer = args.importer;
         let require = matches!(args.kind, ImportKind::Require);
@@ -426,34 +489,51 @@ impl ImpPlugin {
             }));
         }
         if self.config.virtual_modules.contains_key(specifier) {
-            return Ok(Some(HookResolveIdOutput::from_id(format!("{VIRTUAL_PREFIX}{specifier}"))));
+            return Ok(Some(HookResolveIdOutput::from_id(format!(
+                "{VIRTUAL_PREFIX}{specifier}"
+            ))));
         }
         if let Some(found) = self.resolve_imp(specifier, importer)? {
             return Ok(Some(found));
         }
         if self.config.mocks.contains_key(specifier) {
-            return Ok(Some(HookResolveIdOutput::from_id(format!("\0imp-mock:{specifier}"))));
+            return Ok(Some(HookResolveIdOutput::from_id(format!(
+                "\0imp-mock:{specifier}"
+            ))));
         }
-        if let Some(importer_path) = importer.and_then(|importer| importer.strip_prefix(EMBEDDED_PREFIX)) {
+        if let Some(importer_path) =
+            importer.and_then(|importer| importer.strip_prefix(EMBEDDED_PREFIX))
+        {
             if is_relative(specifier) {
-                return Ok(Some(HookResolveIdOutput::from_id(embedded_id(&join_embedded(importer_path, specifier)))));
+                return Ok(Some(HookResolveIdOutput::from_id(embedded_id(
+                    &join_embedded(importer_path, specifier),
+                ))));
             }
         }
         let resolve_dir = match importer {
             Some(importer) if importer.starts_with(VIRTUAL_PREFIX) => {
                 let key = &importer[VIRTUAL_PREFIX.len()..];
-                self.config.virtual_modules.get(key).map(|(_, dir)| dir.clone())
+                self.config
+                    .virtual_modules
+                    .get(key)
+                    .map(|(_, dir)| dir.clone())
             }
             Some(importer) if importer.starts_with("\0imp-mock:") => Some(self.config.root.clone()),
-            Some(importer) if Path::new(importer).is_absolute() => Path::new(importer).parent().map(Path::to_path_buf),
+            Some(importer) if Path::new(importer).is_absolute() => {
+                Path::new(importer).parent().map(Path::to_path_buf)
+            }
             _ => Some(self.config.root.clone()),
         };
         if is_relative(specifier) || Path::new(specifier).is_absolute() {
-            let Some(dir) = resolve_dir.clone() else { return Ok(None) };
+            let Some(dir) = resolve_dir.clone() else {
+                return Ok(None);
+            };
             let candidate = normalize(&dir.join(specifier));
             if let Some(found) = self.resolve_file(&candidate) {
                 if self.config.mocks.contains_key(&found) {
-                    return Ok(Some(HookResolveIdOutput::from_id(format!("\0imp-mock:{found}"))));
+                    return Ok(Some(HookResolveIdOutput::from_id(format!(
+                        "\0imp-mock:{found}"
+                    ))));
                 }
                 if self.config.reject_css && found.ends_with(".css") {
                     return Err(self.record_error(importer, css_import_message(specifier)));
@@ -463,29 +543,53 @@ impl ImpPlugin {
             if self.config.reject_css && specifier.ends_with(".css") {
                 return Err(self.record_error(importer, css_import_message(specifier)));
             }
-            if importer.is_some_and(|importer| importer.starts_with(VIRTUAL_PREFIX) || importer.starts_with("\0imp-mock:")) {
-                return Err(self.record_error(importer, format!("Could not resolve \"{specifier}\"")));
+            if importer.is_some_and(|importer| {
+                importer.starts_with(VIRTUAL_PREFIX) || importer.starts_with("\0imp-mock:")
+            }) {
+                return Err(
+                    self.record_error(importer, format!("Could not resolve \"{specifier}\""))
+                );
             }
             return Ok(None);
         }
         if self.config.reject_css && specifier.ends_with(".css") {
             return Err(self.record_error(importer, css_import_message(specifier)));
         }
-        if self.config.dependencies.iter().any(|alias| alias == specifier) {
-            let path = self.config.root.join("dependencies").join(specifier).join(format!("{specifier}.js"));
+        if self
+            .config
+            .dependencies
+            .iter()
+            .any(|alias| alias == specifier)
+        {
+            let path = self
+                .config
+                .root
+                .join("dependencies")
+                .join(specifier)
+                .join(format!("{specifier}.js"));
             if !path.is_file() {
                 return Err(self.record_error(
                     importer,
-                    format!("dependency '{specifier}' is declared but not vendored - run 'imp install'"),
+                    format!(
+                        "dependency '{specifier}' is declared but not vendored - run 'imp install'"
+                    ),
                 ));
             }
-            return Ok(Some(HookResolveIdOutput::from_id(path.to_string_lossy().into_owned())));
+            return Ok(Some(HookResolveIdOutput::from_id(
+                path.to_string_lossy().into_owned(),
+            )));
         }
         if let Some(parsed) = parse_specifier(specifier).filter(|parsed| parsed.scheme.is_some()) {
             let scheme = parsed.scheme.clone().unwrap();
             let npm = npm::shared()?;
             let resolved = tokio::task::block_in_place(|| {
-                npm.resolve_scheme_specifier(&scheme, &parsed.name, parsed.version.as_deref(), &parsed.subpath, require)
+                npm.resolve_scheme_specifier(
+                    &scheme,
+                    &parsed.name,
+                    parsed.version.as_deref(),
+                    &parsed.subpath,
+                    require,
+                )
             })
             .map_err(|error| self.record_error(importer, format!("{error:#}")))?;
             return Ok(Some(self.resolved_output(resolved)));
@@ -496,18 +600,24 @@ impl ImpPlugin {
                 if npm::is_node_builtin(specifier) {
                     return Err(self.record_error(
                         importer,
-                        format!("\"{specifier}\" is built into Node.js, and imp bundles for the browser"),
+                        format!(
+                            "\"{specifier}\" is built into Node.js, and imp bundles for the browser"
+                        ),
                     ));
                 }
                 if specifier.starts_with('#') {
                     if let Some(package) = npm.package_of_path(importer_path) {
-                        if let Some(resolved) = npm::package_imports(&package.directory, specifier, require) {
+                        if let Some(resolved) =
+                            npm::package_imports(&package.directory, specifier, require)
+                        {
                             return Ok(Some(self.resolved_output(resolved)));
                         }
                     }
                 }
-                let resolved = tokio::task::block_in_place(|| npm.resolve_bare_from(importer_path, specifier, require))
-                    .map_err(|error| self.record_error(importer, format!("{error:#}")))?;
+                let resolved = tokio::task::block_in_place(|| {
+                    npm.resolve_bare_from(importer_path, specifier, require)
+                })
+                .map_err(|error| self.record_error(importer, format!("{error:#}")))?;
                 return Ok(Some(self.resolved_output(resolved)));
             }
         }
@@ -517,31 +627,50 @@ impl ImpPlugin {
 
     fn resolved_output(&self, resolved: Resolved) -> HookResolveIdOutput {
         match resolved {
-            Resolved::File(path) => HookResolveIdOutput::from_id(path.to_string_lossy().into_owned()),
+            Resolved::File(path) => {
+                HookResolveIdOutput::from_id(path.to_string_lossy().into_owned())
+            }
             Resolved::Empty => HookResolveIdOutput::from_id(EMPTY_MODULE),
         }
     }
 
     fn load_code(&self, ctx: &SharedLoadPluginContext, id: &str) -> Result<Option<HookLoadOutput>> {
         if id == EMPTY_MODULE {
-            return Ok(Some(HookLoadOutput { code: "export default {}".into(), ..Default::default() }));
+            return Ok(Some(HookLoadOutput {
+                code: "export default {}".into(),
+                ..Default::default()
+            }));
         }
         if let Some(path) = id.strip_prefix(EMBEDDED_PREFIX) {
-            let code = embedded::text(path).ok_or_else(|| anyhow!("{path} is not embedded in this imp build"))?;
+            let code = embedded::text(path)
+                .ok_or_else(|| anyhow!("{path} is not embedded in this imp build"))?;
             self.state.lock().unwrap().0.inputs.insert(id.to_string());
-            return Ok(Some(HookLoadOutput { code: code.into(), module_type: Some(ModuleType::Js), ..Default::default() }));
+            return Ok(Some(HookLoadOutput {
+                code: code.into(),
+                module_type: Some(ModuleType::Js),
+                ..Default::default()
+            }));
         }
         if let Some(key) = id.strip_prefix(VIRTUAL_PREFIX) {
             let (code, _) = &self.config.virtual_modules[key];
             let code = match &self.config.flags {
-                Some(flags) => fold_flag_calls(code, flags, key).map_err(|error| self.record_error(None, error.to_string()))?,
+                Some(flags) => fold_flag_calls(code, flags, key)
+                    .map_err(|error| self.record_error(None, error.to_string()))?,
                 None => code.clone(),
             };
-            return Ok(Some(HookLoadOutput { code: code.into(), module_type: Some(ModuleType::Js), ..Default::default() }));
+            return Ok(Some(HookLoadOutput {
+                code: code.into(),
+                module_type: Some(ModuleType::Js),
+                ..Default::default()
+            }));
         }
         if let Some(key) = id.strip_prefix("\0imp-mock:") {
             let (_, code) = &self.config.mocks[key];
-            return Ok(Some(HookLoadOutput { code: code.clone().into(), module_type: Some(ModuleType::Js), ..Default::default() }));
+            return Ok(Some(HookLoadOutput {
+                code: code.clone().into(),
+                module_type: Some(ModuleType::Js),
+                ..Default::default()
+            }));
         }
         let path = Path::new(id.split(['?', '#']).next().unwrap_or(id));
         if !path.is_absolute() {
@@ -551,12 +680,21 @@ impl ImpPlugin {
         let extension = extension_of(id);
         let binary = BINARY_ASSET_EXTENSIONS.contains(&extension.as_str());
         let text_asset = TEXT_ASSET_EXTENSIONS.contains(&extension.as_str()) && extension != "json";
-        if binary || (self.config.assets == Assets::DataUrl && (text_asset || extension == "json") && !self.config.reject_css) {
+        if binary
+            || (self.config.assets == Assets::DataUrl
+                && (text_asset || extension == "json")
+                && !self.config.reject_css)
+        {
             let bytes = std::fs::read(path)?;
             let code = match self.config.assets {
-                Assets::DataUrl => format!("export default {}", serde_json::to_string(&data_url(&extension, &bytes))?),
+                Assets::DataUrl => format!(
+                    "export default {}",
+                    serde_json::to_string(&data_url(&extension, &bytes))?
+                ),
                 Assets::Files => {
-                    let name = path.file_name().map(|name| name.to_string_lossy().into_owned());
+                    let name = path
+                        .file_name()
+                        .map(|name| name.to_string_lossy().into_owned());
                     let reference = ctx.emit_file(
                         EmittedAsset {
                             name: name.clone(),
@@ -570,15 +708,24 @@ impl ImpPlugin {
                     format!("export default \"{ASSET_PREFIX}{reference}\"")
                 }
             };
-            return Ok(Some(HookLoadOutput { code: code.into(), module_type: Some(ModuleType::Js), ..Default::default() }));
+            return Ok(Some(HookLoadOutput {
+                code: code.into(),
+                module_type: Some(ModuleType::Js),
+                ..Default::default()
+            }));
         }
         if matches!(extension.as_str(), "js" | "mjs" | "cjs") {
             if let Some(flags) = &self.config.flags {
                 let source = std::fs::read_to_string(path)?;
                 let file = self.display_id(id);
-                let folded = fold_flag_calls(&source, flags, &file).map_err(|error| self.record_error(None, error.to_string()))?;
+                let folded = fold_flag_calls(&source, flags, &file)
+                    .map_err(|error| self.record_error(None, error.to_string()))?;
                 if folded != source {
-                    return Ok(Some(HookLoadOutput { code: folded.into(), module_type: Some(ModuleType::Js), ..Default::default() }));
+                    return Ok(Some(HookLoadOutput {
+                        code: folded.into(),
+                        module_type: Some(ModuleType::Js),
+                        ..Default::default()
+                    }));
                 }
             }
         }
@@ -602,14 +749,22 @@ impl Plugin for ImpPlugin {
     }
 
     fn resolve_id_meta(&self) -> Option<PluginHookMeta> {
-        Some(PluginHookMeta { order: Some(PluginOrder::Pre) })
+        Some(PluginHookMeta {
+            order: Some(PluginOrder::Pre),
+        })
     }
 
     fn load_meta(&self) -> Option<PluginHookMeta> {
-        Some(PluginHookMeta { order: Some(PluginOrder::Pre) })
+        Some(PluginHookMeta {
+            order: Some(PluginOrder::Pre),
+        })
     }
 
-    async fn resolve_id(&self, ctx: &PluginContext, args: &HookResolveIdArgs<'_>) -> HookResolveIdReturn {
+    async fn resolve_id(
+        &self,
+        ctx: &PluginContext,
+        args: &HookResolveIdArgs<'_>,
+    ) -> HookResolveIdReturn {
         self.resolve(ctx, args).await
     }
 
@@ -617,17 +772,35 @@ impl Plugin for ImpPlugin {
         self.load_code(&ctx, args.id)
     }
 
-    async fn transform(&self, _ctx: SharedTransformPluginContext, args: &HookTransformArgs<'_>) -> HookTransformReturn {
-        if self.config.legal_external && matches!(args.module_type, ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx) {
+    async fn transform(
+        &self,
+        _ctx: SharedTransformPluginContext,
+        args: &HookTransformArgs<'_>,
+    ) -> HookTransformReturn {
+        if self.config.legal_external
+            && matches!(
+                args.module_type,
+                ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx
+            )
+        {
             let comments = legal_comments_in(args.code);
             if !comments.is_empty() {
-                self.state.lock().unwrap().0.legal.insert(args.id.to_string(), comments);
+                self.state
+                    .lock()
+                    .unwrap()
+                    .0
+                    .legal
+                    .insert(args.id.to_string(), comments);
             }
         }
         Ok(None)
     }
 
-    async fn render_chunk(&self, ctx: &PluginContext, args: &HookRenderChunkArgs<'_>) -> HookRenderChunkReturn {
+    async fn render_chunk(
+        &self,
+        ctx: &PluginContext,
+        args: &HookRenderChunkArgs<'_>,
+    ) -> HookRenderChunkReturn {
         if !args.code.contains(ASSET_PREFIX) {
             return Ok(None);
         }
@@ -641,12 +814,18 @@ impl Plugin for ImpPlugin {
             let file_name = ctx.get_file_name(reference)?;
             match &self.config.public_path {
                 Some(public) => code.push_str(&format!("{public}{file_name}")),
-                None => code.push_str(&format!("./{}", relative_from_chunk(&args.chunk.filename, &file_name))),
+                None => code.push_str(&format!(
+                    "./{}",
+                    relative_from_chunk(&args.chunk.filename, &file_name)
+                )),
             }
             rest = &after[end..];
         }
         code.push_str(rest);
-        Ok(Some(HookRenderChunkOutput { code, map: Default::default() }))
+        Ok(Some(HookRenderChunkOutput {
+            code,
+            map: Default::default(),
+        }))
     }
 }
 
@@ -654,7 +833,11 @@ fn relative_from_chunk(chunk: &str, asset: &str) -> String {
     let chunk_dir: Vec<&str> = chunk.split('/').collect();
     let chunk_dir = &chunk_dir[..chunk_dir.len() - 1];
     let asset_parts: Vec<&str> = asset.split('/').collect();
-    let common = chunk_dir.iter().zip(&asset_parts).take_while(|(a, b)| a == b).count();
+    let common = chunk_dir
+        .iter()
+        .zip(&asset_parts)
+        .take_while(|(a, b)| a == b)
+        .count();
     let mut parts: Vec<&str> = vec![".."; chunk_dir.len() - common];
     parts.extend(&asset_parts[common..]);
     parts.join("/")
@@ -666,13 +849,26 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
         config: Arc::new(PluginConfig {
             root: options.root.clone(),
             dependencies: options.dependencies.clone(),
-            imp: if options.external_imp { ImpLibrary::External } else { options.imp },
+            imp: if options.external_imp {
+                ImpLibrary::External
+            } else {
+                options.imp
+            },
             virtual_modules: options
                 .virtual_modules
                 .iter()
-                .map(|(key, module)| (key.clone(), (module.code.clone(), module.resolve_dir.clone())))
+                .map(|(key, module)| {
+                    (
+                        key.clone(),
+                        (module.code.clone(), module.resolve_dir.clone()),
+                    )
+                })
                 .collect(),
-            mocks: options.mocks.iter().map(|(key, mock)| (key.clone(), (mock.real_file.clone(), mock.code.clone()))).collect(),
+            mocks: options
+                .mocks
+                .iter()
+                .map(|(key, mock)| (key.clone(), (mock.real_file.clone(), mock.code.clone())))
+                .collect(),
             flags: options.flags.clone(),
             reject_css: options.reject_css,
             assets: options.assets,
@@ -687,7 +883,10 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
             options
                 .entries
                 .iter()
-                .map(|(name, import)| InputItem { name: name.clone(), import: import.clone() })
+                .map(|(name, import)| InputItem {
+                    name: name.clone(),
+                    import: import.clone(),
+                })
                 .collect(),
         ),
         cwd: Some(options.root.clone()),
@@ -697,7 +896,11 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
             Format::Iife => OutputFormat::Iife,
         }),
         minify: Some(rolldown_common::RawMinifyOptions::Bool(options.minify)),
-        define: if options.define.is_empty() { None } else { Some(options.define.iter().cloned().collect()) },
+        define: if options.define.is_empty() {
+            None
+        } else {
+            Some(options.define.iter().cloned().collect())
+        },
         legal_comments: Some(match options.legal_comments {
             LegalComments::Inline => rolldown_common::LegalComments::Inline,
             _ => rolldown_common::LegalComments::None,
@@ -705,11 +908,18 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
         entry_filenames: Some(options.entry_names.clone().into()),
         chunk_filenames: Some(options.chunk_names.clone().into()),
         asset_filenames: Some(options.asset_names.clone().into()),
-        code_splitting: if options.split { None } else { Some(rolldown_common::CodeSplittingMode::Bool(false)) },
+        code_splitting: if options.split {
+            None
+        } else {
+            Some(rolldown_common::CodeSplittingMode::Bool(false))
+        },
         ..Default::default()
     };
     let result = runtime().block_on(async move {
-        let mut bundler = rolldown::Bundler::with_plugins(bundler_options, vec![rolldown_plugin::__inner::Pluginable::new_shared(plugin)])?;
+        let mut bundler = rolldown::Bundler::with_plugins(
+            bundler_options,
+            vec![rolldown_plugin::__inner::Pluginable::new_shared(plugin)],
+        )?;
         let output = bundler.generate().await;
         let _ = bundler.close().await;
         output
@@ -724,7 +934,10 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
                 if problems.iter().any(|problem| text.contains(&problem.text)) {
                     continue;
                 }
-                problems.push(Problem { file: diagnostic.id().map(|id| display_path(&options.root, &id)), text: clean_message(&text) });
+                problems.push(Problem {
+                    file: diagnostic.id().map(|id| display_path(&options.root, &id)),
+                    text: clean_message(&text),
+                });
             }
             return Err(BundleError { problems });
         }
@@ -734,7 +947,8 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
     for item in output.assets {
         match item {
             Output::Chunk(chunk) => {
-                let module_ids: Vec<String> = chunk.module_ids.iter().map(|id| id.to_string()).collect();
+                let module_ids: Vec<String> =
+                    chunk.module_ids.iter().map(|id| id.to_string()).collect();
                 for id in &module_ids {
                     if let Some(comments) = state.legal.get(id) {
                         for comment in comments {
@@ -750,7 +964,11 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
                     is_entry: chunk.is_entry,
                     facade_module_id: chunk.facade_module_id.as_ref().map(|id| id.to_string()),
                     imports: chunk.imports.iter().map(ArcStr::to_string).collect(),
-                    dynamic_imports: chunk.dynamic_imports.iter().map(ArcStr::to_string).collect(),
+                    dynamic_imports: chunk
+                        .dynamic_imports
+                        .iter()
+                        .map(ArcStr::to_string)
+                        .collect(),
                     exports: chunk.exports.iter().map(|name| name.to_string()).collect(),
                     module_ids,
                 });
@@ -764,7 +982,11 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
             }),
         }
     }
-    let chunk_files: BTreeSet<String> = bundle.chunks.iter().map(|chunk| chunk.file_name.clone()).collect();
+    let chunk_files: BTreeSet<String> = bundle
+        .chunks
+        .iter()
+        .map(|chunk| chunk.file_name.clone())
+        .collect();
     let mut externals = BTreeSet::new();
     for chunk in &bundle.chunks {
         for import in &chunk.imports {

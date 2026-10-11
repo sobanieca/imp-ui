@@ -26,7 +26,9 @@ fn agent(timeout: Option<Duration>) -> ureq::Agent {
         .timeout_global(timeout)
         .user_agent(format!("imp/{}", crate::version::VERSION))
         .tls_config(
-            ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier).build(),
+            ureq::tls::TlsConfig::builder()
+                .root_certs(ureq::tls::RootCerts::PlatformVerifier)
+                .build(),
         )
         .build()
         .into()
@@ -48,14 +50,21 @@ pub fn get(url: &str, headers: &[(&str, &str)], timeout: Option<Duration>) -> Re
     Ok(Fetched { status, body })
 }
 
-pub fn post_json(url: &str, body: &serde_json::Value, timeout: Option<Duration>) -> Result<Fetched> {
+pub fn post_json(
+    url: &str,
+    body: &serde_json::Value,
+    timeout: Option<Duration>,
+) -> Result<Fetched> {
     let mut response = agent(timeout)
         .post(url)
         .header("content-type", "application/json")
         .send(serde_json::to_vec(body)?)
         .map_err(|error| anyhow::anyhow!("{error}"))?;
     let status = response.status().as_u16();
-    let body = response.body_mut().read_to_vec().map_err(|error| anyhow::anyhow!("{error}"))?;
+    let body = response
+        .body_mut()
+        .read_to_vec()
+        .map_err(|error| anyhow::anyhow!("{error}"))?;
     Ok(Fetched { status, body })
 }
 

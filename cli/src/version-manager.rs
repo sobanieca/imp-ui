@@ -1,6 +1,8 @@
 use crate::cache_dir::imp_cache_directory;
 use crate::colors::{cyan, dim};
-use crate::config::{ConfigChange, Insertion, find_config_file, try_parse_config, update_config_file};
+use crate::config::{
+    ConfigChange, Insertion, find_config_file, try_parse_config, update_config_file,
+};
 use crate::file_size::format_size;
 use crate::http_client::{get, sha256_hex};
 use crate::specifiers::EXACT_VERSION;
@@ -31,7 +33,11 @@ fn platform_slug() -> Result<&'static str> {
 }
 
 fn asset_name() -> Result<String> {
-    Ok(format!("imp-{}{}", platform_slug()?, if cfg!(windows) { ".exe" } else { "" }))
+    Ok(format!(
+        "imp-{}{}",
+        platform_slug()?,
+        if cfg!(windows) { ".exe" } else { "" }
+    ))
 }
 
 fn versions_dir() -> Result<PathBuf> {
@@ -47,17 +53,26 @@ fn version_binary_path(version: &str) -> Result<PathBuf> {
 }
 
 fn release_asset_url(version: &str) -> Result<String> {
-    Ok(format!("https://github.com/{REPO}/releases/download/v{version}/{}", asset_name()?))
+    Ok(format!(
+        "https://github.com/{REPO}/releases/download/v{version}/{}",
+        asset_name()?
+    ))
 }
 
 fn read_pin(start: &Path) -> Option<String> {
     let found = find_config_file(start)?;
     let text = std::fs::read_to_string(found.path).ok()?;
-    try_parse_config(&text)?.get("version")?.as_str().map(String::from)
+    try_parse_config(&text)?
+        .get("version")?
+        .as_str()
+        .map(String::from)
 }
 
 fn config_in_dir(dir: &Path) -> Option<PathBuf> {
-    ["imp.json", "imp.jsonc"].iter().map(|name| dir.join(name)).find(|path| path.exists())
+    ["imp.json", "imp.jsonc"]
+        .iter()
+        .map(|name| dir.join(name))
+        .find(|path| path.exists())
 }
 
 fn find_pin_target(start: &Path) -> Option<PathBuf> {
@@ -78,10 +93,14 @@ fn find_pin_target(start: &Path) -> Option<PathBuf> {
 }
 
 fn fetch_expected_checksum(url: &str, version: &str) -> Result<String> {
-    let response = get(&format!("{url}.sha256"), &[], None)
-        .map_err(|error| anyhow!("imp {version} checksum could not be fetched from {url}.sha256 - {error}"))?;
+    let response = get(&format!("{url}.sha256"), &[], None).map_err(|error| {
+        anyhow!("imp {version} checksum could not be fetched from {url}.sha256 - {error}")
+    })?;
     if !response.ok() {
-        bail!("imp {version} checksum could not be fetched - {url}.sha256 responded {}", response.status);
+        bail!(
+            "imp {version} checksum could not be fetched - {url}.sha256 responded {}",
+            response.status
+        );
     }
     let text = response.text();
     let hex = text.split_whitespace().next().unwrap_or("").to_lowercase();
@@ -93,10 +112,13 @@ fn fetch_expected_checksum(url: &str, version: &str) -> Result<String> {
 
 fn download_version(version: &str) -> Result<PathBuf> {
     let url = release_asset_url(version)?;
-    let response =
-        get(&url, &[], None).map_err(|error| anyhow!("imp {version} could not be downloaded from {url} - {error}"))?;
+    let response = get(&url, &[], None)
+        .map_err(|error| anyhow!("imp {version} could not be downloaded from {url} - {error}"))?;
     if !response.ok() {
-        bail!("imp {version} could not be downloaded - {url} responded {}", response.status);
+        bail!(
+            "imp {version} could not be downloaded - {url} responded {}",
+            response.status
+        );
     }
     let expected = fetch_expected_checksum(&url, version)?;
     let actual = sha256_hex(&response.body);
@@ -140,19 +162,30 @@ pub fn resolve_latest_version(timeout: Option<Duration>) -> Result<String> {
     let url = format!("https://api.github.com/repos/{REPO}/releases/latest");
     let response = get(&url, &[("accept", "application/vnd.github+json")], timeout)?;
     if !response.ok() {
-        bail!("could not resolve the latest imp release - GitHub responded {}", response.status);
+        bail!(
+            "could not resolve the latest imp release - GitHub responded {}",
+            response.status
+        );
     }
-    let tag = response.json()?.get("tag_name").and_then(|tag| tag.as_str().map(String::from));
+    let tag = response
+        .json()?
+        .get("tag_name")
+        .and_then(|tag| tag.as_str().map(String::from));
     match tag {
         Some(tag) => Ok(tag.strip_prefix('v').map(String::from).unwrap_or(tag)),
-        None => bail!("could not resolve the latest imp release - no tag_name in the GitHub response"),
+        None => {
+            bail!("could not resolve the latest imp release - no tag_name in the GitHub response")
+        }
     }
 }
 
 fn touch_last_used(version: &str) {
     if let Ok(dir) = version_dir(version) {
         if dir.exists() {
-            let _ = std::fs::write(dir.join("lastUsed"), crate::time::iso_string(crate::time::now_millis()));
+            let _ = std::fs::write(
+                dir.join("lastUsed"),
+                crate::time::iso_string(crate::time::now_millis()),
+            );
         }
     }
 }
@@ -179,7 +212,10 @@ fn parse_iso_millis(text: &str) -> Option<u128> {
 
 fn last_used_time(version: &str) -> u128 {
     if let Ok(dir) = version_dir(version) {
-        if let Some(parsed) = std::fs::read_to_string(dir.join("lastUsed")).ok().and_then(|text| parse_iso_millis(&text)) {
+        if let Some(parsed) = std::fs::read_to_string(dir.join("lastUsed"))
+            .ok()
+            .and_then(|text| parse_iso_millis(&text))
+        {
             return parsed;
         }
     }
@@ -194,8 +230,12 @@ fn last_used_time(version: &str) -> u128 {
 
 fn stale_versions(exclude: &str) -> Vec<String> {
     let now = crate::time::now_millis();
-    let Ok(dir) = versions_dir() else { return Vec::new() };
-    let Ok(entries) = std::fs::read_dir(dir) else { return Vec::new() };
+    let Ok(dir) = versions_dir() else {
+        return Vec::new();
+    };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
     let mut stale: Vec<String> = entries
         .flatten()
         .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
@@ -209,7 +249,9 @@ fn stale_versions(exclude: &str) -> Vec<String> {
 }
 
 fn directory_size(dir: &Path) -> u64 {
-    let Ok(entries) = std::fs::read_dir(dir) else { return 0 };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return 0;
+    };
     entries
         .flatten()
         .map(|entry| {
@@ -273,14 +315,19 @@ pub fn maybe_delegate(args: &[String]) -> Result<()> {
     if delegated || std::env::var("IMP_VERSION").is_ok_and(|value| value == "system") {
         return Ok(());
     }
-    let Some(pin) = read_pin(&crate::paths::cwd()) else { return Ok(()) };
+    let Some(pin) = read_pin(&crate::paths::cwd()) else {
+        return Ok(());
+    };
     if pin == VERSION {
         return Ok(());
     }
     let binary = ensure_version(&pin).map_err(|error| {
         anyhow!("{error}\n(imp.json pins version {pin}; set IMP_VERSION=system to run this binary regardless)")
     })?;
-    let status = std::process::Command::new(binary).args(args).env(DELEGATED_ENV, "1").status()?;
+    let status = std::process::Command::new(binary)
+        .args(args)
+        .env(DELEGATED_ENV, "1")
+        .status()?;
     std::process::exit(status.code().unwrap_or(1));
 }
 
@@ -299,13 +346,19 @@ pub fn update(root: &Path, check: bool, requested: Option<String>) -> Result<()>
     }
     ensure_version(&target)?;
     let Some(pin_path) = find_pin_target(root) else {
-        println!("imp {target} downloaded - no imp.json or imp.jsonc found, so no project pin was written");
+        println!(
+            "imp {target} downloaded - no imp.json or imp.jsonc found, so no project pin was written"
+        );
         return Ok(());
     };
     let previous = std::fs::read_to_string(&pin_path)
         .ok()
         .and_then(|text| try_parse_config(&text))
-        .and_then(|config| config.get("version").and_then(|value| value.as_str().map(String::from)));
+        .and_then(|config| {
+            config
+                .get("version")
+                .and_then(|value| value.as_str().map(String::from))
+        });
     update_config_file(
         &pin_path,
         &[ConfigChange {
@@ -325,8 +378,14 @@ pub fn update(root: &Path, check: bool, requested: Option<String>) -> Result<()>
 fn latest_release_throttled() -> Result<String> {
     let cache_path = imp_cache_directory()?.join("update-check.json");
     let now = crate::time::now_millis();
-    if let Some(cache) = std::fs::read_to_string(&cache_path).ok().and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok()) {
-        if let (Some(latest), Some(checked)) = (cache.get("latest").and_then(|v| v.as_str()), cache.get("checkedAt").and_then(|v| v.as_f64())) {
+    if let Some(cache) = std::fs::read_to_string(&cache_path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+    {
+        if let (Some(latest), Some(checked)) = (
+            cache.get("latest").and_then(|v| v.as_str()),
+            cache.get("checkedAt").and_then(|v| v.as_f64()),
+        ) {
             if now.saturating_sub(checked as u128) < UPDATE_CHECK_INTERVAL {
                 return Ok(latest.to_string());
             }
@@ -335,7 +394,10 @@ fn latest_release_throttled() -> Result<String> {
     let latest = resolve_latest_version(Some(Duration::from_millis(2000)))?;
     if let Ok(dir) = imp_cache_directory() {
         let _ = std::fs::create_dir_all(&dir);
-        let _ = std::fs::write(&cache_path, serde_json::json!({ "latest": latest, "checkedAt": now as u64 }).to_string());
+        let _ = std::fs::write(
+            &cache_path,
+            serde_json::json!({ "latest": latest, "checkedAt": now as u64 }).to_string(),
+        );
     }
     Ok(latest)
 }
@@ -351,7 +413,11 @@ pub fn notify_update(args: &[String]) {
     }
     if let Ok(latest) = latest_release_throttled() {
         if is_newer(&latest, VERSION) {
-            println!("{}{}", cyan(format!("imp {latest} is available")), dim(format!(" (you have {VERSION}) - run 'imp update'")));
+            println!(
+                "{}{}",
+                cyan(format!("imp {latest} is available")),
+                dim(format!(" (you have {VERSION}) - run 'imp update'"))
+            );
         }
     }
 }

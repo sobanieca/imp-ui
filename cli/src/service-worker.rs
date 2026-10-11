@@ -8,16 +8,24 @@ use std::sync::Mutex;
 
 pub const SERVICE_WORKER_PATH: &str = "/sw.js";
 pub const WORKER_ENTRY: &str = "imp-worker-entry";
-const DEV_ENTRY_SOURCE: &str = "import { startDevMode } from 'imp/service-worker'\nstartDevMode()\n";
-pub const OFFLINE_WORKER_SOURCE: &str = "import { precacheBuild } from 'imp/service-worker'\nprecacheBuild()\n";
+const DEV_ENTRY_SOURCE: &str =
+    "import { startDevMode } from 'imp/service-worker'\nstartDevMode()\n";
+pub const OFFLINE_WORKER_SOURCE: &str =
+    "import { precacheBuild } from 'imp/service-worker'\nprecacheBuild()\n";
 
 pub fn runtime_values(env: &Env, flags: &Flags) -> String {
     let mut lines = String::new();
     if !env.is_empty() {
-        lines.push_str(&format!("globalThis.__IMP_ENV__ = {};\n", serde_json::to_string(&Value::Object(env.clone())).unwrap()));
+        lines.push_str(&format!(
+            "globalThis.__IMP_ENV__ = {};\n",
+            serde_json::to_string(&Value::Object(env.clone())).unwrap()
+        ));
     }
     if !flags.is_empty() {
-        lines.push_str(&format!("globalThis.__IMP_FLAGS__ = {};\n", serde_json::to_string(&Value::Object(flags.clone())).unwrap()));
+        lines.push_str(&format!(
+            "globalThis.__IMP_FLAGS__ = {};\n",
+            serde_json::to_string(&Value::Object(flags.clone())).unwrap()
+        ));
     }
     lines
 }
@@ -30,19 +38,39 @@ pub fn assert_service_worker_source(path: &Path, declared: &str) -> Result<()> {
     }
 }
 
-pub fn assemble_service_worker(worker: &str, mock_endpoint: Option<&str>, env: &Env, flags: &Flags) -> String {
+pub fn assemble_service_worker(
+    worker: &str,
+    mock_endpoint: Option<&str>,
+    env: &Env,
+    flags: &Flags,
+) -> String {
     let mock = mock_endpoint
-        .map(|endpoint| format!("globalThis.__IMP_MOCK_ENDPOINT__ = {};\n", serde_json::to_string(endpoint).unwrap()))
+        .map(|endpoint| {
+            format!(
+                "globalThis.__IMP_MOCK_ENDPOINT__ = {};\n",
+                serde_json::to_string(endpoint).unwrap()
+            )
+        })
         .unwrap_or_default();
     format!("{}{mock}{worker}", runtime_values(env, flags))
 }
 
 pub fn precache_values(precache: &Value) -> String {
-    format!("globalThis.__IMP_PRECACHE__ = {};\n", serde_json::to_string(precache).unwrap())
+    format!(
+        "globalThis.__IMP_PRECACHE__ = {};\n",
+        serde_json::to_string(precache).unwrap()
+    )
 }
 
 const HOST_FILES: [&str; 8] = [
-    "404.html", "CNAME", "_headers", "_redirects", "_routes.json", "netlify.toml", "staticwebapp.config.json", "vercel.json",
+    "404.html",
+    "CNAME",
+    "_headers",
+    "_redirects",
+    "_routes.json",
+    "netlify.toml",
+    "staticwebapp.config.json",
+    "vercel.json",
 ];
 
 pub fn precached_public_file(name: &str) -> bool {
@@ -69,14 +97,26 @@ pub fn encode_uri_component(text: &str) -> String {
 pub fn worker_entry(options: &mut Options, root: &Path, source: &str) {
     options.virtual_modules.insert(
         WORKER_ENTRY.into(),
-        VirtualModule { code: source.to_string(), resolve_dir: root.to_path_buf() },
+        VirtualModule {
+            code: source.to_string(),
+            resolve_dir: root.to_path_buf(),
+        },
     );
 }
 
-fn bundle_dev_worker(root: &Path, entry: Option<&Path>, dependencies: &[String]) -> Result<(String, Vec<PathBuf>), String> {
+fn bundle_dev_worker(
+    root: &Path,
+    entry: Option<&Path>,
+    dependencies: &[String],
+) -> Result<(String, Vec<PathBuf>), String> {
     let mut options = Options::new(root);
     worker_entry(&mut options, root, DEV_ENTRY_SOURCE);
-    options.entries.push((None, entry.map(|entry| entry.to_string_lossy().into_owned()).unwrap_or_else(|| WORKER_ENTRY.into())));
+    options.entries.push((
+        None,
+        entry
+            .map(|entry| entry.to_string_lossy().into_owned())
+            .unwrap_or_else(|| WORKER_ENTRY.into()),
+    ));
     options.dependencies = dependencies.to_vec();
     options.imp = ImpLibrary::Tooling;
     options.format = Format::Iife;
@@ -122,7 +162,12 @@ pub struct WorkerBundler {
 
 impl WorkerBundler {
     pub fn new(root: &Path, entry: Option<PathBuf>, dependencies: Vec<String>) -> WorkerBundler {
-        WorkerBundler { root: root.to_path_buf(), entry, dependencies, cache: Mutex::new(None) }
+        WorkerBundler {
+            root: root.to_path_buf(),
+            entry,
+            dependencies,
+            cache: Mutex::new(None),
+        }
     }
 
     fn current(&self, cached: Option<&WorkerState>) -> WorkerState {
@@ -134,15 +179,27 @@ impl WorkerBundler {
         match bundle_dev_worker(&self.root, self.entry.as_deref(), &self.dependencies) {
             Ok((source, inputs)) => {
                 let files: Vec<PathBuf> = match &self.entry {
-                    Some(entry) => std::iter::once(entry.clone()).chain(inputs.into_iter().filter(|input| input != entry)).collect(),
+                    Some(entry) => std::iter::once(entry.clone())
+                        .chain(inputs.into_iter().filter(|input| input != entry))
+                        .collect(),
                     None => Vec::new(),
                 };
-                WorkerState { key: stamp_of(&files), inputs: files, source, problem: None, changed: false }
+                WorkerState {
+                    key: stamp_of(&files),
+                    inputs: files,
+                    source,
+                    problem: None,
+                    changed: false,
+                }
             }
             Err(problem) => {
                 let inputs: Vec<PathBuf> = self.entry.iter().cloned().collect();
                 WorkerState {
-                    key: if self.entry.is_some() { format!("{}!", stamp_of(&inputs)) } else { String::new() },
+                    key: if self.entry.is_some() {
+                        format!("{}!", stamp_of(&inputs))
+                    } else {
+                        String::new()
+                    },
                     inputs,
                     source: String::new(),
                     problem: Some(problem),
@@ -155,7 +212,8 @@ impl WorkerBundler {
     pub fn build(&self) -> WorkerState {
         let mut cache = self.cache.lock().unwrap();
         let mut state = self.current(cache.as_ref());
-        state.changed = cache.as_ref().map(|cached| cached.key.as_str()) != Some(state.key.as_str());
+        state.changed =
+            cache.as_ref().map(|cached| cached.key.as_str()) != Some(state.key.as_str());
         *cache = Some(state.clone());
         state
     }

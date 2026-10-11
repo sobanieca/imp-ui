@@ -10,10 +10,14 @@ const NOT_SEARCHED: [&str; 5] = [".git", ".imp", "node_modules", "dist", "depend
 fn nested_log_folders(root: &Path) -> Vec<String> {
     let mut found = Vec::new();
     fn search(root: &Path, directory: &Path, found: &mut Vec<String>) {
-        let Ok(entries) = std::fs::read_dir(directory) else { return };
+        let Ok(entries) = std::fs::read_dir(directory) else {
+            return;
+        };
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
-            if !entry.file_type().is_ok_and(|kind| kind.is_dir()) || NOT_SEARCHED.contains(&name.as_str()) {
+            if !entry.file_type().is_ok_and(|kind| kind.is_dir())
+                || NOT_SEARCHED.contains(&name.as_str())
+            {
                 continue;
             }
             let folder = entry.path();
@@ -31,9 +35,16 @@ fn nested_log_folders(root: &Path) -> Vec<String> {
 fn no_log_message(root: &Path, path: &Path) -> String {
     let nested = nested_log_folders(root);
     if nested.is_empty() {
-        return format!("no dev server has run in this project - imp start writes the log to {}", path.display());
+        return format!(
+            "no dev server has run in this project - imp start writes the log to {}",
+            path.display()
+        );
     }
-    let place = if nested.len() == 1 { "that folder" } else { "one of them" };
+    let place = if nested.len() == 1 {
+        "that folder"
+    } else {
+        "one of them"
+    };
     format!(
         "no session log at {} - there is one in {}, run imp logs from {place}",
         path.display(),
@@ -43,7 +54,11 @@ fn no_log_message(root: &Path, path: &Path) -> String {
 
 fn print(text: &str) {
     let mut stdout = std::io::stdout().lock();
-    if stdout.write_all(text.as_bytes()).and_then(|_| stdout.flush()).is_err() {
+    if stdout
+        .write_all(text.as_bytes())
+        .and_then(|_| stdout.flush())
+        .is_err()
+    {
         std::process::exit(0);
     }
 }
@@ -57,7 +72,10 @@ fn entries_of(text: &str) -> Vec<String> {
 }
 
 fn complete_length(bytes: &[u8]) -> usize {
-    bytes.iter().rposition(|byte| *byte == b'\n').map_or(0, |index| index + 1)
+    bytes
+        .iter()
+        .rposition(|byte| *byte == b'\n')
+        .map_or(0, |index| index + 1)
 }
 
 fn already_printed_prefix(file_entries: &[String], printed: &[String]) -> usize {
@@ -89,7 +107,9 @@ fn follow(path: PathBuf, remember: usize, start_offset: usize, printed: Vec<Stri
                 let rewritten = size < offset || offset == 0;
                 let from = if rewritten { 0 } else { offset };
                 let mut bytes = Vec::new();
-                if file.seek(SeekFrom::Start(from as u64)).is_ok() && file.read_to_end(&mut bytes).is_ok() {
+                if file.seek(SeekFrom::Start(from as u64)).is_ok()
+                    && file.read_to_end(&mut bytes).is_ok()
+                {
                     let complete = complete_length(&bytes);
                     let entries = entries_of(&String::from_utf8_lossy(&bytes[..complete]));
                     if rewritten {
@@ -111,10 +131,16 @@ pub fn logs(root: &Path, count: Option<usize>, keep_open: bool) -> Result<()> {
     let path = crate::paths::absolute(dev_log_path(root));
     let bytes = match std::fs::read(&path) {
         Ok(bytes) => bytes,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => bail!("{}", no_log_message(root, &path)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            bail!("{}", no_log_message(root, &path))
+        }
         Err(error) => return Err(error.into()),
     };
-    let complete = if keep_open { complete_length(&bytes) } else { bytes.len() };
+    let complete = if keep_open {
+        complete_length(&bytes)
+    } else {
+        bytes.len()
+    };
     let entries = entries_of(&String::from_utf8_lossy(&bytes[..complete]));
     let shown = match count {
         Some(count) => &entries[entries.len().saturating_sub(count)..],
@@ -127,7 +153,10 @@ pub fn logs(root: &Path, count: Option<usize>, keep_open: bool) -> Result<()> {
         return Ok(());
     }
     let config = load_imp_config(root)?;
-    let max = config.get("maxLogEntries").and_then(|value| value.as_u64()).map(|value| value as usize);
+    let max = config
+        .get("maxLogEntries")
+        .and_then(|value| value.as_u64())
+        .map(|value| value as usize);
     let remember = max.unwrap_or(DEFAULT_MAX_LOG_ENTRIES).max(entries.len());
     follow(path, remember, complete, entries);
     Ok(())

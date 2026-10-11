@@ -1,7 +1,11 @@
 use anyhow::{Result, bail};
 use std::path::Path;
 
-pub fn route_patterns_of_project(_root: &Path, _map: &str, _dependencies: &[String]) -> Result<Vec<String>> {
+pub fn route_patterns_of_project(
+    _root: &Path,
+    _map: &str,
+    _dependencies: &[String],
+) -> Result<Vec<String>> {
     bail!("imp map is not ported yet")
 }
 

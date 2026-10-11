@@ -21,8 +21,15 @@ const WIDGET_POSITION_KEY: &str = "imp-review-position";
 pub fn imp_mark_svg(scheme: &str) -> String {
     let source = embedded::library_file("std/shared/imp-mark.js").expect("imp-mark.js is embedded");
     let start = source.find('`').expect("the mark literal") + 1;
-    let end = start + source[start..].find('`').expect("the end of the mark literal");
-    let ink = if scheme == "light" { "#101010" } else { "#ffffff" };
+    let end = start
+        + source[start..]
+            .find('`')
+            .expect("the end of the mark literal");
+    let ink = if scheme == "light" {
+        "#101010"
+    } else {
+        "#ffffff"
+    };
     source[start..end].replace("currentColor", ink)
 }
 
@@ -40,14 +47,21 @@ pub fn review_display_path(name: &str) -> String {
 
 pub fn review_file_name(iso: &str, attempt: usize) -> String {
     let base = iso.replace(':', "-").replacen('.', "-", 1);
-    if attempt == 0 { format!("{base}.txt") } else { format!("{base}-{attempt}.txt") }
+    if attempt == 0 {
+        format!("{base}.txt")
+    } else {
+        format!("{base}-{attempt}.txt")
+    }
 }
 
 pub fn is_local_address(address: &std::net::SocketAddr) -> bool {
     match address.ip() {
         std::net::IpAddr::V4(ip) => ip.is_loopback(),
         std::net::IpAddr::V6(ip) => {
-            ip.is_loopback() || ip.to_ipv4_mapped().is_some_and(|mapped| mapped.octets()[0] == 127)
+            ip.is_loopback()
+                || ip
+                    .to_ipv4_mapped()
+                    .is_some_and(|mapped| mapped.octets()[0] == 127)
         }
     }
 }
@@ -65,7 +79,11 @@ fn js_string(value: Option<&Value>) -> String {
     match value {
         None | Some(Value::Null) => String::new(),
         Some(Value::String(text)) => text.clone(),
-        Some(Value::Array(items)) => items.iter().map(|item| js_string(Some(item))).collect::<Vec<_>>().join(","),
+        Some(Value::Array(items)) => items
+            .iter()
+            .map(|item| js_string(Some(item)))
+            .collect::<Vec<_>>()
+            .join(","),
         Some(Value::Object(_)) => "[object Object]".to_string(),
         Some(other) => other.to_string(),
     }
@@ -106,7 +124,11 @@ fn state_line(entry: &Value) -> String {
     if !entry.is_object() {
         return String::new();
     }
-    format!("{} = {}", js_string(entry.get("name")), as_json(entry.get("value")))
+    format!(
+        "{} = {}",
+        js_string(entry.get("name")),
+        as_json(entry.get("value"))
+    )
 }
 
 fn truthy(value: Option<&Value>) -> bool {
@@ -124,7 +146,10 @@ fn control_line(entry: &Value) -> String {
         return String::new();
     }
     let shown = match entry.get("value") {
-        None | Some(Value::Null) => format!("<{} characters, not recorded>", js_string(entry.get("length"))),
+        None | Some(Value::Null) => format!(
+            "<{} characters, not recorded>",
+            js_string(entry.get("length"))
+        ),
         Some(value) => serde_json::to_string(&Value::String(js_string(Some(value)))).unwrap(),
     };
     let flags: Vec<&str> = [
@@ -134,11 +159,19 @@ fn control_line(entry: &Value) -> String {
     .into_iter()
     .flatten()
     .collect();
-    let suffix = if flags.is_empty() { String::new() } else { format!(" ({})", flags.join(", ")) };
+    let suffix = if flags.is_empty() {
+        String::new()
+    } else {
+        format!(" ({})", flags.join(", "))
+    };
     format!("{} = {shown}{suffix}", js_string(entry.get("name")))
 }
 
-fn block_lines(value: Option<&Value>, most: usize, describe: impl Fn(&Value) -> String) -> Vec<String> {
+fn block_lines(
+    value: Option<&Value>,
+    most: usize,
+    describe: impl Fn(&Value) -> String,
+) -> Vec<String> {
     let items = value.and_then(Value::as_array).cloned().unwrap_or_default();
     items
         .iter()
@@ -150,13 +183,29 @@ fn block_lines(value: Option<&Value>, most: usize, describe: impl Fn(&Value) -> 
 
 pub fn format_review(payload: &Value, at: &str, log: &[String]) -> String {
     let empty = json!({});
-    let element = payload.get("element").filter(|value| value.is_object()).unwrap_or(&empty);
-    let field = |label: &str, value: String| if value.is_empty() { String::new() } else { format!("{label}: {value}\n") };
+    let element = payload
+        .get("element")
+        .filter(|value| value.is_object())
+        .unwrap_or(&empty);
+    let field = |label: &str, value: String| {
+        if value.is_empty() {
+            String::new()
+        } else {
+            format!("{label}: {value}\n")
+        }
+    };
     let block = |label: &str, lines: Vec<String>| {
         if lines.is_empty() {
             String::new()
         } else {
-            format!("\n{label}:\n{}\n", lines.iter().map(|line| format!("  {line}")).collect::<Vec<_>>().join("\n"))
+            format!(
+                "\n{label}:\n{}\n",
+                lines
+                    .iter()
+                    .map(|line| format!("  {line}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            )
         }
     };
     let log_values: Vec<Value> = log.iter().map(|line| Value::String(line.clone())).collect();
@@ -175,8 +224,16 @@ pub fn format_review(payload: &Value, at: &str, log: &[String]) -> String {
         field("text", one_line(element.get("text"), 500)),
         field("html", one_line(element.get("html"), 2000)),
         block("state", block_lines(payload.get("state"), 60, state_line)),
-        block("controls", block_lines(payload.get("controls"), 60, control_line)),
-        block("log", block_lines(Some(&Value::Array(log_values)), REVIEW_LOG_LINES, |line| js_string(Some(line)))),
+        block(
+            "controls",
+            block_lines(payload.get("controls"), 60, control_line),
+        ),
+        block(
+            "log",
+            block_lines(Some(&Value::Array(log_values)), REVIEW_LOG_LINES, |line| {
+                js_string(Some(line))
+            }),
+        ),
         "\ncomment:\n".to_string(),
         comment_text(payload.get("comment")),
         "\n".to_string(),
@@ -194,7 +251,11 @@ pub fn write_review(root: &Path, payload: &Value, log: &[String]) -> Result<Stri
     let contents = format_review(payload, &now, log);
     for attempt in 0..100 {
         let name = review_file_name(&now, attempt);
-        match std::fs::OpenOptions::new().write(true).create_new(true).open(directory.join(&name)) {
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join(&name))
+        {
             Ok(mut file) => {
                 use std::io::Write;
                 file.write_all(contents.as_bytes())?;
@@ -215,20 +276,27 @@ struct Parsed {
 
 impl Parsed {
     fn field(&self, name: &str) -> Option<&str> {
-        self.fields.iter().find(|(key, _)| key == name).map(|(_, value)| value.as_str())
+        self.fields
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.as_str())
     }
 }
 
 fn parse_review(contents: &str) -> Parsed {
     let separator = "\ncomment:\n";
     let (header, comment) = match contents.find(separator) {
-        Some(index) => (&contents[..index], contents[index + separator.len()..].trim().to_string()),
+        Some(index) => (
+            &contents[..index],
+            contents[index + separator.len()..].trim().to_string(),
+        ),
         None => (contents, String::new()),
     };
     let mut fields: Vec<(String, String)> = Vec::new();
     let mut blocks: Vec<(String, Vec<String>)> = Vec::new();
     let mut open: Option<usize> = None;
-    let is_word = |text: &str| !text.is_empty() && text.chars().all(|char| char.is_ascii_lowercase());
+    let is_word =
+        |text: &str| !text.is_empty() && text.chars().all(|char| char.is_ascii_lowercase());
     for line in header.split('\n') {
         if let (Some(index), Some(rest)) = (open, line.strip_prefix("  ")) {
             blocks[index].1.push(rest.to_string());
@@ -252,7 +320,11 @@ fn parse_review(contents: &str) -> Parsed {
         }
         open = None;
     }
-    Parsed { fields, blocks, comment }
+    Parsed {
+        fields,
+        blocks,
+        comment,
+    }
 }
 
 fn review_file_names(directory: &Path) -> Result<Vec<String>> {
@@ -309,7 +381,10 @@ pub fn review(root: &Path, args: &[String]) -> Result<()> {
     for name in &names {
         let entry = parse_review(&std::fs::read_to_string(directory.join(name))?);
         println!("{}", bold(review_display_path(name)));
-        let when: Vec<&str> = [entry.field("time"), entry.field("page")].into_iter().flatten().collect();
+        let when: Vec<&str> = [entry.field("time"), entry.field("page")]
+            .into_iter()
+            .flatten()
+            .collect();
         println!("{}", dim(format!("  {}", when.join("  "))));
         if let Some(element) = entry.field("element") {
             println!("{}", dim(format!("  {element}")));
@@ -324,11 +399,17 @@ pub fn review(root: &Path, args: &[String]) -> Result<()> {
             .map(|(label, lines)| format!("{label} ({})", lines.len()))
             .collect();
         if !recorded.is_empty() {
-            println!("{}", dim(format!("  also recorded: {}", recorded.join(", "))));
+            println!(
+                "{}",
+                dim(format!("  also recorded: {}", recorded.join(", ")))
+            );
         }
         println!();
     }
-    logger::info(&format!("{} in .imp/reviews - 'imp review clear' deletes them all", count(names.len())));
+    logger::info(&format!(
+        "{} in .imp/reviews - 'imp review clear' deletes them all",
+        count(names.len())
+    ));
     Ok(())
 }
 

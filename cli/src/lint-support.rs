@@ -1,8 +1,9 @@
 use oxc::allocator::Allocator;
+use oxc::ast::AstKind;
 use oxc::ast::ast::*;
-use oxc::ast::{AstKind, GetNodeId};
 use oxc::semantic::{AstNode, Semantic, SemanticBuilder};
 use oxc::span::{GetSpan, SourceType, Span};
+use oxc::syntax::node::GetNodeId;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
@@ -12,21 +13,48 @@ pub struct Parsed<'a> {
 }
 
 pub fn parse<'a>(allocator: &'a Allocator, source: &'a str) -> Parsed<'a> {
-    let options = oxc::parser::ParseOptions { preserve_parens: false, ..Default::default() };
-    let parsed = oxc::parser::Parser::new(allocator, source, SourceType::mjs()).with_options(options).parse();
+    let options = oxc::parser::ParseOptions {
+        preserve_parens: false,
+        ..Default::default()
+    };
+    let parsed = oxc::parser::Parser::new(allocator, source, SourceType::mjs())
+        .with_options(options)
+        .parse();
     let mut errors: Vec<(String, u32)> = parsed
-        .errors
-        .iter()
-        .map(|error| (error.message.to_string(), error.labels.as_ref().and_then(|labels| labels.first()).map(|label| label.offset() as u32).unwrap_or(0)))
+        .diagnostics
+        .errors()
+        .map(|error| {
+            (
+                error.message.to_string(),
+                error
+                    .labels
+                    .first()
+                    .map(|label| label.offset())
+                    .unwrap_or(0),
+            )
+        })
         .collect();
     let program = allocator.alloc(parsed.program);
-    let built = SemanticBuilder::new().with_check_syntax_error(true).with_cfg(false).build(program);
+    let built = SemanticBuilder::new()
+        .with_build_nodes(true)
+        .with_check_syntax_error(true)
+        .build(program);
     if errors.is_empty() {
-        errors.extend(built.errors.iter().map(|error| {
-            (error.message.to_string(), error.labels.as_ref().and_then(|labels| labels.first()).map(|label| label.offset() as u32).unwrap_or(0))
+        errors.extend(built.diagnostics.errors().map(|error| {
+            (
+                error.message.to_string(),
+                error
+                    .labels
+                    .first()
+                    .map(|label| label.offset())
+                    .unwrap_or(0),
+            )
         }));
     }
-    Parsed { semantic: built.semantic, errors }
+    Parsed {
+        semantic: built.semantic,
+        errors,
+    }
 }
 
 pub struct Raw {
@@ -45,11 +73,27 @@ pub struct Ctx<'s, 'a> {
 
 impl<'s, 'a> Ctx<'s, 'a> {
     pub fn report(&self, rule: &'static str, span: Span, message: impl Into<String>) {
-        self.findings.borrow_mut().push(Raw { rule, message: message.into(), span, fix: None });
+        self.findings.borrow_mut().push(Raw {
+            rule,
+            message: message.into(),
+            span,
+            fix: None,
+        });
     }
 
-    pub fn report_fix(&self, rule: &'static str, span: Span, message: impl Into<String>, fix: Option<Vec<(u32, u32, String)>>) {
-        self.findings.borrow_mut().push(Raw { rule, message: message.into(), span, fix });
+    pub fn report_fix(
+        &self,
+        rule: &'static str,
+        span: Span,
+        message: impl Into<String>,
+        fix: Option<Vec<(u32, u32, String)>>,
+    ) {
+        self.findings.borrow_mut().push(Raw {
+            rule,
+            message: message.into(),
+            span,
+            fix,
+        });
     }
 
     pub fn nodes(&self) -> impl Iterator<Item = &'s AstNode<'a>> {
@@ -84,7 +128,12 @@ pub struct ImportTracker {
 }
 
 impl ImportTracker {
-    pub fn collect(&mut self, declaration: &ImportDeclaration, source: &str, classify: impl Fn(&str) -> Option<String>) {
+    pub fn collect(
+        &mut self,
+        declaration: &ImportDeclaration,
+        source: &str,
+        classify: impl Fn(&str) -> Option<String>,
+    ) {
         if import_source(declaration) != source {
             return;
         }
@@ -92,7 +141,8 @@ impl ImportTracker {
             match specifier {
                 ImportDeclarationSpecifier::ImportSpecifier(specifier) => {
                     if let Some(classified) = classify(&imported_name(specifier)) {
-                        self.locals.insert(specifier.local.name.to_string(), classified);
+                        self.locals
+                            .insert(specifier.local.name.to_string(), classified);
                     }
                 }
                 ImportDeclarationSpecifier::ImportNamespaceSpecifier(specifier) => {
@@ -108,10 +158,19 @@ impl ImportTracker {
     }
 }
 
-pub fn namespace_callee_name<'e>(callee: &'e Expression, namespaces: &HashSet<String>) -> Option<&'e str> {
-    let Expression::StaticMemberExpression(member) = callee.without_parentheses() else { return None };
-    let Expression::Identifier(object) = &member.object else { return None };
-    namespaces.contains(object.name.as_str()).then(|| member.property.name.as_str())
+pub fn namespace_callee_name<'e>(
+    callee: &'e Expression,
+    namespaces: &HashSet<String>,
+) -> Option<&'e str> {
+    let Expression::StaticMemberExpression(member) = callee.without_parentheses() else {
+        return None;
+    };
+    let Expression::Identifier(object) = &member.object else {
+        return None;
+    };
+    namespaces
+        .contains(object.name.as_str())
+        .then(|| member.property.name.as_str())
 }
 
 pub fn identifier_name<'e>(expression: &'e Expression) -> Option<&'e str> {
@@ -134,7 +193,11 @@ pub fn property_key_name(property: &ObjectProperty) -> Option<String> {
 }
 
 pub fn number_text(value: f64) -> String {
-    if value.fract() == 0.0 && value.abs() < 1e21 { format!("{}", value as i64) } else { format!("{value}") }
+    if value.fract() == 0.0 && value.abs() < 1e21 {
+        format!("{}", value as i64)
+    } else {
+        format!("{value}")
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -145,7 +208,9 @@ pub enum LiteralValue {
 }
 
 pub fn literal_argument(argument: Option<&Argument>) -> Option<LiteralValue> {
-    let Some(argument) = argument else { return Some(LiteralValue::Missing) };
+    let Some(argument) = argument else {
+        return Some(LiteralValue::Missing);
+    };
     let expression = argument.as_expression()?;
     literal_expression(expression)
 }
@@ -153,14 +218,35 @@ pub fn literal_argument(argument: Option<&Argument>) -> Option<LiteralValue> {
 pub fn literal_expression(expression: &Expression) -> Option<LiteralValue> {
     match expression.without_parentheses() {
         Expression::StringLiteral(literal) => Some(LiteralValue::Str(literal.value.to_string())),
-        Expression::NumericLiteral(literal) => Some(LiteralValue::Other(number_text(literal.value))),
+        Expression::NumericLiteral(literal) => {
+            Some(LiteralValue::Other(number_text(literal.value)))
+        }
         Expression::BooleanLiteral(literal) => Some(LiteralValue::Other(literal.value.to_string())),
         Expression::NullLiteral(_) => Some(LiteralValue::Other("null".into())),
-        Expression::BigIntLiteral(literal) => Some(LiteralValue::Other(literal.raw.as_ref().map(|raw| raw.to_string()).unwrap_or_default())),
-        Expression::RegExpLiteral(literal) => Some(LiteralValue::Other(literal.raw.as_ref().map(|raw| raw.to_string()).unwrap_or_default())),
-        Expression::TemplateLiteral(template) if template.expressions.is_empty() => Some(LiteralValue::Str(
-            template.quasis.first().and_then(|quasi| quasi.value.cooked.as_ref()).map(|cooked| cooked.to_string()).unwrap_or_default(),
+        Expression::BigIntLiteral(literal) => Some(LiteralValue::Other(
+            literal
+                .raw
+                .as_ref()
+                .map(|raw| raw.to_string())
+                .unwrap_or_default(),
         )),
+        Expression::RegExpLiteral(literal) => Some(LiteralValue::Other(
+            literal
+                .raw
+                .as_ref()
+                .map(|raw| raw.to_string())
+                .unwrap_or_default(),
+        )),
+        Expression::TemplateLiteral(template) if template.expressions.is_empty() => {
+            Some(LiteralValue::Str(
+                template
+                    .quasis
+                    .first()
+                    .and_then(|quasi| quasi.value.cooked.as_ref())
+                    .map(|cooked| cooked.to_string())
+                    .unwrap_or_default(),
+            ))
+        }
         _ => None,
     }
 }
@@ -172,7 +258,10 @@ pub fn first_param_name(params: &FormalParameters) -> Option<String> {
     }
 }
 
-pub fn binding_names<'p>(pattern: &'p BindingPattern<'p>, into: &mut Vec<&'p BindingIdentifier<'p>>) {
+pub fn binding_names<'p>(
+    pattern: &'p BindingPattern<'p>,
+    into: &mut Vec<&'p BindingIdentifier<'p>>,
+) {
     match pattern {
         BindingPattern::BindingIdentifier(identifier) => into.push(identifier),
         BindingPattern::ObjectPattern(object) => {
@@ -199,9 +288,15 @@ pub fn root_identifier<'e>(expression: &'e Expression<'e>) -> Option<&'e Identif
     let mut current = expression.without_parentheses();
     loop {
         match current {
-            Expression::StaticMemberExpression(member) => current = member.object.without_parentheses(),
-            Expression::ComputedMemberExpression(member) => current = member.object.without_parentheses(),
-            Expression::PrivateFieldExpression(member) => current = member.object.without_parentheses(),
+            Expression::StaticMemberExpression(member) => {
+                current = member.object.without_parentheses()
+            }
+            Expression::ComputedMemberExpression(member) => {
+                current = member.object.without_parentheses()
+            }
+            Expression::PrivateFieldExpression(member) => {
+                current = member.object.without_parentheses()
+            }
             Expression::Identifier(identifier) => return Some(identifier),
             _ => return None,
         }

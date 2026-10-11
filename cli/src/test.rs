@@ -42,45 +42,76 @@ fn mock_module_calls(source: &str) -> Result<Vec<(String, String)>> {
         .into_iter()
         .map(|call| {
             let (first, rest) = split_first_argument(&call.argument_source);
-            let specifier = parse_string_literal(&first)
-                .ok_or_else(|| anyhow!("mockModule(specifier, ...) - specifier must be a string literal"))?;
+            let specifier = parse_string_literal(&first).ok_or_else(|| {
+                anyhow!("mockModule(specifier, ...) - specifier must be a string literal")
+            })?;
             Ok((specifier, rest))
         })
         .collect()
 }
 
-fn resolve_mock_target(specifier: &str, file: &Path, root: &Path, dependencies: &[String]) -> Result<(String, PathBuf)> {
+fn resolve_mock_target(
+    specifier: &str,
+    file: &Path,
+    root: &Path,
+    dependencies: &[String],
+) -> Result<(String, PathBuf)> {
     if specifier.starts_with('.') || Path::new(specifier).is_absolute() {
         let real = crate::bundler::resolve_module_file(&resolve(file.parent().unwrap(), specifier))
             .ok_or_else(|| anyhow!("mockModule('{specifier}') - module not found"))?;
         return Ok((real.to_string_lossy().into_owned(), real));
     }
     if !dependencies.iter().any(|alias| alias == specifier) {
-        bail!("mockModule('{specifier}') - not a relative module or a dependency declared in imp.json");
+        bail!(
+            "mockModule('{specifier}') - not a relative module or a dependency declared in imp.json"
+        );
     }
     let real = crate::bundler::resolve_module_file(&root.join("dependencies").join(specifier).join(format!("{specifier}.js")))
         .ok_or_else(|| anyhow!("mockModule('{specifier}') - dependency '{specifier}' is not vendored; run 'imp install'"))?;
     Ok((specifier.to_string(), real))
 }
 
-fn module_exports(real: &Path, root: &Path, dependencies: &[String]) -> Result<(Vec<String>, bool)> {
+fn module_exports(
+    real: &Path,
+    root: &Path,
+    dependencies: &[String],
+) -> Result<(Vec<String>, bool)> {
     let mut options = Options::new(root).entry(real.to_string_lossy());
     options.dependencies = dependencies.to_vec();
     options.imp = ImpLibrary::Tooling;
     options.assets = Assets::DataUrl;
     let bundled = bundle(options).map_err(|error| anyhow!("{}", error.describe()))?;
-    let exports = bundled.chunks.iter().find(|chunk| chunk.is_entry).map(|chunk| chunk.exports.clone()).unwrap_or_default();
+    let exports = bundled
+        .chunks
+        .iter()
+        .find(|chunk| chunk.is_entry)
+        .map(|chunk| chunk.exports.clone())
+        .unwrap_or_default();
     let has_default = exports.iter().any(|name| name == "default");
-    Ok((exports.into_iter().filter(|name| name != "default").collect(), has_default))
+    Ok((
+        exports
+            .into_iter()
+            .filter(|name| name != "default")
+            .collect(),
+        has_default,
+    ))
 }
 
 fn mock_code(real: &Path, factory: &str, named: &[String], has_default: bool) -> String {
-    let uses_orig = !factory.is_empty() && regex::Regex::new(r"\borig\b").unwrap().is_match(factory);
+    let uses_orig =
+        !factory.is_empty() && regex::Regex::new(r"\borig\b").unwrap().is_match(factory);
     let mut lines = vec!["import { spy as __spy } from 'imp/test'".to_string()];
     if uses_orig {
-        lines.push(format!("import * as __real from {}", serde_json::to_string(&real.to_string_lossy()).unwrap()));
+        lines.push(format!(
+            "import * as __real from {}",
+            serde_json::to_string(&real.to_string_lossy()).unwrap()
+        ));
     }
-    let helpers = if uses_orig { "{ spy: __spy, orig: () => __real }" } else { "{ spy: __spy }" };
+    let helpers = if uses_orig {
+        "{ spy: __spy, orig: () => __real }"
+    } else {
+        "{ spy: __spy }"
+    };
     if factory.is_empty() {
         lines.push("const __exports = {}".into());
     } else {
@@ -88,8 +119,14 @@ fn mock_code(real: &Path, factory: &str, named: &[String], has_default: bool) ->
     }
     lines.push("const __pick = (name) => (__exports != null && name in __exports) ? __exports[name] : __spy()".into());
     for (index, name) in named.iter().enumerate() {
-        lines.push(format!("const __export{index} = __pick({})", serde_json::to_string(name).unwrap()));
-        lines.push(format!("export {{ __export{index} as {} }}", serde_json::to_string(name).unwrap()));
+        lines.push(format!(
+            "const __export{index} = __pick({})",
+            serde_json::to_string(name).unwrap()
+        ));
+        lines.push(format!(
+            "export {{ __export{index} as {} }}",
+            serde_json::to_string(name).unwrap()
+        ));
     }
     if has_default {
         lines.push("export default __pick('default')".into());
@@ -97,7 +134,11 @@ fn mock_code(real: &Path, factory: &str, named: &[String], has_default: bool) ->
     format!("{}\n", lines.join("\n"))
 }
 
-pub fn collect_mocks(file: &Path, root: &Path, dependencies: &[String]) -> Result<HashMap<String, Mock>> {
+pub fn collect_mocks(
+    file: &Path,
+    root: &Path,
+    dependencies: &[String],
+) -> Result<HashMap<String, Mock>> {
     let mut mocks = HashMap::new();
     for (specifier, factory) in mock_module_calls(&std::fs::read_to_string(file)?)? {
         let (id, real) = resolve_mock_target(&specifier, file, root, dependencies)?;
@@ -106,7 +147,13 @@ pub fn collect_mocks(file: &Path, root: &Path, dependencies: &[String]) -> Resul
         }
         let (named, has_default) = module_exports(&real, root, dependencies)?;
         let code = mock_code(&real, &factory, &named, has_default);
-        mocks.insert(id, Mock { real_file: real, code });
+        mocks.insert(
+            id,
+            Mock {
+                real_file: real,
+                code,
+            },
+        );
     }
     Ok(mocks)
 }
@@ -130,7 +177,11 @@ struct Run {
 }
 
 fn video_options(config: &Config) -> Value {
-    let video = |key: &str, fallback: f64| get_path(config, &["test", "video", key]).and_then(Value::as_f64).unwrap_or(fallback);
+    let video = |key: &str, fallback: f64| {
+        get_path(config, &["test", "video", key])
+            .and_then(Value::as_f64)
+            .unwrap_or(fallback)
+    };
     json!({ "fps": video("fps", 10.0), "maxDuration": video("maxDuration", 30.0), "width": video("width", 800.0), "quality": video("quality", 80.0) })
 }
 
@@ -180,7 +231,8 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
     });
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
-    let endpoint: Arc<Mutex<Option<Arc<(Mutex<Option<String>>, Condvar)>>>> = Arc::new(Mutex::new(None));
+    let endpoint: Arc<Mutex<Option<Arc<(Mutex<Option<String>>, Condvar)>>>> =
+        Arc::new(Mutex::new(None));
     let run_config = json!({
         "mode": if options.e2e.is_some() { "e2e" } else { "unit" },
         "filter": options.filter,
@@ -206,13 +258,19 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
             ("GET", "/") => Response::new(200, "text/html; charset=utf-8", runner_page()),
             ("GET", "/favicon.ico") => Response::empty(204),
             ("GET", "/@imp/run.json") => Response::json(200, &run_config),
-            ("GET", "/@imp/test.js") => Response::new(200, "text/javascript; charset=utf-8", code.as_bytes().to_vec()),
+            ("GET", "/@imp/test.js") => Response::new(
+                200,
+                "text/javascript; charset=utf-8",
+                code.as_bytes().to_vec(),
+            ),
             ("GET", "/@imp/devtools") => {
                 let shared = handler_endpoint.lock().unwrap().clone();
                 let value = shared.and_then(|shared| {
                     let (lock, ready) = &*shared;
                     let guard = lock.lock().unwrap();
-                    let (guard, _) = ready.wait_timeout_while(guard, Duration::from_secs(30), |value| value.is_none()).unwrap();
+                    let (guard, _) = ready
+                        .wait_timeout_while(guard, Duration::from_secs(30), |value| value.is_none())
+                        .unwrap();
                     guard.clone()
                 });
                 Response::text(200, value.unwrap_or_default())
@@ -231,8 +289,11 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
             ("POST", "/@imp/done") => {
                 let body = request.json().unwrap_or(Value::Null);
                 let count = |key: &str| body.get(key).and_then(Value::as_u64).unwrap_or(0);
-                *handler_state.done.lock().unwrap() =
-                    Some(Counts { passed: count("passed"), failed: count("failed"), skipped: count("skipped") });
+                *handler_state.done.lock().unwrap() = Some(Counts {
+                    passed: count("passed"),
+                    failed: count("failed"),
+                    skipped: count("skipped"),
+                });
                 handler_state.ready.notify_all();
                 Response::text(200, "ok")
             }
@@ -240,28 +301,52 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
                 if let (Some(dir), Some(body)) = (&screenshot_dir, request.json()) {
                     let test = body.get("test").and_then(Value::as_str).unwrap_or("test");
                     let data = body.get("data").and_then(Value::as_str).unwrap_or("");
-                    let target = dir.join(format!("{}-{}.png", slug(&file_name(&file)), slug(test)));
+                    let target =
+                        dir.join(format!("{}-{}.png", slug(&file_name(&file)), slug(test)));
                     if write_base64(&target, data).is_ok() {
-                        println!("{}", dim(format!("      screenshot: {}", relative_posix(&root, &target))));
+                        println!(
+                            "{}",
+                            dim(format!(
+                                "      screenshot: {}",
+                                relative_posix(&root, &target)
+                            ))
+                        );
                     }
                 }
                 Response::text(200, "ok")
             }
             ("POST", "/@imp/save") => {
                 if let Some(body) = request.json() {
-                    let target = resolve(&root, body.get("path").and_then(Value::as_str).unwrap_or("screenshot.png"));
-                    let _ = write_base64(&target, body.get("data").and_then(Value::as_str).unwrap_or(""));
+                    let target = resolve(
+                        &root,
+                        body.get("path")
+                            .and_then(Value::as_str)
+                            .unwrap_or("screenshot.png"),
+                    );
+                    let _ = write_base64(
+                        &target,
+                        body.get("data").and_then(Value::as_str).unwrap_or(""),
+                    );
                 }
                 Response::text(200, "ok")
             }
             ("POST", "/@imp/video") => {
                 if let (Some(dir), Some(body)) = (&video_dir, request.json()) {
-                    let frames = body.get("frames").and_then(Value::as_array).cloned().unwrap_or_default();
+                    let frames = body
+                        .get("frames")
+                        .and_then(Value::as_array)
+                        .cloned()
+                        .unwrap_or_default();
                     match crate::test_video::encode_gif(&frames, &video) {
                         Ok(Some(bytes)) => {
                             let target = dir.join(format!("{}.gif", slug(&file_name(&file))));
-                            if std::fs::create_dir_all(dir).is_ok() && std::fs::write(&target, bytes).is_ok() {
-                                println!("{}", dim(format!("  video: {}", relative_posix(&root, &target))));
+                            if std::fs::create_dir_all(dir).is_ok()
+                                && std::fs::write(&target, bytes).is_ok()
+                            {
+                                println!(
+                                    "{}",
+                                    dim(format!("  video: {}", relative_posix(&root, &target)))
+                                );
                             }
                         }
                         Ok(None) => {}
@@ -293,10 +378,17 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
     crate::http_server::spawn(listener, Arc::new(handler));
     let mut chrome = Chrome::launch(options.browser, &format!("http://127.0.0.1:{port}/"))?;
     *endpoint.lock().unwrap() = Some(chrome.shared_endpoint());
-    let idle_limit = Duration::from_millis(if options.e2e.is_some() { E2E_TIMEOUT * 4 } else { UNIT_TIMEOUT * 12 });
+    let idle_limit = Duration::from_millis(if options.e2e.is_some() {
+        E2E_TIMEOUT * 4
+    } else {
+        UNIT_TIMEOUT * 12
+    });
     loop {
         let guard = state.done.lock().unwrap();
-        let (guard, _) = state.ready.wait_timeout(guard, Duration::from_millis(200)).unwrap();
+        let (guard, _) = state
+            .ready
+            .wait_timeout(guard, Duration::from_millis(200))
+            .unwrap();
         if let Some(counts) = *guard {
             return Ok(counts);
         }
@@ -306,9 +398,21 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
         }
         let idle = state.activity.lock().unwrap().elapsed();
         if idle > idle_limit {
-            let last = state.lines.lock().unwrap().iter().rev().find(|line| line.contains('✓') || line.contains('✗')).cloned();
-            let after = last.map(|line| format!(" after '{}'", line.trim())).unwrap_or_default();
-            bail!("the page stopped responding for {} seconds{after} - a test blocks the page, or navigates it away", idle.as_secs());
+            let last = state
+                .lines
+                .lock()
+                .unwrap()
+                .iter()
+                .rev()
+                .find(|line| line.contains('✓') || line.contains('✗'))
+                .cloned();
+            let after = last
+                .map(|line| format!(" after '{}'", line.trim()))
+                .unwrap_or_default();
+            bail!(
+                "the page stopped responding for {} seconds{after} - a test blocks the page, or navigates it away",
+                idle.as_secs()
+            );
         }
     }
 }
@@ -321,48 +425,105 @@ fn write_base64(target: &Path, data: &str) -> Result<()> {
     Ok(())
 }
 
-fn select_files(root: &Path, paths: &[String], unit: bool, e2e: bool, exclude: &[String]) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
+fn select_files(
+    root: &Path,
+    paths: &[String],
+    unit: bool,
+    e2e: bool,
+    exclude: &[String],
+) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
     for target in paths {
         let path = resolve(root, target);
-        let Ok(meta) = std::fs::metadata(&path) else { bail!("path not found: {target}") };
+        let Ok(meta) = std::fs::metadata(&path) else {
+            bail!("path not found: {target}")
+        };
         if meta.is_file() && !is_test_file(&path.to_string_lossy()) {
-            bail!("not a test file: {target} - unit tests end with .test.js, e2e specs with .spec.js");
+            bail!(
+                "not a test file: {target} - unit tests end with .test.js, e2e specs with .spec.js"
+            );
         }
     }
-    let files: Vec<PathBuf> = collect_files(Collect { root, paths, extensions: &["js", "mjs"], exclude })?
-        .into_iter()
-        .filter(|file| is_test_file(&file.to_string_lossy()))
-        .collect();
+    let files: Vec<PathBuf> = collect_files(Collect {
+        root,
+        paths,
+        extensions: &["js", "mjs"],
+        exclude,
+    })?
+    .into_iter()
+    .filter(|file| is_test_file(&file.to_string_lossy()))
+    .collect();
     let unit_only = unit && !e2e;
     let e2e_only = e2e && !unit;
-    let units = if e2e_only { Vec::new() } else { files.iter().filter(|file| is_unit_file(&file.to_string_lossy())).cloned().collect() };
-    let specs = if unit_only { Vec::new() } else { files.iter().filter(|file| is_spec_file(&file.to_string_lossy())).cloned().collect() };
+    let units = if e2e_only {
+        Vec::new()
+    } else {
+        files
+            .iter()
+            .filter(|file| is_unit_file(&file.to_string_lossy()))
+            .cloned()
+            .collect()
+    };
+    let specs = if unit_only {
+        Vec::new()
+    } else {
+        files
+            .iter()
+            .filter(|file| is_spec_file(&file.to_string_lossy()))
+            .cloned()
+            .collect()
+    };
     Ok((units, specs))
 }
 
 fn print_choose_level() {
-    println!("imp test needs a single file, or a level to run every file of that kind in parallel:");
-    println!("  {}   run every *.test.js file, each in its own browser", bold("imp test --unit"));
-    println!("  {}    run every *.spec.js file, each in its own browser", bold("imp test --e2e"));
+    println!(
+        "imp test needs a single file, or a level to run every file of that kind in parallel:"
+    );
+    println!(
+        "  {}   run every *.test.js file, each in its own browser",
+        bold("imp test --unit")
+    );
+    println!(
+        "  {}    run every *.spec.js file, each in its own browser",
+        bold("imp test --e2e")
+    );
     println!("  {}   run a single test file", bold("imp test <file>"));
-    println!("\nNarrow discovery with a path ({}), cap parallelism", dim("imp test --e2e checkout/"));
-    println!("with {}, or filter tests with {}.", dim("--jobs <n>"), dim("--filter <text>"));
+    println!(
+        "\nNarrow discovery with a path ({}), cap parallelism",
+        dim("imp test --e2e checkout/")
+    );
+    println!(
+        "with {}, or filter tests with {}.",
+        dim("--jobs <n>"),
+        dim("--filter <text>")
+    );
 }
 
 fn default_jobs() -> usize {
-    std::thread::available_parallelism().map(|count| count.get()).unwrap_or(4).max(1)
+    std::thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(4)
+        .max(1)
 }
 
 fn indent_block(text: &str) -> String {
-    text.split('\n').map(|line| format!("    {line}")).collect::<Vec<_>>().join("\n")
+    text.split('\n')
+        .map(|line| format!("    {line}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn orchestrate(root: &Path, files: &[String], jobs: usize, passthrough: &[String]) -> Result<i32> {
     let started = Instant::now();
-    let file_count = format!("{} {}", files.len(), if files.len() == 1 { "file" } else { "files" });
+    let file_count = format!(
+        "{} {}",
+        files.len(),
+        if files.len() == 1 { "file" } else { "files" }
+    );
     println!("imp test: running {file_count} in parallel\n");
     let executable = std::env::current_exe()?;
-    let results: Arc<Mutex<Vec<Option<(i32, String)>>>> = Arc::new(Mutex::new(vec![None; files.len()]));
+    let results: Arc<Mutex<Vec<Option<(i32, String)>>>> =
+        Arc::new(Mutex::new(vec![None; files.len()]));
     let next = Arc::new(Mutex::new(0usize));
     let workers: Vec<_> = (0..jobs.min(files.len()).max(1))
         .map(|_| {
@@ -372,31 +533,37 @@ fn orchestrate(root: &Path, files: &[String], jobs: usize, passthrough: &[String
             let executable = executable.clone();
             let root = root.to_path_buf();
             let passthrough = passthrough.to_vec();
-            std::thread::spawn(move || loop {
-                let index = {
-                    let mut next = next.lock().unwrap();
-                    let index = *next;
-                    *next += 1;
-                    index
-                };
-                if index >= files.len() {
-                    return;
+            std::thread::spawn(move || {
+                loop {
+                    let index = {
+                        let mut next = next.lock().unwrap();
+                        let index = *next;
+                        *next += 1;
+                        index
+                    };
+                    if index >= files.len() {
+                        return;
+                    }
+                    let output = std::process::Command::new(&executable)
+                        .arg("test")
+                        .arg(&files[index])
+                        .args(&passthrough)
+                        .current_dir(&root)
+                        .env("IMP_DELEGATED", "1")
+                        .output();
+                    let result = match output {
+                        Ok(output) => (
+                            output.status.code().unwrap_or(1),
+                            format!(
+                                "{}{}",
+                                String::from_utf8_lossy(&output.stdout),
+                                String::from_utf8_lossy(&output.stderr)
+                            ),
+                        ),
+                        Err(error) => (1, error.to_string()),
+                    };
+                    results.lock().unwrap()[index] = Some(result);
                 }
-                let output = std::process::Command::new(&executable)
-                    .arg("test")
-                    .arg(&files[index])
-                    .args(&passthrough)
-                    .current_dir(&root)
-                    .env("IMP_DELEGATED", "1")
-                    .output();
-                let result = match output {
-                    Ok(output) => (
-                        output.status.code().unwrap_or(1),
-                        format!("{}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr)),
-                    ),
-                    Err(error) => (1, error.to_string()),
-                };
-                results.lock().unwrap()[index] = Some(result);
             })
         })
         .collect();
@@ -422,21 +589,43 @@ fn orchestrate(root: &Path, files: &[String], jobs: usize, passthrough: &[String
     if failed > 0 {
         parts.push(red(format!("{failed} failed")));
     }
-    println!("\nimp test: {} {}", parts.join(", "), dim(format!("({file_count}, {}ms)", started.elapsed().as_millis())));
+    println!(
+        "\nimp test: {} {}",
+        parts.join(", "),
+        dim(format!(
+            "({file_count}, {}ms)",
+            started.elapsed().as_millis()
+        ))
+    );
     Ok(if failed > 0 { 1 } else { 0 })
 }
 
 pub fn run_tests(options: TestOptions) -> Result<i32> {
     let root = options.root.clone();
     let config = load_imp_config(&root)?;
-    let dependencies: Vec<String> = crate::config::dependencies(&config).into_iter().map(|(alias, _)| alias).collect();
-    let video_enabled = get_path(&config, &["test", "video", "enable"]).and_then(Value::as_bool) == Some(true);
+    let dependencies: Vec<String> = crate::config::dependencies(&config)
+        .into_iter()
+        .map(|(alias, _)| alias)
+        .collect();
+    let video_enabled =
+        get_path(&config, &["test", "video", "enable"]).and_then(Value::as_bool) == Some(true);
     let video_dir = if options.video_dir.is_some() || video_enabled {
-        Some(options.video_dir.clone().unwrap_or_else(|| ".imp/videos".into()))
+        Some(
+            options
+                .video_dir
+                .clone()
+                .unwrap_or_else(|| ".imp/videos".into()),
+        )
     } else {
         None
     };
-    let (units, specs) = select_files(&root, &options.paths, options.unit, options.e2e, &get_strings(&config, &["test", "exclude"]))?;
+    let (units, specs) = select_files(
+        &root,
+        &options.paths,
+        options.unit,
+        options.e2e,
+        &get_strings(&config, &["test", "exclude"]),
+    )?;
     let to_relative = |file: &PathBuf| relative_posix(&root, file);
     if options.list {
         let listed: Vec<String> = units.iter().chain(specs.iter()).map(to_relative).collect();
@@ -460,10 +649,19 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
             passthrough.extend(["--video".to_string(), dir.clone()]);
         }
         if let Some(mocks) = options.mocks {
-            passthrough.push(if mocks { "--mock".into() } else { "--no-mock".into() });
+            passthrough.push(if mocks {
+                "--mock".into()
+            } else {
+                "--no-mock".into()
+            });
         }
         let relative: Vec<String> = files.iter().map(to_relative).collect();
-        return orchestrate(&root, &relative, options.jobs.unwrap_or_else(default_jobs), &passthrough);
+        return orchestrate(
+            &root,
+            &relative,
+            options.jobs.unwrap_or_else(default_jobs),
+            &passthrough,
+        );
     }
     if files.len() > 1 {
         print_choose_level();
@@ -496,7 +694,10 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
             filter: options.filter.clone(),
             browser: &browser_path,
             e2e: app.as_ref(),
-            screenshot_dir: options.screenshot_dir.as_ref().map(|dir| absolute(root.join(dir))),
+            screenshot_dir: options
+                .screenshot_dir
+                .as_ref()
+                .map(|dir| absolute(root.join(dir))),
             video_dir: video_dir.as_ref().map(|dir| absolute(root.join(dir))),
             video: video_options(&config),
         });
@@ -520,10 +721,17 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
     if totals.skipped > 0 {
         parts.push(format!("{} skipped", totals.skipped));
     }
-    println!("\nimp test: {} {}", parts.join(", "), dim(format!("(1 file, {}ms)", started.elapsed().as_millis())));
+    println!(
+        "\nimp test: {} {}",
+        parts.join(", "),
+        dim(format!("(1 file, {}ms)", started.elapsed().as_millis()))
+    );
     Ok(if totals.failed > 0 { 1 } else { 0 })
 }
 
 fn indent(text: &str) -> String {
-    text.split('\n').map(|line| format!("      {line}")).collect::<Vec<_>>().join("\n")
+    text.split('\n')
+        .map(|line| format!("      {line}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }

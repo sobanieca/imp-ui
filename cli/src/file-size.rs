@@ -13,11 +13,18 @@ pub fn format_size(bytes: u64) -> String {
 }
 
 pub fn max_file_bytes(config: &crate::config::Config) -> u64 {
-    config.get("maxFileSize").and_then(|value| value.as_f64()).map(|value| value as u64).unwrap_or(DEFAULT_MAX_FILE_BYTES)
+    config
+        .get("maxFileSize")
+        .and_then(|value| value.as_f64())
+        .map(|value| value as u64)
+        .unwrap_or(DEFAULT_MAX_FILE_BYTES)
 }
 
 pub fn is_file_size_ignored(relative_path: &str, ignore: &[String]) -> bool {
-    ignore.iter().any(|entry| is_within_prefix(relative_path, entry))
+    ignore
+        .iter()
+        .any(|entry| is_within_prefix(relative_path, entry))
 }
 
-pub const MAX_FILE_SIZE_HINT: &str = "raise \"maxFileSize\" or add the path to \"maxFileSizeIgnore\" in imp.json";
+pub const MAX_FILE_SIZE_HINT: &str =
+    "raise \"maxFileSize\" or add the path to \"maxFileSizeIgnore\" in imp.json";

@@ -11,11 +11,15 @@ fn has(args: &[String], name: &str) -> bool {
 
 fn flag(args: &[String], name: &str) -> Option<String> {
     let index = args.iter().position(|arg| arg == &format!("--{name}"))?;
-    args.get(index + 1).filter(|value| !value.is_empty()).cloned()
+    args.get(index + 1)
+        .filter(|value| !value.is_empty())
+        .cloned()
 }
 
 fn valued_flag(args: &[String], name: &str, problem: &str) -> Result<Option<String>> {
-    let Some(index) = args.iter().position(|arg| arg == name) else { return Ok(None) };
+    let Some(index) = args.iter().position(|arg| arg == name) else {
+        return Ok(None);
+    };
     match args.get(index + 1) {
         Some(value) if !value.is_empty() && !value.starts_with("--") => Ok(Some(value.clone())),
         _ => bail!("{problem}"),
@@ -23,7 +27,11 @@ fn valued_flag(args: &[String], name: &str, problem: &str) -> Result<Option<Stri
 }
 
 fn font_flag(args: &[String]) -> Result<Option<String>> {
-    valued_flag(args, "--font", "--font needs a font name, like '--font inter'")
+    valued_flag(
+        args,
+        "--font",
+        "--font needs a font name, like '--font inter'",
+    )
 }
 
 fn host_flag(args: &[String]) -> Result<Option<String>> {
@@ -35,7 +43,9 @@ fn host_flag(args: &[String]) -> Result<Option<String>> {
 }
 
 fn port_flag(args: &[String]) -> Result<Option<u16>> {
-    let Some(raw) = flag(args, "port") else { return Ok(None) };
+    let Some(raw) = flag(args, "port") else {
+        return Ok(None);
+    };
     match raw.parse::<f64>() {
         Ok(value) if value.fract() == 0.0 && (0.0..=65535.0).contains(&value) => {
             Ok(Some(value as u16))
@@ -73,7 +83,10 @@ fn positional(args: &[String]) -> Vec<String> {
 }
 
 fn without(args: &[String], removed: &[&str]) -> Vec<String> {
-    args.iter().filter(|arg| !removed.contains(&arg.as_str())).cloned().collect()
+    args.iter()
+        .filter(|arg| !removed.contains(&arg.as_str()))
+        .cloned()
+        .collect()
 }
 
 fn js_number(raw: &str) -> Option<f64> {
@@ -161,7 +174,8 @@ pub fn run(args: &[String]) -> Result<i32> {
                 .iter()
                 .enumerate()
                 .find(|(index, arg)| {
-                    !["-f", "-n"].contains(&arg.as_str()) && (*index == 0 || rest[index - 1] != "-n")
+                    !["-f", "-n"].contains(&arg.as_str())
+                        && (*index == 0 || rest[index - 1] != "-n")
                 })
                 .map(|(_, arg)| arg.clone());
             if let Some(stray) = stray {
@@ -171,7 +185,10 @@ pub fn run(args: &[String]) -> Result<i32> {
         }
         "build" => {
             crate::build::build(crate::build::BuildOptions {
-                entry: positional(rest).first().cloned().unwrap_or_else(|| "index.html".into()),
+                entry: positional(rest)
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "index.html".into()),
                 output: flag(rest, "output").unwrap_or_else(|| "dist".into()),
                 pwa: has(rest, "--pwa"),
                 env: flag(rest, "env"),
@@ -231,7 +248,8 @@ pub fn run(args: &[String]) -> Result<i32> {
                 .iter()
                 .enumerate()
                 .find(|(index, arg)| {
-                    !arg.starts_with('-') && !(*index > 0 && valued.contains(&rest[index - 1].as_str()))
+                    !arg.starts_with('-')
+                        && !(*index > 0 && valued.contains(&rest[index - 1].as_str()))
                 })
                 .map(|(_, arg)| arg.clone());
             let read_dimension = |short: &str, long: &str| -> Result<Option<u32>> {
@@ -267,12 +285,14 @@ pub fn run(args: &[String]) -> Result<i32> {
             }
         }
         "licenses" => {
-            println!("{}", crate::embedded::expect_text("THIRD-PARTY-LICENSES.md").trim_end())
+            println!(
+                "{}",
+                crate::embedded::expect_text("THIRD-PARTY-LICENSES.md").trim_end()
+            )
         }
         "lint" => {
             let fix = has(rest, "--fix");
-            let code =
-                crate::lint::lint(&cwd(), &positional(&without(rest, &["--fix"])), fix)?;
+            let code = crate::lint::lint(&cwd(), &positional(&without(rest, &["--fix"])), fix)?;
             crate::version_manager::notify_update(rest);
             return Ok(code);
         }

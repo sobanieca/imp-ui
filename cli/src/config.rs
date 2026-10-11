@@ -36,11 +36,15 @@ pub fn find_config_file(start: &Path) -> Option<ConfigFile> {
 }
 
 pub fn project_root(start: &Path) -> PathBuf {
-    find_config_file(start).map(|found| found.dir).unwrap_or_else(|| start.to_path_buf())
+    find_config_file(start)
+        .map(|found| found.dir)
+        .unwrap_or_else(|| start.to_path_buf())
 }
 
 pub fn config_target_path(start: &Path) -> PathBuf {
-    find_config_file(start).map(|found| found.path).unwrap_or_else(|| start.join("imp.json"))
+    find_config_file(start)
+        .map(|found| found.path)
+        .unwrap_or_else(|| start.join("imp.json"))
 }
 
 fn jsonc_options() -> jsonc_parser::ParseOptions {
@@ -62,7 +66,11 @@ pub fn parse_config_text(text: &str, name: &str) -> Result<Value> {
     match jsonc_parser::parse_to_serde_value::<Value>(text, &jsonc_options()) {
         Ok(value) => Ok(value),
         Err(error) => {
-            bail!("invalid {name} - {} at position {}", error.kind(), error.range().start)
+            bail!(
+                "invalid {name} - {} at position {}",
+                error.kind(),
+                error.range().start
+            )
         }
     }
 }
@@ -86,8 +94,9 @@ pub struct ConfigChange {
 pub fn update_config_file(path: &Path, changes: &[ConfigChange]) -> Result<()> {
     use jsonc_parser::cst::{CstInputValue, CstRootNode};
     let text = std::fs::read_to_string(path).unwrap_or_else(|_| "{}\n".to_string());
-    let root = CstRootNode::parse(&text, &jsonc_options())
-        .map_err(|error| anyhow::anyhow!("invalid {} - {}", crate::paths::file_name(path), error))?;
+    let root = CstRootNode::parse(&text, &jsonc_options()).map_err(|error| {
+        anyhow::anyhow!("invalid {} - {}", crate::paths::file_name(path), error)
+    })?;
     fn input(value: &Value) -> CstInputValue {
         match value {
             Value::Null => CstInputValue::Null,
@@ -96,7 +105,9 @@ pub fn update_config_file(path: &Path, changes: &[ConfigChange]) -> Result<()> {
             Value::String(text) => CstInputValue::String(text.clone()),
             Value::Array(items) => CstInputValue::Array(items.iter().map(input).collect()),
             Value::Object(map) => CstInputValue::Object(
-                map.iter().map(|(key, value)| (key.clone(), input(value))).collect(),
+                map.iter()
+                    .map(|(key, value)| (key.clone(), input(value)))
+                    .collect(),
             ),
         }
     }
@@ -134,14 +145,17 @@ pub fn update_config_file(path: &Path, changes: &[ConfigChange]) -> Result<()> {
                 let names: Vec<String> = object
                     .properties()
                     .iter()
-                    .filter_map(|property| property.name().and_then(|name| name.decoded_value().ok()))
+                    .filter_map(|property| {
+                        property.name().and_then(|name| name.decoded_value().ok())
+                    })
                     .collect();
                 let index = match change.insertion {
                     Insertion::End => names.len(),
                     Insertion::First => 0,
-                    Insertion::Alphabetical => {
-                        names.iter().position(|name| name.as_str() > last.as_str()).unwrap_or(names.len())
-                    }
+                    Insertion::Alphabetical => names
+                        .iter()
+                        .position(|name| name.as_str() > last.as_str())
+                        .unwrap_or(names.len()),
                 };
                 object.insert(index, last, input(value));
             }
@@ -167,8 +181,15 @@ pub struct MocksSetting {
 pub fn mocks_setting(config: &Config) -> Option<MocksSetting> {
     let declared = config.get("mocks")?;
     Some(MocksSetting {
-        folder: declared.get("folder").and_then(Value::as_str).unwrap_or_default().to_string(),
-        enabled: declared.get("enabled").and_then(Value::as_bool).unwrap_or(false),
+        folder: declared
+            .get("folder")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        enabled: declared
+            .get("enabled")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
     })
 }
 
@@ -200,14 +221,21 @@ pub fn get_str<'a>(config: &'a Config, path: &[&str]) -> Option<&'a str> {
 pub fn get_strings(config: &Config, path: &[&str]) -> Vec<String> {
     get_path(config, path)
         .and_then(Value::as_array)
-        .map(|items| items.iter().filter_map(|item| item.as_str().map(String::from)).collect())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
 const RESERVED_FLAG_PREFIX: &str = "IMP_";
 
 fn is_positive_number(value: &Value) -> bool {
-    value.as_f64().is_some_and(|number| number.is_finite() && number > 0.0)
+    value
+        .as_f64()
+        .is_some_and(|number| number.is_finite() && number > 0.0)
 }
 
 fn is_integer(value: &Value) -> bool {
@@ -215,12 +243,18 @@ fn is_integer(value: &Value) -> bool {
 }
 
 fn is_string_array(value: &Value) -> bool {
-    value.as_array().is_some_and(|items| items.iter().all(Value::is_string))
+    value
+        .as_array()
+        .is_some_and(|items| items.iter().all(Value::is_string))
 }
 
 pub fn load_imp_config(start: &Path) -> Result<Config> {
-    let Some(found) = find_config_file(start) else { return Ok(Map::new()) };
-    let Ok(text) = std::fs::read_to_string(&found.path) else { return Ok(Map::new()) };
+    let Some(found) = find_config_file(start) else {
+        return Ok(Map::new());
+    };
+    let Ok(text) = std::fs::read_to_string(&found.path) else {
+        return Ok(Map::new());
+    };
     let name = found.name;
     let Value::Object(config) = parse_config_text(&text, name)? else {
         bail!("invalid {name} - expected a JSON object at the top level");
@@ -230,7 +264,16 @@ pub fn load_imp_config(start: &Path) -> Result<Config> {
 }
 
 fn validate(config: &Config, name: &str) -> Result<()> {
-    for key in ["dependencies", "fmt", "lint", "test", "preview", "pwa", "environments", "build"] {
+    for key in [
+        "dependencies",
+        "fmt",
+        "lint",
+        "test",
+        "preview",
+        "pwa",
+        "environments",
+        "build",
+    ] {
         if let Some(value) = config.get(key) {
             if !value.is_object() {
                 bail!("invalid {name} - '{key}' must be an object");
@@ -247,16 +290,25 @@ fn validate(config: &Config, name: &str) -> Result<()> {
     if let Some(licenses) = config.get("licenses") {
         if let Some(list) = licenses.as_array() {
             if list.is_empty() || list.iter().any(|id| !id.is_string()) {
-                bail!("invalid {name} - 'licenses' as a list must hold one or more SPDX identifier strings");
+                bail!(
+                    "invalid {name} - 'licenses' as a list must hold one or more SPDX identifier strings"
+                );
             }
-        } else if !licenses.as_str().is_some_and(|policy| LICENSE_POLICY_NAMES.contains(&policy)) {
-            let names = LICENSE_POLICY_NAMES.map(|policy| format!("'{policy}'")).join(", ");
+        } else if !licenses
+            .as_str()
+            .is_some_and(|policy| LICENSE_POLICY_NAMES.contains(&policy))
+        {
+            let names = LICENSE_POLICY_NAMES
+                .map(|policy| format!("'{policy}'"))
+                .join(", ");
             bail!("invalid {name} - 'licenses' must be {names}, or a list of SPDX identifiers");
         }
     }
     if let Some(max_size) = get_path(config, &["build", "maxSize"]) {
         if !(is_integer(max_size) && max_size.as_f64().unwrap_or(0.0) > 0.0) {
-            bail!("invalid {name} - 'build.maxSize' must be a positive whole number of bytes, like 512000");
+            bail!(
+                "invalid {name} - 'build.maxSize' must be a positive whole number of bytes, like 512000"
+            );
         }
     }
     if let Some(environments) = config.get("environments").and_then(Value::as_object) {
@@ -267,11 +319,15 @@ fn validate(config: &Config, name: &str) -> Result<()> {
         }
     }
     if let Some(flags) = config.get("flags") {
-        let valid = flags
-            .as_array()
-            .is_some_and(|items| items.iter().all(|flag| flag.as_str().is_some_and(|flag| !flag.is_empty())));
+        let valid = flags.as_array().is_some_and(|items| {
+            items
+                .iter()
+                .all(|flag| flag.as_str().is_some_and(|flag| !flag.is_empty()))
+        });
         if !valid {
-            bail!("invalid {name} - 'flags' must be an array of flag names, like [\"CHECKOUT_V2\"]");
+            bail!(
+                "invalid {name} - 'flags' must be an array of flag names, like [\"CHECKOUT_V2\"]"
+            );
         }
         if let Some(reserved) = flags
             .as_array()
@@ -286,15 +342,29 @@ fn validate(config: &Config, name: &str) -> Result<()> {
         }
     }
     if let Some(pwa) = config.get("pwa") {
-        for key in ["name", "shortName", "themeColor", "backgroundColor", "icon", "startUrl", "scope"] {
+        for key in [
+            "name",
+            "shortName",
+            "themeColor",
+            "backgroundColor",
+            "icon",
+            "startUrl",
+            "scope",
+        ] {
             if pwa.get(key).is_some_and(|value| !value.is_string()) {
                 bail!("invalid {name} - 'pwa.{key}' must be a string");
             }
         }
         let displays = ["standalone", "fullscreen", "minimal-ui", "browser"];
         if let Some(display) = pwa.get("display") {
-            if !display.as_str().is_some_and(|display| displays.contains(&display)) {
-                bail!("invalid {name} - 'pwa.display' must be one of {}", displays.join(", "));
+            if !display
+                .as_str()
+                .is_some_and(|display| displays.contains(&display))
+            {
+                bail!(
+                    "invalid {name} - 'pwa.display' must be one of {}",
+                    displays.join(", ")
+                );
             }
         }
     }
@@ -307,9 +377,11 @@ fn validate(config: &Config, name: &str) -> Result<()> {
         bail!("invalid {name} - 'test.exclude' must be an array of strings");
     }
     if let Some(exports) = get_path(config, &["lint", "publicExports"]) {
-        let valid = exports
-            .as_array()
-            .is_some_and(|items| items.iter().all(|item| item.as_str().is_some_and(|item| !item.is_empty())));
+        let valid = exports.as_array().is_some_and(|items| {
+            items
+                .iter()
+                .all(|item| item.as_str().is_some_and(|item| !item.is_empty()))
+        });
         if !valid {
             bail!(
                 "invalid {name} - 'lint.publicExports' must be an array of paths, each optionally naming one export like 'src/sdk.js#register'"
@@ -340,7 +412,10 @@ fn validate(config: &Config, name: &str) -> Result<()> {
             bail!("invalid {name} - 'test.video.enable' must be true or false");
         }
         for key in ["fps", "maxDuration", "width", "quality"] {
-            if video.get(key).is_some_and(|value| !is_positive_number(value)) {
+            if video
+                .get(key)
+                .is_some_and(|value| !is_positive_number(value))
+            {
                 bail!("invalid {name} - 'test.video.{key}' must be a positive number");
             }
         }
@@ -348,7 +423,9 @@ fn validate(config: &Config, name: &str) -> Result<()> {
     if let Some(dependencies) = config.get("dependencies").and_then(Value::as_object) {
         for (alias, specifier) in dependencies {
             if alias == "imp" {
-                bail!("invalid {name} - 'imp' is reserved for the imp library and cannot be a dependency alias");
+                bail!(
+                    "invalid {name} - 'imp' is reserved for the imp library and cannot be a dependency alias"
+                );
             }
             if !is_valid_alias(alias) {
                 bail!(
@@ -385,17 +462,29 @@ fn validate(config: &Config, name: &str) -> Result<()> {
         }
     }
     if let Some(version) = config.get("version") {
-        if !version.as_str().is_some_and(|version| EXACT_VERSION.is_match(version)) {
+        if !version
+            .as_str()
+            .is_some_and(|version| EXACT_VERSION.is_match(version))
+        {
             bail!("invalid {name} - 'version' must be an exact imp version string, like '1.2.3'");
         }
     }
-    if config.get("targetImpHost").is_some_and(|value| !value.is_boolean()) {
+    if config
+        .get("targetImpHost")
+        .is_some_and(|value| !value.is_boolean())
+    {
         bail!("invalid {name} - 'targetImpHost' must be true or false");
     }
-    if config.get("maxFileSize").is_some_and(|value| !is_positive_number(value)) {
+    if config
+        .get("maxFileSize")
+        .is_some_and(|value| !is_positive_number(value))
+    {
         bail!("invalid {name} - 'maxFileSize' must be a positive number");
     }
-    if config.get("maxFileSizeIgnore").is_some_and(|value| !is_string_array(value)) {
+    if config
+        .get("maxFileSizeIgnore")
+        .is_some_and(|value| !is_string_array(value))
+    {
         bail!("invalid {name} - 'maxFileSizeIgnore' must be an array of strings");
     }
     if let Some(entries) = config.get("maxLogEntries") {

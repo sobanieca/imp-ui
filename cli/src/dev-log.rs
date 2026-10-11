@@ -25,7 +25,11 @@ pub struct DevLog {
 impl DevLog {
     pub fn create(root: &Path, max_entries: usize) -> std::io::Result<DevLog> {
         std::fs::create_dir_all(root.join(".imp"))?;
-        let file = OpenOptions::new().write(true).create(true).truncate(true).open(dev_log_path(root))?;
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(dev_log_path(root))?;
         Ok(DevLog {
             state: Arc::new(Mutex::new(State {
                 file,
@@ -54,7 +58,9 @@ impl DevLog {
             let _ = state.file.set_len(0);
             let _ = state.file.seek(SeekFrom::Start(0));
             if !lines.is_empty() {
-                let _ = state.file.write_all(format!("{}\n", lines.join("\n")).as_bytes());
+                let _ = state
+                    .file
+                    .write_all(format!("{}\n", lines.join("\n")).as_bytes());
             }
             state.entries_in_file = lines.len();
         }

@@ -14,7 +14,8 @@ pub fn is_within_prefix(relative_path: &str, entry: &str) -> bool {
 }
 
 pub fn is_skipped_path(path: &str) -> bool {
-    path.split(['/', '\\']).any(|segment| ALWAYS_SKIPPED_DIRECTORIES.contains(&segment))
+    path.split(['/', '\\'])
+        .any(|segment| ALWAYS_SKIPPED_DIRECTORIES.contains(&segment))
 }
 
 pub struct Collect<'a> {
@@ -25,19 +26,29 @@ pub struct Collect<'a> {
 }
 
 pub fn collect_files(options: Collect) -> Result<Vec<PathBuf>> {
-    let Collect { root, paths, extensions, exclude } = options;
+    let Collect {
+        root,
+        paths,
+        extensions,
+        exclude,
+    } = options;
     let extensions: HashSet<&str> = extensions.iter().copied().collect();
     let mut files = Vec::new();
     let excluded = |path: &Path| {
         let relative_path = posix(relative(root, path));
         let segments: Vec<&str> = relative_path.split('/').collect();
-        if segments.iter().any(|segment| ALWAYS_SKIPPED_DIRECTORIES.contains(segment)) {
+        if segments
+            .iter()
+            .any(|segment| ALWAYS_SKIPPED_DIRECTORIES.contains(segment))
+        {
             return true;
         }
         if segments.first() == Some(&VENDORED_DEPENDENCIES) {
             return true;
         }
-        exclude.iter().any(|entry| is_within_prefix(&relative_path, entry))
+        exclude
+            .iter()
+            .any(|entry| is_within_prefix(&relative_path, entry))
     };
     fn walk(
         directory: &Path,
@@ -69,10 +80,16 @@ pub fn collect_files(options: Collect) -> Result<Vec<PathBuf>> {
         }
         Ok(())
     }
-    let targets: Vec<String> = if paths.is_empty() { vec![".".into()] } else { paths.to_vec() };
+    let targets: Vec<String> = if paths.is_empty() {
+        vec![".".into()]
+    } else {
+        paths.to_vec()
+    };
     for target in targets {
         let path = crate::paths::resolve(root, &target);
-        let Ok(meta) = std::fs::metadata(&path) else { bail!("path not found: {target}") };
+        let Ok(meta) = std::fs::metadata(&path) else {
+            bail!("path not found: {target}")
+        };
         if meta.is_dir() {
             walk(&path, &excluded, &extensions, &mut files)?;
         } else if extensions.contains(extension(&path).as_str()) {

@@ -9,8 +9,8 @@ const IGNORE_NODE: &str = "imp-fmt-ignore";
 const IGNORE_FILE: &str = "imp-fmt-ignore-file";
 
 pub const FMT_EXTENSIONS: &[&str] = &[
-    "js", "mjs", "cjs", "json", "jsonc", "md", "markdown", "css", "scss", "sass", "less", "html", "svg", "xml",
-    "sql", "yaml", "yml",
+    "js", "mjs", "cjs", "json", "jsonc", "md", "markdown", "css", "scss", "sass", "less", "html",
+    "svg", "xml", "sql", "yaml", "yml",
 ];
 
 pub struct Formatter {
@@ -46,8 +46,16 @@ impl Formatter {
             .line_width(line_width)
             .indent_width(indent_width)
             .use_tabs(use_tabs)
-            .quote_style(if single_quote { QuoteStyle::PreferSingle } else { QuoteStyle::PreferDouble })
-            .semi_colons(if semicolons { SemiColons::Always } else { SemiColons::Asi })
+            .quote_style(if single_quote {
+                QuoteStyle::PreferSingle
+            } else {
+                QuoteStyle::PreferDouble
+            })
+            .semi_colons(if semicolons {
+                SemiColons::Always
+            } else {
+                SemiColons::Asi
+            })
             .ignore_node_comment_text(IGNORE_NODE)
             .ignore_file_comment_text(IGNORE_FILE)
             .build();
@@ -80,11 +88,21 @@ impl Formatter {
         yaml.layout.print_width = line_width as usize;
         yaml.layout.indent_width = indent_width as usize;
         yaml.language.ignore_comment_directive = IGNORE_NODE.into();
-        let mut sql = lax_sql::configuration::resolve_config(Default::default(), &Default::default()).config;
+        let mut sql =
+            lax_sql::configuration::resolve_config(Default::default(), &Default::default()).config;
         sql.line_width = line_width;
         sql.indent_width = indent_width;
         sql.use_tabs = use_tabs;
-        Formatter { typescript, json, markdown, css, markup, yaml, sql, line_width }
+        Formatter {
+            typescript,
+            json,
+            markdown,
+            css,
+            markup,
+            yaml,
+            sql,
+            line_width,
+        }
     }
 
     fn format_script(&self, path: &Path, extension: &str, text: &str) -> Result<Option<String>> {
@@ -108,7 +126,12 @@ impl Formatter {
         malva::format_text(text, syntax, &self.css).map_err(|error| anyhow!("{error}"))
     }
 
-    fn format_embedded<'a>(&self, text: &'a str, extension: &str, print_width: usize) -> Cow<'a, str> {
+    fn format_embedded<'a>(
+        &self,
+        text: &'a str,
+        extension: &str,
+        print_width: usize,
+    ) -> Cow<'a, str> {
         let path = Path::new("embedded").with_extension(extension);
         let formatted = match extension {
             "js" | "mjs" | "cjs" | "ts" | "jsx" | "tsx" => {
@@ -135,7 +158,9 @@ impl Formatter {
                 };
                 malva::format_text(text, syntax, &options).ok()
             }
-            "json" | "jsonc" => dprint_plugin_json::format_text(&path, text, &self.json).ok().flatten(),
+            "json" | "jsonc" => dprint_plugin_json::format_text(&path, text, &self.json)
+                .ok()
+                .flatten(),
             _ => None,
         };
         match formatted {
@@ -165,25 +190,46 @@ impl Formatter {
         let extension = crate::paths::extension(path);
         let formatted = match extension.as_str() {
             "js" | "mjs" | "cjs" => self.format_script(path, &extension, text)?,
-            "json" | "jsonc" => dprint_plugin_json::format_text(path, text, &self.json).map_err(|error| anyhow!("{error}"))?,
-            "md" | "markdown" => dprint_plugin_markdown::format_text(text, &self.markdown, |tag, code, width| {
-                let Some(extension) = Self::code_block_extension(tag) else { return Ok(None) };
-                let formatted = self.format_embedded(code, extension, width as usize);
-                Ok(if formatted == code { None } else { Some(formatted.into_owned()) })
-            })
-            .map_err(|error| anyhow!("{error}"))?,
+            "json" | "jsonc" => dprint_plugin_json::format_text(path, text, &self.json)
+                .map_err(|error| anyhow!("{error}"))?,
+            "md" | "markdown" => {
+                dprint_plugin_markdown::format_text(text, &self.markdown, |tag, code, width| {
+                    let Some(extension) = Self::code_block_extension(tag) else {
+                        return Ok(None);
+                    };
+                    let formatted = self.format_embedded(code, extension, width as usize);
+                    Ok(if formatted == code {
+                        None
+                    } else {
+                        Some(formatted.into_owned())
+                    })
+                })
+                .map_err(|error| anyhow!("{error}"))?
+            }
             "css" | "scss" | "sass" | "less" => Some(self.format_css(text, &extension)?),
             "html" | "svg" | "xml" => {
-                let language = if extension == "html" { markup_fmt::Language::Html } else { markup_fmt::Language::Xml };
+                let language = if extension == "html" {
+                    markup_fmt::Language::Html
+                } else {
+                    markup_fmt::Language::Xml
+                };
                 Some(
                     markup_fmt::format_text(text, language, &self.markup, |code, hints| {
-                        Ok::<_, anyhow::Error>(self.format_embedded(code, hints.ext, hints.print_width))
+                        Ok::<_, anyhow::Error>(self.format_embedded(
+                            code,
+                            hints.ext,
+                            hints.print_width,
+                        ))
                     })
                     .map_err(|error| anyhow!("{error:?}"))?,
                 )
             }
-            "yaml" | "yml" => Some(pretty_yaml::format_text(text, &self.yaml).map_err(|error| anyhow!("{error}"))?),
-            "sql" => lax_sql::format_text(path, text, &self.sql).map_err(|error| anyhow!("{error}"))?,
+            "yaml" | "yml" => Some(
+                pretty_yaml::format_text(text, &self.yaml).map_err(|error| anyhow!("{error}"))?,
+            ),
+            "sql" => {
+                lax_sql::format_text(path, text, &self.sql).map_err(|error| anyhow!("{error}"))?
+            }
             _ => None,
         };
         let _ = self.line_width;
@@ -216,7 +262,12 @@ fn file_count(count: usize) -> String {
 pub fn fmt(root: &Path, paths: &[String], check: bool) -> Result<i32> {
     let config = load_imp_config(root)?;
     let exclude = get_strings(&config, &["fmt", "exclude"]);
-    let files = collect_files(Collect { root, paths, extensions: FMT_EXTENSIONS, exclude: &exclude })?;
+    let files = collect_files(Collect {
+        root,
+        paths,
+        extensions: FMT_EXTENSIONS,
+        exclude: &exclude,
+    })?;
     let formatter = Formatter::new(&config);
     let mut changed = 0;
     let mut failed = 0;
@@ -227,7 +278,11 @@ pub fn fmt(root: &Path, paths: &[String], check: bool) -> Result<i32> {
             Err(error) => {
                 failed += 1;
                 let reason = error.to_string();
-                eprintln!("error formatting {}: {}", relative_posix(root, file), reason.lines().next().unwrap_or(""));
+                eprintln!(
+                    "error formatting {}: {}",
+                    relative_posix(root, file),
+                    reason.lines().next().unwrap_or("")
+                );
                 continue;
             }
         };

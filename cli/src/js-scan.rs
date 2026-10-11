@@ -50,7 +50,9 @@ fn skip_comment(source: &[u8], index: usize) -> Option<usize> {
         }
         Some(b'*') => {
             let mut cursor = index + 2;
-            while cursor < source.len() && !(source[cursor] == b'*' && source.get(cursor + 1) == Some(&b'/')) {
+            while cursor < source.len()
+                && !(source[cursor] == b'*' && source.get(cursor + 1) == Some(&b'/'))
+            {
                 cursor += 1;
             }
             Some(cursor + 2)
@@ -129,7 +131,10 @@ fn parse_call_arguments(source: &[u8], paren: usize) -> Option<(String, usize)> 
             depth += 1;
         } else if b")]}".contains(&char) {
             if depth == 0 && char == b')' {
-                return Some((String::from_utf8_lossy(&source[start..index]).into_owned(), index + 1));
+                return Some((
+                    String::from_utf8_lossy(&source[start..index]).into_owned(),
+                    index + 1,
+                ));
             }
             depth -= 1;
         }
@@ -164,7 +169,11 @@ pub fn extract_calls(source: &str, function_name: &str) -> Vec<Call> {
                 }
                 if bytes.get(cursor) == Some(&b'(') {
                     if let Some((argument_source, call_end)) = parse_call_arguments(bytes, cursor) {
-                        calls.push(Call { start: index, end: call_end, argument_source });
+                        calls.push(Call {
+                            start: index,
+                            end: call_end,
+                            argument_source,
+                        });
                         index = call_end;
                         continue;
                     }

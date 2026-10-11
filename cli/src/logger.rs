@@ -29,7 +29,12 @@ fn emit(to_stderr: bool, header: String, message: &str) {
     } else {
         println!("{line}");
     }
-    let sinks: Vec<Sink> = SINKS.lock().unwrap().iter().map(|(_, sink)| sink.clone()).collect();
+    let sinks: Vec<Sink> = SINKS
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|(_, sink)| sink.clone())
+        .collect();
     if !sinks.is_empty() {
         let plain = strip_ansi(&line);
         for sink in sinks {

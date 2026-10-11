@@ -27,7 +27,10 @@ pub fn split_env_and_flags(config: &crate::config::Config, env: &Env) -> Result<
     let mut values = env.clone();
     let mut flags = Map::new();
     for name in declared {
-        flags.insert(name.clone(), Value::Bool(flag_value(&name, env.get(&name))?));
+        flags.insert(
+            name.clone(),
+            Value::Bool(flag_value(&name, env.get(&name))?),
+        );
         values.remove(&name);
     }
     Ok((values, flags))
@@ -37,7 +40,10 @@ pub fn flags_injection_script(flags: &Flags) -> String {
     if flags.is_empty() {
         return String::new();
     }
-    format!("<script>globalThis.__IMP_FLAGS__ = {}</script>", script_safe_json(&Value::Object(flags.clone())))
+    format!(
+        "<script>globalThis.__IMP_FLAGS__ = {}</script>",
+        script_safe_json(&Value::Object(flags.clone()))
+    )
 }
 
 static IMP_NAMED_IMPORT: LazyLock<Regex> = LazyLock::new(|| {
@@ -69,7 +75,9 @@ fn unknown_flag_problem(name: &str, flags: &Flags) -> String {
 }
 
 pub fn fold_flag_calls(source: &str, flags: &Flags, file: &str) -> Result<String> {
-    let Some(local) = local_flag_name(source) else { return Ok(source.to_string()) };
+    let Some(local) = local_flag_name(source) else {
+        return Ok(source.to_string());
+    };
     let calls = extract_calls(source, &local);
     if calls.is_empty() {
         return Ok(source.to_string());
@@ -84,7 +92,9 @@ pub fn fold_flag_calls(source: &str, flags: &Flags, file: &str) -> Result<String
                 "{file} - {local}() takes one string literal flag name, so the build can fold it away: {local}('CHECKOUT_V2')"
             );
         };
-        let Some(value) = flags.get(&name) else { bail!("{file} - {}", unknown_flag_problem(&name, flags)) };
+        let Some(value) = flags.get(&name) else {
+            bail!("{file} - {}", unknown_flag_problem(&name, flags))
+        };
         folded.push_str(&source[last..call.start]);
         folded.push_str(&value.to_string());
         last = call.end;

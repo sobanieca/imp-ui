@@ -1,14 +1,20 @@
-use crate::bundler::{Assets, Bundle, BundleError, Format, ImpLibrary, LegalComments, Options, bundle};
+use crate::bundler::{
+    Assets, Bundle, BundleError, Format, ImpLibrary, LegalComments, Options, bundle,
+};
 use crate::dependency_manifest::PackageRecord;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 pub fn bundled_packages(inputs: &[String]) -> Vec<PackageRecord> {
-    let Ok(npm) = crate::npm::shared() else { return Vec::new() };
+    let Ok(npm) = crate::npm::shared() else {
+        return Vec::new();
+    };
     let mut packages: BTreeMap<String, PackageRecord> = BTreeMap::new();
     for input in inputs {
         let path = Path::new(input);
-        let Some(package) = npm.package_of_path(path) else { continue };
+        let Some(package) = npm.package_of_path(path) else {
+            continue;
+        };
         let id = format!("{}@{}", package.name, package.version);
         let file = crate::paths::relative_posix(&package.directory, path);
         let record = packages.entry(id).or_insert_with(|| PackageRecord {
@@ -43,7 +49,11 @@ fn kept_imp_imports(bundle: &Bundle) -> Vec<String> {
         .collect()
 }
 
-pub fn bundle_dependency(root: &Path, specifier: &str, alias: &str) -> Result<BundledDependency, BundleError> {
+pub fn bundle_dependency(
+    root: &Path,
+    specifier: &str,
+    alias: &str,
+) -> Result<BundledDependency, BundleError> {
     let mut options = Options::new(root).entry(specifier);
     options.entries[0].0 = Some(alias.to_string());
     options.imp = ImpLibrary::External;
@@ -62,7 +72,12 @@ pub fn bundle_dependency(root: &Path, specifier: &str, alias: &str) -> Result<Bu
         .iter()
         .map(|chunk| (chunk.file_name.clone(), chunk.code.as_bytes().to_vec()))
         .collect();
-    files.extend(bundled.assets.iter().map(|asset| (asset.file_name.clone(), asset.bytes.clone())));
+    files.extend(
+        bundled
+            .assets
+            .iter()
+            .map(|asset| (asset.file_name.clone(), asset.bytes.clone())),
+    );
     let entry = bundled
         .chunks
         .iter()

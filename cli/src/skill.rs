@@ -14,7 +14,10 @@ pub const COMPONENT_SKILL_FILE: &str = "imp-skill.md";
 const GROUPS: [(&str, &str); 3] = [
     ("app", "WRITING AN APP"),
     ("toolkit", "WORKING IN AN IMP PROJECT"),
-    ("components", "STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button"),
+    (
+        "components",
+        "STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button",
+    ),
 ];
 
 const PROJECT_TITLE: &str =
@@ -55,7 +58,12 @@ pub const SKILLS: &[Skill] = &[
     Skill {
         name: "custom-components",
         group: "app",
-        aliases: &["custom", "guidelines", "component-guidelines", "own-components"],
+        aliases: &[
+            "custom",
+            "guidelines",
+            "component-guidelines",
+            "own-components",
+        ],
         summary: "the theme, direction, wording and accessibility rules a component of yours must follow",
     },
     Skill {
@@ -73,13 +81,29 @@ pub const SKILLS: &[Skill] = &[
     Skill {
         name: "routing",
         group: "app",
-        aliases: &["router", "imp/router", "map", "app-map", "appmap", "app-map.js"],
+        aliases: &[
+            "router",
+            "imp/router",
+            "map",
+            "app-map",
+            "appmap",
+            "app-map.js",
+        ],
         summary: "one application map drives the routes, the nav of the shell and the trail",
     },
     Skill {
         name: "std",
         group: "app",
-        aliases: &["imp/std", "standard-components", "imp/std/layout", "imp/std/display", "imp/std/inputs", "imp/std/feedback", "imp/std/data", "imp/std/shell"],
+        aliases: &[
+            "imp/std",
+            "standard-components",
+            "imp/std/layout",
+            "imp/std/display",
+            "imp/std/inputs",
+            "imp/std/feedback",
+            "imp/std/data",
+            "imp/std/shell",
+        ],
         summary: "the built-in component library: text, layout, forms, navigation and empty states",
     },
     Skill {
@@ -115,7 +139,18 @@ pub const SKILLS: &[Skill] = &[
     Skill {
         name: "analytics",
         group: "app",
-        aliases: &["imp/analytics", "imp/analytics/aly", "alysink", "imp-aly", "zone", "zones", "track", "onanalytics", "tracking", "metrics"],
+        aliases: &[
+            "imp/analytics",
+            "imp/analytics/aly",
+            "alysink",
+            "imp-aly",
+            "zone",
+            "zones",
+            "track",
+            "onanalytics",
+            "tracking",
+            "metrics",
+        ],
         summary: "page views, zones, outcomes and errors as counted records, sent to a sink of the app",
     },
     Skill {
@@ -163,7 +198,13 @@ pub const SKILLS: &[Skill] = &[
     Skill {
         name: "service-worker",
         group: "toolkit",
-        aliases: &["imp/service-worker", "sw", "sw.js", "startdevmode", "dev-mode"],
+        aliases: &[
+            "imp/service-worker",
+            "sw",
+            "sw.js",
+            "startdevmode",
+            "dev-mode",
+        ],
         summary: "a service worker of your own, bundled by imp, with dev mode from startDevMode()",
     },
     Skill {
@@ -219,7 +260,8 @@ pub const SKILLS: &[Skill] = &[
         group: "toolkit",
         aliases: &["version", "pin", "prune", "licenses"],
         summary: "pinning the imp version, pruning cached ones, and the license notices",
-    },];
+    },
+];
 
 #[derive(Clone)]
 enum Source {
@@ -236,9 +278,8 @@ struct Subject {
     source: Source,
 }
 
-static BARREL_EXPORT: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"export\s*(?:(\*)|\{\s*(\w+)\s*\})\s*from\s*'([^']+)'").unwrap()
-});
+static BARREL_EXPORT: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"export\s*(?:(\*)|\{\s*(\w+)\s*\})\s*from\s*'([^']+)'").unwrap());
 
 fn join_module(base: &str, module: &str) -> String {
     let mut parts: Vec<&str> = base.split('/').collect();
@@ -256,7 +297,9 @@ fn join_module(base: &str, module: &str) -> String {
 }
 
 fn barrel_components(barrel: &str, into: &mut Vec<(String, String)>) {
-    let Some(source) = embedded::text(barrel) else { return };
+    let Some(source) = embedded::text(barrel) else {
+        return;
+    };
     for caps in BARREL_EXPORT.captures_iter(source) {
         let module = &caps[3];
         if caps.get(1).is_some() {
@@ -285,7 +328,11 @@ fn all_subjects() -> Vec<Subject> {
             name: skill.name.to_string(),
             kind: "subject",
             group: skill.group,
-            aliases: skill.aliases.iter().map(|alias| alias.to_string()).collect(),
+            aliases: skill
+                .aliases
+                .iter()
+                .map(|alias| alias.to_string())
+                .collect(),
             summary: Some(skill.summary.to_string()),
             source: Source::Embedded(format!("skills/{}.md", skill.name)),
         })
@@ -305,8 +352,14 @@ fn all_subjects() -> Vec<Subject> {
 
 fn normalize(subject: &str) -> String {
     let lower = subject.trim().to_lowercase();
-    let without_prefix = lower.strip_prefix("./").or_else(|| lower.strip_prefix('/')).unwrap_or(&lower);
-    without_prefix.strip_suffix(".md").unwrap_or(without_prefix).to_string()
+    let without_prefix = lower
+        .strip_prefix("./")
+        .or_else(|| lower.strip_prefix('/'))
+        .unwrap_or(&lower);
+    without_prefix
+        .strip_suffix(".md")
+        .unwrap_or(without_prefix)
+        .to_string()
 }
 
 fn find_skill(subject: &str) -> Option<Subject> {
@@ -327,7 +380,10 @@ static SEPARATOR_CELL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^:?-+:?$"
 fn cells_of(row: &str) -> Vec<String> {
     let trimmed = row.trim();
     let inner = &trimmed[1..trimmed.len() - 1];
-    inner.split('|').map(|cell| cell.trim().to_string()).collect()
+    inner
+        .split('|')
+        .map(|cell| cell.trim().to_string())
+        .collect()
 }
 
 fn char_len(text: &str) -> usize {
@@ -343,7 +399,11 @@ fn aligned_table(rows: &[String]) -> Vec<String> {
                 .iter()
                 .map(|cells| {
                     let cell = cells.get(index).map(String::as_str).unwrap_or("");
-                    if SEPARATOR_CELL.is_match(cell) { 3 } else { char_len(cell) }
+                    if SEPARATOR_CELL.is_match(cell) {
+                        3
+                    } else {
+                        char_len(cell)
+                    }
                 })
                 .max()
                 .unwrap_or(0)
@@ -389,7 +449,10 @@ fn fenced_lines(lines: &[&str]) -> Vec<bool> {
 }
 
 fn name_by_file(file: &str) -> Option<&'static str> {
-    SKILLS.iter().find(|skill| format!("{}.md", skill.name) == file).map(|skill| skill.name)
+    SKILLS
+        .iter()
+        .find(|skill| format!("{}.md", skill.name) == file)
+        .map(|skill| skill.name)
 }
 
 pub fn retarget_links(text: &str) -> (String, Vec<String>) {
@@ -425,7 +488,11 @@ fn realign_changed_tables(lines: &mut [String], original: &[&str], fenced: &[boo
     let flush = |lines: &mut [String], start: &mut Option<usize>, end: usize| {
         let Some(first) = start.take() else { return };
         let rows: Vec<String> = lines[first..end].to_vec();
-        if rows.iter().enumerate().any(|(index, row)| row != original[first + index]) {
+        if rows
+            .iter()
+            .enumerate()
+            .any(|(index, row)| row != original[first + index])
+        {
             for (index, row) in aligned_table(&rows).into_iter().enumerate() {
                 lines[first + index] = row;
             }
@@ -458,7 +525,10 @@ fn subject_text(subject: &Subject) -> Result<String> {
 }
 
 fn summary_of(subject: &Subject) -> String {
-    subject.summary.clone().unwrap_or_else(|| first_line(&subject_text(subject).unwrap_or_default()))
+    subject
+        .summary
+        .clone()
+        .unwrap_or_else(|| first_line(&subject_text(subject).unwrap_or_default()))
 }
 
 fn render_skill(subject: &Subject) -> Result<String> {
@@ -469,7 +539,11 @@ fn render_skill(subject: &Subject) -> Result<String> {
         .map(|name| format!("imp skill {name}"))
         .collect::<Vec<_>>()
         .join(" | ");
-    let footer = if related_line.is_empty() { String::new() } else { format!("\n\nRelated: {related_line}") };
+    let footer = if related_line.is_empty() {
+        String::new()
+    } else {
+        format!("\n\nRelated: {related_line}")
+    };
     if subject.kind == "component" {
         return Ok(format!("{retargeted}{footer}"));
     }
@@ -509,13 +583,18 @@ pub fn skill_file_for(path: &Path) -> PathBuf {
 }
 
 fn read_skill_text(path: &Path) -> Option<String> {
-    std::fs::read_to_string(path).ok().map(|text| text.trim_end().to_string())
+    std::fs::read_to_string(path)
+        .ok()
+        .map(|text| text.trim_end().to_string())
 }
 
 pub fn read_component_skill(path: &Path, display: &str) -> Result<String> {
     let skill_file = skill_file_for(path);
     read_skill_text(&skill_file).ok_or_else(|| {
-        anyhow!("no skill for {display} - describe the component in {} next to it", file_name(&skill_file))
+        anyhow!(
+            "no skill for {display} - describe the component in {} next to it",
+            file_name(&skill_file)
+        )
     })
 }
 
@@ -535,23 +614,37 @@ fn project_skills(root: &Path) -> Vec<Listed> {
     let mut skills = Vec::new();
     for file in files {
         let text = file.to_string_lossy().into_owned();
-        let Some(stem) = text.strip_suffix(SKILL_SUFFIX) else { continue };
+        let Some(stem) = text.strip_suffix(SKILL_SUFFIX) else {
+            continue;
+        };
         let module = PathBuf::from(format!("{stem}.js"));
-        let target = if module.exists() { module } else { file.clone() };
+        let target = if module.exists() {
+            module
+        } else {
+            file.clone()
+        };
         let summary = first_line(&std::fs::read_to_string(&file).unwrap_or_default());
-        skills.push(Listed { name: format!("./{}", relative_posix(root, &target)), summary });
+        skills.push(Listed {
+            name: format!("./{}", relative_posix(root, &target)),
+            summary,
+        });
     }
     skills
 }
 
 fn dependency_skills(root: &Path) -> Vec<Listed> {
-    let Ok(entries) = std::fs::read_dir(root.join("dependencies")) else { return Vec::new() };
+    let Ok(entries) = std::fs::read_dir(root.join("dependencies")) else {
+        return Vec::new();
+    };
     let mut skills: Vec<Listed> = entries
         .flatten()
         .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
         .filter_map(|entry| {
             let text = std::fs::read_to_string(entry.path().join(COMPONENT_SKILL_FILE)).ok()?;
-            Some(Listed { name: entry.file_name().to_string_lossy().into_owned(), summary: first_line(&text) })
+            Some(Listed {
+                name: entry.file_name().to_string_lossy().into_owned(),
+                summary: first_line(&text),
+            })
         })
         .collect();
     skills.sort_by(|one, other| one.name.cmp(&other.name));
@@ -573,7 +666,8 @@ Read one in full - no flags, the text goes to stdout:
   imp skill widget                 an imp component installed as dependencies/widget/
 ";
 
-const OUTRO: &str = "A component documents itself in a 'counter.skill.md' file next to it - write one for every
+const OUTRO: &str =
+    "A component documents itself in a 'counter.skill.md' file next to it - write one for every
 component you build, and an agent can learn it the same way it learns imp. When the person
 mentions a review, a comment they left, or an element they marked in the browser, run
 'imp review' first: it tells you the page, the element and the state they mean. 'imp help'
@@ -591,17 +685,35 @@ fn section(title: &str, entries: &[Listed], width: usize) -> String {
 }
 
 fn width_of(entries: &[Listed]) -> usize {
-    entries.iter().map(|entry| char_len(&entry.name)).max().unwrap_or(0) + 2
+    entries
+        .iter()
+        .map(|entry| char_len(&entry.name))
+        .max()
+        .unwrap_or(0)
+        + 2
 }
 
 pub fn skill_index(root: &Path) -> String {
     let subjects = all_subjects();
     let listed: Vec<(&'static str, Listed)> = subjects
         .iter()
-        .map(|subject| (subject.group, Listed { name: subject.name.clone(), summary: summary_of(subject) }))
+        .map(|subject| {
+            (
+                subject.group,
+                Listed {
+                    name: subject.name.clone(),
+                    summary: summary_of(subject),
+                },
+            )
+        })
         .collect();
-    let all: Vec<Listed> =
-        listed.iter().map(|(_, entry)| Listed { name: entry.name.clone(), summary: String::new() }).collect();
+    let all: Vec<Listed> = listed
+        .iter()
+        .map(|(_, entry)| Listed {
+            name: entry.name.clone(),
+            summary: String::new(),
+        })
+        .collect();
     let width = width_of(&all);
     let mut sections: Vec<String> = GROUPS
         .iter()
@@ -609,7 +721,10 @@ pub fn skill_index(root: &Path) -> String {
             let entries: Vec<Listed> = listed
                 .iter()
                 .filter(|(group, _)| group == id)
-                .map(|(_, entry)| Listed { name: entry.name.clone(), summary: entry.summary.clone() })
+                .map(|(_, entry)| Listed {
+                    name: entry.name.clone(),
+                    summary: entry.summary.clone(),
+                })
                 .collect();
             section(title, &entries, width)
         })
@@ -622,17 +737,27 @@ pub fn skill_index(root: &Path) -> String {
     });
     let installed = dependency_skills(root);
     if !installed.is_empty() {
-        sections.push(section(DEPENDENCIES_TITLE, &installed, width_of(&installed)));
+        sections.push(section(
+            DEPENDENCIES_TITLE,
+            &installed,
+            width_of(&installed),
+        ));
     }
     format!("{INTRO}\n{}\n\n{OUTRO}", sections.join("\n\n"))
 }
 
 fn looks_like_file(subject: &str) -> bool {
-    subject.ends_with(SKILL_SUFFIX) || subject.ends_with(".js") || subject.contains('/') || subject.contains('\\')
+    subject.ends_with(SKILL_SUFFIX)
+        || subject.ends_with(".js")
+        || subject.contains('/')
+        || subject.contains('\\')
 }
 
 fn unknown_subject(subject: &str) -> anyhow::Error {
-    let names: Vec<String> = all_subjects().into_iter().map(|subject| subject.name).collect();
+    let names: Vec<String> = all_subjects()
+        .into_iter()
+        .map(|subject| subject.name)
+        .collect();
     anyhow!(
         "unknown skill '{subject}' - run 'imp skill' for the index | subjects: {} | for a component of this project pass its path: imp skill ./path/to/component.js | for an imp component in dependencies/ pass its alias: imp skill widget",
         names.join(", ")
@@ -645,7 +770,12 @@ fn render_requested(subject: &str, root: &Path) -> Result<String> {
     }
     if !looks_like_file(subject) {
         if is_valid_alias(subject) {
-            if let Some(text) = read_skill_text(&root.join("dependencies").join(subject).join(COMPONENT_SKILL_FILE)) {
+            if let Some(text) = read_skill_text(
+                &root
+                    .join("dependencies")
+                    .join(subject)
+                    .join(COMPONENT_SKILL_FILE),
+            ) {
                 return Ok(text);
             }
         }

@@ -57,7 +57,10 @@ pub fn collect_license_notices(
     bundles_library: bool,
     embedded: Vec<String>,
 ) -> Result<(Notices, Vec<Value>, Vec<String>)> {
-    let inputs: Vec<String> = inputs.iter().map(|input| input.replace('\\', "/")).collect();
+    let inputs: Vec<String> = inputs
+        .iter()
+        .map(|input| input.replace('\\', "/"))
+        .collect();
     let mut manifests = Vec::new();
     let mut unrecorded = Vec::new();
     for alias in dependencies {
@@ -71,9 +74,16 @@ pub fn collect_license_notices(
         }
     }
     let library = bundles_library.then(|| {
-        format!("imp@{VERSION} - MIT\n\n{}", crate::embedded::expect_text("LICENSE").trim_end())
+        format!(
+            "imp@{VERSION} - MIT\n\n{}",
+            crate::embedded::expect_text("LICENSE").trim_end()
+        )
     });
-    let notices = Notices { library, recorded: recorded_notices(&manifests), embedded };
+    let notices = Notices {
+        library,
+        recorded: recorded_notices(&manifests),
+        embedded,
+    };
     Ok((notices, manifests, unrecorded))
 }
 
@@ -81,7 +91,11 @@ pub fn unrecorded_licenses_warning(unrecorded: &[String]) -> String {
     format!(
         "no manifest.json for {} - the licenses of {} missing from {LICENSE_NOTICES_FILE}; run 'imp install' to record them",
         unrecorded.join(", "),
-        if unrecorded.len() == 1 { "that dependency are" } else { "those dependencies are" }
+        if unrecorded.len() == 1 {
+            "that dependency are"
+        } else {
+            "those dependencies are"
+        }
     )
 }
 

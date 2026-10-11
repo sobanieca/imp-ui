@@ -26,12 +26,24 @@ fn current_build() -> Option<Build> {
         ("macos", "aarch64") => Build {
             platform: "mac-arm64",
             sha256: "9b6c6fbbda6f2948c74425828bd18f0e59542fd2beb056697478c38a956d83cb",
-            executable: &["chrome-mac-arm64", "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing"],
+            executable: &[
+                "chrome-mac-arm64",
+                "Google Chrome for Testing.app",
+                "Contents",
+                "MacOS",
+                "Google Chrome for Testing",
+            ],
         },
         ("macos", "x86_64") => Build {
             platform: "mac-x64",
             sha256: "dc6280df5fa5cb1da96f7026a20d7622df921fa5ba03c07e95af4a8dde17b131",
-            executable: &["chrome-mac-x64", "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing"],
+            executable: &[
+                "chrome-mac-x64",
+                "Google Chrome for Testing.app",
+                "Contents",
+                "MacOS",
+                "Google Chrome for Testing",
+            ],
         },
         ("windows", "x86_64") => Build {
             platform: "win64",
@@ -44,7 +56,16 @@ fn current_build() -> Option<Build> {
 
 fn system_browsers() -> (&'static [&'static str], &'static [&'static str]) {
     match std::env::consts::OS {
-        "linux" => (&["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"], &[]),
+        "linux" => (
+            &[
+                "google-chrome",
+                "google-chrome-stable",
+                "chromium",
+                "chromium-browser",
+                "chrome",
+            ],
+            &[],
+        ),
         "macos" => (
             &[],
             &[
@@ -66,7 +87,9 @@ fn system_browsers() -> (&'static [&'static str], &'static [&'static str]) {
 }
 
 pub fn browser_cache_directory() -> Result<PathBuf> {
-    Ok(imp_cache_directory()?.join("browser").join(format!("chrome-{CHROME_VERSION}")))
+    Ok(imp_cache_directory()?
+        .join("browser")
+        .join(format!("chrome-{CHROME_VERSION}")))
 }
 
 pub fn find_system_browser() -> Option<PathBuf> {
@@ -105,7 +128,9 @@ fn extract_zip(bytes: &[u8], directory: &Path) -> Result<()> {
         if entry.is_dir() {
             continue;
         }
-        let Some(name) = entry.enclosed_name() else { continue };
+        let Some(name) = entry.enclosed_name() else {
+            continue;
+        };
         let path = directory.join(name);
         let mode = entry.unix_mode().unwrap_or(0o644);
         let mut data = Vec::new();
@@ -119,7 +144,11 @@ fn extract_zip(bytes: &[u8], directory: &Path) -> Result<()> {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let permissions = if mode & 0o777 == 0 { 0o644 } else { mode & 0o777 };
+            let permissions = if mode & 0o777 == 0 {
+                0o644
+            } else {
+                mode & 0o777
+            };
             std::fs::set_permissions(&path, std::fs::Permissions::from_mode(permissions))?;
         }
     }
@@ -154,12 +183,16 @@ pub fn download_browser() -> Result<PathBuf> {
     }
     let digest = sha256_hex(&response.body);
     if digest != build.sha256 {
-        bail!("browser download checksum mismatch for {url}\n  expected {}\n  received {digest}", build.sha256);
+        bail!(
+            "browser download checksum mismatch for {url}\n  expected {}\n  received {digest}",
+            build.sha256
+        );
     }
     let directory = browser_cache_directory()?;
     let _ = std::fs::remove_dir_all(&directory);
     extract_zip(&response.body, &directory)?;
-    let executable = find_cached_browser().ok_or_else(|| anyhow!("browser download completed but no executable was found"))?;
+    let executable = find_cached_browser()
+        .ok_or_else(|| anyhow!("browser download completed but no executable was found"))?;
     logger::info(&format!("browser ready: {}", executable.display()));
     Ok(executable)
 }
@@ -193,7 +226,9 @@ pub struct Chrome {
 fn running_as_root() -> bool {
     #[cfg(unix)]
     {
-        std::fs::metadata("/proc/self").map(|meta| std::os::unix::fs::MetadataExt::uid(&meta) == 0).unwrap_or(false)
+        std::fs::metadata("/proc/self")
+            .map(|meta| std::os::unix::fs::MetadataExt::uid(&meta) == 0)
+            .unwrap_or(false)
     }
     #[cfg(not(unix))]
     {
@@ -203,7 +238,11 @@ fn running_as_root() -> bool {
 
 impl Chrome {
     pub fn launch(executable: &Path, url: &str) -> Result<Chrome> {
-        let profile = std::env::temp_dir().join(format!("imp-chrome-{}-{}", std::process::id(), crate::time::now_millis()));
+        let profile = std::env::temp_dir().join(format!(
+            "imp-chrome-{}-{}",
+            std::process::id(),
+            crate::time::now_millis()
+        ));
         std::fs::create_dir_all(&profile)?;
         let mut command = Command::new(executable);
         command.args([
@@ -239,8 +278,16 @@ impl Chrome {
         }
         command.arg(format!("--user-data-dir={}", profile.display()));
         command.arg(url);
-        command.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::piped());
-        let mut child = command.spawn().map_err(|error| anyhow!("could not start the browser {} - {error}", executable.display()))?;
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped());
+        let mut child = command.spawn().map_err(|error| {
+            anyhow!(
+                "could not start the browser {} - {error}",
+                executable.display()
+            )
+        })?;
         let endpoint = Arc::new((Mutex::new(None), Condvar::new()));
         let stderr = child.stderr.take().unwrap();
         let shared = endpoint.clone();
@@ -253,13 +300,19 @@ impl Chrome {
                 }
             }
         });
-        Ok(Chrome { child, profile, endpoint })
+        Ok(Chrome {
+            child,
+            profile,
+            endpoint,
+        })
     }
 
     pub fn endpoint(&self, timeout: Duration) -> Option<String> {
         let (lock, ready) = &*self.endpoint;
         let guard = lock.lock().unwrap();
-        let (guard, _) = ready.wait_timeout_while(guard, timeout, |value| value.is_none()).unwrap();
+        let (guard, _) = ready
+            .wait_timeout_while(guard, timeout, |value| value.is_none())
+            .unwrap();
         guard.clone()
     }
 

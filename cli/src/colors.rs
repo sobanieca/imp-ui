@@ -10,7 +10,11 @@ fn enabled() -> bool {
 }
 
 fn wrap(code: u8, text: impl std::fmt::Display) -> String {
-    if enabled() { format!("\x1b[{code}m{text}\x1b[0m") } else { text.to_string() }
+    if enabled() {
+        format!("\x1b[{code}m{text}\x1b[0m")
+    } else {
+        text.to_string()
+    }
 }
 
 pub fn red(text: impl std::fmt::Display) -> String {

@@ -801,8 +801,8 @@ const scenarioOf = (name, exported) =>
     ? { label: exported.scenario, component: exported.component }
     : { label: name, component: exported }
 
-const buildScenario = (component) =>
-  asNodes(typeof component === 'function' ? component() : component)
+const buildScenario = (scenario) =>
+  asNodes(typeof scenario === 'function' ? scenario() : scenario)
 
 const scenarioSection = (self, name, exported, entry) => {
   const { label, component } = scenarioOf(name, exported)

@@ -29,7 +29,9 @@ fn is_license_file(name: &str) -> bool {
     let lower = name.to_lowercase();
     let base = lower.split(['.', '-']).next().unwrap_or("");
     (base == "license" || base == "licence" || base == "copying")
-        && lower[base.len()..].split(['.', '-']).all(|part| part.chars().all(|char| char.is_ascii_alphanumeric()))
+        && lower[base.len()..]
+            .split(['.', '-'])
+            .all(|part| part.chars().all(|char| char.is_ascii_alphanumeric()))
 }
 
 fn spdx_from(manifest: &Value) -> Option<String> {
@@ -41,12 +43,19 @@ fn spdx_from(manifest: &Value) -> Option<String> {
             return Some(text.to_string());
         }
     }
-    manifest.pointer("/licenses/0/type").and_then(Value::as_str).map(String::from)
+    manifest
+        .pointer("/licenses/0/type")
+        .and_then(Value::as_str)
+        .map(String::from)
 }
 
 fn npm_license(directory: &Path) -> (Option<String>, Option<String>) {
     let manifest = read_package_json(directory);
-    let mut entries: Vec<_> = std::fs::read_dir(directory).into_iter().flatten().flatten().collect();
+    let mut entries: Vec<_> = std::fs::read_dir(directory)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .collect();
     entries.sort_by_key(|entry| entry.file_name());
     let text = entries
         .iter()
@@ -58,16 +67,31 @@ fn npm_license(directory: &Path) -> (Option<String>, Option<String>) {
 }
 
 fn jsr_license(name: &str, version: &str) -> (Option<String>, Option<String>) {
-    let Ok(meta) = get(&format!("{JSR_REGISTRY}/{name}/{version}_meta.json"), &[], None) else { return (None, None) };
+    let Ok(meta) = get(
+        &format!("{JSR_REGISTRY}/{name}/{version}_meta.json"),
+        &[],
+        None,
+    ) else {
+        return (None, None);
+    };
     if !meta.ok() {
         return (None, None);
     }
-    let Ok(meta) = meta.json() else { return (None, None) };
+    let Ok(meta) = meta.json() else {
+        return (None, None);
+    };
     let file = meta
         .get("manifest")
         .and_then(Value::as_object)
-        .and_then(|manifest| manifest.keys().find(|path| is_license_file(path.trim_start_matches('/'))).cloned());
-    let Some(file) = file else { return (None, None) };
+        .and_then(|manifest| {
+            manifest
+                .keys()
+                .find(|path| is_license_file(path.trim_start_matches('/')))
+                .cloned()
+        });
+    let Some(file) = file else {
+        return (None, None);
+    };
     match get(&format!("{JSR_REGISTRY}/{name}/{version}{file}"), &[], None) {
         Ok(response) if response.ok() => (None, Some(response.text().trim_end().to_string())),
         _ => (None, None),
@@ -102,12 +126,20 @@ pub fn unlicensed_packages(manifest: &Value) -> Vec<String> {
         .and_then(Value::as_array)
         .into_iter()
         .flatten()
-        .filter(|entry| entry.get("license").is_none_or(Value::is_null) && entry.get("licenseText").is_none_or(Value::is_null))
+        .filter(|entry| {
+            entry.get("license").is_none_or(Value::is_null)
+                && entry.get("licenseText").is_none_or(Value::is_null)
+        })
         .map(package_id)
         .collect()
 }
 
-pub fn dependency_manifest(alias: &str, specifier: &str, packages: Vec<Value>, imp_imports: &[String]) -> Value {
+pub fn dependency_manifest(
+    alias: &str,
+    specifier: &str,
+    packages: Vec<Value>,
+    imp_imports: &[String],
+) -> Value {
     let now = crate::time::iso_string(crate::time::now_millis());
     let installed_at = format!("{}Z", &now[..19]);
     let mut manifest = Map::new();
@@ -124,8 +156,13 @@ pub fn manifest_file_contents(manifest: &Value) -> String {
 }
 
 pub fn read_dependency_manifest(root: &Path, alias: &str) -> Result<Option<Value>> {
-    let path = root.join("dependencies").join(alias).join(DEPENDENCY_MANIFEST_FILE);
-    let Ok(text) = std::fs::read_to_string(path) else { return Ok(None) };
+    let path = root
+        .join("dependencies")
+        .join(alias)
+        .join(DEPENDENCY_MANIFEST_FILE);
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return Ok(None);
+    };
     match serde_json::from_str(&text) {
         Ok(value) => Ok(Some(value)),
         Err(_) => bail!("invalid dependencies/{alias}/{DEPENDENCY_MANIFEST_FILE} - not valid JSON"),
@@ -135,9 +172,20 @@ pub fn read_dependency_manifest(root: &Path, alias: &str) -> Result<Option<Value
 pub fn recorded_notices(manifests: &[Value]) -> Vec<String> {
     let mut notices: std::collections::BTreeMap<String, String> = Default::default();
     for manifest in manifests {
-        for entry in manifest.get("packages").and_then(Value::as_array).into_iter().flatten() {
+        for entry in manifest
+            .get("packages")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
             let id = package_id(entry);
-            let Some(text) = entry.get("licenseText").and_then(Value::as_str).filter(|text| !text.is_empty()) else { continue };
+            let Some(text) = entry
+                .get("licenseText")
+                .and_then(Value::as_str)
+                .filter(|text| !text.is_empty())
+            else {
+                continue;
+            };
             if notices.contains_key(&id) {
                 continue;
             }

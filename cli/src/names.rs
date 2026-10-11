@@ -1,11 +1,16 @@
 fn is_namespaced_name(name: &str) -> bool {
     let parts: Vec<&str> = name.split('.').collect();
-    parts.len() >= 2 && parts.iter().all(|part| !part.is_empty() && !part.chars().any(char::is_whitespace))
+    parts.len() >= 2
+        && parts
+            .iter()
+            .all(|part| !part.is_empty() && !part.chars().any(char::is_whitespace))
 }
 
 pub fn namespaced_name_problem(name: &str, label: &str, example: &str) -> Option<String> {
     if !is_namespaced_name(name) {
-        return Some(format!("{label} '{name}' must include a namespace - use dot-separated segments like '{example}'"));
+        return Some(format!(
+            "{label} '{name}' must include a namespace - use dot-separated segments like '{example}'"
+        ));
     }
     None
 }
@@ -26,7 +31,10 @@ pub fn analytics_name_problem(name: &str, subject: &str, example: &str) -> Optio
         return Some(problem);
     }
     let valid = name.split('.').all(|part| {
-        !part.is_empty() && part.chars().all(|char| char.is_ascii_alphanumeric() || char == '_' || char == '-')
+        !part.is_empty()
+            && part
+                .chars()
+                .all(|char| char.is_ascii_alphanumeric() || char == '_' || char == '-')
     });
     if name.encode_utf16().count() > MAX_ANALYTICS_NAME_LENGTH || !valid {
         return Some(format!(
@@ -37,23 +45,43 @@ pub fn analytics_name_problem(name: &str, subject: &str, example: &str) -> Optio
 }
 
 const RESERVED_COMPONENT_NAMES: [&str; 8] = [
-    "annotation-xml", "color-profile", "font-face", "font-face-src", "font-face-uri", "font-face-format",
-    "font-face-name", "missing-glyph",
+    "annotation-xml",
+    "color-profile",
+    "font-face",
+    "font-face-src",
+    "font-face-uri",
+    "font-face-format",
+    "font-face-name",
+    "missing-glyph",
 ];
 
 pub fn component_name_problem(name: &str) -> Option<String> {
     let mut parts = name.split('-');
     let first = parts.next().unwrap_or("");
-    let first_valid = first.chars().next().is_some_and(|char| char.is_ascii_lowercase())
-        && first.chars().all(|char| char.is_ascii_lowercase() || char.is_ascii_digit());
+    let first_valid = first
+        .chars()
+        .next()
+        .is_some_and(|char| char.is_ascii_lowercase())
+        && first
+            .chars()
+            .all(|char| char.is_ascii_lowercase() || char.is_ascii_digit());
     let rest: Vec<&str> = parts.collect();
     let rest_valid = !rest.is_empty()
-        && rest.iter().all(|part| !part.is_empty() && part.chars().all(|char| char.is_ascii_lowercase() || char.is_ascii_digit()));
+        && rest.iter().all(|part| {
+            !part.is_empty()
+                && part
+                    .chars()
+                    .all(|char| char.is_ascii_lowercase() || char.is_ascii_digit())
+        });
     if !(first_valid && rest_valid) {
-        return Some(format!("component name '{name}' must be lowercase with at least one dash - like 'my-app-profile'"));
+        return Some(format!(
+            "component name '{name}' must be lowercase with at least one dash - like 'my-app-profile'"
+        ));
     }
     if RESERVED_COMPONENT_NAMES.contains(&name) {
-        return Some(format!("component name '{name}' is reserved by the HTML standard - pick another name"));
+        return Some(format!(
+            "component name '{name}' is reserved by the HTML standard - pick another name"
+        ));
     }
     None
 }

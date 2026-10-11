@@ -14,7 +14,9 @@ const EMBEDDED_FILES: &[&str] = &["THIRD-PARTY-LICENSES.md", "LICENSE"];
 
 fn collect(root: &Path, relative: &str, skipped: &[&str], into: &mut Vec<String>) {
     let directory = root.join(relative);
-    let Ok(entries) = fs::read_dir(&directory) else { return };
+    let Ok(entries) = fs::read_dir(&directory) else {
+        return;
+    };
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
         let path = format!("{relative}/{name}");
@@ -46,8 +48,12 @@ fn main() {
     let mut source = String::from("pub static FILES: &[(&str, &[u8])] = &[\n");
     for file in &files {
         let absolute = root.join(file);
-        writeln!(source, "    ({file:?}, include_bytes!({:?})),", absolute.display().to_string())
-            .unwrap();
+        writeln!(
+            source,
+            "    ({file:?}, include_bytes!({:?})),",
+            absolute.display().to_string()
+        )
+        .unwrap();
     }
     source.push_str("];\n");
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("embedded.rs");

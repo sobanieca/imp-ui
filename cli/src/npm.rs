@@ -13,11 +13,54 @@ pub const JSR_NPM_REGISTRY: &str = "https://npm.jsr.io";
 const JSR_NPM_SCOPE: &str = "@jsr/";
 
 pub const NODE_BUILTINS: &[&str] = &[
-    "assert", "async_hooks", "buffer", "child_process", "cluster", "console", "constants", "crypto", "dgram",
-    "diagnostics_channel", "dns", "domain", "events", "fs", "fs/promises", "http", "http2", "https", "inspector",
-    "module", "net", "os", "path", "path/posix", "path/win32", "perf_hooks", "process", "punycode", "querystring",
-    "readline", "repl", "stream", "stream/promises", "stream/web", "string_decoder", "sys", "timers", "tls",
-    "trace_events", "tty", "url", "util", "util/types", "v8", "vm", "wasi", "worker_threads", "zlib",
+    "assert",
+    "async_hooks",
+    "buffer",
+    "child_process",
+    "cluster",
+    "console",
+    "constants",
+    "crypto",
+    "dgram",
+    "diagnostics_channel",
+    "dns",
+    "domain",
+    "events",
+    "fs",
+    "fs/promises",
+    "http",
+    "http2",
+    "https",
+    "inspector",
+    "module",
+    "net",
+    "os",
+    "path",
+    "path/posix",
+    "path/win32",
+    "perf_hooks",
+    "process",
+    "punycode",
+    "querystring",
+    "readline",
+    "repl",
+    "stream",
+    "stream/promises",
+    "stream/web",
+    "string_decoder",
+    "sys",
+    "timers",
+    "tls",
+    "trace_events",
+    "tty",
+    "url",
+    "util",
+    "util/types",
+    "v8",
+    "vm",
+    "wasi",
+    "worker_threads",
+    "zlib",
 ];
 
 pub fn is_node_builtin(specifier: &str) -> bool {
@@ -41,15 +84,27 @@ pub fn registry_name_of(npm_name: &str) -> (&'static str, String) {
 }
 
 fn registry_base(npm_name: &str) -> &'static str {
-    if npm_name.starts_with(JSR_NPM_SCOPE) { JSR_NPM_REGISTRY } else { NPM_REGISTRY }
+    if npm_name.starts_with(JSR_NPM_SCOPE) {
+        JSR_NPM_REGISTRY
+    } else {
+        NPM_REGISTRY
+    }
 }
 
 fn registry_host(npm_name: &str) -> &'static str {
-    if npm_name.starts_with(JSR_NPM_SCOPE) { "npm.jsr.io" } else { "registry.npmjs.org" }
+    if npm_name.starts_with(JSR_NPM_SCOPE) {
+        "npm.jsr.io"
+    } else {
+        "registry.npmjs.org"
+    }
 }
 
 pub fn package_url(npm_name: &str) -> String {
-    format!("{}/{}", registry_base(npm_name), npm_name.replacen('/', "%2F", 1))
+    format!(
+        "{}/{}",
+        registry_base(npm_name),
+        npm_name.replacen('/', "%2F", 1)
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -93,27 +148,44 @@ impl Npm {
             return Ok(found.clone());
         }
         let url = package_url(npm_name);
-        let response = get(&url, &[("accept", "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8")], None)
-            .map_err(|error| (PackageError::Status(0), error.to_string()))?;
+        let response = get(
+            &url,
+            &[(
+                "accept",
+                "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8",
+            )],
+            None,
+        )
+        .map_err(|error| (PackageError::Status(0), error.to_string()))?;
         if response.status == 404 {
             return Err((PackageError::NotFound, url));
         }
         if !response.ok() {
             return Err((PackageError::Status(response.status), url));
         }
-        let value: Value = response.json().map_err(|error| (PackageError::Status(0), error.to_string()))?;
+        let value: Value = response
+            .json()
+            .map_err(|error| (PackageError::Status(0), error.to_string()))?;
         let value = Arc::new(value);
-        self.packuments.lock().unwrap().insert(npm_name.to_string(), value.clone());
+        self.packuments
+            .lock()
+            .unwrap()
+            .insert(npm_name.to_string(), value.clone());
         Ok(value)
     }
 
     fn packument_or_error(&self, npm_name: &str) -> Result<Arc<Value>> {
         let (registry, name) = registry_name_of(npm_name);
-        self.packument(npm_name).map_err(|(kind, detail)| match kind {
-            PackageError::NotFound => anyhow!("package not found: {registry}:{name}"),
-            PackageError::Status(0) => anyhow!("failed to resolve {registry}:{name} - {detail}"),
-            PackageError::Status(status) => anyhow!("failed to resolve {registry}:{name} - registry responded {status}"),
-        })
+        self.packument(npm_name)
+            .map_err(|(kind, detail)| match kind {
+                PackageError::NotFound => anyhow!("package not found: {registry}:{name}"),
+                PackageError::Status(0) => {
+                    anyhow!("failed to resolve {registry}:{name} - {detail}")
+                }
+                PackageError::Status(status) => {
+                    anyhow!("failed to resolve {registry}:{name} - registry responded {status}")
+                }
+            })
     }
 
     pub fn latest_version(&self, npm_name: &str) -> Result<String> {
@@ -123,14 +195,20 @@ impl Npm {
             .pointer("/dist-tags/latest")
             .and_then(Value::as_str)
             .map(String::from)
-            .ok_or_else(|| anyhow!("failed to resolve {registry}:{name} - no latest version published"))
+            .ok_or_else(|| {
+                anyhow!("failed to resolve {registry}:{name} - no latest version published")
+            })
     }
 
     pub fn resolve_version(&self, npm_name: &str, range: &str) -> Result<String> {
         let packument = self.packument_or_error(npm_name)?;
         let (registry, name) = registry_name_of(npm_name);
         let range = range.trim();
-        if let Some(tagged) = packument.get("dist-tags").and_then(|tags| tags.get(range)).and_then(Value::as_str) {
+        if let Some(tagged) = packument
+            .get("dist-tags")
+            .and_then(|tags| tags.get(range))
+            .and_then(Value::as_str)
+        {
             return Ok(tagged.to_string());
         }
         let parsed = nodejs_semver::Range::parse(if range.is_empty() { "*" } else { range })
@@ -138,9 +216,17 @@ impl Npm {
         let versions: Vec<nodejs_semver::Version> = packument
             .get("versions")
             .and_then(Value::as_object)
-            .map(|versions| versions.keys().filter_map(|key| nodejs_semver::Version::parse(key).ok()).collect())
+            .map(|versions| {
+                versions
+                    .keys()
+                    .filter_map(|key| nodejs_semver::Version::parse(key).ok())
+                    .collect()
+            })
             .unwrap_or_default();
-        if let Some(latest) = packument.pointer("/dist-tags/latest").and_then(Value::as_str) {
+        if let Some(latest) = packument
+            .pointer("/dist-tags/latest")
+            .and_then(Value::as_str)
+        {
             if let Ok(latest) = nodejs_semver::Version::parse(latest) {
                 if latest.satisfies(&parsed) {
                     return Ok(latest.to_string());
@@ -196,11 +282,16 @@ impl Npm {
         eprintln!("Download {tarball_url}");
         let response = get(tarball_url, &[], None)?;
         if !response.ok() {
-            bail!("could not download {name}@{version} - {tarball_url} responded {}", response.status);
+            bail!(
+                "could not download {name}@{version} - {tarball_url} responded {}",
+                response.status
+            );
         }
         if let Some(integrity) = metadata.pointer("/dist/integrity").and_then(Value::as_str) {
             if !matches_integrity(integrity, &response.body) {
-                bail!("integrity check failed for {name}@{version} - the download does not match the hash of the registry");
+                bail!(
+                    "integrity check failed for {name}@{version} - the download does not match the hash of the registry"
+                );
             }
         }
         let files = tarball_files(&response.body)?;
@@ -225,9 +316,16 @@ impl Npm {
 
     pub fn package_of_path(&self, path: &Path) -> Option<CachedPackage> {
         let relative = path.strip_prefix(&self.cache).ok()?;
-        let parts: Vec<String> = relative.components().map(|part| part.as_os_str().to_string_lossy().into_owned()).collect();
+        let parts: Vec<String> = relative
+            .components()
+            .map(|part| part.as_os_str().to_string_lossy().into_owned())
+            .collect();
         let host = parts.first()?;
-        let (name_parts, rest) = if parts.get(1)?.starts_with('@') { (2, &parts[3..]) } else { (1, &parts[2..]) };
+        let (name_parts, rest) = if parts.get(1)?.starts_with('@') {
+            (2, &parts[3..])
+        } else {
+            (1, &parts[2..])
+        };
         let npm_name = parts[1..1 + name_parts].join("/");
         let version = parts.get(1 + name_parts)?.clone();
         let _ = rest;
@@ -237,14 +335,27 @@ impl Npm {
         }
         let (registry, name) = registry_name_of(&npm_name);
         let directory = self.package_directory(&npm_name, &version);
-        Some(CachedPackage { registry, name, npm_name, version, directory })
+        Some(CachedPackage {
+            registry,
+            name,
+            npm_name,
+            version,
+            directory,
+        })
     }
 
     pub fn is_cached_path(&self, path: &Path) -> bool {
         path.starts_with(&self.cache)
     }
 
-    pub fn resolve_scheme_specifier(&self, scheme: &str, name: &str, range: Option<&str>, subpath: &str, require: bool) -> Result<Resolved> {
+    pub fn resolve_scheme_specifier(
+        &self,
+        scheme: &str,
+        name: &str,
+        range: Option<&str>,
+        subpath: &str,
+        require: bool,
+    ) -> Result<Resolved> {
         let npm_name = npm_name_of(scheme, name);
         let version = match range {
             Some(range) => self.resolve_version(&npm_name, range)?,
@@ -255,7 +366,12 @@ impl Npm {
             .with_context(|| format!("could not resolve {scheme}:{name}@{version}{subpath}"))
     }
 
-    pub fn resolve_bare_from(&self, importer: &Path, specifier: &str, require: bool) -> Result<Resolved> {
+    pub fn resolve_bare_from(
+        &self,
+        importer: &Path,
+        specifier: &str,
+        require: bool,
+    ) -> Result<Resolved> {
         let package = self
             .package_of_path(importer)
             .ok_or_else(|| anyhow!("'{specifier}' is imported from outside the package cache"))?;
@@ -266,13 +382,21 @@ impl Npm {
         let manifest = read_package_json(&package.directory);
         let range = ["dependencies", "peerDependencies", "optionalDependencies"]
             .iter()
-            .find_map(|field| manifest.get(*field).and_then(|deps| deps.get(&name)).and_then(Value::as_str))
+            .find_map(|field| {
+                manifest
+                    .get(*field)
+                    .and_then(|deps| deps.get(&name))
+                    .and_then(Value::as_str)
+            })
             .unwrap_or("*")
             .to_string();
         let (target_name, range) = match range.strip_prefix("npm:") {
             Some(aliased) => {
                 let (alias_name, alias_range) = match aliased.rfind('@') {
-                    Some(index) if index > 0 => (aliased[..index].to_string(), aliased[index + 1..].to_string()),
+                    Some(index) if index > 0 => (
+                        aliased[..index].to_string(),
+                        aliased[index + 1..].to_string(),
+                    ),
                     _ => (aliased.to_string(), "*".to_string()),
                 };
                 (alias_name, alias_range)
@@ -281,19 +405,30 @@ impl Npm {
         };
         let version = self.resolve_version(&target_name, &range)?;
         let dependency = self.ensure(&target_name, &version)?;
-        resolve_in_package(&dependency.directory, &subpath, require)
-            .with_context(|| format!("could not resolve '{specifier}' from {}@{}", package.name, package.version))
+        resolve_in_package(&dependency.directory, &subpath, require).with_context(|| {
+            format!(
+                "could not resolve '{specifier}' from {}@{}",
+                package.name, package.version
+            )
+        })
     }
 }
 
 pub fn split_package_specifier(specifier: &str) -> (String, String) {
     let mut parts = specifier.splitn(if specifier.starts_with('@') { 3 } else { 2 }, '/');
     let name = if specifier.starts_with('@') {
-        format!("{}/{}", parts.next().unwrap_or(""), parts.next().unwrap_or(""))
+        format!(
+            "{}/{}",
+            parts.next().unwrap_or(""),
+            parts.next().unwrap_or("")
+        )
     } else {
         parts.next().unwrap_or("").to_string()
     };
-    let rest = parts.next().map(|rest| format!("/{rest}")).unwrap_or_default();
+    let rest = parts
+        .next()
+        .map(|rest| format!("/{rest}"))
+        .unwrap_or_default();
     (name, rest)
 }
 
@@ -310,17 +445,27 @@ pub fn read_package_json(directory: &Path) -> Value {
 }
 
 fn conditions(require: bool) -> [&'static str; 4] {
-    if require { ["browser", "require", "module", "default"] } else { ["browser", "import", "module", "default"] }
+    if require {
+        ["browser", "require", "module", "default"]
+    } else {
+        ["browser", "import", "module", "default"]
+    }
 }
 
-fn resolve_target(target: &Value, conditions: &[&str], star: Option<&str>) -> Option<Option<String>> {
+fn resolve_target(
+    target: &Value,
+    conditions: &[&str],
+    star: Option<&str>,
+) -> Option<Option<String>> {
     match target {
         Value::String(text) => Some(Some(match star {
             Some(star) => text.replace('*', star),
             None => text.clone(),
         })),
         Value::Null => Some(None),
-        Value::Array(items) => items.iter().find_map(|item| resolve_target(item, conditions, star)),
+        Value::Array(items) => items
+            .iter()
+            .find_map(|item| resolve_target(item, conditions, star)),
         Value::Object(map) => {
             for (key, value) in map {
                 if conditions.contains(&key.as_str()) {
@@ -335,17 +480,29 @@ fn resolve_target(target: &Value, conditions: &[&str], star: Option<&str>) -> Op
     }
 }
 
-fn match_exports_map(map: &serde_json::Map<String, Value>, key: &str, conditions: &[&str]) -> Option<Option<String>> {
+fn match_exports_map(
+    map: &serde_json::Map<String, Value>,
+    key: &str,
+    conditions: &[&str],
+) -> Option<Option<String>> {
     if let Some(target) = map.get(key) {
         return resolve_target(target, conditions, None);
     }
     let mut best: Option<(&str, &Value, String)> = None;
     for (pattern, target) in map {
-        let Some(star) = pattern.find('*') else { continue };
+        let Some(star) = pattern.find('*') else {
+            continue;
+        };
         let (prefix, suffix) = (&pattern[..star], &pattern[star + 1..]);
-        if key.starts_with(prefix) && key.ends_with(suffix) && key.len() >= prefix.len() + suffix.len() {
+        if key.starts_with(prefix)
+            && key.ends_with(suffix)
+            && key.len() >= prefix.len() + suffix.len()
+        {
             let captured = key[prefix.len()..key.len() - suffix.len()].to_string();
-            if best.as_ref().is_none_or(|(current, _, _)| prefix.len() > current.find('*').unwrap_or(0)) {
+            if best
+                .as_ref()
+                .is_none_or(|(current, _, _)| prefix.len() > current.find('*').unwrap_or(0))
+            {
                 best = Some((pattern, target, captured));
             }
         }
@@ -364,9 +521,15 @@ fn match_exports_map(map: &serde_json::Map<String, Value>, key: &str, conditions
 }
 
 fn exports_entry(exports: &Value, subpath: &str, conditions: &[&str]) -> Option<Option<String>> {
-    let key = if subpath.is_empty() { ".".to_string() } else { format!(".{subpath}") };
+    let key = if subpath.is_empty() {
+        ".".to_string()
+    } else {
+        format!(".{subpath}")
+    };
     match exports {
-        Value::Object(map) if map.keys().any(|key| key.starts_with('.')) => match_exports_map(map, &key, conditions),
+        Value::Object(map) if map.keys().any(|key| key.starts_with('.')) => {
+            match_exports_map(map, &key, conditions)
+        }
         other if key == "." => resolve_target(other, conditions, None),
         _ => None,
     }
@@ -384,7 +547,10 @@ fn probe(path: &Path) -> Option<PathBuf> {
     }
     if path.is_dir() {
         let manifest = read_package_json(path);
-        if let Some(main) = ["browser", "module", "main"].iter().find_map(|field| manifest.get(*field).and_then(Value::as_str)) {
+        if let Some(main) = ["browser", "module", "main"]
+            .iter()
+            .find_map(|field| manifest.get(*field).and_then(Value::as_str))
+        {
             if let Some(found) = probe(&path.join(main)) {
                 return Some(found);
             }
@@ -403,7 +569,10 @@ fn browser_mapping(manifest: &Value, directory: &Path, file: &Path) -> Option<Re
     let relative = format!("./{}", crate::paths::relative_posix(directory, file));
     let without_extension = crate::paths::without_extension(&relative).to_string();
     for (key, value) in map {
-        if key == &relative || key == &without_extension || format!("./{}", key.trim_start_matches("./")) == relative {
+        if key == &relative
+            || key == &without_extension
+            || format!("./{}", key.trim_start_matches("./")) == relative
+        {
             return Some(match value {
                 Value::Bool(false) => Resolved::Empty,
                 Value::String(target) => Resolved::File(probe(&directory.join(target))?),
@@ -434,7 +603,12 @@ pub fn resolve_in_package(directory: &Path, subpath: &str, require: bool) -> Res
     } else {
         directory.join(subpath.trim_start_matches('/'))
     };
-    let found = probe(&file).ok_or_else(|| anyhow!("{} does not exist in the package", crate::paths::relative_posix(directory, &file)))?;
+    let found = probe(&file).ok_or_else(|| {
+        anyhow!(
+            "{} does not exist in the package",
+            crate::paths::relative_posix(directory, &file)
+        )
+    })?;
     if let Some(mapped) = browser_mapping(&manifest, directory, &found) {
         return Ok(mapped);
     }
@@ -457,10 +631,15 @@ pub fn strongest_sri(integrity: &str) -> Option<(&'static str, String)> {
     let entries: Vec<&str> = integrity
         .split_whitespace()
         .map(|entry| entry.split('?').next().unwrap_or(""))
-        .filter(|entry| entry.contains('-') && SRI_STRENGTH.contains(&entry.split('-').next().unwrap_or("")))
+        .filter(|entry| {
+            entry.contains('-') && SRI_STRENGTH.contains(&entry.split('-').next().unwrap_or(""))
+        })
         .collect();
     for algorithm in SRI_STRENGTH {
-        if let Some(found) = entries.iter().find(|entry| entry.starts_with(&format!("{algorithm}-"))) {
+        if let Some(found) = entries
+            .iter()
+            .find(|entry| entry.starts_with(&format!("{algorithm}-")))
+        {
             return Some((algorithm, found.to_string()));
         }
     }
@@ -475,7 +654,10 @@ pub fn sri_digest(algorithm: &str, bytes: &[u8]) -> String {
         "sha256" => sha2::Sha256::digest(bytes).to_vec(),
         _ => sha1::Sha1::digest(bytes).to_vec(),
     };
-    format!("{algorithm}-{}", base64::engine::general_purpose::STANDARD.encode(digest))
+    format!(
+        "{algorithm}-{}",
+        base64::engine::general_purpose::STANDARD.encode(digest)
+    )
 }
 
 pub fn matches_integrity(integrity: &str, bytes: &[u8]) -> bool {

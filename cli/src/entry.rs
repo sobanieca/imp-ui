@@ -12,7 +12,9 @@ pub fn resolve_entry_path(entry: &str, expected: &str) -> Result<PathBuf> {
         Err(_) => {
             let entry_name = crate::paths::file_name(&entry_path);
             let indent = " ".repeat("[ERROR] ".len());
-            if public_copy_of_entry(entry_path.parent().unwrap_or(Path::new("/")), &entry_name).is_some() {
+            if public_copy_of_entry(entry_path.parent().unwrap_or(Path::new("/")), &entry_name)
+                .is_some()
+            {
                 bail!(
                     "file not found: {}\n{indent}public/{entry_name} exists - move it to the project root: public/ ships verbatim, while the entry page is the one imp bundles, injects environment values into and adds PWA tags to",
                     entry_path.display()

@@ -1,10 +1,16 @@
-use crate::config::{ConfigChange, Insertion, config_target_path, get_strings, load_imp_config, update_config_file};
+use crate::config::{
+    ConfigChange, Insertion, config_target_path, get_strings, load_imp_config, update_config_file,
+};
 use crate::dependency_manifest::{
-    DEPENDENCY_MANIFEST_FILE, dependency_manifest, manifest_file_contents, record_package_licenses, unlicensed_packages,
+    DEPENDENCY_MANIFEST_FILE, dependency_manifest, manifest_file_contents, record_package_licenses,
+    unlicensed_packages,
 };
 use crate::deps::bundle_dependency;
 use crate::file_size::{MAX_FILE_SIZE_HINT, format_size, is_file_size_ignored, max_file_bytes};
-use crate::license_policy::{Policy, license_policy, license_violation_problem, package_id, review_licenses, unknown_license_warning};
+use crate::license_policy::{
+    Policy, license_policy, license_violation_problem, package_id, review_licenses,
+    unknown_license_warning,
+};
 use crate::logger;
 use crate::skill::COMPONENT_SKILL_FILE;
 use crate::specifiers::{EXACT_VERSION, default_alias, is_valid_alias, parse_specifier};
@@ -37,7 +43,8 @@ fn latest_version(scheme: &str, name: &str) -> Result<String> {
 }
 
 fn component_skill(specifier: &str, entry: Option<&Path>) -> Result<(String, Vec<u8>)> {
-    let text = entry.and_then(|entry| std::fs::read_to_string(entry.with_file_name(COMPONENT_SKILL_FILE)).ok());
+    let text = entry
+        .and_then(|entry| std::fs::read_to_string(entry.with_file_name(COMPONENT_SKILL_FILE)).ok());
     match text {
         Some(text) => Ok((COMPONENT_SKILL_FILE.to_string(), text.into_bytes())),
         None => bail!(
@@ -51,27 +58,45 @@ fn prepare_one(root: &Path, target: &Target, policy: &Policy) -> Result<Prepared
         Some(version) => version.clone(),
         None => latest_version(&target.scheme, &target.name)?,
     };
-    let specifier = format!("{}:{}@{version}{}", target.scheme, target.name, target.subpath);
-    let bundled = bundle_dependency(root, &specifier, &target.alias).map_err(|error| anyhow!("{}", error.describe()))?;
+    let specifier = format!(
+        "{}:{}@{version}{}",
+        target.scheme, target.name, target.subpath
+    );
+    let bundled = bundle_dependency(root, &specifier, &target.alias)
+        .map_err(|error| anyhow!("{}", error.describe()))?;
     let mut files = bundled.files;
     if !bundled.imp_imports.is_empty() {
         files.push(component_skill(&specifier, bundled.entry.as_deref())?);
     }
     let mut packages = bundled.packages;
     crate::integrity::verify_packages(&mut packages)?;
-    let manifest = dependency_manifest(&target.alias, &specifier, record_package_licenses(&packages), &bundled.imp_imports);
+    let manifest = dependency_manifest(
+        &target.alias,
+        &specifier,
+        record_package_licenses(&packages),
+        &bundled.imp_imports,
+    );
     let (violations, unknown) = review_licenses(std::slice::from_ref(&manifest), policy);
     if !violations.is_empty() {
         bail!("{}", license_violation_problem(&violations, policy));
     }
-    Ok(Prepared { alias: target.alias.clone(), specifier, files, manifest, unknown, imp_imports: bundled.imp_imports })
+    Ok(Prepared {
+        alias: target.alias.clone(),
+        specifier,
+        files,
+        manifest,
+        unknown,
+        imp_imports: bundled.imp_imports,
+    })
 }
 
 fn warn_about_size(max_bytes: u64, ignore: &[String], prepared: &Prepared) {
     let counted: u64 = prepared
         .files
         .iter()
-        .filter(|(name, _)| !is_file_size_ignored(&format!("dependencies/{}/{name}", prepared.alias), ignore))
+        .filter(|(name, _)| {
+            !is_file_size_ignored(&format!("dependencies/{}/{name}", prepared.alias), ignore)
+        })
         .map(|(_, bytes)| bytes.len() as u64)
         .sum();
     if counted > max_bytes {
@@ -86,11 +111,23 @@ fn warn_about_size(max_bytes: u64, ignore: &[String], prepared: &Prepared) {
 fn report_installed(prepared: &Prepared) {
     println!("installed {} ({})", prepared.alias, prepared.specifier);
     for (name, bytes) in &prepared.files {
-        println!("  dependencies/{}/{name} ({})", prepared.alias, format_size(bytes.len() as u64));
+        println!(
+            "  dependencies/{}/{name} ({})",
+            prepared.alias,
+            format_size(bytes.len() as u64)
+        );
     }
-    println!("  dependencies/{}/{DEPENDENCY_MANIFEST_FILE} (packages, versions, licenses)", prepared.alias);
+    println!(
+        "  dependencies/{}/{DEPENDENCY_MANIFEST_FILE} (packages, versions, licenses)",
+        prepared.alias
+    );
     println!("  bundled packages:");
-    let packages = prepared.manifest.get("packages").and_then(Value::as_array).cloned().unwrap_or_default();
+    let packages = prepared
+        .manifest
+        .get("packages")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     for entry in &packages {
         let attestation = if entry.get("attestationListed").and_then(Value::as_bool) == Some(true) {
             ", attestation listed by the registry"
@@ -100,10 +137,16 @@ fn report_installed(prepared: &Prepared) {
         println!(
             "    {} - {}{attestation}",
             package_id(entry),
-            entry.get("license").and_then(Value::as_str).unwrap_or("license not declared")
+            entry
+                .get("license")
+                .and_then(Value::as_str)
+                .unwrap_or("license not declared")
         );
     }
-    let checked = packages.iter().filter(|entry| entry.get("integrity").is_some_and(|value| !value.is_null())).count();
+    let checked = packages
+        .iter()
+        .filter(|entry| entry.get("integrity").is_some_and(|value| !value.is_null()))
+        .count();
     if checked > 0 {
         println!(
             "  integrity: {checked} npm package{} checked against the signed hash of the npm registry",
@@ -122,8 +165,13 @@ fn report_installed(prepared: &Prepared) {
         logger::warn(&unknown_license_warning(&prepared.unknown));
     }
     if !prepared.imp_imports.is_empty() {
-        println!("  imp imports kept bare (resolved by this app at runtime): {}", prepared.imp_imports.join(", "));
-        println!("    note: this package runs against the imp version this app provides, not the one it was built with");
+        println!(
+            "  imp imports kept bare (resolved by this app at runtime): {}",
+            prepared.imp_imports.join(", ")
+        );
+        println!(
+            "    note: this package runs against the imp version this app provides, not the one it was built with"
+        );
     }
 }
 
@@ -147,7 +195,11 @@ fn commit_dependencies(root: &Path, prepared: &[Prepared], changes: &[ConfigChan
     let work = root.join(".imp");
     let created_work = !work.exists();
     let created_folder = !folder.exists();
-    let staging = work.join(format!("install-{}-{}", std::process::id(), crate::time::now_millis()));
+    let staging = work.join(format!(
+        "install-{}-{}",
+        std::process::id(),
+        crate::time::now_millis()
+    ));
     let config_path = config_target_path(root);
     let config_before = std::fs::read_to_string(&config_path).ok();
     let mut swaps: Vec<Swap> = Vec::new();
@@ -159,7 +211,10 @@ fn commit_dependencies(root: &Path, prepared: &[Prepared], changes: &[ConfigChan
             for (name, bytes) in &dependency.files {
                 std::fs::write(target.join(name), bytes)?;
             }
-            std::fs::write(target.join(DEPENDENCY_MANIFEST_FILE), manifest_file_contents(&dependency.manifest))?;
+            std::fs::write(
+                target.join(DEPENDENCY_MANIFEST_FILE),
+                manifest_file_contents(&dependency.manifest),
+            )?;
         }
         std::fs::create_dir_all(staging.join("old"))?;
         std::fs::create_dir_all(&folder)?;
@@ -251,18 +306,23 @@ fn requested_target(
     alias: Option<String>,
     dependencies: &[(String, String)],
 ) -> Result<Target> {
-    let Some(parsed) = parse_specifier(package) else { bail!("invalid package specifier: '{package}'") };
+    let Some(parsed) = parse_specifier(package) else {
+        bail!("invalid package specifier: '{package}'")
+    };
     if let (Some(first), Some(second)) = (&parsed.version, &version) {
         bail!("two versions given: '{first}' and '{second}'");
     }
     let version = parsed.version.clone().or(version);
     if let Some(version) = &version {
         if !EXACT_VERSION.is_match(version) {
-            bail!("'{version}' is not an exact version - give an exact version (e.g. 1.2.3) or omit it to resolve the latest");
+            bail!(
+                "'{version}' is not an exact version - give an exact version (e.g. 1.2.3) or omit it to resolve the latest"
+            );
         }
     }
     if parsed.scheme.is_none() && parsed.subpath.is_empty() && alias.is_none() {
-        if let Some((name, specifier)) = dependencies.iter().find(|(name, _)| *name == parsed.name) {
+        if let Some((name, specifier)) = dependencies.iter().find(|(name, _)| *name == parsed.name)
+        {
             return declared_target(name, specifier, version);
         }
     }
@@ -274,7 +334,9 @@ fn requested_target(
         bail!("invalid dependency alias: '{alias}'");
     }
     if alias == "imp" {
-        bail!("'imp' is reserved for the imp library, which every app can already import - pick a different alias");
+        bail!(
+            "'imp' is reserved for the imp library, which every app can already import - pick a different alias"
+        );
     }
     Ok(Target {
         alias,
@@ -285,7 +347,12 @@ fn requested_target(
     })
 }
 
-pub fn install(root: &Path, package: Option<String>, version: Option<String>, alias: Option<String>) -> Result<()> {
+pub fn install(
+    root: &Path,
+    package: Option<String>,
+    version: Option<String>,
+    alias: Option<String>,
+) -> Result<()> {
     let config = load_imp_config(root)?;
     let dependencies = crate::config::dependencies(&config);
     let max_bytes = max_file_bytes(&config);
@@ -330,19 +397,33 @@ pub fn install(root: &Path, package: Option<String>, version: Option<String>, al
 }
 
 pub fn uninstall(root: &Path, alias: Option<String>) -> Result<()> {
-    let Some(alias) = alias else { bail!("usage: imp uninstall <package>") };
+    let Some(alias) = alias else {
+        bail!("usage: imp uninstall <package>")
+    };
     let config = load_imp_config(root)?;
     let dependencies = crate::config::dependencies(&config);
-    let Some((_, specifier)) = dependencies.iter().find(|(name, _)| *name == alias).filter(|(_, spec)| !spec.is_empty()) else {
+    let Some((_, specifier)) = dependencies
+        .iter()
+        .find(|(name, _)| *name == alias)
+        .filter(|(_, spec)| !spec.is_empty())
+    else {
         bail!("'{alias}' is not a declared dependency in imp.json");
     };
     if is_valid_alias(&alias) {
         let _ = std::fs::remove_dir_all(root.join("dependencies").join(&alias));
     }
     let change = if dependencies.len() > 1 {
-        ConfigChange { path: vec!["dependencies".into(), alias.clone()], value: None, insertion: Insertion::End }
+        ConfigChange {
+            path: vec!["dependencies".into(), alias.clone()],
+            value: None,
+            insertion: Insertion::End,
+        }
     } else {
-        ConfigChange { path: vec!["dependencies".into()], value: None, insertion: Insertion::End }
+        ConfigChange {
+            path: vec!["dependencies".into()],
+            value: None,
+            insertion: Insertion::End,
+        }
     };
     update_config_file(&config_target_path(root), &[change])?;
     println!("uninstalled {alias} ({specifier})");

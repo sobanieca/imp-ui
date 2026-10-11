@@ -1,7 +1,8 @@
 use regex::Regex;
 use std::sync::LazyLock;
 
-pub static DEPENDENCY_SCHEME: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(npm|jsr):").unwrap());
+pub static DEPENDENCY_SCHEME: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(npm|jsr):").unwrap());
 
 pub static EXACT_VERSION: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\d+\.\d+\.\d+([-+][\w.-]+)?$").unwrap());
@@ -25,7 +26,9 @@ pub struct Specifier {
 }
 
 pub fn parse_specifier(input: &str) -> Option<Specifier> {
-    let scheme = DEPENDENCY_SCHEME.captures(input).map(|caps| caps[1].to_string());
+    let scheme = DEPENDENCY_SCHEME
+        .captures(input)
+        .map(|caps| caps[1].to_string());
     let rest = match &scheme {
         Some(scheme) => &input[scheme.len() + 1..],
         None => input,
@@ -35,7 +38,10 @@ pub fn parse_specifier(input: &str) -> Option<Specifier> {
         scheme,
         name: caps[1].to_string(),
         version: caps.get(2).map(|m| m.as_str().to_string()),
-        subpath: caps.get(3).map(|m| m.as_str().to_string()).unwrap_or_default(),
+        subpath: caps
+            .get(3)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_default(),
     })
 }
 
@@ -73,7 +79,10 @@ pub const IMP_MODULES: &[(&str, &str)] = &[
 ];
 
 pub fn imp_module(specifier: &str) -> Option<&'static str> {
-    IMP_MODULES.iter().find(|(name, _)| *name == specifier).map(|(_, file)| *file)
+    IMP_MODULES
+        .iter()
+        .find(|(name, _)| *name == specifier)
+        .map(|(_, file)| *file)
 }
 
 pub fn is_imp_std_specifier(specifier: &str) -> bool {
@@ -107,7 +116,10 @@ fn known_imp_specifiers() -> String {
 }
 
 pub fn imp_subpath_problem(specifier: &str) -> String {
-    format!("'{specifier}' is not part of the imp library - import {}", known_imp_specifiers())
+    format!(
+        "'{specifier}' is not part of the imp library - import {}",
+        known_imp_specifiers()
+    )
 }
 
 pub fn imp_tooling_only_problem(specifier: &str) -> String {

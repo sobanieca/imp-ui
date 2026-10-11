@@ -19,16 +19,46 @@ pub struct Font {
 }
 
 pub const SCAFFOLD_FONTS: [Font; 10] = [
-    Font { name: "Inter", slug: "inter" },
-    Font { name: "Manrope", slug: "manrope" },
-    Font { name: "Plus Jakarta Sans", slug: "plus-jakarta-sans" },
-    Font { name: "DM Sans", slug: "dm-sans" },
-    Font { name: "Outfit", slug: "outfit" },
-    Font { name: "Space Grotesk", slug: "space-grotesk" },
-    Font { name: "Sora", slug: "sora" },
-    Font { name: "Figtree", slug: "figtree" },
-    Font { name: "Nunito Sans", slug: "nunito-sans" },
-    Font { name: "Work Sans", slug: "work-sans" },
+    Font {
+        name: "Inter",
+        slug: "inter",
+    },
+    Font {
+        name: "Manrope",
+        slug: "manrope",
+    },
+    Font {
+        name: "Plus Jakarta Sans",
+        slug: "plus-jakarta-sans",
+    },
+    Font {
+        name: "DM Sans",
+        slug: "dm-sans",
+    },
+    Font {
+        name: "Outfit",
+        slug: "outfit",
+    },
+    Font {
+        name: "Space Grotesk",
+        slug: "space-grotesk",
+    },
+    Font {
+        name: "Sora",
+        slug: "sora",
+    },
+    Font {
+        name: "Figtree",
+        slug: "figtree",
+    },
+    Font {
+        name: "Nunito Sans",
+        slug: "nunito-sans",
+    },
+    Font {
+        name: "Work Sans",
+        slug: "work-sans",
+    },
 ];
 
 fn pick_font() -> &'static Font {
@@ -40,10 +70,16 @@ fn pick_font() -> &'static Font {
 }
 
 fn font_by_slug(slug: &str) -> Result<&'static Font> {
-    SCAFFOLD_FONTS.iter().find(|font| font.slug == slug).ok_or_else(|| {
-        let known: Vec<&str> = SCAFFOLD_FONTS.iter().map(|font| font.slug).collect();
-        anyhow::anyhow!("unknown font '{slug}' - --font takes one of {}", known.join(", "))
-    })
+    SCAFFOLD_FONTS
+        .iter()
+        .find(|font| font.slug == slug)
+        .ok_or_else(|| {
+            let known: Vec<&str> = SCAFFOLD_FONTS.iter().map(|font| font.slug).collect();
+            anyhow::anyhow!(
+                "unknown font '{slug}' - --font takes one of {}",
+                known.join(", ")
+            )
+        })
 }
 
 struct Subset {
@@ -57,18 +93,48 @@ const FONT_SUBSETS: [Subset; 2] = [
         name: "latin-ext",
         label: "Latin Extended",
         ranges: &[
-            "U+0100-02BA", "U+02BD-02C5", "U+02C7-02CC", "U+02CE-02D7", "U+02DD-02FF", "U+0304",
-            "U+0308", "U+0329", "U+1D00-1DBF", "U+1E00-1E9F", "U+1EF2-1EFF", "U+2020", "U+20A0-20AB",
-            "U+20AD-20C4", "U+2113", "U+2C60-2C7F", "U+A720-A7FF",
+            "U+0100-02BA",
+            "U+02BD-02C5",
+            "U+02C7-02CC",
+            "U+02CE-02D7",
+            "U+02DD-02FF",
+            "U+0304",
+            "U+0308",
+            "U+0329",
+            "U+1D00-1DBF",
+            "U+1E00-1E9F",
+            "U+1EF2-1EFF",
+            "U+2020",
+            "U+20A0-20AB",
+            "U+20AD-20C4",
+            "U+2113",
+            "U+2C60-2C7F",
+            "U+A720-A7FF",
         ],
     },
     Subset {
         name: "latin",
         label: "Latin",
         ranges: &[
-            "U+0000-00FF", "U+0131", "U+0152-0153", "U+02BB-02BC", "U+02C6", "U+02DA", "U+02DC",
-            "U+0304", "U+0308", "U+0329", "U+2000-206F", "U+20AC", "U+2122", "U+2191", "U+2193",
-            "U+2212", "U+2215", "U+FEFF", "U+FFFD",
+            "U+0000-00FF",
+            "U+0131",
+            "U+0152-0153",
+            "U+02BB-02BC",
+            "U+02C6",
+            "U+02DA",
+            "U+02DC",
+            "U+0304",
+            "U+0308",
+            "U+0329",
+            "U+2000-206F",
+            "U+20AC",
+            "U+2122",
+            "U+2191",
+            "U+2193",
+            "U+2212",
+            "U+2215",
+            "U+FEFF",
+            "U+FFFD",
         ],
     },
 ];
@@ -103,7 +169,11 @@ const DEFAULT_TITLE: &str = "My imp app";
 
 fn title_from(name: &str) -> String {
     let separators = Regex::new(r"[-_.]+").unwrap();
-    let words = separators.replace_all(name, " ").split_whitespace().collect::<Vec<_>>().join(" ");
+    let words = separators
+        .replace_all(name, " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     let mut chars = words.chars();
     match chars.next() {
         None => DEFAULT_TITLE.to_string(),
@@ -115,7 +185,13 @@ fn short_name_from(title: &str) -> String {
     if title.chars().count() <= 12 {
         return title.to_string();
     }
-    title.split(' ').next().unwrap_or("").chars().take(12).collect()
+    title
+        .split(' ')
+        .next()
+        .unwrap_or("")
+        .chars()
+        .take(12)
+        .collect()
 }
 
 fn imp_config(title: &str, pwa: bool) -> String {
@@ -148,7 +224,13 @@ struct File {
 }
 
 fn file(path: &str, contents: impl Into<Vec<u8>>, note: impl Into<String>) -> File {
-    File { path: path.into(), contents: contents.into(), note: note.into(), merge: false, appended: None }
+    File {
+        path: path.into(),
+        contents: contents.into(),
+        note: note.into(),
+        merge: false,
+        appended: None,
+    }
 }
 
 fn ignore_entries(text: &str) -> Vec<String> {
@@ -181,20 +263,39 @@ fn entries_missing_from(existing: &str) -> Vec<String> {
         .collect();
     ignore_entries(template("init/gitignore"))
         .into_iter()
-        .filter(|entry| !covered.iter().any(|matcher| matcher.is_match(without_slashes(entry))))
+        .filter(|entry| {
+            !covered
+                .iter()
+                .any(|matcher| matcher.is_match(without_slashes(entry)))
+        })
         .collect()
 }
 
 fn template_files(title: &str, pwa: bool, font: &Font) -> Vec<File> {
     let quoted = title.replace('\\', "\\\\").replace('\'', "\\'");
     let mut files = vec![
-        file("imp.json", imp_config(title, pwa), format!("the one config file - pins imp {VERSION}")),
-        file("index.html", template("init/index.html").replace("{{TITLE}}", title), "the page imp serves"),
-        file("src/main.js", template("init/main.js"), "entry point: applies the theme, mounts the frame"),
+        file(
+            "imp.json",
+            imp_config(title, pwa),
+            format!("the one config file - pins imp {VERSION}"),
+        ),
+        file(
+            "index.html",
+            template("init/index.html").replace("{{TITLE}}", title),
+            "the page imp serves",
+        ),
+        file(
+            "src/main.js",
+            template("init/main.js"),
+            "entry point: applies the theme, mounts the frame",
+        ),
         file(
             "src/theme.js",
             theme_js(font),
-            format!("the theme: {} over imp-light - make the palette your own", font.name),
+            format!(
+                "the theme: {} over imp-light - make the palette your own",
+                font.name
+            ),
         ),
         file(
             "src/app-map.js",
@@ -206,13 +307,28 @@ fn template_files(title: &str, pwa: bool, font: &Font) -> Vec<File> {
             template("init/app.js").replace("{{TITLE_QUOTED}}", &quoted),
             "the frame, the router and the counter",
         ),
-        file("test/app.test.js", template("init/app.test.js"), "unit test, runs in a headless browser"),
-        file("test/app.spec.js", template("init/app.spec.js"), "e2e spec, drives the served app in a headless browser"),
-        file("public/favicon.svg", template("favicon.svg"), "published at the site root - replace it with your own mark"),
+        file(
+            "test/app.test.js",
+            template("init/app.test.js"),
+            "unit test, runs in a headless browser",
+        ),
+        file(
+            "test/app.spec.js",
+            template("init/app.spec.js"),
+            "e2e spec, drives the served app in a headless browser",
+        ),
+        file(
+            "public/favicon.svg",
+            template("favicon.svg"),
+            "published at the site root - replace it with your own mark",
+        ),
         file(
             "public/fonts/fonts.css",
             font_face_css(font),
-            format!("the @font-face rules of {} - linked from index.html", font.name),
+            format!(
+                "the @font-face rules of {} - linked from index.html",
+                font.name
+            ),
         ),
     ];
     for subset in &FONT_SUBSETS {
@@ -228,7 +344,11 @@ fn template_files(title: &str, pwa: bool, font: &Font) -> Vec<File> {
         template(&format!("fonts/{}-ofl.txt", font.slug)),
         format!("{OFL} - ships with the font"),
     ));
-    let mut ignore = file(".gitignore", template("init/gitignore"), "dist/, .imp/ and every .env file");
+    let mut ignore = file(
+        ".gitignore",
+        template("init/gitignore"),
+        "dist/, .imp/ and every .env file",
+    );
     ignore.merge = true;
     files.push(ignore);
     if pwa {
@@ -244,11 +364,17 @@ fn template_files(title: &str, pwa: bool, font: &Font) -> Vec<File> {
 fn note_for(file: &File) -> String {
     match &file.appended {
         None => file.note.clone(),
-        Some(appended) if appended.is_empty() => "left as it was - it already covers all of these".into(),
+        Some(appended) if appended.is_empty() => {
+            "left as it was - it already covers all of these".into()
+        }
         Some(appended) => format!(
             "kept yours - appended the {} {} it was missing",
             appended.len(),
-            if appended.len() > 1 { "entries" } else { "entry" }
+            if appended.len() > 1 {
+                "entries"
+            } else {
+                "entry"
+            }
         ),
     }
 }
@@ -262,7 +388,10 @@ pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) ->
         Some(dir) => resolve(cwd, dir),
         None => cwd.to_path_buf(),
     };
-    let label = dir.as_ref().map(|_| relative_posix(cwd, &target)).filter(|label| !label.is_empty());
+    let label = dir
+        .as_ref()
+        .map(|_| relative_posix(cwd, &target))
+        .filter(|label| !label.is_empty());
     let mut files = template_files(&title_from(&file_name(&target)), pwa, chosen);
     let conflicts: Vec<&str> = files
         .iter()
@@ -273,8 +402,15 @@ pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) ->
         bail!(
             "imp init writes {}, which already {}{} - nothing was written. Scaffold into an empty directory instead ('imp init <dir>'), or move those files aside.",
             conflicts.join(", "),
-            if conflicts.len() > 1 { "exist" } else { "exists" },
-            label.as_ref().map(|label| format!(" in {label}")).unwrap_or_else(|| " here".into())
+            if conflicts.len() > 1 {
+                "exist"
+            } else {
+                "exists"
+            },
+            label
+                .as_ref()
+                .map(|label| format!(" in {label}"))
+                .unwrap_or_else(|| " here".into())
         );
     }
     for file in &mut files {
@@ -283,8 +419,15 @@ pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) ->
             let existing = std::fs::read_to_string(&path)?;
             let missing = entries_missing_from(&existing);
             if !missing.is_empty() {
-                let base = if existing.ends_with('\n') { existing.clone() } else { format!("{existing}\n") };
-                std::fs::write(&path, format!("{base}\n# added by imp init\n{}\n", missing.join("\n")))?;
+                let base = if existing.ends_with('\n') {
+                    existing.clone()
+                } else {
+                    format!("{existing}\n")
+                };
+                std::fs::write(
+                    &path,
+                    format!("{base}\n# added by imp init\n{}\n", missing.join("\n")),
+                )?;
             }
             file.appended = Some(missing);
             continue;
@@ -293,12 +436,22 @@ pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) ->
         std::fs::write(&path, &file.contents)?;
     }
     let width = files.iter().map(|file| file.path.len()).max().unwrap_or(0);
-    let place = label.as_ref().map(|label| format!(" in {label}")).unwrap_or_else(|| " here".into());
+    let place = label
+        .as_ref()
+        .map(|label| format!(" in {label}"))
+        .unwrap_or_else(|| " here".into());
     println!("{}{place}.\n", green("Created a new imp project"));
     for file in &files {
-        println!("  {}  {}", bold(format!("{:<width$}", file.path)), dim(note_for(file)));
+        println!(
+            "  {}  {}",
+            bold(format!("{:<width$}", file.path)),
+            dim(note_for(file))
+        );
     }
-    if let Some(appended) = files.iter().find_map(|file| file.appended.as_ref().filter(|list| !list.is_empty())) {
+    if let Some(appended) = files
+        .iter()
+        .find_map(|file| file.appended.as_ref().filter(|list| !list.is_empty()))
+    {
         println!();
         logger::warn(&format!(
             ".gitignore already existed - appended {} to it and left everything else in it untouched",
@@ -309,12 +462,24 @@ pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) ->
     if let Some(label) = &label {
         println!("  cd {label}");
     }
-    println!("  imp start        {}", dim("serve the app with live reload"));
-    println!("  imp test --unit  {}", dim("run the unit test (--e2e for the browser spec)"));
+    println!(
+        "  imp start        {}",
+        dim("serve the app with live reload")
+    );
+    println!(
+        "  imp test --unit  {}",
+        dim("run the unit test (--e2e for the browser spec)")
+    );
     if pwa {
-        println!("  imp build --pwa  {}", dim("build an installable, offline app into dist/"));
+        println!(
+            "  imp build --pwa  {}",
+            dim("build an installable, offline app into dist/")
+        );
     }
-    println!("  imp skill        {}", dim("read imp's manuals - an AI agent starts here"));
+    println!(
+        "  imp skill        {}",
+        dim("read imp's manuals - an AI agent starts here")
+    );
     println!(
         "\nThe font is {}, {choice}. An AI agent keeps it and follows `imp skill init`\nto give the app a theme of its own.",
         chosen.name

@@ -11,5 +11,9 @@ pub fn function_source(module: &str) -> String {
 }
 
 pub fn browser_script(module: &str, input: &Value) -> String {
-    format!("({})({})\n", function_source(module), crate::environments::script_safe_json(input))
+    format!(
+        "({})({})\n",
+        function_source(module),
+        crate::environments::script_safe_json(input)
+    )
 }

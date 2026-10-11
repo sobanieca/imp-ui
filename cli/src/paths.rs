@@ -42,7 +42,11 @@ pub fn relative(from: &Path, to: &Path) -> PathBuf {
     let to = normalize(to);
     let from_parts: Vec<_> = from.components().collect();
     let to_parts: Vec<_> = to.components().collect();
-    let common = from_parts.iter().zip(&to_parts).take_while(|(a, b)| a == b).count();
+    let common = from_parts
+        .iter()
+        .zip(&to_parts)
+        .take_while(|(a, b)| a == b)
+        .count();
     let mut out = PathBuf::new();
     for _ in common..from_parts.len() {
         out.push("..");
@@ -58,11 +62,15 @@ pub fn relative_posix(from: &Path, to: &Path) -> String {
 }
 
 pub fn extension(path: &Path) -> String {
-    path.extension().map(|ext| ext.to_string_lossy().to_lowercase()).unwrap_or_default()
+    path.extension()
+        .map(|ext| ext.to_string_lossy().to_lowercase())
+        .unwrap_or_default()
 }
 
 pub fn file_name(path: &Path) -> String {
-    path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default()
+    path.file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default()
 }
 
 pub fn without_extension(path: &str) -> &str {
