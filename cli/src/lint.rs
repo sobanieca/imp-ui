@@ -16,6 +16,22 @@ use std::path::Path;
 
 pub const MAX_FILE_SIZE_RULE: &str = "imp/max-file-size";
 
+pub fn rule_names() -> Vec<String> {
+    IMP_RULES
+        .iter()
+        .map(|rule| format!("imp/{rule}"))
+        .chain(
+            [
+                crate::dead_code::UNREACHABLE_MODULE_RULE,
+                crate::dead_code::UNUSED_EXPORT_RULE,
+                crate::dead_code::COMPUTED_IMPORT_RULE,
+                crate::analytics_names::UNIQUE_ANALYTICS_NAME_RULE,
+            ]
+            .map(str::to_string),
+        )
+        .collect()
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
     Off,
