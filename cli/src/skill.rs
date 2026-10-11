@@ -362,6 +362,10 @@ fn normalize(subject: &str) -> String {
         .to_string()
 }
 
+pub fn find_skill_name(subject: &str) -> Option<String> {
+    find_skill(subject).map(|found| found.name)
+}
+
 fn find_skill(subject: &str) -> Option<Subject> {
     let wanted = normalize(subject);
     all_subjects().into_iter().find(|candidate| {
