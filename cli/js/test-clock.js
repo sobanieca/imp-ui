@@ -77,12 +77,13 @@ export function createClock(options) {
     }
   }
 
-  const flushPromises = () => new Promise((resolve) => native.setTimeout(resolve, 0))
+  const flushPromises = () => new Promise((resolve) => native.setTimeout.call(globalThis, resolve, 0))
 
   const setPerformanceNow = (fn) => {
     if (!native.performance || !realPerformanceNow) return
     try {
-      native.performance.now = fn
+      if (fn === realPerformanceNow) delete native.performance.now
+      else native.performance.now = fn
     } catch { /* performance.now is not writable in this runtime */ }
   }
 

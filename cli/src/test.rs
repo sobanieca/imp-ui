@@ -123,6 +123,7 @@ fn bundle_test_file(file: &Path, root: &Path, dependencies: &[String]) -> Result
 }
 
 struct Run {
+    activity: Mutex<Instant>,
     lines: Mutex<Vec<String>>,
     done: Mutex<Option<Counts>>,
     ready: Condvar,
@@ -171,7 +172,12 @@ pub struct FileRun<'a> {
 }
 
 pub fn run_in_browser(options: FileRun) -> Result<Counts> {
-    let state = Arc::new(Run { lines: Mutex::new(Vec::new()), done: Mutex::new(None), ready: Condvar::new() });
+    let state = Arc::new(Run {
+        activity: Mutex::new(Instant::now()),
+        lines: Mutex::new(Vec::new()),
+        done: Mutex::new(None),
+        ready: Condvar::new(),
+    });
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
     let endpoint: Arc<Mutex<Option<Arc<(Mutex<Option<String>>, Condvar)>>>> = Arc::new(Mutex::new(None));
@@ -198,6 +204,7 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
         let path = request.path.as_str();
         match (request.method.as_str(), path) {
             ("GET", "/") => Response::new(200, "text/html; charset=utf-8", runner_page()),
+            ("GET", "/favicon.ico") => Response::empty(204),
             ("GET", "/@imp/run.json") => Response::json(200, &run_config),
             ("GET", "/@imp/test.js") => Response::new(200, "text/javascript; charset=utf-8", code.as_bytes().to_vec()),
             ("GET", "/@imp/devtools") => {
@@ -211,6 +218,7 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
                 Response::text(200, value.unwrap_or_default())
             }
             ("POST", "/@imp/out") => {
+                *handler_state.activity.lock().unwrap() = Instant::now();
                 if let Some(lines) = request.json().and_then(|body| body.get("lines").cloned()) {
                     for line in lines.as_array().into_iter().flatten() {
                         let text = line.as_str().unwrap_or("").to_string();
@@ -285,8 +293,7 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
     crate::http_server::spawn(listener, Arc::new(handler));
     let mut chrome = Chrome::launch(options.browser, &format!("http://127.0.0.1:{port}/"))?;
     *endpoint.lock().unwrap() = Some(chrome.shared_endpoint());
-    let limit = Duration::from_secs(if options.e2e.is_some() { 30 * 60 } else { 10 * 60 });
-    let started = Instant::now();
+    let idle_limit = Duration::from_millis(if options.e2e.is_some() { E2E_TIMEOUT * 4 } else { UNIT_TIMEOUT * 12 });
     loop {
         let guard = state.done.lock().unwrap();
         let (guard, _) = state.ready.wait_timeout(guard, Duration::from_millis(200)).unwrap();
@@ -297,8 +304,11 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
         if chrome.exited() {
             bail!("the browser exited before the tests finished");
         }
-        if started.elapsed() > limit {
-            bail!("the test file did not finish in {} seconds", limit.as_secs());
+        let idle = state.activity.lock().unwrap().elapsed();
+        if idle > idle_limit {
+            let last = state.lines.lock().unwrap().iter().rev().find(|line| line.contains('✓') || line.contains('✗')).cloned();
+            let after = last.map(|line| format!(" after '{}'", line.trim())).unwrap_or_default();
+            bail!("the page stopped responding for {} seconds{after} - a test blocks the page, or navigates it away", idle.as_secs());
         }
     }
 }

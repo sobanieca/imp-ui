@@ -6,12 +6,14 @@ const REGISTRY_KEY = Symbol.for('imp.test.registry')
 const nativeSetTimeout = globalThis.setTimeout
 const nativeClearTimeout = globalThis.clearTimeout
 const nativeConsole = { ...console }
+const nativeFetch = globalThis.fetch.bind(globalThis)
+const nativeStringify = JSON.stringify
 
 const post = (path, body) =>
-  fetch(path, {
+  nativeFetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: nativeStringify(body),
   })
 
 let pending = []
@@ -63,7 +65,7 @@ addEventListener('unhandledrejection', (event) => {
   out(`Uncaught (in promise) ${describe(event.reason)}`)
 })
 
-const run = await (await fetch('/@imp/run.json')).json()
+const run = await (await nativeFetch('/@imp/run.json')).json()
 
 const paint = (code) => (text) => run.color ? `\x1b[${code}m${text}\x1b[0m` : text
 const red = paint(31)
@@ -197,7 +199,16 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
 
 const importTests = () => import('/@imp/test.js')
 
+const keepRunnerPage = () => {
+  navigation.addEventListener('navigate', (event) => {
+    if (event.canIntercept && !event.hashChange && !event.downloadRequest) {
+      event.intercept({ handler: () => Promise.resolve() })
+    }
+  })
+}
+
 async function runUnit() {
+  keepRunnerPage()
   const registry = freshRegistry()
   await importTests()
   return await runRegistry(registry, {
@@ -241,7 +252,7 @@ async function stopScreencast({ client, frames, onFrame }) {
 
 async function runSpec() {
   const { default: puppeteer } = await import('/@imp/puppeteer/puppeteer.js')
-  const browserWSEndpoint = await (await fetch('/@imp/devtools')).text()
+  const browserWSEndpoint = await (await nativeFetch('/@imp/devtools')).text()
   const browser = await puppeteer.connect({
     browserWSEndpoint,
     defaultViewport: { width: 800, height: 600 },
