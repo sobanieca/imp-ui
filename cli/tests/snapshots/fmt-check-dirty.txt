@@ -1,4 +1,4 @@
-$ imp fmt --check messy.js  (cwd: test/fixtures/fmt-dirty)
+$ imp fmt --check messy.js  (cwd: tests/fixtures/fmt-dirty)
 exit code: 1
 
 --- stdout ---

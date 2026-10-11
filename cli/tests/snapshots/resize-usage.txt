@@ -1,4 +1,4 @@
-$ imp resize  (cwd: test/fixtures/resize)
+$ imp resize  (cwd: tests/fixtures/resize)
 exit code: 1
 
 --- stdout ---

@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/broken-config)
+$ imp lint app.js  (cwd: tests/fixtures/broken-config)
 exit code: 1
 
 --- stdout ---

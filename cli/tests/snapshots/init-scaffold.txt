@@ -10,8 +10,8 @@ Created a new imp project in app.
   src/theme.js                       the theme: Sora over imp-light - make the palette your own
   src/app-map.js                     the application map: every feature of the app, one line each
   src/app.js                         the frame, the router and the counter
-  test/app.test.js                   unit test, runs in-process
-  test/app.spec.js                   e2e spec, runs in a real browser
+  test/app.test.js                   unit test, runs in a headless browser
+  test/app.spec.js                   e2e spec, drives the served app in a headless browser
   public/favicon.svg                 published at the site root - replace it with your own mark
   public/fonts/fonts.css             the @font-face rules of Sora - linked from index.html
   public/fonts/sora-latin-ext.woff2  Sora, Latin Extended

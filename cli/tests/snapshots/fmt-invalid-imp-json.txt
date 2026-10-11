@@ -1,4 +1,4 @@
-$ imp fmt --check app.js  (cwd: test/fixtures/broken-config)
+$ imp fmt --check app.js  (cwd: tests/fixtures/broken-config)
 exit code: 1
 
 --- stdout ---

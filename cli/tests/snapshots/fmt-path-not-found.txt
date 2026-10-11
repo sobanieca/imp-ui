@@ -1,4 +1,4 @@
-$ imp fmt missing.js  (cwd: test/fixtures/basic)
+$ imp fmt missing.js  (cwd: tests/fixtures/basic)
 exit code: 1
 
 --- stdout ---

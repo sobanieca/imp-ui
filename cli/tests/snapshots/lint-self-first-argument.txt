@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/lint-self-first)
+$ imp lint app.js  (cwd: tests/fixtures/lint-self-first)
 exit code: 1
 
 --- stdout ---

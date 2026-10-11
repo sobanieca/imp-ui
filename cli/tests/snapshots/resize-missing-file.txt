@@ -1,4 +1,4 @@
-$ imp resize missing.png -w 100  (cwd: test/fixtures/resize)
+$ imp resize missing.png -w 100  (cwd: tests/fixtures/resize)
 exit code: 1
 
 --- stdout ---

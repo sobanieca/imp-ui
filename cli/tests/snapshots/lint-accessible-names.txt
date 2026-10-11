@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/lint-accessible-names)
+$ imp lint app.js  (cwd: tests/fixtures/lint-accessible-names)
 exit code: 1
 
 --- stdout ---

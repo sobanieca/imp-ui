@@ -1,4 +1,4 @@
-$ imp resize logo.png -w 9000  (cwd: test/fixtures/resize)
+$ imp resize logo.png -w 9000  (cwd: tests/fixtures/resize)
 exit code: 0
 
 --- stdout ---

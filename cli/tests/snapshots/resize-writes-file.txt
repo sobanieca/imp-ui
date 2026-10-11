@@ -2,7 +2,7 @@ $ imp resize logo.png -w 150  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-[INFO] logo.png 300x180 2.2 kB -> logo.png 150x90 1.7 kB
+[INFO] logo.png 300x180 2.2 kB -> logo.png 150x90 2.6 kB
 
 --- stderr ---
 (empty)
@@ -14,7 +14,7 @@ $ imp resize logo.png -h 30 --output small.png  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-[INFO] logo.png 150x90 1.7 kB -> small.png 50x30 445 B
+[INFO] logo.png 150x90 2.6 kB -> small.png 50x30 869 B
 
 --- stderr ---
 (empty)
@@ -26,7 +26,7 @@ $ imp resize logo.png -w 100 -h 100 --output box.png  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-[INFO] logo.png 150x90 1.7 kB -> box.png 100x60 1.1 kB
+[INFO] logo.png 150x90 2.6 kB -> box.png 100x60 1.7 kB
 
 --- stderr ---
 (empty)
@@ -38,7 +38,7 @@ $ imp resize logo.png -w 100 -h 100 --stretch --output stretched.png  (cwd: <tmp
 exit code: 0
 
 --- stdout ---
-[INFO] logo.png 150x90 1.7 kB -> stretched.png 100x90 1.6 kB
+[INFO] logo.png 150x90 2.6 kB -> stretched.png 100x90 2.3 kB
 
 --- stderr ---
 (empty)

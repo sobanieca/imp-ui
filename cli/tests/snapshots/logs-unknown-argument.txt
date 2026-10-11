@@ -1,4 +1,4 @@
-$ imp logs bogus  (cwd: test/fixtures/basic)
+$ imp logs bogus  (cwd: tests/fixtures/basic)
 exit code: 1
 
 --- stdout ---

@@ -1,4 +1,4 @@
-$ imp map  (cwd: test/fixtures/basic)
+$ imp map  (cwd: tests/fixtures/basic)
 exit code: 1
 
 --- stdout ---

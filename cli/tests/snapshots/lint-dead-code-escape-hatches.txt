@@ -9,8 +9,8 @@ exit code: 1
 error[imp/unused-export]: 'external' is exported by src/lib.js but nothing imports it - delete it, or add it to "publicExports" in imp.json if it is used from outside the project
  --> src/lib.js:3:14
 
-error[imp/unreachable-module]: nothing imports src/sdk_core.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
- --> src/sdk_core.js:1:1
+error[imp/unreachable-module]: nothing imports src/sdk-core.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
+ --> src/sdk-core.js:1:1
 
 error[imp/unreachable-module]: nothing imports src/sdk.js - no entry page, test, preview setting or public export reaches it; delete it, or add it to "publicExports" in imp.json if it is used from outside the project
  --> src/sdk.js:1:1

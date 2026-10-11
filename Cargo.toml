@@ -25,3 +25,6 @@ lto = false
 codegen-units = 16
 incremental = true
 strip = false
+
+[profile.test]
+opt-level = 1

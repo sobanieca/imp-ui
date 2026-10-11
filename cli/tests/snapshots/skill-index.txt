@@ -123,9 +123,9 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/timeline         timeline - a vertical list of dated events, each with a marker, a time, a title and actions
 
 THIS PROJECT - components with a skill file | read: imp skill ./path/to/component.js
-  ./test/fixtures/build/app.js                   app - the build fixture component: a greeting carried through mitt
-  ./test/fixtures/preview/components/counter.js  counter - a number with a minus and a plus button
-  ./test/fixtures/skill-project/counter.js       counter - a self-contained increment/decrement widget
+  ./tests/fixtures/build/app.js                   app - the build fixture component: a greeting carried through mitt
+  ./tests/fixtures/preview/components/counter.js  counter - a number with a minus and a plus button
+  ./tests/fixtures/skill-project/counter.js       counter - a self-contained increment/decrement widget
 
 A component documents itself in a 'counter.skill.md' file next to it - write one for every
 component you build, and an agent can learn it the same way it learns imp. When the person

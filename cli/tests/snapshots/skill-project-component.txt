@@ -1,4 +1,4 @@
-$ imp skill ./counter.js  (cwd: test/fixtures/skill-project)
+$ imp skill ./counter.js  (cwd: tests/fixtures/skill-project)
 exit code: 0
 
 --- stdout ---

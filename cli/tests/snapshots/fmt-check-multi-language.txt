@@ -1,4 +1,4 @@
-$ imp fmt --check  (cwd: test/fixtures/fmt-multi)
+$ imp fmt --check  (cwd: tests/fixtures/fmt-multi)
 exit code: 1
 
 --- stdout ---

@@ -88,6 +88,7 @@ fn already_printed_prefix(file_entries: &[String], printed: &[String]) -> usize 
 }
 
 fn follow(path: PathBuf, remember: usize, start_offset: usize, printed: Vec<String>) {
+    let _ = ctrlc::set_handler(|| std::process::exit(0));
     let mut offset = start_offset;
     let mut recent: Vec<String> = printed[printed.len().saturating_sub(remember)..].to_vec();
     let emit = |entries: Vec<String>, recent: &mut Vec<String>| {

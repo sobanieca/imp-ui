@@ -1,4 +1,4 @@
-$ imp map src/elsewhere.js  (cwd: test/fixtures/map)
+$ imp map src/elsewhere.js  (cwd: tests/fixtures/map)
 exit code: 1
 
 --- stdout ---

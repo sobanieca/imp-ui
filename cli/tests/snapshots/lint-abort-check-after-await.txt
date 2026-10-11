@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/lint-abort-check)
+$ imp lint app.js  (cwd: tests/fixtures/lint-abort-check)
 exit code: 1
 
 --- stdout ---

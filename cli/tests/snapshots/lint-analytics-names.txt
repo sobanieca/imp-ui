@@ -1,4 +1,4 @@
-$ imp lint src/main.js  (cwd: test/fixtures/lint-analytics)
+$ imp lint src/main.js  (cwd: tests/fixtures/lint-analytics)
 exit code: 1
 
 --- stdout ---

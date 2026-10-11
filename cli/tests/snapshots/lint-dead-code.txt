@@ -1,4 +1,4 @@
-$ imp lint  (cwd: test/fixtures/lint-dead-code)
+$ imp lint  (cwd: tests/fixtures/lint-dead-code)
 exit code: 1
 
 --- stdout ---

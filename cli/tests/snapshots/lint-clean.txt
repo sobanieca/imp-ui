@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/with-config)
+$ imp lint app.js  (cwd: tests/fixtures/with-config)
 exit code: 0
 
 --- stdout ---

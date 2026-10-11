@@ -1,4 +1,4 @@
-$ imp map src/admin/map.js  (cwd: test/fixtures/map)
+$ imp map src/admin/map.js  (cwd: tests/fixtures/map)
 exit code: 0
 
 --- stdout ---

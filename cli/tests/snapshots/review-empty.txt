@@ -1,4 +1,4 @@
-$ imp review  (cwd: test/fixtures/basic)
+$ imp review  (cwd: tests/fixtures/basic)
 exit code: 0
 
 --- stdout ---

@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/lint-loading-sync)
+$ imp lint app.js  (cwd: tests/fixtures/lint-loading-sync)
 exit code: 1
 
 --- stdout ---

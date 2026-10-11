@@ -1,4 +1,4 @@
-$ imp lint app.js  (cwd: test/fixtures/lint-unpinned)
+$ imp lint app.js  (cwd: tests/fixtures/lint-unpinned)
 exit code: 1
 
 --- stdout ---

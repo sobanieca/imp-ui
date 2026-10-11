@@ -1,4 +1,4 @@
-$ imp review bogus  (cwd: test/fixtures/basic)
+$ imp review bogus  (cwd: tests/fixtures/basic)
 exit code: 1
 
 --- stdout ---

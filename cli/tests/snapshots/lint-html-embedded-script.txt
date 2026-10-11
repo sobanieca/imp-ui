@@ -1,4 +1,4 @@
-$ imp lint index.html  (cwd: test/fixtures/lint-html)
+$ imp lint index.html  (cwd: tests/fixtures/lint-html)
 exit code: 1
 
 --- stdout ---

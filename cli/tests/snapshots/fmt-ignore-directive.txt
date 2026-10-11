@@ -1,4 +1,4 @@
-$ imp fmt --check app.js  (cwd: test/fixtures/fmt-ignore)
+$ imp fmt --check app.js  (cwd: tests/fixtures/fmt-ignore)
 exit code: 0
 
 --- stdout ---
