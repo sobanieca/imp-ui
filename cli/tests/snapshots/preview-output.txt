@@ -1,4 +1,4 @@
-$ imp preview --output <out>/gallery  (cwd: /test/fixtures/preview)
+$ imp preview --output <out>/gallery  (cwd: /tests/fixtures/preview)
 exit code: 0
 
 --- stdout ---

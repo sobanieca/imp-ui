@@ -1,4 +1,4 @@
-[INFO] imp preview serving 1 preview from <root>/test/fixtures/preview
+[INFO] imp preview serving 1 preview from <root>/tests/fixtures/preview
   -> http://localhost:<port>/widgets/counter
   logs -> imp logs (-f follows the session)
   themes -> theme/brand.js, theme/dark.js + built-ins

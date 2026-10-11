@@ -748,3 +748,76 @@ pub fn raw_status_line(
     let _ = reader.read_line(&mut line);
     line.trim_end().to_string()
 }
+
+pub fn serve_fn(
+    answer: impl Fn(&str) -> (u16, &'static str, Vec<u8>) + Send + Sync + 'static,
+) -> (String, std::sync::Arc<std::sync::atomic::AtomicBool>) {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let answer = std::sync::Arc::new(answer);
+    let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let alive = running.clone();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            if !alive.load(Ordering::SeqCst) {
+                return;
+            }
+            let Ok(mut stream) = stream else { continue };
+            let answer = answer.clone();
+            std::thread::spawn(move || {
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                    return;
+                }
+                loop {
+                    let mut header = String::new();
+                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header.trim().is_empty() {
+                        break;
+                    }
+                }
+                let target = line.split(' ').nth(1).unwrap_or("/");
+                let path = percent_decode(target.split(['?', '#']).next().unwrap_or("/"));
+                let (status, kind, body) = answer(&path);
+                let head = format!(
+                    "HTTP/1.1 {status} OK\r\ncontent-type: {kind}\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
+                    body.len()
+                );
+                let _ = stream.write_all(head.as_bytes());
+                let _ = stream.write_all(&body);
+            });
+        }
+    });
+    (format!("http://127.0.0.1:{port}"), running)
+}
+
+pub fn spec_report(dir: &Path, spec: &Path, base: &str) -> String {
+    copy_spec(dir, spec);
+    write(
+        &dir.join("server.js"),
+        &format!("export const base = {}\n", serde_json::Value::from(base)),
+    );
+    write(
+        &dir.join("index.html"),
+        "<!doctype html>\n<title>spec host</title>\n",
+    );
+    let name = spec.file_name().unwrap().to_string_lossy().into_owned();
+    let result = run_imp(&["test", &name], dir);
+    let Some(start) = result.stdout.find("IMP-REPORT-BEGIN\n") else {
+        panic!(
+            "the spec printed no report:\n{}\n{}",
+            result.stdout, result.stderr
+        );
+    };
+    let rest = &result.stdout[start + "IMP-REPORT-BEGIN\n".len()..];
+    let end = rest.find("\nIMP-REPORT-END").expect("the report ends");
+    check(
+        result.code == 0,
+        format!("the spec failed:\n{}\n{}", result.stdout, result.stderr),
+    );
+    rest[..end].to_string()
+}
+
+fn copy_spec(dir: &Path, spec: &Path) {
+    std::fs::copy(spec, dir.join(spec.file_name().unwrap())).unwrap();
+}
