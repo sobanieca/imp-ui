@@ -950,7 +950,8 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
             let mut problems = std::mem::take(&mut state.errors);
             for diagnostic in errors.into_vec() {
                 let text = diagnostic.to_string();
-                if problems.iter().any(|problem| text.contains(&problem.text)) {
+                let relayed = !problems.is_empty() && text.contains("plugin `imp` threw");
+                if relayed || problems.iter().any(|problem| text.contains(&problem.text)) {
                     continue;
                 }
                 problems.push(Problem {

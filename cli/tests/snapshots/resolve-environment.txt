@@ -29,7 +29,7 @@ error: environment 'array' - array.json must be a flat JSON object of values
 error: environment 'nested' - key 'obj' must be a string, number, or boolean
 
 === malformed json rejected ===
-error: environment 'broken' - invalid JSON in broken.json: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+error: environment 'broken' - invalid JSON in broken.json: key must be a string (line 1 column 3)
 
 === dotenv file parsed ===
 ok: {"API_URL":"https://api.example.com","TOKEN":"env-token","GREETING":"hello world","RAW":"keep $env.NOT_EXPANDED literal","FEATURE":"true"}

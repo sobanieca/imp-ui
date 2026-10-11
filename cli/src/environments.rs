@@ -59,7 +59,7 @@ fn parse_dotenv(text: &str) -> Map<String, Value> {
     values
 }
 
-fn resolve_values(alias: &str, file: &str, raw: Value) -> Result<Env> {
+fn resolve_values(alias: &str, file: &str, raw: Value, shell: ShellEnv) -> Result<Env> {
     let Value::Object(raw) = raw else {
         bail!("environment '{alias}' - {file} must be a flat JSON object of values");
     };
@@ -68,7 +68,7 @@ fn resolve_values(alias: &str, file: &str, raw: Value) -> Result<Env> {
         match &value {
             Value::String(text) => {
                 if let Some(variable) = text.strip_prefix("$env.").filter(|rest| !rest.is_empty()) {
-                    let Ok(from_shell) = std::env::var(variable) else {
+                    let Some(from_shell) = shell(variable) else {
                         bail!(
                             "environment '{alias}' - key '{key}' references shell variable '{variable}', which is not set"
                         );
@@ -87,11 +87,15 @@ fn resolve_values(alias: &str, file: &str, raw: Value) -> Result<Env> {
     Ok(resolved)
 }
 
-fn select_alias(requested: Option<&str>, environments: &Map<String, Value>) -> Option<String> {
+fn select_alias(
+    requested: Option<&str>,
+    environments: &Map<String, Value>,
+    shell: ShellEnv,
+) -> Option<String> {
     if let Some(requested) = requested {
         return Some(requested.to_string());
     }
-    if let Ok(from_shell) = std::env::var("IMP_ENV") {
+    if let Some(from_shell) = shell("IMP_ENV") {
         if !from_shell.is_empty() {
             return Some(from_shell);
         }
@@ -101,17 +105,28 @@ fn select_alias(requested: Option<&str>, environments: &Map<String, Value>) -> O
         .then(|| DEFAULT_ALIAS.to_string())
 }
 
+pub type ShellEnv<'a> = &'a dyn Fn(&str) -> Option<String>;
+
 pub fn resolve_environment(
     root: &Path,
     config: &crate::config::Config,
     requested: Option<&str>,
+) -> Result<Env> {
+    resolve_environment_in(root, config, requested, &|name| std::env::var(name).ok())
+}
+
+pub fn resolve_environment_in(
+    root: &Path,
+    config: &crate::config::Config,
+    requested: Option<&str>,
+    shell: ShellEnv,
 ) -> Result<Env> {
     let empty = Map::new();
     let environments = config
         .get("environments")
         .and_then(Value::as_object)
         .unwrap_or(&empty);
-    let Some(alias) = select_alias(requested, environments) else {
+    let Some(alias) = select_alias(requested, environments, shell) else {
         return Ok(Map::new());
     };
     let Some(file) = environments.get(&alias).and_then(Value::as_str) else {
@@ -135,7 +150,7 @@ pub fn resolve_environment(
             )
         })?
     };
-    resolve_values(&alias, file, raw)
+    resolve_values(&alias, file, raw, shell)
 }
 
 pub fn script_safe_json(value: &Value) -> String {

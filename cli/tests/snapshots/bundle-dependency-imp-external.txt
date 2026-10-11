@@ -8,4 +8,4 @@ component.js
 imp/html
 
 --- component.js ---
-import{div as r}from"imp/html";var i=o=>r(o);export{i as box};
+import{div as e}from"imp/html";const t=t=>e(t);export{t as box};

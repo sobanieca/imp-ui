@@ -2,7 +2,7 @@ $ imp build --env prod  (cwd: <tmp>)
 exit code: 1
 
 --- stdout ---
-✘ [ERROR] app.js - unknown flag 'CHEKOUT_V2' - declare it in imp.json's 'flags'; declared flags: CHECKOUT_V2, NEW_NAV [plugin imp]
+(empty)
 
 --- stderr ---
 [ERROR] Build failed with 1 error:

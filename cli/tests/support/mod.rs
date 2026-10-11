@@ -459,3 +459,27 @@ pub fn png_size(path: &Path) -> String {
         read(20)
     )
 }
+
+static BUILT_SCRIPT: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"chunks/(env|register-service-worker)-[A-Za-z0-9_-]{8}\.js$").unwrap()
+});
+
+pub fn with_built_scripts(dist: &Path, html: &str) -> String {
+    let mut texts = vec![html.to_string()];
+    for script in imp::html_document::read_html(html).scripts {
+        if let Some(found) = script.src.as_deref().and_then(|src| BUILT_SCRIPT.find(src)) {
+            texts.push(read(&dist.join(found.as_str())));
+        }
+    }
+    texts.join("\n")
+}
+
+static SIZE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\(\d+(\.\d+)? k?B\)").unwrap());
+static HASHED: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"-[A-Za-z0-9_-]{8}\.js").unwrap());
+
+pub fn mask(text: &str, dir: &TempDir) -> String {
+    let text = text.replace(&dir.text(), "<tmp>");
+    let text = SIZE.replace_all(&text, "(<size>)");
+    HASHED.replace_all(&text, "-<hash>.js").into_owned()
+}
