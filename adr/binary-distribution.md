@@ -2,7 +2,7 @@
 
 ## Context
 
-imp ships as one self-contained binary that `deno compile` produces. A person must be able to
+imp ships as one self-contained binary that `cargo build --release` produces. A person must be able to
 install the binary, update it, and pin it, see `version-pinning-self-delegation.md`. So a release
 needs a download URL that is predictable, per version and per platform. It also needs an automated
 way to produce that URL. The sibling project `sobanieca/jsonr` already solves this in the same way.
@@ -14,13 +14,12 @@ assets to a tagged release. imp reuses that proven shape, and invents no pipelin
 imp builds and publishes its binaries from the `sobanieca/imp-ui` GitHub repository. The mechanism
 mirrors the release mechanism of jsonr.
 
-- **The `"version"` field of `deno.json` is the source of truth.** imp puts it into the binary by an
-  import, as in `import denoJson from '../../deno.json' with { type: 'json' }`. So `imp --version`,
-  and the comparison for self-delegation, read the same value that the release is tagged with. jsonr
-  copies its version into a `src/version.js`, and runs a `check-version` job to keep the two the
-  same. imp imports `deno.json` directly, so it needs no such check.
-- **The CI workflow releases on a push to `main`.** It runs the formatting, lint, test and binary
-  size jobs. Then a version job reads the version, and checks whether the tag `v{version}` exists.
+- **The `version` of `[workspace.package]` in the root `Cargo.toml` is the source of truth.** The
+  CLI crate inherits it, and the compiler puts it into the binary through `CARGO_PKG_VERSION`. So
+  `imp --version`, and the comparison for self-delegation, read the same value that the release is
+  tagged with, and no check keeps two copies the same.
+- **The CI workflow releases on a push to `main`.** It runs the check, test and binary size jobs.
+  Then a version job reads the version from `cargo metadata`, and checks whether the tag `v{version}` exists.
   When no tag exists, the build jobs run, and a release job publishes a GitHub Release through
   `softprops/action-gh-release`. A second push with no change of the version does nothing, because
   the guard for an existing tag skips the build and the release. So the pipeline is safe to run on
@@ -37,11 +36,12 @@ mirrors the release mechanism of jsonr.
   two pushes of the same version cannot publish twice. GitHub keeps one waiting job per group, so a
   newer waiting release job replaces an older one that waits.
 - **There are six targets.** They are `x86_64` and `aarch64` for `linux`, `macos` and `windows`.
-  There is no `musl` target, because `deno compile` has none. Each build job compiles its target
-  with a command of this form: `tools/compile.js --target <triple> --output <file>`. So a release
-  binary has exactly the include set of the binary that the tests ran: the CLI, the library without
-  its `public/` fonts, the skills and the licence notices. It also gets the same preparation of the
-  prebundled fmt plugins and npm dependencies. imp names an asset `imp-{os}-{arch}`, and adds `.exe`
+  There is no `musl` target. Each build job compiles its target with
+  `cargo build --release --package imp --target <triple>`. So a release binary embeds exactly what
+  the binary that the tests ran embeds: the library without its `public/` fonts, the browser
+  modules, the templates, the browser driver, the skills and the licence notices, see
+  `cli/build.rs`. The release profile turns on link-time optimization and strips the symbols. imp
+  names an asset `imp-{os}-{arch}`, and adds `.exe`
   on Windows. `{os}` is `linux`, `macos` or `windows`. `{arch}` is `x64` or `arm64`.
 - **Windows is tested in CI.** The test job runs the library unit tests, the library e2e tests and
   the CLI tests on Ubuntu and on Windows. Each suite runs in its own job, at the same time as the
@@ -72,7 +72,7 @@ mirrors the release mechanism of jsonr.
 
 - Every release exposes a stable URL that you can construct. That is exactly what the version
   manager needs, to fetch and cache a pinned or a latest binary, with no registry and no index.
-- A release is fully automated from one change to the version in `deno.json`. Nobody can forget to
+- A release is fully automated from one change to the version in the root `Cargo.toml`. Nobody can forget to
   tag, or to build a platform. A push with no change of the version does not release again by
   mistake.
 - Linux with musl, such as Alpine, has no binary. The CLI fails immediately, with a clear message,

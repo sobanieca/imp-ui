@@ -1,0 +1,8 @@
+$ imp resize logo.png -w abc  (cwd: tests/fixtures/resize)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] --width must be a positive integer, got 'abc'

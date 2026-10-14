@@ -1,8 +1,0 @@
-$ imp preview  (cwd: test/fixtures/preview-bad-translations)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] translations not found: locales/missing.js - listed in 'preview.translations.pl'

@@ -2,13 +2,11 @@
 
 ## Context
 
-A unit test in a `*.test.js` file runs in process, on the real globals of Deno. The unit
-environment, see `two-level-testing.md`, borrows from happy-dom only the DOM APIs that Deno lacks.
-It deliberately keeps the `setTimeout`, `setInterval`, `Date` and `performance` of Deno. The timer
-implementation of happy-dom is tied to the lifecycle of its window, and it adds nothing over the
-timers of the host, which the event loop already drives.
+A unit test in a `*.test.js` file runs in a page of a real browser, on the globals of that page,
+see `two-level-testing.md`. The page has the real `setTimeout`, `setInterval`, `Date` and
+`performance`.
 
-That left code which depends on time awkward to test. Examples are a debounce, a throttle, a poll, a
+That leaves code which depends on time awkward to test. Examples are a debounce, a throttle, a poll, a
 retry backoff and an animation. A test either waited real time on the wall clock, or patched
 `globalThis.setTimeout` by hand. The manual patch has two sharp edges. It is easy to forget to
 restore it, and it then leaks into the next test. The watchdog of the runner, which enforces the
@@ -32,7 +30,9 @@ or from a `Date`.
 - **The clock handle stays small.** `await clock.tick(ms)` advances the virtual time, and fires
   every timer that comes due, in order. `await clock.runAll()` drains every pending timer.
   `clock.now` reads the current virtual time. `clock.restore()` returns to the real timers early.
-  `tick` and `runAll` are async, and they flush an awaited promise between two timers. So one method
+  `tick` and `runAll` are async. Before and after each timer they wait a few real tasks of the
+  page, so an awaited promise settles, and so does work that the browser finishes in a later task,
+  such as the read of a `Response` body. So one method
   covers synchronous code, and code that awaits between two timers. There is no separate `tickAsync`
   to choose, and there is no `next` for one timer. An interval that reschedules itself without an
   end is capped, and it throws instead of hanging.
@@ -45,8 +45,9 @@ or from a `Date`.
 - **Where the clock lives.** The clock is an internal concern of the runner. The runner creates and
   injects it, from a small module outside the public `imp/test` surface. `imp/test` gains only the
   `fakeTimers` test option, and no new export.
-- **The clock is for a unit test only.** It works because a unit test shares the globals of Deno. In
-  an e2e spec, the code runs in a real browser, out of reach of a swap of a Deno global. So
+- **The clock is for a unit test only.** It works because a unit test shares the globals of the page
+  that runs it. In an e2e spec, the app runs in a second page, out of reach of a swap of the globals
+  of the runner page. So
   `fakeTimers` on a `*.spec.js` file fails, with a message that points at control of the time
   through the Puppeteer page.
 

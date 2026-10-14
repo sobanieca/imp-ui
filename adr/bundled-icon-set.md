@@ -27,7 +27,7 @@ draws it, and takes the value, not a name.**
 - **`imp/icons` is a generated module of `export const` array literals.** `luUser` is the list of
   shapes that draws it, which is
   `[['path', { d: '...' }], ['circle', { cx: '12', cy: '7', r: '4' }]]`, and nothing more. An app
-  imports the names that it draws, esbuild drops the rest, and an entry that uses one icon builds to
+  imports the names that it draws, the bundler drops the rest, and an entry that uses one icon builds to
   less than 20 kB, against the 434 kB of the table. A test builds that entry, and fails above 25 kB.
   So imp measures the guarantee, and does not only assert it.
 - **The export name is `lu` plus the Lucide icon name in PascalCase.** So `house` is `luHouse`, and
@@ -47,11 +47,10 @@ draws it, and takes the value, not a name.**
   and a standing question about which one to use. That would save an app that draws one glyph a few
   hundred bytes. `icon` is the one icon component, and Lucide is the one set.
 - **There is one generated file, and not one file per icon.** `lib/src/icons/lucide-icons.js` is 434
-  kB, and it holds 1791 declarations. `deno run -A --no-lock tools/vendor-lucide.js` writes it, from
-  the pinned `lucide-static` package, and you commit it. A module per icon would shake in the same
-  way, and it would add 1791 files to the repository for no gain. esbuild shakes per declaration
-  inside a module. The generator runs with `--no-lock`, because that package in `deno.lock` adds its
-  npm tarball to the compiled binary, and nothing imports it.
+  kB, and it holds 1791 declarations. `cargo xtask vendor-lucide` writes it, from the pinned
+  `lucide-static` package, and you commit it. A module per icon would shake in the same way, and it
+  would add 1791 files to the repository for no gain. The bundler shakes per declaration inside a
+  module.
 - **Lucide uses the ISC licence, and the icons that it inherited from Feather use MIT.** Both are
   already in the permissive tier of `license-policy-gate.md`. So nothing about the policy changes.
 - **The attribution ships with the app, automatically.** The generated module starts with a `/*! */`
@@ -70,8 +69,7 @@ draws it, and takes the value, not a name.**
   app. So the `imp/icons-by-name` lint rule enforces the rule where the app is. A namespace import,
   an `export *` re-export, and a dynamic `import()` of `imp/icons`, are each an error, and the
   message names the form that imports by name.
-- The binary grows by 434 kB, which is well under one percent of it. `deno fmt` and `deno lint`
-  exclude the generated file.
+- The binary grows by 434 kB. `cargo xtask check` does not format or lint the generated file.
 - Lucide renames an icon between two releases. So an update is one pinned version in
-  `tools/vendor-lucide.js`, a file that imp generates again, and possibly a rename in the public API
+  `xtask/src/vendor.rs`, a file that imp generates again, and possibly a rename in the public API
   of imp. Before version 1.0.0, that is a rename and nothing more.

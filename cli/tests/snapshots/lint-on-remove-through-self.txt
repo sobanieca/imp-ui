@@ -1,0 +1,21 @@
+$ imp lint app.js  (cwd: tests/fixtures/lint-on-remove)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/on-remove-through-self]: 'useState' in onRemove reaches state 'demo.user', which setup never resolved - in onRemove, useState returns only a handle that setup resolved through self, and a new name throws because the host has left the page; resolve 'demo.user' in setup, then reach it again here
+ --> app.js:16:20
+
+error[imp/on-remove-through-self]: 'useHttpClient' in onRemove reaches http client 'demo.reports', which setup never resolved - in onRemove, useHttpClient returns only a handle that setup resolved through self, and a new name throws because the host has left the page; resolve 'demo.reports' in setup, then reach it again here
+ --> app.js:17:25
+
+error[imp/on-remove-through-self]: 'initState' runs in onRemove, after the host has left the page, so the call throws - initialize the state in setup, and reach it here with useState(self, name)
+ --> app.js:18:5
+
+error[imp/on-remove-through-self]: 'theme.watch(self, fn)' runs in onRemove, after the host has left the page, so nothing owns the subscription and the call throws - watch in setup, or hold the stop that watch(fn) returns
+ --> app.js:19:5
+
+Found 4 problems
+Checked 1 file

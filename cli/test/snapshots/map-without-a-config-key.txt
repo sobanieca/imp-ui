@@ -1,8 +1,0 @@
-$ imp map  (cwd: test/fixtures/basic)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] imp.json has no 'map' - add "map": "src/app-map.js", the file that exports appMap(), or pass a file: imp map src/admin/map.js

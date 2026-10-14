@@ -1,0 +1,8 @@
+$ imp test --list  (cwd: tests/fixtures/test-list)
+exit code: 0
+
+--- stdout ---
+["util.test.js","checkout.spec.js","login.spec.js"]
+
+--- stderr ---
+(empty)

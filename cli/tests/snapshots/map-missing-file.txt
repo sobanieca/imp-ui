@@ -1,0 +1,8 @@
+$ imp map src/elsewhere.js  (cwd: tests/fixtures/map)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] no map at src/elsewhere.js - imp map reads the file that exports appMap(), the file you pass

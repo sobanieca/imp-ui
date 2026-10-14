@@ -1,8 +1,0 @@
-$ imp preview http.js  (cwd: test/fixtures/preview)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] not a preview file: http.js - previews end with .preview.js, and there is no http.preview.js next to it

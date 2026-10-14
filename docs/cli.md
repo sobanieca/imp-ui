@@ -73,8 +73,8 @@ imp install [package[@version]]       vendor a dependency into dependencies/
 imp uninstall <package>               remove a vendored dependency
 imp audit [--sbom] [--output <file>]  check the vendored packages for known vulnerabilities
                                       (--sbom: write a CycloneDX bill of materials)
-imp test  <file>                      run one test file: *.test.js unit in-process,
-                                      *.spec.js e2e in a real browser
+imp test  <file>                      run one test file in headless Chrome: *.test.js
+                                      unit in a blank page, *.spec.js e2e against the app
 imp test  --unit | --e2e              run every file of that level, each in its own
                                       process, in parallel (--jobs <n> caps concurrency |
                                       --screenshots <dir> | --video <dir>)
@@ -253,8 +253,8 @@ app
 `imp map src/admin/map.js` prints a part of the map on its own, with the props of the node that it
 hangs from on the first line, and its paths relative to that node.
 
-The command runs the file the same way `imp test --unit` runs a test, in process. The file can
-import `t` for a translated `label`. Nothing else needs a mock. A file that exports no map, or a
+The command reads the file in a JavaScript engine that is part of the binary, with no browser. The
+file can import `t` for a translated `label`. It must not touch the DOM or the network. A file that exports no map, or a
 path that does not exist, exits with code 1 and says what it expected. See **[Routing](routing.md)**
 for the map itself.
 
@@ -558,8 +558,8 @@ components keep their real calls. `imp build` leaves the folder out of productio
   `{ method, url, path, query, headers, body }`. `path` and `query` come from the URL. `body`
   arrives parsed when the page sent it as JSON. **The first match wins**, in file-path order.
 - **`handler(request)`** receives the same object, and returns `{ status, headers, body }`. The
-  default `status` is `200`. imp sends a `body` that is not a string as JSON. To take full control,
-  return a `Response` of your own. A handler can be async.
+  default `status` is `200`. imp sends a `body` that is not a string as JSON. Set a `content-type`
+  in `headers` to send anything else. A handler can be async.
 - **`delay`** is the simulated latency in milliseconds, so you can watch your spinners work.
 - **imp sends an unmatched request to the real network.** That is how you mock the half of an API
   that does not exist yet, while the rest goes to your backend.
@@ -1164,16 +1164,16 @@ imp test --unit | --e2e [--jobs <n>] [--filter <text>] [--list] [--video <dir>]
 ```
 
 `imp test` runs the tests of the project on two levels, through one command. A file that ends in
-`.test.js` is a unit test or an integration test. imp runs it in process, against a built-in
-simulated browser environment. There is no real browser, and it is very fast. A file that ends in
+`.test.js` is a unit test or an integration test. imp runs it in a blank page of a headless Chrome,
+with no server, and it is very fast. A file that ends in
 `.spec.js` is an end-to-end test. imp serves your app exactly as `imp start` does, launches a
 headless Chrome, and gives each spec a Puppeteer page that points at the running app. The console
 and the network activity of the browser stream to the terminal. You write a test with `test` and
 `expect` from `imp/test`. The runner and the assertions are part of the binary, so there is nothing
 to install.
 
-imp runs **one test file per process**. That is the unit of isolation, so no two files share the
-globals, the timers, the server or the browser of a process. `imp test <file>` runs exactly that one
+imp runs **one test file per process and per browser**. That is the unit of isolation, so no two
+files share the globals, the timers, the server or the browser of a process. `imp test <file>` runs exactly that one
 file, and exits with its result. To run a whole level, name it. `imp test --unit` covers every
 `*.test.js` file, and `imp test --e2e` covers every `*.spec.js` file. Each command discovers its
 files, and runs each one in its own process, in parallel. `--jobs <n>` caps the number, and the

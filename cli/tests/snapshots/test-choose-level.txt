@@ -1,0 +1,14 @@
+$ imp test  (cwd: tests/fixtures/test-list)
+exit code: 1
+
+--- stdout ---
+imp test needs a single file, or a level to run every file of that kind in parallel:
+  imp test --unit   run every *.test.js file, each in its own browser
+  imp test --e2e    run every *.spec.js file, each in its own browser
+  imp test <file>   run a single test file
+
+Narrow discovery with a path (imp test --e2e checkout/), cap parallelism
+with --jobs <n>, or filter tests with --filter <text>.
+
+--- stderr ---
+(empty)

@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: tests/fixtures/lint-module-scope)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/no-self-at-module-scope]: 'current' at module scope stores what belongs to one mount - the module outlives every mount, so the next mount overwrites the value and an unmounted component stays reachable; store a per-mount resource on self instead (self.current = ...)
+ --> app.js:12:5
+
+error[imp/no-self-at-module-scope]: 'cache.host' at module scope stores what belongs to one mount - the module outlives every mount, so the next mount overwrites the value and an unmounted component stays reachable; store a per-mount resource on self instead (self.field = ...)
+ --> app.js:13:5
+
+error[imp/no-self-at-module-scope]: 'cache.user' at module scope stores what belongs to one mount - the module outlives every mount, so the next mount overwrites the value and an unmounted component stays reachable; store a per-mount resource on self instead (self.field = ...)
+ --> app.js:14:5
+
+Found 3 problems
+Checked 1 file

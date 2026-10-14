@@ -97,9 +97,9 @@ These are the conventions:
 | ADR                                                                         | Decision                                                                             |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [project-scaffold](project-scaffold.md)                                     | imp init: one non-interactive scaffold, tests included                               |
-| [in-process-toolchain](in-process-toolchain.md)                             | fmt and lint run in-process, no subprocess                                           |
+| [native-toolchain](native-toolchain.md)                                     | One Rust binary: dprint crates, oxc lint, rolldown, QuickJS; no subprocess           |
 | [project-wide-dead-code](project-wide-dead-code.md)                         | imp lint walks the module graph: unreachable modules, dead exports                   |
-| [in-process-dependency-bundling](in-process-dependency-bundling.md)         | Bundle deps in-process via esbuild-wasm + Deno plugin                                |
+| [dependency-bundling-with-rolldown](dependency-bundling-with-rolldown.md)   | Bundle deps with rolldown and imp's own npm and jsr resolver                         |
 | [vendored-dependencies](vendored-dependencies.md)                           | Vendored, committed deps via imp install; no lockfile                                |
 | [vendored-dependency-manifest](vendored-dependency-manifest.md)             | Each vendored bundle records its packages, versions, licenses; npm integrity checked |
 | [dependency-audit](dependency-audit.md)                                     | imp audit: OSV check of the manifests, CycloneDX bill of materials                   |
@@ -107,19 +107,19 @@ These are the conventions:
 | [production-bundling](production-bundling.md)                               | imp build from vendored bundles + baked-in library                                   |
 | [public-folder-static-assets](public-folder-static-assets.md)               | public/ is the site root; IMP_BASEPATH prefixes built URLs                           |
 | [pwa-toolkit](pwa-toolkit.md)                                               | imp build --pwa: manifest, icons, build-graph SW                                     |
-| [raster-image-pipeline](raster-image-pipeline.md)                           | resvg decode+resize, format-preserving encode, no new codec                          |
+| [raster-image-pipeline](raster-image-pipeline.md)                           | resvg for icons, image crate for resize, format-preserving encode                    |
 | [transitive-duplication-accepted](transitive-duplication-accepted.md)       | No dedupe across vendored bundles - by design                                        |
-| [two-level-testing](two-level-testing.md)                                   | imp test: in-process unit runner, per-spec e2e Chrome                                |
+| [two-level-testing](two-level-testing.md)                                   | imp test: unit tests in a blank page, specs against the app, both in Chrome          |
 | [dev-server-mocks](dev-server-mocks.md)                                     | Mocks from *.mock.js files, run by imp start, reached through the worker             |
 | [service-worker-dev-mode](service-worker-dev-mode.md)                       | Dev mode is startDevMode() in any worker; a project keeps its own                    |
 | [fake-timers](fake-timers.md)                                               | fakeTimers option: virtual clock for unit tests                                      |
-| [test-video-recording](test-video-recording.md)                             | E2E GIF recording via CDP screencast, in-process, no ffmpeg                          |
+| [test-video-recording](test-video-recording.md)                             | E2E GIF recording via CDP screencast, native encode, no ffmpeg                       |
 | [component-preview](component-preview.md)                                   | imp preview: *.preview.js scenarios, their code and manual, on one page              |
 | [preview-export](preview-export.md)                                         | imp preview --output: the gallery as one element that any page embeds                |
 | [in-page-review-capture](in-page-review-capture.md)                         | One capture engine: dev review files and the bugReport component                     |
 | [browser-modules-as-function-source](browser-modules-as-function-source.md) | Injected browser code is a module; the CLI injects the source of its function        |
-| [prebundled-npm-dependencies](prebundled-npm-dependencies.md)               | Runtime npm deps pre-bundled at build time                                           |
-| [third-party-attribution](third-party-attribution.md)                       | THIRD-PARTY-LICENSES records every bundled package; prebundle generates it           |
+| [vendored-browser-driver](vendored-browser-driver.md)                       | Browser build of puppeteer-core, vendored and embedded, runs in the runner page      |
+| [third-party-attribution](third-party-attribution.md)                       | THIRD-PARTY-LICENSES records every crate and package; xtask generates it             |
 | [built-app-license-notices](built-app-license-notices.md)                   | imp build writes LICENSES.txt, imp's own notice included; scripts point at it        |
 | [agent-skills](agent-skills.md)                                             | imp skill: skills/ + *.skill.md sidecars as agent manuals                            |
 | [binary-distribution](binary-distribution.md)                               | GitHub Releases for Linux, macOS and Windows, compiled on push                       |

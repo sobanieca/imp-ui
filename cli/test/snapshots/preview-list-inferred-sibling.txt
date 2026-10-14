@@ -1,8 +1,0 @@
-$ imp preview components/counter.js --list  (cwd: test/fixtures/preview)
-exit code: 0
-
---- stdout ---
-components/counter.preview.js
-
---- stderr ---
-(empty)

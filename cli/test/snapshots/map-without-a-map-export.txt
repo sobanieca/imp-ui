@@ -1,8 +1,0 @@
-$ imp map src/no-map.js  (cwd: test/fixtures/map)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] src/no-map.js exports no map - export the value of appMap(), like export const app = appMap({ ... })

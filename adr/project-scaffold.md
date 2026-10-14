@@ -5,8 +5,8 @@
 A new imp project needs an `imp.json`, a page, a `public/` folder and an entry module, before
 anything runs. To assemble that by hand, a person reads the documentation before they write a line
 of app code. It also invites the two mistakes that imp most wants to prevent. The first is a
-`deno.json` that somebody wrote by hand. The second is a `.gitignore` that either commits a `.env`
-file, or ignores the vendored `dependencies/` folder.
+bundler or package config that somebody wrote by hand. The second is a `.gitignore` that either
+commits a `.env` file, or ignores the vendored `dependencies/` folder.
 
 imp assumes that an AI agent is a first-class user of every command. A scaffolder that asks a
 question cannot run unattended. Such a question could be the flavour of the framework, TypeScript or

@@ -1,8 +1,0 @@
-$ imp fmt --check app.js  (cwd: test/fixtures/fmt-ignore)
-exit code: 0
-
---- stdout ---
-(empty)
-
---- stderr ---
-Checked 1 file

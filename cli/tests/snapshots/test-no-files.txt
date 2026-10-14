@@ -1,0 +1,8 @@
+$ imp test  (cwd: tests/fixtures/with-config)
+exit code: 0
+
+--- stdout ---
+no test files found (unit tests end with .test.js, e2e specs with .spec.js)
+
+--- stderr ---
+(empty)

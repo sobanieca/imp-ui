@@ -1,8 +1,0 @@
-$ imp preview  (cwd: test/fixtures/preview-bad-theme)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] theme not found: theme/missing.js - listed in 'preview.themes'

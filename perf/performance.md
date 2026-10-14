@@ -21,15 +21,18 @@ run.
 ## How to run
 
 ```
-deno run -A perf/run.js                                  build the three apps and run every scenario
-deno run -A perf/run.js --frameworks imp                 one framework only (imp, react, vue)
-deno run -A perf/run.js --filter "1k rows"               scenarios whose name contains the text
-deno run -A perf/run.js --samples 20                     samples per scenario, default 10
-deno run -A perf/run.js --skip-build                     reuse perf/dist/ from the previous run
-deno run -A perf/run.js --profile                        readable bundles, and a CPU profile per scenario
+cargo xtask perf                              build the three apps and run every scenario
+cargo xtask perf --frameworks imp             one framework only (imp, react, vue)
+cargo xtask perf --filter "1k rows"           scenarios whose name contains the text
+cargo xtask perf --samples 20                 samples per scenario, default 10
+cargo xtask perf --skip-build                 reuse perf/dist/ from the previous run
+cargo xtask perf --profile                    readable bundles, and a CPU profile per scenario
 ```
 
-The runner compiles the imp binary first, so the numbers always describe the current source. A run
+The runner builds the imp binary first, so the numbers always describe the current source. It
+builds the imp app with `imp build`, and the React and Vue apps with the bundler of imp. It serves
+`perf/dist/` on a local port, and runs `perf/driver.spec.js` with `imp test`. The spec drives the
+three apps through Puppeteer, and prints the result for xtask to write. A run
 prints one line per scenario and writes two files:
 
 - `perf/results/<date>.json` holds every sample, every memory probe and every DOM snapshot.
@@ -37,28 +40,25 @@ prints one line per scenario and writes two files:
 
 With `--profile`, the run also writes `perf/results/<framework>-<scenario>.cpuprofile` for the last
 sample of every scenario. Chrome DevTools opens the file in its Performance panel. For a quick look
-in the terminal, `deno run -A perf/profile-top.js <file> 25` prints the functions with the most self
-time, and `--tree` at the end prints the call tree with inclusive times. A profiled run builds
+in the terminal, `cargo xtask perf-profile <file> 25` prints the functions with the most self time, and `--tree` at the end prints the call tree with inclusive times. A profiled run builds
 readable bundles, without minification, so the function names are real.
 
 The results folder is not committed. Copy a table into this file when a run becomes a reference.
 
 A run needs Chrome. The suite finds the browser the same way `imp test --e2e` does, and it downloads
-a pinned Chrome for Testing when the machine has none. The React and Vue apps come from npm at the
-versions pinned in `perf/apps/imports.json`, and the first build downloads them into the local
-cache.
+a pinned Chrome for Testing when the machine has none. The React and Vue apps import `npm:`
+specifiers with exact versions, and the first build downloads them into the cache of imp.
 
 ## Layout
 
 ```
 perf/
   performance.md          this file
-  run.js                  builds the apps, serves them, drives Chrome, writes the results
+  driver.spec.js          the imp test spec that drives Chrome through the scenarios
   scenarios.js            the scenario list, shared by every framework
   report.js               turns a result into the markdown tables
-  profile-top.js          summarizes a .cpuprofile file on the terminal
+  profile-summary.js      summarizes a .cpuprofile file; cargo xtask perf-profile runs it
   apps/
-    imports.json          the pinned React and Vue versions
     shared/bench-data.js  the row data and the list operations that every app shares
     imp/                  an imp project: imp.json, env.json, index.html, app.js,
                           and rich-text-document.js, the document of the rich text scenarios
@@ -219,7 +219,7 @@ microtasks, and the emptying of 1000 shadow roots is most of its time.
 
 ## Reference run
 
-The tables below are the output of `deno run -A perf/run.js` on the reference machine, a Linux
+The tables below are the output of `cargo xtask perf` on the reference machine, a Linux
 x86_64 cloud container with a noisy CPU. Read the ratios, not the absolute numbers.
 
 Date: 2026-09-23T12:17:59.533Z. Browser: Chrome/150.0.7871.46. Platform: linux x86_64. Versions: imp
@@ -296,5 +296,6 @@ Every framework produced the same DOM after every scenario.
 - **A new operation** needs an implementation in every app, with the same name and the same effect
   on the DOM. The DOM check catches an implementation that drifts.
 - **A new framework** is one folder under `perf/apps/` with an `index.html` and an `app.js` that
-  sets `window.__bench`, plus an entry in the `FRAMEWORKS` table of `perf/run.js` with a `build`
-  function and a `version` function. An npm framework reuses `buildNpmApp`.
+  sets `window.__bench`, plus its name in the `FRAMEWORKS` list of `xtask/src/perf.rs`. An npm
+  framework imports its package as an exact `npm:` specifier, which also gives its version to the
+  report.

@@ -1,0 +1,12 @@
+$ imp test counter.test.js  (cwd: tests/fixtures/test-unit)
+exit code: 0
+
+--- stdout ---
+counter.test.js
+  ✓ renders and reacts to clicks (*ms)
+  ✓ mount replaces previous content (*ms)
+
+imp test: 2 passed (1 file, *ms)
+
+--- stderr ---
+(empty)

@@ -1,0 +1,59 @@
+$ imp preview --output <out>/gallery  (cwd: /tests/fixtures/preview)
+exit code: 0
+
+--- stdout ---
+[INFO] imp preview exported 2 previews -> <out>/gallery/
+  <script type="module" src="/imp-preview.js"></script> loads it, <imp-preview></imp-preview> shows it
+  #/<group>/<name> in the address of the page opens a component
+  entry -> preview.html
+  LICENSES.txt (<size>)
+  app.js (<size>)
+  chunks/<name>-<hash>.js (<size>)
+  chunks/<name>-<hash>.js (<size>)
+  groups/components.js (<size>)
+  groups/widgets.js (<size>)
+  imp-preview.js (<size>)
+
+--- stderr ---
+(empty)
+
+
+--- files ---
+.imp-output
+LICENSES.txt
+app.js
+chunks/<name>-<hash>.js
+chunks/<name>-<hash>.js
+groups/components.js
+groups/widgets.js
+imp-preview.js
+
+--- imp-preview.js ---
+defines the element: true
+element name: imp-preview
+finds the app next to itself: true
+shows the page in a blob url frame: true
+mirrors the route to the address of the page: true
+follows the address of the page: true
+entry page kept: true
+title: imp preview
+hash routing: true
+loads the app by its address: true
+no dev server client: true
+
+--- app.js ---
+starts the chrome embedded: true
+catalog embedded: true
+loads a group on demand: true
+library shared through a chunk: true
+route bridge: true
+no dev server address: true
+
+--- groups/widgets.js ---
+holds the counter: true
+not the todos: true
+
+--- LICENSES.txt ---
+carries the notice of imp: true
+app.js points at it: true
+a chunk points one folder up: true

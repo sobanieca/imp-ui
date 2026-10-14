@@ -1,0 +1,5 @@
+[INFO] mocks - 2 file(s) from mocks/ answering requests
+[INFO] imp start serving index.html from <root>/tests/fixtures/start-mocks
+  -> http://localhost:<port>/
+  logs -> imp logs (-f follows the session)
+  imp auto-injected | live reload | console + network telemetry

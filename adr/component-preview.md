@@ -76,23 +76,23 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   `imp build` copies to `imp-skill.md` beside the bundle of a JS entry (`agent-skills.md`). The
   preview bundler folds it into the chunk of the preview file as `impPreviewSkill`, rendered to HTML
   at bundle time, so the runtime receives HTML and the entry module stays small. The renderer is the
-  vendored `marked` (`in-process-dependency-bundling.md`). Subject links are retargeted first,
+  `pulldown-cmark` crate, compiled into the binary (`native-toolchain.md`). Subject links are retargeted first,
   exactly as `imp skill` prints them, so a link to a sibling skill reads `state (imp skill state)`
   on the page too. The page styles the HTML with the same `--imp-*` tokens as the rest of the
   workbench, and it renders every fenced code block as a `codeBlock`, highlighted in the language of
   its fence. A component without a sidecar gets an empty state that names the file to write.
 - **Module mocking reuses the seam of the test runner.** `mockModule(specifier, factory)` is
-  imported from `imp/preview` and behaves as in `imp test`. It uses the same `imp-mock` esbuild
-  namespace, the same `orig`/`spy` helpers, and the same rule that a specifier is a relative module
-  or a vendored `imp.json` dependency. The scanning, mock generation, and resolver plugin live in
-  one shared module (`cli/src/bundling.js`) that both commands use. A developer who knows one knows
+  imported from `imp/preview` and behaves as in `imp test`. It uses the same virtual mock modules,
+  the same `orig`/`spy` helpers, and the same rule that a specifier is a relative module or a
+  vendored `imp.json` dependency. The scanning, the generation of a mock and the resolution live in
+  the bundler that both commands use. A developer who knows one knows
   the other. A mock applies to the whole preview app, because every preview shares one module graph.
   Two files that mock the same module must agree on the factory. Otherwise imp reports both and
   leaves them out of the build.
 - **The app is one split build, and every preview shares one module graph.** A generated entry
   module holds the catalog, the themes, the translations, the groups module and one dynamic
   `import()` per preview file. Each import points at a generated group module, which re-exports
-  every preview file of that group as a namespace. esbuild bundles the entry and every group module
+  every preview file of that group as a namespace. The bundler bundles the entry and every group module
   as entry points, with code splitting. The library and the chrome land in shared chunks, and each
   group is a bundle of its own that the browser fetches on the first visit. So there is exactly one
   instance of the library behind the chrome, every component and every mock. A move to a component

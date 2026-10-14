@@ -9,7 +9,7 @@ produces the production output from those bundles, and it treats each one as an 
 its own copy. imp scoped the removal of those copies. Every workable direction gives up a core
 guarantee:
 
-- **A new resolution of the `imp.json` pins at bundle time** would let esbuild see the full package
+- **A new resolution of the `imp.json` pins at bundle time** would let the bundler see the full package
   graph and remove the duplicates naturally. But it breaks an offline bundle on a cold cache. It
   also brings back the silent drift of a transitive version, which is what vendoring removed. The
   shipped graph would no longer be the committed bytes.

@@ -11,12 +11,11 @@ hide the values.
 Two constraints shaped the mechanism:
 
 - **`imp start` serves raw ES modules**, with an injected import map, and it bundles nothing.
-  `imp build` runs esbuild. An approach that works only at compile time, such as the `define` option
-  of esbuild, or `import.meta.env`, would work in the bundle but not in the raw dev server. That
+  `imp build` runs the bundler. An approach that works only at compile time, such as the `define`
+  option of a bundler, or `import.meta.env`, would work in the bundle but not in the raw dev server. That
   would force two different code paths, and it would make development differ from production.
-- **A user edits `imp.json` only.** imp follows the model that hides Deno. So the selection and the
-  configuration of an environment must appear in the config of imp, and not in a file that belongs
-  to Deno or to a bundler.
+- **A user edits `imp.json` only.** So the selection and the configuration of an environment must
+  appear in the config of imp, and not in a file that belongs to a bundler.
 
 ## Decision
 
@@ -32,7 +31,7 @@ Two constraints shaped the mechanism:
   reference reaches the resolver without a change, and it behaves the same way in both formats.
 - **The values are a flat set of a string, a number or a boolean.** Each env file is flat. imp
   rejects a nested object and an array in JSON. A string of the form `$env.NAME` resolves at build
-  time or at serve time, from the shell, through `Deno.env.get`. Any other string is a literal. A
+  time or at serve time, from the environment of the process. Any other string is a literal. A
   reference to a `$env.NAME` that is not set is an error that stops the command immediately. The
   message names the alias, the key and the variable. An environment that is half filled is worse
   than a build that stops.

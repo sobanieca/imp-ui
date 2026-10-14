@@ -1,7 +1,7 @@
 # imp - Testing
 
 ```
-imp test <file>            run one test file in this process
+imp test <file>            run one test file
 imp test --unit            run every *.test.js file, each in its own process, in parallel
 imp test --e2e             run every *.spec.js file, each in its own process, in parallel
 imp test --unit --jobs 4   cap how many files run at once (default: your CPU count)
@@ -15,20 +15,20 @@ imp test --e2e --mock      answer the specs' requests from your *.mock.js files
 `imp test` is the built-in test runner of imp. It covers two levels of testing, through one command
 and one import:
 
-- **A unit test or an integration test** lives in a file that ends in **`.test.js`**. It runs in
-  process, against a simulated browser environment. It is fast, and it needs no browser and no
+- **A unit test or an integration test** lives in a file that ends in **`.test.js`**. It runs in a
+  blank page of a real headless Chrome, with no server behind it. It is fast, and it needs no
   network.
 - **An end-to-end test** lives in a file that ends in **`.spec.js`**. It runs against your real app,
   in a real headless Chrome. `imp test` serves your app exactly as `imp start` does, opens a browser
   page on it, and hands that page to your spec.
 
-There is nothing to install and nothing to configure. The runner, the assertion library and the
-simulated DOM are part of the `imp` binary. The only external piece is the e2e browser, and imp
-finds it or fetches it for you. See _The browser_ below.
+There is nothing to install and nothing to configure. The runner and the assertion library are part
+of the `imp` binary. The only external piece is the browser, and imp finds it or fetches it for you.
+See _The browser_ below.
 
-imp runs **one test file per process**. That is the unit of isolation. So no two files share the
-globals, the timers or the module state of a process. For an e2e file, no two files share a server
-and a browser. `imp test <file>` runs exactly that one file in the current process, and exits with
+imp runs **one test file per process and per browser**. That is the unit of isolation. So no two
+files share the globals, the timers or the module state of a page. For an e2e file, no two files
+share a server either. `imp test <file>` runs exactly that one file in the current process, and exits with
 its result. The exit code is `0` when everything passed, and `1` otherwise.
 
 To run a whole level, name it, and imp does the fan-out. `imp test --unit` discovers every
@@ -316,9 +316,9 @@ module applies to every test in that file, and it never leaks to another file.
 
 ## Unit tests - `*.test.js`
 
-A unit test file runs in process, with a fresh simulated browser environment per file. `document`,
-`window`, the elements, the events, `localStorage` and the rest of the DOM API are there. So a
-component renders and behaves as it does in a page, and you start no page:
+A unit test file runs in a fresh, blank page of its own headless Chrome. `document`, `window`, the
+elements, the events, `localStorage` and the rest of the DOM API are the real ones. So a component
+renders and behaves exactly as it does in your app, and you start no server:
 
 ```js
 import { mount } from 'imp'
@@ -341,8 +341,8 @@ test('reacts to clicks', () => {
 ```
 
 Your whole module graph is available. A relative import, `imp`, and every vendored dependency alias
-resolve exactly as they do under `imp start`. Each file gets its own DOM. The tests in one file
-share that DOM, so reset what you need in `beforeEach`. Two separate files never see the state of
+resolve exactly as they do under `imp start`. Each file gets its own browser. The tests in one file
+share its page, so reset what you need in `beforeEach`. Two separate files never see the state of
 each other.
 
 A component renders into a shadow root. So `document.querySelector` does not see its internals. Go
@@ -356,6 +356,23 @@ card.shadowRoot.querySelector('button').click()
 `document`, `window` and the rest of the DOM are globals. Use them directly, as in the browser. A
 unit test callback receives a context only when there is something that is _not_ global to hand
 over. That is `clock`, under [fake timers](#fake-timers).
+
+### What the real browser does on its own time
+
+The page of a unit test is a real page, so it keeps the timing of the platform. Two rules follow:
+
+- **The browser fires some events one task later.** The `toggle` event of a popover and the `close`
+  event of a dialog arrive in a later task, and so does the work that a component does in them. An
+  example is the focus that a picker moves into its panel. Await one task before you check it:
+  `await new Promise((resolve) => setTimeout(resolve))`. Under fake timers, take `setTimeout` from
+  `globalThis` before the test starts, because the fake clock replaces it.
+- **An event that a test dispatches is not trusted.** The browser does not treat it as real input.
+  So `Escape` from `dispatchEvent` does not light-dismiss a popover. Close a popover with
+  `hidePopover()` in a unit test. Test the key in an e2e spec, where `page.keyboard.press('Escape')`
+  is real input.
+- **A dispatched `click` runs the activation behaviour of its target.** It checks a checkbox and it
+  follows a link. A click on an off-site link takes the page of the test away. Cancel that click in
+  a listener that runs after your check.
 
 ### Fake timers
 
@@ -608,16 +625,16 @@ it. A plain `imp test --e2e` records nothing.
 
 ### The browser
 
-An e2e spec runs in Chrome, and only in Chrome. imp supports the current stable version of Chrome,
+Every test runs in Chrome, and only in Chrome. imp supports the current stable version of Chrome,
 Edge, Firefox and Safari, see **[Browser support](browser-support.md)**, but it drives one browser
 in a test. Puppeteer drives Chrome through the DevTools protocol, and Firefox and Safari do not
-speak that protocol the same way. So a spec proves the behaviour in one engine. imp tests its own
+speak that protocol the same way. So a test proves the behaviour in one engine. imp tests its own
 components in every engine by hand, and a bug in another engine is a bug.
 
 imp reports no coverage. A test file is bundled before it runs, so a line count of the bundle would
 not point at your source. Use the test names as the record of what is covered.
 
-An e2e test needs a Chrome or Chromium binary. imp resolves one in this order:
+A test needs a Chrome or Chromium binary. imp resolves one in this order:
 
 1. **`test.browser` in `imp.json`**, which is an explicit path to a browser executable.
 2. **The `IMP_BROWSER` environment variable**, which is the same, for CI or for a single override.
@@ -642,13 +659,13 @@ Give it a browser in one of two ways:
   `.gitignore`. A relative path counts from the folder where you run imp, so set the same value for
   every step.
 
-A unit test needs no browser and no network. The dependencies of your app are in the repository, so
-`imp test` never talks to a package registry.
+A unit test uses the same browser and needs no network. The dependencies of your app are in the
+repository, so `imp test` never talks to a package registry.
 
 ## How to run tests in parallel
 
-Every `imp test <file>` is self-contained. A unit file gets its own fresh simulated DOM. A spec file
-gets its own server, port and browser. Nothing is shared between files. So the files can run at the
+Every `imp test <file>` is self-contained. A unit file gets its own browser and a fresh page. A spec
+file gets its own server, port and browser. Nothing is shared between files. So the files can run at the
 same time, and they do not interfere. `imp test --unit` and `imp test --e2e` do exactly that. Each
 one names a level, and imp runs every file of that level in its own process, several at a time.
 

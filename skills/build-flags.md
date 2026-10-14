@@ -31,7 +31,7 @@ would produce. The built output contains no flag name, no value and no `flag()` 
 ## Rules
 
 - **The name must be a string literal at the call site.** These forms stop the setup: `flag(name)`,
-  `flag(\`X\`)` where the template has a substitution, a call with two arguments, and a call with no
+  ``flag(`X`)`` where the template has a substitution, a call with two arguments, and a call with no
   argument. imp folds the call only when it can read the name.
 - **A declared flag is not an env value.** imp removes every `flags` name from `env`, so
   `env.CHECKOUT_V2` is `undefined`. `flag()` is the only reader, and the only form that the build

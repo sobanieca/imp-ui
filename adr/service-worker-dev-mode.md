@@ -19,8 +19,8 @@ of imp is that one call. A project names its own worker in `imp.json`, and it ma
 itself.
 
 - **`imp.json` names the worker.** `"serviceWorker": "src/sw.js"` is the path of the source. With
-  the key, the injected client registers no worker of imp. The dev server bundles the source in
-  process, with esbuild, and serves it at `/sw.js`. `imp build` bundles the same source into `sw.js`
+  the key, the injected client registers no worker of imp. The dev server bundles the source with
+  the bundler of imp, and serves it at `/sw.js`. `imp build` bundles the same source into `sw.js`
   in the output folder. The app registers `/sw.js` itself, in both modes. There is one registration,
   and the app owns it.
 - **`startDevMode()` adds exactly the dev behaviour.** It adds a `fetch` listener that reports each

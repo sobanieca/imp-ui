@@ -1,8 +1,0 @@
-$ imp preview --list --json  (cwd: test/fixtures/preview)
-exit code: 0
-
---- stdout ---
-["components/counter.preview.js","components/todos.preview.js"]
-
---- stderr ---
-(empty)

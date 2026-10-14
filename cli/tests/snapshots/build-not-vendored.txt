@@ -1,0 +1,9 @@
+$ imp build  (cwd: /tests/fixtures/with-config)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] Build failed with 1 error:
+app.js:1:17: ERROR: dependency 'mitt' is declared but not vendored - run 'imp install'

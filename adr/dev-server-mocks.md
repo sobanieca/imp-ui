@@ -31,12 +31,14 @@ nested folder. So you split the routes across files, in the way that the app is 
   `match(request)` is a predicate over `{ method, url, path, query, headers, body }`. It is a
   function, and not a route pattern. A pattern language is a second thing to learn, and it is always
   one case short of what a predicate expresses. `handler(request)` receives the same object. It
-  returns `{ status, headers, body }`, where imp serializes a plain `body` as JSON, or it returns a
-  `Response`. `delay` is the simulated latency in milliseconds. **The first entry that matches
+  returns `{ status, headers, body }`, where imp serializes a plain `body` as JSON. A handler sets a
+  `content-type` header to send anything else. `delay` is the simulated latency in milliseconds. **The first entry that matches
   answers**, in file-path order.
-- **A handler is code, and not data.** imp bundles the files with esbuild and loads the bundle once
-  in a worker thread of the dev server process. So a file imports a shared fixture, a vendored
-  dependency, and whatever else it needs. A closure over a counter is how a handler keeps state
+- **A handler is code, and not data.** imp bundles the files with its bundler and loads the bundle
+  once in an embedded QuickJS, on a thread of the dev server process, see `native-toolchain.md`. So
+  a file imports a shared fixture, a vendored dependency, and whatever else it needs. The engine
+  gives a handler the language, `console` and timers, and no DOM and no `fetch`, because a mock
+  answers for the network and never calls it. A closure over a counter is how a handler keeps state
   across requests. That state lives as long as the run. Every tab shares it, and a reload or a
   stopped worker keeps it. A `throw` inside a handler is how it simulates a transport failure, and
   the `fetch` of the page then rejects exactly as it does when the machine is offline.

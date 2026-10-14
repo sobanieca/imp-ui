@@ -1,8 +1,0 @@
-$ imp test --unit --jobs 0  (cwd: test/fixtures/test-unit)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] --jobs must be a positive integer, got '0'

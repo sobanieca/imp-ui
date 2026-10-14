@@ -27,7 +27,7 @@ unchanged, so a selection and a copy give the source back.
   looks, and the read-only listing and the input cannot drift apart.
 - **They stay two exports, in two entry points.** A bundler drops an export, not a prop value. One
   `code({ editable })` component would pull the textarea, the keys, the form shell and the field
-  binding into an app that only shows a listing, because esbuild cannot drop a branch that a value
+  binding into an app that only shows a listing, because a bundler cannot drop a branch that a value
   can reach. Two exports split the bundle at the import, the same way `field.js` and `shell.js` sit
   under every input, see `tree-shakeable-library.md`.
 - **imp ships its own scanner, with no highlighting dependency.** One generic scanner reads a

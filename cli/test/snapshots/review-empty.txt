@@ -1,8 +1,0 @@
-$ imp review  (cwd: test/fixtures/basic)
-exit code: 0
-
---- stdout ---
-[INFO] no reviews yet - serve the app with imp start or imp preview, press the imp mark on the page, press Add review, and pick the element you want to comment on
-
---- stderr ---
-(empty)

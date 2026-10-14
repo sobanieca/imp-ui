@@ -1,8 +1,0 @@
-$ imp skill ./widget.js  (cwd: test/fixtures/skill-project)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] no skill for ./widget.js - describe the component in widget.skill.md next to it

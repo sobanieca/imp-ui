@@ -1,8 +1,0 @@
-$ imp test app.js  (cwd: test/fixtures/basic)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] not a test file: app.js - unit tests end with .test.js, e2e specs with .spec.js

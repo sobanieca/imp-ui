@@ -8,7 +8,7 @@ import {
   provide,
   ref,
   shallowRef,
-} from 'vue'
+} from 'npm:vue@3.5.43'
 import { makeRows, relabel, swapEnds, withoutMiddle } from '../shared/bench-data.js'
 
 const handles = {

@@ -16,7 +16,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp preview --output <dir>`             | export the gallery as static files that any page embeds  | [preview](preview.md)           |
 | `imp review [clear]`                     | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |
 | `imp logs [-n <count>] [-f]`             | print the log of the dev server session; `-f` follows it | [start](start.md)               |
-| `imp test <file> \| --unit \| --e2e`     | `*.test.js` in-process, `*.spec.js` in a real browser    | [testing](testing.md)           |
+| `imp test <file> \| --unit \| --e2e`     | `*.test.js` in a blank page, `*.spec.js` against the app | [testing](testing.md)           |
 | `imp install [pkg[@version]]`            | vendor a dependency into `dependencies/`                 | [dependencies](dependencies.md) |
 | `imp uninstall <pkg>`                    | remove one                                               | [dependencies](dependencies.md) |
 | `imp audit [--sbom]`                     | known vulnerabilities (OSV), or a CycloneDX SBOM         | [dependencies](dependencies.md) |
@@ -60,4 +60,4 @@ key, and the `--env` environment files.
 Your repository holds your code, your static assets in `public/`, at most one `imp.json`, and the
 committed `dependencies/` folder. imp writes no lock file, no cache folder and no generated config
 into the project. imp caches a registry download and an imp version per user, outside the project.
-Never create a `deno.json`, a `package.json` or a bundler config for an imp project.
+Never create a `package.json` or a bundler config for an imp project.

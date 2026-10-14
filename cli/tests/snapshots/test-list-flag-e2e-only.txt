@@ -1,0 +1,8 @@
+$ imp test --e2e --list  (cwd: tests/fixtures/test-list)
+exit code: 0
+
+--- stdout ---
+["checkout.spec.js","login.spec.js"]
+
+--- stderr ---
+(empty)

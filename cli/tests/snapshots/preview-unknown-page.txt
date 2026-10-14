@@ -1,0 +1,5 @@
+GET /@imp/preview/components/missing.preview.js
+status: 404
+content-type: text/plain; charset=utf-8
+
+not found: components/missing.preview.js

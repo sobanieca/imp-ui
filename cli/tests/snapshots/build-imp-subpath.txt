@@ -1,0 +1,38 @@
+$ imp build std-entry.js --output std  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+built std-entry.js -> std/
+  LICENSES.txt - 1 third-party license notice, referenced from every script emitted
+  imp-skill.md - the manual of the component, from std-entry.skill.md
+  LICENSES.txt (<size>)
+  imp-skill.md (<size>)
+  std-entry.js (<size>)
+
+--- stderr ---
+(empty)
+
+[bundle defines the element: true]
+[bundle carries a development check: false]
+
+$ imp build std-entry.js --output std  (cwd: <tmp>, unknown subpath)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] Build failed with 1 error:
+std-entry.js:1:25: ERROR: 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/analytics/aly', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
+
+
+$ imp build std-entry.js --output std  (cwd: <tmp>, tooling-only subpath)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] Build failed with 1 error:
+std-entry.js:1:23: ERROR: 'imp/test' is only resolved by imp test - it cannot be bundled into an app
+

@@ -1,0 +1,12 @@
+$ imp test lib.test.js --filter adds  (cwd: tests/fixtures/test-unit)
+exit code: 0
+
+--- stdout ---
+lib.test.js
+  ✓ adds numbers (*ms)
+  - greets by name (skipped)
+
+imp test: 1 passed, 1 skipped (1 file, *ms)
+
+--- stderr ---
+(empty)

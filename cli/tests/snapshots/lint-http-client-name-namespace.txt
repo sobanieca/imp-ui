@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: tests/fixtures/lint-http-client)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/http-client-name-namespace]: http client name 'sync' must include a namespace - use dot-separated segments like 'myapp.api'
+ --> app.js:5:40
+
+error[imp/http-client-name-namespace]: http client name 'api' must include a namespace - use dot-separated segments like 'myapp.api'
+ --> app.js:9:38
+
+error[imp/http-client-name-namespace]: http client name 'exports' must include a namespace - use dot-separated segments like 'myapp.api'
+ --> app.js:16:38
+
+Found 3 problems
+Checked 1 file

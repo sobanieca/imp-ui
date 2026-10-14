@@ -1,5 +1,0 @@
-[WARN] dependency 'mitt' is declared but not vendored - run 'imp install'
-[INFO] imp start serving index.html from <root>/test/fixtures/with-config
-  -> http://localhost:<port>/
-  logs -> imp logs (-f follows the session)
-  imp auto-injected | live reload | console + network telemetry

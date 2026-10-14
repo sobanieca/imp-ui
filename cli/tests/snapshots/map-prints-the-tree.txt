@@ -1,0 +1,22 @@
+$ imp map  (cwd: tests/fixtures/map)
+exit code: 0
+
+--- stdout ---
+app
+  /                                           Home
+    The dashboard
+  /projects                                   Projects  access: "user"
+    /projects/:projectId                      Project id
+      /projects/:projectId/builds             Builds
+        /projects/:projectId/builds/:buildId  Build id
+      /projects/:projectId/settings           Settings  access: "admin" | group 'Manage'
+  /admin                                      Admin  access: "admin"
+    /admin/users                              Users
+    /admin/create-api-key                     Create api key
+      Mint a key for a service
+  /reports                                    Reports
+    /reports/weekly                           Weekly
+  /login                                      Login  hidden from the nav
+
+--- stderr ---
+(empty)

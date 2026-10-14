@@ -14,12 +14,12 @@ simple worker that caches the HTML holds a user on a stale build forever.
 A general tool, such as Workbox or `vite-plugin-pwa`, globs the output directory and hashes the
 files again after the bundler ran, because it is separate from the bundler. imp is not separate.
 `imp build`, see `production-bundling.md`, owns the module graph. It already knows the exact set of
-files that it wrote, with their content hashes, from the esbuild metafile and from its own list of
-emitted files. That is a structural advantage for a correct precache list. It is the reason why PWA
+files that it wrote, with their content hashes, from the output of the bundler and from its own
+list of emitted files. That is a structural advantage for a correct precache list. It is the reason why PWA
 support earns real effort here, in place of a thin generator of a manifest.
 
 The scaling of an icon is the one piece that is not the generation of a string.
-`in-process-toolchain.md` forbids a subprocess. So imp cannot call ImageMagick or sharp, which is
+`native-toolchain.md` forbids a subprocess. So imp cannot call ImageMagick or sharp, which is
 how the asset generator of `vite-plugin-pwa` works.
 
 ## Decision
@@ -37,12 +37,10 @@ With `--pwa` on an HTML entry, the build also does the following:
 - **imp scales one source icon**, which is a `.svg` or a `.png` file, to the full set. That set is a
   192 app icon, a 512 app icon, a 512 maskable icon that imp insets to a safe zone over an opaque
   background, and a 180 apple-touch-icon. imp generates them again on every build. The scaling runs
-  **in process**, through the vendored `@resvg/resvg-wasm` rasterizer. `deno.lock` pins that
-  rasterizer, and imp bakes it into the binary, like `esbuild-wasm`, see
-  `in-process-dependency-bundling.md`. Both formats go through one rasterizer. Each icon is a small
-  wrapper SVG. That SVG embeds the source as a data URI, and controls the target size, the
-  background and the inset. So the raster handling of resvg scales a PNG source, and imp needs no
-  second codec. This keeps the guarantee of no subprocess, see `in-process-toolchain.md`.
+  **in process**, through the `resvg` crate, see `raster-image-pipeline.md`. Both formats go
+  through one rasterizer. Each icon is a small wrapper SVG. That SVG embeds the source as a data
+  URI, and controls the target size, the background and the inset. So the raster handling of resvg
+  scales a PNG source. This keeps the guarantee of no subprocess, see `native-toolchain.md`.
 - **imp writes `manifest.webmanifest`.** It guarantees the set that installability needs, which is
   the name, the 192 and 512 icons, the display mode and the `start_url`. imp injects the manifest
   link, the theme-color meta tag and the apple-touch-icon link into the built HTML. It writes the
@@ -120,11 +118,9 @@ answers first takes that request.
 - One source image is the whole input for the icons. Nobody maintains an icon set by hand. An SVG
   source scales cleanly to any size. resvg scales a PNG source, and you must supply that source at
   or above the largest target, which is 512, to avoid a blur from an upscale.
-- `@resvg/resvg-wasm` adds a vendored wasm rasterizer to the binary. The lock file pins it, like the
-  other wasm engines that run in process. The generation of an icon calls nothing outside the
-  binary.
+- The generation of an icon calls nothing outside the binary.
 - `imp.json` gains a `pwa` block that imp validates, beside `dependencies`, `fmt`, `lint` and
-  `test`, in `cli/src/config.js`. Deno stays an implementation detail. A user edits `imp.json` only.
+  `test`, in `cli/src/config.rs`. A user edits `imp.json` only.
 
 ## Scope and non-goals
 
@@ -143,7 +139,7 @@ otherwise:
   of request. That covers stale-while-revalidate, caching at runtime with an expiry or a maximum
   number of entries, cache-only, and network-only. imp ships one opinionated set of strategies. It
   is not a policy engine. That is the same reasoning as the bundling of the build graph, in place of
-  an exposed config for esbuild.
+  an exposed config for the bundler.
 - **Caching of dynamic data at runtime.** A request that the build did not emit passes through to
   the network, and imp caches nothing. That covers an API call, and an image that the app fetches at
   runtime. To cache mutable data is a concern of the app. It has its own policy for freshness and

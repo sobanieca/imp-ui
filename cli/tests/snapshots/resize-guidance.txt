@@ -1,0 +1,10 @@
+$ imp resize logo.png  (cwd: tests/fixtures/resize)
+exit code: 0
+
+--- stdout ---
+[INFO] logo.png is 300x180, 2.2 kB
+[INFO] to shrink it, run:  imp resize logo.png -w 225
+[INFO] resize keeps quality high with minimal compression - reach for a dedicated image tool for fine-grained control
+
+--- stderr ---
+(empty)

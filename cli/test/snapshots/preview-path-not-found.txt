@@ -1,8 +1,0 @@
-$ imp preview missing.preview.js  (cwd: test/fixtures/preview)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] path not found: missing.preview.js

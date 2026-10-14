@@ -9,8 +9,7 @@ its images and its fonts beside the built code.
 The first implementation had no folder for assets. The project root _was_ the static root. So the
 build copied the whole root into the output, and then subtracted what must not ship. It subtracted a
 fixed list of directories, which were `.git`, `node_modules` and `.imp`. It subtracted a fixed list
-of root files, which held `imp.json`. It subtracted the inputs of the bundler, taken from the
-esbuild metafile. It subtracted the configured environment files, and the mocks folder.
+of root files, which held `imp.json`. It subtracted the inputs of the bundler. It subtracted the configured environment files, and the mocks folder.
 
 That is a list of what to exclude, and it fails in the unsafe direction. imp publishes anything that
 nobody thought to exclude. That could be a stray `.env.local`, a `notes/` folder, or a second
@@ -35,7 +34,7 @@ These consequences follow from a list of what to include:
 
 - **The build holds no exclusion list.** Module sources, `imp.json`, an environment file, the mocks
   folder, `.git`, `node_modules` and `.imp` are all excluded, because they are not in `public/`. imp
-  does not read the esbuild metafile for this purpose.
+  does not read the inputs of the bundler for this purpose.
 - **The entry HTML stays at the project root.** imp processes that file. It bundles the scripts,
   injects the environment values, and adds the PWA tags. `public/` passes through without a change.
   The two roles are different, so they live in different places.

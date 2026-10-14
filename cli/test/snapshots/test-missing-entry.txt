@@ -1,8 +1,0 @@
-$ imp test login.spec.js  (cwd: test/fixtures/test-list)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] e2e entry not found: index.html - each *.spec.js runs against your served app; set "test": { "entry": "<page>.html" } in imp.json if it is not index.html

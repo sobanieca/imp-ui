@@ -1,0 +1,17 @@
+$ imp install axe-core@4.8.2  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+[WARN] npm:axe-core@4.8.2 bundles to 529.6 kB, which will be committed into your git repository - raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
+installed axe-core (npm:axe-core@4.8.2)
+  dependencies/axe-core/axe-core.js (529.6 kB)
+  dependencies/axe-core/manifest.json (packages, versions, licenses)
+  bundled packages:
+    axe-core@4.8.2 - MPL-2.0
+  integrity: 1 npm package checked against the signed hash of the npm registry
+
+--- stderr ---
+(empty)
+
+--- wrote dependencies/ ---
+yes

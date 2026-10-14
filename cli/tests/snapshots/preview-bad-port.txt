@@ -1,0 +1,8 @@
+$ imp preview --port abc  (cwd: tests/fixtures/preview)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] --port must be an integer between 0 and 65535, got 'abc'

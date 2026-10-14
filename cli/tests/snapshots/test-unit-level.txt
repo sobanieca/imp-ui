@@ -1,0 +1,13 @@
+$ imp test --unit  (cwd: tests/fixtures/test-unit)
+exit code: 0
+
+--- stdout ---
+imp test: running 2 files in parallel
+
+✓ counter.test.js
+✓ lib.test.js
+
+imp test: 2 passed (2 files, *ms)
+
+--- stderr ---
+(empty)

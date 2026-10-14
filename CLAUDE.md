@@ -20,23 +20,23 @@ change the shape of anything.
 - Reconsider this rule only when the version reaches `1.0.0`. From then on, a breaking change has a
   real cost.
 
-## Hide Deno from the user
+## One native binary
 
-imp uses Deno as its runtime and toolchain. **Deno must stay an implementation detail.** A user must
-not need to know that Deno is involved. Keep every user-facing surface imp-branded:
+imp is a Rust program. Every tool that it needs compiles into the one binary: the formatter, the
+linter, the bundler, the image codecs and an embedded QuickJS (`adr/native-toolchain.md`). A user
+installs that binary and nothing else. Keep every user-facing surface imp-branded:
 
-- **Config** lives in `imp.json`, never in a user-authored `deno.json`. The CLI reads `imp.json`
-  in-process and applies its settings directly. It writes no derived `deno.json` to disk. Users edit
-  only `imp.json`.
+- **Config** lives in `imp.json`. Users edit only `imp.json`. imp writes no other config file into a
+  project.
 - **No lock file.** imp writes no lock file into a project. The committed `dependencies/` folder is
-  the frozen state (`adr/vendored-dependencies.md`). Never tell a user about `deno.lock`.
-- **Commands and docs** speak in terms of `imp` (`imp start`, `imp lint`, ...), not `deno`. They
-  shell out to Deno underneath, but they do not say so.
+  the frozen state (`adr/vendored-dependencies.md`).
+- **Commands and docs** speak in terms of `imp` (`imp start`, `imp lint`, ...). They never name the
+  crates or the engines underneath.
 
-The one exception is imp's own repo manifest, `deno.json` at the project root. It is imp's internal
-build file, and the compiled binary contains it. End users never see it. When you add a feature that
-needs new Deno tooling, route it through this same translation layer. Do not ask users to touch
-Deno.
+The Rust workspace of this repository is imp's internal build. `Cargo.toml`, `cli/`, `xtask/` and
+`.cargo/config.toml` are maintainer files that end users never see. When you add a feature that
+needs a new tool, add a crate to the CLI. Never ask users to install a tool, and never start a
+subprocess for a tool of imp's own.
 
 ## ADRs (`adr/`)
 
@@ -78,7 +78,7 @@ Docs are for a person. The agent-facing text for the same subject lives in `skil
 `skills/` is the corpus that `imp skill <subject>` prints for an AI agent (`adr/agent-skills.md`).
 It is the **only** documentation compiled into the binary. `docs/` is the source of the public site,
 and nothing reads it at runtime. There is one page per subject, named after the subject
-(`skills/state.md` is `imp skill state`). Each page is registered in `cli/src/skill.js` with its
+(`skills/state.md` is `imp skill state`). Each page is registered in `cli/src/skill.rs` with its
 summary, group and aliases. A test asserts that the folder and the registry match exactly.
 
 The two corpora are **independent**. They serve different readers through different channels, so
@@ -127,51 +127,57 @@ component in one folder that shows in another group fails the tests.
 
 ## Everything runs the compiled binary
 
-**Every command that invokes imp runs the compiled `./imp`, never `cli/src/main.js`.** There is one
+**Every command that invokes imp runs the binary that cargo builds from this tree.** There is one
 imp, the same one users get. There is no second "from source" mode that could behave differently.
 
-`tools/imp.js` is the only way to run it. `deno run -A tools/imp.js <args>` runs `tools/compile.js`
-at the repo root, then `./imp <args>` in the current folder. `compile.js` rebuilds only when the
-stamp next to the binary (`imp.stamp`) does not match the git-visible files. The stamp is a hash of
-the file list with the time and size of each file. So an edit, a new file or a deleted file in
-`cli/src` or `lib/src` forces a rebuild before the command runs, and a green test run is never about
-stale code. An unchanged tree costs one `git ls-files`, and the script prints that it skipped. Pass
-`--force` to `compile.js` to rebuild anyway.
+`cargo imp <args>` builds the CLI with the `local` profile, then runs it in the current folder.
+Cargo rebuilds when a file under `cli/`, `lib/src`, `skills/` or the licence files changed, because
+`cli/build.rs` embeds those trees. So a green test run is never about stale code. Every `cargo xtask`
+task builds the binary the same way before it runs it.
 
-**Never invoke `./imp` by hand** (for example `../../imp test` from `lib/test`). A bare `./imp`
-skips the freshness check and runs whatever was compiled last.
+**Never run `target/local/imp` by hand** (for example `../../target/local/imp test` from
+`lib/test`). A bare binary skips the rebuild and runs whatever was compiled last.
 
 ## Tasks and tools
 
-`deno.json` holds five tasks. Each one is the daily command for one job:
+`.cargo/config.toml` defines the aliases. Each one is the daily command for one job:
 
-| Task                | What it does                                                                     |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `deno task example` | serves the todo example from `examples` on <http://localhost:4507/>              |
-| `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/>         |
-| `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm`         |
-| `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests           |
-| `deno task check`   | runs `deno lint`, `deno fmt`, then `imp lint` on `lib/src` and `cli/src/browser` |
+| Command                  | What it does                                                             |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `cargo imp <args>`       | builds the CLI, then runs `imp <args>` in the current folder             |
+| `cargo xtask example`    | serves the todo example from `examples` on <http://localhost:4507/>      |
+| `cargo xtask preview`    | serves the component previews from `lib/src` on <http://localhost:4517/> |
+| `cargo xtask site`       | builds the home page into `site/dist/` and serves that folder with `rfm` |
+| `cargo xtask test`       | runs the library unit tests, the library e2e tests, then the Rust tests  |
+| `cargo xtask check`      | formats and lints the repository, then runs `imp lint` on `lib/src`      |
+| `cargo verify`           | runs `check` without writing a file, then `test`; CI runs the same steps |
+| `cargo update-snapshots` | runs the CLI tests and rewrites their snapshots                          |
 
-`deno task test --update` rewrites the CLI snapshots. `rfm` is a static file server installed on the
-machine, not part of the repo. Install it from <https://sobanieca.github.io/remote-file-manager/>.
+`rfm` is a static file server installed on the machine, not part of the repo. Install it from
+<https://sobanieca.github.io/remote-file-manager/>. `cargo xtask test` runs the library unit tests
+with `TZ=Europe/Warsaw`, because the calendar tests need a day that skips an hour. To run one test
+file, use `cargo imp test <file>` from `lib/test`, with the same `TZ` for `calendar.test.js`.
 
-Every other maintainer job is a script, run directly with `deno run -A`:
+Every other maintainer job is a cargo command too:
 
-| Script                                             | What it does                                            |
-| -------------------------------------------------- | ------------------------------------------------------- |
-| `tools/imp.js <args>`                              | compiles if needed, then runs `./imp <args>` here       |
-| `tools/compile.js`                                 | compiles `./imp` when the git-visible files changed     |
-| `tools/build-site.js`                              | writes `site/dist/`, gallery included; CI runs this     |
-| `tools/check-binary-size.js`                       | fails when `./imp` is over `binary-size-limit.json`     |
-| `tools/update-dependencies.js`                     | updates the Deno dependencies and the formatter plugins |
-| `tools/vendor-lucide.js` (with `--no-lock`)        | regenerates `lib/src/icons/lucide-icons.js`             |
-| `tools/vendor-natural-earth.js` (with `--no-lock`) | regenerates the world data of `map`                     |
-| `perf/run.js`                                      | builds the perf apps and runs the scenarios             |
+| Command                            | What it does                                                   |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `cargo xtask build-site`           | writes `site/dist/`, gallery included                          |
+| `cargo xtask binary-size`          | fails when the release binary is over `binary-size-limit.json` |
+| `cargo xtask licenses`             | lists the crates of the binary in `THIRD-PARTY-LICENSES.md`    |
+| `cargo xtask vendor-lucide`        | regenerates `lib/src/icons/lucide-icons.js`                    |
+| `cargo xtask vendor-natural-earth` | regenerates the world data of `map`                            |
+| `cargo xtask vendor-puppeteer`     | regenerates the browser driver in `cli/vendor/puppeteer/`      |
+| `cargo xtask perf`                 | builds the perf apps and runs the scenarios, see `perf/`       |
+| `cargo update`                     | updates the Rust dependencies within their version ranges      |
+
+The CLI tests live in `cli/tests/`, one Rust file per command, with their snapshots in
+`cli/tests/snapshots/` and their fixtures in `cli/tests/fixtures/`. A test that drives a browser
+returns early when `IMP_TEST_SKIP_BROWSER` is set.
 
 ## Previewing the standard components
 
-`deno task preview` serves every `*.preview.js` under `lib/src` on <http://localhost:4517/>. This is
+`cargo xtask preview` serves every `*.preview.js` under `lib/src` on <http://localhost:4517/>. This is
 the working surface for the development of a standard component. The task runs `imp preview` from
 `lib/src`. The `imp.json` there points `preview.groups` at `std/preview-groups.js`. That module
 holds the sidebar's groups, their order and their icons. The CLI holds none of them. The same
@@ -182,8 +188,8 @@ Those themes take their tokens from `std/preview-look.js`. That module maps the 
 radii and the shadows. The ground of the page is `background-app`, and a raised surface is
 `color-surface`.
 
-The page itself adds four layers in `cli/src/preview-shell.js`. The geometry, the brand bars and the
-prose styles come from `cli/src/design-chrome.js`, which the home page shares. The geometry is the
+The page itself adds four layers in `cli/js/preview-shell.js`. The geometry, the brand bars and the
+prose styles come from `cli/js/design-chrome.js`, which the home page shares. The geometry is the
 corner mark of the design system, in the lower end corner of the canvas, under the content. It has a
 fading line grid and six squares, and it is smaller on a phone. Its ink follows `color-text`, and
 its three brand colours are constants. A panel paints the sidebar in the surface colour. A square of
@@ -196,61 +202,64 @@ is permitted. The font files are not changed. A changed IBM Plex file must not u
 The compiled binary does not contain `lib/src/public/`.
 
 The task serves from `lib/src`, so the session log is `lib/src/.imp/dev.log`. To print it, run
-`deno run -A ../../tools/imp.js logs` from `lib/src`, with `-n` or `-f` as needed. An `imp logs` at
+`cargo imp logs` from `lib/src`, with `-n` or `-f` as needed. An `imp logs` at
 the repo root finds no log there, and its message points at `lib/src`.
 
 **An edit to a component during a session does not reach the page. Restart the task.** The dev
 server reloads on save and rebuilds the preview page. But a preview imports `button` from `imp/std`,
 and that import resolves to the library embedded in the running binary. So the page comes back
 byte-identical. Preview files are read from disk, so an edit to a `*.preview.js` does live-reload.
-The loop for a component edit is Ctrl-C, then `deno task preview` again. The task recompiles first.
+The loop for a component edit is Ctrl-C, then `cargo xtask preview` again. The task rebuilds first.
 
 ## The home page of imp
 
 `site/` is the home page: static HTML pages, Overview, Components and Docs, under one navbar.
-`tools/build-site.js` writes the whole site into `site/dist/`. It renders `docs/*.md` and
-`site/content/overview.md` with the vendored `marked`, highlights every code block at build time
-with the tokenizer of `codeBlock`, and writes one `index.html` per page with its content, its title
-and its description. There is no imp app on the site and no client-side router. A navbar link is a
+`cargo xtask build-site` writes the whole site into `site/dist/`. The pages come from
+`site/build/site.js`, a module of pure functions that xtask runs in QuickJS. xtask renders
+`docs/*.md` and `site/content/overview.md` with `pulldown-cmark`, and the module highlights every
+code block at build time with the tokenizer of `codeBlock`. It writes one `index.html` per page with
+its content, its title and its description. There is no imp app on the site and no client-side router. A navbar link is a
 plain link, and a click loads the next page. The only JavaScript is a small script for the theme
 toggle, and the `imp-preview` element on the Components page, which is the export of `imp preview`.
 
 The site takes its look from the same source as the preview page. `site.css` holds the tokens of
 `std/preview-look.js` over the built-in themes as `--imp-*` custom properties, one set per colour
-scheme, and the styles of `cli/src/design-styles.js`: the corner geometry and the Markdown prose. So
+scheme, and the styles of `cli/js/design-styles.js`: the corner geometry and the Markdown prose. So
 the site matches the imp theme without an imp runtime. An inline script reads the remembered scheme
 before the first paint, so a dark page never flashes light. The build copies `lib/src/public/fonts/`
 to `/fonts/`, so the pages and the gallery load the same font files from the site. The site sends no
 request to another origin.
 
-`deno run -A tools/build-site.js` writes `site/dist/`. It renders the pages, then runs
-`imp preview --output` from `lib/src` into `site/dist/gallery/`. Set `IMP_SITE_URL` to the public
+`cargo xtask build-site` renders the pages, then runs `imp preview --output` from `lib/src` into
+`site/dist/gallery/`. A module of `site/build/` may import only by relative path, because the
+QuickJS of xtask has no other resolution. Set `IMP_SITE_URL` to the public
 origin to get canonical links, `sitemap.xml` and `robots.txt`. Upload `site/dist/` as it is.
-`deno task site` builds it, then serves `site/dist/` with `rfm`. The site draws its own navbar,
+`cargo xtask site` builds it, then serves `site/dist/` with `rfm`. The site draws its own navbar,
 because the navbar of the design system is ink with white text, and the `shell` bar takes the
 surface colour of the theme.
 
 ## After making changes
 
-After you complete a batch of code changes, run `deno task check`. It runs `deno lint`, `deno fmt`
-and `imp lint` on `lib/src` and on `cli/src/browser`. Fix every issue it reports before you consider
-the work done. These tools operate on imp's own repo source, so it is fine to invoke Deno directly
-here. This is internal maintainer tooling, not a user-facing surface.
+After you complete a batch of code changes, run `cargo xtask check`. It runs `cargo fmt` and
+`cargo clippy -D warnings` on the Rust code. It formats every JavaScript, JSON, Markdown, CSS, HTML
+and YAML file of the repository with the formatter of imp, and lints every JavaScript file with the
+recommended rules of imp. It writes the crate list of `THIRD-PARTY-LICENSES.md` again. Last, it runs
+`imp lint` on `lib/src`. Fix every issue it reports before you consider the work done.
 
-**Keep every change that `deno fmt` makes, also in files outside your scope.** `deno fmt` runs
+**Keep every change that the check makes, also in files outside your scope.** The formatter runs
 repo-wide and can reformat files unrelated to your change, for example formatting drift in other
 `todo/` or `adr/` files. Do **not** revert those reformats to keep a diff "focused". The formatted
 state is the canonical state of the repo. Leave every change in place and include it in the commit.
 
-**`deno lint` must pass clean.** If it reports an error, fix it before you consider the work done.
-This holds for code you just wrote and for anything else it reports. Do not ignore, suppress, or
-leave lint errors behind.
+**Clippy and the repository lint must pass clean.** If either reports an error, fix it before you
+consider the work done. This holds for code you just wrote and for anything else it reports. Do not
+ignore, suppress, or leave lint errors behind. Do not add an `#[allow]` to silence clippy.
 
-**The `imp lint` step of `deno task check` must pass clean too.** It lints `lib/src` with the rule
-set that users get. That set is stricter than `deno lint`, and it includes the dead code checks. The
-`imp.json` in `lib/src` lists the library entry points in `publicExports`, together with each export
-that the CLI imports from `lib/src` by path. When you add such an import, list it there. Do not add
-an `imp-lint-ignore` directive to library code.
+**The `imp lint` step must pass clean too.** It lints `lib/src` with the rule set that users get.
+That set is stricter than the repository lint, and it includes the dead code checks. The `imp.json`
+in `lib/src` lists the library entry points in `publicExports`, together with each export that the
+CLI imports from `lib/src` by path. When you add such an import, list it there. Do not add an
+`imp-lint-ignore` directive to library code.
 
 ## Git - commit on the branch you are on
 
@@ -260,7 +269,7 @@ back onto `main`. The history of the repo is linear on `main`, and a branch per 
 merge to undo. When another branch is checked out, commit there instead. The rule is always to
 commit where you already are.
 
-Commit only when asked. `deno lint` and `deno fmt` must pass before you commit.
+Commit only when asked. `cargo xtask check` must pass before you commit.
 
 ## Prose style - Simplified Technical English
 
@@ -275,8 +284,9 @@ Keep them as they are. Apply these rules:
 - **Paragraphs.** Keep a paragraph to six sentences or fewer, on one topic. Start it with the topic
   sentence. Use a vertical list for a sequence of steps or a set of parallel items.
 - **Verbs.** Use the active voice. Use the present tense. Give an instruction in the imperative
-  ("Run `deno lint`", not "`deno lint` should be run"). Say "must" for a requirement and "can" for a
-  possibility. Do not use "should", "may" or "might" for a requirement.
+  ("Run `cargo xtask check`", not "`cargo xtask check` should be run"). Say "must" for a
+  requirement and "can" for a possibility. Do not use "should", "may" or "might" for a
+  requirement.
 - **Words.** Use one term for one thing, everywhere. Use simple words in their most common meaning.
   Do not use idioms, metaphors, slang or humour ("out of the box", "footgun", "with teeth"). Do not
   use a noun cluster of more than three nouns. Do not leave out articles.
@@ -299,11 +309,10 @@ for this file.
 
 **The rule covers punctuation, not content, and it has two deliberate exceptions.** Text that is
 non-ASCII because that is what it says stays as written: a translation fixture in Arabic or Polish,
-and third-party licence text quoted verbatim. Two glyph sets are kept on purpose. The first is the
-pass/fail marks of `imp test` (U+2713 and U+2717), which show the result at a glance in a way a word
-does not. The second is the box-drawing that esbuild prints in its own errors, which imp captures
-rather than authors. Nothing else gets an exception. Do not add a third one without recording it
-here.
+and third-party licence text quoted verbatim. One glyph set is kept on purpose: the pass/fail marks
+of `imp test` (U+2713 and U+2717), which show the result at a glance in a way a word does not.
+Nothing else gets an exception. Do not add another one without recording it here. A Rust string
+that must hold a non-ASCII character writes it as an escape, such as `\u{e9}`.
 
 The rule is not cosmetic, for two reasons. Skills and CLI output print into whatever encoding the
 user's terminal has, where a non-ASCII byte is a mojibake risk rather than a nicer glyph. And a
@@ -313,10 +322,11 @@ item. That class of bug shows up only when the page is rendered.
 **Name a file with a hyphen between words, never an underscore.** `app-map.js`, `theme-colors.js`,
 `user-card.skill.md`. An underscore needs one more key on most keyboards. The rule covers every file
 in this repo: the library, the CLI, the tools, the tests, the scaffold of `imp init`, every path in
-`docs/`, `skills/` and a `*.skill.md`. Two things keep an underscore because the name is not imp's
-to choose: an environment value such as `IMP_BASEPATH`, since a shell does not accept a hyphen in a
-name, and a vendored third-party asset that keeps its upstream name, such as the `.wasm` files under
-`cli/src/vendor/`.
+`docs/`, `skills/` and a `*.skill.md`. A Rust source file is named the same way. Its module takes the
+underscore name that Rust requires, through `#[path = "dead-code.rs"] mod dead_code;`. Two things
+keep an underscore because the name is not imp's to choose: an environment value such as
+`IMP_BASEPATH`, since a shell does not accept a hyphen in a name, and a crate name of a third party,
+such as `markup_fmt`.
 
 **Do not add comments to code.** Write self-explanatory code instead. Use clear, descriptive names
 for functions, variables, and constants, so the intent is obvious without comments. Put prose
@@ -332,16 +342,16 @@ module scope, because a global cannot reach another module. A test fails on anyt
 the line. Do not use `/* @__PURE__ */` to silence the test. That trades a checked rule for an
 unchecked claim.
 
-**Use modern JavaScript syntax (ES2017 / ES7 and newer).** This project targets modern browsers and
-Deno only. There is no transpilation and no legacy support, so write current idiomatic JS. Prefer
+**Use modern JavaScript syntax (ES2017 / ES7 and newer).** This project targets modern browsers
+only. There is no transpilation and no legacy support, so write current idiomatic JS. Prefer
 `const`/`let` over `var`; arrow functions and rest/spread params over `function`/`arguments`;
 template literals over string concatenation; destructuring, `for...of`, optional chaining (`?.`),
 nullish coalescing (`??`), `async`/`await`, and other current language features. This applies to
 browser-targeted code too, including the scripts that the CLI injects into a page.
 
-**Write browser code that the CLI injects as a script in a module in `cli/src/browser/`, never in a
-template literal.** The module exports one self-contained function. The CLI injects its source with
-`browserScript(run, input)`, and the function reads every value from its one argument
+**Write browser code that the CLI injects as a script in a module in `cli/js/`, never in a Rust
+string.** The module exports one self-contained function. The CLI injects its source with
+`browser_script(module, input)`, and the function reads every value from its one argument
 (`adr/browser-modules-as-function-source.md`). The function must not use a name from the scope of
 its module, because only the function text reaches the page.
 

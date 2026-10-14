@@ -1,0 +1,8 @@
+$ imp lint app.js  (cwd: tests/fixtures/lint-ignore)
+exit code: 0
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+Checked 1 file

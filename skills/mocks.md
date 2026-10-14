@@ -32,14 +32,15 @@ export const mocks = [
 Every `*.mock.js` file under the folder exports a `mocks` array of `{ match, handler, delay? }`. imp
 also reads a nested folder.
 
-| Key                | Gets                                          | Returns                                                     |
-| ------------------ | --------------------------------------------- | ----------------------------------------------------------- |
-| `match(request)`   | `{ method, url, path, query, headers, body }` | `true` to answer this request                               |
-| `handler(request)` | the same object                               | `{ status, headers, body }`, or a `Response`. Can be async. |
-| `delay`            | -                                             | milliseconds of simulated latency, so a spinner is visible  |
+| Key                | Gets                                          | Returns                                                    |
+| ------------------ | --------------------------------------------- | ---------------------------------------------------------- |
+| `match(request)`   | `{ method, url, path, query, headers, body }` | `true` to answer this request                              |
+| `handler(request)` | the same object                               | `{ status, headers, body }`. Can be async.                 |
+| `delay`            | -                                             | milliseconds of simulated latency, so a spinner is visible |
 
 The default `status` is `200`. imp sends a `body` that is not a string as JSON. A request `body`
-arrives parsed when the page sent it as JSON.
+arrives parsed when the page sent it as JSON. A mock runs in the `imp start` process, not in the
+page. It has `setTimeout` and `console`, and no DOM and no `fetch`.
 
 ## How to turn the mocks on and off
 

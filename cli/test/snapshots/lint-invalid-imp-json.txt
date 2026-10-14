@@ -1,8 +1,0 @@
-$ imp lint app.js  (cwd: test/fixtures/broken-config)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] invalid imp.json - 'fmt' must be an object

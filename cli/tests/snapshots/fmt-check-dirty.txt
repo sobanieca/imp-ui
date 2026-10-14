@@ -1,0 +1,15 @@
+$ imp fmt --check messy.js  (cwd: tests/fixtures/fmt-dirty)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+
+from messy.js:
+1 | -export function messy (first,second)   {
+1 | +export function messy(first, second) {
+2 | -    return first+second;
+2 | +  return first + second
+
+error: Found 1 not formatted file in 1 file

@@ -1,0 +1,17 @@
+$ imp install node-forge@0.7.0  (cwd: <tmp>)
+exit code: 0
+
+--- stdout ---
+[WARN] npm:node-forge@0.7.0 bundles to 265.4 kB, which will be committed into your git repository - raise "maxFileSize" or add the path to "maxFileSizeIgnore" in imp.json
+installed node-forge (npm:node-forge@0.7.0)
+  dependencies/node-forge/node-forge.js (265.4 kB)
+  dependencies/node-forge/manifest.json (packages, versions, licenses)
+  bundled packages:
+    node-forge@0.7.0 - (BSD-3-Clause OR GPL-2.0)
+  integrity: 1 npm package checked against the signed hash of the npm registry
+
+--- stderr ---
+(empty)
+
+--- wrote dependencies/ ---
+yes

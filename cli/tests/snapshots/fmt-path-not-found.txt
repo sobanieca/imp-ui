@@ -1,0 +1,8 @@
+$ imp fmt missing.js  (cwd: tests/fixtures/basic)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+[ERROR] path not found: missing.js

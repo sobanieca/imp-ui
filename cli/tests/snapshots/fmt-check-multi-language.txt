@@ -1,0 +1,67 @@
+$ imp fmt --check  (cwd: tests/fixtures/fmt-multi)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+
+from ci.yaml:
+4 | -      - run:   echo hi
+4 | +      - run: echo hi
+
+from data.json:
+1 | -{"name"  :"imp","tags":[1,2,
+1 | +{ "name": "imp", "tags": [1, 2, 3] }
+2 | -3]}
+2 | +
+3 | -
+
+from feed.xml:
+1 | -<feed><entry   id="1"    title="hello"/></feed>
+1 | +<feed><entry id="1" title="hello" /></feed>
+
+from icon.svg:
+1 | -<svg    xmlns="http://www.w3.org/2000/svg"><rect   x="1"    y="2"/></svg>
+1 | +<svg xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" /></svg>
+
+from notes.md:
+1 | -#  Notes
+1 | +# Notes
+3 | -*  first item
+3 | +- first item
+4 | -*    second item
+4 | +- second item
+
+from page.html:
+1 | -<div  class="app"></div>
+1 | +<div class="app"></div>
+3 | -      const  greet=(name)=>{console.log("hi "+name);};
+3 | +const greet = (name) => {
+4 | -   greet( "imp" )
+4 | +  console.log('hi ' + name)
+5 | -</script>
+5 | +}
+6 | -
+6 | +greet('imp')
+7 | +</script>
+8 | +
+
+from query.sql:
+1 | -select   id,name   from    users   where id=1;
+1 | +select id,name
+2 | -
+2 | +from users
+3 | +where id=1;
+4 | +
+
+from style.css:
+1 | -.card{color:red;padding:4px   8px}
+1 | +.card {
+2 | -
+2 | +  color: red;
+3 | +  padding: 4px 8px;
+4 | +}
+5 | +
+
+error: Found 8 not formatted files in 8 files

@@ -1,0 +1,54 @@
+<div class="outline" hidden></div>
+<div class="dock">
+  <div class="panel" id="imp-review-panel" hidden>
+    <div class="view" data-view="idle">
+      <p class="title">imp review</p>
+      <p class="status" role="status"></p>
+    </div>
+    <div class="view" data-view="picking" hidden>
+      <p class="title">imp review</p>
+      <p class="hint">Click the element you want to review. imp saves your comment on this
+        machine, with the page and the element. Your AI agent reads the reviews with imp review,
+        so it knows exactly which element you mean.</p>
+      <button type="button" class="ghost" data-action="cancel">Cancel</button>
+    </div>
+    <div class="view" data-view="commenting" hidden>
+      <p class="title">imp review</p>
+      <p class="hint">The element you picked stays outlined on the page. Say what is wrong with
+        it.</p>
+      <label class="label" for="imp-review-comment">Comment</label>
+      <textarea id="imp-review-comment" rows="4"></textarea>
+      <div class="row">
+        <button type="button" class="primary" data-action="save">Save review</button>
+        <button type="button" class="ghost" data-action="cancel">Cancel</button>
+      </div>
+    </div>
+    <div class="view" data-view="log" hidden>
+      <div class="head">
+        <p class="title" data-log-title></p>
+        <button type="button" class="clear" data-action="clear" disabled>{{ICON_CLEAR}}</button>
+      </div>
+      <div class="chips" role="group" aria-label="Filter the lines" style="flex-direction: column"></div>
+      <ol class="lines"></ol>
+      <p class="hint">What the page did since it loaded, as it happens. Click a line to see all of
+        it. Open the developer tools of the browser for more.</p>
+    </div>
+    <div class="view" data-view="theme" hidden>
+      <p class="title">Theme editor</p>
+      <p class="status" role="status" data-theme-status></p>
+      <div class="card"></div>
+      <p class="hint">The page re-skins as you type. imp keeps the draft for the applied theme
+        across reloads, until you press reset. Copy or download theme.js and pass it to init().</p>
+    </div>
+  </div>
+  <div class="actions" id="imp-review-actions" hidden>
+    <button type="button" class="action" data-action="pick" aria-label="Add review"
+      title="Add review">{{ICON_REVIEW}}</button>
+    <button type="button" class="action" data-action="console" aria-label="Console logs"
+      title="Console logs" aria-pressed="false">{{ICON_CONSOLE}}</button>
+    <button type="button" class="action" data-action="network" aria-label="Network logs"
+      title="Network logs" aria-pressed="false">{{ICON_NETWORK}}</button>{{THEME_ACTION}}
+  </div>
+  <button type="button" class="toggle" aria-label="imp tools" aria-expanded="false"
+    aria-controls="imp-review-actions">{{MARK}}</button>
+</div>
