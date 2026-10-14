@@ -19,7 +19,7 @@ current directory. With `dir`, imp creates that directory if necessary and scaff
 | `src/theme.js`                        | the theme: `base: 'imp-light'` and the font in `font-family`. Make the palette your own. |
 | `src/app-map.js`                      | the application map, named in `imp.json`. It exports `app`: `home` and `about`.          |
 | `src/app.js`                          | the frame and the router. It exports `root`; `home` binds a click counter.               |
-| `test/app.test.js`                    | the unit test, in process                                                                |
+| `test/app.test.js`                    | the unit test, in a blank page                                                           |
 | `test/app.spec.js`                    | the e2e spec, in a real browser                                                          |
 | `public/favicon.svg`                  | published at the site root                                                               |
 | `public/fonts/fonts.css`              | the `@font-face` rules of the font, weights 400 to 700                                   |
@@ -135,7 +135,7 @@ export default {
   `about` node renders a stub until you bind it. Do not expect a larger template.
 - **`--font` takes a name from the font table.** Any other name exits `1` and lists the names. imp
   writes nothing then.
-- **Never add a `deno.json` or a `package.json`** to the scaffolded project.
+- **Never add a `package.json` or a bundler config** to the scaffolded project.
 - **The scaffold passes `imp lint`, `imp fmt --check`, `imp test --unit` and `imp test --e2e` as
   written.** Keep it passing while you edit.
 
@@ -167,7 +167,7 @@ names `imp-button >>> button` only to select one button out of the page.
 
 ```
 imp start        serve with live reload
-imp test --unit  the in-process test
+imp test --unit  the unit test
 imp test --e2e   the browser spec
 ```
 

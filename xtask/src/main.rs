@@ -1,4 +1,5 @@
 mod check;
+mod licenses;
 #[path = "natural-earth.rs"]
 mod natural_earth;
 mod perf;
@@ -18,13 +19,14 @@ const USAGE: &str = "usage: cargo xtask <task>
   site                   build the home page into site/dist/ and serve it with rfm
   build-site             build the home page into site/dist/
   test [filter]          run the library tests, then the Rust tests
-  check                  format and lint the repository
+  check [--verify]       format and lint the repository (--verify: write nothing)
   verify                 check without writing, then test
   update-snapshots       run the CLI tests and rewrite their snapshots
   binary-size            fail when the release binary is over binary-size-limit.json
   vendor-lucide          regenerate lib/src/icons/lucide-icons.js
   vendor-natural-earth   regenerate the world data of map
   vendor-puppeteer       regenerate cli/vendor/puppeteer/
+  licenses               list the crates of the binary in THIRD-PARTY-LICENSES.md
   perf [options]         build the perf apps and run the scenarios
   perf-profile <file>    print the functions with the most self time in a CPU profile";
 
@@ -47,13 +49,14 @@ fn main() -> ExitCode {
         "site" => site::serve_site(),
         "build-site" => site::build_site(),
         "test" => check::test(rest),
-        "check" => check::check(true),
+        "check" => check::check(!rest.iter().any(|arg| arg == "--verify")),
         "verify" => check::check(false).and_then(|()| check::test(rest)),
         "update-snapshots" => check::update_snapshots(),
         "binary-size" => check::binary_size(),
         "vendor-lucide" => vendor::lucide(),
         "vendor-natural-earth" => natural_earth::natural_earth(),
         "vendor-puppeteer" => vendor::puppeteer(),
+        "licenses" => licenses::write(),
         "perf" => perf::perf(rest),
         "perf-profile" => perf::profile_summary(rest),
         _ => {

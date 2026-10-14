@@ -7,11 +7,9 @@ map. That map points `imp` at the served library, and points each dependency ali
 at its vendored `dependencies/<alias>/` bundle, see `vendored-dependencies.md`. Production needs the
 opposite shape. It needs self-contained, minified static files, with no import map and no imp
 runtime, that you can upload to any static host. The output must resolve a specifier exactly as
-development did. Otherwise what you tested is not what you ship. The question of the bundling engine
-was already settled for `imp install`. It is esbuild-wasm with `@deno/esbuild-plugin`, fully in
-process, see `in-process-dependency-bundling.md`. The bundling utilities of Deno are still not
-available inside a compiled binary. `deno bundle` is removed from `denort`, and `Deno.bundle()`
-throws in a compiled binary. imp probed both against Deno 2.9.
+development did. Otherwise what you tested is not what you ship. The bundling engine was already
+settled for `imp install`. It is rolldown with the imp plugin, see
+`dependency-bundling-with-rolldown.md`.
 
 ## Decision
 
@@ -23,14 +21,12 @@ step.
 
 `imp build [file.html|file.js] [--output dist]` reuses the engine of `imp install` to build the
 module graph of the app. It resolves a bare specifier in the same way as the import map of the dev
-server, offline. An esbuild resolver that imp owns intercepts before the resolver of Deno:
+server, offline. The imp plugin resolves a specifier before the bundler does:
 
-- **`imp` resolves to the library source that imp baked into the binary.** imp loads it from the
-  virtual filesystem of the compiled binary. imp addresses a library module by its path inside the
-  binary, such as `/lib/src/api/router.js`, and never by the folder that the binary runs from. imp
-  addresses an entry point as an absolute `file://` URL. imp resolves a local entry path against the
-  project before it bundles, because a relative path would otherwise resolve into that virtual
-  filesystem, and not into the project.
+- **`imp` resolves to the library source that imp embedded in the binary.** imp loads it from the
+  embedded files. imp addresses a library module by its path inside the binary, such as
+  `lib/src/api/router.js`, and never by the folder that the binary runs from. imp resolves a local
+  entry path against the project before it bundles.
 - **Each dependency alias resolves to its vendored `dependencies/<alias>/` bundle.** imp contacts no
   registry. A declared alias with no vendored bundle fails the build, and the message suggests
   `imp install`.
@@ -43,8 +39,8 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   file of a build lives under `chunks/`, and only there. A host caches that folder for a year and
   revalidates every other file on each load, with no special case. A `public/chunks/` folder stops
   the build, because a copied file with no hash must never get that cache.
-- **A hashed name depends only on the sources.** esbuild puts the path of each input into the hash
-  of an output. imp bundles with the project root as the working directory. So a project file enters
+- **A hashed name depends only on the sources.** The bundler puts the path of each input into the
+  hash of an output. imp bundles with the project root as the working directory. So a project file enters
   the hash by its path inside the project, and a library module by its path inside the binary. The
   same sources give the same names and the same bytes in any folder, and from a binary at any path.
   A test builds one project in two folders and compares the output.
@@ -54,9 +50,10 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   module. So the build rejects it too, with a message that names the script and the file.
 - **A JS entry keeps its plain name.** A consumer imports that file by name, so a hash would break
   every import of it.
-- **imp reads the HTML entry with a real HTML parser, parse5**, which follows the parsing rules of
-  the HTML standard. So a script in a comment, in a `<textarea>` or in an attribute value is text,
-  as it is for a browser. An attribute value that holds `>` does not end its tag. imp edits the
+- **imp reads the HTML entry with its own tokenizer, which follows the tokenizer rules of the HTML
+  standard** for comments, quoted attribute values, and the raw text of elements such as `<script>`,
+  `<style>` and `<textarea>`. So a script in a comment, in a `<textarea>` or in an attribute value
+  is text, as it is for a browser. An attribute value that holds `>` does not end its tag. imp edits the
   source at the offsets that the parser reports, and it writes no page again from a tree. So the
   rest of the page keeps its layout, its case and its quotes. The dev server, the preview and the
   linter read a page with the same parser.
@@ -152,5 +149,5 @@ server, offline. An esbuild resolver that imp owns intercepts before the resolve
   `error-boundaries.md`. It catches the rejection of async work that is not part of a mount. It
   reports each error with a message and a context that identify the failure without the stack trace.
   The output has no second set of files to keep private or to upload to a service.
-- esbuild in wasm is about ten times slower than native esbuild. imp pays that cost per `imp build`
-  run, and never while it serves.
+- The bundler is native code, so a build of a typical app takes well under a second, and the dev
+  server never bundles an app.

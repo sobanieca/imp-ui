@@ -150,5 +150,6 @@ vite.config.ts.timestamp-*
 .imp/
 
 
-# performance results (perf/run.js)
+# performance results and built apps (cargo xtask perf)
 perf/results/
+perf/dist/

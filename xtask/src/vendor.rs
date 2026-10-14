@@ -43,9 +43,38 @@ pub fn puppeteer() -> anyhow::Result<()> {
         );
     }
     let packages = imp::deps::bundled_packages(&bundled.inputs);
-    for package in &packages {
-        println!("  bundled {}@{}", package.name, package.version);
-    }
+    let lines: Vec<String> = imp::dependency_manifest::record_package_licenses(&packages)
+        .iter()
+        .map(|record| {
+            let mut parts = vec![
+                format!(
+                    "{}@{}",
+                    record["name"].as_str().unwrap_or(""),
+                    record["version"].as_str().unwrap_or("")
+                ),
+                record["license"].as_str().unwrap_or("unknown").to_string(),
+            ];
+            parts.extend(crate::licenses::copyright_lines(
+                record["licenseText"].as_str().unwrap_or(""),
+            ));
+            parts.join(" - ")
+        })
+        .collect();
+    let path = root.join(crate::licenses::LICENSES_FILE);
+    let text = std::fs::read_to_string(&path)?;
+    std::fs::write(
+        &path,
+        crate::licenses::replace_section(
+            &text,
+            crate::licenses::DRIVER_HEADING,
+            &crate::licenses::driver_section(&lines),
+        ),
+    )?;
+    println!(
+        "  {} packages recorded in {}",
+        lines.len(),
+        crate::licenses::LICENSES_FILE
+    );
     Ok(())
 }
 

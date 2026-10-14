@@ -1,8 +1,8 @@
 # config - the `imp.json` file, key by key
 
 `imp.json` is the only config file that a project author writes. It sits at the project root and it
-is **completely optional**. Every command works without it. Never write a `deno.json`, a
-`package.json`, a lock file or a bundler config. imp reads `imp.json` in process, and nothing else.
+is **completely optional**. Every command works without it. Never write a `package.json`, a lock
+file or a bundler config. imp reads `imp.json` in process, and nothing else.
 
 A command searches upward from the current directory and stops at the repository root. So a command
 works from any subfolder. In a monorepo, each app folder carries its own `imp.json` and its own

@@ -126,15 +126,15 @@ holds plain functions. It is not a component, and it is not a manager singleton.
   the shadow root. So a dialog whose `open` is already true at mount opens in `onMount`, on the next
   frame, in place of during the mount, which would throw. Only the first open needs that. Every
   later open runs against an element that is connected.
-- **The test DOM gets a fill for the top layer.** `installDomEnvironment` installs it, beside the
-  fills for the popover and for the animations. It covers the entry of the focus, the restore of the
-  focus, `inert` on the rest of the body, and the sequence from Escape to `cancel` to `close`. Like
-  a browser, the fill starts no close request for an Escape `keydown` that a listener cancelled. The
-  vendored happy-dom stubs `showModal()` as `setAttribute('open', '')`, and it has none of that.
-  Without the fill, a unit test can assert the markup, and nothing that the seam exists for. The
-  fill completes the test environment, in the way that `fake-timers.md` does. The seam itself calls
-  the real APIs, with no condition, and the proof in a real browser stays in an e2e spec, see
-  `two-level-testing.md`.
+- **The modal seam reports a close at once.** The browser fires the `close` event of a dialog one
+  task after `close()`. The seam calls its `onClose` callback right after `dialog.close()`, and again
+  on the `close` event, and a component writes its open state back from that callback. So an open
+  request in the same task never opens a dialog that is closing. The seam takes the scroll hold of
+  the page once per overlay, so two opens never leave a hold behind.
+- **The tests see the real top layer.** A unit test runs in a real page, see
+  `two-level-testing.md`, so the entry of the focus, the restore of the focus, the inert page and
+  the sequence from Escape to `cancel` to `close` are the ones of the browser. A light dismiss needs
+  real input, so an e2e spec presses `Escape` on every panel.
 
 ## Consequences
 
@@ -216,7 +216,6 @@ in `menuButton({ items })`, and never `menu(button(...))`.
 only. It wraps the control in a box of its own root and anchors the tip to that box. The control
 carries its own accessible name, and the tooltip text must never be the only name of a control.
 
-**A placement is proven in a browser.** happy-dom has no layout engine, so a unit test cannot see
-which side a panel took. The e2e suite pins the trigger of the menu, of `datePicker` and of
+**A placement is proven against the served app.** The e2e suite pins the trigger of the menu, of `datePicker` and of
 `comboBox` to each edge and each corner of the viewport, and asserts the side that the panel took.
 It also asserts the corner of the `toast` region in both directions.

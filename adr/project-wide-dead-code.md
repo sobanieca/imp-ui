@@ -2,16 +2,15 @@
 
 ## Context
 
-The recommended set of ESLint already reports dead code inside one file. `no-unused-vars` reports a
+The recommended lint rules already report dead code inside one file. `no-unused-vars` reports a
 local or an import that nothing reads. `no-unreachable` reports a statement after a `return`. What
 that set cannot report is dead code between two files. It cannot report an export that nothing
 imports, or a module that nothing loads. Every core rule sees one file at a time, and it has no
 notion that other files exist.
 
 Nothing that exists closes that gap here. The `no-unused-modules` rule of `eslint-plugin-import`
-needs real access to the filesystem, and a resolver with the semantics of Node. imp embeds
-`eslint/universal`, which is the `Linter` with no filesystem, see `in-process-toolchain.md`. imp
-also resolves `imp/...`, the vendored `dependencies/`, and an alias from `imp.json`, by its own
+needs a Node process, and a resolver with the semantics of Node. The linter of imp runs on the oxc
+parser inside the binary, see `native-toolchain.md`. imp also resolves `imp/...`, the vendored `dependencies/`, and an alias from `imp.json`, by its own
 rules. A separate tool such as knip would be a second Node process. That contradicts a binary that
 works offline, with nothing installed.
 
@@ -22,8 +21,8 @@ findings, each at error severity. `imp/unreachable-module` reports a module that
 reaches. `imp/unused-export` reports an exported name that no reachable module imports.
 `imp/computed-import` reports a dynamic `import()` whose specifier imp cannot read.
 
-The pass parses every module of the project with the same embedded `Linter`. It uses a collector
-rule over the AST, and there is no second parser. It resolves a relative specifier with the module
+The pass parses every module of the project with the same oxc parser that the lint rules use. It
+walks the AST, and there is no second parser. It resolves a relative specifier with the module
 resolution of imp. It then walks the graph, from the starting points that it discovers. The starting
 points are these. Every `<script>` tag in an HTML page. Every `*.test.js`, `*.spec.js`,
 `*.preview.js` and `*.mock.js` file. The modules that `preview.themes`, `preview.translations` and

@@ -1,5 +1,5 @@
 // puppeteer-core@24.43.1
-import{t as e}from"./version-B4KjTh00.js";import t from"ws";
+import{t as e}from"./version-782a34e1.js";import t from"ws";
 /**
 * @license
 * Copyright 2018 Google Inc.

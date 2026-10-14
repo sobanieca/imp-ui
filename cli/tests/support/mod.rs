@@ -623,8 +623,6 @@ pub fn serve_folder(folder: &Path, headers: &[(&str, &str)]) -> StaticServer {
     std::thread::spawn(move || {
         for stream in listener.incoming() {
             let Ok(mut stream) = stream else { continue };
-            let folder = shared_folder.lock().unwrap().clone();
-            let running = shared_running.load(Ordering::SeqCst);
             let headers = headers.clone();
             let control_folder = shared_folder.clone();
             let control_running = shared_running.clone();
@@ -654,6 +652,8 @@ pub fn serve_folder(folder: &Path, headers: &[(&str, &str)]) -> StaticServer {
                     let _ = stream.write_all(b"HTTP/1.1 204 No Content\r\ncontent-length: 0\r\nconnection: close\r\n\r\n");
                     return;
                 }
+                let folder = control_folder.lock().unwrap().clone();
+                let running = control_running.load(Ordering::SeqCst);
                 let path = percent_decode(path);
                 let file = if path.ends_with('/') {
                     format!("{path}index.html")

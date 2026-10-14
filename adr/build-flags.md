@@ -10,7 +10,7 @@ present. A person can read it in the bundle. A person can also turn it on, by se
 before the entry module runs. So a gate that must hold a feature back does not hold it back.
 
 imp tried to make the bundler see through `env`, and rejected that. An app uses `env` as an object.
-It writes `import { env } from 'imp'`, and then `env.X`. The `define` option of esbuild does not
+It writes `import { env } from 'imp'`, and then `env.X`. The `define` option of a bundler does not
 substitute a name that an import binds. So a fold would need imp to remove the import from user
 source, and to define the bare identifier `env` across the build. That takes over the name in every
 bundled file, and that includes third-party code. Worse, the fold could only ever be partial.
@@ -66,7 +66,7 @@ foldable. Its domain is boolean, and a flag that is absent is off, and not undef
 - Development and production differ by design here, and only here. `imp start` reads a flag while
   the page runs. So a change to a flag in an environment file is a reload, and not a rebuild. A
   build answers a flag once. The values are the same. Only the moment differs.
-- The build must rewrite the source before esbuild sees it. The rewrite reuses the call scanner that
+- The build must rewrite the source before the bundler sees it. The rewrite reuses the call scanner that
   imp already uses for `mockModule`, which understands a comment and a string. imp applies the
   rewrite only to a file that imports `flag` from `imp`, and it follows the local name when the
   import is renamed. So an unrelated function named `flag` stays as it is.

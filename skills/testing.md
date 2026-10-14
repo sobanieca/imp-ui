@@ -1,10 +1,10 @@
-# testing - unit tests in-process, e2e specs in a real browser
+# testing - unit tests in a blank page, e2e specs against the served app, both in Chrome
 
-There are two levels, one command and one import. The runner, the assertions and the simulated DOM
-are part of the binary.
+There are two levels, one command and one import. The runner and the assertions are part of the
+binary. Every file runs in its own headless Chrome.
 
-- **`*.test.js`** holds a unit test or an integration test. It runs in process, against a simulated
-  browser environment.
+- **`*.test.js`** holds a unit test or an integration test. It runs in a blank page of a real
+  headless Chrome, with no server.
 - **`*.spec.js`** holds an end-to-end test. imp serves the app as `imp start` does, launches
   headless Chrome, and gives each spec a Puppeteer `page`. The page reports no reduced-motion
   preference on every machine. Chrome is the only e2e browser. There is no Firefox and no Safari
@@ -20,8 +20,8 @@ imp test --e2e --video vid   record each spec as an animated GIF into ./vid
 imp test --e2e --mock        answer the app's requests from the *.mock.js files (--no-mock forces real)
 ```
 
-There is no watch mode. Run the tests when a piece of work is done. One test file per process is the
-unit of isolation. A bare `imp test` with several candidate files runs nothing and exits with a
+There is no watch mode. Run the tests when a piece of work is done. One test file per process and per
+browser is the unit of isolation. A bare `imp test` with several candidate files runs nothing and exits with a
 non-zero code. Always name a level or a file.
 
 ## How to write a test
@@ -129,8 +129,19 @@ attempts. See [http](http.md).
 
 ## Unit tests
 
-Each file gets a fresh simulated DOM. `document`, `window`, the elements, the events and
-`localStorage` are globals. Tests in one file share the DOM, so reset it in `beforeEach`.
+Each file gets a fresh page in its own browser. `document`, `window`, the elements, the events and
+`localStorage` are the real globals. Tests in one file share the page, so reset it in `beforeEach`.
+
+Rules an agent gets wrong in a real page:
+
+- A popover `toggle` event and a dialog `close` event fire one task later. Await a task before you
+  check what they do, such as the focus that moves into a panel:
+  `await new Promise((resolve) => setTimeout(resolve))`. Under `fakeTimers`, keep a reference to the
+  real `setTimeout` from before the test, because the fake clock replaces it.
+- A dispatched event is not trusted. `Escape` from `dispatchEvent` does not close a popover. Call
+  `hidePopover()` in a unit test, and press the real key in an e2e spec.
+- A dispatched `click` follows a link. Cancel a click on an off-site link after the check, or the
+  page of the test navigates away.
 
 ```js
 import { mount } from 'imp'

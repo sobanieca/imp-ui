@@ -1,4 +1,4 @@
-# E2E video recording - CDP screencast frames, in-process GIF encode, no ffmpeg
+# E2E video recording - CDP screencast frames, a native GIF encode, no ffmpeg
 
 ## Context
 
@@ -10,42 +10,35 @@ That was a `page.screenshot()` into `.imp/screenshots/`, connected through `--sc
 Nothing moved.
 
 The obvious path for a moving image is `page.screencast()` of puppeteer. That calls a system
-`ffmpeg` to encode WebM. It breaks `in-process-toolchain.md` twice. It starts an external tool that
+`ffmpeg` to encode WebM. It breaks `native-toolchain.md` twice. It starts an external tool that
 is not one of the two approved exceptions of `imp test`. It also depends on a binary on the machine
 that imp does not ship. So it would not work offline, inside the self-contained binary.
 
-imp investigated a WebM encode fully in process, and rejected it as not feasible. The runtime of imp
-is Deno. Deno has **no WebCodecs**, because `VideoEncoder` and `VideoFrame` are absent. Deno also
-has **no readable 2D canvas**. So Deno cannot encode video in process, and it cannot even read
-decoded pixels there. Mediabunny was the muxer that imp first considered. It needs WebCodecs for the
-encode step. Its variant for a server delegates to `node-av`, which is a native N-API addon over
-libav and FFmpeg. That addon cannot go into `deno compile`, and it is specific to a platform. So it
-brings back exactly the problem of a native binary on the machine. There is no usable VP8 or VP9
-encoder, in pure JavaScript or in wasm, that runs in Deno.
+A WebM encode needs a VP8 or VP9 encoder. The usable ones are libvpx and FFmpeg, which are C
+libraries with their own build per platform, or the WebCodecs of a browser. Each one brings back a
+native dependency or a second capture path. A GIF encoder is small, and a Rust crate covers it.
 
 ## Decision
 
 `imp test` records the browser session of each e2e spec as an **animated GIF**. It captures the
-frames over the Chrome DevTools Protocol, and encodes them **fully in process**, with codecs in pure
-JavaScript. There is no ffmpeg, no native addon, and no subprocess other than the browser under
-test, which is already approved.
+frames over the Chrome DevTools Protocol, and encodes them **in the imp process**, with Rust crates
+that the binary compiles in. There is no ffmpeg, no native addon, and no subprocess other than the
+browser under test, which is already approved.
 
-- **imp captures over CDP.** imp opens a CDP session on the puppeteer page that it already drives,
-  with `page.createCDPSession()`. It calls `Page.startScreencast`, which gives JPEG frames, and it
-  caps the width with `maxWidth` and `maxHeight`. Chrome streams a `Page.screencastFrame` event for
-  each frame. Each event is a base64 JPEG of the viewport, with a timestamp. imp collects those
-  frames in process, and acknowledges each one with `Page.screencastFrameAck`. There is no external
-  binary and no subprocess. The frames arrive over the browser connection that imp already holds.
+- **imp captures over CDP.** The runner page opens a CDP session on the puppeteer page that it
+  already drives, with `page.createCDPSession()`. It calls `Page.startScreencast`, which gives JPEG
+  frames, and it caps the width with `maxWidth` and `maxHeight`. Chrome streams a
+  `Page.screencastFrame` event for each frame. Each event is a base64 JPEG of the viewport, with a
+  timestamp. The runner collects those frames, acknowledges each one with
+  `Page.screencastFrameAck`, and posts them to the imp process when the spec ends.
   `Page.stopScreencast` ends the capture.
-- **imp encodes in process, in pure JavaScript.** imp decodes a collected frame with `jpeg-js`,
-  which is a JPEG decoder in pure JavaScript, into RGBA. It encodes an animated GIF with `gifenc`,
-  which is a quantizer and a GIF encoder in pure JavaScript. imp pre-bundles both into
-  `cli/src/vendor/video.js`, and versions them by checksum, exactly like happy-dom, puppeteer-core
-  and eslint, see `prebundled-npm-dependencies.md`. So the encode runs in the Deno process of imp,
-  with no native code, and it works offline inside the compiled binary. imp thins the frames to a
+- **imp encodes in the imp process.** imp decodes a collected frame with the `image` crate into
+  RGBA, and encodes an animated GIF with the `gif` crate, which quantizes each frame. Both compile
+  into the binary, so the encode works offline. imp thins the frames to a
   target frame rate, caps the total duration, and downscales at the moment of capture.
 - **The format is GIF, and not WebM.** WebM was the first target, because GitHub embeds it as a
-  player. But a self-contained WebM encode inside Deno is not achievable, see the Context. GIF is
+  player. But a self-contained WebM encode is not achievable without a native codec, see the
+  Context. GIF is
   the format that imp _can_ produce, under the guarantees of no subprocess, offline work, and a
   self-contained binary. A GIF also embeds inline in the markdown of a pull request. So a reviewer
   sees the clip and downloads nothing, and that suits the handover from an agent to a reviewer that
@@ -61,26 +54,24 @@ test, which is already approved.
   stops the screencast, and writes whatever frames imp captured. So a spec that crashes still gives
   a clip. A layer that brackets one interaction, to trim the clip, is possible later. It is not part
   of this decision.
-- **The config defaults live in `test.video`.** `config.js` validates them, beside `test.browser`
+- **The config defaults live in `test.video`.** `config.rs` validates them, beside `test.browser`
   and `test.entry`. They are `enable`, `fps`, `maxDuration` in seconds, `width` in pixels, and
   `quality`. A user edits `imp.json` only.
-- **The wiring mirrors `--screenshots`.** `main.js` parses the flag. imp threads it through
-  `runTests`, then through the passthrough arguments of `orchestrate`, and then into `runSpecFile`.
-  imp reuses the browser and the page that it already established for the spec.
+- **The wiring mirrors `--screenshots`.** The flag travels with the run of each spec file to the
+  runner page. imp reuses the browser and the page that it already established for the spec.
 
 This is a real extension of the surface of subprocess exceptions for `imp test`, in
-`in-process-toolchain.md` and `two-level-testing.md`. It adds the capture of a moving image beside
-the screenshot of a failure, and it keeps the guarantee of no subprocess. The CDP frames arrive over
-the browser connection, and the encode stays in process.
+`native-toolchain.md` and `two-level-testing.md`. It adds the capture of a moving image beside the
+screenshot of a failure, and it keeps the guarantee of no subprocess. The CDP frames arrive over the
+browser connection, and the encode stays in the imp process.
 
 ## Consequences
 
 - An agent can produce a clip of a feature at work, and attach it to a pull request, so that a
   person verifies the function and the look and feel. It needs no external tool and no network. The
   clip is a GIF, and it embeds inline in markdown.
-- `jpeg-js` and `gifenc` add a small vendor bundle in pure JavaScript to the binary, of about 30 KB.
-  That is small beside the roughly 3 MB of happy-dom and puppeteer. There is no native code, no
-  dependency on WebCodecs, and no ffmpeg.
+- The `gif` crate adds little to the binary, and the `image` crate is already there for
+  `imp resize`. There is no dependency on WebCodecs, and no ffmpeg.
 - A GIF file is larger than an equivalent WebM, because every frame is a keyframe. The caps on the
   frame rate, the duration and the width keep a review clip small. If somebody ever wants a smaller
   WebM file, that needs an encode in the WebCodecs of the browser under test, which is a different

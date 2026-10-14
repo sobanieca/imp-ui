@@ -55,9 +55,7 @@ launcher logic.
   on the child that it runs again, so a download that is corrupt, or that carries the wrong version,
   runs once, and does not fork forever. The child removes `IMP_DELEGATED` from its own environment
   as it starts. So a process that the child starts, such as an imp in another pinned project, does
-  its own delegation. A run from source skips the delegation completely. imp detects that when
-  `Deno.execPath()` is `deno`, and not a compiled `imp`. So it is not maddening to develop imp
-  inside a pinned project.
+  its own delegation. A pin that equals the version of the running binary runs in place.
 - **The store lives in the cache folder of imp, `~/.imp/` by default.** A cached version sits at
   `~/.imp/versions/<version>/imp`, or `imp.exe` on Windows, and the timestamp of the update check
   sits beside it. `IMP_CACHE_DIR` moves the whole folder, which also holds the e2e browser, see

@@ -43,7 +43,7 @@ WORKING IN AN IMP PROJECT
   service-worker       a service worker of your own, bundled by imp, with dev mode from startDevMode()
   preview              rendering components in isolation from a *.preview.js file
   review               run it when the person mentions a review, a comment or an element they marked in the browser
-  testing              unit tests in-process and e2e specs against a real browser
+  testing              unit tests in a blank page and e2e specs against the app, both in Chrome
   dependencies         vendoring packages into dependencies/ and importing them
   lint                 the imp lint rules, what each one prevents, and how to apply fixes
   fmt                  formatting every file type in the project with one command

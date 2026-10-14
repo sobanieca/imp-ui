@@ -76,7 +76,7 @@ repository. `imp install` and `imp uninstall` manage that.
   `agent-skills.md`. A package that does not import imp gets no `imp-skill.md`.
 - **The dev server bundles no dependency.** The injected import map maps each alias to its
   `dependencies/<alias>/` bundle, which imp serves as a plain static file. Only `imp install`
-  invokes the in-process bundling engine, see `in-process-dependency-bundling.md`.
+  bundles a package, see `dependency-bundling-with-rolldown.md`.
 - **The `exact-dependency-versions` lint rule enforces the model.** Every specifier in
   `dependencies` must pin an exact version. An inline `npm:` or `jsr:` import in code is an error. A
   bare import that matches no declared alias, other than `imp`, is an error, and the message hints

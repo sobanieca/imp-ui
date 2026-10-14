@@ -21,8 +21,8 @@ publication to another imp app, where the consumer has no access to the source t
 
 **`skills/` is the corpus of subjects, and imp writes it for an agent.** There is one page per
 subject. Each page is short and mechanical. It gives the imports, the API tables, the rules that an
-agent gets wrong, and a worked example. `deno compile` includes the `skills/` tree in the binary, in
-the same way as it includes `THIRD-PARTY-LICENSES.md` for `imp licenses`. `imp skill` reads the
+agent gets wrong, and a worked example. `cli/build.rs` embeds the `skills/` tree in the binary, in
+the same way as it embeds `THIRD-PARTY-LICENSES.md` for `imp licenses`. `imp skill` reads the
 pages from there. There is no network, and there are no project files. The version is the version
 that shipped with the binary that runs. imp does not compile `docs/` in. `docs/` is the site for a
 person, and nothing reads it at runtime.
@@ -59,7 +59,7 @@ is a file beside the bundle, and not an export of it. Two things follow from tha
 
 `imp skill` is the one surface for reading both corpora:
 
-- **There is one registry, in `cli/src/skill.js`, and one derivation.** `SKILLS` carries what nobody
+- **There is one registry, in `cli/src/skill.rs`, and one derivation.** `SKILLS` carries what nobody
   can read off the tree. That is the group of a subject, its aliases, such as `imp/state`,
   `state.md` and `router`, and its summary of one line. The page itself is `skills/<subject>.md`. So
   a subject names its own file. imp does not list a standard component there at all. imp reads the

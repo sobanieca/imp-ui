@@ -223,7 +223,7 @@ pub const SKILLS: &[Skill] = &[
         name: "testing",
         group: "toolkit",
         aliases: &["test", "imp/test"],
-        summary: "unit tests in-process and e2e specs against a real browser",
+        summary: "unit tests in a blank page and e2e specs against the app, both in Chrome",
     },
     Skill {
         name: "dependencies",

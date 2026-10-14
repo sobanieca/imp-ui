@@ -122,6 +122,11 @@ pub fn check(write: bool) -> Result<()> {
     if problems > 0 {
         bail!("{problems} lint problems in the repository");
     }
+    if write {
+        crate::licenses::write()?;
+    } else {
+        crate::licenses::verify()?;
+    }
     let binary = build_imp("local")?;
     for folder in IMP_LINTED {
         run_imp(&binary, &["lint"], &repo_root().join(folder))?;

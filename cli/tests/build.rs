@@ -1031,7 +1031,7 @@ test('the previous build stays for a running page', async ({{ page }}) => {{
   expect(await next.evaluate(() => globalThis.release)).toEqual('three')
   expect(await next.evaluate(() => globalThis.loadPanel())).toEqual('panel of three')
   await next.close()
-}}, {{ timeout: 90000 }})
+}})
 "#,
             base = Value::from(server.base.clone())
         ),

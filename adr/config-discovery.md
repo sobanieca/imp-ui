@@ -45,8 +45,8 @@ shaped how imp reads that file, and how it writes it:
   of imp keep those comments. imp does not flatten the file.
 - An error message about the config names the file that imp found, which is `imp.json` or
   `imp.jsonc`.
-- imp pre-bundles `jsonc-parser` into the binary, like every other runtime npm dependency. See
-  [prebundled-npm-dependencies](prebundled-npm-dependencies.md).
+- imp parses and edits the file with the `jsonc-parser` crate, which keeps the concrete syntax tree,
+  comments included. See `native-toolchain.md`.
 - A trailing comment on a line can sometimes move to the next line, when imp inserts a new sibling
   key beside it. imp never loses a comment, but an edit from code does not guarantee its exact
   place.

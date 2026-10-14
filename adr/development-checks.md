@@ -18,13 +18,13 @@ exists in development only.
 
 A development check in the library runs behind `globalThis.__IMP_DEV__ === true`, written in full at
 the call site. `imp start`, `imp preview` and the e2e page of `imp test` inject a script that sets
-the global to `true` before any module runs. The unit test runner of `imp test` sets it on its DOM
-environment. `imp build`, `imp preview --output` and the service worker build pass an esbuild
-`define` that replaces the expression with `false`. The minifier drops the branch. A module that
+the global to `true` before any module runs. The runner page of a unit test sets it the same way.
+`imp build`, `imp preview --output` and the service worker build pass a bundler `define` that
+replaces the expression with `false`. The minifier drops the branch. A module that
 only a dropped branch imports leaves the bundle with it.
 
-The condition stands at the call site, not behind a helper function. esbuild folds a constant, and
-it does not inline a function call. A helper would keep the check in the bundle. The check itself
+The condition stands at the call site, not behind a helper function. The minifier folds a constant,
+and it does not inline a function call. A helper would keep the check in the bundle. The check itself
 lives in one module, `styles-boundary.js`, so the folded bundle carries none of it.
 
 The first check is the styles boundary. In development, an element factory records the component

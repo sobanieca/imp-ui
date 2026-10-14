@@ -12,16 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: denoland/setup-deno@v2
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          deno-version: v2.x
-          cache: true
-      - name: Format check
-        run: deno fmt --check
-      - name: Lint
-        run: deno lint
-      - name: Library lint
-        run: cd lib/src && deno run -A ../../tools/imp.js lint
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format, lint and licenses
+        run: cargo xtask check --verify
       - name: Install scripts parse
         run: |
           bash -n install.sh
@@ -37,40 +33,40 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-          cache: true
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Use a time zone with daylight saving time
         if: runner.os == 'Windows'
         run: tzutil /s "Central European Standard Time"
-      - name: Compile imp
-        run: deno run -A tools/compile.js
+      - name: Build imp
+        run: cargo build --locked --profile local --package imp
       - name: Library unit tests
-        if: matrix.suite == 'unit'
+        if: matrix.suite == 'unit' && runner.os != 'Windows'
         working-directory: lib/test
-        run: deno run -A ../../tools/imp.js test --unit
+        env:
+          TZ: Europe/Warsaw
+        run: cargo imp test --unit
+      - name: Library unit tests (Windows)
+        if: matrix.suite == 'unit' && runner.os == 'Windows'
+        working-directory: lib/test
+        run: cargo imp test --unit
       - name: Library e2e tests
         if: matrix.suite == 'e2e'
         working-directory: lib/test
-        run: deno run -A ../../tools/imp.js test --e2e
+        run: cargo imp test --e2e
       - name: CLI tests
         if: matrix.suite == 'cli'
-        run: deno test -A --parallel cli/test/
+        run: cargo test --locked --profile local --workspace
 
   size:
     name: Binary size
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-          cache: true
-      - name: Compile imp
-        run: deno run -A tools/compile.js
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Check binary size against limit
-        run: deno run -A tools/check-binary-size.js
+        run: cargo xtask binary-size
 
   version:
     name: Release version
@@ -82,13 +78,10 @@ jobs:
       exists: ${{ steps.tag.outputs.exists }}
     steps:
       - uses: actions/checkout@v7
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
 
-      - name: Read version from deno.json
+      - name: Read version from Cargo.toml
         id: version
-        run: echo "version=$(deno eval "console.log(JSON.parse(Deno.readTextFileSync('deno.json')).version)")" >> $GITHUB_OUTPUT
+        run: echo "version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "imp") | .version')" >> $GITHUB_OUTPUT
 
       - name: Skip if the release already exists
         id: tag
@@ -130,13 +123,17 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
-      - uses: denoland/setup-deno@v2
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          deno-version: v2.x
-          cache: true
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
 
       - name: Compile ${{ matrix.asset }}
-        run: deno run -A tools/compile.js --target ${{ matrix.target }} --output ${{ matrix.asset }}
+        run: |
+          cargo build --locked --release --package imp --target ${{ matrix.target }}
+          suffix=""
+          case "${{ matrix.target }}" in *windows*) suffix=".exe" ;; esac
+          cp "target/${{ matrix.target }}/release/imp${suffix}" "${{ matrix.asset }}"
 
       - name: Smoke test ${{ matrix.asset }}
         run: |

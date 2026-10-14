@@ -29,44 +29,47 @@ For complete apps that are built with imp, see
 
 ### Prerequisites
 
-- [Deno](https://deno.com/), for the build scripts and the tests.
-- [rfm](https://sobanieca.github.io/remote-file-manager/), a static file server. `deno task site`
+- [Rust](https://rustup.rs/), stable, with `rustfmt` and `clippy`.
+- A C compiler, for the JavaScript engine that the CLI embeds.
+- [rfm](https://sobanieca.github.io/remote-file-manager/), a static file server. `cargo xtask site`
   uses it to serve the built home page. No other task needs it.
-- Git. The build compares the binary with the files that Git sees.
 
-The first compile downloads the formatter plugins into `cli/src/vendor/`. The first browser test
-downloads a pinned Chrome into `~/.imp/browser/`, when the machine has no Chrome or Chromium.
+The first browser test downloads a pinned Chrome into `~/.imp/browser/`, when the machine has no
+Chrome or Chromium.
 
 ### Tasks
 
-| Task                | What it does                                                             |
-| ------------------- | ------------------------------------------------------------------------ |
-| `deno task example` | serves the todo example from `examples` on <http://localhost:4507/>      |
-| `deno task preview` | serves the component previews from `lib/src` on <http://localhost:4517/> |
-| `deno task site`    | builds the home page into `site/dist/` and serves that folder with `rfm` |
-| `deno task test`    | runs the library unit tests, the library e2e tests, then the CLI tests   |
-| `deno task check`   | runs `deno lint`, `deno fmt`, then `imp lint` on `lib/src`               |
+| Command                  | What it does                                                             |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `cargo xtask example`    | serves the todo example from `examples` on <http://localhost:4507/>      |
+| `cargo xtask preview`    | serves the component previews from `lib/src` on <http://localhost:4517/> |
+| `cargo xtask site`       | builds the home page into `site/dist/` and serves that folder with `rfm` |
+| `cargo xtask test`       | runs the library unit tests, the library e2e tests, then the Rust tests  |
+| `cargo xtask check`      | formats and lints the repository, then runs `imp lint` on `lib/src`      |
+| `cargo verify`           | runs `check` without writing a file, then `test`                         |
+| `cargo update-snapshots` | runs the CLI tests and rewrites their snapshots                          |
+| `cargo imp <args>`       | builds the CLI, then runs `imp <args>` in the current folder             |
 
-Each task compiles `./imp` first when a file changed. To run any other imp command on the current
-source, use `deno run -A tools/imp.js <args>`. Do not run `./imp` directly, because it can be older
-than the source.
+`cargo xtask` with no task lists every task. Each task builds the CLI first when a file changed.
+Do not run a binary from `target/` directly, because it can be older than the source.
 
 ### Repository layout
 
-| Folder      | What it holds                                                   |
-| ----------- | --------------------------------------------------------------- |
-| `cli/`      | the `imp` command, and its tests                                |
-| `lib/`      | the library that an app imports, with the standard components   |
-| `docs/`     | the public documentation                                        |
-| `skills/`   | the pages that `imp skill` prints for an AI agent               |
-| `adr/`      | the accepted architectural decisions, see `adr/README.md`       |
-| `todo/`     | the planned work, one item per file                             |
-| `examples/` | the todo example app                                            |
-| `site/`     | the home page                                                   |
-| `tools/`    | maintainer scripts: compile, site build, vendoring, size checks |
-| `perf/`     | the performance apps and scenarios                              |
+| Folder      | What it holds                                                        |
+| ----------- | -------------------------------------------------------------------- |
+| `cli/`      | the `imp` command in Rust, its browser modules, and its tests        |
+| `xtask/`    | maintainer tasks: site build, vendoring, licences, size checks, perf |
+| `lib/`      | the library that an app imports, with the standard components        |
+| `docs/`     | the public documentation                                             |
+| `skills/`   | the pages that `imp skill` prints for an AI agent                    |
+| `adr/`      | the accepted architectural decisions, see `adr/README.md`            |
+| `todo/`     | the planned work, one item per file                                  |
+| `examples/` | the todo example app                                                 |
+| `site/`     | the home page                                                        |
+| `perf/`     | the performance apps and scenarios                                   |
 
-The rules for a change to this repository are in [`CLAUDE.md`](CLAUDE.md).
+The rules for a change to this repository are in [`CLAUDE.md`](CLAUDE.md), and
+[`AGENTS.md`](AGENTS.md) points an AI agent at them.
 
 ## License
 
