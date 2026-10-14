@@ -205,7 +205,7 @@ fn slug(text: &str) -> String {
 }
 
 fn runner_page() -> &'static str {
-    "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>imp test</title><script type=\"module\" src=\"/@imp/runner/test-runner.js\"></script></head><body></body></html>\n"
+    "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>imp test</title><script>globalThis.__IMP_DEV__ = true</script><script type=\"module\" src=\"/@imp/runner/test-runner.js\"></script></head><body></body></html>\n"
 }
 
 pub struct E2eApp {
