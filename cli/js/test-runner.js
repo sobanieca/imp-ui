@@ -207,16 +207,36 @@ const keepRunnerPage = () => {
   })
 }
 
+async function connectBrowser(defaultViewport) {
+  const { default: puppeteer } = await import('/@imp/puppeteer/puppeteer.js')
+  const browserWSEndpoint = await (await nativeFetch('/@imp/devtools')).text()
+  return puppeteer.connect({ browserWSEndpoint, defaultViewport })
+}
+
+async function keepPageFocused(browser) {
+  const pages = await browser.pages()
+  const own = pages.find((page) => page.url() === location.href)
+  if (!own) return
+  const session = await own.createCDPSession()
+  await session.send('Emulation.setFocusEmulationEnabled', { enabled: true })
+}
+
 async function runUnit() {
   keepRunnerPage()
-  const registry = freshRegistry()
-  await importTests()
-  return await runRegistry(registry, {
-    context: {},
-    defaultTimeout: run.unitTimeout,
-    filter: run.filter,
-    environment: 'unit',
-  })
+  const browser = await connectBrowser(null)
+  try {
+    await keepPageFocused(browser)
+    const registry = freshRegistry()
+    await importTests()
+    return await runRegistry(registry, {
+      context: {},
+      defaultTimeout: run.unitTimeout,
+      filter: run.filter,
+      environment: 'unit',
+    })
+  } finally {
+    await browser.disconnect().catch(() => {})
+  }
 }
 
 async function startScreencast(page, options) {
@@ -251,12 +271,7 @@ async function stopScreencast({ client, frames, onFrame }) {
 }
 
 async function runSpec() {
-  const { default: puppeteer } = await import('/@imp/puppeteer/puppeteer.js')
-  const browserWSEndpoint = await (await nativeFetch('/@imp/devtools')).text()
-  const browser = await puppeteer.connect({
-    browserWSEndpoint,
-    defaultViewport: { width: 800, height: 600 },
-  })
+  const browser = await connectBrowser({ width: 800, height: 600 })
   let page = null
   let recording = null
   try {

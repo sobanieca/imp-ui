@@ -2,7 +2,6 @@ const FRAME_MS = 16
 const MAX_TIMER_STEPS = 100_000
 const SETTLE_TASKS = 3
 
-
 export function createClock(options) {
   const native = {
     setTimeout: globalThis.setTimeout,

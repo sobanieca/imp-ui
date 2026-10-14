@@ -25,7 +25,7 @@ const NOT_FORMATTED: &[&str] = &[
     "examples/",
 ];
 
-const IMP_LINTED: &[&str] = &["lib/src", "cli/js"];
+const IMP_LINTED: &[&str] = &["lib/src"];
 
 const LIBRARY_TEST_TIME_ZONE: &str = "Europe/Warsaw";
 
