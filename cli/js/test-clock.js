@@ -1,5 +1,7 @@
 const FRAME_MS = 16
 const MAX_TIMER_STEPS = 100_000
+const SETTLE_TASKS = 3
+
 
 export function createClock(options) {
   const native = {
@@ -77,8 +79,11 @@ export function createClock(options) {
     }
   }
 
-  const flushPromises = () =>
-    new Promise((resolve) => native.setTimeout.call(globalThis, resolve, 0))
+  const nativeTask = () => new Promise((resolve) => native.setTimeout.call(globalThis, resolve, 0))
+
+  const flushPromises = async () => {
+    for (let task = 0; task < SETTLE_TASKS; task++) await nativeTask()
+  }
 
   const setPerformanceNow = (fn) => {
     if (!native.performance || !realPerformanceNow) return
