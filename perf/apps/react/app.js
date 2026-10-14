@@ -6,9 +6,9 @@ import {
   useContext,
   useEffect,
   useState,
-} from 'react'
-import { flushSync } from 'react-dom'
-import { createRoot } from 'react-dom/client'
+} from 'npm:react@19.3.0'
+import { flushSync } from 'npm:react-dom@19.3.0'
+import { createRoot } from 'npm:react-dom@19.3.0/client'
 import { makeRows, relabel, swapEnds, withoutMiddle } from '../shared/bench-data.js'
 
 const handles = {

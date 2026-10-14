@@ -6,10 +6,10 @@ pub fn message_of(ctx: &Ctx<'_>, error: rquickjs::Error) -> String {
         return error.to_string();
     }
     let thrown = ctx.catch();
-    if let Some(object) = thrown.as_object() {
-        if let Ok(message) = object.get::<_, String>("message") {
-            return message;
-        }
+    if let Some(object) = thrown.as_object()
+        && let Ok(message) = object.get::<_, String>("message")
+    {
+        return message;
     }
     thrown
         .as_string()
@@ -29,13 +29,13 @@ pub fn console_text<'js>(values: &[Value<'js>]) -> String {
             if let Some(text) = value.as_string() {
                 return text.to_string().unwrap_or_default();
             }
-            if value.is_object() && !value.is_function() {
-                if let Some(text) = stringify
+            if value.is_object()
+                && !value.is_function()
+                && let Some(text) = stringify
                     .as_ref()
                     .and_then(|stringify| stringify.call::<_, String>((value.clone(),)).ok())
-                {
-                    return text;
-                }
+            {
+                return text;
             }
             ctx.globals()
                 .get::<_, Function>("String")

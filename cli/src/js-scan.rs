@@ -167,16 +167,16 @@ pub fn extract_calls(source: &str, function_name: &str) -> Vec<Call> {
                 while cursor < bytes.len() && bytes[cursor].is_ascii_whitespace() {
                     cursor += 1;
                 }
-                if bytes.get(cursor) == Some(&b'(') {
-                    if let Some((argument_source, call_end)) = parse_call_arguments(bytes, cursor) {
-                        calls.push(Call {
-                            start: index,
-                            end: call_end,
-                            argument_source,
-                        });
-                        index = call_end;
-                        continue;
-                    }
+                if bytes.get(cursor) == Some(&b'(')
+                    && let Some((argument_source, call_end)) = parse_call_arguments(bytes, cursor)
+                {
+                    calls.push(Call {
+                        start: index,
+                        end: call_end,
+                        argument_source,
+                    });
+                    index = call_end;
+                    continue;
                 }
             }
             index = end;

@@ -298,7 +298,7 @@ fn a_pinned_project_runs_its_version_once() {
     let cache = dir.join("cache");
     let project = dir.join("project");
     write(&project.join("imp.json"), "{ \"version\": \"9.9.9\" }\n");
-    let fake = cache.join(&format!("versions/9.9.9/{EXECUTABLE}"));
+    let fake = cache.join(format!("versions/9.9.9/{EXECUTABLE}"));
     write(
         &fake,
         "#!/bin/sh\necho \"delegated with IMP_DELEGATED=$IMP_DELEGATED\"\n",

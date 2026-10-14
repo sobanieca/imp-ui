@@ -215,13 +215,12 @@ fn text_literal_of(expression: &Expression) -> Option<String> {
 
 fn dedent(text: &str) -> String {
     let mut text = text;
-    if let Some(newline) = text.find('\n') {
-        if text[..newline]
+    if let Some(newline) = text.find('\n')
+        && text[..newline]
             .chars()
             .all(|char| char == ' ' || char == '\t')
-        {
-            text = &text[newline + 1..];
-        }
+    {
+        text = &text[newline + 1..];
     }
     let text = text.trim_end();
     let lines: Vec<&str> = text.split('\n').collect();

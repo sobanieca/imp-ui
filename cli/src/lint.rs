@@ -234,7 +234,7 @@ pub fn lint_source(source: &str, settings: &Settings) -> (Vec<Message>, Vec<(u32
 }
 
 fn apply_fixes(source: &str, mut fixes: Vec<(u32, u32, String)>) -> String {
-    fixes.sort_by(|a, b| a.0.cmp(&b.0));
+    fixes.sort_by_key(|a| a.0);
     let mut accepted: Vec<(u32, u32, String)> = Vec::new();
     for fix in fixes {
         if accepted.last().is_some_and(|last| fix.0 < last.1) {

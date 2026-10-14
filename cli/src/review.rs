@@ -302,21 +302,22 @@ fn parse_review(contents: &str) -> Parsed {
             blocks[index].1.push(rest.to_string());
             continue;
         }
-        if let Some((key, value)) = line.split_once(": ") {
-            if is_word(key) && !value.is_empty() {
-                fields.retain(|(existing, _)| existing != key);
-                fields.push((key.to_string(), value.to_string()));
-                open = None;
-                continue;
-            }
+        if let Some((key, value)) = line.split_once(": ")
+            && is_word(key)
+            && !value.is_empty()
+        {
+            fields.retain(|(existing, _)| existing != key);
+            fields.push((key.to_string(), value.to_string()));
+            open = None;
+            continue;
         }
-        if let Some(key) = line.strip_suffix(':') {
-            if is_word(key) {
-                blocks.retain(|(existing, _)| existing != key);
-                blocks.push((key.to_string(), Vec::new()));
-                open = Some(blocks.len() - 1);
-                continue;
-            }
+        if let Some(key) = line.strip_suffix(':')
+            && is_word(key)
+        {
+            blocks.retain(|(existing, _)| existing != key);
+            blocks.push((key.to_string(), Vec::new()));
+            open = Some(blocks.len() - 1);
+            continue;
         }
         open = None;
     }
@@ -351,10 +352,10 @@ fn count(total: usize) -> String {
 
 pub fn review(root: &Path, args: &[String]) -> Result<()> {
     let subcommand = args.first();
-    if let Some(subcommand) = subcommand {
-        if subcommand != "clear" {
-            bail!("unknown argument '{subcommand}' - imp review takes 'clear' or nothing");
-        }
+    if let Some(subcommand) = subcommand
+        && subcommand != "clear"
+    {
+        bail!("unknown argument '{subcommand}' - imp review takes 'clear' or nothing");
     }
     if let Some(extra) = args.get(1) {
         bail!("unexpected argument '{extra}' - imp review takes 'clear' or nothing");

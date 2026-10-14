@@ -563,13 +563,12 @@ fn collect_app_mocks(build: &AppBuild) -> (HashMap<String, Mock>, Vec<(String, S
         let collected = crate::test::collect_mocks(&build.root.join(&entry.file), build.root, build.dependencies)
             .and_then(|own| {
                 for (id, mock) in &own {
-                    if let (Some(owner), Some(known)) = (owners.get(id), mocks.get(id)) {
-                        if known.code != mock.code {
+                    if let (Some(owner), Some(known)) = (owners.get(id), mocks.get(id))
+                        && known.code != mock.code {
                             bail!(
                                 "mockModule('{id}') - {owner} already mocks this module with a different factory; the preview app is one module graph, so a module is mocked once, the same way, for every preview"
                             );
                         }
-                    }
                 }
                 Ok(own)
             });
@@ -985,10 +984,10 @@ impl PreviewServer {
             let built = self.load_build();
             let script =
                 |code: String| no_store(Response::new(200, "text/javascript; charset=utf-8", code));
-            if name == format!("{APP_BUNDLE_NAME}.js") {
-                if let Some(error) = &built.error {
-                    return script(failure_module(error));
-                }
+            if name == format!("{APP_BUNDLE_NAME}.js")
+                && let Some(error) = &built.error
+            {
+                return script(failure_module(error));
             }
             return match built.files.get(&request.path) {
                 Some(code) => script(code.clone()),

@@ -52,12 +52,13 @@ fn decode_uri(text: &str) -> String {
     let mut out = Vec::with_capacity(bytes.len());
     let mut index = 0;
     while index < bytes.len() {
-        if bytes[index] == b'%' && index + 2 < bytes.len() {
-            if let Ok(byte) = u8::from_str_radix(&text[index + 1..index + 3], 16) {
-                out.push(byte);
-                index += 3;
-                continue;
-            }
+        if bytes[index] == b'%'
+            && index + 2 < bytes.len()
+            && let Ok(byte) = u8::from_str_radix(&text[index + 1..index + 3], 16)
+        {
+            out.push(byte);
+            index += 3;
+            continue;
         }
         out.push(bytes[index]);
         index += 1;
@@ -231,7 +232,7 @@ fn assert_within_budget(
         return Ok(());
     }
     let _ = std::fs::remove_dir_all(outdir);
-    sizes.sort_by(|a, b| b.1.cmp(&a.1));
+    sizes.sort_by_key(|size| std::cmp::Reverse(size.1));
     let largest: Vec<String> = sizes
         .iter()
         .take(5)
@@ -743,10 +744,10 @@ pub fn build(options: BuildOptions) -> Result<()> {
         "built {entry_name} -> {}/",
         if shown.is_empty() { "." } else { &shown }
     );
-    if let Some(mocks) = mocks_setting(&config) {
-        if is_html_entry {
-            println!("  {}/ left out - mocks serve in imp start", mocks.folder);
-        }
+    if let Some(mocks) = mocks_setting(&config)
+        && is_html_entry
+    {
+        println!("  {}/ left out - mocks serve in imp start", mocks.folder);
     }
     if !base.is_empty() && is_html_entry {
         println!("  base path {base} - root-absolute urls prefixed for a sub-path deployment");

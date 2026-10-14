@@ -49,9 +49,13 @@ function piercingProxy(target, selectorMethods, save) {
           piercingSelector(selector),
           ...framePolled(property, rest),
         )
-        if (RETURNS_HANDLE.has(property)) return result && piercingProxy(result, HANDLE_SELECTOR_METHODS, save)
+        if (RETURNS_HANDLE.has(property)) {
+          return result && piercingProxy(result, HANDLE_SELECTOR_METHODS, save)
+        }
         if (RETURNS_HANDLE_LIST.has(property)) {
-          return result.map((handle) => handle && piercingProxy(handle, HANDLE_SELECTOR_METHODS, save))
+          return result.map((handle) =>
+            handle && piercingProxy(handle, HANDLE_SELECTOR_METHODS, save)
+          )
         }
         return result
       }

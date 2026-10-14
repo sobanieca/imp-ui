@@ -347,10 +347,10 @@ fn regex_checks(ctx: &Ctx, literal: &RegExpLiteral) {
         if char == '\\' && index + 1 < bytes.len() {
             if bytes[index + 1] == 'x' && index + 3 < bytes.len() {
                 let hex: String = bytes[index + 2..index + 4].iter().collect();
-                if let Ok(value) = u32::from_str_radix(&hex, 16) {
-                    if value < 0x20 {
-                        controls.push(format!("\\x{hex}"));
-                    }
+                if let Ok(value) = u32::from_str_radix(&hex, 16)
+                    && value < 0x20
+                {
+                    controls.push(format!("\\x{hex}"));
                 }
             }
             index += 2;
@@ -468,6 +468,9 @@ fn unused_vars(ctx: &Ctx) {
     for symbol in scoping.symbol_ids() {
         let flags = scoping.symbol_flags(symbol);
         let name = scoping.symbol_name(symbol);
+        if name.starts_with('_') {
+            continue;
+        }
         let declaration = scoping.symbol_declaration(symbol);
         let declaration_kind = nodes.kind(declaration);
         let mut exported = false;
@@ -486,10 +489,10 @@ fn unused_vars(ctx: &Ctx) {
         if exported {
             continue;
         }
-        if let AstKind::Function(function) = declaration_kind {
-            if function.r#type == FunctionType::FunctionExpression {
-                continue;
-            }
+        if let AstKind::Function(function) = declaration_kind
+            && function.r#type == FunctionType::FunctionExpression
+        {
+            continue;
         }
         if matches!(declaration_kind, AstKind::Class(class) if class.r#type == ClassType::ClassExpression)
         {
@@ -508,10 +511,11 @@ fn unused_vars(ctx: &Ctx) {
                 return false;
             }
             let span = nodes.get_node(reference.node_id()).kind().span();
-            if let Some(scope) = self_scope {
-                if span.start >= scope.start && span.end <= scope.end {
-                    return false;
-                }
+            if let Some(scope) = self_scope
+                && span.start >= scope.start
+                && span.end <= scope.end
+            {
+                return false;
             }
             if reference.is_write() {
                 let parent = nodes.parent_kind(reference.node_id());
@@ -523,15 +527,14 @@ fn unused_vars(ctx: &Ctx) {
                 {
                     return false;
                 }
-                if let AstKind::AssignmentExpression(assignment) = parent {
-                    if assignment.operator != AssignmentOperator::Assign
-                        && matches!(
-                            nodes.parent_kind(nodes.parent_id(reference.node_id())),
-                            AstKind::ExpressionStatement(_)
-                        )
-                    {
-                        return false;
-                    }
+                if let AstKind::AssignmentExpression(assignment) = parent
+                    && assignment.operator != AssignmentOperator::Assign
+                    && matches!(
+                        nodes.parent_kind(nodes.parent_id(reference.node_id())),
+                        AstKind::ExpressionStatement(_)
+                    )
+                {
+                    return false;
                 }
             }
             true
@@ -576,13 +579,12 @@ fn unused_vars(ctx: &Ctx) {
                 for names in &parameter_names {
                     if after {
                         for identifier in names {
-                            if let Some(other) = identifier.symbol_id.get() {
-                                if scoping
+                            if let Some(other) = identifier.symbol_id.get()
+                                && scoping
                                     .get_resolved_references(other)
                                     .any(|reference| reference.is_read())
-                                {
-                                    later_used = true;
-                                }
+                            {
+                                later_used = true;
                             }
                         }
                     }
@@ -598,13 +600,12 @@ fn unused_vars(ctx: &Ctx) {
                     binding_names(&rest.rest.argument, &mut names);
                     if after {
                         for identifier in names {
-                            if let Some(other) = identifier.symbol_id.get() {
-                                if scoping
+                            if let Some(other) = identifier.symbol_id.get()
+                                && scoping
                                     .get_resolved_references(other)
                                     .any(|reference| reference.is_read())
-                                {
-                                    later_used = true;
-                                }
+                            {
+                                later_used = true;
                             }
                         }
                     }
@@ -873,14 +874,14 @@ pub fn run(ctx: &Ctx) {
                     }
                 }
                 if let Some(test) = &statement.test {
-                    if let Expression::AssignmentExpression(assignment) = test {
-                        if !wrapped_twice(ctx, assignment.span, 1) {
-                            ctx.report(
-                                "no-cond-assign",
-                                assignment.span,
-                                "Expected a conditional expression and instead saw an assignment.",
-                            );
-                        }
+                    if let Expression::AssignmentExpression(assignment) = test
+                        && !wrapped_twice(ctx, assignment.span, 1)
+                    {
+                        ctx.report(
+                            "no-cond-assign",
+                            assignment.span,
+                            "Expected a conditional expression and instead saw an assignment.",
+                        );
                     }
                     if is_literal_like(test) {
                         ctx.report(
@@ -893,14 +894,15 @@ pub fn run(ctx: &Ctx) {
             }
             AstKind::Function(function) => {
                 if let Some(body) = &function.body {
-                    if let Some((kind, name)) = is_getter_or_setter(ctx, id) {
-                        if kind == "get" && !function_contains_return_value(body) {
-                            ctx.report(
-                                "getter-return",
-                                function.span,
-                                format!("Expected to return a value in getter '{name}'."),
-                            );
-                        }
+                    if let Some((kind, name)) = is_getter_or_setter(ctx, id)
+                        && kind == "get"
+                        && !function_contains_return_value(body)
+                    {
+                        ctx.report(
+                            "getter-return",
+                            function.span,
+                            format!("Expected to return a value in getter '{name}'."),
+                        );
                     }
                     if function.generator && !body.statements.is_empty() && !contains_yield(body) {
                         ctx.report(
@@ -1003,31 +1005,25 @@ pub fn run(ctx: &Ctx) {
                 }
             }
             AstKind::CatchClause(clause) => {
-                if let Some(parameter) = &clause.param {
-                    if let BindingPattern::BindingIdentifier(param) = &parameter.pattern {
-                        if let [Statement::ThrowStatement(throw)] = clause.body.body.as_slice() {
-                            if identifier_of(&throw.argument) == Some(param.name.as_str()) {
-                                let try_statement = ctx.parent(id);
-                                let message = match try_statement {
-                                    AstKind::TryStatement(statement)
-                                        if statement.finalizer.is_some() =>
-                                    {
-                                        "Unnecessary catch clause."
-                                    }
-                                    _ => "Unnecessary try/catch wrapper.",
-                                };
-                                let span = match try_statement {
-                                    AstKind::TryStatement(statement)
-                                        if statement.finalizer.is_none() =>
-                                    {
-                                        statement.span
-                                    }
-                                    _ => clause.span,
-                                };
-                                ctx.report("no-useless-catch", span, message);
-                            }
+                if let Some(parameter) = &clause.param
+                    && let BindingPattern::BindingIdentifier(param) = &parameter.pattern
+                    && let [Statement::ThrowStatement(throw)] = clause.body.body.as_slice()
+                    && identifier_of(&throw.argument) == Some(param.name.as_str())
+                {
+                    let try_statement = ctx.parent(id);
+                    let message = match try_statement {
+                        AstKind::TryStatement(statement) if statement.finalizer.is_some() => {
+                            "Unnecessary catch clause."
                         }
-                    }
+                        _ => "Unnecessary try/catch wrapper.",
+                    };
+                    let span = match try_statement {
+                        AstKind::TryStatement(statement) if statement.finalizer.is_none() => {
+                            statement.span
+                        }
+                        _ => clause.span,
+                    };
+                    ctx.report("no-useless-catch", span, message);
                 }
             }
             AstKind::TryStatement(statement) => {
@@ -1073,14 +1069,14 @@ pub fn run(ctx: &Ctx) {
                 }
             }
             AstKind::IfStatement(statement) => {
-                if let Expression::AssignmentExpression(assignment) = &statement.test {
-                    if !wrapped_twice(ctx, assignment.span, 2) {
-                        ctx.report(
-                            "no-cond-assign",
-                            assignment.span,
-                            "Expected a conditional expression and instead saw an assignment.",
-                        );
-                    }
+                if let Expression::AssignmentExpression(assignment) = &statement.test
+                    && !wrapped_twice(ctx, assignment.span, 2)
+                {
+                    ctx.report(
+                        "no-cond-assign",
+                        assignment.span,
+                        "Expected a conditional expression and instead saw an assignment.",
+                    );
                 }
                 if is_literal_like(&statement.test) {
                     ctx.report(
@@ -1102,14 +1098,14 @@ pub fn run(ctx: &Ctx) {
                 }
             }
             AstKind::WhileStatement(statement) => {
-                if let Expression::AssignmentExpression(assignment) = &statement.test {
-                    if !wrapped_twice(ctx, assignment.span, 2) {
-                        ctx.report(
-                            "no-cond-assign",
-                            assignment.span,
-                            "Expected a conditional expression and instead saw an assignment.",
-                        );
-                    }
+                if let Expression::AssignmentExpression(assignment) = &statement.test
+                    && !wrapped_twice(ctx, assignment.span, 2)
+                {
+                    ctx.report(
+                        "no-cond-assign",
+                        assignment.span,
+                        "Expected a conditional expression and instead saw an assignment.",
+                    );
                 }
                 let while_true = matches!(statement.test.without_parentheses(), Expression::BooleanLiteral(literal) if literal.value);
                 if !while_true && is_literal_like(&statement.test) {
@@ -1122,14 +1118,14 @@ pub fn run(ctx: &Ctx) {
                 extra_boolean_cast(ctx, &statement.test);
             }
             AstKind::DoWhileStatement(statement) => {
-                if let Expression::AssignmentExpression(assignment) = &statement.test {
-                    if !wrapped_twice(ctx, assignment.span, 2) {
-                        ctx.report(
-                            "no-cond-assign",
-                            assignment.span,
-                            "Expected a conditional expression and instead saw an assignment.",
-                        );
-                    }
+                if let Expression::AssignmentExpression(assignment) = &statement.test
+                    && !wrapped_twice(ctx, assignment.span, 2)
+                {
+                    ctx.report(
+                        "no-cond-assign",
+                        assignment.span,
+                        "Expected a conditional expression and instead saw an assignment.",
+                    );
                 }
                 extra_boolean_cast(ctx, &statement.test);
             }
@@ -1141,14 +1137,14 @@ pub fn run(ctx: &Ctx) {
                         "Unexpected constant condition.",
                     );
                 }
-                if let Expression::AssignmentExpression(assignment) = &expression.test {
-                    if !wrapped_twice(ctx, assignment.span, 1) {
-                        ctx.report(
-                            "no-cond-assign",
-                            assignment.span,
-                            "Expected a conditional expression and instead saw an assignment.",
-                        );
-                    }
+                if let Expression::AssignmentExpression(assignment) = &expression.test
+                    && !wrapped_twice(ctx, assignment.span, 1)
+                {
+                    ctx.report(
+                        "no-cond-assign",
+                        assignment.span,
+                        "Expected a conditional expression and instead saw an assignment.",
+                    );
                 }
                 extra_boolean_cast(ctx, &expression.test);
             }
@@ -1180,18 +1176,17 @@ pub fn run(ctx: &Ctx) {
                     expression.operator,
                     BinaryOperator::In | BinaryOperator::Instanceof
                 ) {
-                    if let Expression::UnaryExpression(unary) = &expression.left {
-                        if unary.operator == UnaryOperator::LogicalNot
-                            && !wrapped_twice(ctx, unary.span, 1)
-                        {
-                            ctx.report(
-                                "no-unsafe-negation",
-                                unary.span,
-                                format!(
-                                    "Unexpected negating the left operand of '{operator}' operator."
-                                ),
-                            );
-                        }
+                    if let Expression::UnaryExpression(unary) = &expression.left
+                        && unary.operator == UnaryOperator::LogicalNot
+                        && !wrapped_twice(ctx, unary.span, 1)
+                    {
+                        ctx.report(
+                            "no-unsafe-negation",
+                            unary.span,
+                            format!(
+                                "Unexpected negating the left operand of '{operator}' operator."
+                            ),
+                        );
                     }
                     if is_chain(&expression.right) {
                         ctx.report("no-unsafe-optional-chaining", expression.right.span(), "Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError.");
@@ -1206,8 +1201,8 @@ pub fn run(ctx: &Ctx) {
                         if !typeof_operand(typed) {
                             continue;
                         }
-                        if let Some(LiteralValue::Str(value)) = literal_expression(other) {
-                            if ![
+                        if let Some(LiteralValue::Str(value)) = literal_expression(other)
+                            && ![
                                 "undefined",
                                 "object",
                                 "boolean",
@@ -1218,13 +1213,12 @@ pub fn run(ctx: &Ctx) {
                                 "bigint",
                             ]
                             .contains(&value.as_str())
-                            {
-                                ctx.report(
-                                    "valid-typeof",
-                                    other.span(),
-                                    "Invalid typeof comparison value.",
-                                );
-                            }
+                        {
+                            ctx.report(
+                                "valid-typeof",
+                                other.span(),
+                                "Invalid typeof comparison value.",
+                            );
                         }
                     }
                 }
@@ -1233,27 +1227,25 @@ pub fn run(ctx: &Ctx) {
                 if assignment.operator == AssignmentOperator::Assign {
                     if let (AssignmentTarget::AssignmentTargetIdentifier(left), Some(right)) =
                         (&assignment.left, identifier_of(&assignment.right))
+                        && left.name == right
                     {
-                        if left.name == right {
-                            ctx.report(
-                                "no-self-assign",
-                                assignment.right.span(),
-                                format!("'{right}' is assigned to itself."),
-                            );
-                        }
+                        ctx.report(
+                            "no-self-assign",
+                            assignment.right.span(),
+                            format!("'{right}' is assigned to itself."),
+                        );
                     }
                     if let (
                         AssignmentTarget::StaticMemberExpression(left),
                         Expression::StaticMemberExpression(right),
                     ) = (&assignment.left, assignment.right.without_parentheses())
+                        && ctx.text(left.span) == ctx.text(right.span)
                     {
-                        if ctx.text(left.span) == ctx.text(right.span) {
-                            ctx.report(
-                                "no-self-assign",
-                                right.span,
-                                format!("'{}' is assigned to itself.", ctx.text(right.span)),
-                            );
-                        }
+                        ctx.report(
+                            "no-self-assign",
+                            right.span,
+                            format!("'{}' is assigned to itself.", ctx.text(right.span)),
+                        );
                     }
                 }
                 if let AssignmentTarget::StaticMemberExpression(member) = &assignment.left {
@@ -1414,25 +1406,23 @@ pub fn run(ctx: &Ctx) {
                     if name == "Promise" {
                         if let Some(Argument::ArrowFunctionExpression(arrow)) =
                             expression.arguments.first()
+                            && arrow.r#async
                         {
-                            if arrow.r#async {
-                                ctx.report(
-                                    "no-async-promise-executor",
-                                    arrow.span,
-                                    "Promise executor functions should not be async.",
-                                );
-                            }
+                            ctx.report(
+                                "no-async-promise-executor",
+                                arrow.span,
+                                "Promise executor functions should not be async.",
+                            );
                         }
                         if let Some(Argument::FunctionExpression(function)) =
                             expression.arguments.first()
+                            && function.r#async
                         {
-                            if function.r#async {
-                                ctx.report(
-                                    "no-async-promise-executor",
-                                    function.span,
-                                    "Promise executor functions should not be async.",
-                                );
-                            }
+                            ctx.report(
+                                "no-async-promise-executor",
+                                function.span,
+                                "Promise executor functions should not be async.",
+                            );
                         }
                     }
                     if ["Math", "JSON", "Reflect", "Atomics", "Intl"].contains(&name)
@@ -1444,14 +1434,13 @@ pub fn run(ctx: &Ctx) {
                             format!("'{name}' is not a function."),
                         );
                     }
-                    if name == "Boolean" {
-                        if let Some(argument) = expression
+                    if name == "Boolean"
+                        && let Some(argument) = expression
                             .arguments
                             .first()
                             .and_then(Argument::as_expression)
-                        {
-                            extra_boolean_cast(ctx, argument);
-                        }
+                    {
+                        extra_boolean_cast(ctx, argument);
                     }
                 }
                 if is_chain(&expression.callee) {
@@ -1469,18 +1458,17 @@ pub fn run(ctx: &Ctx) {
                             format!("'{name}' is not a function."),
                         );
                     }
-                    if name == "Boolean" && !is_shadowed(ctx, &call.callee) {
-                        if let Some(argument) =
+                    if name == "Boolean"
+                        && !is_shadowed(ctx, &call.callee)
+                        && let Some(argument) =
                             call.arguments.first().and_then(Argument::as_expression)
-                        {
-                            extra_boolean_cast(ctx, argument);
-                        }
+                    {
+                        extra_boolean_cast(ctx, argument);
                     }
                 }
                 if let Expression::StaticMemberExpression(member) =
                     call.callee.without_parentheses()
-                {
-                    if [
+                    && [
                         "hasOwnProperty",
                         "isPrototypeOf",
                         "propertyIsEnumerable",
@@ -1490,11 +1478,17 @@ pub fn run(ctx: &Ctx) {
                         "__lookupSetter__",
                     ]
                     .contains(&member.property.name.as_str())
-                    {
-                        let object_is_prototype = matches!(member.object.without_parentheses(), Expression::StaticMemberExpression(object) if object.property.name == "prototype");
-                        if !object_is_prototype {
-                            ctx.report("no-prototype-builtins", call.span, format!("Do not access Object.prototype method '{}' from target object.", member.property.name));
-                        }
+                {
+                    let object_is_prototype = matches!(member.object.without_parentheses(), Expression::StaticMemberExpression(object) if object.property.name == "prototype");
+                    if !object_is_prototype {
+                        ctx.report(
+                            "no-prototype-builtins",
+                            call.span,
+                            format!(
+                                "Do not access Object.prototype method '{}' from target object.",
+                                member.property.name
+                            ),
+                        );
                     }
                 }
                 if !call.optional && is_chain(&call.callee) {
@@ -1537,17 +1531,16 @@ pub fn run(ctx: &Ctx) {
             AstKind::ComputedMemberExpression(member) => {
                 let gap = &ctx.source
                     [member.object.span().end as usize..member.expression.span().start as usize];
-                if let Some(bracket) = gap.find('[') {
-                    if gap[..bracket].contains('\n')
-                        && gap[..bracket].trim().is_empty()
-                        && !member.optional
-                    {
-                        ctx.report(
-                            "no-unexpected-multiline",
-                            member.span,
-                            "Unexpected newline between object and [ of property access.",
-                        );
-                    }
+                if let Some(bracket) = gap.find('[')
+                    && gap[..bracket].contains('\n')
+                    && gap[..bracket].trim().is_empty()
+                    && !member.optional
+                {
+                    ctx.report(
+                        "no-unexpected-multiline",
+                        member.span,
+                        "Unexpected newline between object and [ of property access.",
+                    );
                 }
                 if !member.optional && is_chain(&member.object) {
                     ctx.report("no-unsafe-optional-chaining", member.object.span(), "Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError.");
@@ -1575,12 +1568,11 @@ pub fn run(ctx: &Ctx) {
                 }
             }
             AstKind::VariableDeclarator(declarator) => {
-                if !matches!(declarator.id, BindingPattern::BindingIdentifier(_)) {
-                    if let Some(init) = &declarator.init {
-                        if is_chain(init) {
-                            ctx.report("no-unsafe-optional-chaining", init.span(), "Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError.");
-                        }
-                    }
+                if !matches!(declarator.id, BindingPattern::BindingIdentifier(_))
+                    && let Some(init) = &declarator.init
+                    && is_chain(init)
+                {
+                    ctx.report("no-unsafe-optional-chaining", init.span(), "Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError.");
                 }
             }
             AstKind::LabeledStatement(statement) => {
@@ -1597,14 +1589,14 @@ pub fn run(ctx: &Ctx) {
                     let function = nodes
                         .ancestor_ids(id)
                         .find(|ancestor| nodes.kind(*ancestor).is_function_like());
-                    if let Some(function) = function {
-                        if matches!(is_getter_or_setter(ctx, function), Some(("set", _))) {
-                            ctx.report(
-                                "no-setter-return",
-                                statement.span,
-                                "Setter cannot return a value.",
-                            );
-                        }
+                    if let Some(function) = function
+                        && matches!(is_getter_or_setter(ctx, function), Some(("set", _)))
+                    {
+                        ctx.report(
+                            "no-setter-return",
+                            statement.span,
+                            "Setter cannot return a value.",
+                        );
                     }
                 }
             }
@@ -1619,22 +1611,13 @@ pub fn run(ctx: &Ctx) {
                 }
             }
             AstKind::StringLiteral(literal) => {
-                if !matches!(
-                    ctx.parent(id),
-                    AstKind::ImportDeclaration(_)
-                        | AstKind::ExportAllDeclaration(_)
-                        | AstKind::ExportFromDeclaration(_)
-                ) {
-                    useless_escapes(ctx, literal.span, false);
-                } else {
-                    useless_escapes(ctx, literal.span, false);
-                }
+                useless_escapes(ctx, literal.span, false);
             }
-            AstKind::TemplateLiteral(template) => {
-                if !matches!(ctx.parent(id), AstKind::TaggedTemplateExpression(_)) {
-                    for quasi in &template.quasis {
-                        useless_escapes(ctx, quasi.span, true);
-                    }
+            AstKind::TemplateLiteral(template)
+                if !matches!(ctx.parent(id), AstKind::TaggedTemplateExpression(_)) =>
+            {
+                for quasi in &template.quasis {
+                    useless_escapes(ctx, quasi.span, true);
                 }
             }
             _ => {}
@@ -1731,32 +1714,33 @@ fn cast_fix(ctx: &Ctx, whole: Span, inner: &Expression) -> Option<Vec<(u32, u32,
 fn extra_boolean_cast(ctx: &Ctx, expression: &Expression) {
     match expression.without_parentheses() {
         Expression::UnaryExpression(unary) if unary.operator == UnaryOperator::LogicalNot => {
-            if let Expression::UnaryExpression(inner) = unary.argument.without_parentheses() {
-                if inner.operator == UnaryOperator::LogicalNot {
-                    ctx.report_fix(
-                        "no-extra-boolean-cast",
-                        unary.span,
-                        "Redundant double negation.",
-                        cast_fix(ctx, unary.span, &inner.argument),
-                    );
-                }
-            }
-        }
-        Expression::CallExpression(call) => {
-            if identifier_of(&call.callee) == Some("Boolean") && !is_shadowed(ctx, &call.callee) {
-                let fix = match call.arguments.as_slice() {
-                    [argument] => argument
-                        .as_expression()
-                        .and_then(|inner| cast_fix(ctx, call.span, inner)),
-                    _ => None,
-                };
+            if let Expression::UnaryExpression(inner) = unary.argument.without_parentheses()
+                && inner.operator == UnaryOperator::LogicalNot
+            {
                 ctx.report_fix(
                     "no-extra-boolean-cast",
-                    call.span,
-                    "Redundant Boolean call.",
-                    fix,
+                    unary.span,
+                    "Redundant double negation.",
+                    cast_fix(ctx, unary.span, &inner.argument),
                 );
             }
+        }
+        Expression::CallExpression(call)
+            if identifier_of(&call.callee) == Some("Boolean")
+                && !is_shadowed(ctx, &call.callee) =>
+        {
+            let fix = match call.arguments.as_slice() {
+                [argument] => argument
+                    .as_expression()
+                    .and_then(|inner| cast_fix(ctx, call.span, inner)),
+                _ => None,
+            };
+            ctx.report_fix(
+                "no-extra-boolean-cast",
+                call.span,
+                "Redundant Boolean call.",
+                fix,
+            );
         }
         _ => {}
     }

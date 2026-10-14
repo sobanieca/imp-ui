@@ -226,14 +226,14 @@ pub fn serve_from_dir(dir: &Path, relative_path: &str, head_injection: Option<&s
     };
     let name = fs_path.to_string_lossy();
     let kind = content_type(&name);
-    if let Some(injection) = head_injection {
-        if name.to_ascii_lowercase().ends_with(".html") {
-            return Response::new(
-                200,
-                kind,
-                inject_imp(&String::from_utf8_lossy(&bytes), injection),
-            );
-        }
+    if let Some(injection) = head_injection
+        && name.to_ascii_lowercase().ends_with(".html")
+    {
+        return Response::new(
+            200,
+            kind,
+            inject_imp(&String::from_utf8_lossy(&bytes), injection),
+        );
     }
     Response::new(200, kind, bytes)
 }
@@ -587,10 +587,10 @@ pub fn exposed_host_warning(host: &str) -> String {
 
 fn request_hostname(request: &Request) -> String {
     let host = request.host();
-    if let Some(rest) = host.strip_prefix('[') {
-        if let Some((inside, _)) = rest.split_once(']') {
-            return format!("[{}]", inside.to_ascii_lowercase());
-        }
+    if let Some(rest) = host.strip_prefix('[')
+        && let Some((inside, _)) = rest.split_once(']')
+    {
+        return format!("[{}]", inside.to_ascii_lowercase());
     }
     host.split(':').next().unwrap_or("").to_ascii_lowercase()
 }
@@ -765,10 +765,11 @@ impl Handler {
         if path == worker_path {
             return self.serve_worker();
         }
-        if let Some(mocks) = &app.mocks {
-            if path == MOCK_ENDPOINT && request.method == "POST" {
-                return mocks.answer(&request.body);
-            }
+        if let Some(mocks) = &app.mocks
+            && path == MOCK_ENDPOINT
+            && request.method == "POST"
+        {
+            return mocks.answer(&request.body);
         }
         if let Some(rest) = path.strip_prefix("/@imp/") {
             return serve_library(rest);

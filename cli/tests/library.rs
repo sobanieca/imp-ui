@@ -215,7 +215,7 @@ fn the_prose_export_tables_match_what_imp_really_exports() {
                 continue;
             }
             for name in &exported {
-                if !listed.iter().any(|listed| *listed == name) {
+                if !listed.contains(&name) {
                     problems.push(format!("{at}: '{specifier}' exports '{name}', which the table omits - list it, or mark the list with '...'"));
                 }
                 if !subjects.is_empty() && !subjects.contains(name) {
@@ -415,12 +415,12 @@ fn nothing_in_the_library_runs_work_when_it_is_imported() {
         let lines: Vec<&str> = source.lines().collect();
         for (index, line) in lines.iter().enumerate() {
             let at = format!("lib/src/{path}:{}", index + 1);
-            if let Some(called) = call.captures(line).map(|caps| caps[1].to_string()) {
-                if !allowed.contains(&called.as_str()) {
-                    problems.push(format!(
+            if let Some(called) = call.captures(line).map(|caps| caps[1].to_string())
+                && !allowed.contains(&called.as_str())
+            {
+                problems.push(format!(
                         "{at}: calls '{called}' at module scope, so a bundler must keep the statement - build the value on first use instead"
                     ));
-                }
             }
             let Some(name) = template.captures(line).map(|caps| caps[1].to_string()) else {
                 continue;

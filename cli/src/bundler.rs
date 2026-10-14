@@ -350,10 +350,10 @@ fn mime_of(extension: &str) -> &'static str {
 fn data_url(extension: &str, bytes: &[u8]) -> String {
     use base64::Engine;
     let mime = mime_of(extension);
-    if let Ok(text) = std::str::from_utf8(bytes) {
-        if matches!(extension, "svg" | "css" | "txt" | "json") {
-            return format!("data:{mime};charset=utf-8,{}", percent_encode(text));
-        }
+    if let Ok(text) = std::str::from_utf8(bytes)
+        && matches!(extension, "svg" | "css" | "txt" | "json")
+    {
+        return format!("data:{mime};charset=utf-8,{}", percent_encode(text));
     }
     format!(
         "data:{mime};base64,{}",
@@ -551,12 +551,11 @@ impl ImpPlugin {
         }
         if let Some(importer_path) =
             importer.and_then(|importer| importer.strip_prefix(EMBEDDED_PREFIX))
+            && is_relative(specifier)
         {
-            if is_relative(specifier) {
-                return Ok(Some(HookResolveIdOutput::from_id(embedded_id(
-                    &join_embedded(importer_path, specifier),
-                ))));
-            }
+            return Ok(Some(HookResolveIdOutput::from_id(embedded_id(
+                &join_embedded(importer_path, specifier),
+            ))));
         }
         let resolve_dir = match importer {
             Some(importer) if importer.starts_with(VIRTUAL_PREFIX) => {
@@ -582,12 +581,11 @@ impl ImpPlugin {
                     importer.map(Path::new).filter(|path| path.is_absolute())
                 {
                     let npm = npm::shared()?;
-                    if npm.is_cached_path(importer_path) {
-                        if let Some(resolved) =
+                    if npm.is_cached_path(importer_path)
+                        && let Some(resolved) =
                             npm.browser_file_override(importer_path, Path::new(&found))
-                        {
-                            return Ok(Some(self.resolved_output(resolved)));
-                        }
+                    {
+                        return Ok(Some(self.resolved_output(resolved)));
                     }
                 }
                 if self.config.mocks.contains_key(&found) && !mocked_by_itself(&found) {
@@ -703,14 +701,12 @@ impl ImpPlugin {
                         ),
                     ));
                 }
-                if specifier.starts_with('#') {
-                    if let Some(package) = npm.package_of_path(importer_path) {
-                        if let Some(resolved) =
-                            npm::package_imports(&package.directory, specifier, require)
-                        {
-                            return Ok(Some(self.resolved_output(resolved)));
-                        }
-                    }
+                if specifier.starts_with('#')
+                    && let Some(package) = npm.package_of_path(importer_path)
+                    && let Some(resolved) =
+                        npm::package_imports(&package.directory, specifier, require)
+                {
+                    return Ok(Some(self.resolved_output(resolved)));
                 }
                 let resolved = tokio::task::block_in_place(|| {
                     npm.resolve_bare_from(importer_path, specifier, require)
@@ -823,19 +819,19 @@ impl ImpPlugin {
                 ..Default::default()
             }));
         }
-        if matches!(extension.as_str(), "js" | "mjs" | "cjs") {
-            if let Some(flags) = &self.config.flags {
-                let source = std::fs::read_to_string(path)?;
-                let file = self.display_id(id);
-                let folded = fold_flag_calls(&source, flags, &file)
-                    .map_err(|error| self.record_error(None, error.to_string()))?;
-                if folded != source {
-                    return Ok(Some(HookLoadOutput {
-                        code: folded.into(),
-                        module_type: Some(ModuleType::Js),
-                        ..Default::default()
-                    }));
-                }
+        if matches!(extension.as_str(), "js" | "mjs" | "cjs")
+            && let Some(flags) = &self.config.flags
+        {
+            let source = std::fs::read_to_string(path)?;
+            let file = self.display_id(id);
+            let folded = fold_flag_calls(&source, flags, &file)
+                .map_err(|error| self.record_error(None, error.to_string()))?;
+            if folded != source {
+                return Ok(Some(HookLoadOutput {
+                    code: folded.into(),
+                    module_type: Some(ModuleType::Js),
+                    ..Default::default()
+                }));
             }
         }
         Ok(None)

@@ -210,10 +210,10 @@ impl HandleTracker {
                 _ => &[],
             };
             for specifier in declaration.specifiers.iter().flatten() {
-                if let ImportDeclarationSpecifier::ImportSpecifier(specifier) = specifier {
-                    if readables.contains(&imported_name(specifier).as_str()) {
-                        names.insert(specifier.local.name.to_string());
-                    }
+                if let ImportDeclarationSpecifier::ImportSpecifier(specifier) = specifier
+                    && readables.contains(&imported_name(specifier).as_str())
+                {
+                    names.insert(specifier.local.name.to_string());
                 }
             }
         }
@@ -226,19 +226,17 @@ impl HandleTracker {
                 AstKind::VariableDeclarator(declarator) => {
                     if let (BindingPattern::BindingIdentifier(id), Some(init)) =
                         (&declarator.id, &declarator.init)
+                        && is_handle_call(init)
                     {
-                        if is_handle_call(init) {
-                            names.insert(id.name.to_string());
-                        }
+                        names.insert(id.name.to_string());
                     }
                 }
                 AstKind::AssignmentExpression(assignment) => {
-                    if assignment.operator == AssignmentOperator::Assign {
-                        if let AssignmentTarget::AssignmentTargetIdentifier(id) = &assignment.left {
-                            if is_handle_call(&assignment.right) {
-                                names.insert(id.name.to_string());
-                            }
-                        }
+                    if assignment.operator == AssignmentOperator::Assign
+                        && let AssignmentTarget::AssignmentTargetIdentifier(id) = &assignment.left
+                        && is_handle_call(&assignment.right)
+                    {
+                        names.insert(id.name.to_string());
                     }
                 }
                 _ => {}
@@ -248,10 +246,10 @@ impl HandleTracker {
     }
 
     fn handle_text(&self, expression: &Expression) -> Option<String> {
-        if let Some(name) = identifier_name(expression) {
-            if self.names.contains(name) {
-                return Some(name.to_string());
-            }
+        if let Some(name) = identifier_name(expression)
+            && self.names.contains(name)
+        {
+            return Some(name.to_string());
         }
         if let Expression::CallExpression(call) = expression.without_parentheses() {
             return self
@@ -420,16 +418,24 @@ fn describe_literal(value: &LiteralValue) -> Option<String> {
     }
 }
 
-fn name_rule(
-    ctx: &Ctx,
-    imports: &[&ImportDeclaration],
+struct NameRule {
     rule: &'static str,
-    source: &str,
-    helpers: &[(&str, usize)],
+    source: &'static str,
+    helpers: &'static [(&'static str, usize)],
     problem: fn(&str) -> Option<String>,
-    label: &str,
-    example: &str,
-) {
+    label: &'static str,
+    example: &'static str,
+}
+
+fn name_rule(ctx: &Ctx, imports: &[&ImportDeclaration], name_rule: &NameRule) {
+    let NameRule {
+        rule,
+        source,
+        helpers,
+        problem,
+        label,
+        example,
+    } = *name_rule;
     let names: Vec<&str> = helpers.iter().map(|(name, _)| *name).collect();
     let tracker = HelperTracker::new(imports, &[(source, &names)]);
     for node in ctx.nodes() {
@@ -641,13 +647,12 @@ fn no_capital_component(ctx: &Ctx) {
             AstKind::VariableDeclarator(declarator) => {
                 if let (BindingPattern::BindingIdentifier(id), Some(init)) =
                     (&declarator.id, &declarator.init)
-                {
-                    if matches!(
+                    && matches!(
                         init.without_parentheses(),
                         Expression::ArrowFunctionExpression(_) | Expression::FunctionExpression(_)
-                    ) {
-                        report(id.span, &id.name);
-                    }
+                    )
+                {
+                    report(id.span, &id.name);
                 }
             }
             _ => {}
@@ -939,10 +944,10 @@ fn loading_with_async_setup(
             stack.push((info.span, frame));
             continue;
         }
-        if let AstKind::ReturnStatement(statement) = node.kind() {
-            if let Some((_, Some(index))) = stack.last() {
-                builds[*index].returns.push(statement.argument.as_ref());
-            }
+        if let AstKind::ReturnStatement(statement) = node.kind()
+            && let Some((_, Some(index))) = stack.last()
+        {
+            builds[*index].returns.push(statement.argument.as_ref());
         }
     }
     for build in builds {
@@ -1968,26 +1973,30 @@ pub fn run(ctx: &Ctx) {
     name_rule(
         ctx,
         &imports,
-        "state-name-namespace",
-        "imp/state",
-        &[("initState", 1), ("useState", 1)],
-        state_name_problem,
-        "state name",
-        "myapp.user",
+        &NameRule {
+            rule: "state-name-namespace",
+            source: "imp/state",
+            helpers: &[("initState", 1), ("useState", 1)],
+            problem: state_name_problem,
+            label: "state name",
+            example: "myapp.user",
+        },
     );
     name_rule(
         ctx,
         &imports,
-        "http-client-name-namespace",
-        "imp/http",
-        &[
-            ("createHttpClient", 0),
-            ("initHttpClient", 1),
-            ("useHttpClient", 1),
-        ],
-        http_client_name_problem,
-        "http client name",
-        "myapp.api",
+        &NameRule {
+            rule: "http-client-name-namespace",
+            source: "imp/http",
+            helpers: &[
+                ("createHttpClient", 0),
+                ("initHttpClient", 1),
+                ("useHttpClient", 1),
+            ],
+            problem: http_client_name_problem,
+            label: "http client name",
+            example: "myapp.api",
+        },
     );
     analytics_rule(ctx);
     watch_with_self(ctx, &definitions, &handles);

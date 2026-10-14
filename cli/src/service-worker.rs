@@ -171,10 +171,10 @@ impl WorkerBundler {
     }
 
     fn current(&self, cached: Option<&WorkerState>) -> WorkerState {
-        if let Some(cache) = cached {
-            if self.entry.is_none() || cache.key == stamp_of(&cache.inputs) {
-                return cache.clone();
-            }
+        if let Some(cache) = cached
+            && (self.entry.is_none() || cache.key == stamp_of(&cache.inputs))
+        {
+            return cache.clone();
         }
         match bundle_dev_worker(&self.root, self.entry.as_deref(), &self.dependencies) {
             Ok((source, inputs)) => {

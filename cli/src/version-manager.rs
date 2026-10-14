@@ -193,24 +193,23 @@ impl Releases<'_> {
     }
 
     fn touch_last_used(&self, version: &str) {
-        if let Ok(dir) = self.version_dir(version) {
-            if dir.exists() {
-                let _ = std::fs::write(
-                    dir.join("lastUsed"),
-                    crate::time::iso_string(crate::time::now_millis()),
-                );
-            }
+        if let Ok(dir) = self.version_dir(version)
+            && dir.exists()
+        {
+            let _ = std::fs::write(
+                dir.join("lastUsed"),
+                crate::time::iso_string(crate::time::now_millis()),
+            );
         }
     }
 
     fn last_used_time(&self, version: &str) -> u128 {
-        if let Ok(dir) = self.version_dir(version) {
-            if let Some(parsed) = std::fs::read_to_string(dir.join("lastUsed"))
+        if let Ok(dir) = self.version_dir(version)
+            && let Some(parsed) = std::fs::read_to_string(dir.join("lastUsed"))
                 .ok()
                 .and_then(|text| parse_iso_millis(&text))
-            {
-                return parsed;
-            }
+        {
+            return parsed;
         }
         self.version_binary_path(version)
             .ok()
@@ -386,15 +385,13 @@ impl Releases<'_> {
         if let Some(cache) = std::fs::read_to_string(&cache_path)
             .ok()
             .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
-        {
-            if let (Some(latest), Some(checked)) = (
+            && let (Some(latest), Some(checked)) = (
                 cache.get("latest").and_then(|v| v.as_str()),
                 cache.get("checkedAt").and_then(|v| v.as_f64()),
-            ) {
-                if now.saturating_sub(checked as u128) < UPDATE_CHECK_INTERVAL {
-                    return Ok(latest.to_string());
-                }
-            }
+            )
+            && now.saturating_sub(checked as u128) < UPDATE_CHECK_INTERVAL
+        {
+            return Ok(latest.to_string());
         }
         let latest = self.resolve_latest_version(Some(Duration::from_millis(2000)))?;
         let _ = std::fs::create_dir_all(&self.cache);

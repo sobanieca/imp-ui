@@ -313,10 +313,10 @@ pub fn report_dead_code(root: &Path, config: &Config, config_name: &str) -> Resu
         modules.insert(file.clone(), record);
     }
     for path in preview_modules(config) {
-        if let Some(target) = resolve_module_file(&normalize(&project_root.join(path))) {
-            if modules.contains_key(&target) {
-                roots.insert(target);
-            }
+        if let Some(target) = resolve_module_file(&normalize(&project_root.join(path)))
+            && modules.contains_key(&target)
+        {
+            roots.insert(target);
         }
     }
     let resolve_edge = |directory: &Path, specifier: &str| -> Option<PathBuf> {
@@ -380,10 +380,10 @@ pub fn report_dead_code(root: &Path, config: &Config, config_name: &str) -> Resu
                 } else {
                     directory.join(&path)
                 };
-                if let Some(target) = resolve_module_file(&normalize(&candidate)) {
-                    if modules.contains_key(&target) {
-                        roots.insert(target);
-                    }
+                if let Some(target) = resolve_module_file(&normalize(&candidate))
+                    && modules.contains_key(&target)
+                {
+                    roots.insert(target);
                 }
                 continue;
             }

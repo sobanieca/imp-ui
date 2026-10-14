@@ -14,6 +14,8 @@ use std::path::Path;
 
 pub const UNIQUE_ANALYTICS_NAME_RULE: &str = "imp/unique-analytics-name";
 
+type NameLocation = (String, String, usize, usize);
+
 pub struct NameUse {
     pub helper: String,
     pub name: Option<String>,
@@ -62,8 +64,8 @@ pub fn report_duplicate_analytics_names(root: &Path, config: &Config) -> Result<
         extensions: &["js", "mjs", "cjs", "html"],
         exclude: &exclude,
     })?;
-    let mut uses: Vec<(String, Vec<(String, String, usize, usize)>)> = Vec::new();
-    let mut record = |key: String, entry: (String, String, usize, usize)| match uses
+    let mut uses: Vec<(String, Vec<NameLocation>)> = Vec::new();
+    let mut record = |key: String, entry: NameLocation| match uses
         .iter_mut()
         .find(|(existing, _)| *existing == key)
     {

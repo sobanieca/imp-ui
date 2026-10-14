@@ -226,12 +226,10 @@ impl Npm {
         if let Some(latest) = packument
             .pointer("/dist-tags/latest")
             .and_then(Value::as_str)
+            && let Ok(latest) = nodejs_semver::Version::parse(latest)
+            && latest.satisfies(&parsed)
         {
-            if let Ok(latest) = nodejs_semver::Version::parse(latest) {
-                if latest.satisfies(&parsed) {
-                    return Ok(latest.to_string());
-                }
-            }
+            return Ok(latest.to_string());
         }
         parsed
             .max_satisfying(&versions)
@@ -287,12 +285,12 @@ impl Npm {
                 response.status
             );
         }
-        if let Some(integrity) = metadata.pointer("/dist/integrity").and_then(Value::as_str) {
-            if !matches_integrity(integrity, &response.body) {
-                bail!(
-                    "integrity check failed for {name}@{version} - the download does not match the hash of the registry"
-                );
-            }
+        if let Some(integrity) = metadata.pointer("/dist/integrity").and_then(Value::as_str)
+            && !matches_integrity(integrity, &response.body)
+        {
+            bail!(
+                "integrity check failed for {name}@{version} - the download does not match the hash of the registry"
+            );
         }
         let files = tarball_files(&response.body)?;
         let staging = directory.with_extension(format!("tmp-{}", std::process::id()));
@@ -500,10 +498,10 @@ fn resolve_target(
             .find_map(|item| resolve_target(item, conditions, star)),
         Value::Object(map) => {
             for (key, value) in map {
-                if conditions.contains(&key.as_str()) {
-                    if let Some(found) = resolve_target(value, conditions, star) {
-                        return Some(found);
-                    }
+                if conditions.contains(&key.as_str())
+                    && let Some(found) = resolve_target(value, conditions, star)
+                {
+                    return Some(found);
                 }
             }
             None
@@ -543,10 +541,11 @@ fn match_exports_map(
         return resolve_target(target, conditions, Some(&captured));
     }
     for (pattern, target) in map {
-        if pattern.ends_with('/') && key.starts_with(pattern.as_str()) {
-            if let Some(Some(base)) = resolve_target(target, conditions, None) {
-                return Some(Some(format!("{base}{}", &key[pattern.len()..])));
-            }
+        if pattern.ends_with('/')
+            && key.starts_with(pattern.as_str())
+            && let Some(Some(base)) = resolve_target(target, conditions, None)
+        {
+            return Some(Some(format!("{base}{}", &key[pattern.len()..])));
         }
     }
     None
@@ -582,10 +581,9 @@ fn probe(path: &Path) -> Option<PathBuf> {
         if let Some(main) = ["browser", "module", "main"]
             .iter()
             .find_map(|field| manifest.get(*field).and_then(Value::as_str))
+            && let Some(found) = probe(&path.join(main))
         {
-            if let Some(found) = probe(&path.join(main)) {
-                return Some(found);
-            }
+            return Some(found);
         }
         for index in ["index.js", "index.mjs", "index.cjs", "index.json"] {
             if path.join(index).is_file() {

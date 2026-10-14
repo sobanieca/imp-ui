@@ -213,10 +213,10 @@ pub fn fixed_version(vulnerability: &Value, entry: &Value) -> Option<String> {
         }
         for range in affected["ranges"].as_array().into_iter().flatten() {
             for event in range["events"].as_array().into_iter().flatten() {
-                if let Some(fixed) = event["fixed"].as_str() {
-                    if is_newer(fixed, version) {
-                        fixes.push(fixed.to_string());
-                    }
+                if let Some(fixed) = event["fixed"].as_str()
+                    && is_newer(fixed, version)
+                {
+                    fixes.push(fixed.to_string());
                 }
             }
         }

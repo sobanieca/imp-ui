@@ -773,15 +773,15 @@ fn render_requested(subject: &str, root: &Path) -> Result<String> {
         return render_skill(&known);
     }
     if !looks_like_file(subject) {
-        if is_valid_alias(subject) {
-            if let Some(text) = read_skill_text(
+        if is_valid_alias(subject)
+            && let Some(text) = read_skill_text(
                 &root
                     .join("dependencies")
                     .join(subject)
                     .join(COMPONENT_SKILL_FILE),
-            ) {
-                return Ok(text);
-            }
+            )
+        {
+            return Ok(text);
         }
         return Err(unknown_subject(subject));
     }

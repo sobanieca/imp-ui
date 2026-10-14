@@ -14,6 +14,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
+type ReportSlot = Arc<(Mutex<Option<String>>, Condvar)>;
+
+type WorkerResult = (i32, String);
+
 pub struct TestOptions {
     pub root: PathBuf,
     pub paths: Vec<String>,
@@ -231,8 +235,7 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
     });
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
-    let endpoint: Arc<Mutex<Option<Arc<(Mutex<Option<String>>, Condvar)>>>> =
-        Arc::new(Mutex::new(None));
+    let endpoint: Arc<Mutex<Option<ReportSlot>>> = Arc::new(Mutex::new(None));
     let run_config = json!({
         "mode": if options.e2e.is_some() { "e2e" } else { "unit" },
         "filter": options.filter,
@@ -522,7 +525,7 @@ fn orchestrate(root: &Path, files: &[String], jobs: usize, passthrough: &[String
     );
     println!("imp test: running {file_count} in parallel\n");
     let executable = std::env::current_exe()?;
-    let results: Arc<Mutex<Vec<Option<(i32, String)>>>> =
+    let results: Arc<Mutex<Vec<Option<WorkerResult>>>> =
         Arc::new(Mutex::new(vec![None; files.len()]));
     let next = Arc::new(Mutex::new(0usize));
     let workers: Vec<_> = (0..jobs.min(files.len()).max(1))

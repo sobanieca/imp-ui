@@ -20,15 +20,16 @@ fn strip_unquoted_comment(value: &str) -> &str {
 
 fn unquote_dotenv_value(value: &str) -> String {
     let first = value.chars().next();
-    if let Some(quote @ ('"' | '\'')) = first {
-        if value.len() >= 2 && value.ends_with(quote) {
-            let inner = &value[1..value.len() - 1];
-            return if quote == '"' {
-                inner.replace("\\n", "\n").replace("\\\"", "\"")
-            } else {
-                inner.to_string()
-            };
-        }
+    if let Some(quote @ ('"' | '\'')) = first
+        && value.len() >= 2
+        && value.ends_with(quote)
+    {
+        let inner = &value[1..value.len() - 1];
+        return if quote == '"' {
+            inner.replace("\\n", "\n").replace("\\\"", "\"")
+        } else {
+            inner.to_string()
+        };
     }
     strip_unquoted_comment(value).to_string()
 }
@@ -95,10 +96,10 @@ fn select_alias(
     if let Some(requested) = requested {
         return Some(requested.to_string());
     }
-    if let Some(from_shell) = shell("IMP_ENV") {
-        if !from_shell.is_empty() {
-            return Some(from_shell);
-        }
+    if let Some(from_shell) = shell("IMP_ENV")
+        && !from_shell.is_empty()
+    {
+        return Some(from_shell);
     }
     environments
         .contains_key(DEFAULT_ALIAS)

@@ -274,18 +274,18 @@ fn validate(config: &Config, name: &str) -> Result<()> {
         "environments",
         "build",
     ] {
-        if let Some(value) = config.get(key) {
-            if !value.is_object() {
-                bail!("invalid {name} - '{key}' must be an object");
-            }
+        if let Some(value) = config.get(key)
+            && !value.is_object()
+        {
+            bail!("invalid {name} - '{key}' must be an object");
         }
     }
-    if let Some(map) = config.get("map") {
-        if map.as_str().is_none_or(str::is_empty) {
-            bail!(
-                "invalid {name} - 'map' must be the path of the file that exports the application map, like \"src/app-map.js\""
-            );
-        }
+    if let Some(map) = config.get("map")
+        && map.as_str().is_none_or(str::is_empty)
+    {
+        bail!(
+            "invalid {name} - 'map' must be the path of the file that exports the application map, like \"src/app-map.js\""
+        );
     }
     if let Some(licenses) = config.get("licenses") {
         if let Some(list) = licenses.as_array() {
@@ -304,12 +304,12 @@ fn validate(config: &Config, name: &str) -> Result<()> {
             bail!("invalid {name} - 'licenses' must be {names}, or a list of SPDX identifiers");
         }
     }
-    if let Some(max_size) = get_path(config, &["build", "maxSize"]) {
-        if !(is_integer(max_size) && max_size.as_f64().unwrap_or(0.0) > 0.0) {
-            bail!(
-                "invalid {name} - 'build.maxSize' must be a positive whole number of bytes, like 512000"
-            );
-        }
+    if let Some(max_size) = get_path(config, &["build", "maxSize"])
+        && !(is_integer(max_size) && max_size.as_f64().unwrap_or(0.0) > 0.0)
+    {
+        bail!(
+            "invalid {name} - 'build.maxSize' must be a positive whole number of bytes, like 512000"
+        );
     }
     if let Some(environments) = config.get("environments").and_then(Value::as_object) {
         for (alias, path) in environments {
@@ -356,16 +356,15 @@ fn validate(config: &Config, name: &str) -> Result<()> {
             }
         }
         let displays = ["standalone", "fullscreen", "minimal-ui", "browser"];
-        if let Some(display) = pwa.get("display") {
-            if !display
+        if let Some(display) = pwa.get("display")
+            && !display
                 .as_str()
                 .is_some_and(|display| displays.contains(&display))
-            {
-                bail!(
-                    "invalid {name} - 'pwa.display' must be one of {}",
-                    displays.join(", ")
-                );
-            }
+        {
+            bail!(
+                "invalid {name} - 'pwa.display' must be one of {}",
+                displays.join(", ")
+            );
         }
     }
     for key in ["entry", "browser"] {
@@ -454,20 +453,19 @@ fn validate(config: &Config, name: &str) -> Result<()> {
             );
         }
     }
-    if let Some(worker) = config.get("serviceWorker") {
-        if worker.as_str().is_none_or(str::is_empty) {
-            bail!(
-                "invalid {name} - 'serviceWorker' must be the path of your service worker source, like \"src/sw.js\""
-            );
-        }
+    if let Some(worker) = config.get("serviceWorker")
+        && worker.as_str().is_none_or(str::is_empty)
+    {
+        bail!(
+            "invalid {name} - 'serviceWorker' must be the path of your service worker source, like \"src/sw.js\""
+        );
     }
-    if let Some(version) = config.get("version") {
-        if !version
+    if let Some(version) = config.get("version")
+        && !version
             .as_str()
             .is_some_and(|version| EXACT_VERSION.is_match(version))
-        {
-            bail!("invalid {name} - 'version' must be an exact imp version string, like '1.2.3'");
-        }
+    {
+        bail!("invalid {name} - 'version' must be an exact imp version string, like '1.2.3'");
     }
     if config
         .get("targetImpHost")
@@ -487,10 +485,10 @@ fn validate(config: &Config, name: &str) -> Result<()> {
     {
         bail!("invalid {name} - 'maxFileSizeIgnore' must be an array of strings");
     }
-    if let Some(entries) = config.get("maxLogEntries") {
-        if !(is_integer(entries) && entries.as_f64().unwrap_or(0.0) > 0.0) {
-            bail!("invalid {name} - 'maxLogEntries' must be a positive integer");
-        }
+    if let Some(entries) = config.get("maxLogEntries")
+        && !(is_integer(entries) && entries.as_f64().unwrap_or(0.0) > 0.0)
+    {
+        bail!("invalid {name} - 'maxLogEntries' must be a positive integer");
     }
     if let Some(port) = config.get("devServerPort") {
         let number = port.as_f64().unwrap_or(0.0);

@@ -77,7 +77,8 @@ export function createClock(options) {
     }
   }
 
-  const flushPromises = () => new Promise((resolve) => native.setTimeout.call(globalThis, resolve, 0))
+  const flushPromises = () =>
+    new Promise((resolve) => native.setTimeout.call(globalThis, resolve, 0))
 
   const setPerformanceNow = (fn) => {
     if (!native.performance || !realPerformanceNow) return

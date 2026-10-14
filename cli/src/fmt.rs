@@ -76,12 +76,20 @@ impl Formatter {
         css.layout.print_width = line_width as usize;
         css.layout.indent_width = indent_width as usize;
         css.layout.use_tabs = use_tabs;
+        css.language.quotes = if single_quote {
+            malva::config::Quotes::PreferSingle
+        } else {
+            malva::config::Quotes::PreferDouble
+        };
+        css.language.operator_linebreak = malva::config::OperatorLineBreak::Before;
+        css.language.linebreak_in_pseudo_parens = true;
         css.language.ignore_comment_directive = IGNORE_NODE.into();
         css.language.ignore_file_comment_directive = IGNORE_FILE.into();
         let mut markup = markup_fmt::config::FormatOptions::default();
         markup.layout.print_width = line_width as usize;
         markup.layout.indent_width = indent_width as usize;
         markup.layout.use_tabs = use_tabs;
+        markup.language.doctype_keyword_case = markup_fmt::config::DoctypeKeywordCase::Ignore;
         markup.language.ignore_comment_directive = IGNORE_NODE.into();
         markup.language.ignore_file_comment_directive = IGNORE_FILE.into();
         let mut yaml = pretty_yaml::config::FormatOptions::default();

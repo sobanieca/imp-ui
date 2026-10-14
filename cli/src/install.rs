@@ -288,15 +288,15 @@ pub fn commit_dependencies(
         Err(error) => {
             let mut problems = Vec::new();
             for swap in swaps.iter().rev() {
-                if swap.placed {
-                    if let Err(problem) = std::fs::remove_dir_all(&swap.target) {
-                        problems.push(format!("remove {}: {problem}", swap.target.display()));
-                    }
+                if swap.placed
+                    && let Err(problem) = std::fs::remove_dir_all(&swap.target)
+                {
+                    problems.push(format!("remove {}: {problem}", swap.target.display()));
                 }
-                if swap.moved_aside {
-                    if let Err(problem) = std::fs::rename(&swap.aside, &swap.target) {
-                        problems.push(format!("restore {}: {problem}", swap.target.display()));
-                    }
+                if swap.moved_aside
+                    && let Err(problem) = std::fs::rename(&swap.aside, &swap.target)
+                {
+                    problems.push(format!("restore {}: {problem}", swap.target.display()));
                 }
             }
             if config_touched {
@@ -358,18 +358,19 @@ fn requested_target(
         bail!("two versions given: '{first}' and '{second}'");
     }
     let version = parsed.version.clone().or(version);
-    if let Some(version) = &version {
-        if !EXACT_VERSION.is_match(version) {
-            bail!(
-                "'{version}' is not an exact version - give an exact version (e.g. 1.2.3) or omit it to resolve the latest"
-            );
-        }
+    if let Some(version) = &version
+        && !EXACT_VERSION.is_match(version)
+    {
+        bail!(
+            "'{version}' is not an exact version - give an exact version (e.g. 1.2.3) or omit it to resolve the latest"
+        );
     }
-    if parsed.scheme.is_none() && parsed.subpath.is_empty() && alias.is_none() {
-        if let Some((name, specifier)) = dependencies.iter().find(|(name, _)| *name == parsed.name)
-        {
-            return declared_target(name, specifier, version);
-        }
+    if parsed.scheme.is_none()
+        && parsed.subpath.is_empty()
+        && alias.is_none()
+        && let Some((name, specifier)) = dependencies.iter().find(|(name, _)| *name == parsed.name)
+    {
+        return declared_target(name, specifier, version);
     }
     if parsed.scheme.as_deref() == Some("jsr") && !parsed.name.starts_with('@') {
         bail!("jsr packages are scoped: 'jsr:@scope/name', got '{package}'");

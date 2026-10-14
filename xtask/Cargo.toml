@@ -8,3 +8,5 @@ publish = false
 imp = { path = "../cli" }
 serde_json = { version = "1", features = ["preserve_order"] }
 anyhow = "1"
+rquickjs = { version = "0.14", features = ["loader"] }
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }

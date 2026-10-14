@@ -4759,6 +4759,8 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "imp",
+ "pulldown-cmark",
+ "rquickjs",
  "serde_json",
 ]
 

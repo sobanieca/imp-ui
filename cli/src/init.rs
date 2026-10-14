@@ -153,7 +153,7 @@ fn font_face_css(font: &Font) -> String {
         .iter()
         .map(|subset| {
             format!(
-                "@font-face {{\n  font-family: \"{}\";\n  font-style: normal;\n  font-weight: 400 700;\n  font-display: swap;\n  src: url({}) format(\"woff2\");\n  unicode-range:\n    {};\n}}\n",
+                "@font-face {{\n  font-family: '{}';\n  font-style: normal;\n  font-weight: 400 700;\n  font-display: swap;\n  src: url({}) format('woff2');\n  unicode-range:\n    {};\n}}\n",
                 font.name,
                 font_file(font, subset),
                 subset.ranges.join(",\n    ")
