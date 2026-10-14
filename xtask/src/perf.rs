@@ -253,7 +253,7 @@ fn run_driver(binary: &Path, runner: &Path) -> Result<Value> {
 
 pub fn perf(args: &[String]) -> Result<()> {
     let options = parse_arguments(args)?;
-    let binary = build_imp("local")?;
+    let binary = build_imp("dev")?;
     let mut versions = serde_json::Map::new();
     for name in &options.frameworks {
         versions.insert(name.clone(), Value::String(version_of(name)?));

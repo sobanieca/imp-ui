@@ -39,7 +39,7 @@ jobs:
         if: runner.os == 'Windows'
         run: tzutil /s "Central European Standard Time"
       - name: Build imp
-        run: cargo build --locked --profile local --package imp
+        run: cargo build --locked --package imp
       - name: Library unit tests
         if: matrix.suite == 'unit' && runner.os != 'Windows'
         working-directory: lib/test
@@ -56,7 +56,7 @@ jobs:
         run: cargo imp test --e2e
       - name: CLI tests
         if: matrix.suite == 'cli'
-        run: cargo test --locked --profile local --workspace
+        run: cargo test --locked --workspace
 
   size:
     name: Binary size

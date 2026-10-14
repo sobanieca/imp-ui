@@ -1,5 +1,5 @@
 [alias]
-xtask = "run --quiet --profile local --package xtask --"
-imp = "run --quiet --profile local --package imp --"
+xtask = "run --quiet --package xtask --"
+imp = "run --quiet --package imp --"
 verify = "xtask verify"
 update-snapshots = "xtask update-snapshots"

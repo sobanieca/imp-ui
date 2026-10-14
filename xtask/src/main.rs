@@ -31,7 +31,7 @@ const USAGE: &str = "usage: cargo xtask <task>
   perf-profile <file>    print the functions with the most self time in a CPU profile";
 
 fn serve(folder: &str, command: &str) -> Result<()> {
-    let binary = build_imp("local")?;
+    let binary = build_imp("dev")?;
     run_imp(
         &binary,
         &[command, "--no-reload"],

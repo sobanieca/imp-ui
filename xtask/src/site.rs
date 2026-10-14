@@ -193,7 +193,7 @@ pub fn build_site() -> Result<()> {
         std::fs::copy(root.join(from), dist.join(to))?;
     }
     copy_folder(&root.join("lib/src/public/fonts"), &dist.join("fonts"))?;
-    let binary = build_imp("local")?;
+    let binary = build_imp("dev")?;
     let gallery = dist.join("gallery");
     run_imp(
         &binary,

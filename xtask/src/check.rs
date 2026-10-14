@@ -108,8 +108,6 @@ pub fn check(write: bool) -> Result<()> {
         "--quiet",
         "--workspace",
         "--all-targets",
-        "--profile",
-        "local",
         "--",
         "-D",
         "warnings",
@@ -127,7 +125,7 @@ pub fn check(write: bool) -> Result<()> {
     } else {
         crate::licenses::verify()?;
     }
-    let binary = build_imp("local")?;
+    let binary = build_imp("dev")?;
     for folder in IMP_LINTED {
         run_imp(&binary, &["lint"], &repo_root().join(folder))?;
     }
@@ -136,7 +134,7 @@ pub fn check(write: bool) -> Result<()> {
 }
 
 pub fn test(filter: &[String]) -> Result<()> {
-    let binary = build_imp("local")?;
+    let binary = build_imp("dev")?;
     let library_tests = repo_root().join("lib").join("test");
     run_imp_with(
         &binary,
@@ -145,7 +143,7 @@ pub fn test(filter: &[String]) -> Result<()> {
         &[("TZ", LIBRARY_TEST_TIME_ZONE)],
     )?;
     run_imp(&binary, &["test", "--e2e"], &library_tests)?;
-    let mut args = vec!["test", "--profile", "local", "--workspace"];
+    let mut args = vec!["test", "--workspace"];
     if !filter.is_empty() {
         args.push("--");
         args.extend(filter.iter().map(String::as_str));
@@ -154,10 +152,7 @@ pub fn test(filter: &[String]) -> Result<()> {
 }
 
 pub fn update_snapshots() -> Result<()> {
-    cargo_with(
-        &["test", "--profile", "local", "--package", "imp"],
-        &[("UPDATE_SNAPSHOTS", "1")],
-    )
+    cargo_with(&["test", "--package", "imp"], &[("UPDATE_SNAPSHOTS", "1")])
 }
 
 pub fn binary_size() -> Result<()> {

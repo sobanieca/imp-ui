@@ -130,12 +130,16 @@ component in one folder that shows in another group fails the tests.
 **Every command that invokes imp runs the binary that cargo builds from this tree.** There is one
 imp, the same one users get. There is no second "from source" mode that could behave differently.
 
-`cargo imp <args>` builds the CLI with the `local` profile, then runs it in the current folder.
+`cargo imp <args>` builds the CLI with the `dev` profile, then runs it in the current folder.
 Cargo rebuilds when a file under `cli/`, `lib/src`, `skills/` or the licence files changed, because
 `cli/build.rs` embeds those trees. So a green test run is never about stale code. Every `cargo xtask`
 task builds the binary the same way before it runs it.
 
-**Never run `target/local/imp` by hand** (for example `../../target/local/imp test` from
+The workspace has two profiles. `dev` is for development. It optimizes the code fully but skips LTO,
+so a rebuild after a small edit takes less than a minute. `release` is for the binary that users get. Its LTO
+pass takes minutes on every rebuild, so use it only for a release build or `cargo xtask binary-size`.
+
+**Never run `target/debug/imp` by hand** (for example `../../target/debug/imp test` from
 `lib/test`). A bare binary skips the rebuild and runs whatever was compiled last.
 
 ## Tasks and tools
