@@ -8,8 +8,62 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 REPO="sobanieca/imp-ui"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+DEFAULT_INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="imp"
+SCRIPT_URL="https://sobanieca.github.io/imp-ui/install.sh"
+
+usage() {
+  cat <<USAGE
+Install imp for Linux or macOS (x64, arm64).
+
+Usage:
+  curl -fsSL ${SCRIPT_URL} | bash
+
+By default imp is installed to ${DEFAULT_INSTALL_DIR}, for all users. If you
+can't write to it, run the script with sudo:
+  curl -fsSL ${SCRIPT_URL} | sudo bash
+
+To install to a custom location, set INSTALL_DIR to a directory that is
+on your PATH:
+  curl -fsSL ${SCRIPT_URL} | INSTALL_DIR=~/.local/bin bash
+USAGE
+}
+
+case "${1:-}" in
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  "")
+    ;;
+  *)
+    echo -e "${RED}Error: Unknown argument: $1${NC}"
+    echo ""
+    usage
+    exit 1
+    ;;
+esac
+
+if [ -n "${INSTALL_DIR:-}" ]; then
+  CUSTOM_INSTALL_DIR=1
+else
+  CUSTOM_INSTALL_DIR=""
+  INSTALL_DIR="${DEFAULT_INSTALL_DIR}"
+fi
+
+install_failed() {
+  echo -e "${RED}Error: Could not install imp to ${INSTALL_DIR}${NC}"
+  if [ -n "${CUSTOM_INSTALL_DIR}" ]; then
+    echo "INSTALL_DIR must be a writable directory that is on your PATH, e.g.:"
+    echo "  curl -fsSL ${SCRIPT_URL} | INSTALL_DIR=~/.local/bin bash"
+  else
+    echo "Most likely you need to run the script with sudo:"
+    echo "  curl -fsSL ${SCRIPT_URL} | sudo bash"
+    echo "or set INSTALL_DIR to a directory that is on your PATH, e.g.:"
+    echo "  curl -fsSL ${SCRIPT_URL} | INSTALL_DIR=~/.local/bin bash"
+  fi
+  exit 1
+}
 
 echo "Installing imp..."
 echo ""
@@ -43,6 +97,9 @@ case "$ARCH" in
     exit 1
     ;;
 esac
+
+mkdir -p "${INSTALL_DIR}" 2> /dev/null || install_failed
+[ -w "${INSTALL_DIR}" ] || install_failed
 
 BINARY_FILE="imp-${OS_TYPE}-${ARCH_TYPE}"
 
@@ -114,15 +171,8 @@ fi
 
 chmod +x "${TMP_DIR}/${BINARY_NAME}"
 
-if [ -w "$INSTALL_DIR" ]; then
-  SUDO=""
-else
-  SUDO="sudo"
-  echo -e "${YELLOW}Note: sudo is required to install to ${INSTALL_DIR}${NC}"
-fi
-
 echo "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
-$SUDO mv "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+mv -f "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}" || install_failed
 
 echo ""
 echo -e "${GREEN}imp has been installed successfully${NC}"
@@ -130,10 +180,13 @@ echo ""
 echo "Run 'imp help' to get started"
 echo ""
 
-if command -v imp &> /dev/null; then
-  VERSION=$(imp --version 2>&1 || echo "unknown")
-  echo "Installed version: ${VERSION}"
-else
-  echo -e "${YELLOW}Warning: ${INSTALL_DIR} may not be in your PATH${NC}"
-  echo "Add it to your PATH or move the binary to a directory in your PATH"
-fi
+case ":${PATH}:" in
+  *":${INSTALL_DIR}:"*)
+    VERSION=$("${INSTALL_DIR}/${BINARY_NAME}" --version 2>&1 || echo "unknown")
+    echo "Installed version: ${VERSION}"
+    ;;
+  *)
+    echo -e "${YELLOW}Warning: ${INSTALL_DIR} is not on your PATH${NC}"
+    echo "Add it to your PATH, or set INSTALL_DIR to a directory that is on your PATH"
+    ;;
+esac

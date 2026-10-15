@@ -27,7 +27,10 @@ it on your `PATH`:
 curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
 ```
 
-The script installs to `/usr/local/bin` by default. To choose another location, set `INSTALL_DIR`.
+The script installs to `/usr/local/bin` by default, for all users. If you can't write to that
+folder, the script stops with an error: run it with `sudo bash` instead of `bash`. To choose another
+location, set `INSTALL_DIR` to a folder on your `PATH`, such as
+`curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | INSTALL_DIR=~/.local/bin bash`.
 To install by hand, download the binary for your platform from the
 [releases page](https://github.com/sobanieca/imp-ui/releases/latest). Make it executable and put it
 anywhere on your `PATH`:
