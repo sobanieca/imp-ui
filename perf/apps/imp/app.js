@@ -31,10 +31,13 @@ const row = component('perf-row', {
     return li(
       { class: rowClass },
       span({ class: 'label' }, label.text()),
-      button({
-        class: 'remove',
-        events: { click: () => rows.set((items) => items.filter((it) => it.id !== item.id)) },
-      }, 'x'),
+      button(
+        {
+          class: 'remove',
+          events: { click: () => rows.set((items) => items.filter((it) => it.id !== item.id)) },
+        },
+        'x',
+      ),
     )
   },
   onRemove: (self, { item }) => {
@@ -46,7 +49,12 @@ const listApp = component('perf-list-app', {
   setup: (self, { items }) => {
     handles.rows = initState(self, 'perf.rows', items)
     handles.selected = initState(self, 'perf.selected', null)
-    return ul(handles.rows.each((item) => row({ item }), (item) => item.id))
+    return ul(
+      handles.rows.each(
+        (item) => row({ item }),
+        (item) => item.id,
+      ),
+    )
   },
 })
 
@@ -54,10 +62,13 @@ const plainRow = (item, selected, rows) =>
   li(
     { class: computed([selected], (id) => ({ row: true, selected: id === item.id })) },
     span({ class: 'label' }, item.label),
-    button({
-      class: 'remove',
-      events: { click: () => rows.set((items) => items.filter((it) => it.id !== item.id)) },
-    }, 'x'),
+    button(
+      {
+        class: 'remove',
+        events: { click: () => rows.set((items) => items.filter((it) => it.id !== item.id)) },
+      },
+      'x',
+    ),
   )
 
 const plainListApp = component('perf-plain-list-app', {
@@ -65,7 +76,12 @@ const plainListApp = component('perf-plain-list-app', {
     handles.rows = initState(self, 'perf.rows', items)
     handles.selected = initState(self, 'perf.selected', null)
     const { rows, selected } = handles
-    return ul(rows.each((item) => plainRow(item, selected, rows), (item) => item.id))
+    return ul(
+      rows.each(
+        (item) => plainRow(item, selected, rows),
+        (item) => item.id,
+      ),
+    )
   },
 })
 
@@ -118,8 +134,8 @@ const caretAt = (area, pick) => {
 }
 
 const middleParagraph = (area) => {
-  const paragraphs = [...area.children].filter((node) =>
-    node.localName === 'p' && !node.querySelector('img')
+  const paragraphs = [...area.children].filter(
+    (node) => node.localName === 'p' && !node.querySelector('img'),
   )
   return paragraphs[paragraphs.length >> 1]
 }

@@ -11,27 +11,27 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 
 ## Every key
 
-| Key                 | Type                                   | Default      | Read by                                                           |
-| ------------------- | -------------------------------------- | ------------ | ----------------------------------------------------------------- |
-| `version`           | exact version string                   | -            | every command (self-delegation); written by `imp update`          |
-| `dependencies`      | alias -> exact `npm:`/`jsr:` specifier | `{}`         | `imp start`, `imp build`, `imp lint`; written by `imp install`    |
-| `licenses`          | tier string or SPDX id array           | `permissive` | `imp install`, `imp build` (both error on a violation)            |
-| `targetImpHost`     | boolean                                | `false`      | `imp build` with a **JS** entry                                   |
-| `build`             | `{ maxSize }`, bytes                   | -            | `imp build` (fails over the budget)                               |
-| `fmt`               | object                                 | see below    | `imp fmt`                                                         |
-| `lint`              | object                                 | `{}`         | `imp lint`                                                        |
-| `test`              | object                                 | `{}`         | `imp test`                                                        |
-| `map`               | path of the application map file       | -            | `imp map`; `imp init` writes `src/app-map.js`                     |
-| `preview`           | object                                 | `{}`         | `imp preview`                                                     |
-| `pwa`               | object                                 | -            | `imp start`, `imp build --pwa`                                    |
-| `environments`      | alias -> env file path                 | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)                 |
-| `flags`             | array of build flag names              | `[]`         | `imp start`, `imp build` (folds them), `imp preview`              |
-| `mocks`             | `{ folder, enabled }`, both required   | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)      |
-| `serviceWorker`     | path of your service worker source     | -            | `imp start` (serves it at `/sw.js`), `imp build` (writes `sw.js`) |
-| `maxFileSize`       | bytes                                  | `204800`     | `imp lint` (errors), `imp install` (warns)                        |
-| `maxFileSizeIgnore` | array of repo-relative paths           | `[]`         | the same size check                                               |
-| `maxLogEntries`     | number                                 | `4000`       | `imp start` (the log that `imp logs` prints)                      |
-| `devServerPort`     | number                                 | `4507`       | `imp start` (`--port` wins)                                       |
+| Key                 | Type                                 | Default      | Read by                                                           |
+| ------------------- | ------------------------------------ | ------------ | ----------------------------------------------------------------- |
+| `version`           | exact version string                 | -            | every command (self-delegation); written by `imp update`          |
+| `dependencies`      | alias -> exact `npm:` specifier      | `{}`         | `imp start`, `imp build`, `imp lint`; written by `imp install`    |
+| `licenses`          | tier string or SPDX id array         | `permissive` | `imp install`, `imp build` (both error on a violation)            |
+| `targetImpHost`     | boolean                              | `false`      | `imp build` with a **JS** entry                                   |
+| `build`             | `{ maxSize }`, bytes                 | -            | `imp build` (fails over the budget)                               |
+| `fmt`               | object                               | see below    | `imp fmt`                                                         |
+| `lint`              | object                               | `{}`         | `imp lint`                                                        |
+| `test`              | object                               | `{}`         | `imp test`                                                        |
+| `map`               | path of the application map file     | -            | `imp map`; `imp init` writes `src/app-map.js`                     |
+| `preview`           | object                               | `{}`         | `imp preview`                                                     |
+| `pwa`               | object                               | -            | `imp start`, `imp build --pwa`                                    |
+| `environments`      | alias -> env file path               | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)                 |
+| `flags`             | array of build flag names            | `[]`         | `imp start`, `imp build` (folds them), `imp preview`              |
+| `mocks`             | `{ folder, enabled }`, both required | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)      |
+| `serviceWorker`     | path of your service worker source   | -            | `imp start` (serves it at `/sw.js`), `imp build` (writes `sw.js`) |
+| `maxFileSize`       | bytes                                | `204800`     | `imp lint` (errors), `imp install` (warns)                        |
+| `maxFileSizeIgnore` | array of repo-relative paths         | `[]`         | the same size check                                               |
+| `maxLogEntries`     | number                               | `4000`       | `imp start` (the log that `imp logs` prints)                      |
+| `devServerPort`     | number                               | `4507`       | `imp start` (`--port` wins)                                       |
 
 ## A file that uses every key
 
@@ -40,7 +40,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
   "version": "1.2.3",
   "dependencies": {
     "mitt": "npm:mitt@3.0.1",
-    "base64": "jsr:@std/encoding@1.0.10/base64"
+    "non-secure": "npm:nanoid@5.0.7/non-secure"
   },
   "devServerPort": 9085,
   "maxLogEntries": 10000,
@@ -106,9 +106,9 @@ change, see [build](build.md). **`dependencies/`** holds the vendored bundles.
 ## Rules an agent gets wrong
 
 - **Never edit `dependencies` by hand.** Run `imp install <pkg>`. The command resolves the package,
-  bundles it into `dependencies/`, and writes the pin. A pin must be an exact `npm:` or `jsr:`
-  version, such as `npm:mitt@3.0.1`. Never write `^3.0.1`, `3` or a bare `npm:mitt`. `imp lint`
-  reports an error for those forms.
+  bundles it into `dependencies/`, and writes the pin. A pin must be an exact `npm:` version, such
+  as `npm:mitt@3.0.1`. Never write `^3.0.1`, `3` or a bare `npm:mitt`. `imp lint` reports an error
+  for those forms.
 - **Never write a range in `version`.** It is one exact version, and `imp update` sets it. Any imp
   binary then hands the run to that version.
 - **There is no lock file, no cache folder and no generated config.** When you are about to create

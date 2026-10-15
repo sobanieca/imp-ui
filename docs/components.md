@@ -464,7 +464,12 @@ export const orders = component('my-app-orders', {
   setup: async (self, { customerId }) => {
     const response = await fetch(`/api/customers/${customerId}/orders`)
     const orders = initState(self, 'myapp.orders', await response.json())
-    return ul(orders.each((order) => li(order.title), (order) => order.id))
+    return ul(
+      orders.each(
+        (order) => li(order.title),
+        (order) => order.id,
+      ),
+    )
   },
 })
 ```
@@ -480,10 +485,7 @@ rejection of an async `setup`. So a broken screen does not stay on the page:
 export const ordersPane = component('my-app-orders-pane', {
   setup: () => div(ordersList(), ordersSummary()),
   error: (_self, error) =>
-    div(
-      p('Orders are unavailable right now.'),
-      p({ class: 'detail' }, error.message),
-    ),
+    div(p('Orders are unavailable right now.'), p({ class: 'detail' }, error.message)),
 })
 ```
 
@@ -554,7 +556,7 @@ const filterButtons = component('my-app-filter-buttons', {
     const filter = useState(self, 'myapp.filter')
     return div(
       ['all', 'open', 'done'].map((kind) =>
-        button({ events: { click: () => filter.set(kind) } }, kind)
+        button({ events: { click: () => filter.set(kind) } }, kind),
       ),
     )
   },

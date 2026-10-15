@@ -346,16 +346,22 @@ shell(
   router({ map: app, access, screens, options }),
 )
 shell({ logo: brand(), sidebar: { label: 'Reports', groups, selected: page } }, page())
-shell({
-  navbar: { map: app, icons },
-  sidebar: { extras: supportCard(), footer: [{ id: 'help', label: 'Help', href: '/help' }] },
-  gap: 3,
-  background: driftingShapes(),
-}, router({ map: app, screens }))
-shell({
-  navbar: { map: app, background: barGlow() },
-  sidebar: { background: columnImage() },
-}, router({ map: app, screens }))
+shell(
+  {
+    navbar: { map: app, icons },
+    sidebar: { extras: supportCard(), footer: [{ id: 'help', label: 'Help', href: '/help' }] },
+    gap: 3,
+    background: driftingShapes(),
+  },
+  router({ map: app, screens }),
+)
+shell(
+  {
+    navbar: { map: app, background: barGlow() },
+    sidebar: { background: columnImage() },
+  },
+  router({ map: app, screens }),
+)
 ```
 
 Related: imp skill std/drawer - the contextual panel that opens over the frame; imp skill

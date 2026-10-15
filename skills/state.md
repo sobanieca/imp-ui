@@ -108,7 +108,12 @@ user.set({ ...user.get(), theme: 'light' })
 ```js
 span(user.text((u) => u.name)) // live text node, updates in place
 div(session.view((u) => (u ? profileCard(u) : loginForm()))) // rebuilt whole on every set
-ul(todos.each((todo) => li(todo.title), (todo) => todo.id)) // keyed list
+ul(
+  todos.each(
+    (todo) => li(todo.title),
+    (todo) => todo.id,
+  ),
+) // keyed list
 div({ class: theme }) // live prop
 ```
 
@@ -167,7 +172,12 @@ const orderList = component('myapp-order-list', {
     const orders = initState(self, 'myapp.orders', [])
     const api = useHttpClient(self, 'myapp.api') // see imp skill http
     orders.set(await api.get('/orders', { query: { user: id } }))
-    return ul(orders.each((order) => li(order.title), (order) => order.id))
+    return ul(
+      orders.each(
+        (order) => li(order.title),
+        (order) => order.id,
+      ),
+    )
   },
 })
 ```

@@ -4,7 +4,12 @@
 import { langSelect } from 'imp/std/shell'
 
 langSelect({ languages: ['en', 'pl', 'pt-BR'] })
-langSelect({ languages: [{ value: 'en', label: 'English' }, { value: 'pl', label: 'Polski' }] })
+langSelect({
+  languages: [
+    { value: 'en', label: 'English' },
+    { value: 'pl', label: 'Polski' },
+  ],
+})
 ```
 
 The call shape is `langSelect(props)`. It takes no content, and it renders one `menuButton` whose

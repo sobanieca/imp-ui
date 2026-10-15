@@ -353,7 +353,7 @@ const api = initHttpClient(self, 'myapp.api', {
   baseUrl,
   onRequest: async (request) => {
     if (isExpired(token)) {
-      refreshing ??= refreshToken().finally(() => refreshing = null)
+      refreshing ??= refreshToken().finally(() => (refreshing = null))
       token = await refreshing
     }
     request.headers.authorization = `Bearer ${token}`
@@ -434,31 +434,37 @@ import { initHttpClient } from 'imp/http'
 
 const owner = component('test-owner', { setup: (self, prepare) => prepare(self) })
 
-test('retries a failing read', async ({ clock }) => {
-  let attempt = 0
-  spy(globalThis, 'fetch', () =>
-    Promise.resolve(
-      new Response(JSON.stringify({ ok: true }), {
-        status: attempt++ === 0 ? 503 : 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    ))
-  let api
-  mount(
-    document.body,
-    owner((self) =>
-      void (api = initHttpClient(self, 'test.api', {
-        baseUrl: 'https://api.test',
-        retry: { attempts: 2, delay: 100, jitter: false },
-      }))
-    ),
-  )
+test(
+  'retries a failing read',
+  async ({ clock }) => {
+    let attempt = 0
+    spy(globalThis, 'fetch', () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ ok: true }), {
+          status: attempt++ === 0 ? 503 : 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    )
+    let api
+    mount(
+      document.body,
+      owner(
+        (self) =>
+          void (api = initHttpClient(self, 'test.api', {
+            baseUrl: 'https://api.test',
+            retry: { attempts: 2, delay: 100, jitter: false },
+          })),
+      ),
+    )
 
-  const pending = api.get('/things')
-  await clock.tick(100)
+    const pending = api.get('/things')
+    await clock.tick(100)
 
-  expect(await pending).toEqual({ ok: true })
-}, { fakeTimers: true })
+    expect(await pending).toEqual({ ok: true })
+  },
+  { fakeTimers: true },
+)
 ```
 
 A component owns a client, so a test mounts a small host to initialize the client in. The same short

@@ -318,10 +318,12 @@ import { alySink } from 'imp/analytics/aly'
 import { app } from './app.js'
 
 if (flag('ANALYTICS')) {
-  onAnalytics(alySink({
-    app: 'myapp',
-    servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
-  }))
+  onAnalytics(
+    alySink({
+      app: 'myapp',
+      servers: ['https://aly-1.myapp.example', 'https://aly-2.myapp.example'],
+    }),
+  )
 }
 
 mount('#app', app())
@@ -431,10 +433,12 @@ Turn off the automatic exceptions of PostHog, so a failure arrives once.
 ```js
 import { batch, onAnalytics } from 'imp/analytics'
 
-onAnalytics(batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records)), {
-  size: 20,
-  ms: 5000,
-}))
+onAnalytics(
+  batch((records) => navigator.sendBeacon('/collect', JSON.stringify(records)), {
+    size: 20,
+    ms: 5000,
+  }),
+)
 ```
 
 **Send with `navigator.sendBeacon`, or with `fetch(url, { keepalive: true })`.** A batch goes out as
@@ -489,8 +493,8 @@ A `used` record with `zone: null` is always correct. It is the use of the page.
 ```js
 const response = await fetch('https://myapp.example/app-analytics.json')
 const lists = await response.json()
-const [pages, zones, outcomes] = [lists.pages, lists.zones, lists.outcomes].map((list) =>
-  new Set(list)
+const [pages, zones, outcomes] = [lists.pages, lists.zones, lists.outcomes].map(
+  (list) => new Set(list),
 )
 const isKnown = (record) => {
   if (!pages.has(record.page)) return false

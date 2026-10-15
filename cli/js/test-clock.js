@@ -55,10 +55,11 @@ export function createClock(options) {
     for (const entry of scheduled.values()) {
       if (limit !== undefined && entry.time > limit) continue
       if (
-        candidate === null ||
-        entry.time < candidate.time ||
-        (entry.time === candidate.time && entry.id < candidate.id)
-      ) candidate = entry
+        candidate === null
+        || entry.time < candidate.time
+        || (entry.time === candidate.time && entry.id < candidate.id)
+      )
+        candidate = entry
     }
     return candidate
   }
@@ -89,7 +90,9 @@ export function createClock(options) {
     try {
       if (fn === realPerformanceNow) delete native.performance.now
       else native.performance.now = fn
-    } catch { /* performance.now is not writable in this runtime */ }
+    } catch {
+      /* performance.now is not writable in this runtime */
+    }
   }
 
   const clock = {

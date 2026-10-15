@@ -26,36 +26,44 @@ const CARD_ICONS = {
   wifiOff: luWifiOff,
   zap: luZap,
 }
-const EQUATION_OPERATORS = [['+', 'plus'], ['=', 'equals']]
+const EQUATION_OPERATORS = [
+  ['+', 'plus'],
+  ['=', 'equals'],
+]
 
 const escape = (text) =>
   String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;')
 
-const IMP_NAME = `<span class="imp-name">` +
-  `<img class="imp-mark-light" src="/mark-light.svg" alt="">` +
-  `<img class="imp-mark-dark" src="/mark-dark.svg" alt="">imp</span>`
+const IMP_NAME =
+  `<span class="imp-name">`
+  + `<img class="imp-mark-light" src="/mark-light.svg" alt="">`
+  + `<img class="imp-mark-dark" src="/mark-dark.svg" alt="">imp</span>`
 
 const brandName = (html) =>
-  html.split(/(<code>[^<]*<\/code>)/).map((part) =>
-    part.startsWith('<code>') ? part : part.replace(/\bimp\b/g, IMP_NAME)
-  ).join('')
+  html
+    .split(/(<code>[^<]*<\/code>)/)
+    .map((part) => (part.startsWith('<code>') ? part : part.replace(/\bimp\b/g, IMP_NAME)))
+    .join('')
 
 const cardText = (text) => brandName(escape(text).replace(/`([^`]+)`/g, '<code>$1</code>'))
 
 const svgIcon = (className, elements) =>
-  `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
-  `stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
-  elements.map(([tag, attributes]) =>
-    `<${tag} ${
-      Object.entries(attributes).map(([name, value]) => `${name}="${escape(value)}"`).join(' ')
-    }/>`
-  ).join('') +
-  `</svg>`
+  `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" `
+  + `stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+  + elements
+    .map(
+      ([tag, attributes]) =>
+        `<${tag} ${Object.entries(attributes)
+          .map(([name, value]) => `${name}="${escape(value)}"`)
+          .join(' ')}/>`,
+    )
+    .join('')
+  + `</svg>`
 
 export const renderNotice = () =>
-  `<p class="notice" role="note"><strong>Experimental.</strong> imp is in an early phase and has ` +
-  `no stable release yet. Some things can work in a way that is not intended. Every API, ` +
-  `config key and command can change. Use it at your own risk.</p>`
+  `<p class="notice" role="note"><strong>Experimental.</strong> imp is in an early phase and has `
+  + `no stable release yet. Some things can work in a way that is not intended. Every API, `
+  + `config key and command can change. Use it at your own risk.</p>`
 
 export const installCommand = (origin) => `curl -fsSL ${origin}/install.sh | bash`
 
@@ -67,55 +75,55 @@ const INSTALL_TABS = [
 ]
 
 const installTab = ({ id, label }, index) =>
-  `<button class="install-tab" type="button" role="tab" id="install-tab-${id}" ` +
-  `aria-controls="install-panel-${id}" aria-selected="${index === 0}" ` +
-  `tabindex="${index === 0 ? 0 : -1}">${label}</button>`
+  `<button class="install-tab" type="button" role="tab" id="install-tab-${id}" `
+  + `aria-controls="install-panel-${id}" aria-selected="${index === 0}" `
+  + `tabindex="${index === 0 ? 0 : -1}">${label}</button>`
 
 const installPanel = ({ id, prompt, command }, origin, index) =>
-  `<div class="install-command" role="tabpanel" id="install-panel-${id}" ` +
-  `aria-labelledby="install-tab-${id}"${index === 0 ? '' : ' hidden'}>` +
-  `<code data-prompt="${prompt} ">${escape(command(origin))}</code>` +
-  `<button class="copy" type="button" aria-label="Copy the install command">` +
-  `${svgIcon('copy-icon', luCopy)}${svgIcon('copied-icon', luCheck)}</button>` +
-  `</div>`
+  `<div class="install-command" role="tabpanel" id="install-panel-${id}" `
+  + `aria-labelledby="install-tab-${id}"${index === 0 ? '' : ' hidden'}>`
+  + `<code data-prompt="${prompt} ">${escape(command(origin))}</code>`
+  + `<button class="copy" type="button" aria-label="Copy the install command">`
+  + `${svgIcon('copy-icon', luCopy)}${svgIcon('copied-icon', luCheck)}</button>`
+  + `</div>`
 
 export const renderInstall = (origin) =>
-  `<div class="install">` +
-  `<div class="install-tabs" role="tablist" aria-label="Operating system">` +
-  INSTALL_TABS.map(installTab).join('') +
-  `</div>` +
-  INSTALL_TABS.map((tab, index) => installPanel(tab, origin, index)).join('') +
-  `<p class="install-note">x64 and arm64. Then run <code>imp init my-app</code>.</p>` +
-  `</div>`
+  `<div class="install">`
+  + `<div class="install-tabs" role="tablist" aria-label="Operating system">`
+  + INSTALL_TABS.map(installTab).join('')
+  + `</div>`
+  + INSTALL_TABS.map((tab, index) => installPanel(tab, origin, index)).join('')
+  + `<p class="install-note">x64 and arm64. Then run <code>imp init my-app</code>.</p>`
+  + `</div>`
 
 const stateFigure = () =>
-  `<div class="state-figure" aria-hidden="true">` +
-  `<div class="state-node state-root">` +
-  `<span class="state-tag">&lt;app-root&gt;</span>` +
-  `<code>initState(self, 'app.user', { name: 'Ada' })</code>` +
-  `<span class="state-set"><code>user.set({ name: 'Grace' })</code></span>` +
-  `</div>` +
-  `<div class="state-wires">` +
-  `<span class="state-trunk"></span><span class="state-bar"></span>` +
-  `<span class="state-branch state-branch-start"></span>` +
-  `<span class="state-branch state-branch-end"></span>` +
-  `<span class="state-pulse state-pulse-trunk"></span>` +
-  `<span class="state-pulse state-pulse-start"></span>` +
-  `<span class="state-pulse state-pulse-end"></span>` +
-  `</div>` +
-  `<div class="state-leaves">` +
-  `<div class="state-node state-leaf">` +
-  `<span class="state-tag">&lt;app-profile&gt;</span>` +
-  `<code>useState(self, 'app.user')</code>` +
-  `<span class="state-value state-name"></span>` +
-  `</div>` +
-  `<div class="state-node state-leaf">` +
-  `<span class="state-tag">&lt;app-greeting&gt;</span>` +
-  `<code>useState(self, 'app.user')</code>` +
-  `<span class="state-value state-greeting"></span>` +
-  `</div>` +
-  `</div>` +
-  `</div>`
+  `<div class="state-figure" aria-hidden="true">`
+  + `<div class="state-node state-root">`
+  + `<span class="state-tag">&lt;app-root&gt;</span>`
+  + `<code>initState(self, 'app.user', { name: 'Ada' })</code>`
+  + `<span class="state-set"><code>user.set({ name: 'Grace' })</code></span>`
+  + `</div>`
+  + `<div class="state-wires">`
+  + `<span class="state-trunk"></span><span class="state-bar"></span>`
+  + `<span class="state-branch state-branch-start"></span>`
+  + `<span class="state-branch state-branch-end"></span>`
+  + `<span class="state-pulse state-pulse-trunk"></span>`
+  + `<span class="state-pulse state-pulse-start"></span>`
+  + `<span class="state-pulse state-pulse-end"></span>`
+  + `</div>`
+  + `<div class="state-leaves">`
+  + `<div class="state-node state-leaf">`
+  + `<span class="state-tag">&lt;app-profile&gt;</span>`
+  + `<code>useState(self, 'app.user')</code>`
+  + `<span class="state-value state-name"></span>`
+  + `</div>`
+  + `<div class="state-node state-leaf">`
+  + `<span class="state-tag">&lt;app-greeting&gt;</span>`
+  + `<code>useState(self, 'app.user')</code>`
+  + `<span class="state-value state-greeting"></span>`
+  + `</div>`
+  + `</div>`
+  + `</div>`
 
 const FIGURES = { state: stateFigure }
 
@@ -133,107 +141,127 @@ const pointPart = (part) =>
 const pointHtml = (point) => [point].flat().map(pointPart).join('')
 
 const slideText = (slide) =>
-  `<div class="tour-text">` +
-  `<p class="tour-eyebrow">${escape(slide.eyebrow)}</p>` +
-  `<h3>${escape(slide.title)}</h3>` +
-  `<p class="tour-lead">${escape(slide.lead)}</p>` +
-  `<ul>${slide.points.map((point) => `<li>${pointHtml(point)}</li>`).join('')}</ul>` +
-  `</div>`
+  `<div class="tour-text">`
+  + `<p class="tour-eyebrow">${escape(slide.eyebrow)}</p>`
+  + `<h3>${escape(slide.title)}</h3>`
+  + `<p class="tour-lead">${escape(slide.lead)}</p>`
+  + `<ul>${slide.points.map((point) => `<li>${pointHtml(point)}</li>`).join('')}</ul>`
+  + `</div>`
 
 export const renderTour = (slides, highlight) =>
-  `<section class="section tour" aria-roledescription="carousel" aria-label="How imp works">` +
-  `<div class="tour-head"><h2>How imp works</h2>` +
-  `<div class="tour-controls">` +
-  `<button class="tour-prev" type="button" aria-label="Previous slide">${
-    svgIcon('', luChevronLeft)
-  }</button>` +
-  `<span class="tour-count"><span class="tour-index">1</span> / ${slides.length}</span>` +
-  `<button class="tour-next" type="button" aria-label="Next slide">${
-    svgIcon('', luChevronRight)
-  }</button>` +
-  `</div></div>` +
-  `<div class="tour-track" tabindex="0">` +
-  slides.map((slide, index) =>
-    `<article class="tour-slide" id="tour-${slide.key}" role="group" ` +
-    `aria-roledescription="slide" aria-label="${index + 1} of ${slides.length}">` +
-    `${slideText(slide)}<div class="tour-media">${slideMedia(slide, highlight)}</div>` +
-    `</article>`
-  ).join('') +
-  `</div>` +
-  `<ol class="tour-dots">` +
-  slides.map((slide, index) =>
-    `<li><button type="button" data-index="${index}" ` +
-    `aria-label="Slide ${index + 1}: ${escape(slide.title)}"` +
-    `${index === 0 ? ' aria-current="true"' : ''}></button></li>`
-  ).join('') +
-  `</ol>` +
-  `</section>`
+  `<section class="section tour" aria-roledescription="carousel" aria-label="How imp works">`
+  + `<div class="tour-head"><h2>How imp works</h2>`
+  + `<div class="tour-controls">`
+  + `<button class="tour-prev" type="button" aria-label="Previous slide">${svgIcon(
+    '',
+    luChevronLeft,
+  )}</button>`
+  + `<span class="tour-count"><span class="tour-index">1</span> / ${slides.length}</span>`
+  + `<button class="tour-next" type="button" aria-label="Next slide">${svgIcon(
+    '',
+    luChevronRight,
+  )}</button>`
+  + `</div></div>`
+  + `<div class="tour-track" tabindex="0">`
+  + slides
+    .map(
+      (slide, index) =>
+        `<article class="tour-slide" id="tour-${slide.key}" role="group" `
+        + `aria-roledescription="slide" aria-label="${index + 1} of ${slides.length}">`
+        + `${slideText(slide)}<div class="tour-media">${slideMedia(slide, highlight)}</div>`
+        + `</article>`,
+    )
+    .join('')
+  + `</div>`
+  + `<ol class="tour-dots">`
+  + slides
+    .map(
+      (slide, index) =>
+        `<li><button type="button" data-index="${index}" `
+        + `aria-label="Slide ${index + 1}: ${escape(slide.title)}"`
+        + `${index === 0 ? ' aria-current="true"' : ''}></button></li>`,
+    )
+    .join('')
+  + `</ol>`
+  + `</section>`
 
 export const renderWorkflow = (steps, note) =>
-  `<section class="section flow"><h2>The workflow with imp</h2>` +
-  `<ol class="steps">` +
-  steps.map((step, index) =>
-    `<li class="step" style="--step-tone: ${STEP_TONES[index % STEP_TONES.length]}">` +
-    `<span class="step-mark">${index + 1}</span>` +
-    `<div class="step-body"><h3>${escape(step.title)}</h3><p>${escape(step.text)}</p>` +
-    `<code class="step-command">${escape(step.command)}</code></div>` +
-    `</li>`
-  ).join('') +
-  `</ol>` +
-  `<p class="steps-note">${escape(note)}</p>` +
-  `</section>`
+  `<section class="section flow"><h2>The workflow with imp</h2>`
+  + `<ol class="steps">`
+  + steps
+    .map(
+      (step, index) =>
+        `<li class="step" style="--step-tone: ${STEP_TONES[index % STEP_TONES.length]}">`
+        + `<span class="step-mark">${index + 1}</span>`
+        + `<div class="step-body"><h3>${escape(step.title)}</h3><p>${escape(step.text)}</p>`
+        + `<code class="step-command">${escape(step.command)}</code></div>`
+        + `</li>`,
+    )
+    .join('')
+  + `</ol>`
+  + `<p class="steps-note">${escape(note)}</p>`
+  + `</section>`
 
 const renderEquation = (terms) =>
-  `<p class="equation" aria-label="${
-    escape(
-      terms.map((term, index) =>
-        index === 0 ? term.label : `${EQUATION_OPERATORS[index - 1][1]} ${term.label}`
-      ).join(' '),
+  `<p class="equation" aria-label="${escape(
+    terms
+      .map((term, index) =>
+        index === 0 ? term.label : `${EQUATION_OPERATORS[index - 1][1]} ${term.label}`,
+      )
+      .join(' '),
+  )}">`
+  + terms
+    .map(
+      (term, index) =>
+        `<span class="equation-group">`
+        + (index === 0
+          ? ''
+          : `<span class="equation-operator" aria-hidden="true">${
+              EQUATION_OPERATORS[index - 1][0]
+            }</span>`)
+        + `<span class="equation-term" style="--term-tone: ${CARD_TONES[index % CARD_TONES.length]}">`
+        + `${svgIcon('equation-icon', CARD_ICONS[term.icon])}${escape(term.label)}</span>`
+        + `</span>`,
     )
-  }">` +
-  terms.map((term, index) =>
-    `<span class="equation-group">` +
-    (index === 0
-      ? ''
-      : `<span class="equation-operator" aria-hidden="true">${
-        EQUATION_OPERATORS[index - 1][0]
-      }</span>`) +
-    `<span class="equation-term" style="--term-tone: ${CARD_TONES[index % CARD_TONES.length]}">` +
-    `${svgIcon('equation-icon', CARD_ICONS[term.icon])}${escape(term.label)}</span>` +
-    `</span>`
-  ).join('') +
-  `</p>`
+    .join('')
+  + `</p>`
 
 const renderTags = (tags) =>
-  `<ul class="tags">` +
-  tags.map((tag, index) =>
-    `<li class="equation-term" style="--term-tone: ${CARD_TONES[index % CARD_TONES.length]}">` +
-    `${svgIcon('equation-icon', CARD_ICONS[tag.icon])}${escape(tag.label)}</li>`
-  ).join('') +
-  `</ul>`
+  `<ul class="tags">`
+  + tags
+    .map(
+      (tag, index) =>
+        `<li class="equation-term" style="--term-tone: ${CARD_TONES[index % CARD_TONES.length]}">`
+        + `${svgIcon('equation-icon', CARD_ICONS[tag.icon])}${escape(tag.label)}</li>`,
+    )
+    .join('')
+  + `</ul>`
 
 export const renderPositions = (positions) =>
-  `<section class="section positions"><h2>Why imp</h2>` +
-  `<ul class="cards">` +
-  positions.map((position, index) =>
-    `<li class="card" style="--card-tone: ${CARD_TONES[index % CARD_TONES.length]}">` +
-    `<h3>${cardText(position.title)}</h3>` +
-    `<p class="card-lead">${cardText(position.lead)}</p>` +
-    `<p>${cardText(position.text)}</p>` +
-    (position.points === undefined
-      ? ''
-      : `<ul>${position.points.map((point) => `<li>${cardText(point)}</li>`).join('')}</ul>`) +
-    (position.equation === undefined ? '' : renderEquation(position.equation)) +
-    (position.tags === undefined ? '' : renderTags(position.tags)) +
-    (position.link === undefined
-      ? ''
-      : `<a class="card-link" href="${escape(position.link.href)}">${
-        escape(position.link.label)
-      }</a>`) +
-    `</li>`
-  ).join('') +
-  `</ul>` +
-  `</section>`
+  `<section class="section positions"><h2>Why imp</h2>`
+  + `<ul class="cards">`
+  + positions
+    .map(
+      (position, index) =>
+        `<li class="card" style="--card-tone: ${CARD_TONES[index % CARD_TONES.length]}">`
+        + `<h3>${cardText(position.title)}</h3>`
+        + `<p class="card-lead">${cardText(position.lead)}</p>`
+        + `<p>${cardText(position.text)}</p>`
+        + (position.points === undefined
+          ? ''
+          : `<ul>${position.points.map((point) => `<li>${cardText(point)}</li>`).join('')}</ul>`)
+        + (position.equation === undefined ? '' : renderEquation(position.equation))
+        + (position.tags === undefined ? '' : renderTags(position.tags))
+        + (position.link === undefined
+          ? ''
+          : `<a class="card-link" href="${escape(position.link.href)}">${escape(
+              position.link.label,
+            )}</a>`)
+        + `</li>`,
+    )
+    .join('')
+  + `</ul>`
+  + `</section>`
 
 export const overviewStyles = `
 .hero::before {

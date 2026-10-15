@@ -13,7 +13,7 @@ in development, in CI or in the build.
 ```
 imp install mitt              latest, pinned exactly
 imp install mitt@3.0.1        a specific version (imp install mitt 3.0.1 is equivalent)
-imp install jsr:@std/encoding@1.0.10/base64    jsr, and a module inside the package
+imp install nanoid@5.0.7/non-secure    a module inside the package (alias non-secure)
 imp install mitt --alias events
 imp install                   re-resolve and update every declared dependency
 imp uninstall mitt            remove the folder and the pin
@@ -70,9 +70,9 @@ installed micromark (npm:micromark@4.0.2)
 
 `manifest.json` records the same resolution on disk. It holds the alias, the resolved specifier, the
 install timestamp, the bare `imp` imports that imp kept, and every bundled package. For each package
-it gives the registry, the exact version, `integrity` (the checked SRI hash, `null` for jsr),
-`attestationListed` (`true` when the registry lists a provenance attestation), the SPDX identifier
-and the full license text.
+it gives the name, the exact version, `integrity` (the checked SRI hash), `attestationListed`
+(`true` when the registry lists a provenance attestation), the SPDX identifier and the full license
+text.
 
 - **`imp install` refuses a package that fails the integrity check.** It verifies the npm registry
   signature of the `dist.integrity` hash. It compares the npm archive with that hash, and every
@@ -103,8 +103,7 @@ package put it. Never remove it.
   Code `2` means a missing manifest, or no answer from OSV after four attempts. Never treat `2` as a
   pass.
 - No dependencies in `imp.json` prints `nothing to audit` and exits `0`.
-- It checks npm packages against OSV. A jsr package is listed as not checked, because OSV has no jsr
-  records.
+- It checks every bundled npm package against OSV.
 - To fix a finding, run `imp install <pkg>@<fixed version>`. For a transitive package, update the
   dependency that contains it. Then run `imp audit` again.
 - `--sbom` needs no network and never fails on a vulnerability. A missing manifest makes it exit `2`
@@ -127,8 +126,8 @@ package put it. Never remove it.
   package. Never edit a manifest by hand.
 - **`OR` takes the most permissive branch. `AND` must satisfy every branch.** So
   `(BSD-3-Clause OR GPL-2.0)` passes `"permissive"`.
-- **A license that imp cannot identify gives a warning, never a block.** This covers every JSR
-  package, because JSR publishes no identifier. Check those terms yourself.
+- **A license that imp cannot identify gives a warning, never a block.** Check those terms
+  yourself.
 
 A bundle that is larger than `maxFileSize` gives a warning, because the bundle goes into git. The
 default limit is 200 kB. To accept the bundle, raise `maxFileSize` or list the folder in
@@ -151,7 +150,7 @@ rewrite the bundle of a package.
 ## Installed imp components - a bare `imp` import
 
 A vendored bundle that keeps a bare `imp` import is an imp component. Its package must ship
-`imp-skill.md` next to its entry module, the file that the specifier resolves to in npm or jsr.
+`imp-skill.md` next to its entry module, the file that the specifier resolves to in npm.
 `imp build` of the component writes it, see [build](build.md). `imp install` copies it to
 `dependencies/<alias>/imp-skill.md`, and `imp skill <alias>` prints it, see [skill](skill.md).
 

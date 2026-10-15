@@ -23,9 +23,9 @@ export const profileSummary = ({ profile, count, tree }) => {
   lines.push(`total sampled: ${(total / 1000).toFixed(1)} ms`)
   for (const [key, time] of rows) {
     lines.push(
-      `${(time / 1000).toFixed(1).padStart(8)} ms ${
-        (100 * time / total).toFixed(1).padStart(5)
-      }%  ${key}`,
+      `${(time / 1000).toFixed(1).padStart(8)} ms ${((100 * time) / total)
+        .toFixed(1)
+        .padStart(5)}%  ${key}`,
     )
   }
 

@@ -55,7 +55,7 @@ export const author = component('myapp-author', {
       user.view((value) =>
         value === null
           ? flex({ gap: 3, verticalAlign: 'center' }, skeleton({ shape: 'circle' }), skeleton())
-          : text(value.name)
+          : text(value.name),
       ),
     )
   },

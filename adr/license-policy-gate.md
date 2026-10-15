@@ -43,11 +43,10 @@ and `imp build` check that key. A violation is an error, and not a warning.
   ignores a `WITH` exception, and uses the base licence. So `(BSD-3-Clause OR GPL-2.0)` passes the
   permissive tier. That is correct, and a simple check on a substring gets that case wrong.
 - **A licence that imp cannot identify gives a warning, and never blocks.** `imp install` names the
-  package, and the build does not fail. This covers every JSR package, because JSR publishes no
-  licence identifier. It also covers an npm package that declares none. To treat an unknown licence
-  as a violation would make `imp install jsr:...` fail with no setup. It would also state a
-  conclusion that imp did not reach. imp does not block over something that it only failed to read,
-  and it does not pretend that it checked.
+  package, and the build does not fail. This covers an npm package that declares no licence, or a
+  licence string that is not an SPDX expression. To treat an unknown licence as a violation would
+  state a conclusion that imp did not reach. imp does not block over something that it only failed
+  to read, and it does not pretend that it checked.
 
 ## Consequences
 

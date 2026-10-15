@@ -487,8 +487,9 @@ in no browser. The query itself still needs the literal `48rem`. Read the token 
 you need the number as data:
 
 ```js
-const desktopFrom = getComputedStyle(document.documentElement)
-  .getPropertyValue('--imp-breakpoint-desktop')
+const desktopFrom = getComputedStyle(document.documentElement).getPropertyValue(
+  '--imp-breakpoint-desktop',
+)
 ```
 
 `border-width` and `focus-ring-width` exist so that contrast does not depend on color alone. A theme

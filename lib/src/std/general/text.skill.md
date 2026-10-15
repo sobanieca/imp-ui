@@ -29,9 +29,5 @@ Rules an agent gets wrong:
 
 ```js
 text({ tone: 'secondary', size: 'sm' }, 'Prices exclude VAT.')
-text(
-  'You have ',
-  text({ inline: true, weight: 'bold' }, '3 days'),
-  ' left in your trial.',
-)
+text('You have ', text({ inline: true, weight: 'bold' }, '3 days'), ' left in your trial.')
 ```

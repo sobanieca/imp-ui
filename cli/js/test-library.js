@@ -1,6 +1,6 @@
 const REGISTRY_KEY = Symbol.for('imp.test.registry')
 
-const registry = globalThis[REGISTRY_KEY] ??= {
+const registry = (globalThis[REGISTRY_KEY] ??= {
   tests: [],
   focused: false,
   beforeAll: [],
@@ -10,7 +10,7 @@ const registry = globalThis[REGISTRY_KEY] ??= {
   spies: [],
   restores: [],
   running: false,
-}
+})
 
 function register(mode, name, run, options) {
   if (typeof name !== 'string' || !name) {
@@ -51,8 +51,10 @@ function makeSpy(implementation) {
 }
 
 export function spy(target, method, implementation) {
-  const patchesMethod = (typeof target === 'object' || typeof target === 'function') &&
-    target !== null && typeof method === 'string'
+  const patchesMethod =
+    (typeof target === 'object' || typeof target === 'function')
+    && target !== null
+    && typeof method === 'string'
   if (!patchesMethod) return makeSpy(target)
   const original = target[method]
   if (typeof original !== 'function') {
@@ -60,7 +62,7 @@ export function spy(target, method, implementation) {
   }
   const wrapped = makeSpy(implementation ?? ((...args) => original.apply(target, args)))
   target[method] = wrapped
-  if (registry.running) registry.restores.push(() => target[method] = original)
+  if (registry.running) registry.restores.push(() => (target[method] = original))
   return wrapped
 }
 
@@ -97,7 +99,7 @@ const matchesConstructor = (constructor, actual) => {
   }
 }
 
-const clip = (text) => text.length > 200 ? `${text.slice(0, 200)}...` : text
+const clip = (text) => (text.length > 200 ? `${text.slice(0, 200)}...` : text)
 
 export function stringify(value) {
   if (isAsymmetric(value)) return value.label
@@ -111,9 +113,8 @@ export function stringify(value) {
   if (tag === 'Map') return `Map(${stringify([...value.entries()])})`
   if (tag === 'Set') return `Set(${stringify([...value.values()])})`
   try {
-    const json = JSON.stringify(
-      value,
-      (_key, entry) => typeof entry === 'bigint' ? `${entry}n` : entry,
+    const json = JSON.stringify(value, (_key, entry) =>
+      typeof entry === 'bigint' ? `${entry}n` : entry,
     )
     if (json !== undefined) return clip(json)
   } catch {
@@ -133,21 +134,29 @@ export function deepEqual(a, b) {
   if (tag === 'Date') return a.getTime() === b.getTime()
   if (tag === 'RegExp') return String(a) === String(b)
   if (Array.isArray(a)) {
-    return Array.isArray(b) && a.length === b.length &&
-      a.every((entry, index) => deepEqual(entry, b[index]))
+    return (
+      Array.isArray(b)
+      && a.length === b.length
+      && a.every((entry, index) => deepEqual(entry, b[index]))
+    )
   }
   if (tag === 'Set') {
-    return a.size === b.size &&
-      [...a].every((entry) => [...b].some((other) => deepEqual(entry, other)))
+    return (
+      a.size === b.size && [...a].every((entry) => [...b].some((other) => deepEqual(entry, other)))
+    )
   }
   if (tag === 'Map') {
-    return a.size === b.size &&
-      [...a].every(([key, entry]) => b.has(key) && deepEqual(entry, b.get(key)))
+    return (
+      a.size === b.size
+      && [...a].every(([key, entry]) => b.has(key) && deepEqual(entry, b.get(key)))
+    )
   }
   if (tag !== 'Object') return false
   const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length &&
-    keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]))
+  return (
+    keys.length === Object.keys(b).length
+    && keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]))
+  )
 }
 
 class ExpectationError extends Error {
@@ -189,9 +198,9 @@ const isPuppeteerElement = (value) =>
 
 const describeElement = (element) => {
   const describe = (node) =>
-    `${node.localName}${node.id ? `#${node.id}` : ''}${
-      [...node.classList].map((name) => `.${name}`).join('')
-    }`
+    `${node.localName}${node.id ? `#${node.id}` : ''}${[...node.classList]
+      .map((name) => `.${name}`)
+      .join('')}`
   const parts = [describe(element)]
   let host = element.getRootNode().host
   while (host) {
@@ -286,11 +295,12 @@ function buildMatchers(received, negated) {
       })
     },
     toContain(expected) {
-      const pass = typeof received === 'string'
-        ? received.includes(expected)
-        : Array.from(received ?? []).some((entry) =>
-          Object.is(entry, expected) || deepEqual(entry, expected)
-        )
+      const pass =
+        typeof received === 'string'
+          ? received.includes(expected)
+          : Array.from(received ?? []).some(
+              (entry) => Object.is(entry, expected) || deepEqual(entry, expected),
+            )
       check(pass, 'toContain', {
         expected: stringify(expected),
         expectedLabel: 'looking for',
@@ -299,8 +309,9 @@ function buildMatchers(received, negated) {
     },
     toMatch(expected) {
       const pattern = expected instanceof RegExp ? expected : null
-      const pass = typeof received === 'string' &&
-        (pattern ? pattern.test(received) : received.includes(String(expected)))
+      const pass =
+        typeof received === 'string'
+        && (pattern ? pattern.test(received) : received.includes(String(expected)))
       check(pass, 'toMatch', {
         expected: stringify(expected),
         expectedLabel: 'pattern',
@@ -373,7 +384,10 @@ function buildMatchers(received, negated) {
         return
       }
       if (result && typeof result.then === 'function') {
-        return result.then(() => settle(false), (error) => settle(true, error))
+        return result.then(
+          () => settle(false),
+          (error) => settle(true, error),
+        )
       }
       settle(false)
     },
@@ -394,9 +408,8 @@ export function expect(received) {
 expect.anything = () =>
   asymmetric('anything()', (actual) => actual !== null && actual !== undefined)
 expect.any = (constructor) =>
-  asymmetric(
-    `any(${constructor?.name ?? String(constructor)})`,
-    (actual) => matchesConstructor(constructor, actual),
+  asymmetric(`any(${constructor?.name ?? String(constructor)})`, (actual) =>
+    matchesConstructor(constructor, actual),
   )
 expect.stringContaining = (text) =>
   asymmetric(
@@ -404,22 +417,26 @@ expect.stringContaining = (text) =>
     (actual) => typeof actual === 'string' && actual.includes(text),
   )
 expect.stringMatching = (pattern) =>
-  asymmetric(`stringMatching(${stringify(pattern)})`, (actual) =>
-    typeof actual === 'string' &&
-    (pattern instanceof RegExp ? pattern.test(actual) : actual.includes(String(pattern))))
+  asymmetric(
+    `stringMatching(${stringify(pattern)})`,
+    (actual) =>
+      typeof actual === 'string'
+      && (pattern instanceof RegExp ? pattern.test(actual) : actual.includes(String(pattern))),
+  )
 expect.arrayContaining = (items) =>
   asymmetric(
     `arrayContaining(${stringify(items)})`,
     (actual) =>
-      Array.isArray(actual) &&
-      items.every((item) => actual.some((entry) => deepEqual(entry, item))),
+      Array.isArray(actual)
+      && items.every((item) => actual.some((entry) => deepEqual(entry, item))),
   )
 expect.objectContaining = (shape) =>
   asymmetric(
     `objectContaining(${stringify(shape)})`,
     (actual) =>
-      actual !== null && typeof actual === 'object' &&
-      Object.keys(shape).every((key) => key in actual && deepEqual(actual[key], shape[key])),
+      actual !== null
+      && typeof actual === 'object'
+      && Object.keys(shape).every((key) => key in actual && deepEqual(actual[key], shape[key])),
   )
 expect.closeTo = (value, digits = 2) =>
   asymmetric(

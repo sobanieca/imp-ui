@@ -33,7 +33,7 @@ const sentence = (seed, length) =>
   Array.from({ length }, (_, index) => WORDS[(seed * 7 + index * 3) % WORDS.length]).join(' ')
 
 const noiseImage = async (seed) => {
-  const canvas = new OffscreenCanvas(IMAGE_EDGE, IMAGE_EDGE * 3 / 4)
+  const canvas = new OffscreenCanvas(IMAGE_EDGE, (IMAGE_EDGE * 3) / 4)
   const context = canvas.getContext('2d')
   const pixels = context.createImageData(canvas.width, canvas.height)
   let value = seed * 2654435761

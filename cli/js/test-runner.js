@@ -42,7 +42,7 @@ const describe = (value, seen = new Set()) => {
   if (value instanceof Node) return value.outerHTML ?? `#${value.nodeName.toLowerCase()}`
   if (seen.has(value)) return '[Circular]'
   try {
-    return JSON.stringify(value, (_key, entry) => typeof entry === 'bigint' ? `${entry}n` : entry)
+    return JSON.stringify(value, (_key, entry) => (typeof entry === 'bigint' ? `${entry}n` : entry))
   } catch {
     return String(value)
   }
@@ -67,7 +67,7 @@ addEventListener('unhandledrejection', (event) => {
 
 const run = await (await nativeFetch('/@imp/run.json')).json()
 
-const paint = (code) => (text) => run.color ? `\x1b[${code}m${text}\x1b[0m` : text
+const paint = (code) => (text) => (run.color ? `\x1b[${code}m${text}\x1b[0m` : text)
 const red = paint(31)
 const green = paint(32)
 const yellow = paint(33)
@@ -111,7 +111,10 @@ const errorMessage = (error) => {
 }
 
 const indentMessage = (error) =>
-  errorMessage(error).split('\n').map((line) => `      ${line}`).join('\n')
+  errorMessage(error)
+    .split('\n')
+    .map((line) => `      ${line}`)
+    .join('\n')
 
 const createTestClock = (fakeTimers, environment) => {
   if (!fakeTimers) return null
@@ -140,8 +143,10 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
   }
 
   for (const entry of registry.tests) {
-    const excluded = entry.mode === 'skip' || (registry.focused && entry.mode !== 'only') ||
-      (filter && !entry.name.includes(filter))
+    const excluded =
+      entry.mode === 'skip'
+      || (registry.focused && entry.mode !== 'only')
+      || (filter && !entry.name.includes(filter))
     if (excluded) {
       counts.skipped++
       out(`  ${yellow('-')} ${entry.name} ${dim('(skipped)')}`)
@@ -168,12 +173,16 @@ async function runRegistry(registry, { context, defaultTimeout, filter, onFailur
     for (const restore of registry.restores.splice(0)) {
       try {
         restore()
-      } catch { /* already restored */ }
+      } catch {
+        /* already restored */
+      }
     }
     for (const spy of registry.spies) spy.calls.length = 0
     try {
       clock?.restore()
-    } catch { /* already restored */ }
+    } catch {
+      /* already restored */
+    }
     const duration = `(${Math.round(performance.now() - startedAt)}ms)`
     if (failure === null) {
       counts.passed++
@@ -246,7 +255,9 @@ async function startScreencast(page, options) {
     frames.push({ data, timestamp: metadata.timestamp })
     try {
       await client.send('Page.screencastFrameAck', { sessionId })
-    } catch { /* session may be gone */ }
+    } catch {
+      /* session may be gone */
+    }
   }
   client.on('Page.screencastFrame', onFrame)
   await client.send('Page.startScreencast', {
@@ -262,11 +273,15 @@ async function startScreencast(page, options) {
 async function stopScreencast({ client, frames, onFrame }) {
   try {
     await client.send('Page.stopScreencast')
-  } catch { /* session may be gone */ }
+  } catch {
+    /* session may be gone */
+  }
   client.off('Page.screencastFrame', onFrame)
   try {
     await client.detach()
-  } catch { /* already detached */ }
+  } catch {
+    /* already detached */
+  }
   return frames
 }
 
@@ -280,9 +295,9 @@ async function runSpec() {
     await page.goto(run.baseUrl, { waitUntil: 'load' })
     if (run.mockServer) {
       await page.waitForFunction(() =>
-        navigator.serviceWorker.getRegistration().then((registration) =>
-          Boolean(registration?.active)
-        )
+        navigator.serviceWorker
+          .getRegistration()
+          .then((registration) => Boolean(registration?.active)),
       )
       await page.goto(run.baseUrl, { waitUntil: 'load' })
     }
@@ -300,11 +315,13 @@ async function runSpec() {
       environment: 'e2e',
       onFailure: run.screenshots
         ? async (entry) => {
-          try {
-            const data = await page.screenshot({ encoding: 'base64' })
-            await post('/@imp/screenshot', { test: entry.name, data })
-          } catch { /* page may be gone */ }
-        }
+            try {
+              const data = await page.screenshot({ encoding: 'base64' })
+              await post('/@imp/screenshot', { test: entry.name, data })
+            } catch {
+              /* page may be gone */
+            }
+          }
         : undefined,
     })
   } finally {

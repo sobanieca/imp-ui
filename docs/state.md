@@ -214,10 +214,12 @@ building them again. It moves only the elements that are out of order, so a swap
 two elements, and the rest of the list stays untouched:
 
 ```js
-ul(todos.each(
-  (todo) => li(todo.title, input({ class: 'notes' })),
-  (todo) => todo.id,
-))
+ul(
+  todos.each(
+    (todo) => li(todo.title, input({ class: 'notes' })),
+    (todo) => todo.id,
+  ),
+)
 ```
 
 Use a key whenever an item holds anything worth keeping: text someone typed into the input of an
@@ -433,7 +435,12 @@ const orderList = component('my-app-order-list', {
   setup: async (self, { id }) => {
     const loaded = await fetch(`/api/orders?user=${id}`).then((response) => response.json())
     const orders = initState(self, 'myapp.orders', loaded)
-    return ul(orders.each((order) => li(order.title), (order) => order.id))
+    return ul(
+      orders.each(
+        (order) => li(order.title),
+        (order) => order.id,
+      ),
+    )
   },
 })
 ```

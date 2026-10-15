@@ -6,7 +6,6 @@ use base64::Engine;
 use serde_json::Value;
 
 const NPM_SIGNING_KEYS: &str = "https://registry.npmjs.org/-/npm/v1/keys";
-const JSR_API: &str = "https://api.jsr.io";
 
 fn fetch_json(url: &str, what: &str) -> Result<Value> {
     let response = get(url, &[], None)?;
@@ -232,34 +231,10 @@ fn verify_npm_package(record: &mut PackageRecord, keys: &mut Option<Vec<Value>>)
     Ok(())
 }
 
-fn jsr_attestation_listed(name: &str, version: &str) -> bool {
-    let trimmed = name.trim_start_matches('@');
-    let Some((scope, package)) = trimmed.split_once('/') else {
-        return false;
-    };
-    match get(
-        &format!("{JSR_API}/scopes/{scope}/packages/{package}/versions/{version}"),
-        &[],
-        None,
-    ) {
-        Ok(response) if response.ok() => response
-            .json()
-            .ok()
-            .and_then(|value| value.get("rekorLogId").cloned())
-            .is_some_and(|value| !value.is_null() && value != Value::String(String::new())),
-        _ => false,
-    }
-}
-
 pub fn verify_packages(packages: &mut [PackageRecord]) -> Result<()> {
     let mut keys = None;
     for record in packages.iter_mut() {
-        if record.registry == "npm" {
-            verify_npm_package(record, &mut keys)?;
-        } else {
-            record.integrity = None;
-            record.attestation_listed = jsr_attestation_listed(&record.name, &record.version);
-        }
+        verify_npm_package(record, &mut keys)?;
     }
     Ok(())
 }

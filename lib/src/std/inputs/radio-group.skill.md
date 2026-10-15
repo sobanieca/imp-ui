@@ -50,6 +50,9 @@ radioGroup({
   field: 'billing',
   label: 'Billing period',
   orientation: 'horizontal',
-  options: [{ value: 'monthly', label: 'Monthly' }, { value: 'yearly', label: 'Yearly' }],
+  options: [
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'yearly', label: 'Yearly' },
+  ],
 })
 ```

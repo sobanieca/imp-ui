@@ -35,8 +35,6 @@ One command, `imp audit`, reads the committed manifests of the declared dependen
   contains, so a pass would claim a check that did not happen. The same holds for `--sbom`, which
   then writes no file. A project with no declared dependency passes with code 0, and the output says
   that there is nothing to audit.
-- **A jsr package is not checked.** OSV has no jsr ecosystem. The report names each such package as
-  not checked, so the gap is visible.
 - **`imp audit --sbom` writes a CycloneDX 1.7 JSON file.** The default path is `sbom.cdx.json` in
   the project root, and `--output` changes it. Each package is one `library` component, with its
   version, its package URL, its licence, its integrity hash and its distribution URL. The app is the
@@ -53,5 +51,3 @@ One command, `imp audit`, reads the committed manifests of the declared dependen
   that has no manifest stops both modes with code 2, and names the dependency.
 - The manifest records no edges between packages. So the bill of materials lists every package, and
   records only the edges from the app to its declared dependencies.
-- A jsr package has no package URL type and no archive hash. Its component carries the registry
-  reference and its distribution URL only.

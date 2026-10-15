@@ -13,7 +13,9 @@ use crate::license_policy::{
 };
 use crate::logger;
 use crate::skill::COMPONENT_SKILL_FILE;
-use crate::specifiers::{EXACT_VERSION, default_alias, is_valid_alias, parse_specifier};
+use crate::specifiers::{
+    EXACT_VERSION, NPM_PREFIX, default_alias, is_valid_alias, parse_specifier,
+};
 use anyhow::{Result, anyhow, bail};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -22,7 +24,6 @@ pub const LICENSE_NOTICES_FILE: &str = "LICENSES.txt";
 
 struct Target {
     alias: String,
-    scheme: String,
     name: String,
     version: Option<String>,
     subpath: String,
@@ -77,9 +78,8 @@ impl ProjectFileSystem for DiskFileSystem {
     }
 }
 
-fn latest_version(scheme: &str, name: &str) -> Result<String> {
-    let npm = crate::npm::shared()?;
-    npm.latest_version(&crate::npm::npm_name_of(scheme, name))
+fn latest_version(name: &str) -> Result<String> {
+    crate::npm::shared()?.latest_version(name)
 }
 
 pub fn component_skill(specifier: &str, entry: Option<&Path>) -> Result<(String, Vec<u8>)> {
@@ -96,12 +96,9 @@ pub fn component_skill(specifier: &str, entry: Option<&Path>) -> Result<(String,
 fn prepare_one(root: &Path, target: &Target, policy: &Policy) -> Result<Prepared> {
     let version = match &target.version {
         Some(version) => version.clone(),
-        None => latest_version(&target.scheme, &target.name)?,
+        None => latest_version(&target.name)?,
     };
-    let specifier = format!(
-        "{}:{}@{version}{}",
-        target.scheme, target.name, target.subpath
-    );
+    let specifier = format!("{NPM_PREFIX}{}@{version}{}", target.name, target.subpath);
     let bundled = bundle_dependency(root, &specifier, &target.alias)
         .map_err(|error| anyhow!("{}", error.describe()))?;
     let mut files = bundled.files;
@@ -334,9 +331,8 @@ pub fn commit_dependencies(
 
 fn declared_target(alias: &str, specifier: &str, version: Option<String>) -> Result<Target> {
     match parse_specifier(specifier) {
-        Some(declared) if declared.scheme.is_some() => Ok(Target {
+        Some(declared) if declared.npm_prefix => Ok(Target {
             alias: alias.to_string(),
-            scheme: declared.scheme.unwrap(),
             name: declared.name,
             version,
             subpath: declared.subpath,
@@ -352,7 +348,9 @@ fn requested_target(
     dependencies: &[(String, String)],
 ) -> Result<Target> {
     let Some(parsed) = parse_specifier(package) else {
-        bail!("invalid package specifier: '{package}'")
+        bail!(
+            "invalid package specifier: '{package}' - give an npm package, such as 'mitt' or 'npm:mitt@3.0.1'"
+        )
     };
     if let (Some(first), Some(second)) = (&parsed.version, &version) {
         bail!("two versions given: '{first}' and '{second}'");
@@ -365,15 +363,12 @@ fn requested_target(
             "'{version}' is not an exact version - give an exact version (e.g. 1.2.3) or omit it to resolve the latest"
         );
     }
-    if parsed.scheme.is_none()
+    if !parsed.npm_prefix
         && parsed.subpath.is_empty()
         && alias.is_none()
         && let Some((name, specifier)) = dependencies.iter().find(|(name, _)| *name == parsed.name)
     {
         return declared_target(name, specifier, version);
-    }
-    if parsed.scheme.as_deref() == Some("jsr") && !parsed.name.starts_with('@') {
-        bail!("jsr packages are scoped: 'jsr:@scope/name', got '{package}'");
     }
     let alias = alias.unwrap_or_else(|| default_alias(&parsed));
     if !is_valid_alias(&alias) {
@@ -386,7 +381,6 @@ fn requested_target(
     }
     Ok(Target {
         alias,
-        scheme: parsed.scheme.unwrap_or_else(|| "npm".into()),
         name: parsed.name,
         version,
         subpath: parsed.subpath,

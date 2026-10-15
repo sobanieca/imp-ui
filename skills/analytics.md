@@ -221,10 +221,13 @@ import { button } from 'imp/std'
 export const sendArea = (sendInvoice) =>
   zone(
     { name: 'myapp.send' },
-    button({
-      variant: 'primary',
-      events: { click: () => sendInvoice().then(() => track('myapp.invoice-sent')) },
-    }, t('Send')),
+    button(
+      {
+        variant: 'primary',
+        events: { click: () => sendInvoice().then(() => track('myapp.invoice-sent')) },
+      },
+      t('Send'),
+    ),
   )
 ```
 

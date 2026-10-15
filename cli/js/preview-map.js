@@ -18,7 +18,7 @@ const wordsOf = (name) =>
     .map((word) => word.toLowerCase())
 
 const identifierOf = (words) =>
-  words.map((word, index) => index === 0 ? word : word[0].toUpperCase() + word.slice(1)).join('')
+  words.map((word, index) => (index === 0 ? word : word[0].toUpperCase() + word.slice(1))).join('')
 
 const slugOf = (name, taken, fallback) => {
   let words = wordsOf(name)

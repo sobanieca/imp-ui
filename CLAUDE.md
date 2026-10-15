@@ -135,9 +135,16 @@ Cargo rebuilds when a file under `cli/`, `lib/src`, `skills/` or the licence fil
 `cli/build.rs` embeds those trees. So a green test run is never about stale code. Every `cargo xtask`
 task builds the binary the same way before it runs it.
 
-The workspace has two profiles. `dev` is for development. It optimizes the code fully but skips LTO,
-so a rebuild after a small edit takes less than a minute. `release` is for the binary that users get. Its LTO
-pass takes minutes on every rebuild, so use it only for a release build or `cargo xtask binary-size`.
+The workspace has two profiles. `dev` is for development. It optimizes the code fully, but it turns
+LTO off and keeps the incremental default of codegen units. So a rebuild after a small edit takes
+about ten seconds. `release` is for the binary that users get. Its LTO pass takes minutes on every
+rebuild, so use it only for a release build or `cargo xtask binary-size`.
+
+**Give a crate the same features in every package of the workspace.** `cargo xtask` builds the
+`imp` library for xtask, then builds the binary. When the two feature sets differ, cargo compiles
+the `imp` crate twice on every edit. Keep `lto = "off"` in the `dev` profile, and do not set
+`codegen-units` there. A crate-local ThinLTO pass and a fixed count of codegen units each multiply
+the time of a rebuild.
 
 **Never run `target/debug/imp` by hand** (for example `../../target/debug/imp test` from
 `lib/test`). A bare binary skips the rebuild and runs whatever was compiled last.

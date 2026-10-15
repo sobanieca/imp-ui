@@ -62,25 +62,21 @@ A version is always exact, such as `3.0.1`. It is never `^3` or `3`. When you le
 imp resolves the latest release and pins the exact version it found. `imp.json` always records
 exactly what is in the bundle.
 
-## npm and jsr
+## Packages from npm
 
-A package name refers to npm by default. `imp install mitt` means `npm:mitt`. To install from the
-jsr registry, add the `jsr:` prefix:
-
-```
-imp install jsr:@std/encoding
-```
+imp installs packages from the npm registry. `imp install mitt` and `imp install npm:mitt` are the
+same command. `imp.json` always records the pin with the `npm:` prefix.
 
 A specifier can also name a module inside the package. The bundle then contains exactly that module:
 
 ```
-imp install jsr:@std/encoding@1.0.10/base64
+imp install nanoid@5.0.7/non-secure
 ```
 
-This installs under the alias `base64`, the last path segment. So you write:
+This installs under the alias `non-secure`, the last path segment. So you write:
 
 ```js
-import { encodeBase64 } from 'base64'
+import { nanoid } from 'non-secure'
 ```
 
 ## How to update
@@ -167,9 +163,6 @@ imp also records whether the registry lists a provenance attestation for the ver
 links a published version to the source repository and the build that made it. imp records only that
 the registry lists one. It does not verify the attestation, and it does not refuse a package that
 has none.
-
-The checks cover npm packages. For a jsr package, imp records whether the registry lists an
-attestation, but a jsr package has no archive hash to check.
 
 ## Large dependencies
 
@@ -285,7 +278,6 @@ you shipped. The manifest answers the question instead.
   "impImports": [],
   "packages": [
     {
-      "registry": "npm",
       "name": "micromark",
       "version": "4.0.2",
       "integrity": "sha512-...",
@@ -299,8 +291,8 @@ you shipped. The manifest answers the question instead.
 
 The manifest lists every package that went into the bundle, with its exact version, the integrity
 hash that imp checked, whether the registry lists a provenance attestation, its license identifier,
-and the full text of that license. A jsr package has `null` as its `integrity`. Commit it with the
-bundle. `imp uninstall` removes it with everything else in the folder.
+and the full text of that license. Commit it with the bundle. `imp uninstall` removes it with
+everything else in the folder.
 
 imp writes the manifest when you install, and it describes what you installed. It is not a lock
 file, and nothing reads it back to pin a version. So you can answer these questions from a fresh
@@ -354,9 +346,6 @@ error. It waits as long as OSV asks, and it stops after four attempts.
 
 When `imp.json` declares no dependencies, `imp audit` says so and exits with code 0. Your app then
 vendors no package, so there is nothing to check.
-
-The OSV database has no records for jsr packages. `imp audit` lists them as not checked. When every
-dependency is a jsr package, the report says that there are no npm packages to check.
 
 ### A software bill of materials
 
@@ -416,9 +405,8 @@ Two details are worth knowing:
   as `(BSD-3-Clause OR GPL-2.0)` passes the permissive tier, because you can take the BSD terms. A
   package licensed under several licenses at the same time must satisfy all of them.
 - **imp reports a license it cannot identify. It never allows or refuses it in silence.**
-  `imp install` warns and names the package. The build does not fail. This covers every JSR package,
-  because JSR publishes no license identifier. imp does not block you over something it only failed
-  to read, and it does not pretend that it checked.
+  `imp install` warns and names the package. The build does not fail. imp does not block you over
+  something it only failed to read, and it does not pretend that it checked.
 
 ## How to choose a dependency well
 
@@ -450,6 +438,6 @@ Two more points are worth knowing:
 ## Lint enforcement
 
 `imp lint` keeps the model correct. Every entry in `dependencies` must pin an exact version. An
-inline `npm:` or `jsr:` specifier in an import statement is an error, and you must install the
+inline `npm:` specifier in an import statement is an error, and you must install the
 package instead. A bare import that matches no declared dependency is an error, and the message
 suggests the `imp install` command that fixes it. See **[Linting](lint.md)**.

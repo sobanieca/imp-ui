@@ -667,12 +667,10 @@ impl ImpPlugin {
                 path.to_string_lossy().into_owned(),
             )));
         }
-        if let Some(parsed) = parse_specifier(specifier).filter(|parsed| parsed.scheme.is_some()) {
-            let scheme = parsed.scheme.clone().unwrap();
+        if let Some(parsed) = parse_specifier(specifier).filter(|parsed| parsed.npm_prefix) {
             let npm = npm::shared()?;
             let resolved = tokio::task::block_in_place(|| {
-                npm.resolve_scheme_specifier(
-                    &scheme,
+                npm.resolve_npm_specifier(
                     &parsed.name,
                     parsed.version.as_deref(),
                     &parsed.subpath,

@@ -30,10 +30,13 @@ export const app = appMap({
 // src/admin/map.js - a part of the map; the first argument is the props of the node it hangs from
 import { appMap } from 'imp'
 
-export const admin = appMap({ access: 'admin' }, {
-  users: 'Everyone with a login',
-  createApiKey: 'Mint a key for a service',
-})
+export const admin = appMap(
+  { access: 'admin' },
+  {
+    users: 'Everyone with a login',
+    createApiKey: 'Mint a key for a service',
+  },
+)
 ```
 
 ```js

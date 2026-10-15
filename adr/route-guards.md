@@ -38,14 +38,8 @@ no initial value starts at `undefined`, which is a value like any other. Only th
 that value means.
 
 ```js
-const access = guard(
-  ['myapp.session'],
-  (session, { need }) =>
-    session === undefined
-      ? wait
-      : session
-      ? session.roles.includes(need) || '/forbidden'
-      : '/login',
+const access = guard(['myapp.session'], (session, { need }) =>
+  session === undefined ? wait : session ? session.roles.includes(need) || '/forbidden' : '/login',
 )
 
 router({ map: app, access, screens })

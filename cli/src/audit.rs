@@ -94,8 +94,7 @@ pub fn audited_packages(manifests: &[Value]) -> Vec<Value> {
     let mut packages: BTreeMap<String, Value> = BTreeMap::new();
     for manifest in manifests {
         for entry in manifest["packages"].as_array().into_iter().flatten() {
-            let id = format!("{}:{}", str_of(entry, "registry"), package_id(entry));
-            let package = packages.entry(id).or_insert_with(|| {
+            let package = packages.entry(package_id(entry)).or_insert_with(|| {
                 let mut copy = entry.clone();
                 copy["aliases"] = json!([]);
                 copy
@@ -260,10 +259,7 @@ pub fn describe_vulnerability(vulnerability: &Value, entry: &Value) -> Vulnerabi
     }
 }
 
-pub fn audit_report(
-    checked: &[(Value, Vec<Vulnerability>)],
-    unchecked: &[Value],
-) -> (String, bool) {
+pub fn audit_report(checked: &[(Value, Vec<Vulnerability>)]) -> (String, bool) {
     let mut lines = Vec::new();
     let affected: Vec<&(Value, Vec<Vulnerability>)> = checked
         .iter()
@@ -319,29 +315,18 @@ pub fn audit_report(
     } else {
         lines.push("no npm packages to check".into());
     }
-    if !unchecked.is_empty() {
-        let names: Vec<String> = unchecked.iter().map(package_id).collect();
-        lines.push(format!(
-            "not checked: {} - the OSV database has no records for jsr packages",
-            names.join(", ")
-        ));
-    }
     (lines.join("\n"), count > 0)
 }
 
 pub fn check_vulnerabilities(packages: &[Value], osv: &dyn OsvTransport) -> Result<(String, bool)> {
-    let (npm, unchecked): (Vec<Value>, Vec<Value>) = packages
-        .iter()
-        .cloned()
-        .partition(|entry| str_of(entry, "registry") == "npm");
-    let ids = known_vulnerability_ids(&npm, osv)?;
+    let ids = known_vulnerability_ids(packages, osv)?;
     let unique: BTreeSet<&String> = ids.iter().flatten().collect();
     let mut details = BTreeMap::new();
     for id in unique {
         let path = format!("/vulns/{}", crate::service_worker::encode_uri_component(id));
         details.insert(id.clone(), osv_request(osv, &path, None)?);
     }
-    let checked: Vec<(Value, Vec<Vulnerability>)> = npm
+    let checked: Vec<(Value, Vec<Vulnerability>)> = packages
         .iter()
         .zip(&ids)
         .map(|(entry, ids)| {
@@ -353,7 +338,7 @@ pub fn check_vulnerabilities(packages: &[Value], osv: &dyn OsvTransport) -> Resu
             )
         })
         .collect();
-    Ok(audit_report(&checked, &unchecked))
+    Ok(audit_report(&checked))
 }
 
 fn component_hashes(integrity: &str) -> Vec<Value> {
@@ -399,51 +384,34 @@ fn component_licenses(license: &str) -> Vec<Value> {
     }
 }
 
-pub fn package_url(entry: &Value) -> Option<String> {
-    if str_of(entry, "registry") != "npm" {
-        return None;
-    }
+pub fn package_url(entry: &Value) -> String {
     let name = str_of(entry, "name");
     let name = name
         .strip_prefix('@')
         .map(|rest| format!("%40{rest}"))
         .unwrap_or_else(|| name.to_string());
-    Some(format!("pkg:npm/{name}@{}", str_of(entry, "version")))
-}
-
-fn bom_ref(entry: &Value) -> String {
-    package_url(entry)
-        .unwrap_or_else(|| format!("{}:{}", str_of(entry, "registry"), package_id(entry)))
+    format!("pkg:npm/{name}@{}", str_of(entry, "version"))
 }
 
 fn component(entry: &Value) -> Value {
+    let purl = package_url(entry);
     let mut component = serde_json::Map::new();
     component.insert("type".into(), "library".into());
-    component.insert("bom-ref".into(), bom_ref(entry).into());
+    component.insert("bom-ref".into(), purl.clone().into());
     component.insert("name".into(), str_of(entry, "name").into());
     component.insert("version".into(), str_of(entry, "version").into());
-    if let Some(purl) = package_url(entry) {
-        component.insert("purl".into(), purl.into());
-    }
+    component.insert("purl".into(), purl.into());
     if let Some(integrity) = entry["integrity"].as_str().filter(|text| !text.is_empty()) {
         component.insert("hashes".into(), component_hashes(integrity).into());
     }
     if let Some(license) = entry["license"].as_str().filter(|text| !text.is_empty()) {
         component.insert("licenses".into(), component_licenses(license).into());
     }
-    let url = if str_of(entry, "registry") == "npm" {
-        format!(
-            "https://www.npmjs.com/package/{}/v/{}",
-            str_of(entry, "name"),
-            str_of(entry, "version")
-        )
-    } else {
-        format!(
-            "https://jsr.io/{}@{}",
-            str_of(entry, "name"),
-            str_of(entry, "version")
-        )
-    };
+    let url = format!(
+        "https://www.npmjs.com/package/{}/v/{}",
+        str_of(entry, "name"),
+        str_of(entry, "version")
+    );
     component.insert(
         "externalReferences".into(),
         json!([{ "type": "distribution", "url": url }]),
@@ -467,11 +435,10 @@ pub fn cyclonedx_bom(
                 .as_array()?
                 .iter()
                 .find(|entry| {
-                    Some(str_of(entry, "registry")) == declared.scheme.as_deref()
-                        && str_of(entry, "name") == declared.name
+                    str_of(entry, "name") == declared.name
                         && Some(str_of(entry, "version")) == declared.version.as_deref()
                 })
-                .map(bom_ref)
+                .map(package_url)
         })
         .collect();
     json!({

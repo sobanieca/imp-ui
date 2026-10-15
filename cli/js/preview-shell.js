@@ -218,7 +218,7 @@ const indexDefinition = {
           ),
         },
         componentList(entries, `${name} components`),
-      )
+      ),
     )
     return div(
       div(
@@ -251,10 +251,10 @@ const agentStrip = (self, entry) =>
     span({ class: 'agent-label' }, 'For an agent'),
     entry.skill === null
       ? span(
-        { class: 'missing' },
-        `no skill - write ${sidecarNameOf(entry)} next to the component. imp shows it here, ` +
-          "and 'imp skill' prints it for an agent.",
-      )
+          { class: 'missing' },
+          `no skill - write ${sidecarNameOf(entry)} next to the component. imp shows it here, `
+            + "and 'imp skill' prints it for an agent.",
+        )
       : [pre({ class: 'instruction' }, entry.skill), copyButton(self, 'skill', entry.skill)],
   )
 
@@ -312,9 +312,9 @@ const skillBody = (html, entry) => {
   if (html === null) {
     return emptyState({
       title: 'No skill for this component',
-      description: `Write ${
-        sidecarNameOf(entry)
-      } next to the component. imp shows it here, and 'imp skill' prints it for an agent.`,
+      description: `Write ${sidecarNameOf(
+        entry,
+      )} next to the component. imp shows it here, and 'imp skill' prints it for an agent.`,
     })
   }
   return markdownBody(html)
@@ -409,9 +409,7 @@ export const previewSkill = (html, entry) => {
   return createSkill(html, entry)
 }
 
-export const previewShell = (
-  { embedded, mark, navbar, navOpen, controls, editor, content },
-) => {
+export const previewShell = ({ embedded, mark, navbar, navOpen, controls, editor, content }) => {
   const host = shell(
     {
       ...(embedded ? {} : { logo: appLogo({ label: 'imp preview', src: mark, href: '/' }) }),

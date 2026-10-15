@@ -85,22 +85,17 @@ fn install_and_uninstall() {
         &plain,
     );
 
-    let result = without_download_noise(run_imp(
-        &["install", "jsr:@std/encoding@1.0.10/base64"],
-        &dir.path,
-    ));
+    let result =
+        without_download_noise(run_imp(&["install", "nanoid@5.0.7/non-secure"], &dir.path));
     let usage = run_module_probe(
-        &dir.join("dependencies/base64"),
-        "import { encodeBase64 } from './base64.js'\nglobalThis.__probe = `[vendored module: encodeBase64('imp') returned '${encodeBase64('imp')}']`\n",
+        &dir.join("dependencies/non-secure"),
+        "import { nanoid } from './non-secure.js'\nglobalThis.__probe = `[vendored module: nanoid(7) returned ${nanoid(7).length} characters]`\n",
     );
     assert_snapshot(
-        "install-jsr-subpath",
+        "install-npm-subpath",
         &format!(
             "{}\n{usage}\n{}",
-            transcript(
-                "imp install jsr:@std/encoding@1.0.10/base64  (cwd: <tmp>)",
-                &result
-            ),
+            transcript("imp install nanoid@5.0.7/non-secure  (cwd: <tmp>)", &result),
             project_state(&dir.path)
         ),
     );
@@ -221,7 +216,7 @@ fn install_license_policy() {
     with_policy(
         "license-unknown-warns-only",
         json!("permissive"),
-        &["install", "jsr:@std/encoding@1.0.10/base64"],
+        &["install", "indexof@0.0.1"],
     );
     with_policy(
         "license-invalid-policy-value",
@@ -235,22 +230,15 @@ fn audit_manifests() -> Vec<Value> {
         json!({
             "alias": "forge", "specifier": "npm:node-forge@0.7.0", "installedAt": "2026-09-01T10:00:00Z", "impImports": [],
             "packages": [{
-                "registry": "npm", "name": "node-forge", "version": "0.7.0",
+                "name": "node-forge", "version": "0.7.0",
                 "integrity": "sha512-nrGmJHbnyl7LfZyHbcgNyi0yHawEXOAnWYnw/3MJKJ7vyS2NcTqs5+sI4xcaivd6kjoUwnkD53FFRHC7m2FH4A==",
                 "attestationListed": false, "license": "(BSD-3-Clause OR GPL-2.0)", "licenseText": "...",
             }],
         }),
         json!({
-            "alias": "base64", "specifier": "jsr:@std/encoding@1.0.10/base64", "installedAt": "2026-09-01T10:00:00Z", "impImports": [],
-            "packages": [{
-                "registry": "jsr", "name": "@std/encoding", "version": "1.0.10", "integrity": null,
-                "attestationListed": true, "license": null, "licenseText": "...",
-            }],
-        }),
-        json!({
             "alias": "ng", "specifier": "npm:@angular/core@17.0.0", "installedAt": "2026-09-01T10:00:00Z", "impImports": [],
             "packages": [{
-                "registry": "npm", "name": "@angular/core", "version": "17.0.0", "integrity": null,
+                "name": "@angular/core", "version": "17.0.0", "integrity": null,
                 "attestationListed": false, "license": "SEE LICENSE IN LICENSE.md", "licenseText": null,
             }],
         }),
@@ -276,22 +264,14 @@ fn audit_reports_the_known_vulnerabilities_of_a_package() {
     });
     let unfixed =
         json!({ "id": "GHSA-xxxx-yyyy-zzzz", "details": "A second problem.\nMore text." });
-    let jsr: Vec<Value> = packages
-        .iter()
-        .filter(|entry| entry["registry"] == "jsr")
-        .cloned()
-        .collect();
-    let (affected, vulnerable) = audit_report(
-        &[(
-            forge.clone(),
-            vec![
-                describe_vulnerability(&advisory, &forge),
-                describe_vulnerability(&unfixed, &forge),
-            ],
-        )],
-        &jsr,
-    );
-    let (clean, clean_vulnerable) = audit_report(&[(forge.clone(), vec![])], &[]);
+    let (affected, vulnerable) = audit_report(&[(
+        forge.clone(),
+        vec![
+            describe_vulnerability(&advisory, &forge),
+            describe_vulnerability(&unfixed, &forge),
+        ],
+    )]);
+    let (clean, clean_vulnerable) = audit_report(&[(forge.clone(), vec![])]);
     assert_snapshot(
         "audit-report",
         &format!(

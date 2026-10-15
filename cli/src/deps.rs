@@ -18,7 +18,6 @@ pub fn bundled_packages(inputs: &[String]) -> Vec<PackageRecord> {
         let id = format!("{}@{}", package.name, package.version);
         let file = crate::paths::relative_posix(&package.directory, path);
         let record = packages.entry(id).or_insert_with(|| PackageRecord {
-            registry: package.registry,
             name: package.name.clone(),
             version: package.version.clone(),
             directory: package.directory.clone(),

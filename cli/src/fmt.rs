@@ -2,11 +2,17 @@ use crate::config::{Config, get_path, get_strings, load_imp_config};
 use crate::paths::relative_posix;
 use crate::walk::{Collect, collect_files};
 use anyhow::{Result, anyhow};
+use oxc::allocator::Allocator;
+use oxc::parser::Parser;
+use oxc::span::{GetSpan, SourceType};
+use oxc_formatter::{JsFormatOptions, OperatorPosition, QuoteStyle, Semicolons};
+use oxc_formatter_core::{IndentStyle, IndentWidth, LineWidth};
 use std::borrow::Cow;
 use std::path::Path;
 
 const IGNORE_NODE: &str = "imp-fmt-ignore";
 const IGNORE_FILE: &str = "imp-fmt-ignore-file";
+const SCRIPT_IGNORE_NODE: &str = "oxfmt-ignore";
 
 pub const FMT_EXTENSIONS: &[&str] = &[
     "js", "mjs", "cjs", "json", "jsonc", "md", "markdown", "css", "scss", "sass", "less", "html",
@@ -14,7 +20,7 @@ pub const FMT_EXTENSIONS: &[&str] = &[
 ];
 
 pub struct Formatter {
-    typescript: dprint_plugin_typescript::configuration::Configuration,
+    script: JsFormatOptions,
     json: dprint_plugin_json::configuration::Configuration,
     markdown: dprint_plugin_markdown::configuration::Configuration,
     css: malva::config::FormatOptions,
@@ -40,25 +46,27 @@ impl Formatter {
         let single_quote = boolean(config, "singleQuote").unwrap_or(true);
         let semicolons = boolean(config, "semiColons").unwrap_or(false);
 
-        use dprint_plugin_typescript::configuration::{QuoteStyle, SemiColons};
-        let typescript = dprint_plugin_typescript::configuration::ConfigurationBuilder::new()
-            .deno()
-            .line_width(line_width)
-            .indent_width(indent_width)
-            .use_tabs(use_tabs)
-            .quote_style(if single_quote {
-                QuoteStyle::PreferSingle
+        let script = JsFormatOptions {
+            indent_style: if use_tabs {
+                IndentStyle::Tab
             } else {
-                QuoteStyle::PreferDouble
-            })
-            .semi_colons(if semicolons {
-                SemiColons::Always
+                IndentStyle::Space
+            },
+            indent_width: IndentWidth::try_from(indent_width).unwrap_or_default(),
+            line_width: script_line_width(line_width),
+            quote_style: if single_quote {
+                QuoteStyle::Single
             } else {
-                SemiColons::Asi
-            })
-            .ignore_node_comment_text(IGNORE_NODE)
-            .ignore_file_comment_text(IGNORE_FILE)
-            .build();
+                QuoteStyle::Double
+            },
+            semicolons: if semicolons {
+                Semicolons::Always
+            } else {
+                Semicolons::AsNeeded
+            },
+            operator_position: OperatorPosition::Start,
+            ..JsFormatOptions::default()
+        };
         let json = dprint_plugin_json::configuration::ConfigurationBuilder::new()
             .line_width(line_width)
             .indent_width(indent_width)
@@ -102,7 +110,7 @@ impl Formatter {
         sql.indent_width = indent_width;
         sql.use_tabs = use_tabs;
         Formatter {
-            typescript,
+            script,
             json,
             markdown,
             css,
@@ -113,15 +121,38 @@ impl Formatter {
         }
     }
 
-    fn format_script(&self, path: &Path, extension: &str, text: &str) -> Result<Option<String>> {
-        dprint_plugin_typescript::format_text(dprint_plugin_typescript::FormatTextOptions {
-            path,
-            extension: Some(extension),
-            text: text.to_string(),
-            config: &self.typescript,
-            external_formatter: None,
-        })
-        .map_err(|error| anyhow!("{error}"))
+    fn format_script(&self, extension: &str, text: &str, line_width: u32) -> Result<String> {
+        let source_type =
+            SourceType::from_extension(extension).map_err(|error| anyhow!("{error}"))?;
+        let mut source = Cow::Borrowed(text);
+        let mut renamed_ignore = false;
+        if text.contains(IGNORE_NODE) {
+            let directives = ScriptDirectives::scan(text, source_type);
+            if directives.ignore_file {
+                return Ok(text.to_string());
+            }
+            if let Some(renamed) = directives.rename(text, IGNORE_NODE, SCRIPT_IGNORE_NODE) {
+                source = Cow::Owned(renamed);
+                renamed_ignore = true;
+            }
+        }
+        let options = JsFormatOptions {
+            line_width: script_line_width(line_width),
+            ..self.script.clone()
+        };
+        let allocator = Allocator::default();
+        let formatted = oxc_formatter::format(&allocator, &source, source_type, options)
+            .map_err(|error| anyhow!("{error}"))?
+            .print()
+            .map_err(|error| anyhow!("{error}"))?
+            .into_code();
+        if !renamed_ignore {
+            return Ok(formatted);
+        }
+        let directives = ScriptDirectives::scan(&formatted, source_type);
+        Ok(directives
+            .rename(&formatted, SCRIPT_IGNORE_NODE, IGNORE_NODE)
+            .unwrap_or(formatted))
     }
 
     fn format_css(&self, text: &str, extension: &str) -> Result<String> {
@@ -143,17 +174,7 @@ impl Formatter {
         let path = Path::new("embedded").with_extension(extension);
         let formatted = match extension {
             "js" | "mjs" | "cjs" | "ts" | "jsx" | "tsx" => {
-                let mut config = self.typescript.clone();
-                config.line_width = print_width as u32;
-                dprint_plugin_typescript::format_text(dprint_plugin_typescript::FormatTextOptions {
-                    path: &path,
-                    extension: Some(extension),
-                    text: text.to_string(),
-                    config: &config,
-                    external_formatter: None,
-                })
-                .ok()
-                .flatten()
+                self.format_script(extension, text, print_width as u32).ok()
             }
             "css" | "scss" | "sass" | "less" => {
                 let mut options = self.css.clone();
@@ -197,7 +218,7 @@ impl Formatter {
     pub fn format(&self, path: &Path, text: &str) -> Result<String> {
         let extension = crate::paths::extension(path);
         let formatted = match extension.as_str() {
-            "js" | "mjs" | "cjs" => self.format_script(path, &extension, text)?,
+            "js" | "mjs" | "cjs" => Some(self.format_script(&extension, text, self.line_width)?),
             "json" | "jsonc" => dprint_plugin_json::format_text(path, text, &self.json)
                 .map_err(|error| anyhow!("{error}"))?,
             "md" | "markdown" => {
@@ -240,8 +261,63 @@ impl Formatter {
             }
             _ => None,
         };
-        let _ = self.line_width;
         Ok(formatted.unwrap_or_else(|| text.to_string()))
+    }
+}
+
+fn script_line_width(line_width: u32) -> LineWidth {
+    LineWidth::try_from(line_width.min(u32::from(LineWidth::MAX)) as u16).unwrap_or_default()
+}
+
+struct ScriptDirectives {
+    ignore_file: bool,
+    comment_bodies: Vec<(usize, usize)>,
+}
+
+impl ScriptDirectives {
+    fn scan(text: &str, source_type: SourceType) -> ScriptDirectives {
+        let allocator = Allocator::default();
+        let program = Parser::new(&allocator, text, source_type).parse().program;
+        let first_code = program
+            .directives
+            .first()
+            .map(|directive| directive.span.start)
+            .or_else(|| program.body.first().map(|statement| statement.span().start))
+            .unwrap_or(u32::MAX);
+        let mut ignore_file = false;
+        let mut comment_bodies = Vec::new();
+        for comment in &program.comments {
+            let body = comment.content_span();
+            let (start, end) = (body.start as usize, body.end as usize);
+            if comment.span.start < first_code && text[start..end].trim() == IGNORE_FILE {
+                ignore_file = true;
+            }
+            comment_bodies.push((start, end));
+        }
+        ScriptDirectives {
+            ignore_file,
+            comment_bodies,
+        }
+    }
+
+    fn rename(&self, text: &str, from: &str, to: &str) -> Option<String> {
+        let mut renamed = String::with_capacity(text.len());
+        let mut copied = 0;
+        for &(start, end) in &self.comment_bodies {
+            let body = &text[start..end];
+            if body.trim() != from {
+                continue;
+            }
+            let marker = start + body.find(from).unwrap_or(0);
+            renamed.push_str(&text[copied..marker]);
+            renamed.push_str(to);
+            copied = marker + from.len();
+        }
+        if copied == 0 {
+            return None;
+        }
+        renamed.push_str(&text[copied..]);
+        Some(renamed)
     }
 }
 

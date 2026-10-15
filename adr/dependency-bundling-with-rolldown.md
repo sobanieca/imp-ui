@@ -2,26 +2,24 @@
 
 ## Context
 
-`imp install` turns each `npm:` and `jsr:` dependency into a minified ESM bundle that the browser
-can run, and vendors it under `dependencies/`, see `vendored-dependencies.md`. `imp build` and
-`imp test` bundle an app that imports those aliases. A bundler needs a resolver that reaches a
-package registry, picks a version, fetches the package, and resolves a path inside it. imp runs on a
-machine that has no package manager, no `node_modules` and no other runtime, see
-`native-toolchain.md`.
+`imp install` turns each `npm:` dependency into a minified ESM bundle that the browser can run, and
+vendors it under `dependencies/`, see `vendored-dependencies.md`. `imp build` and `imp test` bundle
+an app that imports those aliases. A bundler needs a resolver that reaches a package registry, picks
+a version, fetches the package, and resolves a path inside it. imp runs on a machine that has no
+package manager, no `node_modules` and no other runtime, see `native-toolchain.md`.
 
 ## Decision
 
 imp bundles with rolldown, and resolves packages with a resolver of its own, in `cli/src/npm.rs`.
 The resolver is written for imp. It reuses no code of another loader.
 
-- **A specifier names a registry and a range.** `npm:name@range/subpath` reads from
-  `registry.npmjs.org`. `jsr:@scope/name@range/subpath` reads from the npm compatibility registry
-  of jsr, at `npm.jsr.io`, as the package `@jsr/scope__name`. So one code path serves both.
+- **A specifier names an npm package and a range.** `npm:name@range/subpath` reads from
+  `registry.npmjs.org`. imp installs packages from the npm registry only.
 - **Version resolution follows npm semver.** imp reads the packument once per run, picks the highest
   version that satisfies the range, and caches the packument in memory.
 - **A package is fetched once, and checked.** imp downloads the tarball, verifies the strongest
   `integrity` hash that the registry lists, and extracts it into the cache folder of imp at
-  `~/.imp/cache/npm/<registry>/<name>@<version>/`. A project folder never receives a download.
+  `~/.imp/npm/registry.npmjs.org/<name>/<version>/`. A project folder never receives a download.
 - **Resolution inside a package follows Node.** imp reads the `exports` and `imports` maps with the
   `browser` and `import` conditions, falls back to `module` and `main`, and honours the `browser`
   field, also when it maps one file of the package to another. A bare import from inside a package

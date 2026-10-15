@@ -19,14 +19,11 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 arcstr = "1"
-rustc-hash = "2"
-base64 = "0.22"
-dprint-core = "0.70"
+base64 = "0.23"
 dprint-plugin-json = "0.25"
 dprint-plugin-markdown = "0.26"
-dprint-plugin-typescript = "0.96.1"
 flate2 = "1"
-gif = "0.13"
+gif = "0.14"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 jsonc-parser = { version = "0.34", features = ["serde", "cst"] }
 malva = "0.16"
@@ -34,8 +31,9 @@ lax-sql = "0.3"
 markup_fmt = "0.27"
 nodejs-semver = "7"
 notify = "8"
+oxc_formatter = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.153.0" }
+oxc_formatter_core = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.153.0" }
 oxc = { version = "0.153", features = ["semantic", "codegen", "ast_visit"] }
-oxc_resolver = "11"
 pretty_yaml = "0.6"
 regex = "1"
 ring = "0.17"
@@ -51,9 +49,6 @@ tar = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ureq = { version = "3", default-features = false, features = ["rustls", "platform-verifier", "gzip"] }
 zip = { version = "9", default-features = false, features = ["deflate"] }
-rquickjs = "0.14"
+rquickjs = { version = "0.14", features = ["loader"] }
 if-addrs = "0.15.0"
 ctrlc = "3.5.2"
-
-[dev-dependencies]
-rquickjs = { version = "0.14", features = ["loader"] }

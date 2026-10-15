@@ -8,15 +8,15 @@ uninstalled bus (npm:mitt@3.0.1)
 (empty)
 
 --- files ---
-dependencies/base64/base64.js
-dependencies/base64/manifest.json
 dependencies/mitt/manifest.json
 dependencies/mitt/mitt.js
+dependencies/non-secure/manifest.json
+dependencies/non-secure/non-secure.js
 
 --- imp.json ---
 {
   "dependencies": {
-    "base64": "jsr:@std/encoding@1.0.10/base64",
-    "mitt": "npm:mitt@3.0.1"
+    "mitt": "npm:mitt@3.0.1",
+    "non-secure": "npm:nanoid@5.0.7/non-secure"
   }
 }

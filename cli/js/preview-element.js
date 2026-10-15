@@ -1,6 +1,11 @@
-export const previewElement = (
-  { page, element, appMark, routeEvent, themeEvent, themeAttribute },
-) => {
+export const previewElement = ({
+  page,
+  element,
+  appMark,
+  routeEvent,
+  themeEvent,
+  themeAttribute,
+}) => {
   const APP = new URL('./app.js', import.meta.url).href
   const ROUTE_HASH = /^#\//
   const INDEX_HASH = '#/'
@@ -26,7 +31,10 @@ export const previewElement = (
   const addressOf = (node) => (node.localName === 'link' ? 'href' : 'src')
 
   const pageSource = () => {
-    const parsed = new DOMParser().parseFromString(page.replace(appMark, () => APP), 'text/html')
+    const parsed = new DOMParser().parseFromString(
+      page.replace(appMark, () => APP),
+      'text/html',
+    )
     for (const node of parsed.querySelectorAll(LINKED)) {
       const name = addressOf(node)
       node.setAttribute(name, new URL(node.getAttribute(name), document.baseURI).href)

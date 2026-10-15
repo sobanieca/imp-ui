@@ -41,9 +41,9 @@ destroys it. To freeze the bytes removed the fallback that would make a record o
   dependencies that share a transitive package each record that package.
 - **What it records** is the alias, the exact resolved specifier, a timestamp of the install, the
   bare `imp` imports that stay in the bundle, and every package that went into the bundle. For each
-  package it records the registry, the name, the exact version, the integrity hash that imp checked,
-  whether the registry lists a provenance attestation (`attestationListed`), the SPDX identifier and
-  the full licence text.
+  package it records the name, the exact version, the integrity hash that imp checked, whether the
+  registry lists a provenance attestation (`attestationListed`), the SPDX identifier and the full
+  licence text.
 - **imp checks every npm package before it writes the manifest.** TLS alone proves only that the
   bytes came from the registry host. So imp reads the `dist.integrity` hash of the exact version
   from the npm registry. It downloads the package archive and compares its hash with that value.
@@ -61,16 +61,13 @@ destroys it. To freeze the bytes removed the fallback that would make a record o
   full package document of the registry, and only when the key has such a date. The npm client
   applies the same expiry rule.
 - **imp records whether the registry lists a provenance attestation. It does not verify it.** For an
-  npm package, the field is `true` when the version has `dist.attestations.provenance`. For a JSR
-  package, it is `true` when the JSR API reports a transparency log entry for the version. imp does
+  npm package, the field is `true` when the version has `dist.attestations.provenance`. imp does
   not check the Sigstore bundle, so the field claims only what the registry lists. Most packages
-  publish no attestation yet, so a requirement would block the common case. A JSR package has no
-  archive hash, so its `integrity` is `null`.
+  publish no attestation yet, so a requirement would block the common case.
 - **imp reads the licence data at vendor time, from the resolved package itself.** That is the only
-  moment when imp has the package, and not the bundle. For an npm package, imp reads the `license`
-  field of its `package.json`, and its `LICENSE` file, from the resolved package directory. For a
-  JSR package, imp reads the licence file that the published manifest of the version names. JSR
-  publishes no SPDX identifier. So imp records the identifier as absent. It does not guess one.
+  moment when imp has the package, and not the bundle. imp reads the `license` field of its
+  `package.json`, and its `LICENSE` file, from the resolved package directory. When the package
+  declares no SPDX identifier, imp records the identifier as absent. It does not guess one.
 - **imp reports a package that has neither an identifier nor a licence text. It does not hide it.**
   `imp install` warns, and names each such package. So the gap is visible when somebody introduces
   it, and not at an audit.
@@ -104,10 +101,9 @@ without a change.
 - The manifest records the graph at install time. It cannot detect that somebody edited the bundle
   by hand later. It describes the bytes in good faith, and a reviewer sees the bytes in the same
   diff.
-- `imp install` makes network requests per package. For an npm package, it fetches the metadata of
-  the version and the archive, for the integrity check. It fetches the full package document when
-  the signing key has an expiry date. That document can be large for a package with many versions.
-  For a JSR package, it fetches the licence text and the attestation record. The install already
+- `imp install` makes network requests per package. It fetches the metadata of the version and the
+  archive, for the integrity check. It fetches the full package document when the signing key has
+  an expiry date. That document can be large for a package with many versions. The install already
   needs the network, so this adds time and no new requirement.
 - The checks prove that the npm registry signed the hash of the archive that imp bundled. They
   detect an archive, a hash or a local copy that differs from what the registry signed. imp reads

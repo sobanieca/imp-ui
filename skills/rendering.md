@@ -35,14 +35,17 @@ p('Hello ', strong('world')) // same as p(['Hello ', strong('world')])
 ## Props
 
 ```js
-button({
-  type: 'submit',
-  disabled: true, // property-first: sets node.disabled
-  'data-id': 42, // no property -> attribute
-  class: 'btn',
-  style: { marginTop: '4px' },
-  events: { click: onClick },
-}, 'Save')
+button(
+  {
+    type: 'submit',
+    disabled: true, // property-first: sets node.disabled
+    'data-id': 42, // no property -> attribute
+    class: 'btn',
+    style: { marginTop: '4px' },
+    events: { click: onClick },
+  },
+  'Save',
+)
 ```
 
 - **A key is the HTML name, without a change.** Write `class`, `for`, `data-*` and `aria-*`. There

@@ -9,8 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub const NPM_REGISTRY: &str = "https://registry.npmjs.org";
-pub const JSR_NPM_REGISTRY: &str = "https://npm.jsr.io";
-const JSR_NPM_SCOPE: &str = "@jsr/";
+const NPM_REGISTRY_HOST: &str = "registry.npmjs.org";
 
 pub const NODE_BUILTINS: &[&str] = &[
     "assert",
@@ -67,51 +66,13 @@ pub fn is_node_builtin(specifier: &str) -> bool {
     specifier.starts_with("node:") || NODE_BUILTINS.contains(&specifier)
 }
 
-pub fn npm_name_of(scheme: &str, name: &str) -> String {
-    if scheme == "jsr" {
-        let bare = name.trim_start_matches('@');
-        format!("{JSR_NPM_SCOPE}{}", bare.replacen('/', "__", 1))
-    } else {
-        name.to_string()
-    }
-}
-
-pub fn registry_name_of(npm_name: &str) -> (&'static str, String) {
-    match npm_name.strip_prefix(JSR_NPM_SCOPE) {
-        Some(rest) => ("jsr", format!("@{}", rest.replacen("__", "/", 1))),
-        None => ("npm", npm_name.to_string()),
-    }
-}
-
-fn registry_base(npm_name: &str) -> &'static str {
-    if npm_name.starts_with(JSR_NPM_SCOPE) {
-        JSR_NPM_REGISTRY
-    } else {
-        NPM_REGISTRY
-    }
-}
-
-fn registry_host(npm_name: &str) -> &'static str {
-    if npm_name.starts_with(JSR_NPM_SCOPE) {
-        "npm.jsr.io"
-    } else {
-        "registry.npmjs.org"
-    }
-}
-
-pub fn package_url(npm_name: &str) -> String {
-    format!(
-        "{}/{}",
-        registry_base(npm_name),
-        npm_name.replacen('/', "%2F", 1)
-    )
+pub fn package_url(name: &str) -> String {
+    format!("{NPM_REGISTRY}/{}", name.replacen('/', "%2F", 1))
 }
 
 #[derive(Debug, Clone)]
 pub struct CachedPackage {
-    pub registry: &'static str,
     pub name: String,
-    pub npm_name: String,
     pub version: String,
     pub directory: PathBuf,
 }
@@ -143,11 +104,11 @@ pub enum PackageError {
 }
 
 impl Npm {
-    pub fn packument(&self, npm_name: &str) -> Result<Arc<Value>, (PackageError, String)> {
-        if let Some(found) = self.packuments.lock().unwrap().get(npm_name) {
+    pub fn packument(&self, name: &str) -> Result<Arc<Value>, (PackageError, String)> {
+        if let Some(found) = self.packuments.lock().unwrap().get(name) {
             return Ok(found.clone());
         }
-        let url = package_url(npm_name);
+        let url = package_url(name);
         let response = get(
             &url,
             &[(
@@ -170,39 +131,33 @@ impl Npm {
         self.packuments
             .lock()
             .unwrap()
-            .insert(npm_name.to_string(), value.clone());
+            .insert(name.to_string(), value.clone());
         Ok(value)
     }
 
-    fn packument_or_error(&self, npm_name: &str) -> Result<Arc<Value>> {
-        let (registry, name) = registry_name_of(npm_name);
-        self.packument(npm_name)
-            .map_err(|(kind, detail)| match kind {
-                PackageError::NotFound => anyhow!("package not found: {registry}:{name}"),
-                PackageError::Status(0) => {
-                    anyhow!("failed to resolve {registry}:{name} - {detail}")
-                }
-                PackageError::Status(status) => {
-                    anyhow!("failed to resolve {registry}:{name} - registry responded {status}")
-                }
-            })
+    fn packument_or_error(&self, name: &str) -> Result<Arc<Value>> {
+        self.packument(name).map_err(|(kind, detail)| match kind {
+            PackageError::NotFound => anyhow!("package not found: npm:{name}"),
+            PackageError::Status(0) => {
+                anyhow!("failed to resolve npm:{name} - {detail}")
+            }
+            PackageError::Status(status) => {
+                anyhow!("failed to resolve npm:{name} - registry responded {status}")
+            }
+        })
     }
 
-    pub fn latest_version(&self, npm_name: &str) -> Result<String> {
-        let packument = self.packument_or_error(npm_name)?;
-        let (registry, name) = registry_name_of(npm_name);
+    pub fn latest_version(&self, name: &str) -> Result<String> {
+        let packument = self.packument_or_error(name)?;
         packument
             .pointer("/dist-tags/latest")
             .and_then(Value::as_str)
             .map(String::from)
-            .ok_or_else(|| {
-                anyhow!("failed to resolve {registry}:{name} - no latest version published")
-            })
+            .ok_or_else(|| anyhow!("failed to resolve npm:{name} - no latest version published"))
     }
 
-    pub fn resolve_version(&self, npm_name: &str, range: &str) -> Result<String> {
-        let packument = self.packument_or_error(npm_name)?;
-        let (registry, name) = registry_name_of(npm_name);
+    pub fn resolve_version(&self, name: &str, range: &str) -> Result<String> {
+        let packument = self.packument_or_error(name)?;
         let range = range.trim();
         if let Some(tagged) = packument
             .get("dist-tags")
@@ -212,7 +167,7 @@ impl Npm {
             return Ok(tagged.to_string());
         }
         let parsed = nodejs_semver::Range::parse(if range.is_empty() { "*" } else { range })
-            .map_err(|_| anyhow!("invalid version range '{range}' for {registry}:{name}"))?;
+            .map_err(|_| anyhow!("invalid version range '{range}' for npm:{name}"))?;
         let versions: Vec<nodejs_semver::Version> = packument
             .get("versions")
             .and_then(Value::as_object)
@@ -234,34 +189,30 @@ impl Npm {
         parsed
             .max_satisfying(&versions)
             .map(|version| version.to_string())
-            .ok_or_else(|| anyhow!("no version of {registry}:{name} matches '{range}'"))
+            .ok_or_else(|| anyhow!("no version of npm:{name} matches '{range}'"))
     }
 
-    pub fn version_metadata(&self, npm_name: &str, version: &str) -> Result<Value> {
-        let packument = self.packument_or_error(npm_name)?;
-        let (registry, name) = registry_name_of(npm_name);
+    pub fn version_metadata(&self, name: &str, version: &str) -> Result<Value> {
+        let packument = self.packument_or_error(name)?;
         packument
             .get("versions")
             .and_then(|versions| versions.get(version))
             .cloned()
-            .ok_or_else(|| anyhow!("{registry}:{name}@{version} is not published"))
+            .ok_or_else(|| anyhow!("npm:{name}@{version} is not published"))
     }
 
-    fn package_directory(&self, npm_name: &str, version: &str) -> PathBuf {
-        let mut directory = self.cache.join(registry_host(npm_name));
-        for part in npm_name.split('/') {
+    fn package_directory(&self, name: &str, version: &str) -> PathBuf {
+        let mut directory = self.cache.join(NPM_REGISTRY_HOST);
+        for part in name.split('/') {
             directory.push(part);
         }
         directory.join(version)
     }
 
-    pub fn ensure(&self, npm_name: &str, version: &str) -> Result<CachedPackage> {
-        let directory = self.package_directory(npm_name, version);
-        let (registry, name) = registry_name_of(npm_name);
+    pub fn ensure(&self, name: &str, version: &str) -> Result<CachedPackage> {
+        let directory = self.package_directory(name, version);
         let cached = CachedPackage {
-            registry,
-            name: name.clone(),
-            npm_name: npm_name.to_string(),
+            name: name.to_string(),
             version: version.to_string(),
             directory: directory.clone(),
         };
@@ -272,11 +223,11 @@ impl Npm {
         if directory.join(".imp-complete").exists() {
             return Ok(cached);
         }
-        let metadata = self.version_metadata(npm_name, version)?;
+        let metadata = self.version_metadata(name, version)?;
         let tarball_url = metadata
             .pointer("/dist/tarball")
             .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("{registry}:{name}@{version} has no tarball in the registry"))?;
+            .ok_or_else(|| anyhow!("npm:{name}@{version} has no tarball in the registry"))?;
         eprintln!("Download {tarball_url}");
         let response = get(tarball_url, &[], None)?;
         if !response.ok() {
@@ -313,30 +264,21 @@ impl Npm {
     }
 
     pub fn package_of_path(&self, path: &Path) -> Option<CachedPackage> {
-        let relative = path.strip_prefix(&self.cache).ok()?;
+        let relative = path.strip_prefix(self.cache.join(NPM_REGISTRY_HOST)).ok()?;
         let parts: Vec<String> = relative
             .components()
             .map(|part| part.as_os_str().to_string_lossy().into_owned())
             .collect();
-        let host = parts.first()?;
-        let (name_parts, rest) = if parts.get(1)?.starts_with('@') {
-            (2, &parts[3..])
+        let name_parts = if parts.first()?.starts_with('@') {
+            2
         } else {
-            (1, &parts[2..])
+            1
         };
-        let npm_name = parts[1..1 + name_parts].join("/");
-        let version = parts.get(1 + name_parts)?.clone();
-        let _ = rest;
-        let expected_host = registry_host(&npm_name);
-        if host != expected_host {
-            return None;
-        }
-        let (registry, name) = registry_name_of(&npm_name);
-        let directory = self.package_directory(&npm_name, &version);
+        let name = parts.get(..name_parts)?.join("/");
+        let version = parts.get(name_parts)?.clone();
+        let directory = self.package_directory(&name, &version);
         Some(CachedPackage {
-            registry,
             name,
-            npm_name,
             version,
             directory,
         })
@@ -346,22 +288,17 @@ impl Npm {
         path.starts_with(&self.cache)
     }
 
-    pub fn resolve_scheme_specifier(
+    pub fn resolve_npm_specifier(
         &self,
-        scheme: &str,
         name: &str,
         range: Option<&str>,
         subpath: &str,
         require: bool,
     ) -> Result<Resolved> {
-        let npm_name = npm_name_of(scheme, name);
-        let version = match range {
-            Some(range) => self.resolve_version(&npm_name, range)?,
-            None => self.resolve_version(&npm_name, "*")?,
-        };
-        let package = self.ensure(&npm_name, &version)?;
+        let version = self.resolve_version(name, range.unwrap_or("*"))?;
+        let package = self.ensure(name, &version)?;
         resolve_in_package(&package.directory, subpath, require)
-            .with_context(|| format!("could not resolve {scheme}:{name}@{version}{subpath}"))
+            .with_context(|| format!("could not resolve npm:{name}@{version}{subpath}"))
     }
 
     pub fn browser_override(
@@ -406,7 +343,7 @@ impl Npm {
             .package_of_path(importer)
             .ok_or_else(|| anyhow!("'{specifier}' is imported from outside the package cache"))?;
         let (name, subpath) = split_package_specifier(specifier);
-        if name == package.npm_name {
+        if name == package.name {
             return resolve_in_package(&package.directory, &subpath, require);
         }
         let manifest = read_package_json(&package.directory);

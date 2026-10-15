@@ -1,17 +1,15 @@
-export const reviewWidget = (
-  {
-    size,
-    margin,
-    logViews,
-    chipColors,
-    html,
-    positionKey,
-    reviewEndpoint,
-    reportModule,
-    themeEditorModule,
-    telemetryEntries,
-  },
-) => {
+export const reviewWidget = ({
+  size,
+  margin,
+  logViews,
+  chipColors,
+  html,
+  positionKey,
+  reviewEndpoint,
+  reportModule,
+  themeEditorModule,
+  telemetryEntries,
+}) => {
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
   if (!LOOPBACK.has(location.hostname)) return
 
@@ -242,22 +240,26 @@ export const reviewWidget = (
   }
 
   const renderChips = () => {
-    chips.replaceChildren(...logViews[tool].filters.map((group) => {
-      const row = document.createElement('div')
-      row.className = 'chips'
-      row.dataset.group = group.key
-      row.append(...group.options.map((name) => {
-        const chip = document.createElement('button')
-        chip.type = 'button'
-        chip.className = 'chip'
-        chip.dataset.filter = name
-        chip.style.setProperty('--chip', chipColors[name])
-        chip.setAttribute('aria-pressed', String(name === active[group.key]))
-        chip.textContent = name
-        return chip
-      }))
-      return row
-    }))
+    chips.replaceChildren(
+      ...logViews[tool].filters.map((group) => {
+        const row = document.createElement('div')
+        row.className = 'chips'
+        row.dataset.group = group.key
+        row.append(
+          ...group.options.map((name) => {
+            const chip = document.createElement('button')
+            chip.type = 'button'
+            chip.className = 'chip'
+            chip.dataset.filter = name
+            chip.style.setProperty('--chip', chipColors[name])
+            chip.setAttribute('aria-pressed', String(name === active[group.key]))
+            chip.textContent = name
+            return chip
+          }),
+        )
+        return row
+      }),
+    )
   }
 
   const entryFor = (entry) => {
@@ -358,9 +360,7 @@ export const reviewWidget = (
       return
     }
     if (tool !== 'theme') return
-    card.replaceChildren(
-      module.themeEditor({ theme: module.appliedThemeName(), tokensOnly: true }),
-    )
+    card.replaceChildren(module.themeEditor({ theme: module.appliedThemeName(), tokensOnly: true }))
   }
 
   let drag = null
@@ -443,10 +443,14 @@ export const reviewWidget = (
     }
   })
 
-  addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || actions.hidden || stopPicking) return
-    collapse()
-  }, true)
+  addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key !== 'Escape' || actions.hidden || stopPicking) return
+      collapse()
+    },
+    true,
+  )
 
   addEventListener('resize', () => {
     if (host.style.insetInlineStart) {

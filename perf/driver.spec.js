@@ -32,9 +32,9 @@ const snapshot = (page) =>
       firstLabel: rows[0]?.querySelector('.label')?.textContent ?? null,
       middleLabel: rows[rows.length >> 1]?.querySelector('.label')?.textContent ?? null,
       lastLabel: rows.at(-1)?.querySelector('.label')?.textContent ?? null,
-      text: spans.filter((span) => !span.classList.contains('label')).map((span) =>
-        span.textContent
-      )
+      text: spans
+        .filter((span) => !span.classList.contains('label'))
+        .map((span) => span.textContent)
         .join('|'),
     }
   })
@@ -85,9 +85,10 @@ const runScenario = async (page, session, profiles, name, scenario) => {
     const mounted = scenario.memory ? await memoryProbe(page, session) : null
     const measure = () => runSteps(page, repeated(scenario.measure, scenario.repeat ?? 1))
     const lastSample = sample === samples + WARMUP_SAMPLES - 1
-    const duration = options.profile && lastSample
-      ? await profiled(session, profiles, name, scenario, measure)
-      : await measure()
+    const duration =
+      options.profile && lastSample
+        ? await profiled(session, profiles, name, scenario, measure)
+        : await measure()
     if (dom === null) dom = await snapshot(page)
     await runSteps(page, scenario.finish)
     if (sample < WARMUP_SAMPLES) continue
@@ -123,21 +124,25 @@ const runFramework = async (browser, profiles, name) => {
   return results
 }
 
-test('performance scenarios', async ({ page: host }) => {
-  const browser = host.browser()
-  const run = {
-    date: new Date().toISOString(),
-    browser: await browser.version(),
-    platform: options.platform,
-    samples: options.samples,
-    versions,
-    frameworks: {},
-  }
-  const profiles = {}
-  for (const name of options.frameworks) {
-    console.log(`running ${name}`)
-    run.frameworks[name] = await runFramework(browser, profiles, name)
-  }
-  const report = { run, markdown: writeReport(run), profiles }
-  console.log(`IMP-REPORT-BEGIN\n${JSON.stringify(report)}\nIMP-REPORT-END`)
-}, { timeout: 4 * 60 * 60 * 1000 })
+test(
+  'performance scenarios',
+  async ({ page: host }) => {
+    const browser = host.browser()
+    const run = {
+      date: new Date().toISOString(),
+      browser: await browser.version(),
+      platform: options.platform,
+      samples: options.samples,
+      versions,
+      frameworks: {},
+    }
+    const profiles = {}
+    for (const name of options.frameworks) {
+      console.log(`running ${name}`)
+      run.frameworks[name] = await runFramework(browser, profiles, name)
+    }
+    const report = { run, markdown: writeReport(run), profiles }
+    console.log(`IMP-REPORT-BEGIN\n${JSON.stringify(report)}\nIMP-REPORT-END`)
+  },
+  { timeout: 4 * 60 * 60 * 1000 },
+)

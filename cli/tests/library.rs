@@ -615,8 +615,8 @@ fn parse_specifiers() {
         "mitt@3.0.1",
         "npm:mitt@3.0.1",
         "npm:@scope/pkg@1.2.3/sub/module.js",
-        "jsr:@std/encoding@1.0.10/base64",
-        "jsr:@std/encoding",
+        "npm:@scope/pkg",
+        "github:user/repo",
         "preact@10.19.3/hooks",
         "not@a@version",
         "@lonely-scope",
@@ -627,7 +627,7 @@ fn parse_specifiers() {
         .map(|input| match parse_specifier(input) {
             Some(parsed) => format!(
                 "'{input}' -> {} alias={}",
-                json!({ "scheme": parsed.scheme, "name": parsed.name, "version": parsed.version, "subpath": parsed.subpath }),
+                json!({ "npmPrefix": parsed.npm_prefix, "name": parsed.name, "version": parsed.version, "subpath": parsed.subpath }),
                 default_alias(&parsed)
             ),
             None => format!("'{input}' -> null"),

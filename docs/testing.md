@@ -86,9 +86,13 @@ test('adds numbers', () => {
   The default is 5 seconds for a unit test and 30 seconds for an e2e test. Raise it for a long flow:
 
   ```js
-  test('full checkout', async ({ page }) => {
-    // ...
-  }, { timeout: 120_000 })
+  test(
+    'full checkout',
+    async ({ page }) => {
+      // ...
+    },
+    { timeout: 120_000 },
+  )
   ```
 
 - `options.fakeTimers` runs this test under a virtual clock, and passes the clock as `clock` in the
@@ -101,7 +105,11 @@ and `afterAll`, and they come from `imp/test`. imp awaits an async test and an a
 special `each` helper to learn. Generate the cases with a plain `for...of`:
 
 ```js
-for (const [a, b, sum] of [[1, 1, 2], [2, 3, 5], [10, -4, 6]]) {
+for (const [a, b, sum] of [
+  [1, 1, 2],
+  [2, 3, 5],
+  [10, -4, 6],
+]) {
   test(`adds ${a} + ${b}`, () => {
     expect(add(a, b)).toEqual(sum)
   })
@@ -273,8 +281,8 @@ import.
 
 **How it works.** The factory returns the exports of the module, and it receives `{ spy, orig }`:
 
-- Write `specifier` relative to your test file, as in `'./http.js'`. For an npm or jsr package, use
-  the **dependency alias** from `imp.json`, as in `'mitt'`. imp matches both everywhere they are
+- Write `specifier` relative to your test file, as in `'./http.js'`. For an npm package, use the
+  **dependency alias** from `imp.json`, as in `'mitt'`. imp matches both everywhere they are
   imported.
 - `spy` is the same helper as above. Use it so that the mocked functions record their calls.
   `orig()` returns the **real** module, for a partial mock. See below.
@@ -384,18 +392,22 @@ test context. You advance the time by hand:
 ```js
 import { expect, test } from 'imp/test'
 
-test('debounce fires once, 300ms after the last call', async ({ clock }) => {
-  let calls = 0
-  const ping = debounce(() => calls++, 300)
+test(
+  'debounce fires once, 300ms after the last call',
+  async ({ clock }) => {
+    let calls = 0
+    const ping = debounce(() => calls++, 300)
 
-  ping()
-  ping()
-  ping()
-  await clock.tick(299)
-  expect(calls).toEqual(0)
-  await clock.tick(1)
-  expect(calls).toEqual(1)
-}, { fakeTimers: true })
+    ping()
+    ping()
+    ping()
+    await clock.tick(299)
+    expect(calls).toEqual(0)
+    await clock.tick(1)
+    expect(calls).toEqual(1)
+  },
+  { fakeTimers: true },
+)
 ```
 
 While the fake timers are on, `setTimeout`, `setInterval`, `requestAnimationFrame`, `Date`, which is
@@ -419,21 +431,29 @@ Start the clock at a fixed instant when your code reads the wall clock. Pass `no
 number or a `Date`, in place of `true`:
 
 ```js
-test('renews the token on the first of the year', ({ clock }) => {
-  expect(new Date().getFullYear()).toEqual(2030)
-  // ...
-}, { fakeTimers: { now: new Date('2030-01-01') } })
+test(
+  'renews the token on the first of the year',
+  ({ clock }) => {
+    expect(new Date().getFullYear()).toEqual(2030)
+    // ...
+  },
+  { fakeTimers: { now: new Date('2030-01-01') } },
+)
 ```
 
 `tick` flushes the pending promise callbacks while it advances. So an async flow that awaits between
 two timers works. The next timer sees the state that the awaits produced:
 
 ```js
-test('retries after a 1s backoff', async ({ clock }) => {
-  const done = fetchWithRetry('/data') // awaits, then schedules a retry in 1000ms
-  await clock.tick(1000)
-  expect(await done).toEqual({ ok: true })
-}, { fakeTimers: true })
+test(
+  'retries after a 1s backoff',
+  async ({ clock }) => {
+    const done = fetchWithRetry('/data') // awaits, then schedules a retry in 1000ms
+    await clock.tick(1000)
+    expect(await done).toEqual({ ok: true })
+  },
+  { fakeTimers: true },
+)
 ```
 
 Fake timers are a tool for a unit test. An e2e spec runs against a real browser, where the time

@@ -97,7 +97,7 @@ Everything else is ordinary JavaScript. A flag reads well anywhere a boolean doe
 import { flag } from 'imp'
 import { div } from 'imp/html'
 
-const nav = () => flag('NEW_NAV') ? newNav() : classicNav()
+const nav = () => (flag('NEW_NAV') ? newNav() : classicNav())
 
 export const page = () => div(nav(), flag('CHECKOUT_V2') && promoBanner())
 ```

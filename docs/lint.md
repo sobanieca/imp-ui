@@ -532,18 +532,18 @@ bundles it into the `dependencies/` folder of your project. See
 **[Managing dependencies](dependencies.md)**. This rule enforces that model in all three places
 where a dependency can appear:
 
-- **A pin in `imp.json` must be exact.** Every `dependencies` entry must be an `npm:` or `jsr:`
-  specifier with an exact version, such as `npm:mitt@3.0.1`. Never write `npm:mitt@3`,
-  `npm:mitt@^3.0.1` or a bare `npm:mitt`. There is no lock file. The exact pin and the committed
-  bundle are what make the resolution reproducible.
+- **A pin in `imp.json` must be exact.** Every `dependencies` entry must be an `npm:` specifier with
+  an exact version, such as `npm:mitt@3.0.1`. Never write `npm:mitt@3`, `npm:mitt@^3.0.1` or a bare
+  `npm:mitt`. There is no lock file. The exact pin and the committed bundle are what make the
+  resolution reproducible.
 
   ```
   error[imp/exact-dependency-versions]: dependency 'dayjs': 'npm:dayjs@1' must pin an exact version ('1' is not an exact version) - the vendored bundle in dependencies/ is built from this pin (e.g. 'npm:dayjs@1.0.0'); run 'imp install' to re-resolve and re-pin it
    --> imp.json:1:1
   ```
 
-- **Write no inline `npm:` or `jsr:` specifier in code.** You install a dependency. You do not
-  import it by URL:
+- **Write no inline `npm:` specifier in code.** You install a dependency. You do not import it by
+  URL:
 
   ```js
   import mitt from 'npm:mitt@3.0.1'

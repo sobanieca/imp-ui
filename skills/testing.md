@@ -176,13 +176,17 @@ clock as `clock`:
 | `clock.restore()`      | back to real timers (rarely needed)                           |
 
 ```js
-test('debounce fires once', async ({ clock }) => {
-  ping(), ping()
-  await clock.tick(299)
-  expect(calls).toEqual(0)
-  await clock.tick(1)
-  expect(calls).toEqual(1)
-}, { fakeTimers: true })
+test(
+  'debounce fires once',
+  async ({ clock }) => {
+    ;(ping(), ping())
+    await clock.tick(299)
+    expect(calls).toEqual(0)
+    await clock.tick(1)
+    expect(calls).toEqual(1)
+  },
+  { fakeTimers: true },
+)
 ```
 
 `tick` and `runAll` are async. Always `await` them. `fakeTimers` on a spec fails.

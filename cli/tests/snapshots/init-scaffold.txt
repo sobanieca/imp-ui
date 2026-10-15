@@ -174,7 +174,10 @@ const counter = component('app-counter', {
         text({ inline: true, weight: 'bold' }, 'imp skill'),
         ' and start building!',
       ),
-      p({ id: 'clicks' }, clicks.text((value) => `Clicks: ${value}`)),
+      p(
+        { id: 'clicks' },
+        clicks.text((value) => `Clicks: ${value}`),
+      ),
       button(
         { variant: 'primary', events: { click: () => clicks.set((value) => value + 1) } },
         'Click me',

@@ -55,6 +55,9 @@ select({
   field: 'country',
   label: 'Country',
   placeholder: 'Choose a country',
-  options: [{ value: 'pl', label: 'Poland' }, { value: 'gb', label: 'United Kingdom' }],
+  options: [
+    { value: 'pl', label: 'Poland' },
+    { value: 'gb', label: 'United Kingdom' },
+  ],
 })
 ```

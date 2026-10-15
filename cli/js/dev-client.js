@@ -1,15 +1,13 @@
-export const devClient = (
-  {
-    eventsEndpoint,
-    logEndpoint,
-    workerPath,
-    telemetryEntries,
-    mocks,
-    themeEditor,
-    themeDraftPrefix,
-    themeDraftModule,
-  },
-) => {
+export const devClient = ({
+  eventsEndpoint,
+  logEndpoint,
+  workerPath,
+  telemetryEntries,
+  mocks,
+  themeEditor,
+  themeDraftPrefix,
+  themeDraftModule,
+}) => {
   const hasThemeDraft = () => {
     try {
       return Object.keys(localStorage).some((key) => key.startsWith(themeDraftPrefix))
@@ -115,7 +113,8 @@ export const devClient = (
       if (event.data?.imp === 'telemetry') keep(event.data.entry)
     })
     if (workerPath) {
-      navigator.serviceWorker.register(workerPath, { scope: '/' })
+      navigator.serviceWorker
+        .register(workerPath, { scope: '/' })
         .catch((error) => console.error('imp: the dev service worker failed to start -', error))
     }
 
@@ -127,10 +126,14 @@ export const devClient = (
         if (!target.includes('/@imp/') && !navigator.serviceWorker.controller) missed = true
         return network.apply(globalThis, args)
       }
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        globalThis.fetch = network
-        if (missed) location.reload()
-      }, { once: true })
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          globalThis.fetch = network
+          if (missed) location.reload()
+        },
+        { once: true },
+      )
     }
   }
 }

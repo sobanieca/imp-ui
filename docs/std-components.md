@@ -657,7 +657,10 @@ shell({ extras: [notifications()] }, toast(), router({ map: app, screens }))
 const choice = await notify({
   kind: 'warning',
   title: 'Invoice 1042 is overdue',
-  actions: [{ id: 'remind', label: 'Send a reminder' }, { id: 'ignore', label: 'Ignore' }],
+  actions: [
+    { id: 'remind', label: 'Send a reminder' },
+    { id: 'ignore', label: 'Ignore' },
+  ],
 })
 ```
 
@@ -676,7 +679,10 @@ import { reactions } from 'imp/std/feedback'
 
 reactions(
   {
-    items: [{ emoji: '\u{1F44D}', count: 12, reacted: true }, { emoji: '\u{1F389}', count: 4 }],
+    items: [
+      { emoji: '\u{1F44D}', count: 12, reacted: true },
+      { emoji: '\u{1F389}', count: 4 },
+    ],
     onReact: (emoji, reacted) => api.post('/posts/42/reactions', { body: { emoji, reacted } }),
   },
   card(markdown(post.body)),

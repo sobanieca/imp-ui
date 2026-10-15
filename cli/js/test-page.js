@@ -28,13 +28,15 @@ const framePolled = (property, rest) => {
   return [{ polling: 'raf', ...options }, ...others]
 }
 
-const savedScreenshot = (screenshot, save) => async (options = {}) => {
-  if (!options.path) return screenshot(options)
-  const { path, ...rest } = options
-  const data = await screenshot({ ...rest, encoding: 'base64' })
-  await save(path, data)
-  return Uint8Array.from(atob(data), (char) => char.charCodeAt(0))
-}
+const savedScreenshot =
+  (screenshot, save) =>
+  async (options = {}) => {
+    if (!options.path) return screenshot(options)
+    const { path, ...rest } = options
+    const data = await screenshot({ ...rest, encoding: 'base64' })
+    await save(path, data)
+    return Uint8Array.from(atob(data), (char) => char.charCodeAt(0))
+  }
 
 function piercingProxy(target, selectorMethods, save) {
   return new Proxy(target, {
@@ -53,8 +55,8 @@ function piercingProxy(target, selectorMethods, save) {
           return result && piercingProxy(result, HANDLE_SELECTOR_METHODS, save)
         }
         if (RETURNS_HANDLE_LIST.has(property)) {
-          return result.map((handle) =>
-            handle && piercingProxy(handle, HANDLE_SELECTOR_METHODS, save)
+          return result.map(
+            (handle) => handle && piercingProxy(handle, HANDLE_SELECTOR_METHODS, save),
           )
         }
         return result

@@ -1,13 +1,15 @@
-$ imp install jsr:@std/encoding@1.0.10/base64  (cwd: <tmp>)
+$ imp install indexof@0.0.1  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-installed base64 (jsr:@std/encoding@1.0.10/base64)
-  dependencies/base64/base64.js (2.3 kB)
-  dependencies/base64/manifest.json (packages, versions, licenses)
+installed indexof (npm:indexof@0.0.1)
+  dependencies/indexof/indexof.js (244 B)
+  dependencies/indexof/manifest.json (packages, versions, licenses)
   bundled packages:
-    @std/encoding@1.0.10 - license not declared, attestation listed by the registry
-[WARN] could not identify the license of @std/encoding@1.0.10 - check the terms yourself; imp cannot hold it to the 'licenses' policy
+    indexof@0.0.1 - license not declared
+  integrity: 1 npm package checked against the signed hash of the npm registry
+[WARN] no license text found for indexof@0.0.1 - LICENSES.txt will not carry a notice for it
+[WARN] could not identify the license of indexof@0.0.1 - check the terms yourself; imp cannot hold it to the 'licenses' policy
 
 --- stderr ---
 (empty)

@@ -5,7 +5,7 @@ use crate::names::{
     state_name_problem,
 };
 use crate::specifiers::{
-    DEPENDENCY_SCHEME, EXACT_VERSION, default_alias, imp_subpath_problem, is_imp_specifier,
+    EXACT_VERSION, NPM_PREFIX, default_alias, imp_subpath_problem, is_imp_specifier,
     is_imp_std_specifier, parse_specifier,
 };
 use oxc::ast::AstKind;
@@ -1867,8 +1867,7 @@ fn exact_dependency_versions(ctx: &Ctx) {
     let aliases: HashSet<&str> = ctx.dependency_aliases.iter().map(String::as_str).collect();
     let check = |literal: &StringLiteral| {
         let specifier = literal.value.as_str();
-        if DEPENDENCY_SCHEME.is_match(specifier) {
-            let install = specifier.strip_prefix("npm:").unwrap_or(specifier);
+        if let Some(install) = specifier.strip_prefix(NPM_PREFIX) {
             let alias = parse_specifier(specifier)
                 .map(|parsed| default_alias(&parsed))
                 .unwrap_or_else(|| "the-alias".into());
@@ -1915,10 +1914,10 @@ fn exact_dependency_versions(ctx: &Ctx) {
 }
 
 pub fn dependency_pin_problem(specifier: &str) -> Option<String> {
-    let parsed = parse_specifier(specifier).filter(|parsed| parsed.scheme.is_some());
+    let parsed = parse_specifier(specifier).filter(|parsed| parsed.npm_prefix);
     let Some(parsed) = parsed else {
         return Some(format!(
-            "'{specifier}' must be an 'npm:' or 'jsr:' specifier (e.g. 'npm:mitt@3.0.1') - run 'imp install' to declare dependencies"
+            "'{specifier}' must be an 'npm:' specifier (e.g. 'npm:mitt@3.0.1') - run 'imp install' to declare dependencies"
         ));
     };
     if parsed
@@ -1949,11 +1948,7 @@ pub fn dependency_pin_problem(specifier: &str) -> Option<String> {
             parts.join(".")
         }
     };
-    let example = format!(
-        "{}:{}@{example_version}",
-        parsed.scheme.as_deref().unwrap(),
-        parsed.name
-    );
+    let example = format!("{NPM_PREFIX}{}@{example_version}", parsed.name);
     let reason = match &parsed.version {
         Some(version) => format!("'{version}' is not an exact version"),
         None => "no version is given".into(),

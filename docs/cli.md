@@ -540,7 +540,10 @@ export const mocks = [
     delay: 800,
     handler: () => ({
       status: 200,
-      body: [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }],
+      body: [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' },
+      ],
     }),
   },
   {
@@ -1115,16 +1118,16 @@ imp install [package[@version]] [version] [--alias name]
 imp uninstall <package>
 ```
 
-`imp install` adds a dependency to your project. It resolves the package, from npm by default and
-from the jsr registry with the `jsr:` prefix. It bundles the package into one minified module that
-the browser can run. It writes the bundle into the committed `dependencies/` folder, and pins the
-exact version in `imp.json`. With no version, it resolves the latest release. A second run then
-updates that dependency. With no argument at all, it updates every declared dependency.
-`imp uninstall` removes the folder of a dependency, and its pin. Your code imports a dependency by
-its bare alias, as in `import mitt from 'mitt'`. A package that imports `imp` itself keeps that
-import bare, because your app provides the imp library. imp never treats `imp` as a registry
-package. The bundle keeps the licence notice of the package where the package put it, so the notice
-is there for `imp build` to collect into the [`LICENSES.txt`](#license-notices) of your app.
+`imp install` adds a dependency to your project. It resolves the package from the npm registry. It
+bundles the package into one minified module that the browser can run. It writes the bundle into the
+committed `dependencies/` folder, and pins the exact version in `imp.json`. With no version, it
+resolves the latest release. A second run then updates that dependency. With no argument at all, it
+updates every declared dependency. `imp uninstall` removes the folder of a dependency, and its pin.
+Your code imports a dependency by its bare alias, as in `import mitt from 'mitt'`. A package that
+imports `imp` itself keeps that import bare, because your app provides the imp library. imp never
+treats `imp` as a registry package. The bundle keeps the licence notice of the package where the
+package put it, so the notice is there for `imp build` to collect into the
+[`LICENSES.txt`](#license-notices) of your app.
 
 Such a package is an **imp component**. It must ship `imp-skill.md` next to its entry module, as
 `imp build` writes it. `imp install` copies the file into the folder of the dependency. A missing
@@ -1135,8 +1138,7 @@ for it. It then puts every package in place, or none of them. `imp audit` checks
 packages for known vulnerabilities.
 
 **[Managing dependencies](dependencies.md)** gives the full story: how to pin a version, how to
-update, aliases, a jsr package and a subpath, what imp prints, and why you commit the vendored
-folder.
+update, aliases, a subpath, what imp prints, and why you commit the vendored folder.
 
 ### File-size warning
 

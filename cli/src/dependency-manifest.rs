@@ -1,4 +1,3 @@
-use crate::http_client::get;
 use crate::license_policy::package_id;
 use crate::npm::read_package_json;
 use anyhow::{Result, bail};
@@ -6,11 +5,9 @@ use serde_json::{Map, Value, json};
 use std::path::{Path, PathBuf};
 
 pub const DEPENDENCY_MANIFEST_FILE: &str = "manifest.json";
-const JSR_REGISTRY: &str = "https://jsr.io";
 
 #[derive(Debug, Clone)]
 pub struct PackageRecord {
-    pub registry: &'static str,
     pub name: String,
     pub version: String,
     pub directory: PathBuf,
@@ -66,49 +63,12 @@ fn npm_license(directory: &Path) -> (Option<String>, Option<String>) {
     (spdx_from(&manifest), text)
 }
 
-fn jsr_license(name: &str, version: &str) -> (Option<String>, Option<String>) {
-    let Ok(meta) = get(
-        &format!("{JSR_REGISTRY}/{name}/{version}_meta.json"),
-        &[],
-        None,
-    ) else {
-        return (None, None);
-    };
-    if !meta.ok() {
-        return (None, None);
-    }
-    let Ok(meta) = meta.json() else {
-        return (None, None);
-    };
-    let file = meta
-        .get("manifest")
-        .and_then(Value::as_object)
-        .and_then(|manifest| {
-            manifest
-                .keys()
-                .find(|path| is_license_file(path.trim_start_matches('/')))
-                .cloned()
-        });
-    let Some(file) = file else {
-        return (None, None);
-    };
-    match get(&format!("{JSR_REGISTRY}/{name}/{version}{file}"), &[], None) {
-        Ok(response) if response.ok() => (None, Some(response.text().trim_end().to_string())),
-        _ => (None, None),
-    }
-}
-
 pub fn record_package_licenses(packages: &[PackageRecord]) -> Vec<Value> {
     packages
         .iter()
         .map(|record| {
-            let (license, license_text) = if record.registry == "npm" {
-                npm_license(&record.directory)
-            } else {
-                jsr_license(&record.name, &record.version)
-            };
+            let (license, license_text) = npm_license(&record.directory);
             json!({
-                "registry": record.registry,
                 "name": record.name,
                 "version": record.version,
                 "integrity": record.integrity,

@@ -5,7 +5,6 @@
   "impImports": [],
   "packages": [
     {
-      "registry": "npm",
       "name": "mitt",
       "version": "3.0.1",
       "license": "MIT",

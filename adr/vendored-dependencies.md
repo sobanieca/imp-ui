@@ -3,7 +3,7 @@
 ## Context
 
 An app used to declare a dependency inline, in its own code, as `import mitt from 'npm:mitt@3.0.1'`.
-The dev server bundled that dependency while it ran, and it fetched the package from the npm or jsr
+The dev server bundled that dependency while it ran, and it fetched the package from the npm
 registry at the moment of the request. That kept the project free of a generated file, and it had
 two structural weaknesses:
 
@@ -24,7 +24,7 @@ imp vendors a dependency. It resolves the dependency, bundles it, and commits th
 repository. `imp install` and `imp uninstall` manage that.
 
 - **The `dependencies` key of `imp.json` is the one source of truth.** It maps a bare import alias
-  to an exact `npm:` or `jsr:` specifier, and that specifier can carry a subpath. An example is
+  to an exact `npm:` specifier, and that specifier can carry a subpath. An example is
   `{ "dependencies": { "mitt": "npm:mitt@3.0.1" } }`. App code imports a dependency by its alias
   only, as in `import mitt from 'mitt'`. It never uses an inline specifier.
 - **`dependencies/` at the project root holds the committed output.** There is one subfolder per
@@ -70,17 +70,17 @@ repository. `imp install` and `imp uninstall` manage that.
   about a difference of version.
 - **A package whose bundle keeps a bare `imp` import is an imp component, and it ships its manual.**
   It must publish `imp-skill.md` next to its entry module, the file that the specifier resolves to
-  in npm or jsr. `imp build` of a JS entry writes it, see `production-bundling.md`. `imp install`
-  copies it into `dependencies/<alias>/`, beside the bundle and `manifest.json`. A missing file
-  stops the install, and the message names it. `imp skill <alias>` reads the manual from there, see
+  in npm. `imp build` of a JS entry writes it, see `production-bundling.md`. `imp install` copies it
+  into `dependencies/<alias>/`, beside the bundle and `manifest.json`. A missing file stops the
+  install, and the message names it. `imp skill <alias>` reads the manual from there, see
   `agent-skills.md`. A package that does not import imp gets no `imp-skill.md`.
 - **The dev server bundles no dependency.** The injected import map maps each alias to its
   `dependencies/<alias>/` bundle, which imp serves as a plain static file. Only `imp install`
   bundles a package, see `dependency-bundling-with-rolldown.md`.
 - **The `exact-dependency-versions` lint rule enforces the model.** Every specifier in
-  `dependencies` must pin an exact version. An inline `npm:` or `jsr:` import in code is an error. A
-  bare import that matches no declared alias, other than `imp`, is an error, and the message hints
-  at `imp install`.
+  `dependencies` must pin an exact version. An inline `npm:` import in code is an error. A bare
+  import that matches no declared alias, other than `imp`, is an error, and the message hints at
+  `imp install`.
 
 `imp install` writes exactly two things into the project, and a user asked for both. They are
 committed source. They are the `dependencies/` vendor directory, and the pin in `imp.json`. imp

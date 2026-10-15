@@ -2,7 +2,7 @@ $ imp audit --sbom  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
-wrote sbom.cdx.json - CycloneDX 1.7, 3 packages
+wrote sbom.cdx.json - CycloneDX 1.7, 2 packages
 
 --- stderr ---
 (empty)
@@ -54,18 +54,6 @@ wrote sbom.cdx.json - CycloneDX 1.7, 3 packages
     },
     {
       "type": "library",
-      "bom-ref": "jsr:@std/encoding@1.0.10",
-      "name": "@std/encoding",
-      "version": "1.0.10",
-      "externalReferences": [
-        {
-          "type": "distribution",
-          "url": "https://jsr.io/@std/encoding@1.0.10"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bom-ref": "pkg:npm/node-forge@0.7.0",
       "name": "node-forge",
       "version": "0.7.0",
@@ -93,7 +81,6 @@ wrote sbom.cdx.json - CycloneDX 1.7, 3 packages
     {
       "ref": "app:<app>",
       "dependsOn": [
-        "jsr:@std/encoding@1.0.10",
         "pkg:npm/%40angular/core@17.0.0",
         "pkg:npm/node-forge@0.7.0"
       ]

@@ -1169,7 +1169,12 @@ import { luBox } from 'imp/icons'
 
 appLogo({ label: 'Acme', icon: icon(luBox, { size: 'lg' }) })
 appLogo({ label: 'Acme', image: '/acme-wordmark.svg' })
-breadcrumbs({ items: [{ id: 'home', label: 'Home', href: '/' }, { id: 'order', label: 'Order' }] })
+breadcrumbs({
+  items: [
+    { id: 'home', label: 'Home', href: '/' },
+    { id: 'order', label: 'Order' },
+  ],
+})
 userCard({ name: 'Ada Lovelace', description: user.email })
 orgSelect({ orgs: memberships, selected: currentOrg, events: { select: switchOrg } })
 themeSelect()
@@ -1313,7 +1318,10 @@ const choice = await notify({
   id: 'invoice-1042',
   kind: 'warning',
   title: 'Invoice 1042 is overdue',
-  actions: [{ id: 'remind', label: 'Send a reminder' }, { id: 'ignore', label: 'Ignore' }],
+  actions: [
+    { id: 'remind', label: 'Send a reminder' },
+    { id: 'ignore', label: 'Ignore' },
+  ],
   duration: 0,
 })
 dismiss('invoice-1042')

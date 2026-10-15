@@ -112,7 +112,10 @@ Returns a live text node. The simplest possible binding: the text updates in pla
 around it is touched.
 
 ```js
-span('Items in cart: ', cart.text((items) => items.length))
+span(
+  'Items in cart: ',
+  cart.text((items) => items.length),
+)
 ```
 
 ### `view(render)` - render from it
@@ -136,10 +139,12 @@ someone typed, focus, scroll position, CSS transitions - all preserved), changed
 individually, and reorders _move_ the existing elements instead of rebuilding them.
 
 ```js
-ul(todos.each(
-  (todo) => li(todo.title, input({ class: 'notes' })),
-  (todo) => todo.id,
-))
+ul(
+  todos.each(
+    (todo) => li(todo.title, input({ class: 'notes' })),
+    (todo) => todo.id,
+  ),
+)
 ```
 
 Items are compared **by content**, not by reference - so your everyday spread updates do exactly the
@@ -232,16 +237,21 @@ the component with app-lifetime. The header badge is a text node that updates in
 never re-renders:
 
 ```js
-span({ class: 'badge' }, cart.text((items) => items.length))
+span(
+  { class: 'badge' },
+  cart.text((items) => items.length),
+)
 ```
 
 The cart page is a keyed `each` - quantity inputs keep focus while other items change:
 
 ```js
-ul(cart.each(
-  (item) => cartRow(item),
-  (item) => item.sku,
-))
+ul(
+  cart.each(
+    (item) => cartRow(item),
+    (item) => item.sku,
+  ),
+)
 ```
 
 The checkout button disables itself, and the empty state handles itself:
@@ -272,7 +282,12 @@ const orderList = component('my-app-order-list', {
   setup: async (self, { id }) => {
     const loaded = await fetch(`/api/orders?user=${id}`).then((response) => response.json())
     const orders = initState(self, 'myapp.orders', loaded)
-    return ul(orders.each((order) => li(order.title), (order) => order.id))
+    return ul(
+      orders.each(
+        (order) => li(order.title),
+        (order) => order.id,
+      ),
+    )
   },
 })
 ```

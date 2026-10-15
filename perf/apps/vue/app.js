@@ -53,7 +53,7 @@ const ListApp = defineComponent({
       h(
         'ul',
         rows.value.map((item) =>
-          h(Row, { key: item.id, item, selected: selected.value === item.id, onRemove })
+          h(Row, { key: item.id, item, selected: selected.value === item.id, onRemove }),
         ),
       )
   },

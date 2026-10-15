@@ -830,7 +830,6 @@ them. The text of each license is above.
 
 ```
 adler2@2.0.1 - 0BSD OR MIT OR Apache-2.0 - Copyright (C) Jonas Schievink <jonasschievink@gmail.com>
-ahash@0.8.12 - MIT OR Apache-2.0 - Copyright (c) 2018 Tom Kaitchuck
 aho-corasick@1.1.5 - Unlicense OR MIT - Copyright (c) 2015 Andrew Gallant
 allocator-api2@0.2.21 - MIT OR Apache-2.0 - authors: Zakarum <zaq.dev@icloud.com>
 anyhow@1.0.104 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.com>
@@ -838,13 +837,10 @@ append-only-vec@0.1.8 - MIT OR Apache-2.0 - authors: David Roundy <daveroundy@gm
 arcstr@1.2.0 - Apache-2.0 OR MIT OR Zlib - Copyright 2016 The Miri Developers - Copyright (c) 2020 Thom Chiovoloni
 arrayref@0.3.9 - BSD-2-Clause - Copyright (c) 2015 David Roundy <roundyd@physics.oregonstate.edu>
 arrayvec@0.7.8 - MIT OR Apache-2.0 - Copyright (c) Ulrik Sverdrup "bluss" 2015-2023
-ast_node@5.0.0 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 async-scoped@0.9.0 - Apache-2.0/MIT - authors: Rajsekar Manokaran <rajsekar@gmail.com>
 base-encode@0.3.1 - MIT - authors: Janis Pritzkau <janispritzkau@gmail.com>
 base64-simd@0.8.0 - MIT
-base64@0.22.1 - MIT OR Apache-2.0 - Copyright (c) 2015 Alice Maz
 base64@0.23.1 - MIT OR Apache-2.0 - Copyright (c) 2025 Alice Maz, Marshall Pierce
-better_scoped_tls@1.0.1 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 bitflags@2.13.2 - MIT OR Apache-2.0 - Copyright (c) 2014 The Rust Project Developers
 blake3@1.8.7 - CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception - Copyright 2019 Jack O'Connor and Samuel Neves
 block-buffer@0.10.4 - MIT OR Apache-2.0 - Copyright (c) 2018-2019 The RustCrypto Project Developers
@@ -854,10 +850,7 @@ bytecount@0.6.9 - Apache-2.0/MIT - Copyright (c) 2017 The bytecount Developers
 bytemuck@1.25.2 - Zlib OR Apache-2.0 OR MIT - Copyright (c) 2019 Daniel "Lokathor" Gee.
 byteorder-lite@0.1.0 - Unlicense OR MIT - Copyright (c) 2015 Andrew Gallant
 byteorder@1.5.0 - Unlicense OR MIT - Copyright (c) 2015 Andrew Gallant
-bytes-str@0.2.9 - Apache-2.0 - authors: Donny <kdy1997.dev@gmail.com>
 bytes@1.12.1 - MIT - Copyright (c) 2018 Carl Lerche
-capacity_builder@0.5.0 - MIT - Copyright (c) 2024 David Sherret
-capacity_builder_macros@0.3.0 - MIT
 castaway@0.2.4 - MIT - Copyright (c) 2021 Stephen M. Coakley
 cfg-if@1.0.5 - MIT OR Apache-2.0 - Copyright (c) 2014 Alex Crichton
 cobs@0.3.0 - MIT OR Apache-2.0 - Copyright (c) 2015 The cobs.rs Developers
@@ -881,11 +874,6 @@ css_dataset@0.4.1 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 ctrlc@3.5.2 - MIT/Apache-2.0 - Copyright 2017 CtrlC developers
 dashmap@6.2.1 - MIT - Copyright (c) 2019 Acrimon
 data-url@0.3.2 - MIT OR Apache-2.0 - Copyright (c) 2013-2025 The rust-url developers
-deno_ast@0.53.3 - MIT - Copyright (c) 2018-2024 the Deno authors
-deno_error@0.7.3 - MIT - Copyright (c) 2018-2024 the Deno authors
-deno_error_macro@0.7.3 - MIT - authors: the Deno authors
-deno_media_type@0.4.0 - MIT - Copyright (c) 2018-2025 the Deno authors
-deno_terminal@0.2.3 - MIT - Copyright (c) 2018-2024 the Deno authors
 derive_more-impl@2.1.1 - MIT - Copyright (c) 2016 Jelte Fennema
 derive_more@2.1.1 - MIT - Copyright (c) 2016 Jelte Fennema
 digest@0.10.7 - MIT OR Apache-2.0 - Copyright (c) 2017 Artyom Pavlov
@@ -897,8 +885,6 @@ dprint-core@0.69.1 - MIT - Copyright (c) 2019 David Sherret
 dprint-core@0.70.0 - MIT - Copyright (c) 2019 David Sherret
 dprint-plugin-json@0.25.2 - MIT - Copyright (c) 2020 David Sherret
 dprint-plugin-markdown@0.26.0 - MIT - Copyright (c) 2020-2023 David Sherret
-dprint-plugin-typescript@0.96.1 - MIT - Copyright (c) 2019-2022 David Sherret
-dprint-swc-ext@0.26.1 - MIT - authors: David Sherret <dsherret@gmail.com>
 dragonbox_ecma@0.1.12 - Apache-2.0 WITH LLVM-exception OR BSL-1.0 - authors: David Tolnay <dtolnay@gmail.com>, magic-akari <akari.ccino@gmail.com>
 either@1.19.0 - MIT OR Apache-2.0 - Copyright (c) 2015
 embedded-io@0.4.0 - MIT OR Apache-2.0 - Copyright (c) 2022 The embedded-io authors
@@ -919,7 +905,6 @@ float-cmp@0.9.0 - MIT - Copyright (c) 2014-2020 Optimal Computing (NZ) Ltd
 foldhash@0.1.5 - Zlib - Copyright (c) 2024 Orson Peters
 foldhash@0.2.0 - Zlib - Copyright (c) 2024 Orson Peters
 form_urlencoded@1.2.2 - MIT OR Apache-2.0 - Copyright (c) 2013-2016 The rust-url developers
-from_variant@3.0.0 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 fsevent-sys@4.1.0 - MIT - Copyright (c) 2015 Pierre Baillet
 futures-channel@0.3.34 - MIT OR Apache-2.0 - Copyright (c) 2016 Alex Crichton - Copyright (c) 2017 The Tokio Authors
 futures-core@0.3.34 - MIT OR Apache-2.0 - Copyright (c) 2016 Alex Crichton - Copyright (c) 2017 The Tokio Authors
@@ -933,7 +918,6 @@ futures@0.3.34 - MIT OR Apache-2.0 - Copyright (c) 2016 Alex Crichton - Copyrigh
 generic-array@0.14.7 - MIT - Copyright (c) 2015 Bartłomiej Kamiński
 getrandom@0.2.17 - MIT OR Apache-2.0 - Copyright (c) 2018-2024 The rust-random Project Developers - Copyright (c) 2014 The Rust Project Developers
 getrandom@0.4.3 - MIT OR Apache-2.0 - Copyright (c) 2018-2026 The rust-random Project Developers - Copyright (c) 2014 The Rust Project Developers
-gif@0.13.3 - MIT OR Apache-2.0 - Copyright (c) 2015 nwin
 gif@0.14.2 - MIT OR Apache-2.0 - Copyright (c) 2015 nwin
 halfbrown@0.4.0 - Apache-2.0/MIT - authors: Heinz N. Gies <heinz@licenser.net>
 hashbrown@0.14.5 - MIT OR Apache-2.0 - Copyright (c) 2016 Amanieu d'Antras
@@ -942,7 +926,6 @@ hashbrown@0.16.1 - MIT OR Apache-2.0 - Copyright (c) 2016 Amanieu d'Antras
 hashbrown@0.17.1 - MIT OR Apache-2.0 - Copyright (c) 2016 Amanieu d'Antras
 heck@0.5.0 - MIT OR Apache-2.0 - Copyright (c) 2015 The Rust Project Developers
 hmac-sha1-compact@1.1.8 - ISC - Copyright (c) 2021-2026, Frank Denis.
-hstr@3.0.6 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 http@1.5.0 - MIT OR Apache-2.0 - Copyright 2017 http-rs authors - Copyright (c) 2017 http-rs authors
 httparse@1.10.1 - MIT OR Apache-2.0 - Copyright (c) 2015-2025 Sean McArthur
 icu_collections@2.3.0 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
@@ -966,7 +949,6 @@ indexmap@2.14.2 - Apache-2.0 OR MIT - Copyright (c) 2016--2017
 infer@0.22.0 - MIT - Copyright (c) 2019 Bojan
 inotify-sys@0.1.8 - ISC - Copyright (c) Hanno Braun and contributors
 inotify@0.11.5 - ISC - Copyright (c) Hanno Braun and contributors
-is-macro@0.3.8 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 itertools@0.14.0 - MIT OR Apache-2.0 - Copyright (c) 2015
 itertools@0.15.0 - MIT OR Apache-2.0 - Copyright (c) 2015
 itoa@1.0.18 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.com>
@@ -992,6 +974,7 @@ litemap@0.8.3 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 202
 lock_api@0.4.14 - MIT OR Apache-2.0 - Copyright (c) 2016 The Rust Project Developers
 log@0.4.34 - MIT OR Apache-2.0 - Copyright (c) 2014 The Rust Project Developers
 malva@0.16.0 - MIT - authors: Pig Fang <g-plane@hotmail.com>
+markdown@1.0.0 - MIT - Copyright (c) 2022 Titus Wormer <tituswormer@gmail.com>
 markup_fmt@0.27.5 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 memchr@2.8.3 - Unlicense OR MIT - Copyright (c) 2015 Andrew Gallant
 mime@0.3.17 - MIT OR Apache-2.0 - Copyright (c) 2014 Sean McArthur
@@ -999,7 +982,7 @@ miniz_oxide@0.8.9 - MIT OR Zlib OR Apache-2.0 - Copyright 2013-2014 RAD Game Too
 miniz_oxide@0.9.1 - MIT OR Zlib OR Apache-2.0 - Copyright 2013-2014 RAD Game Tools and Valve Software - Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC - Copyright (c) 2017 Frommi - Copyright (c) 2017-2024 oyvindln - Copyright (c) 2020 Frommi
 mio@1.2.4 - MIT - Copyright (c) 2014 Carl Lerche and other MIO contributors
 moxcms@0.8.1 - BSD-3-Clause OR Apache-2.0 - Copyright 2024 Radzivon Bartoshyk - Copyright (c) Radzivon Bartoshyk. All rights reserved.
-new_debug_unreachable@1.0.6 - MIT - Copyright (c) 2015 Jonathan Reem
+natord@1.0.9 - MIT - Copyright (c) 2014, Kang Seonghoon.
 nibble_vec@0.1.0 - MIT - Copyright (c) 2015 Michael Sproul
 nix@0.31.3 - MIT - Copyright (c) 2015 Carl Lerche + nix-rust Authors
 nodejs-built-in-modules@1.0.0 - MIT - authors: Boshen <boshenc@gmail.com>
@@ -1009,7 +992,6 @@ nonmax@0.5.5 - MIT OR Apache-2.0 - Copyright (c) 2020 Lucien Greathouse
 notify-types@2.1.0 - MIT OR Apache-2.0 - Copyright 2023 Notify Contributors - Copyright (c) 2023 Notify Contributors
 notify@8.2.0 - CC0-1.0 - authors: Félix Saparelli <me@passcod.name>, Daniel Faust <hessijames@gmail.com>, Aron Heinecke <Ox0p54r36@t-online.de>
 nu-ansi-term@0.50.3 - MIT - Copyright (c) 2014 Benjamin Sago - Copyright (c) 2021-2022 The Nushell Project Developers
-num-bigint@0.4.8 - MIT OR Apache-2.0 - Copyright (c) 2014 The Rust Project Developers
 num-bigint@0.5.1 - MIT OR Apache-2.0 - Copyright (c) 2014 The Rust Project Developers
 num-integer@0.1.47 - MIT OR Apache-2.0 - Copyright (c) 2014 The Rust Project Developers
 num-traits@0.2.19 - MIT OR Apache-2.0 - Copyright (c) 2014 The Rust Project Developers
@@ -1030,8 +1012,11 @@ oxc_data_structures@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc con
 oxc_diagnostics@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
 oxc_ecmascript@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
 oxc_estree@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
+oxc_formatter@0.71.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
+oxc_formatter_core@0.71.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
 oxc_index@5.0.0 - MIT - authors: Boshen <boshenc@gmail.com>
 oxc_isolated_declarations@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
+oxc_jsdoc@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
 oxc_mangler@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
 oxc_minifier@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
 oxc_parser@0.153.0 - MIT - authors: Boshen <boshenc@gmail.com>, Oxc contributors
@@ -1049,13 +1034,9 @@ parking_lot_core@0.9.12 - MIT OR Apache-2.0 - Copyright (c) 2016 The Rust Projec
 pathdiff@0.2.3 - MIT/Apache-2.0 - Copyright 2017 The Rust Project Developers
 percent-encoding@2.3.2 - MIT OR Apache-2.0 - Copyright (c) 2013-2025 The rust-url developers
 petgraph@0.8.3 - MIT OR Apache-2.0 - Copyright (c) 2015
-phf@0.11.3 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
 phf@0.14.0 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
-phf_generator@0.11.3 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
 phf_generator@0.14.0 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
-phf_macros@0.11.3 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
 phf_macros@0.14.0 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
-phf_shared@0.11.3 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
 phf_shared@0.14.0 - MIT - Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
 pico-args@0.5.0 - MIT - Copyright (c) 2019 Yevhenii Reizner
 pin-project-internal@1.1.13 - Apache-2.0 OR MIT
@@ -1068,7 +1049,6 @@ postcard@1.1.3 - MIT OR Apache-2.0 - Copyright (c) 2019 Anthony James Munns
 potential_utf@0.1.6 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
 pretty_yaml@0.6.0 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 proc-macro2@1.0.107 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.com>, Alex Crichton <alex@alexcrichton.com>
-psm@0.1.32 - MIT OR Apache-2.0 - Copyright © 2018, Simonas Kazlauskas
 pulldown-cmark-escape@0.11.0 - MIT - Copyright 2015 Google Inc. All rights reserved.
 pulldown-cmark@0.13.4 - MIT - Copyright 2015 Google Inc. All rights reserved.
 pxfm@0.1.30 - BSD-3-Clause OR Apache-2.0 - Copyright 2024 Radzivon Bartoshyk - Copyright (c) Radzivon Bartoshyk. All rights reserved.
@@ -1078,8 +1058,6 @@ r-efi@6.0.0 - MIT OR Apache-2.0 OR LGPL-2.1-or-later
 radix_trie@0.3.0 - MIT - Copyright (c) 2015 Michael Sproul
 raffia@0.12.3 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 raffia_macro@0.2.0 - MIT - authors: Pig Fang <g-plane@hotmail.com>
-rand@0.8.8 - MIT OR Apache-2.0 - Copyright 2018 Developers of the Rand project - Copyright (c) 2014 The Rust Project Developers
-rand_core@0.6.4 - MIT OR Apache-2.0 - Copyright 2018 Developers of the Rand project - Copyright (c) 2014 The Rust Project Developers
 rayon-core@1.13.0 - MIT OR Apache-2.0 - Copyright (c) 2010 The Rust Project Developers
 rayon@1.12.0 - MIT OR Apache-2.0 - Copyright (c) 2010 The Rust Project Developers
 redox_syscall@0.5.18 - MIT - Copyright (c) 2017 Redox OS Developers
@@ -1136,7 +1114,6 @@ rustversion@1.0.23 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.co
 ryu@1.0.23 - Apache-2.0 OR BSL-1.0 - authors: David Tolnay <dtolnay@gmail.com>
 same-file@1.0.6 - Unlicense/MIT - Copyright (c) 2017 Andrew Gallant
 schannel@0.1.29 - MIT - Copyright (c) 2015 steffengy
-scoped-tls@1.0.1 - MIT/Apache-2.0 - Copyright (c) 2014 Alex Crichton
 scopeguard@1.2.0 - MIT OR Apache-2.0 - Copyright (c) 2016-2019 Ulrik Sverdrup "bluss" and scopeguard developers
 security-framework-sys@2.17.0 - MIT OR Apache-2.0 - Copyright (c) 2015 Steven Fackler
 security-framework@3.7.0 - MIT OR Apache-2.0 - Copyright (c) 2015 Steven Fackler
@@ -1154,30 +1131,18 @@ simd-json@0.18.1 - Apache-2.0 OR MIT - authors: Heinz N. Gies <heinz@licenser.ne
 simd_cesu8@1.2.0 - Apache-2.0 OR MIT - authors: Sean C. Roach <me@seancroach.dev>
 simdutf8@0.1.5 - MIT OR Apache-2.0 - authors: Hans Kratz <hans@appfour.com>
 simplecss@0.2.2 - Apache-2.0 OR MIT - Copyright (c) 2018 Reizner Evgeniy
-siphasher@0.3.11 - MIT/Apache-2.0 - Copyright 2012-2016 The Rust Project Developers. - Copyright 2016-2023 Frank Denis.
 siphasher@1.0.4 - MIT OR Apache-2.0 - Copyright 2012-2016 The Rust Project Developers. - Copyright 2016-2026 Frank Denis.
 slab@0.4.12 - MIT - Copyright (c) 2019 Carl Lerche
 smallvec@1.16.3 - MIT OR Apache-2.0 - Copyright (c) 2018 The Servo Project Developers
-smartstring@1.0.1 - MPL-2.0+ - authors: Bodil Stokke <bodil@bodil.org>
 smawk@0.3.3 - MIT - Copyright (c) 2017 Martin Geisler
 stable_deref_trait@1.2.1 - MIT OR Apache-2.0 - Copyright (c) 2017 Robert Grosse
-stacker@0.1.25 - MIT OR Apache-2.0 - Copyright (c) 2014 Alex Crichton
 static_assertions@1.1.0 - MIT OR Apache-2.0 - Copyright (c) 2017 Nikolai Vazquez
 str_indices@0.4.4 - MIT OR Apache-2.0 - authors: Nathan Vegdahl <cessen@cessen.com>
 strict-num@0.1.1 - MIT - Copyright (c) 2022 Yevhenii Reizner
-string_enum@1.0.2 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 string_wizard@1.2.13 - MIT
 subtle@2.6.1 - BSD-3-Clause - Copyright (c) 2016-2017 Isis Agora Lovecruft, Henry de Valence. All rights reserved. - Copyright (c) 2016-2024 Isis Agora Lovecruft. All rights reserved.
 sugar_path@3.0.0 - MIT - Copyright (c) 2022 HeYunfei
 svgtypes@0.16.1 - Apache-2.0 OR MIT - Copyright (c) 2018 Yevhenii Reizner
-swc_atoms@9.0.0 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
-swc_common@17.0.1 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
-swc_ecma_ast@18.0.0 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
-swc_ecma_lexer@26.0.0 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
-swc_ecma_parser@27.0.7 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
-swc_eq_ignore_macros@1.0.1 - Apache-2.0 - authors: 강동윤 <kdy1@dudy.kr>
-swc_macros_common@1.0.1 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
-swc_visit@2.0.2 - Apache-2.0 - authors: 강동윤 <kdy1997.dev@gmail.com>
 syn@1.0.109 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.com>
 syn@2.0.119 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.com>
 syn@3.0.7 - MIT OR Apache-2.0 - authors: David Tolnay <dtolnay@gmail.com>
@@ -1202,7 +1167,6 @@ tracing-core@0.1.36 - MIT - Copyright (c) 2019 Tokio Contributors
 tracing-serde@0.2.0 - MIT - Copyright (c) 2019 Tokio Contributors
 tracing-subscriber@0.3.23 - MIT - Copyright (c) 2019 Tokio Contributors
 tracing@0.1.44 - MIT - Copyright (c) 2019 Tokio Contributors
-triomphe@0.1.17 - MIT OR Apache-2.0 - Copyright (c) 2019 Manish Goregaokar
 ts-rs-macros@12.0.1 - MIT - authors: Moritz Bischof <moritz.bischof1@gmail.com>
 ts-rs@12.0.1 - MIT - authors: Moritz Bischof <moritz.bischof1@gmail.com>
 typed-path@0.12.3 - MIT OR Apache-2.0 - authors: Chip Senkbeil <chip@senkbeil.org>
@@ -1210,6 +1174,7 @@ typedmap@0.6.0 - MIT OR Apache-2.0 - authors: Konrad Gołuchowski <kodieg@gmail.
 typenum@1.20.1 - MIT OR Apache-2.0 - Copyright 2014 Paho Lurie-Gregg - Copyright (c) 2014 Paho Lurie-Gregg
 unicase@2.10.0 - MIT OR Apache-2.0 - Copyright (c) 2014-2026 Sean McArthur
 unicode-id-start@1.5.0 - (MIT OR Apache-2.0) AND Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 1991-2023 Unicode, Inc.
+unicode-id@0.3.7 - MIT OR Apache-2.0 - Copyright (c) 2015 The Rust Project Developers
 unicode-ident@1.0.26 - (MIT OR Apache-2.0) AND Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 1991-2023 Unicode, Inc.
 unicode-segmentation@1.13.3 - MIT OR Apache-2.0 - Copyright (c) 2015 The Rust Project Developers
 unicode-width@0.2.2 - MIT OR Apache-2.0 - Copyright (c) 2015 The Rust Project Developers
@@ -1276,8 +1241,6 @@ yaml_parser@0.3.0 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 yansi@1.0.1 - MIT OR Apache-2.0 - Copyright 2017 Sergio Benitez - Copyright (c) 2017 Sergio Benitez
 yoke-derive@0.8.4 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
 yoke@0.8.3 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
-zerocopy-derive@0.8.62 - BSD-2-Clause OR Apache-2.0 OR MIT - Copyright 2023 The Fuchsia Authors - Copyright 2019 The Fuchsia Authors.
-zerocopy@0.8.62 - BSD-2-Clause OR Apache-2.0 OR MIT - Copyright 2023 The Fuchsia Authors - Copyright 2019 The Fuchsia Authors.
 zerofrom-derive@0.1.8 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
 zerofrom@0.1.8 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
 zeroize@1.9.1 - Apache-2.0 OR MIT - Copyright (c) 2018-2026 The RustCrypto Project Developers

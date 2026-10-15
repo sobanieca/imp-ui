@@ -3,13 +3,14 @@ export const slides = [
     key: 'buildless',
     eyebrow: 'No build step',
     title: 'The browser runs the file that you typed',
-    lead: 'There is no compile step, no JSX and no virtual DOM. A component is a plain function ' +
-      'that returns a real DOM node.',
+    lead:
+      'There is no compile step, no JSX and no virtual DOM. A component is a plain function '
+      + 'that returns a real DOM node.',
     points: [
-      'One binary holds the dev server, the test runner, the linter, the formatter and the ' +
-      'dependency manager.',
-      'A unit test runs in process, with no browser. An end-to-end test runs in a real headless ' +
-      'Chrome, and a spec records itself as a GIF.',
+      'One binary holds the dev server, the test runner, the linter, the formatter and the '
+        + 'dependency manager.',
+      'A unit test runs in process, with no browser. An end-to-end test runs in a real headless '
+        + 'Chrome, and a spec records itself as a GIF.',
       'Production is the one place where a build exists. It emits plain static files.',
     ],
     code: {
@@ -25,8 +26,9 @@ imp fmt            # one formatter`,
     key: 'state',
     eyebrow: 'State',
     title: 'State lives in the parent component',
-    lead: 'A component initializes a named state. Every component under it reads the same state ' +
-      'by name.',
+    lead:
+      'A component initializes a named state. Every component under it reads the same state '
+      + 'by name.',
     points: [
       'There is no store to configure, no provider to wrap and no re-render.',
       'A change updates only the DOM that you bound to it.',
@@ -38,13 +40,14 @@ imp fmt            # one formatter`,
     key: 'component',
     eyebrow: 'Components',
     title: 'A component is a web component',
-    lead: 'The name that you choose is the HTML tag. The component renders into its own shadow ' +
-      'root.',
+    lead:
+      'The name that you choose is the HTML tag. The component renders into its own shadow '
+      + 'root.',
     points: [
-      'The setup runs after the browser connects the element, so the state of a parent is ' +
-      'already there.',
-      'You call a component like any element factory, and you pass it the same kinds of ' +
-      'arguments.',
+      'The setup runs after the browser connects the element, so the state of a parent is '
+        + 'already there.',
+      'You call a component like any element factory, and you pass it the same kinds of '
+        + 'arguments.',
     ],
     code: {
       language: 'js',
@@ -67,11 +70,12 @@ export const counter = component('app-counter', {
     key: 'styling',
     eyebrow: 'Styling',
     title: 'The styles stay inside the component',
-    lead: 'A styles key holds the CSS of the component. The shadow root keeps it there, and ' +
-      'nothing leaks out.',
+    lead:
+      'A styles key holds the CSS of the component. The shadow root keeps it there, and '
+      + 'nothing leaks out.',
     points: [
-      'Every colour, length and font reads an --imp-* token. A theme change reaches your ' +
-      'component with no code.',
+      'Every colour, length and font reads an --imp-* token. A theme change reaches your '
+        + 'component with no code.',
       'Logical properties make the component correct in both text directions.',
     ],
     code: {
@@ -97,8 +101,8 @@ export const counter = component('app-counter', {
     lead: 'The browser console, every error and every request stream to your terminal.',
     points: [
       'The whole session lands in a plain text log. imp logs -f follows it.',
-      'The review widget sits on every page. Click an element, describe what is wrong, and imp ' +
-      'writes a text file with the page and the element.',
+      'The review widget sits on every page. Click an element, describe what is wrong, and imp '
+        + 'writes a text file with the page and the element.',
       'Your agent reads the reviews with imp review, so it does not guess what you meant.',
     ],
     code: {
@@ -130,8 +134,9 @@ button({ variant: 'primary', events: { click: search } }, icon(luSearch), 'Searc
     key: 'map',
     eyebrow: 'The app map',
     title: 'The whole app on one screen',
-    lead: 'One file names every screen, its path and its purpose. The router binds a component ' +
-      'to each node.',
+    lead:
+      'One file names every screen, its path and its purpose. The router binds a component '
+      + 'to each node.',
     points: [
       'imp map prints the tree, so a person and an agent read the same plan.',
       'A node with no screen yet renders a placeholder, so the plan runs before the code exists.',
@@ -151,8 +156,9 @@ export const app = appMap({
     key: 'mocks',
     eyebrow: 'Mocks',
     title: 'A backend that does not exist yet',
-    lead: 'Point imp.json at a folder of *.mock.js files. The dev server answers the requests ' +
-      'itself.',
+    lead:
+      'Point imp.json at a folder of *.mock.js files. The dev server answers the requests '
+      + 'itself.',
     points: [
       'The app runs before the first endpoint exists.',
       'The end-to-end tests run against the same mocks.',
@@ -175,8 +181,8 @@ export const app = appMap({
     title: 'One command line for the whole loop',
     lead: 'Every step of a project is a subcommand of imp. There is nothing to connect.',
     points: [
-      'Scaffold, serve, test, lint, format, preview, review, build, install and update come ' +
-      'from one binary.',
+      'Scaffold, serve, test, lint, format, preview, review, build, install and update come '
+        + 'from one binary.',
       'imp update pins the version of imp in the project, so every clone runs the same imp.',
     ],
     code: {
@@ -196,8 +202,9 @@ imp install marked    # vendor a dependency`,
     key: 'skill',
     eyebrow: 'imp skill',
     title: 'The manual, written for your agent',
-    lead: 'imp skill prints a manual out of the binary, at the exact version that the project ' +
-      'runs.',
+    lead:
+      'imp skill prints a manual out of the binary, at the exact version that the project '
+      + 'runs.',
     points: [
       'It works offline, and it makes no network call.',
       'The index costs one call. A subject costs one more.',
@@ -215,8 +222,9 @@ imp skill ./components/counter.js`,
     key: 'analytics',
     eyebrow: 'Analytics',
     title: 'See which parts of the UI work',
-    lead: 'imp helps you build the UI, and also measure how well it works for your users. It ' +
-      'counts the pages, the zones and the outcomes of your app.',
+    lead:
+      'imp helps you build the UI, and also measure how well it works for your users. It '
+      + 'counts the pages, the zones and the outcomes of your app.',
     points: [
       'Every page view is recorded, with no code per route.',
       'A zone counts how often any part of a screen is seen and used, with no code in the component.',

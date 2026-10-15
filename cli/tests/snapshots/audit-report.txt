@@ -8,7 +8,6 @@ node-forge@0.7.0 (in forge)
   GHSA-xxxx-yyyy-zzzz A second problem. - no fix yet
     https://osv.dev/vulnerability/GHSA-xxxx-yyyy-zzzz
 2 known vulnerabilities in 1 npm package, of 1 checked
-not checked: @std/encoding@1.0.10 - the OSV database has no records for jsr packages
 
 --- clean (false) ---
 no known vulnerabilities in 1 npm package

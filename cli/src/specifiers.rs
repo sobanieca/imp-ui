@@ -1,14 +1,13 @@
 use regex::Regex;
 use std::sync::LazyLock;
 
-pub static DEPENDENCY_SCHEME: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(npm|jsr):").unwrap());
+pub const NPM_PREFIX: &str = "npm:";
 
 pub static EXACT_VERSION: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\d+\.\d+\.\d+([-+][\w.-]+)?$").unwrap());
 
 static SPECIFIER_SHAPE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(@[^/@]+/[^/@]+|[^/@]+)(?:@([^/]+))?(/.*)?$").unwrap());
+    LazyLock::new(|| Regex::new(r"^(@[^/@:]+/[^/@:]+|[^/@:]+)(?:@([^/]+))?(/.*)?$").unwrap());
 
 pub static VALID_ALIAS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$").unwrap());
@@ -19,23 +18,17 @@ pub fn is_valid_alias(alias: &str) -> bool {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Specifier {
-    pub scheme: Option<String>,
+    pub npm_prefix: bool,
     pub name: String,
     pub version: Option<String>,
     pub subpath: String,
 }
 
 pub fn parse_specifier(input: &str) -> Option<Specifier> {
-    let scheme = DEPENDENCY_SCHEME
-        .captures(input)
-        .map(|caps| caps[1].to_string());
-    let rest = match &scheme {
-        Some(scheme) => &input[scheme.len() + 1..],
-        None => input,
-    };
-    let caps = SPECIFIER_SHAPE.captures(rest)?;
+    let rest = input.strip_prefix(NPM_PREFIX);
+    let caps = SPECIFIER_SHAPE.captures(rest.unwrap_or(input))?;
     Some(Specifier {
-        scheme,
+        npm_prefix: rest.is_some(),
         name: caps[1].to_string(),
         version: caps.get(2).map(|m| m.as_str().to_string()),
         subpath: caps

@@ -62,24 +62,24 @@ discovery.
   test it clears every `.calls` array, and restores any method that somebody wrapped **during** a
   running test. A wrap at module level stays. So there is no surface to reset or to restore by hand.
 - **A module mock is a rewrite of the resolution at bundle time, and not a registry at runtime.**
-  imp compiles each test file into one bundle. An import across modules is inlined. So there
-  is no module boundary at runtime to intercept, in the way that Vitest intercepts one. So
+  imp compiles each test file into one bundle. An import across modules is inlined. So there is no
+  module boundary at runtime to intercept, in the way that Vitest intercepts one. So
   `mockModule(specifier, factory)` happens where imp already owns the seam, which is the resolution.
   Before it bundles, imp scans the file statically for a `mockModule('...', ...)` call. It reads a
   string literal as a specifier, and nothing else. It resolves each specifier to a **canonical
   key**. A relative path becomes the absolute path of the real file, after imp resolves an extension
   or an index, and canonicalizes it with `realPath`. A bare specifier is a dependency alias from
   `imp.json`. imp reads the export names of the real module with the parser of its linter, and it
-  executes nothing. A plugin for the resolution then redirects **every** import that resolves
-  to that key, at any depth in the graph, to a generated virtual module. That module runs the
-  factory once, and feeds it `{ spy, orig }`. It exports exactly the names of the real module, and
-  fills any name that the factory omitted with a fresh `spy()`. `orig()` is a live `import` of the
-  real file. So a partial mock, such as `{ ...orig(), one: spy() }`, keeps the rest real. To key by
-  the resolved file, and not by the string of the specifier, is what makes `'../http.js'` and
-  `'./http.js'` collapse to one mock. It is also what makes an npm or jsr dependency mockable by its
-  alias. imp inlines the factory into the virtual module. So the factory runs before the module
-  under test loads, which matches the order of evaluation in jest. So the factory cannot close over
-  a local variable of the test file, and jest imposes the same constraint.
+  executes nothing. A plugin for the resolution then redirects **every** import that resolves to
+  that key, at any depth in the graph, to a generated virtual module. That module runs the factory
+  once, and feeds it `{ spy, orig }`. It exports exactly the names of the real module, and fills any
+  name that the factory omitted with a fresh `spy()`. `orig()` is a live `import` of the real file.
+  So a partial mock, such as `{ ...orig(), one: spy() }`, keeps the rest real. To key by the
+  resolved file, and not by the string of the specifier, is what makes `'../http.js'` and
+  `'./http.js'` collapse to one mock. It is also what makes an npm dependency mockable by its alias.
+  imp inlines the factory into the virtual module. So the factory runs before the module under test
+  loads, which matches the order of evaluation in jest. So the factory cannot close over a local
+  variable of the test file, and jest imposes the same constraint.
 - **The model of execution is imp's own runner, in the page.** imp bundles each test file with its
   embedded bundler. That resolves `imp`, `imp/test`, a vendored dependency alias, and a relative
   import, with the same resolution as `imp build`. imp starts a small server on an ephemeral port

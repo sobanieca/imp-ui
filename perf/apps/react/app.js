@@ -45,10 +45,7 @@ const ListApp = ({ initialRows }) => {
   handles.rows = rows
   handles.setRows = setRows
   handles.setSelected = setSelected
-  const onRemove = useCallback(
-    (id) => setRows((items) => items.filter((it) => it.id !== id)),
-    [],
-  )
+  const onRemove = useCallback((id) => setRows((items) => items.filter((it) => it.id !== id)), [])
   return h(
     'ul',
     null,
@@ -61,7 +58,7 @@ const DeepContext = createContext(0)
 const DeepLeaf = () => h('span', { className: 'deep' }, String(useContext(DeepContext)))
 
 const DeepNode = memo(({ depth }) =>
-  h('div', null, depth === 0 ? h(DeepLeaf) : h(DeepNode, { depth: depth - 1 }))
+  h('div', null, depth === 0 ? h(DeepLeaf) : h(DeepNode, { depth: depth - 1 })),
 )
 
 const DeepApp = ({ depth }) => {

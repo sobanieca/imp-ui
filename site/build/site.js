@@ -56,7 +56,10 @@ const PAGE_ORDER = [
   'browser-support',
 ]
 
-const MARKS = [['mark-dark.svg', 'dark'], ['mark-light.svg', 'light']]
+const MARKS = [
+  ['mark-dark.svg', 'dark'],
+  ['mark-light.svg', 'light'],
+]
 
 const SECTIONS = [
   { href: '/', label: 'Overview', isCurrent: (route) => route === '' },
@@ -87,10 +90,10 @@ const highlight = (source, language) => {
   return lines
     .map((line) =>
       tokenNodes(line, (className, text) => `<span class="${className}">${escape(text)}</span>`)
-        .map((
-          node,
-        ) => (typeof node === 'string' && !node.startsWith('<span') ? escape(node) : node))
-        .join('')
+        .map((node) =>
+          typeof node === 'string' && !node.startsWith('<span') ? escape(node) : node,
+        )
+        .join(''),
     )
     .join('\n')
 }
@@ -106,7 +109,11 @@ const markdownRenderer = (markdown) => (text) => {
 
 const readTitle = (markdown) => markdown.match(/^# (.+)$/m)?.[1] ?? ''
 
-const textOf = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+const textOf = (html) =>
+  html
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 const readDescription = (html) => {
   const paragraph = html.match(/<p>([\s\S]*?)<\/p>/)?.[1] ?? ''
@@ -137,25 +144,26 @@ const renderDocs = (docs, render) => {
 
 const wrapOverview = (html, withHero, installOrigin) => {
   const chunks = html.split(SECTION_START)
-  return chunks.map((chunk, index) =>
-    withHero && index === 0
-      ? `<div class="hero">${
-        chunk.replace(NOTICE_SLOT, renderNotice()).replace(
-          INSTALL_SLOT,
-          renderInstall(installOrigin),
-        )
-      }</div>`
-      : `<section class="section">${chunk}</section>`
-  ).join('')
+  return chunks
+    .map((chunk, index) =>
+      withHero && index === 0
+        ? `<div class="hero">${chunk
+            .replace(NOTICE_SLOT, renderNotice())
+            .replace(INSTALL_SLOT, renderInstall(installOrigin))}</div>`
+        : `<section class="section">${chunk}</section>`,
+    )
+    .join('')
 }
 
 const renderOverview = (markdown, render, installOrigin) => {
   const parts = markdown.split(OVERVIEW_SLOT)
-  const html = parts.map((part, index) => {
-    if (index % 2 === 1) return OVERVIEW_BLOCKS[part]()
-    if (part.trim() === '') return ''
-    return wrapOverview(render(part), index === 0, installOrigin)
-  }).join('')
+  const html = parts
+    .map((part, index) => {
+      if (index % 2 === 1) return OVERVIEW_BLOCKS[part]()
+      if (part.trim() === '') return ''
+      return wrapOverview(render(part), index === 0, installOrigin)
+    })
+    .join('')
   return { description: readDescription(render(parts[0])), html }
 }
 
@@ -165,7 +173,9 @@ const tokensOf = (scheme) => ({
 })
 
 const tokenRules = (tokens) =>
-  Object.entries(tokens).map(([name, value]) => `  --imp-${name}: ${value};`).join('\n')
+  Object.entries(tokens)
+    .map(([name, value]) => `  --imp-${name}: ${value};`)
+    .join('\n')
 
 const stylesheet = () => `
 :root {
@@ -586,61 +596,68 @@ const earlyScript = () =>
     </script>`
 
 const svgIcon = (className, elements) =>
-  `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
-  `stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
-  elements.map(([tag, attributes]) =>
-    `<${tag} ${
-      Object.entries(attributes).map(([name, value]) => `${name}="${escape(value)}"`).join(' ')
-    }/>`
-  ).join('') +
-  `</svg>`
+  `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" `
+  + `stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+  + elements
+    .map(
+      ([tag, attributes]) =>
+        `<${tag} ${Object.entries(attributes)
+          .map(([name, value]) => `${name}="${escape(value)}"`)
+          .join(' ')}/>`,
+    )
+    .join('')
+  + `</svg>`
 
 const link = (href, label, current = false) =>
   `<a href="${escape(href)}"${current ? ' aria-current="page"' : ''}>${escape(label)}</a>`
 
 const bar = (route, version) =>
-  `<header class="bar">` +
-  `<a class="brand" href="/" aria-label="imp - home"><img src="/mark-dark.svg" alt="">` +
-  `<span>imp</span></a>` +
-  `<nav aria-label="Sections"><ul class="links">` +
-  SECTIONS.map((section) =>
-    `<li>${link(section.href, section.label, section.isCurrent(route))}</li>`
-  ).join('') +
-  `</ul></nav>` +
-  `<div class="end">` +
-  `<button class="scheme" type="button" aria-label="Switch the theme">` +
-  `${svgIcon('sun', luSun)}${svgIcon('moon', luMoon)}</button>` +
-  `<span class="version">v${escape(version)}</span>` +
-  `<div class="bars" aria-hidden="true"><div class="main-1"></div>` +
-  `<div class="main-2"></div><div class="main-3"></div></div>` +
-  `</div></header>`
+  `<header class="bar">`
+  + `<a class="brand" href="/" aria-label="imp - home"><img src="/mark-dark.svg" alt="">`
+  + `<span>imp</span></a>`
+  + `<nav aria-label="Sections"><ul class="links">`
+  + SECTIONS.map(
+    (section) => `<li>${link(section.href, section.label, section.isCurrent(route))}</li>`,
+  ).join('')
+  + `</ul></nav>`
+  + `<div class="end">`
+  + `<button class="scheme" type="button" aria-label="Switch the theme">`
+  + `${svgIcon('sun', luSun)}${svgIcon('moon', luMoon)}</button>`
+  + `<span class="version">v${escape(version)}</span>`
+  + `<div class="bars" aria-hidden="true"><div class="main-1"></div>`
+  + `<div class="main-2"></div><div class="main-3"></div></div>`
+  + `</div></header>`
 
 const corner = () =>
-  `<div class="corner" aria-hidden="true"><div class="geometry"><div class="grid"></div>` +
-  GEOMETRY_SQUARES.map(({ tone, column, row, span = 1 }) =>
-    `<div class="square ${tone}" style="--column: ${column}; --row: ${row}; --span: ${span}"></div>`
-  ).join('') +
-  `</div></div>`
+  `<div class="corner" aria-hidden="true"><div class="geometry"><div class="grid"></div>`
+  + GEOMETRY_SQUARES.map(
+    ({ tone, column, row, span = 1 }) =>
+      `<div class="square ${tone}" style="--column: ${column}; --row: ${row}; --span: ${span}"></div>`,
+  ).join('')
+  + `</div></div>`
 
 const docsNav = (pages, currentSlug) =>
-  `<nav aria-label="Documentation pages"><ul class="pages">` +
-  pages.map((page) =>
-    `<li>${link(`/docs/${page.slug}`, page.label, page.slug === currentSlug)}</li>`
-  ).join('') +
-  `</ul></nav>`
+  `<nav aria-label="Documentation pages"><ul class="pages">`
+  + pages
+    .map((page) => `<li>${link(`/docs/${page.slug}`, page.label, page.slug === currentSlug)}</li>`)
+    .join('')
+  + `</ul></nav>`
 
-const EXAMPLES_NOTE = `<p>For complete apps that are built with imp, see ` +
-  `<a href="https://github.com/sobanieca/imp-examples">imp-examples</a>. Two of them run live: ` +
-  `<a href="https://sobanieca.github.io/imp-examples/observability/">Beacon</a>, an ` +
-  `observability SPA, and <a href="https://sobanieca.github.io/imp-examples/brickfall/">` +
-  `Brickfall</a>, a game that installs as a PWA.</p>`
+const EXAMPLES_NOTE =
+  `<p>For complete apps that are built with imp, see `
+  + `<a href="https://github.com/sobanieca/imp-examples">imp-examples</a>. Two of them run live: `
+  + `<a href="https://sobanieca.github.io/imp-examples/observability/">Beacon</a>, an `
+  + `observability SPA, and <a href="https://sobanieca.github.io/imp-examples/brickfall/">`
+  + `Brickfall</a>, a game that installs as a PWA.</p>`
 
 const docsIndex = (pages) =>
-  `<ul>` +
-  pages.map((page) =>
-    `<li>${link(`/docs/${page.slug}`, page.label)} - ${escape(page.description)}</li>`
-  ).join('') +
-  `</ul>`
+  `<ul>`
+  + pages
+    .map(
+      (page) => `<li>${link(`/docs/${page.slug}`, page.label)} - ${escape(page.description)}</li>`,
+    )
+    .join('')
+  + `</ul>`
 
 const pagesOf = ({ docs, overview }) => [
   {
@@ -661,18 +678,20 @@ const pagesOf = ({ docs, overview }) => [
   {
     route: 'docs',
     title: 'Docs - imp',
-    description: 'The documentation of imp: the CLI, rendering, components, state, routing, ' +
-      'theming, testing and more.',
-    main: `<div class="docs">${docsNav(docs, null)}<article class="paper md"><h1>Docs</h1>${
-      docsIndex(docs)
-    }${EXAMPLES_NOTE}</article></div>`,
+    description:
+      'The documentation of imp: the CLI, rendering, components, state, routing, '
+      + 'theming, testing and more.',
+    main: `<div class="docs">${docsNav(docs, null)}<article class="paper md"><h1>Docs</h1>${docsIndex(
+      docs,
+    )}${EXAMPLES_NOTE}</article></div>`,
   },
   ...docs.map((page) => ({
     route: `docs/${page.slug}`,
     title: `${page.label} - imp`,
     description: page.description,
-    main: `<div class="docs">${docsNav(docs, page.slug)}<article class="paper md">${page.html}` +
-      `</article></div>`,
+    main:
+      `<div class="docs">${docsNav(docs, page.slug)}<article class="paper md">${page.html}`
+      + `</article></div>`,
   })),
 ]
 
@@ -711,10 +730,10 @@ const documentOf = (page, version, origin) => {
 }
 
 const sitemapOf = (pages, origin) =>
-  `<?xml version="1.0" encoding="UTF-8"?>\n` +
-  `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-  pages.map((page) => `  <url><loc>${origin}/${page.route}</loc></url>`).join('\n') +
-  `\n</urlset>\n`
+  `<?xml version="1.0" encoding="UTF-8"?>\n`
+  + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`
+  + pages.map((page) => `  <url><loc>${origin}/${page.route}</loc></url>`).join('\n')
+  + `\n</urlset>\n`
 
 const pagePath = (route) => (route === '' ? 'index.html' : `${route}/index.html`)
 

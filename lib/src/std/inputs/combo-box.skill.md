@@ -107,9 +107,9 @@ form(
     options: knownPeople,
     minSearch: 2,
     onSearch: (text, { signal }) =>
-      api.get('/people', { query: { q: text }, signal }).then((people) =>
-        people.map(({ id, name }) => ({ value: id, label: name }))
-      ),
+      api
+        .get('/people', { query: { q: text }, signal })
+        .then((people) => people.map(({ id, name }) => ({ value: id, label: name }))),
   }),
   button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
 )

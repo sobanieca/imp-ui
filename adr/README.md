@@ -97,9 +97,9 @@ These are the conventions:
 | ADR                                                                         | Decision                                                                             |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [project-scaffold](project-scaffold.md)                                     | imp init: one non-interactive scaffold, tests included                               |
-| [native-toolchain](native-toolchain.md)                                     | One Rust binary: dprint crates, oxc lint, rolldown, QuickJS; no subprocess           |
+| [native-toolchain](native-toolchain.md)                                     | One Rust binary: oxc fmt and lint, rolldown, QuickJS; no subprocess                  |
 | [project-wide-dead-code](project-wide-dead-code.md)                         | imp lint walks the module graph: unreachable modules, dead exports                   |
-| [dependency-bundling-with-rolldown](dependency-bundling-with-rolldown.md)   | Bundle deps with rolldown and imp's own npm and jsr resolver                         |
+| [dependency-bundling-with-rolldown](dependency-bundling-with-rolldown.md)   | Bundle deps with rolldown and imp's own npm resolver                                 |
 | [vendored-dependencies](vendored-dependencies.md)                           | Vendored, committed deps via imp install; no lockfile                                |
 | [vendored-dependency-manifest](vendored-dependency-manifest.md)             | Each vendored bundle records its packages, versions, licenses; npm integrity checked |
 | [dependency-audit](dependency-audit.md)                                     | imp audit: OSV check of the manifests, CycloneDX bill of materials                   |

@@ -48,10 +48,12 @@ export const mockRuntime = ({ modules, files, reply, report }) => {
   const answerOf = (source, result) => {
     const descriptor = result || {}
     const status = descriptor.status ?? 200
-    const headers = Object.entries(descriptor.headers || {})
-      .map(([name, value]) => [name.toLowerCase(), String(value)])
+    const headers = Object.entries(descriptor.headers || {}).map(([name, value]) => [
+      name.toLowerCase(),
+      String(value),
+    ])
     const body = bodyOf(descriptor.body, status, headers)
-    headers.sort(([one], [other]) => one < other ? -1 : one > other ? 1 : 0)
+    headers.sort(([one], [other]) => (one < other ? -1 : one > other ? 1 : 0))
     return { verdict: { source, status, statusText: descriptor.statusText || '', headers }, body }
   }
 

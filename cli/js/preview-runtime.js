@@ -365,8 +365,11 @@ const SPECIMEN_STYLES = `
 `
 
 const isThemeDefinition = (value) =>
-  !!value && typeof value === 'object' && !Array.isArray(value) &&
-  !!value.tokens && typeof value.tokens === 'object'
+  !!value
+  && typeof value === 'object'
+  && !Array.isArray(value)
+  && !!value.tokens
+  && typeof value.tokens === 'object'
 
 const customThemeLabel = (source, definition) => {
   const declared = typeof definition.name === 'string' ? definition.name.trim() : ''
@@ -380,8 +383,8 @@ const registerThemes = (customThemes) => {
     const definition = module?.default
     if (!isThemeDefinition(definition)) {
       console.error(
-        `imp preview: '${source}' is listed in preview.themes but does not default-export a theme ` +
-          'object like { name, tokens } - skipping it',
+        `imp preview: '${source}' is listed in preview.themes but does not default-export a theme `
+          + 'object like { name, tokens } - skipping it',
       )
       continue
     }
@@ -418,7 +421,9 @@ const readStored = (key, isKnown, fallback) => {
 const remember = (key, value) => {
   try {
     localStorage.setItem(key, value)
-  } catch { /* storage is unavailable - the choice just does not survive a reload */ }
+  } catch {
+    /* storage is unavailable - the choice just does not survive a reload */
+  }
 }
 
 const readStoredTheme = () =>
@@ -542,7 +547,9 @@ const elementsInTree = (nodes) => {
     if (elements.length >= MAX_SCANNED_ELEMENTS || !(node instanceof Element)) return
     elements.push(node)
     for (const child of node.children) visit(child)
-    if (node.shadowRoot) { for (const child of node.shadowRoot.children) visit(child) }
+    if (node.shadowRoot) {
+      for (const child of node.shadowRoot.children) visit(child)
+    }
   }
   for (const node of nodes) visit(node)
   return elements
@@ -552,7 +559,7 @@ const statesInTree = (nodes) =>
   elementsInTree(nodes).flatMap((provider) =>
     statesProvidedBy(provider)
       .filter(({ name }) => !name.startsWith(LIBRARY_STATE_PREFIX))
-      .map(({ name, state }) => ({ name, state, provider }))
+      .map(({ name, state }) => ({ name, state, provider })),
   )
 
 const describeValue = (value) => {
@@ -600,7 +607,9 @@ const stageDefinition = {
         const startY = event.clientY
         try {
           handle.setPointerCapture(event.pointerId)
-        } catch { /* the pointer is already gone */ }
+        } catch {
+          /* the pointer is already gone */
+        }
         const resize = (moveEvent) => {
           if (kind !== 'bottom') {
             inlineSize.set(asStageSize(rect.width + moveEvent.clientX - startX))
@@ -793,8 +802,12 @@ const scenarioPanel = (name, scenario, entry) => {
 }
 
 const isLabelledScenario = (exported) =>
-  exported !== null && typeof exported === 'object' && !(exported instanceof Node) &&
-  !Array.isArray(exported) && typeof exported.scenario === 'string' && 'component' in exported
+  exported !== null
+  && typeof exported === 'object'
+  && !(exported instanceof Node)
+  && !Array.isArray(exported)
+  && typeof exported.scenario === 'string'
+  && 'component' in exported
 
 const scenarioOf = (name, exported) =>
   isLabelledScenario(exported)
@@ -881,21 +894,24 @@ const groupCard = (entry, load) => {
   }
   if (entry.error !== undefined) fail('failed to build - open the card for the error')
   else {
-    load().then((scenarios) => {
-      const name = scenarioOrder(scenarios, entry.order)[0]
-      if (name === undefined) {
-        fail('no scenarios in this file')
-        return
-      }
-      const { label, component } = scenarioOf(name, scenarios[name])
-      scenarioName.textContent = label
-      try {
-        specimen.replaceChildren(...buildScenario(component))
-      } catch (error) {
-        console.error(`imp preview: scenario '${name}' failed to build`, error)
-        fail(`${name} failed to build - see the terminal`)
-      }
-    }, (error) => fail(error.message))
+    load().then(
+      (scenarios) => {
+        const name = scenarioOrder(scenarios, entry.order)[0]
+        if (name === undefined) {
+          fail('no scenarios in this file')
+          return
+        }
+        const { label, component } = scenarioOf(name, scenarios[name])
+        scenarioName.textContent = label
+        try {
+          specimen.replaceChildren(...buildScenario(component))
+        } catch (error) {
+          console.error(`imp preview: scenario '${name}' failed to build`, error)
+          fail(`${name} failed to build - see the terminal`)
+        }
+      },
+      (error) => fail(error.message),
+    )
   }
   return card(
     {
@@ -920,8 +936,8 @@ const groupDefinition = {
           group.description === null ? null : groupDescription(group.description),
           text(
             { tone: 'secondary' },
-            `${group.entries.length} component${group.entries.length === 1 ? '' : 's'}. ` +
-              'Each card shows the first scenario. Open a card for every scenario.',
+            `${group.entries.length} component${group.entries.length === 1 ? '' : 's'}. `
+              + 'Each card shows the first scenario. Open a card for every scenario.',
           ),
         ),
       ),
@@ -952,8 +968,9 @@ const scenarioTabsSetup = (self, scenarios, entry) => {
   if (!names.length) {
     return emptyState({
       title: 'No scenarios in this file',
-      description: `${entry.file} has no named exports - export one instance per scenario, ` +
-        'like export const empty = myComponent()',
+      description:
+        `${entry.file} has no named exports - export one instance per scenario, `
+        + 'like export const empty = myComponent()',
     })
   }
   const folded = initState(self, TABS_STATE, readStoredTabs())
@@ -962,9 +979,8 @@ const scenarioTabsSetup = (self, scenarios, entry) => {
     (event) => folded.set(event.matches || readStoredTabs()),
     { signal: self.abortSignal },
   )
-  const selected = computed(
-    [useRoute()],
-    ({ query }) => names.includes(query.scenario) ? query.scenario : names[0],
+  const selected = computed([useRoute()], ({ query }) =>
+    names.includes(query.scenario) ? query.scenario : names[0],
   )
   return tabs({
     orientation: 'vertical',
@@ -1019,15 +1035,16 @@ const scenarioScreen = (scenarios, entry) =>
 const noPreviews = () =>
   emptyState({
     title: 'No previews found',
-    description: "Write a '*.preview.js' file next to a component and export one instance per " +
-      'scenario, like export const empty = myComponent()',
+    description:
+      "Write a '*.preview.js' file next to a component and export one instance per "
+      + 'scenario, like export const empty = myComponent()',
   })
 
 const previewArea = (entry, handle, load) =>
   area(() =>
     load().then((scenarios) => ({
       default: area({ screens: { [handle]: () => scenarioScreen(scenarios, entry) } }),
-    }))
+    })),
   )
 
 const bindCatalog = (catalog, load, listed) => {
@@ -1045,7 +1062,7 @@ const bindCatalog = (catalog, load, listed) => {
   const app = appMap({ components: { path: '/', label: 'Components', ...nodes } })
   const icons = {}
   const tags = {}
-  const screens = { [app.components]: () => listed.length ? previewIndex(listed) : noPreviews() }
+  const screens = { [app.components]: () => (listed.length ? previewIndex(listed) : noPreviews()) }
   const entries = new Map()
   const groups = new Map()
   for (const group of listed) {
@@ -1060,9 +1077,10 @@ const bindCatalog = (catalog, load, listed) => {
       entry.href = handle.href()
       icons[handle] = previewMarker(entry.href)
       entries.set(String(handle), entry)
-      screens[handle] = entry.error === undefined
-        ? previewArea(entry, handle, load[entry.file])
-        : () => buildFailure(entry)
+      screens[handle] =
+        entry.error === undefined
+          ? previewArea(entry, handle, load[entry.file])
+          : () => buildFailure(entry)
     }
   }
   const title = ({ node }) => {
@@ -1112,7 +1130,7 @@ const pageDefinition = {
     const editor = drawer(
       { title: 'Theme editor', modal: false, open: editorOpen },
       editorOpen.view((open) =>
-        open ? themeChoice.view((name) => themeEditor({ theme: name })) : null
+        open ? themeChoice.view((name) => themeEditor({ theme: name })) : null,
       ),
     )
     editorOpen.watch((open) => {
@@ -1192,9 +1210,10 @@ const readGroups = (declared) => {
     groups.push({
       name: entry.name,
       icon: Array.isArray(entry.icon) ? entry.icon : null,
-      description: typeof entry.description === 'string' && entry.description.trim()
-        ? entry.description
-        : null,
+      description:
+        typeof entry.description === 'string' && entry.description.trim()
+          ? entry.description
+          : null,
       priority: Number.isFinite(entry.priority) ? entry.priority : null,
     })
   }
@@ -1218,18 +1237,16 @@ const ensureFavicon = (favicon) => {
   document.head.append(icon)
 }
 
-export async function startPreview(
-  {
-    embedded = false,
-    mark,
-    favicon,
-    catalog,
-    load,
-    themes: customThemes = [],
-    translations = [],
-    groups: declaredGroups = null,
-  },
-) {
+export async function startPreview({
+  embedded = false,
+  mark,
+  favicon,
+  catalog,
+  load,
+  themes: customThemes = [],
+  translations = [],
+  groups: declaredGroups = null,
+}) {
   ensureFavicon(favicon)
   const listed = groupsOf(catalog, readGroups(declaredGroups))
   const styles = document.createElement('style')
@@ -1243,10 +1260,10 @@ export async function startPreview(
   await init(
     translations.length
       ? {
-        translations: Object.fromEntries(
-          translations.map(({ code, module }) => [code, () => module]),
-        ),
-      }
+          translations: Object.fromEntries(
+            translations.map(({ code, module }) => [code, () => module]),
+          ),
+        }
       : {},
   )
   await applyLanguage(readStoredLanguage())

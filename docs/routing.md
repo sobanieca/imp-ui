@@ -157,10 +157,13 @@ with the props of the node that it hangs from as the first argument:
 
 ```js
 // admin/map.js
-export const admin = appMap({ access: 'admin', description: 'The back office' }, {
-  users: 'Everyone with a login',
-  createApiKey: 'Mint a key for a service',
-})
+export const admin = appMap(
+  { access: 'admin', description: 'The back office' },
+  {
+    users: 'Everyone with a login',
+    createApiKey: 'Mint a key for a service',
+  },
+)
 ```
 
 ```js
@@ -488,14 +491,11 @@ The guard is a plain function of the state that it reads. It runs before imp bui
 ```js
 import { guard, wait } from 'imp/router'
 
-const access = guard(
-  ['myapp.session'],
-  (session, { need, path }) => {
-    if (session === undefined) return wait
-    if (!session) return `/login?next=${encodeURIComponent(path)}`
-    return session.roles.includes(need) || '/forbidden'
-  },
-)
+const access = guard(['myapp.session'], (session, { need, path }) => {
+  if (session === undefined) return wait
+  if (!session) return `/login?next=${encodeURIComponent(path)}`
+  return session.roles.includes(need) || '/forbidden'
+})
 
 router({ map: app, access, screens })
 ```
@@ -714,9 +714,13 @@ A reload, a closed tab, and a link to another site unload the whole page. Only t
 then, with its own prompt. Add a `beforeunload` listener for that case:
 
 ```js
-globalThis.addEventListener('beforeunload', (event) => {
-  if (dirty.get()) event.preventDefault()
-}, { signal: self.abortSignal })
+globalThis.addEventListener(
+  'beforeunload',
+  (event) => {
+    if (dirty.get()) event.preventDefault()
+  },
+  { signal: self.abortSignal },
+)
 ```
 
 A `dialog` and a `drawer` take the same kind of check, as their `beforeClose` prop. See

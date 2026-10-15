@@ -5,7 +5,10 @@ import { orgSelect } from 'imp/std/shell'
 
 orgSelect({ orgs: memberships, selected: currentOrg })
 orgSelect({
-  orgs: [{ id: 'acme', name: 'Acme', description: 'Owner' }, { id: 'globex', name: 'Globex' }],
+  orgs: [
+    { id: 'acme', name: 'Acme', description: 'Owner' },
+    { id: 'globex', name: 'Globex' },
+  ],
   selected: 'acme',
   events: { select: (event) => navigate(app.organizations.$org.href({ org: event.detail.id })) },
 })
