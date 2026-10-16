@@ -68,8 +68,7 @@ Do not run a binary from `target/` directly, because it can be older than the so
 | `site/`     | the home page                                                        |
 | `perf/`     | the performance apps and scenarios                                   |
 
-The rules for a change to this repository are in [`CLAUDE.md`](CLAUDE.md), and
-[`AGENTS.md`](AGENTS.md) points an AI agent at them.
+The rules for a change to this repository are in [`AGENTS.md`](AGENTS.md).
 
 ## License
 
