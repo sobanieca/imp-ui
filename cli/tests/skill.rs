@@ -301,7 +301,7 @@ fn skill_init_writes_the_agent_skill() {
         std::fs::create_dir_all(root.join(path)).unwrap();
     }
     write(&home.join("repo/packages/app/AGENTS.md"), "# app\n");
-    write(&home.join("notes/CLAUDE.md"), "# notes\n");
+    write(&home.join("notes/AGENTS.md"), "# notes\n");
     let init = |cwd: &std::path::Path| {
         let output = imp_command(cwd)
             .args(["skill", "--init"])
