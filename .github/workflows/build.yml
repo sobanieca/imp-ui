@@ -1,14 +1,20 @@
 name: CI
 
+# Runs only on demand: start it from the Actions tab (a run on main also releases),
+# or add the `ci` label to a PR to check it and every later push to it.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
   pull_request:
     branches: [main]
+    types: [labeled, synchronize, reopened]
 
 jobs:
   check:
     name: Format and lint
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'ci') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'ci'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -25,6 +31,10 @@ jobs:
 
   test:
     name: Tests ${{ matrix.suite }} (${{ matrix.os }})
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'ci') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'ci'))
     strategy:
       fail-fast: false
       matrix:
@@ -60,6 +70,10 @@ jobs:
 
   size:
     name: Binary size
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'ci') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'ci'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -71,7 +85,7 @@ jobs:
   version:
     name: Release version
     needs: [check, test, size]
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
