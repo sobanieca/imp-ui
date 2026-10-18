@@ -24,6 +24,11 @@ There is no watch mode. Run the tests when a piece of work is done. One test fil
 browser is the unit of isolation. A bare `imp test` with several candidate files runs nothing and exits with a
 non-zero code. Always name a level or a file.
 
+**Do not write tests in the first phase of a new app, unless the person asks for them.** In that
+phase the screens, the map and the mocks change at almost every request. A test then breaks soon
+and slows the work. Build the feature, run `imp lint`, and look at the page with `imp start`. Write
+tests when the person asks for them.
+
 ## How to write a test
 
 ```js
