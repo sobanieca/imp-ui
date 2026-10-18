@@ -40,7 +40,7 @@ collide:
 
 ```
 time: 2026-08-25T12:10:36.682Z
-page: http://localhost:4507/settings
+page: http://localhost:4400/settings
 title: Settings - Acme
 viewport: 1440x900
 scroll: 0,1240
@@ -63,7 +63,7 @@ controls:
 
 log:
   [BROWSER:error] TypeError: profile.email is undefined
-  [HTTP] PATCH http://localhost:4507/api/profile -> 500 34ms
+  [HTTP] PATCH http://localhost:4400/api/profile -> 500 34ms
 
 comment:
 The save button is disabled until a field is touched, but nothing says so.

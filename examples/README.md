@@ -8,7 +8,7 @@ folder answers every API call through the dev server.
 Run these commands in this folder:
 
 ```
-imp start              serve the app on http://localhost:4507/
+imp start              serve the app on http://localhost:4400/
 imp test --unit        run the unit tests
 imp test --e2e         run the browser specs against the mocks
 imp preview            show the todoProgress component in isolation

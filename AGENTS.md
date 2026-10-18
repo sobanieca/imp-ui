@@ -162,8 +162,8 @@ the time of a rebuild.
 | Command                  | What it does                                                             |
 | ------------------------ | ------------------------------------------------------------------------ |
 | `cargo imp <args>`       | builds the CLI, then runs `imp <args>` in the current folder             |
-| `cargo xtask example`    | serves the todo example from `examples` on <http://localhost:4507/>      |
-| `cargo xtask preview`    | serves the component previews from `lib/src` on <http://localhost:4517/> |
+| `cargo xtask example`    | serves the todo example from `examples` on <http://localhost:4400/>      |
+| `cargo xtask preview`    | serves the component previews from `lib/src` on <http://localhost:4401/> |
 | `cargo xtask site`       | builds the home page into `site/dist/` and serves that folder with `rfm` |
 | `cargo xtask test`       | runs the library unit tests, the library e2e tests, then the Rust tests  |
 | `cargo xtask check`      | formats and lints the repository, then runs `imp lint` on `lib/src`      |
@@ -194,7 +194,7 @@ returns early when `IMP_TEST_SKIP_BROWSER` is set.
 
 ## Previewing the standard components
 
-`cargo xtask preview` serves every `*.preview.js` under `lib/src` on <http://localhost:4517/>. This is
+`cargo xtask preview` serves every `*.preview.js` under `lib/src` on <http://localhost:4401/>. This is
 the working surface for the development of a standard component. The task runs `imp preview` from
 `lib/src`. The `imp.json` there points `preview.groups` at `std/preview-groups.js`. That module
 holds the sidebar's groups, their order and their icons. The CLI holds none of them. The same

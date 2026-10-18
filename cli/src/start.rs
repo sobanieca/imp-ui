@@ -24,7 +24,7 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
-const DEFAULT_DEV_SERVER_PORT: u16 = 4507;
+const DEFAULT_DEV_SERVER_PORT: u16 = 4400;
 pub const DEFAULT_DEV_HOST: &str = "127.0.0.1";
 pub const DEV_WORKER_PATH: &str = "/@imp/sw.js";
 pub const EVENTS_ENDPOINT: &str = "/@imp/events";

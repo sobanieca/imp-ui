@@ -80,7 +80,7 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
 - **`maxLogEntries`** is the number of recent entries `imp start` keeps in the session log that
   `imp logs` prints. The default is 4000. imp removes the oldest entry once the log reaches the
   limit. See **[`imp logs`](cli.md#imp-logs)**.
-- **`devServerPort`** is the port `imp start` listens on. The default is 4507. A `--port` flag on
+- **`devServerPort`** is the port `imp start` listens on. The default is 4400. A `--port` flag on
   the command line overrides it. See **[`imp start`](cli.md#imp-start)**.
 
 Two folders have a fixed name and no key. imp copies the contents of `public/` to the root of the

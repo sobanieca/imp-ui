@@ -20,7 +20,7 @@ fn a_review_file_names_itself_by_timestamp_and_records_the_page_it_came_from() {
         String::new(),
         format_review(
             &json!({
-                "page": "http://localhost:4517/preview/components/counter.preview.js",
+                "page": "http://localhost:4401/preview/components/counter.preview.js",
                 "title": "imp preview - Widgets / Counter",
                 "viewport": "900x700 at 2x",
                 "scroll": "0,1240",

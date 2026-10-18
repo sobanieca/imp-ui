@@ -7,7 +7,7 @@ from 192.168.1.20: false
 with no address at all: false
 
 time: 2026-08-25T12:10:36.682Z
-page: http://localhost:4517/preview/components/counter.preview.js
+page: http://localhost:4401/preview/components/counter.preview.js
 title: imp preview - Widgets / Counter
 viewport: 900x700 at 2x
 scroll: 0,1240

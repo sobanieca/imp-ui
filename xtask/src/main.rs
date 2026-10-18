@@ -14,8 +14,8 @@ use workspace::{build_imp, repo_root, run_imp};
 
 const USAGE: &str = "usage: cargo xtask <task>
 
-  example                serve the todo example on http://localhost:4507/
-  preview                serve the component previews on http://localhost:4517/
+  example                serve the todo example on http://localhost:4400/
+  preview                serve the component previews on http://localhost:4401/
   site                   build the home page into site/dist/ and serve it with rfm
   build-site             build the home page into site/dist/
   test [filter]          run the library tests, then the Rust tests

@@ -1,7 +1,7 @@
 # preview - one component at a time, from a `*.preview.js` file
 
 ```
-imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock] [--no-reload]
+imp preview [path] [--port 4401] [--env <name>] [--mock | --no-mock] [--no-reload]
             [--host <address>]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]

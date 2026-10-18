@@ -252,7 +252,7 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   address off the map gets the preview page, and the router says so.
 - **`imp preview [path]`** with no path serves everything. A `*.preview.js` path, a component path
   whose sibling preview is inferred, or a folder narrows it. `--list` prints what was discovered
-  (`--json` for tooling). `--port` defaults to 4517, so a preview server and `imp start` can run
+  (`--json` for tooling). `--port` defaults to 4401, so a preview server and `imp start` can run
   side by side. `preview.exclude` in `imp.json` keeps folders out of discovery. A `preview.themes`,
   `preview.translations` or `preview.groups` path that resolves to no file fails the command at
   startup. It does not degrade in silence.

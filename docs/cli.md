@@ -57,13 +57,13 @@ install, run `imp --version`. It prints the version that the binary runs.
 
 ```
 imp init [dir] [--pwa] [--font <name>] scaffold a new project (--pwa: installable app)
-imp start [file.html] [--port 4507]   serve a page (default: index.html)
+imp start [file.html] [--port 4400]   serve a page (default: index.html)
           [--mock | --no-mock]        answer from the mocks folder, or from the real API
           [--no-reload]               keep the page as it is when a file changes
           [--host <address>]          listen on another address than 127.0.0.1
 imp build [file.html] [--output dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
-imp preview [path] [--port 4517]      preview components in isolation, one page per
+imp preview [path] [--port 4401]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
             [--output <dir>]          export the gallery as static files that any page embeds
             [--mock | --no-mock] [--no-reload] [--host <address>]
@@ -264,7 +264,7 @@ for the map itself.
 ## `imp start`
 
 ```
-imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-reload]
+imp start [file.html] [--port 4400] [--env <name>] [--mock | --no-mock] [--no-reload]
           [--host <address>]
 ```
 
@@ -273,7 +273,7 @@ imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-re
 or when it is a directory. The entry file answers at `/`.
 
 imp resolves the port in this order: the `--port` flag, then the `devServerPort` in `imp.json`, then
-the default `4507`. Set a fixed port for a project, so you do not repeat the flag:
+the default `4400`. Set a fixed port for a project, so you do not repeat the flag:
 
 ```json
 {
@@ -626,7 +626,7 @@ keeps `pending` above zero, and your interceptors run. imp reports a mocked requ
 like any other request, with the file and the entry that answered it:
 
 ```
-[HTTP] GET http://localhost:4507/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
+[HTTP] GET http://localhost:4400/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
 ```
 
 An edit to a mock file, or to a file that it imports, reloads the browser like any other change. imp
@@ -1202,7 +1202,7 @@ resolution, the recording, and the pattern for parallel runs in CI.
 ## `imp preview`
 
 ```
-imp preview [path] [--port 4517] [--env <name>] [--mock | --no-mock] [--no-reload]
+imp preview [path] [--port 4401] [--env <name>] [--mock | --no-mock] [--no-reload]
             [--host <address>]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]
@@ -1616,7 +1616,7 @@ case with hyphens, such as `/widgets/counter`. A reload keeps it, and a bookmark
 on a scenario tab adds `?scenario=<name>` to the address, so a link opens that scenario.
 
 `imp preview --list` prints the discovered preview files, one per line. `--list --json` prints them
-as a JSON array, for a tool to read. `--port` selects the port, and the default is 4517. `--host`
+as a JSON array, for a tool to read. `--port` selects the port, and the default is 4401. `--host`
 selects the address, as on `imp start`, and the same warning applies. `--env` selects an environment
 entry from `imp.json`, exactly as on `imp start`. To keep a folder out of the discovery, use a
 `preview.exclude` array in `imp.json`:
@@ -1704,7 +1704,7 @@ comes first:
 
 ```
 .imp/reviews/2026-08-25T12-10-36-682Z.txt
-  2026-08-25T12:10:36.682Z  http://localhost:4507/settings
+  2026-08-25T12:10:36.682Z  http://localhost:4400/settings
   body > div#app > acme-settings >> form.panel > button.save
   The save button is disabled until a field is touched, but nothing says so.
 
@@ -1723,7 +1723,7 @@ that describe the state that you were in, then your comment.
 
 ```
 time: 2026-08-25T12:10:36.682Z
-page: http://localhost:4507/settings
+page: http://localhost:4400/settings
 title: Settings - Acme
 viewport: 1440x900
 scroll: 0,1240
@@ -1746,7 +1746,7 @@ controls:
 
 log:
   [BROWSER:error] TypeError: profile.email is undefined
-  [HTTP] PATCH http://localhost:4507/api/profile -> 500 34ms
+  [HTTP] PATCH http://localhost:4400/api/profile -> 500 34ms
 
 comment:
 The save button is disabled until a field is touched, but nothing says so.

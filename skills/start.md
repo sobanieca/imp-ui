@@ -1,7 +1,7 @@
 # start - the dev server, and imp logs to read the browser from the terminal
 
 ```
-imp start [file.html] [--port 4507] [--env <name>] [--mock | --no-mock] [--no-reload]
+imp start [file.html] [--port 4400] [--env <name>] [--mock | --no-mock] [--no-reload]
           [--host <address>]
 ```
 
@@ -10,7 +10,7 @@ in the current directory. The entry answers at `/`. A missing file, or a directo
 file, exits with an error. **Development is buildless.** imp serves a file exactly as you wrote it,
 so the code that runs is the source that you typed.
 
-imp resolves the port in this order: `--port`, then `devServerPort` in `imp.json`, then `4507`. See
+imp resolves the port in this order: `--port`, then `devServerPort` in `imp.json`, then `4400`. See
 [config](config.md).
 
 - **The dev server is a local tool.** It listens on `127.0.0.1`. Never deploy it or expose it.

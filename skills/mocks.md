@@ -61,7 +61,7 @@ other request, and adds the file and the entry that answered:
 
 ```
 [INFO] mocks - 2 file(s) from mocks/ answering requests
-[HTTP] GET http://localhost:4507/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
+[HTTP] GET http://localhost:4400/api/users -> 200 802ms (mock: mocks/users.mock.js #1)
 ```
 
 ## Rules an agent gets wrong

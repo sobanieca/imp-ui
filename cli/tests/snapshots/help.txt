@@ -10,7 +10,7 @@ USAGE
                                         an e2e spec (no dir: here | --pwa: installable,
                                         offline-ready | --font: a font of imp skill
                                         init instead of a random one)
-  imp start [file.html] [--port 4507]   serve a page: imp auto-injected,
+  imp start [file.html] [--port 4400]   serve a page: imp auto-injected,
                      [--env <name>]     live reload, console + network -> terminal
                                         (--env selects an "environments" entry
                                         from imp.json, exposed as import { env })
@@ -29,7 +29,7 @@ USAGE
                                         and an offline service worker (needs a
                                         "pwa" block in imp.json)
                      [--env <name>]     select an "environments" entry from imp.json
-  imp preview [path] [--port 4517]      preview components in isolation: each *.preview.js
+  imp preview [path] [--port 4401]      preview components in isolation: each *.preview.js
                      [--env <name>]     file renders its named exports as labeled, drag-resizable
                      [--list] [--json]  stages with a live state editor (no path: every preview,
                      [--mock]           listed on an index page | --list prints what was found |

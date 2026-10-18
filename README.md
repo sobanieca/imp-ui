@@ -41,8 +41,8 @@ Chrome or Chromium.
 
 | Command                  | What it does                                                             |
 | ------------------------ | ------------------------------------------------------------------------ |
-| `cargo xtask example`    | serves the todo example from `examples` on <http://localhost:4507/>      |
-| `cargo xtask preview`    | serves the component previews from `lib/src` on <http://localhost:4517/> |
+| `cargo xtask example`    | serves the todo example from `examples` on <http://localhost:4400/>      |
+| `cargo xtask preview`    | serves the component previews from `lib/src` on <http://localhost:4401/> |
 | `cargo xtask site`       | builds the home page into `site/dist/` and serves that folder with `rfm` |
 | `cargo xtask test`       | runs the library unit tests, the library e2e tests, then the Rust tests  |
 | `cargo xtask check`      | formats and lints the repository, then runs `imp lint` on `lib/src`      |

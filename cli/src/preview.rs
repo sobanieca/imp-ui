@@ -28,7 +28,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 
-const DEFAULT_PREVIEW_PORT: u16 = 4517;
+const DEFAULT_PREVIEW_PORT: u16 = 4401;
 const PREVIEW_EXTENSIONS: [&str; 2] = ["js", "mjs"];
 const ENTRY_ID: &str = "imp-preview-entry";
 const RUNTIME_SPECIFIER: &str = "imp-preview-runtime";

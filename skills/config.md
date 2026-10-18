@@ -31,7 +31,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 | `maxFileSize`       | bytes                                | `204800`     | `imp lint` (errors), `imp install` (warns)                        |
 | `maxFileSizeIgnore` | array of repo-relative paths         | `[]`         | the same size check                                               |
 | `maxLogEntries`     | number                               | `4000`       | `imp start` (the log that `imp logs` prints)                      |
-| `devServerPort`     | number                               | `4507`       | `imp start` (`--port` wins)                                       |
+| `devServerPort`     | number                               | `4400`       | `imp start` (`--port` wins)                                       |
 
 ## A file that uses every key
 
