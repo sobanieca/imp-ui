@@ -112,28 +112,38 @@ export const devClient = ({
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data?.imp === 'telemetry') keep(event.data.entry)
     })
-    if (workerPath) {
-      navigator.serviceWorker
-        .register(workerPath, { scope: '/' })
-        .catch((error) => console.error('imp: the dev service worker failed to start -', error))
-    }
-
+    // Until a worker controls the page, a fetch would skip the mocks. Hold it until one does.
+    let release = () => {}
     if (mocks && !navigator.serviceWorker.controller) {
       const network = globalThis.fetch
-      let missed = false
+      let open
+      const controlled = new Promise((resolve) => (open = resolve))
+      release = () => {
+        if (!open) return
+        globalThis.fetch = network
+        open()
+        open = null
+      }
       globalThis.fetch = (...args) => {
         const target = String(args[0]?.url ?? args[0] ?? '')
-        if (!target.includes('/@imp/') && !navigator.serviceWorker.controller) missed = true
-        return network.apply(globalThis, args)
+        if (target.includes('/@imp/') || navigator.serviceWorker.controller) {
+          return network.apply(globalThis, args)
+        }
+        return controlled.then(() => network.apply(globalThis, args))
       }
-      navigator.serviceWorker.addEventListener(
-        'controllerchange',
-        () => {
-          globalThis.fetch = network
-          if (missed) location.reload()
-        },
-        { once: true },
-      )
+      navigator.serviceWorker.addEventListener('controllerchange', release, { once: true })
+      setTimeout(() => {
+        if (navigator.serviceWorker.controller) return
+        console.warn('imp: no service worker controls the page, so its requests skip the mocks')
+        release()
+      }, 5000)
+    }
+
+    if (workerPath) {
+      navigator.serviceWorker.register(workerPath, { scope: '/' }).catch((error) => {
+        console.error('imp: the dev service worker failed to start -', error)
+        release()
+      })
     }
   }
 }

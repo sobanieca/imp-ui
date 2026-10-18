@@ -85,11 +85,14 @@ so the browser never follows a mocked redirect or shows an authentication prompt
 throws, the header carries the message, and the worker rejects the request. The worker reports each
 request as before, with the file and the entry that answered it.
 
-**A page that loaded before the worker took control reloads itself, but only when it missed
-something.** A newly installed worker claims the page a moment after the page loads. A request in
-that window would reach the network. The injected client script wraps `fetch` while the page has no
-controller. It reloads once when, and only when, a request really went out unmocked. In the common
-case, where a worker from the previous page load is already active, it does no work.
+**A page that loaded before the worker took control holds its fetches until the worker does.** A
+newly installed worker claims the page a moment after the page loads. A request in that window would
+reach the network, and a missing backend would answer it with an error that the app shows and logs.
+The injected client script wraps `fetch` while the page has no controller. It holds each request
+until the worker takes control, then sends it through the worker. When no worker takes control
+within five seconds, or the dev worker fails to start, the held requests go to the network and the
+console says that they skip the mocks. In the common case, where a worker from the previous page
+load is already active, the script does no work.
 
 ## Consequences
 
