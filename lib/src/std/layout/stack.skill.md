@@ -30,8 +30,7 @@ Rules an agent gets wrong:
   the spare room. `'justify'` only spreads them apart, with `space-between`. It does not stretch
   them.
 - **Nothing else is a prop.** There is no padding, background, width or grow prop, and there is no
-  `grid` component. A box that needs those is a `div` that your own component styles. Two stacks
-  side by side, which wrap on a narrow screen, are `columns`, see imp skill std/columns.
+  `grid` component. A box that needs those is a `div` that your own component styles.
 - **A child moves into the shadow root of the stack, where your `styles` do not reach.** So
   `stack({}, div({ class: 'box' }))` renders the div without your `.box` rule, and imp warns in
   development. Give the box its own component, use a standard component, or set an inline `style`. A

@@ -19,7 +19,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                                                               |
 | `imp/analytics/aly`  | `alySink` - the sink for imp-aly servers                                                                                              |
 | `imp/std`            | `button`, `copyButton`, `menuButton`, `heading`, `text`, `link`, `icon`                                                               |
-| `imp/std/layout`     | `flex`, `stack`, `columns`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                   |
+| `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                              |
 | `imp/std/inputs`     | `form`, `useField`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                                                 |
 | `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                                                                 |
 | `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `accountMenu`, `orgSelect`, `themeSelect`, ...                                         |

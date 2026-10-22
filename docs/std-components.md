@@ -268,7 +268,7 @@ with the current choice on the trigger. Each region takes plain DOM, so you repl
 does not fit with a component of your own. The gallery shows every prop of the frame, its floating
 panels, its backdrops and its maximum width.
 
-## Lay a page out with a row and a column
+## Lay a page out with two components
 
 Inside the frame, two components lay a page out. **`flex` is a row.** **`stack` is a column.**
 
@@ -281,19 +281,8 @@ stack(
 )
 ```
 
-**Page columns are `columns`.** A details page often has a wide main column and a narrow side
-column. On a phone they must sit one under the other. `columns` does that with no media query:
-
-```js
-columns({ weights: [2, 1] }, stack({ gap: 5 }, summary(), answers()), stack({ gap: 5 }, links()))
-```
-
-Each child is one column, and `weights` sets their widths. Each column has a minimum width,
-`minInlineSize` times its weight. When the row is too narrow for all of the minimums, the columns
-wrap, and each one takes the whole row.
-
 That is the whole layout library. There is no grid, no box, and no wrapper with padding and width
-props. **When a row, a column and page columns cannot express what you want, write the CSS.** A dashboard of cards
+props. **When a row and a column cannot express what you want, write the CSS.** A dashboard of cards
 is `display: grid` in the `styles` of your own component, next to the thing that it affects:
 
 ```js

@@ -35,7 +35,6 @@ only when it adds behaviour of its own. These are the merges that follow from th
 | Dated events in order       | `timeline`, with `icon` and `color`  | An activity feed, a history log, an audit trail            |
 | A chart of numbers          | `chart`, with `type` and `stacked`   | A bar, a column, a line and a stacked chart component      |
 | An arrangement in two axes  | none                                 | An app writes CSS grid in its own component                |
-| Page columns that wrap      | `columns`, with `weights`            | A responsive grid, a two-column page template              |
 | A copy action               | `copyButton`                         | A clipboard helper in every app                            |
 | An account menu             | `accountMenu`                        | A popover recipe that every app copied                     |
 | A floating button           | none                                 | A `button` that the app places with its own CSS            |

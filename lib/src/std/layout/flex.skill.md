@@ -40,7 +40,6 @@ Rules an agent gets wrong:
   `textField({ type: 'number', stepper: true })`.
 - **Nothing else is a prop.** There is no padding, background, width, direction or grow prop, and
   there is no `grid` component. A box that needs those is a `div` that your own component styles.
-  Side-by-side page columns that wrap on a narrow screen are `columns`, see imp skill std/columns.
 - **A child moves into the shadow root of the row, where your `styles` do not reach.** So
   `flex({}, div({ class: 'box' }))` renders the div without your `.box` rule, and imp warns in
   development. Give the box its own component, use a standard component, or set an inline `style`. A

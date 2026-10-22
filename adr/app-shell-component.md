@@ -2,7 +2,7 @@
 
 ## Context
 
-The layout group arranges with `flex`, `stack` and `columns`, and nothing else, see `layout-flex-and-columns.md`. That
+The layout group is `flex` and `stack`, and nothing else, see `layout-two-flex-primitives.md`. That
 is correct for the arrangement of things inside a page, and it says nothing about the shape of a
 whole page. Every app still needs the same frame. That frame holds a brand block, a nav at the top
 level, a nav column for what sits under it, a content area, and a place for the signed-in person.
