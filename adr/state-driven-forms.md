@@ -127,10 +127,25 @@ added to the kernel.
 - **A submit is an action, and not a mode of a button.** `submitForm(source)` and
   `resetForm(source, values?)` are plain functions of `imp/std/inputs`. They take the click event,
   or a node inside the form, and dispatch a composed, bubbling, cancelable event from it. The form
-  catches the event and claims it. So any `button` is the submit button, at any depth:
-  `button({ events: { click: submitForm } }, 'Save')`. There is no `submitButton` component and no
-  `resetButton` component. A button that must spin reads `imp.form.submitting`, in a component of
-  the app. `button` keeps no `type` prop, see `standard-component-library.md`. **The implicit
+  catches the event and claims it. So any `button` can submit, at any depth. The `submit` prop of
+  `button` is the common case: `button({ submit: true }, 'Save')` dispatches the same event, and it
+  binds `imp.form.submitting` to `loading`. So a submit button spins with no component of the app.
+  There is no `submitButton` component and no `resetButton` component. `button` keeps no `type`
+  prop, see `standard-component-library.md`.
+- **A submit carries an intent.** `submitForm(source, intent)` and `button({ submit: 'draft' })`
+  write the intent into `imp.form.intent` before the fields validate again. `onSubmit` receives
+  `(values, { intent })`, and every `validate` and `validateAsync` receives
+  `(value, { values, intent })`. So two buttons that save a draft and publish share one form, and a
+  field can be required for one intent only. A state of the app that remembers the pressed button
+  would race with the validation, which runs in the same tick.
+- **One field is a state of its own through `useField(self, path)`.** It is a `computed` over
+  `imp.form` that reads the path, with a `set` that writes only that path. A field that follows
+  another field watches one handle and sets the other. A spread of the whole `imp.form` would
+  overwrite an edit that arrived in between.
+- **A choice keeps the type of its option.** `select`, `radioGroup` and `segmented` match an option
+  by the text of its value, because the DOM holds text. They write the value of the option as the
+  app wrote it. So `{ value: 4 }` writes a number and `{ value: null }` writes `null`, and the app
+  converts nothing in `onSubmit`. **The implicit
   submit**, which is Enter in a single-line field, is implemented by the form. The platform would
   otherwise have provided it.
 

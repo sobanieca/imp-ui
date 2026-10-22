@@ -7,7 +7,7 @@ import { button } from 'imp/std'
 form(
   { initialValues: { user: { firstName: 'Ada' }, plan: 'pro' }, onSubmit: save },
   textField({ field: 'user.firstName', label: 'First name', required: true }),
-  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
+  button({ variant: 'primary', submit: true }, 'Save'),
 )
 ```
 
@@ -19,12 +19,12 @@ form are ordinary named state**, and they live at the position of the form in th
 inside the form names the field that it owns with a dot path. It reads and writes that state
 directly. There is nothing to connect. When the form unmounts, the state goes with it.
 
-| Prop            | Values                                   | Default      | Notes                                          |
-| --------------- | ---------------------------------------- | ------------ | ---------------------------------------------- |
-| `initialValues` | plain object                             | `null`       | Seeds `imp.form`, and is the first clean state |
-| `onSubmit`      | `(values) => void \| Promise`            | -            | Runs only when every field is valid            |
-| `layout`        | `'vertical'`, `'horizontal'`, `'inline'` | `'vertical'` | Where each field's label sits                  |
-| `gap`           | spacing step `0`-`6`                     | `4`          | Space between children                         |
+| Prop            | Values                                    | Default      | Notes                                          |
+| --------------- | ----------------------------------------- | ------------ | ---------------------------------------------- |
+| `initialValues` | plain object                              | `null`       | Seeds `imp.form`, and is the first clean state |
+| `onSubmit`      | `(values, { intent }) => void \| Promise` | -            | Runs only when every field is valid            |
+| `layout`        | `'vertical'`, `'horizontal'`, `'inline'`  | `'vertical'` | Where each field's label sits                  |
+| `gap`           | spacing step `0`-`6`                      | `4`          | Space between children                         |
 
 ## The states it owns
 
@@ -38,6 +38,7 @@ directly. There is nothing to connect. When the form unmounts, the state goes wi
 | `imp.form.validating` | `{ [path]: true }` for fields with a check in flight   |
 | `imp.form.dirty`      | `true` while the values differ from the clean state    |
 | `imp.form.formError`  | `null`, the message of a `FormError`, or `''`          |
+| `imp.form.intent`     | the intent of the last submit, or `null`               |
 
 `imp.form`, `imp.form.submitting`, `imp.form.dirty` and `imp.form.formError` are the states for your
 code. The others are how the controls and the form agree with each other. A state of the form
@@ -45,19 +46,62 @@ reaches only the subtree of the form. So read it from a component inside the for
 
 ## Submitting and resetting
 
-`imp/std/inputs` exports two functions and one error class beside the components:
+`imp/std/inputs` exports three functions and one error class beside the components:
 
 | Export                               | Does                                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `submitForm(source)`                 | Validates every field, then runs `onSubmit` when every field passes                         |
+| `submitForm(source, intent?)`        | Validates every field, then runs `onSubmit` when every field passes                         |
+| `useField(self, path)`               | One field of the form around `self`: `get`, `set`, `watch`, `text`, `view`                  |
 | `resetForm(source)`                  | Puts the clean state back, and clears the errors, the touched state and the failure         |
 | `resetForm(source, values)`          | Makes `values` the clean state, then does the same                                          |
 | `new FormError(message)`             | An error from `onSubmit` whose message the form shows to the person                         |
 | `new FormError(message, { fields })` | `fields` is `{ [path]: message }`; each message shows on its field, focus goes to the first |
 
-`source` is the click event, or any node inside the form. So a plain `button` is the submit button:
-`button({ events: { click: submitForm } }, 'Save')`. The function finds the form by position, at any
-depth, so the button can sit inside a `flex`, a `card` or a component of yours.
+`source` is the click event, or any node inside the form. The function finds the form by position, at
+any depth, so the button can sit inside a `flex`, a `card` or a component of yours.
+
+**The submit button is `button({ submit: true })`.** It submits the form around it, and it spins
+while `imp.form.submitting` is `true`. `button({ submit: 'draft' })` submits with the intent
+`'draft'`. Two buttons with two intents share one form:
+
+```js
+form(
+  {
+    initialValues,
+    onSubmit: (values, { intent }) => (intent === 'draft' ? saveDraft(values) : publish(values)),
+  },
+  textField({
+    field: 'title',
+    label: 'Title',
+    validate: (value, { intent }) => (intent === 'publish' && !value ? 'Add a title' : null),
+  }),
+  flex(
+    { gap: 2 },
+    button({ submit: 'draft' }, 'Save draft'),
+    button({ variant: 'primary', submit: 'publish' }, 'Publish'),
+  ),
+)
+```
+
+`validate` and `validateAsync` of every control get `(value, { values, intent })`. `values` is the
+whole form, for a check that compares two fields. `intent` is the intent of the submit that runs,
+or of the last one. An Enter in a field submits with the intent `null`.
+
+`useField(self, path)` gives a component inside the form one field as a state. Use it for a field
+that follows another field:
+
+```js
+const teamPeople = component('myapp-team-people', {
+  setup: (self, { teams }) => {
+    const partners = useField(self, 'partners')
+    useField(self, 'teamId').watch(self, (teamId) => {
+      const team = teams.find((item) => item.id === teamId)
+      if (team) partners.set(team.members)
+    })
+    return comboBox({ field: 'partners', label: 'People', multiple: true, custom: true })
+  },
+})
+```
 
 - **Enter in any single-line field submits the form**, because imp implements the implicit submit
   itself. Enter in a multi-line `textField` does not submit.
@@ -105,17 +149,22 @@ Rules an agent gets wrong:
 
 - **There is no native `<form>` submit to attach to.** Do not pass `events: { submit }`, and do not
   use a `type: 'submit'` button. `onSubmit` on the form and `submitForm` are the whole API.
-- **There is no `submitButton` and no `resetButton` component.** A `button` from `imp/std` with
-  `submitForm` or `resetForm` as its click handler is the button.
-- **A spinner on the submit button is `imp.form.submitting`.** A plain button shows none. Write a
-  small component that reads the state and passes it as `loading`, as in the example below.
+- **There is no `submitButton` and no `resetButton` component.** `button({ submit: true })` is the
+  submit button. A `button` with `resetForm` as its click handler is the reset button.
+- **Do not write a component only for the spinner.** A `button` with `submit` spins on its own.
+- **Do not keep the pressed button in a state of your own.** Pass the intent to `submit`, and read
+  `intent` in `onSubmit` and in `validate`.
+- **Write one field with `useField(self, path).set(value)`**, not with a spread of the whole
+  `imp.form`. `useField(self, path).watch(self, fn)` runs at once with the current value, then on
+  each change of that field only.
 - **`onSubmit` receives the values object**, already validated. Read the argument. Do not call
   `useState(self, 'imp.form')` again.
 - **Put the buttons in the last child.** The failure notice goes above the last child. A row of
   buttons is one `flex`, so the notice sits above the whole row.
 - **Do not catch the error in `onSubmit` to show it yourself.** To show a specific message, throw
-  `new FormError(t('...'), { cause })`. A plain `Error`, an `HttpError` or a `TypeError` shows only
-  the generic message, because its text is not written for a person.
+  `new FormError(t('...'), { cause })`. An `HttpError` shows its `userMessage`, the text that the
+  `userMessage` option of the HTTP client reads from the response. Any other error shows only the
+  generic message, because its text is not written for a person.
 - **Never read a password, a key or a token from `imp.form`.** Set `secret: true` on its field and
   read it from the argument of `onSubmit`. A plain field puts the value in a state, and the debug
   log prints every state value.
@@ -126,25 +175,11 @@ Rules an agent gets wrong:
   and about a `layout` outside the list, and falls back to the default.
 
 ```js
-import { component } from 'imp'
 import { HttpError } from 'imp/http'
 import { t } from 'imp/i18n'
-import { useState } from 'imp/state'
 import { button } from 'imp/std'
-import { form, FormError, resetForm, select, submitForm, textField } from 'imp/std/inputs'
+import { form, FormError, resetForm, select, textField } from 'imp/std/inputs'
 import { flex } from 'imp/std/layout'
-
-const saveButton = component('myapp-save-button', {
-  setup: (self) =>
-    button(
-      {
-        variant: 'primary',
-        loading: useState(self, 'imp.form.submitting'),
-        events: { click: submitForm },
-      },
-      'Create account',
-    ),
-})
 
 form(
   {
@@ -162,9 +197,12 @@ form(
   },
   textField({ field: 'email', label: 'Email', type: 'email', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro'] }),
-  flex(saveButton(), button({ variant: 'ghost', events: { click: resetForm } }, 'Start over')),
+  flex(
+    button({ variant: 'primary', submit: true }, 'Create account'),
+    button({ variant: 'ghost', events: { click: resetForm } }, 'Start over'),
+  ),
 )
 ```
 
-Related: imp skill std/button - the button that carries `submitForm`; imp skill state - `useState`
-for `imp.form` and `imp.form.submitting`.
+Related: imp skill std/button - the button with `submit`; imp skill state - `useState` for
+`imp.form` and `imp.form.submitting`; imp skill http - `userMessage`.

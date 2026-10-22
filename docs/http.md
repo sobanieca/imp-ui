@@ -246,8 +246,31 @@ An `HttpError` carries these fields.
 | `code`            | `status`, `network`, `timeout`, `aborted`, `parse`, or `hook`         |
 | `method`, `url`   | The call that failed                                                  |
 | `headers`, `body` | The response, when there was one - a parsed error body is right there |
+| `userMessage`     | The text for a person, from the `userMessage` option, or `null`       |
 
 `request` throws on the same failures as a verb. It differs only in what it gives you on success.
+
+### The text for a person
+
+The `message` of an `HttpError` is for a developer. Your API often sends a sentence for the user in
+its error body. Tell the client once where that sentence is:
+
+```js
+initHttpClient(self, 'myapp.api', {
+  baseUrl: '/api',
+  userMessage: (error) => error.body?.error,
+})
+```
+
+imp then sets `error.userMessage` on every failed response. A `form` shows that text when its
+`onSubmit` throws the error, and a `toast` uses it as its title. So you do not catch the error to
+turn it into a message yourself. A function that returns nothing leaves `userMessage` at `null`.
+
+### A failure that the page shows itself
+
+A `toast` with `client` shows every failure of the client. Some failures belong to the page, such
+as a link that no longer works and renders an empty state. Pass `silent: true` on that call. It
+still rejects, but it leaves `lastError` as it was, so no toast appears.
 
 ## Retries
 
@@ -307,9 +330,20 @@ controller.abort()
 A call you aborted rejects with `code: 'aborted'`, and imp never retries it. imp retries a timeout
 like any other failure.
 
-**Usually you do not cancel by hand.** When the component that owns the client unmounts, imp aborts
-everything still in flight. This is what stops the requests of a screen when the user navigates
-away. Use your own `signal` for cases the lifetime of the client does not cover. Two examples are a
+**Usually you do not cancel by hand.** A call belongs to the component that made it. When the
+component that owns the client unmounts, imp aborts everything in flight. When a component that
+reached the client with `useHttpClient` unmounts, imp aborts the calls of that component. This is
+what stops the requests of a screen when the user navigates away, even when the client lives in the
+root of the app.
+
+An aborted call rejects with `code: 'aborted'`, also when its response arrived in the same moment.
+So in an async `setup`, the code after `await api.get(...)` never runs after an unmount. You do not
+check `self.abortSignal` there. An aborted call does not write `lastError`, because a cancel is not
+a failure.
+
+A call that must finish after its component leaves takes `detached: true`, for example a report
+that a closing panel sends. A call made in `onRemove` is never bound to the mount. Use your own
+`signal` for cases the lifetime of the component does not cover. Two examples are a
 search-as-you-type call the next keystroke replaces, and a request that needs a cancel button.
 
 ## Interceptors
@@ -409,7 +443,7 @@ const status = component('api-status', {
 
 - **`api.pending`** is the number of calls in flight now.
 - **`api.lastError`** is the most recent failure as plain data, in the shape
-  `{ message, status, code, method, url, body }`, or `null`. It clears when a later call succeeds.
+  `{ message, userMessage, status, code, method, url, body }`, or `null`. It clears when a later call succeeds.
   `api.clearError()` dismisses it by hand.
 
 For one spinner on one request, name that call:

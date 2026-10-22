@@ -135,6 +135,13 @@ vocabulary for the options that it shares with a component, see `client-side-rou
   `onRemove`, which has already run. So an async `onRemove` that touches a **shared** resource, or a
   resource at module scope, must check `self.abortSignal.aborted` after its `await`, and stop. A
   resource per mount needs no guard.
+- **An async `setup` that awaits an http call of the component needs no check.** A call through
+  `useHttpClient(self)` belongs to the mount, see `http-client.md`. An unmount aborts it, so the
+  rest of `setup` never runs, and imp logs the aborted rejection at debug level only. The
+  `imp/abort-check-after-await` lint rule counts such an `await` as a guard.
+- **`interval(self, ms, run)` repeats work for the length of a mount.** imp stops it when the mount
+  ends, with the bindings. It skips a tick while an async `run` has not settled, so a slow poll does
+  not overlap itself, and it logs a failure instead of throwing it into a timer.
 - **`error(self, error, ...args)` is optional.** It makes the component an error boundary, for a
   mount failure of the component itself, and of its subtree, see `error-boundaries.md`. The boundary
   is a mounted component when its error view renders. So it gets the same `self`. The error view can

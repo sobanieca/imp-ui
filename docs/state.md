@@ -447,10 +447,34 @@ const orderList = component('my-app-order-list', {
 
 A binding you build after the `await` goes live when the resolved DOM mounts. One case throws. When
 the component unmounts while `setup` still awaits, a later `initState` or `useState` has no mount to
-resolve through, and the error says the host has left the page. An async `setup` that can outlive
-its host checks `self.abortSignal.aborted` after the `await`, or hands `self.abortSignal` to the
-awaited call. The `imp/abort-check-after-await` lint rule reports a resolution after an `await` that
-does neither.
+resolve through, and the error says the host has left the page. When the `await` is an http call of
+the component, this never happens: an unmount aborts the call, so the code after it does not run.
+After any other `await`, an async `setup` that can outlive its host checks
+`self.abortSignal.aborted`. The `imp/abort-check-after-await` lint rule reports a resolution after an
+`await` that has no such guard.
+
+## A state that the browser keeps
+
+Some state belongs to one person on one device: the filter they chose, the panel they closed, the
+items they started without an account. Pass `{ persist: true }` as the fourth argument, and imp keeps
+the value in `localStorage`:
+
+```js
+const recent = initState(self, 'myapp.recent', [], { persist: true })
+recent.set((items) => [item, ...items].slice(0, 20))
+```
+
+- The next mount starts from the stored value, also after a reload. With nothing stored, it starts
+  from the value that you pass.
+- Every `set` writes the new value. A change in another tab of the same app arrives in this tab
+  through the `storage` event of the browser.
+- The key is `imp.state.` and the name of the state. Two components that persist the same name share
+  the stored value.
+- The value must survive JSON. A `Date` comes back as a string, so store an ISO string.
+- A private window or blocked site data can refuse the storage. imp then starts from your value, and
+  the state works for the session. You write no `try` around the call.
+
+Do not use it for data that must be correct or shared. It never leaves the browser.
 
 ## Scope and lifetime
 

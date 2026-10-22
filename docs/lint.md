@@ -318,15 +318,15 @@ mount.
 
 An async `setup` can wait while the component leaves the page. A resolution after that throws. See
 **[Components](components.md)**. The rule reports, in an async `setup`, an `initState`, `useState`,
-`initHttpClient` or `useHttpClient` call after an `await` that nothing guards. Three things count as
-a guard. A read of `self.abortSignal.aborted` after the `await`. A `self.abortSignal` passed to the
-awaited call, because that call then rejects on unmount. A resolution before the first `await`:
+`initHttpClient` or `useHttpClient` call after an `await` that nothing guards. Four things count as
+a guard. An `await` of an http call of the component, such as `await api.get('/orders')`, because
+an unmount aborts that call. A read of `self.abortSignal.aborted` after the `await`. A
+`self.abortSignal` passed to the awaited call. A resolution before the first `await`:
 
 ```js
 const orders = component('my-app-orders', {
   setup: async (self) => {
-    const api = useHttpClient(self, 'myapp.api')
-    const data = await api.get('/orders')
+    const data = await loadOrdersFromIndexedDb()
     const orders = initState(self, 'myapp.orders', data)
     return ul(orders.each((order) => li(order.title)))
   },
@@ -334,12 +334,12 @@ const orders = component('my-app-orders', {
 ```
 
 ```
-error[imp/abort-check-after-await]: 'initState' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; test self.abortSignal.aborted after the await and return, pass self.abortSignal to the awaited call, or resolve before the first await
+error[imp/abort-check-after-await]: 'initState' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; await an http call of the component, which an unmount cancels, test self.abortSignal.aborted after the await and return, or resolve before the first await
  --> src/orders.js:5:20
 ```
 
-Pass `{ signal: self.abortSignal }` to the call, or check `self.abortSignal.aborted` after the
-`await` and return. Or initialize the state with an empty value before the `await`, and `set` the
+Check `self.abortSignal.aborted` after the `await` and return, or pass `{ signal: self.abortSignal }`
+to a call that takes one. Or initialize the state with an empty value before the `await`, and `set` the
 data in after it.
 
 ### `imp/no-state-as-child`

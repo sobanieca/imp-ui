@@ -53,11 +53,13 @@ WORKING IN AN IMP PROJECT
 
 STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/button           button - the standard button, rendered as a real `<button>`
+  std/copyButton       copyButton - a button that copies a text to the clipboard and confirms it
   std/heading          heading - a section heading, rendered as the real `h1`-`h6` element
   std/text             text - body text, a paragraph by default or an inline span
   std/link             link - a real anchor whose in-app clicks are handled by the router
   std/icon             icon - one Lucide icon, sized and coloured from the theme
   std/menuButton       menuButton - a button that opens a menu of actions
+  std/columns          columns - side-by-side columns that wrap into one column when the row is narrow
   std/dialog           dialog - one component for both overlay windows: the modal frame and the movable panel
   std/drawer           drawer - a panel that slides in from the side of the screen, modal or not, on any width
   std/flex             flex - a row of children laid out with CSS flexbox
@@ -87,19 +89,21 @@ STANDARD COMPONENTS - imported from 'imp/std' | read: imp skill std/button
   std/FormError        form - a form whose values are ordinary imp state, addressed by field path
   std/resetForm        form - a form whose values are ordinary imp state, addressed by field path
   std/submitForm       form - a form whose values are ordinary imp state, addressed by field path
+  std/useField         form - a form whose values are ordinary imp state, addressed by field path
   std/imageUpload      imageUpload - pick one picture, crop it in a frame, and resize it on the client
   std/radioGroup       radioGroup - one choice out of a few, bound to a form field
   std/richTextEditor   richTextEditor - a WYSIWYG editor with a formatting toolbar, whose value is markdown
   std/segmented        segmented - a choice drawn as a joined row of buttons, one value or many
   std/select           select - a dropdown of choices bound to a form field
   std/slider           slider - a native range input bound to a number
-  std/textField        textField - the one text input: text, email, password, search, number, or multi-line
+  std/textField        textField - the one text input: text, email, password, search, number, time, or multi-line
   std/toggle           toggle - a switch for a boolean that takes effect immediately
   std/treeSelect       treeSelect - a dropdown field that picks many values from a searchable tree with tri-state boxes
   std/shell            shell - the app frame: the map drives the nav and the trail, logo, content, and the phone fold
   std/appLogo          appLogo - the brand block at the head of a navbar or sidebar
   std/breadcrumbs      breadcrumbs - the trail of levels above the main region, as plain data, with a picker per crumb
   std/userCard         userCard - the signed-in person: avatar, name and a muted line, and nothing else
+  std/accountMenu      accountMenu - the avatar button of the signed-in person, with a panel that folds into the drawer
   std/themeSelect      themeSelect - a light / dark / system menu that applies and remembers the theme
   std/langSelect       langSelect - a language menu that calls setLang and remembers the choice
   std/notifications    notifications - the bell with the unread count, and the drawer of recent notifications

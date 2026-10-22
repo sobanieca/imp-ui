@@ -12,14 +12,15 @@ card({ href: '/projects/42', label: 'Project 42' }, preview)
 The call shape is `card(props?, ...children)`. When a props object is present, it must be the
 **first** argument. **Everything after it is the body.**
 
-| Prop      | Values                   | Default | Notes                                                                        |
-| --------- | ------------------------ | ------- | ---------------------------------------------------------------------------- |
-| `header`  | string or DOM - **live** | -       | Sits above the body, separated by a rule                                     |
-| `footer`  | string or DOM - **live** | -       | Sits below the body, separated by a rule                                     |
-| `href`    | string                   | -       | Makes the whole card one link. An in-app path goes through the router        |
-| `label`   | string                   | -       | The accessible name. With `href` it names the link. Alone, it names a region |
-| `padding` | `'sm'`, `'md'`, `'lg'`   | `'md'`  | The inner padding, from `space-3`, `space-4` and `space-6`                   |
-| `events`  | `{ click: fn, ... }`     | -       | Listeners on the outer element                                               |
+| Prop      | Values                   | Default     | Notes                                                                        |
+| --------- | ------------------------ | ----------- | ---------------------------------------------------------------------------- |
+| `header`  | string or DOM - **live** | -           | Sits above the body, separated by a rule                                     |
+| `footer`  | string or DOM - **live** | -           | Sits below the body, separated by a rule                                     |
+| `href`    | string                   | -           | Makes the whole card one link. An in-app path goes through the router        |
+| `label`   | string                   | -           | The accessible name. With `href` it names the link. Alone, it names a region |
+| `padding` | `'sm'`, `'md'`, `'lg'`   | `'md'`      | The inner padding, from `space-3`, `space-4` and `space-6`                   |
+| `tone`    | `'surface'`, `'primary'` | `'surface'` | `'primary'` fills the card with the primary colour                           |
+| `events`  | `{ click: fn, ... }`     | -           | Listeners on the outer element                                               |
 
 The card renders a `div`. With `label` and no `href` it renders a `section`, which is a named
 region. With `href` it renders a real `a`, so the browser gives it the link role, the keyboard and
@@ -28,6 +29,11 @@ app. An `href` with a scheme other than `http:`, `https:`, `mailto:` or `tel:`, 
 `javascript:`, is dropped with a warning, and the card renders as with no `href`.
 
 Rules an agent gets wrong:
+
+- **`tone: 'primary'` turns the theme around inside the card.** The text, the headings and every
+  standard component in it take `color-on-primary` as ink. A primary `button` there is drawn in
+  `color-on-primary` with the primary colour as its text. Do not override `--imp-color-*` tokens
+  yourself to make a loud card.
 
 - **Import the component from `imp/std/display`**, not from `imp/std`.
 - **A card is a box, not an inline thing.** The host is `display: block`, and the panel fills the

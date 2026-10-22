@@ -4,6 +4,7 @@ use crate::logger;
 use crate::paths::posix;
 use crate::script_engine::{install_console, message_of, run_jobs};
 use crate::service_worker::stamp_of;
+use ring::rand::{SecureRandom, SystemRandom};
 use rquickjs::function::Opt;
 use rquickjs::{Context, Ctx, Function, Object, Persistent, Runtime, Value};
 use serde_json::Value as Json;
@@ -361,7 +362,29 @@ fn install_globals(ctx: &Ctx<'_>, shared: &Rc<RefCell<Shared>>) -> rquickjs::Res
         })?,
     )?;
     install_console(ctx, "mocks - ")?;
-    Ok(())
+    install_crypto(ctx)
+}
+
+fn random_bytes(count: usize) -> Vec<u8> {
+    let mut bytes = vec![0u8; count];
+    if SystemRandom::new().fill(&mut bytes).is_err() {
+        bytes.clear();
+    }
+    bytes
+}
+
+fn install_crypto(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
+    let input = Object::new(ctx.clone())?;
+    input.set(
+        "randomBytes",
+        Function::new(ctx.clone(), |count: usize| random_bytes(count))?,
+    )?;
+    let source = format!(
+        "({})",
+        crate::browser_script::function_source("mock-crypto.js")
+    );
+    let install: Function = ctx.eval(source.as_str())?;
+    install.call::<_, ()>((input,))
 }
 
 impl Engine {

@@ -78,9 +78,11 @@ Rules an agent gets wrong:
   inline size.
 - **The timer of a popup waits** while the pointer is over the popup, and while the focus is inside
   it. A popup never takes the focus.
+- **A call with `silent: true` raises no notification.** Use it for a failure that the page shows
+  itself. An aborted call raises none either. Do not create a second client to keep the toast quiet.
 - **`client` names a client that an ancestor initialized.** The region calls `useHttpClient` from
   its own position, and imp throws when no ancestor provides the name. The title of the notification
-  is the `message` of `lastError`. The `id` comes from the client name, the method and the URL, so
+  is the `userMessage` of `lastError` when the client sets one, else its `message`. The `id` comes from the client name, the method and the URL, so
   the same request that fails again stays one entry.
 - **A screen reader hears the title and the description once.** `info` and `success` go to a
   `role="status"` element. `warning` and `error` go to a `role="alert"` element. Do not add a live

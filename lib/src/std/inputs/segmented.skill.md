@@ -45,7 +45,9 @@ Rules an agent gets wrong:
   accessible name and the native tooltip. Do not wrap the control in `tooltip`.
 - **The arrow keys move the focus and select in single mode.** Left and Right mirror under
   `dir="rtl"`. In `multiple` mode, Tab moves between the segments, and Space or Enter toggles one.
-- **imp compares the values as strings.** An option value of `1` matches a form value of `'1'`.
+- **The field gets the option value as you wrote it.** `{ value: 4 }` writes the number `4`, and
+  `{ value: null, label: 'No team' }` writes `null`. Do not convert the value in `onSubmit`. imp
+  matches the field to an option by its text, so a form value of `'4'` still selects `{ value: 4 }`.
 - **Every option is visible at the same time.** Above five options, use `select` or `comboBox`.
 - **A row that is wider than its container wraps.** The segments that do not fit go to a second
   line. A segment does not shrink, and the row does not scroll.

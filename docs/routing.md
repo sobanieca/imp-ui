@@ -183,15 +183,26 @@ own, with its paths relative to where it will hang.
 `appMap()` returns a tree of **handles**, one per node. `app.admin.createApiKey` is a frozen object
 that stands for that node everywhere:
 
-| Access                             | Gives                                                                |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| `${handle}` or `handle.toString()` | the pattern, `/admin/create-api-key`, so a handle keys an object     |
-| `handle.href({ projectId: '42' })` | the URL, with the params filled in and the base path applied         |
-| `handle.spec`                      | the node data: `name`, `pattern`, `label`, `description`, `children` |
+| Access                              | Gives                                                                |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `${handle}` or `handle.toString()`  | the pattern, `/admin/create-api-key`, so a handle keys an object     |
+| `handle.href({ projectId: '42' })`  | the URL, with the params filled in and the base path applied         |
+| `handle.href(params, { query })`    | the same URL with a query string, such as `/search?q=milk`           |
+| `handle.href(params, { absolute })` | with `absolute: true`, the whole URL, origin included                |
+| `handle.spec`                       | the node data: `name`, `pattern`, `label`, `description`, `children` |
 
 `href()` takes a missing param from the current route. On `/projects/42/builds`, the call
 `app.projects.$projectId.settings.href()` gives `/projects/42/settings`. A param that neither the
 argument nor the route supplies is an error.
+
+The second argument adds to the URL. `query` is a plain object. imp skips a `null` or `undefined`
+value, repeats the key for an array, and encodes every value. `absolute: true` gives the URL with
+its origin, for a link that you send in an email or paste in a chat:
+
+```js
+navigate(app.checks.new.href({}, { query: { teamId } }))
+const invite = app.join.$key.href({ key }, { absolute: true }) // https://example.com/join/k3y
+```
 
 | `({ node }) => ...` in a factory | the handle of the matched node, so a screen reads its own
 `spec` |
@@ -268,6 +279,9 @@ Every node of the map answers its URL from the first run:
   in. `redirect('/somewhere')` takes a path.
 - A node with static children and no screen forwards to its first child. So `/admin` opens
   `/admin/users` until you bind a screen to `admin`.
+- A node whose children are all params, and which has no `description`, is a prefix. It is not a
+  page. So `/join` of `join: { $key: {} }` renders the not-found page, and its crumb in the trail is
+  plain text. Give the node a `description` when it is a page that you still have to build.
 - Any other node renders a placeholder with its label and its `description`.
 
 So you write the map first, run the app, and see every page as a placeholder, with the nav and the
@@ -327,6 +341,29 @@ Inside the scope, the sections of the nav are the static children of `$org`. The
 the organization, with a picker when `options` binds it. Outside the scope, on `/user-settings/me`
 or `/login`, the sections are the top-level nodes. A link inside the organization writes
 `app.organizations.$org.admin.href()`. `href()` takes the current slug from the route.
+
+### The label of a param crumb
+
+The crumb of a param, such as `$teamId`, shows the value from the URL until something names it. A
+screen names it with `crumbLabel(self, label)` from `imp/router`, after it loads its data:
+
+```js
+const teamScreen = component('my-app-team', {
+  setup: async (self, { teamId }) => {
+    const team = initState(self, 'myapp.team', await api.get(`/teams/${teamId}`))
+    crumbLabel(
+      self,
+      computed([team], (current) => current.name),
+    )
+    return teamView(team)
+  },
+})
+```
+
+The trail and the document title then show the name. A state as the label keeps the crumb current
+after a rename. imp keeps the label for that value of the param, so a child page such as
+`/teams/t1/settings` shows it too. Use `options` when the crumb needs a picker of all the teams. A
+screen does not have to add itself to that list to get its label.
 
 ### Not found (404)
 
@@ -601,6 +638,17 @@ Set `null`. Do not clear the value back to `undefined`. `null` is an answer that
 page. After you are in, only a redirect takes you out. A background refresh of the session must not
 tear down the screen you work in. That would lose your scroll position, your focus, and anything you
 typed.
+
+A redirect from a guard waits for one microtask. A `navigate` in the same task wins over it. So a
+screen that signs the person in can set the session and then go where the person goes next:
+
+```js
+session.set(user) // the guard of this public page now wants to redirect
+navigate(app.checks.$checkId.href({ checkId }), { replace: true }) // this navigation wins
+```
+
+A guard that allows again before its redirect runs also keeps the screen. To send a signed-in person
+away from a public page, return that path from the guard. Do not watch the session in the screen.
 
 ### A guard and a lazily loaded section
 
@@ -1009,5 +1057,6 @@ So a deep link and a refresh work while you build.
 | `navigate(path, { replace?, external? })`  | -                  | Navigates programmatically; `replace` swaps the current history entry; `external` lets it leave for another site. Only http and https.     |
 | `safeNext(value, fallback)`                | a path             | `value` when it is a path of the app, else `fallback`. Use it for a `?next=` value before you navigate.                                    |
 | `useRoute()`                               | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
+| `crumbLabel(self, label)`                  | -                  | In a screen of a param node, names the crumb of that param, and so the title, with a string or a state.                                    |
 | `url(path)`                                | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |
 | `screenRegion(self, element, { effect? })` | -                  | Names the box that scrolls the screens, so imp restores its scroll; `effect` animates a change of screen, see below.                       |

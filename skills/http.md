@@ -33,15 +33,15 @@ export const app = component('myapp-root', {
 
 ## The handle
 
-| Member                                     | Returns                                                                   |
-| ------------------------------------------ | ------------------------------------------------------------------------- |
-| `get`/`post`/`put`/`patch`/`delete`/`head` | the **parsed body**, as a promise                                         |
-| `request(path, options)`                   | the whole response, `method` an option                                    |
-| `pending`                                  | read-only state: calls in flight (a number)                               |
-| `lastError`                                | read-only state: `{ message, status, code, method, url, body }` or `null` |
-| `clearError()`                             | drops `lastError`                                                         |
-| `tracked(key)`                             | `{ pending, lastError }` for calls made with `track: key`                 |
-| `close()`                                  | **only** on a `createHttpClient` handle                                   |
+| Member                                     | Returns                                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `get`/`post`/`put`/`patch`/`delete`/`head` | the **parsed body**, as a promise                                                      |
+| `request(path, options)`                   | the whole response, `method` an option                                                 |
+| `pending`                                  | read-only state: calls in flight (a number)                                            |
+| `lastError`                                | read-only state: `{ message, userMessage, status, code, method, url, body }` or `null` |
+| `clearError()`                             | drops `lastError`                                                                      |
+| `tracked(key)`                             | `{ pending, lastError }` for calls made with `track: key`                              |
+| `close()`                                  | **only** on a `createHttpClient` handle                                                |
 
 `useHttpClient` returns the same members, but not `close`. The owner ends the client. A consumer
 never ends it.
@@ -58,10 +58,13 @@ You can set every option on the client, and override it on a single call.
 | `retry`                  | `1` attempt    | number of attempts, or `{ attempts, backoff, delay, maxDelay, jitter, retryOn }` |
 | `requestId`              | `x-request-id` | header carrying a generated UUID; a header name, or `false` for none             |
 | `onRequest`/`onResponse` | none           | interceptor, or an array of them; may be async                                   |
+| `userMessage`            | none           | `(error) => string`: the text for a person, read from a failed response          |
 
 These options work on a call only: `query`, where imp skips a `null` or `undefined` value and
 repeats the key for an array, `body`, `signal`, `track`, which is a name for `tracked()`, `meta`,
-which is yours and which an interceptor can read, and `method` on `request`.
+which is yours and which an interceptor can read, and `method` on `request`. `silent: true` keeps a
+failure of the call out of `lastError`, so a `toast` does not show it. `detached: true` lets a call
+through `useHttpClient` outlive the component that made it.
 
 ```js
 await api.get('/users', { query: { page: 2, tag: ['new', 'active'] } })
@@ -103,9 +106,19 @@ anything else to a `Blob`. A `204` response and an empty body both give `null`.
 - **A helper module takes the client as an argument**, as in `loadUsers(api, page)`. imp reaches a
   client through the DOM. Never import one. Do the same for DOM that imp renders outside the
   subtree, such as a second `mount` into another element of the page. Pass the handle.
-- **Do not cancel a call by hand for a navigation.** When the owner unmounts, imp aborts the calls
-  in flight. Use your own `signal` only for a search-as-you-type call that a newer call replaces, or
-  for a cancel button.
+- **Do not cancel a call by hand for a navigation.** A call through `useHttpClient(self)` belongs to
+  that component. When it unmounts, imp aborts the call, and the call rejects with `code: 'aborted'`
+  even when the response already arrived. So the code after `await api.get(...)` in an async
+  `setup` never runs after an unmount, and needs no `self.abortSignal` check. Use your own `signal`
+  only for a search-as-you-type call that a newer call replaces, or for a cancel button.
+- **A call that must finish after the component leaves takes `detached: true`**, such as an event
+  that a component sends as it closes. A call made in `onRemove` is never bound to the mount.
+- **An aborted call never writes `lastError`.** A cancel is not a failure, so no toast shows it.
+- **Read the error text for a person from `error.userMessage`.** Set `userMessage` on the client
+  once, for example `(error) => error.body?.error`. A `form` shows that text when `onSubmit` throws
+  the error, and a `toast` uses it as the title. Without it, `userMessage` is `null`.
+- **A failure that the screen shows itself takes `silent: true`**, such as a 404 for a dead link
+  that renders an empty state. Do not make a second client only to keep a toast quiet.
 - **`requestId` can break a cross-origin call.** A custom header causes a CORS preflight. Set
   `requestId: false` for an API that does not list the header in `Access-Control-Allow-Headers`. imp
   leaves an `x-request-id` that you set yourself in `headers` as it is.
@@ -142,7 +155,8 @@ try {
 ```
 
 An `HttpError` carries `status`, which is `0` when no response arrived, and `code`, which is
-`status`, `network`, `timeout`, `aborted`, `parse` or `hook`. It also carries `method` and `url`.
+`status`, `network`, `timeout`, `aborted`, `parse` or `hook`. It also carries `method`, `url` and
+`userMessage`, which is the text of the `userMessage` option of the client, or `null`.
 When a response arrived, it carries the `headers` and the `body` of that response, so a parsed error
 envelope is available.
 

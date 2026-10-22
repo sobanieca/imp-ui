@@ -4,15 +4,15 @@ The components come from `imp/std` and its groups. There is nothing to install, 
 include. Each component is a real imp component. It renders as its own element, such as
 `<imp-button>`, with its styles sealed inside.
 
-| Import             | Exports                                                                                                                                                                                                                                                                                | Per-component skill                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `imp/std`          | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                                                                              | `imp skill std/button`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                                                                                                          |
-| `imp/std/layout`   | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                                                               | `imp skill std/flex`, `std/stack`, `std/splitPane`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                                                                           |
-| `imp/std/inputs`   | `form`, `submitForm`, `resetForm`, `FormError`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `treeSelect`, `slider`, `colorPicker`, `datePicker`, `dateRangePicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor` | `imp skill std/form`, `std/submitForm`, `std/resetForm`, `std/FormError`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/treeSelect`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/dateRangePicker`, `std/emojiPicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor` |
-| `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`, `qrCode`                                                                                                                                                           | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`, `std/qrCode`                                                                                                                                                                                                   |
-| `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                                                               | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                                                                                   |
-| `imp/std/feedback` | `bugReport`, `notice`, `loader`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`, `reactions`                                                                                                                                                                                     | `imp skill std/bugReport`, `std/notice`, `std/loader`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`, `std/reactions`                                                                                                                                                                                                                                     |
-| `imp/std/data`     | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                                                               | `imp skill std/table`, `std/list`, `std/timeline`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                                                                                   |
+| Import             | Exports                                                                                                                                                                                                                                                                                            | Per-component skill                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imp/std`          | `button`, `copyButton`, `menuButton`, `heading`, `text`, `link`, `icon`                                                                                                                                                                                                                            | `imp skill std/button`, `std/copyButton`, `std/menuButton`, `std/heading`, `std/text`, `std/link`, `std/icon`                                                                                                                                                                                                                                                                                        |
+| `imp/std/layout`   | `flex`, `stack`, `columns`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                                                                | `imp skill std/flex`, `std/stack`, `std/columns`, `std/splitPane`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                                                                            |
+| `imp/std/inputs`   | `form`, `submitForm`, `resetForm`, `useField`, `FormError`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `treeSelect`, `slider`, `colorPicker`, `datePicker`, `dateRangePicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor` | `imp skill std/form`, `std/submitForm`, `std/resetForm`, `std/useField`, `std/FormError`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/treeSelect`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/dateRangePicker`, `std/emojiPicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor` |
+| `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`, `qrCode`                                                                                                                                                                       | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`, `std/qrCode`                                                                                                                                                                                                                   |
+| `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `accountMenu`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                                                            | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/accountMenu`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                                                                                |
+| `imp/std/feedback` | `bugReport`, `notice`, `loader`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`, `reactions`                                                                                                                                                                                                 | `imp skill std/bugReport`, `std/notice`, `std/loader`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`, `std/reactions`                                                                                                                                                                                                                                                     |
+| `imp/std/data`     | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                                                                           | `imp skill std/table`, `std/list`, `std/timeline`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                                                                                                   |
 
 Read the skill of a component before you use it. This page gives the shared contract and a summary
 of the props only.
@@ -292,9 +292,8 @@ Rules an agent gets wrong:
   shows the router content and the logo, centred, and nothing else. A redirect keeps the layout, so
   a signed-out visitor never sees the chrome. Write the sign-in page yourself; imp renders no form
   and holds no session.
-- **The frame has no account prop.** `userCard` in `extras` displays the person, and the sign-out
-  action is a `button` or a `menuButton` of yours beside it. Whether a person sees a section is the
-  `access` of the map.
+- **The frame has no account prop.** `accountMenu` in `extras` holds the person, the pickers and
+  the sign-out. Whether a person sees a section is the `access` of the map.
 - **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
   of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
   there inline, or do not style it.
@@ -344,8 +343,9 @@ Full manual: `imp skill std/shell`.
 
 ## Layout - from `imp/std/layout`
 
-There are two flex primitives and nothing else. `flex` is a row, and `stack` is a column. There is
-no `grid` and no `box`. There is no padding, width or background prop. A box that needs those is a
+There are two flex primitives. `flex` is a row, and `stack` is a column. `columns` puts page columns
+side by side, and wraps them into one column when the row is too narrow, with no media query. There
+is no `grid` and no `box`. There is no padding, width or background prop. A box that needs those is a
 `div` that your own component styles. Keep that `div` in your own tree, around the layout. A `div`
 passed as a child of `flex` or `stack` moves into the shadow root of the layout, where your `styles`
 do not reach it, and imp warns in development.
@@ -750,13 +750,13 @@ one path. This works at any depth, so a layout component in between changes noth
 
 ```js
 import { button } from 'imp/std'
-import { form, select, submitForm, textField } from 'imp/std/inputs'
+import { form, select, textField } from 'imp/std/inputs'
 
 form(
   { initialValues: { user: { firstName: 'Ada' }, plan: 'pro' }, onSubmit: save },
   textField({ field: 'user.firstName', label: 'First name', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro'] }),
-  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
+  button({ variant: 'primary', submit: true }, 'Save'),
 )
 ```
 
@@ -774,7 +774,8 @@ Every control takes the same binding props and labelling props:
 | `secret`    | boolean                        | With `field`: the value never enters state |
 
 The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern` and
-`validate`. `validate` returns a message, or `null` when the value is correct. The built-in messages
+`validate`. `validate(value, { values, intent })` returns a message, or `null` when the value is
+correct. The built-in messages
 live under `imp.form.*`. `validateAsync` returns a **promise** of a message or of `null`. It runs on
 blur and on submit only. A submit waits for it. A synchronous failure skips it. A rejected promise
 blocks the submit with `imp.form.checkFailed`.
@@ -786,7 +787,7 @@ path. A successful submit and `resetForm` empty the field.
 | Component         | What it binds                                    | Its own props                                                           |
 | ----------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
 | `form`            | Owns `imp.form`                                  | `initialValues`, `onSubmit`, `layout`, `gap`                            |
-| `textField`       | A string, or a **number**                        | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly`            |
+| `textField`       | A string, a **number**, or a time `'HH:mm'`      | `type`, `rows`, `step`, `stepper`, `placeholder`, `readonly`            |
 | `select`          | One value from `options`                         | `options`, `placeholder`                                                |
 | `segmented`       | One value from `options`, or an array            | `options`, `multiple`, `size`, `block`                                  |
 | `comboBox`        | One value from `options`, an array, or free text | `options`, `multiple`, `custom`, `onSearch`, `minSearch`, `placeholder` |
@@ -802,17 +803,20 @@ path. A successful submit and `resetForm` empty the field.
 | `toggle`          | A boolean, drawn as a switch                     | -                                                                       |
 | `radioGroup`      | One value from `options`                         | `options`, `orientation`                                                |
 
-`submitForm(source)` and `resetForm(source)` are functions, not components. `source` is the click
-event or any node inside the form. So `button({ events: { click: submitForm } }, 'Save')` is the
-submit button, and `button({ events: { click: resetForm } }, 'Start over')` the reset button.
-`resetForm(source, values)` also makes `values` the clean state of the form.
+`button({ submit: true }, 'Save')` is the submit button. It spins while the form submits.
+`button({ submit: 'draft' })` submits with the intent `'draft'`, and `onSubmit(values, { intent })`
+reads it. `submitForm(source, intent?)` and `resetForm(source)` are the same actions as functions.
+`source` is the click event or any node inside the form. So
+`button({ events: { click: resetForm } }, 'Start over')` is the reset button.
+`resetForm(source, values)` also makes `values` the clean state of the form. `useField(self, path)`
+gives a component inside the form one field as a state with `set`. `select`, `radioGroup` and
+`segmented` write the option value with its type, so `{ value: null }` writes `null`.
 
 Rules an agent gets wrong:
 
 - **There is no native form submit.** There is no `type: 'submit'` button and no
   `events: { submit }`. Put the handler in the `onSubmit` of the form, and give a `button` the
-  `submitForm` function as its click handler. There is no `submitButton` and no `resetButton`
-  component. Enter in a single-line field also submits. Enter in a multi-line `textField` does not.
+  `submit` prop. There is no `submitButton` and no `resetButton` component. Enter in a single-line field also submits. Enter in a multi-line `textField` does not.
 - **A `field` with no `form` around it is an error.** A path that is not dot-separated is also an
   error. A numeric segment indexes an array: `items.0.name` is the first row of `items`.
 - **`field` and `value` are alternatives.** With both, imp warns and `field` wins.
@@ -1199,8 +1203,8 @@ Rules an agent gets wrong:
   `aria-current="page"`, never as a link. A crumb with `options` gets a picker of its siblings. The
   frame renders the trail from the map; call `breadcrumbs` yourself only outside `shell`.
 - **`userCard` displays. It does not act.** It has no sign-in button, no sign-out button and no
-  menu. Render a `button` or a `menuButton` of your own beside it for the account actions, and
-  decide there how a sign-out works. imp holds no session, and it talks to no identity provider.
+  menu. Use `accountMenu`, which holds a `userCard`, for the account actions, and decide in
+  `onSignOut` how a sign-out works. imp holds no session, and it talks to no identity provider.
   Whether anybody is signed in is the `access` guard of the router.
 - **`themeSelect`, `langSelect` and `orgSelect` are menus.** Each renders a `menuButton` with the
   current choice on the trigger and a `menuitemradio` per option. There is no `<select>` in the
@@ -1217,14 +1221,14 @@ Rules an agent gets wrong:
   `alt`. Use it for a brand that sets its name in a font of its own.
 - **`compact` on `appLogo` and on `userCard` hides the words visually, not from assistive
   technology.** That is how a brand block with a mark only keeps its name.
-- **Inside `shell`, `userCard` goes in `extras`.** The frame has no account prop. It places the
+- **Inside `shell`, `accountMenu` goes in `extras`.** The frame has no account prop. It places the
   extras in the bar on a wide screen and in the drawer on a phone.
 - **Keep the desktop `extras` to one or two icon buttons.** When the bar is full, the sections give
-  way, not the extras. Put `userCard`, `langSelect`, `themeSelect` and the sign-out in one account
-  popover. `imp skill std/shell` has the recipe. The same panel shows inline in the phone drawer.
+  way, not the extras. Put `langSelect` and `themeSelect` as children of `accountMenu`, and pass the
+  sign-out as `onSignOut`. The same panel shows inline in the phone drawer.
 
 - **`notifications` is the bell, and it takes no data.** It lists what `notify` from
-  `imp/std/feedback` raised. It renders its own modal drawer. Put it in `extras`, beside `userCard`.
+  `imp/std/feedback` raised. It renders its own modal drawer. Put it in `extras`, beside `accountMenu`.
 
 Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/orgSelect` |
 `std/themeSelect` | `std/langSelect`.

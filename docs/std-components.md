@@ -204,18 +204,27 @@ page and never sees the navbar.
 **The sign-in page is yours, because it differs with every app.** Write a form with a password,
 buttons for social providers, a magic link, or a passkey. For an external identity provider, put its
 return URL under the sign-in node, so that it also shows without the chrome. imp renders no form and
-talks to no identity provider. Sign-out is a plain `button` or a `menuButton` that you put beside
-`userCard`. The sign-in page is an ordinary page, so analytics counts its views.
+talks to no identity provider. Sign-out is your own function, which you pass to `accountMenu` as
+`onSignOut`. The sign-in page is an ordinary page, so analytics counts its views.
 
 **Keep the bar light, and group the account controls.** The sections and the extras share the top
 bar. A language picker, a theme picker and a user card side by side take the place of two or three
-sections, and a section that does not fit scrolls out of view. So put those controls in one account
-menu: an avatar button that opens a small popover with the person, the pickers and the sign-out. You
-write it as one component of your own. On a desktop the browser runs the popover and CSS anchor
-positioning places it under the avatar, with no script for opening or placement. One `focusout`
-listener closes the panel when the focus leaves it, so an open panel never covers the focused
-control. On a phone the shell moves the extras into its drawer, and one media query in your
-component shows the same panel inline there, without the button.
+sections, and a section that does not fit scrolls out of view. So put those controls in one
+`accountMenu`: an avatar button that opens a small popover with the person, the pickers and the
+sign-out.
+
+```js
+accountMenu(
+  { name: user.name, description: user.email, onSignOut },
+  langSelect({ languages }),
+  themeSelect(),
+)
+```
+
+On a desktop the browser runs the popover, and CSS anchor positioning places it under the avatar.
+The panel closes when the focus leaves it, so an open panel never covers the focused control. On a
+phone the shell moves the extras into its drawer, and the same panel shows inline there, without the
+button.
 
 **A multi-tenant app gets a switcher.** `orgSelect` lists the organizations that a person belongs
 to, shows the current one on its trigger, and reports a choice. Put it beside the logo, or in
@@ -254,12 +263,12 @@ page. The link is hidden until the keyboard moves the focus to it, and it moves 
 content. A tap never shows it.
 
 `imp/std/shell` ships the pieces that usually fill the regions of the frame: `appLogo`, `userCard`,
-`orgSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,
+`accountMenu`, `orgSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,
 with the current choice on the trigger. Each region takes plain DOM, so you replace a piece that
 does not fit with a component of your own. The gallery shows every prop of the frame, its floating
 panels, its backdrops and its maximum width.
 
-## Lay a page out with two components
+## Lay a page out with a row and a column
 
 Inside the frame, two components lay a page out. **`flex` is a row.** **`stack` is a column.**
 
@@ -272,8 +281,19 @@ stack(
 )
 ```
 
+**Page columns are `columns`.** A details page often has a wide main column and a narrow side
+column. On a phone they must sit one under the other. `columns` does that with no media query:
+
+```js
+columns({ weights: [2, 1] }, stack({ gap: 5 }, summary(), answers()), stack({ gap: 5 }, links()))
+```
+
+Each child is one column, and `weights` sets their widths. Each column has a minimum width,
+`minInlineSize` times its weight. When the row is too narrow for all of the minimums, the columns
+wrap, and each one takes the whole row.
+
 That is the whole layout library. There is no grid, no box, and no wrapper with padding and width
-props. **When a row and a column cannot express what you want, write the CSS.** A dashboard of cards
+props. **When a row, a column and page columns cannot express what you want, write the CSS.** A dashboard of cards
 is `display: grid` in the `styles` of your own component, next to the thing that it affects:
 
 ```js
@@ -351,7 +371,7 @@ owns:
 
 ```js
 import { button } from 'imp/std'
-import { form, select, submitForm, textField } from 'imp/std/inputs'
+import { form, select, textField } from 'imp/std/inputs'
 
 form(
   {
@@ -361,7 +381,7 @@ form(
   textField({ field: 'user.firstName', label: 'First name', required: true }),
   textField({ field: 'user.email', label: 'Email', type: 'email', required: true }),
   select({ field: 'plan', label: 'Plan', options: ['free', 'pro', 'team'] }),
-  button({ variant: 'primary', events: { click: submitForm } }, 'Save'),
+  button({ variant: 'primary', submit: true }, 'Save'),
 )
 ```
 
@@ -388,12 +408,26 @@ This covers a field on a tab that is not open, or a field behind a condition tha
 the person never meets a blocked submit with no message on the screen. The value of the field stays
 in the form and goes to `onSubmit`. When the field comes back, the next submit validates it again.
 
-**A submit is an ordinary button.** `submitForm` and `resetForm` are functions. Pass one as the
-click handler of any `button`, at any depth inside the form, and the function finds the form. A
-submit checks every field again. When one field fails, `onSubmit` does not run, the bad fields show
-their messages, and the focus moves to the first of them. Return a promise from `onSubmit`, and the
-form ignores a second submit until it settles. The state `imp.form.submitting` is `true` meanwhile,
-so a button of yours can spin.
+**A submit is an ordinary button.** `button({ submit: true })` submits the form around it, at any
+depth, and spins while the form submits. `submitForm` and `resetForm` are the same actions as
+functions, for a click handler of your own. A submit checks every field again. When one field fails,
+`onSubmit` does not run, the bad fields show their messages, and the focus moves to the first of
+them. Return a promise from `onSubmit`, and the form ignores a second submit until it settles. The
+state `imp.form.submitting` is `true` meanwhile.
+
+**Two buttons can submit one form for two reasons.** Give each one an intent, such as
+`button({ submit: 'draft' }, 'Save draft')` and `button({ submit: 'publish' }, 'Publish')`.
+`onSubmit` receives `(values, { intent })`. Every `validate` receives `(value, { values, intent })`,
+so a field can be required for one intent only. `values` also lets a check compare two fields.
+
+**A field that follows another field uses `useField`.** In a component inside the form,
+`useField(self, 'teamId')` is that one field as a state. Watch it, and `set` another field with
+`useField(self, 'partners').set(members)`. You do not spread the whole form state to change one
+value.
+
+**A choice keeps its type.** `select`, `radioGroup` and `segmented` write the value of an option as
+you wrote it. An option `{ value: 4 }` gives the number `4`, and `{ value: null, label: 'None' }`
+gives `null`.
 
 **A failed save shows above the buttons.** When `onSubmit` throws, or its promise rejects, the form
 shows an error `notice` above its last child, which holds the buttons. A screen reader announces it.
@@ -402,8 +436,9 @@ The next submit removes it. So a failure that belongs to no single field needs n
 **Only a message that you wrote for a person reaches the person.** The text of an ordinary error,
 such as `TypeError: Cannot read properties of undefined`, means nothing to the reader of your app.
 So the form shows a translated generic message, "We could not send the form - try again", and logs
-the original error. To show your own message, throw a `FormError` from `imp/std/inputs`, and route
-its text through `t()`:
+the original error. An `HttpError` with a `userMessage` shows that text, which the `userMessage`
+option of the HTTP client reads from the error body of your API, see **[HTTP](http.md)**. To show a
+message of your own, throw a `FormError` from `imp/std/inputs`, and route its text through `t()`:
 
 ```js
 import { HttpError } from 'imp/http'
@@ -631,6 +666,18 @@ dialog(
 The same prop makes a dialog that only your code closes, with `() => false`. It also holds a dialog
 open while a request runs, with `() => !saving.get()`. The router asks the same kind of check before
 it leaves a screen, see **[Routing](routing.md)**.
+
+**A form in a dialog starts fresh each time.** Pass the content as `content: () => form(...)`. imp
+builds it when the dialog opens and drops it after the dialog closes. So the next open starts from
+`initialValues`, with no reset of your own:
+
+```js
+dialog({
+  title: 'Add people',
+  open: adding,
+  content: () => form({ initialValues: { members: [] }, onSubmit: add }, ...fields),
+})
+```
 
 A `drawer` slides in from the end of the line, the right edge in English and the left edge under
 `dir="rtl"`. On a desktop it is as tall as the screen. On a phone it is as tall as its content, up

@@ -29,18 +29,37 @@ export const mocks = [
 ]
 ```
 
-Every `*.mock.js` file under the folder exports a `mocks` array of `{ match, handler, delay? }`. imp
-also reads a nested folder.
+Every `*.mock.js` file under the folder exports a `mocks` array of `{ match, handler, delay? }` or
+`{ route, handler, delay? }`. imp also reads a nested folder.
 
 | Key                | Gets                                          | Returns                                                    |
 | ------------------ | --------------------------------------------- | ---------------------------------------------------------- |
 | `match(request)`   | `{ method, url, path, query, headers, body }` | `true` to answer this request                              |
+| `route`            | a string such as `'GET /api/users/:id'`       | answers that method and path; the handler gets `params`    |
 | `handler(request)` | the same object                               | `{ status, headers, body }`. Can be async.                 |
 | `delay`            | -                                             | milliseconds of simulated latency, so a spinner is visible |
 
 The default `status` is `200`. imp sends a `body` that is not a string as JSON. A request `body`
 arrives parsed when the page sent it as JSON. A mock runs in the `imp start` process, not in the
-page. It has `setTimeout` and `console`, and no DOM and no `fetch`.
+page. It has `setTimeout`, `console` and `crypto.getRandomValues` and `crypto.randomUUID`, and no
+DOM and no `fetch`.
+
+```js
+export const mocks = [
+  {
+    route: 'GET /api/orders/:orderId',
+    handler: (request) => ({ body: findOrder(request.params.orderId) }),
+  },
+  {
+    route: 'POST /api/orders',
+    handler: (request) => ({ status: 201, body: { id: crypto.randomUUID(), ...request.body } }),
+  },
+]
+```
+
+A `route` matches the whole path, with or without a trailing `/`, and ignores the query. Each
+`:name` matches one segment, and imp decodes it into `request.params.name`. Do not write your own
+router of regular expressions for a mock API.
 
 ## How to turn the mocks on and off
 

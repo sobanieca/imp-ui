@@ -16,7 +16,7 @@ drops it.
 | `name`       | string, or a state holding one - **live** | required    | Gives the initials and the accessible name    |
 | `picture`    | URL, or a state holding one - **live**    | -           | The image; the initials show when it is unset |
 | `size`       | `'sm'`, `'md'`, `'lg'`                    | `'md'`      | 1.5rem, 2rem, 3rem                            |
-| `color`      | `'primary'`, or any theme palette name    | `'primary'` | The colour behind the initials                |
+| `color`      | `'primary'`, `'auto'`, or a palette name  | `'primary'` | The colour behind the initials                |
 | `decorative` | boolean                                   | `false`     | Hides the avatar from a screen reader         |
 
 `color` accepts these 16 palette names, in palette order:
@@ -36,7 +36,9 @@ Rules an agent gets wrong:
 - **`color` is a palette name, not a CSS colour.** Write `color: 'violet'`, never `'#7c3aed'`. imp
   warns about an unknown name and falls back to `'primary'`. A palette colour draws a tint of the
   colour with darker initials, so all 16 stay readable in a light theme and in a dark theme.
-- **imp does not derive a colour from the name.** Pass the `color` that you want for each person.
+- **`color: 'auto'` takes the colour from the name.** The same name always gets the same palette
+  colour, and a live name changes it. Do not keep a list of colours and cycle through it by index.
+  The neutral `gray` and `brown` are never picked.
 - **There is no avatar group and no overlap.** `flex` has no negative gap. A row of people is
   `flex({ gap: 1 }, avatar(...), avatar(...))`. For "and 4 more", add `tag({ size: 'sm' }, '+4')`.
 - **The avatar is not interactive.** There is no click and no focus. For a link to a profile, put

@@ -94,6 +94,7 @@ mount(
 | `safeNext(value, fallback)`               | `value` when it is a path of the app, else `fallback`; wrap every `?next=` value in it                                                     |
 | `beforeLeave(self, check)`                | in `setup`: `check()` returns `false`, or a Promise of `false`, to stay; asked before the route changes                                    |
 | `useRoute()`                              | read-only live `{ path, query, searchParams }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                         |
+| `crumbLabel(self, label)`                 | in a screen of a param node: names its crumb, and the title, with the data that the screen loaded; `label` is a string or a state          |
 | `url(path)`                               | prefixes `IMP_BASEPATH`, for an `href` you write as a string                                                                               |
 
 `loading` shows while the module of an **area** downloads or a guard waits. `error` is an error
@@ -149,6 +150,8 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `${app.admin.users}`                                | `/admin/users` - so `[app.admin.users]` keys `screens` and `icons`                            |
 | `app.projects.$projectId.href({ projectId: '42' })` | `/projects/42`, through `url()`; a missing param comes from the current route, else it throws |
+| `app.search.href({}, { query: { q: 'milk' } })`     | `/search?q=milk`; `null` and `undefined` values are skipped, an array repeats the key         |
+| `app.join.$key.href({ key }, { absolute: true })`   | `https://host/join/abc`, for a link that leaves the app in an email or a chat                 |
 | `app.admin.spec`                                    | frozen `{ name, pattern, label, description, access, children, ... }`                         |
 | `({ node }) =>` in a factory                        | the handle of the matched node                                                                |
 
@@ -173,6 +176,9 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
   Unbound parent with static children: forwards to the first child. `redirect(handle)` in `screens`:
   forwards there. The router logs the stub nodes when it mounts. Write the map first, then bind
   screens.
+- **A node with only a param child and no `description` is a prefix, not a page.** `join: { $key: {...} }`
+  serves `/join/:key`. An unbound `/join` renders `notFound`, and its crumb is text, not a link. Do
+  not bind it to a `redirect` to hide the stub.
 - **A screen factory builds its screen immediately.** Never `await` in it, and never `import()` in
   it. Fetch in the async `setup` of the screen component. Put on-demand code behind `area()`.
 - **`area()` is the only lazy binding.** The nodes of the section stay in the map, so its nav shows
@@ -186,7 +192,8 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
 - **A broken percent encoding in a param, such as `/todos/%zz`, renders `notFound`.** A screen never
   sees a param that failed to decode.
 - **Navigate with a handle.** `navigate(app.projects.$projectId.href({ projectId }))`, and
-  `link({ href: app.x.href() }, ...)` from `imp/std`. Do not write a path string. Use
+  `link({ href: app.x.href() }, ...)` from `imp/std`. Do not write a path string. Pass a query as
+  `href(params, { query })`, never as a string that you join to the path. Use
   `{ replace: true }` after a login redirect. Inside a param, `app.x.$id.y.href()` fills `id` from
   the route.
 - **`navigate` throws on another origin.** `//x.com` and `https://x.com` throw unless you pass
@@ -198,6 +205,9 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
 - **`options` names a state, or lists the choices.** The router resolves the name with `useState` at
   its own position, so an ancestor must `initState` it. The state holds `[{ value, label }]` or
   strings. A screen fills it. The choices reach the trail as a picker, never the sidebar as rows.
+- **Name the crumb of a param with `crumbLabel(self, label)` in the screen.** Use `options` only for
+  a picker. A screen that opened by a deep link calls `crumbLabel(self, team.name)`, and the trail
+  and the title show that name. imp keeps the label for the value, so a child screen shows it too.
 - **A tenant is `scope`, not a map prop.** Put `$org` in the map where the URL has it, and pass
   `router({ scope: app.organizations.$org })`. Inside, the sections are the children of `$org` and
   the trail starts at its crumb. Outside, on `/login`, the sections are the top-level nodes.
@@ -248,6 +258,12 @@ decides the nav: a row shows only on an allow verdict, and `wait` hides it until
 - **A guard is synchronous and pure.** Do not `await`, fetch or call `navigate` in it. Return a path
   instead. It runs on every change of a declared state and once per node in the nav, so keep it
   cheap.
+- **A redirect waits one microtask, and a `navigate` in the same task wins over it.** So a screen
+  can `session.set(user)` and then `navigate(...)` to where the person goes next. The guard of the
+  screen that it leaves does not send the person anywhere else. A guard that allows again before
+  its redirect runs also keeps the screen.
+- **Send a signed-in person away from a public page with the guard**, not with a `watch` in the
+  screen. Return the path from the guard, for example by `need === 'guest'`.
 
 ## An area file
 

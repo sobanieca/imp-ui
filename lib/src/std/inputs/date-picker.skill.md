@@ -47,8 +47,7 @@ Rules an agent gets wrong:
 - **The empty value is `undefined`.** The clear button writes `undefined`. `required` removes the
   clear button.
 - **A range of dates is `dateRangePicker`.** `datePicker` holds one date. It has no range prop.
-- **A time alone has no control.** `time: true` always includes the date. `textField` covers plain
-  text only. A control for a time without a date is out of scope for now.
+- **A time alone is `textField({ type: 'time' })`.** `time: true` here always includes the date.
 - **`min` and `max` are days.** In `time` mode they limit the day, not the hour. A value outside the
   limits that comes from the state fails validation with `imp.datePicker.min` or
   `imp.datePicker.max`.

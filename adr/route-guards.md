@@ -116,6 +116,10 @@ router({ map: app, access, screens })
   other. imp resets the counter whenever any screen renders. So an ordinary redirect never
   accumulates toward the limit. imp uses a counter of its own, and not the generic
   `MAX_UPDATE_DEPTH` cycle error. That error would point at the state layer instead.
+- **A deferred redirect gives way.** A `navigate` that runs before the microtask drops it, because
+  the app already decided where the person goes. A guard that allows again before the microtask
+  cancels it. So a screen that signs the person in can set the session and navigate, and the guard
+  of the public page that it leaves does not send the person somewhere else.
 
 - **Everything fails closed.** A declared state that nothing provides at the position of the router
   throws the existing message of `useState`, and the router does not mount. A check that throws, and

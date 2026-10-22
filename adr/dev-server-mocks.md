@@ -28,16 +28,19 @@ folder. Every `*.mock.js` file under that folder is part of the mock set, and im
 nested folder. So you split the routes across files, in the way that the app is split.
 
 - **A mock file exports `mocks`, which is an array of `{ match, delay, handler }`.**
-  `match(request)` is a predicate over `{ method, url, path, query, headers, body }`. It is a
-  function, and not a route pattern. A pattern language is a second thing to learn, and it is always
-  one case short of what a predicate expresses. `handler(request)` receives the same object. It
+  `match(request)` is a predicate over `{ method, url, path, query, headers, body }`. A predicate
+  expresses every case. **`route` is the short form for the common case**: `'GET /api/users/:id'`
+  matches one method and one path, and the handler gets the decoded segments as `request.params`.
+  The pattern language is one rule, a `:name` per segment, so there is nothing more to learn. Without
+  it, every mock API grew its own small router of regular expressions. `handler(request)` receives the same object. It
   returns `{ status, headers, body }`, where imp serializes a plain `body` as JSON. A handler sets a
   `content-type` header to send anything else. `delay` is the simulated latency in milliseconds. **The first entry that matches
   answers**, in file-path order.
 - **A handler is code, and not data.** imp bundles the files with its bundler and loads the bundle
   once in an embedded QuickJS, on a thread of the dev server process, see `native-toolchain.md`. So
   a file imports a shared fixture, a vendored dependency, and whatever else it needs. The engine
-  gives a handler the language, `console` and timers, and no DOM and no `fetch`, because a mock
+  gives a handler the language, `console`, timers and `crypto.getRandomValues` and
+  `crypto.randomUUID` from the random source of the system, and no DOM and no `fetch`, because a mock
   answers for the network and never calls it. A closure over a counter is how a handler keeps state
   across requests. That state lives as long as the run. Every tab shares it, and a reload or a
   stopped worker keeps it. A `throw` inside a handler is how it simulates a transport failure, and

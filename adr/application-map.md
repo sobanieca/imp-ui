@@ -68,6 +68,16 @@ handle per node.**
   static child. A node bound to `redirect(handle)` forwards there, with the params of the route. So
   the whole map runs before one screen exists, in production too. The router logs the nodes that
   render a stub when it mounts.
+- **A node that holds only params, and has no `description`, is a prefix.** `join: { $key: {} }`
+  exists to give `/join/:key` its first segment. Its own URL renders `notFound`, and its crumb is
+  text. A `description` marks a page that is still to come, and then the node renders a stub as
+  before. So an app does not bind a `redirect` only to hide a stub.
+- **A screen names the crumb of its param with `crumbLabel(self, label)`.** The router provides the
+  context of each route page through the DOM, so the call finds the innermost param of its screen.
+  imp keeps the label per param value for the session. A child page shows it, and a picker in
+  `options` is needed only when the trail must offer the siblings.
+- **`handle.href(params, { query, absolute })` builds every link.** A query is a plain object that
+  imp encodes, and `absolute: true` adds the origin for a link that leaves the app in an email.
 
 - **`access` is the one door.** A node carries any `access` value, and one guard on the router,
   `router({ access })`, receives that value as `need`, beside the state values and

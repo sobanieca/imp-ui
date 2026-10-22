@@ -1,4 +1,4 @@
-# Layout: two flex primitives, `flex` and `stack`, and no third box
+# Layout: two flex primitives, `flex` and `stack`, page `columns`, and no box
 
 ## Context
 
@@ -33,8 +33,8 @@ app that stayed left to right, while everything inside it turned around.
 ## Decision
 
 **The arrangement primitives are `flex` and `stack`, imported from `imp/std/layout`. They are CSS
-flexbox with a small, closed set of props. The library ships no third way to arrange children, and
-no third way to put them in a box.**
+flexbox with a small, closed set of props. `columns` is the one more arrangement, for page columns
+that wrap. The library ships no way to put children in a box.**
 
 - **`flex` is a row**, with `flex-direction: row`. It takes `horizontalAlign`, which is `start`,
   `end`, `center` or `justify`, `verticalAlign`, which is `top`, `bottom`, `center` or `stretch`,
@@ -64,13 +64,21 @@ no third way to put them in a box.**
   a length. So it stays fluid and themable, see `responsive-fluid-values-only.md`. There is no
   margin prop, and no standard component carries an outer margin. So a `gap` on the parent is the
   one answer to the space between two components.
+- **`columns` places page columns side by side, and wraps them when the row is too narrow.** Each
+  child is one column. Its flex basis is `minInlineSize` times its weight, and it grows by its
+  weight. So the widths keep the ratio of the weights while the row fits, and the columns wrap into
+  one column below that, with no media query. It takes `weights`, `minInlineSize`, `gap` and
+  `verticalAlign`, which is `top` or `stretch`. A details page with a main column and a side column
+  was the same twelve lines of CSS grid and one media query in every screen of an app. `columns`
+  wraps each child in a box of its own shadow root, because a host with `display: contents` makes no
+  box that a flex basis can size.
 - **There is no padding, background, width, height, radius, border, grow or scroll prop, and there
   is no `box` and no `grid` component.** A box that needs those is a `div`, inside the component of
   the app, styled with plain CSS. The library takes the two arrangements that every page makes, and
   it leaves the rest to the language that already does that well.
 - **No prop varies by the size of the screen.** A layout that must change shape at a width is a
   media query that the app writes in its own component, see `responsive-fluid-values-only.md`.
-  `wrap` and the fluid scale cover the rest.
+  `wrap`, `columns` and the fluid scale cover the rest.
 - **The other exports of the group, `shell`, `dialog` and `drawer`, are not arrangement primitives,
   and they do not open this decision again.** `shell` is the app frame. It is a fixed set of named
   regions for a whole page, and it takes DOM. It does not sort children into a slot, as the removed
@@ -87,7 +95,7 @@ no third way to put them in a box.**
 
 ## Consequences
 
-- The whole arrangement surface is two names and six props. That is small enough to keep in mind,
+- The whole arrangement surface is three names and ten props. That is small enough to keep in mind,
   and small enough for an agent to get right from one skill page.
 - **Anything richer than a row or a stack is the CSS of the app**, and that is more to type than a
   prop table was. That is the trade. A `div` with a `padding` and a `background`, in the `styles` of
@@ -96,8 +104,8 @@ no third way to put them in a box.**
 - Nesting is the technique. Every arrangement is a row inside a stack inside a row. The cost is one
   custom element per level. That is cheap, because a layout component defines no state, and compiles
   its stylesheet once for the whole app.
-- **There is no grid.** So a layout that is genuinely two-dimensional is CSS grid, in the component
-  of the app. A dense form, and a dashboard of cards, are the examples. There is one exception at
+- **There is no grid.** `columns` aligns nothing across its columns, so it is not a grid. A layout
+  that is genuinely two-dimensional is CSS grid, in the component of the app. A dense form, and a dashboard of cards, are the examples. There is one exception at
   page level. `shell` owns the grid that an app frame is made of, so nobody writes that grid by
   hand. Whether the library must own a grid at all stays open. imp does not answer that badly a
   second time.

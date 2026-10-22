@@ -87,6 +87,8 @@ fn mocks_transcript(worker: &Worker, port: u16) -> Vec<String> {
             Some("application/json"),
         ),
         worker.send("/api/reports?name=q3", "GET", None, None),
+        worker.send("/api/orders/o%207/lines/2", "GET", None, None),
+        worker.send("/api/orders/o7", "GET", None, None),
         worker.send("/api/flaky", "GET", None, None),
         worker.send("/api/flaky", "GET", None, None),
         worker.send("/api/unmocked", "GET", None, None),
