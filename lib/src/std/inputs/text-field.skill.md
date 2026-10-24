@@ -1,4 +1,4 @@
-# textField - the one text input: text, email, password, search, number, or multi-line
+# textField - the one text input: text, email, password, search, number, time, or multi-line
 
 ```js
 import { textField } from 'imp/std/inputs'
@@ -21,15 +21,15 @@ The call shape is `textField(props?)`. It takes no children.
 | `disabled`  | boolean, or a state holding one - **live** | Blocks interaction                           |
 | `secret`    | boolean                                    | With `field`: keeps the value out of state   |
 
-| Prop           | Values                                                                      | Default  | Notes                                           |
-| -------------- | --------------------------------------------------------------------------- | -------- | ----------------------------------------------- |
-| `type`         | `'text'`, `'email'`, `'tel'`, `'url'`, `'password'`, `'search'`, `'number'` | `'text'` | The `type` of the `<input>`                     |
-| `rows`         | number                                                                      | -        | Renders a `<textarea>` with that many lines     |
-| `step`         | number                                                                      | -        | Type `'number'` only. The step of the spinner   |
-| `stepper`      | boolean                                                                     | `false`  | Type `'number'` only. A minus and a plus button |
-| `placeholder`  | string                                                                      | -        | Shown while the control is empty                |
-| `readonly`     | boolean                                                                     | `false`  | The value shows, and the person cannot edit it  |
-| `autocomplete` | string                                                                      | -        | The autofill hint, such as `'new-password'`     |
+| Prop           | Values                                                                                | Default  | Notes                                           |
+| -------------- | ------------------------------------------------------------------------------------- | -------- | ----------------------------------------------- |
+| `type`         | `'text'`, `'email'`, `'tel'`, `'url'`, `'password'`, `'search'`, `'number'`, `'time'` | `'text'` | The `type` of the `<input>`                     |
+| `rows`         | number                                                                                | -        | Renders a `<textarea>` with that many lines     |
+| `step`         | number                                                                                | -        | Type `'number'` only. The step of the spinner   |
+| `stepper`      | boolean                                                                               | `false`  | Type `'number'` only. A minus and a plus button |
+| `placeholder`  | string                                                                                | -        | Shown while the control is empty                |
+| `readonly`     | boolean                                                                               | `false`  | The value shows, and the person cannot edit it  |
+| `autocomplete` | string                                                                                | -        | The autofill hint, such as `'new-password'`     |
 
 The validation props are `required`, `minLength`, `maxLength`, `min`, `max`, `pattern`, which is a
 RegExp, and `validate`. `validate` is a function. It returns a message string, or `null` when the
@@ -56,6 +56,8 @@ Rules an agent gets wrong:
   or a multi-line text. Set `type`, or set `rows`.
 - **`rows` makes the field multi-line, and `type` makes it something else. Do not pass both.** imp
   warns, ignores `type`, and renders the `<textarea>`.
+- **Type `'time'` commits a `'HH:mm'` string**, from the native time input. `min` and `max` are
+  `'HH:mm'` strings, and imp checks them as times. An empty control commits `''`.
 - **Type `'number'` commits a number, not a string.** An empty control commits `undefined`. Text
   that is not a number fails with `imp.form.number`. `min` and `max` compare the number. `step`
   applies to this type only.

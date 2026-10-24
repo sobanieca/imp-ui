@@ -18,6 +18,7 @@ of the platform. So an ancestor never clips it, and it needs no z-index.
 | `open`        | boolean, or a state - **live**    | `false` | What opens and closes it                       |
 | `beforeClose` | `() => boolean \| Promise`        | -       | Return `false` to stay open                    |
 | `anchor`      | element - **read once, at mount** | -       | Non-modal only: the window opens next to it    |
+| `content`     | `() => DOM`                       | -       | Built on each open, dropped after each close   |
 | `events`      | `{ openToggle }`                  | -       | `detail: { open }`, on changes it makes itself |
 
 | Property                   | Default |
@@ -37,6 +38,12 @@ of the platform. So an ancestor never clips it, and it needs no z-index.
 | Several open at once | one at a time               | as many as you mount                     |
 
 Rules an agent gets wrong:
+
+- **A form in a dialog goes in `content`.** `dialog({ title, open, content: () => form(...) })`
+  builds the form each time the dialog opens, so it starts from its `initialValues` again. imp drops
+  it after the closing animation. Do not wrap the content in `open.view(...)` yourself. Children are
+  built once, and keep what the person typed.
+- **Pass `content` or children, not both.** With both, imp warns and uses `content`.
 
 - **Import the component from `imp/std/layout`**, not from `imp/std`. It **shadows the `dialog`
   element factory** from `imp/html`. A file that needs both gives one an alias:

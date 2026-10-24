@@ -11,7 +11,7 @@ after a tap on the fold button: aria-expanded true, tabs inert false, a tab is v
 state editor on a phone: anchored true, 8px under its toggle, inside the viewport true
 agent instruction strips on the page: 1 (region 'Agent instruction')
 agent instruction: imp skill ./components/counter.js
-agent instruction copy control: copy button with 1 icon, in a tooltip
+agent instruction copy control: Copy button with 1 icon, in a tooltip
 code hidden before the toggle: true, hidden again after a second click: true
 code toggle pressed: false -> true (remembered as shown)
 scenario tabs: zero, Starts at five, Built at render time (vertical, selected zero)

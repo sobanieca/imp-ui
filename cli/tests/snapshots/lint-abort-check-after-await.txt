@@ -5,8 +5,8 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/abort-check-after-await]: 'initState' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; test self.abortSignal.aborted after the await and return, pass self.abortSignal to the awaited call, or resolve before the first await
- --> app.js:10:20
+error[imp/abort-check-after-await]: 'useState' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; await an http call of the component, which an unmount cancels, test self.abortSignal.aborted after the await and return, or resolve before the first await
+ --> app.js:16:18
 
 Found 1 problem
 Checked 1 file

@@ -5,6 +5,38 @@ export const mockRuntime = ({ modules, files, reply, report }) => {
 
   const messageOf = (error) => String(error?.message || error)
 
+  const ROUTE = /^([A-Z]+)\s+(\/\S*)$/
+
+  const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  const routeMatcher = (route) => {
+    const found = typeof route === 'string' ? route.trim().match(ROUTE) : null
+    if (!found) return null
+    const [, method, path] = found
+    const names = []
+    const pattern = path
+      .split('/')
+      .map((segment) => {
+        if (!segment.startsWith(':')) return escaped(segment)
+        names.push(segment.slice(1))
+        return '([^/]+)'
+      })
+      .join('/')
+    const expression = new RegExp(`^${pattern}/?$`)
+    return (description) => {
+      if (description.method !== method) return null
+      const values = description.path.match(expression)
+      if (!values) return null
+      try {
+        return Object.fromEntries(
+          names.map((name, index) => [name, decodeURIComponent(values[index + 1])]),
+        )
+      } catch {
+        return null
+      }
+    }
+  }
+
   const collectEntries = () => {
     const problems = []
     const entries = modules.flatMap((module, fileIndex) => {
@@ -16,11 +48,19 @@ export const mockRuntime = ({ modules, files, reply, report }) => {
       }
       return declared.flatMap((entry, index) => {
         const source = `${file} #${index + 1}`
-        if (typeof entry?.match !== 'function' || typeof entry?.handler !== 'function') {
-          problems.push(`${source} must be { match, handler }, both functions`)
+        const route = typeof entry?.match === 'function' ? null : routeMatcher(entry?.route)
+        if (
+          (typeof entry?.match !== 'function' && !route)
+          || typeof entry?.handler !== 'function'
+        ) {
+          problems.push(
+            `${source} must be { match, handler } or { route: 'GET /api/users/:id', handler }, with functions`,
+          )
           return []
         }
-        return [{ match: entry.match, handler: entry.handler, delay: entry.delay ?? 0, source }]
+        return [
+          { route, match: entry.match, handler: entry.handler, delay: entry.delay ?? 0, source },
+        ]
       })
     })
     return { entries, problems }
@@ -71,6 +111,14 @@ export const mockRuntime = ({ modules, files, reply, report }) => {
   const answer = async (id, text) => {
     const description = JSON.parse(text)
     for (const entry of entries) {
+      if (entry.route) {
+        const params = entry.route(description)
+        if (params) {
+          reply(id, JSON.stringify(await answerFrom(entry, { ...description, params })))
+          return
+        }
+        continue
+      }
       let matched = false
       try {
         matched = await entry.match(description)

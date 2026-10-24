@@ -61,7 +61,9 @@ You can set every option on the client, and override it on a single call.
 
 These options work on a call only: `query`, where imp skips a `null` or `undefined` value and
 repeats the key for an array, `body`, `signal`, `track`, which is a name for `tracked()`, `meta`,
-which is yours and which an interceptor can read, and `method` on `request`.
+which is yours and which an interceptor can read, and `method` on `request`. `silent: true` keeps a
+failure of the call out of `lastError`, so a `toast` does not show it. `detached: true` lets a call
+through `useHttpClient` outlive the component that made it.
 
 ```js
 await api.get('/users', { query: { page: 2, tag: ['new', 'active'] } })
@@ -103,9 +105,19 @@ anything else to a `Blob`. A `204` response and an empty body both give `null`.
 - **A helper module takes the client as an argument**, as in `loadUsers(api, page)`. imp reaches a
   client through the DOM. Never import one. Do the same for DOM that imp renders outside the
   subtree, such as a second `mount` into another element of the page. Pass the handle.
-- **Do not cancel a call by hand for a navigation.** When the owner unmounts, imp aborts the calls
-  in flight. Use your own `signal` only for a search-as-you-type call that a newer call replaces, or
-  for a cancel button.
+- **Do not cancel a call by hand for a navigation.** A call through `useHttpClient(self)` belongs to
+  that component. When it unmounts, imp aborts the call, and the call rejects with `code: 'aborted'`
+  even when the response already arrived. So the code after `await api.get(...)` in an async
+  `setup` never runs after an unmount, and needs no `self.abortSignal` check. Use your own `signal`
+  only for a search-as-you-type call that a newer call replaces, or for a cancel button.
+- **A call that must finish after the component leaves takes `detached: true`**, such as an event
+  that a component sends as it closes. A call made in `onRemove` is never bound to the mount.
+- **An aborted call never writes `lastError`.** A cancel is not a failure, so no toast shows it.
+- **The component that shows a failure reads the text for a person.** Pass
+  `message: (error) => error.body?.error` to `toast`, and `errorMessage` of the same shape to
+  `form`. Do not catch the error only to turn it into a message.
+- **A failure that the screen shows itself takes `silent: true`**, such as a 404 for a dead link
+  that renders an empty state. Do not make a second client only to keep a toast quiet.
 - **`requestId` can break a cross-origin call.** A custom header causes a CORS preflight. Set
   `requestId: false` for an API that does not list the header in `Access-Control-Allow-Headers`. imp
   leaves an `x-request-id` that you set yourself in `headers` as it is.

@@ -51,6 +51,7 @@ resolves with `null` when the entry is dismissed, when it expires, or when the s
 | `visible`  | number                              | `3`        | Popups in the corner at once. The rest wait in order |
 | `limit`    | number                              | `100`      | Entries the store keeps. It drops the oldest         |
 | `client`   | name of an HTTP client, or an array | -          | Raises an `error` notification from each `lastError` |
+| `message`  | `(error) => string`                 | -          | The title of a client failure. Gets `lastError`      |
 
 Rules an agent gets wrong:
 
@@ -78,9 +79,11 @@ Rules an agent gets wrong:
   inline size.
 - **The timer of a popup waits** while the pointer is over the popup, and while the focus is inside
   it. A popup never takes the focus.
+- **A call with `silent: true` raises no notification.** Use it for a failure that the page shows
+  itself. An aborted call raises none either. Do not create a second client to keep the toast quiet.
 - **`client` names a client that an ancestor initialized.** The region calls `useHttpClient` from
   its own position, and imp throws when no ancestor provides the name. The title of the notification
-  is the `message` of `lastError`. The `id` comes from the client name, the method and the URL, so
+  is the text that `message` returns, else the `message` of `lastError`. The `id` comes from the client name, the method and the URL, so
   the same request that fails again stays one entry.
 - **A screen reader hears the title and the description once.** `info` and `success` go to a
   `role="status"` element. `warning` and `error` go to a `role="alert"` element. Do not add a live

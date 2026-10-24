@@ -28,9 +28,11 @@ folder. Every `*.mock.js` file under that folder is part of the mock set, and im
 nested folder. So you split the routes across files, in the way that the app is split.
 
 - **A mock file exports `mocks`, which is an array of `{ match, delay, handler }`.**
-  `match(request)` is a predicate over `{ method, url, path, query, headers, body }`. It is a
-  function, and not a route pattern. A pattern language is a second thing to learn, and it is always
-  one case short of what a predicate expresses. `handler(request)` receives the same object. It
+  `match(request)` is a predicate over `{ method, url, path, query, headers, body }`. A predicate
+  expresses every case. **`route` is the short form for the common case**: `'GET /api/users/:id'`
+  matches one method and one path, and the handler gets the decoded segments as `request.params`.
+  The pattern language is one rule, a `:name` per segment, so there is nothing more to learn. Without
+  it, every mock API grew its own small router of regular expressions. `handler(request)` receives the same object. It
   returns `{ status, headers, body }`, where imp serializes a plain `body` as JSON. A handler sets a
   `content-type` header to send anything else. `delay` is the simulated latency in milliseconds. **The first entry that matches
   answers**, in file-path order.
@@ -58,6 +60,13 @@ nested folder. So you split the routes across files, in the way that the app is 
   boundary for failure. An error that mock code throws outside a handler, for example in a timer,
   stops that worker and not the dev server. imp reports the error, and the next request loads the
   set again.
+- **`imp/fake` gives realistic data with one call.** `fake` has `guid`, `name`, `email`, `phone`,
+  `hash` and `address`. A mock needs plausible records, not random bytes, so imp ships the
+  high-level calls and no `crypto`. The values come from `Math.random`, because a fake value never
+  protects anything. An email uses the reserved `example.*` domains and a phone uses the fictional
+  `555-01xx` range, so a value never reaches a real person. The name says what the data is, not
+  where it is used, because a test and a preview need it too. `imp/fake` is a tooling module like
+  `imp/test`, so `imp build` refuses it in an app.
 - **An unmatched request goes to the network.** So an API that is half mocked is the normal case,
   and not a case that somebody configures. To mock one endpoint never takes the rest of the app
   offline.

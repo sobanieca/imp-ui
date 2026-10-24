@@ -146,9 +146,23 @@ calls in flight. So a `computed` over `api.pending` binds straight to a `hidden`
 `api.pending.text()` renders the count. There is no new concept. `lastError` holds **plain data**,
 which is `{ message, status, code, method, url, body }`, and not the `Error` object. A state value
 is plain data, see `state-plain-data-values.md`. The next call that succeeds clears `lastError`, and
-`clearError()` clears it by hand. Granularity per request is a **choice that you make**. A call that
+`clearError()` clears it by hand. An aborted call never writes it, because a cancel is not a
+failure. A call with `silent: true` leaves it as it was, so a page that renders a failure itself
+keeps the toast quiet with no second client. Granularity per request is a **choice that you make**. A call that
 passes `track: 'users.list'` also drives `api.tracked('users.list')`. So to connect one spinner to
 one request costs one name, and every other call costs nothing.
+
+**A call belongs to the component that made it.** The handle of `useHttpClient(self)` adds an abort
+signal of that mount to each call. When the mount ends, imp aborts the calls, and a call whose
+response arrived in the same moment rejects with `code: 'aborted'` as well. So the code after an
+`await` of the call never runs after an unmount, and an async `setup` needs no check of
+`self.abortSignal`. A call made in `onRemove`, or a call with `detached: true`, is not bound, so an
+exit report still goes out.
+
+**The component that shows a failure reads the text for a person.** An `HttpError` and `lastError`
+carry the response, and no text for a person. A `toast` takes `message: (error) => string` for the
+title of a client failure. A `form` takes `errorMessage: (error) => string` for a failed submit. The
+text belongs to the place that shows it, so the client stays free of presentation.
 
 ## Consequences
 

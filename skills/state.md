@@ -72,8 +72,9 @@ user.set({ ...user.get(), theme: 'light' })
   which means unknown, then `null`, which means known to be empty, then the value. Branch where the
   difference matters. A guard in [routing](routing.md) reads exactly that convention.
 - **Resolution goes through `self`, at any point in `setup`.** `initState` and `useState` work
-  before and after any `await`. They throw after the component has left the page. An async `setup`
-  that can outlive its host checks `self.abortSignal.aborted` after an `await`. The lint rule is
+  before and after any `await`. They throw after the component has left the page. After an `await`
+  of an http call of the component, nothing more is needed, because an unmount aborts the call.
+  After any other `await`, check `self.abortSignal.aborted`. The lint rule is
   `imp/abort-check-after-await`.
 - **`useState` throws when no ancestor initialized the name.** `initState` throws when the same
   scope already provides the name. A nested `initState` of the same name shadows the ancestor for
@@ -147,6 +148,19 @@ value, not a registered name. `useState` cannot find it. Pass it around, or crea
 A source notifies on its own. So two `set` calls one after the other cause two recomputes, and the
 first notification sees the combination in between. Put values that must change together in **one**
 state object.
+
+## A state that the browser keeps
+
+`initState(self, name, value, { persist: true })` keeps the value in `localStorage` under
+`imp.state.<name>`. The next mount, also after a reload, starts from the stored value. Each `set`
+writes it again, and a change in another tab arrives through the `storage` event.
+
+- **Use it for a convenience of one person on one device**, such as the checks that the person
+  started here, a filter or a closed panel. It never reaches another device or the server.
+- **The value must be JSON.** A `Date` comes back as a string.
+- **Storage can be blocked or empty**, as in a private window. imp then starts from `value` and logs
+  at debug level. Do not wrap the call in `try`.
+- Do not write your own `localStorage` helper for a state.
 
 ## Cleanup and scope
 

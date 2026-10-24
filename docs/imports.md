@@ -8,7 +8,7 @@ The library is split by subject, so an import line shows which part of imp a fil
 
 | Specifier            | What it holds                                                                                                           | Page                                     |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                                                   | [Components](components.md)              |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`, `interval`, `delay`                                              | [Components](components.md)              |
 | `imp/html`           | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...)                                               | [Rendering](rendering.md)                |
 | `imp/state`          | `initState`, `useState`, `computed`                                                                                     | [State](state.md)                        |
 | `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute`, `url`, `screenRegion` | [Routing](routing.md)                    |
@@ -23,6 +23,7 @@ The library is split by subject, so an import line shows which part of imp a fil
 | `imp/std`            | The standard component library, split by group                                                                          | [Standard components](std-components.md) |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, and the hooks                                                                    | [Testing](testing.md)                    |
 | `imp/preview`        | `mockModule`, for a `*.preview.js` file                                                                                 | [CLI](cli.md#imp-preview)                |
+| `imp/fake`           | `fake`, generated data for a mock file, a test or a preview                                                             | [CLI](cli.md#generated-data)             |
 
 A typical screen imports from the two or three specifiers it uses:
 

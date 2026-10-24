@@ -195,13 +195,30 @@ struct HandleTracker {
 
 impl HandleTracker {
     fn new(ctx: &Ctx, imports: &[&ImportDeclaration]) -> HandleTracker {
-        let creators = HelperTracker::new(
+        HandleTracker::from_creators(
+            ctx,
             imports,
             &[
                 ("imp/state", &["initState", "useState", "computed"]),
                 ("imp/router", &["useRoute"]),
             ],
-        );
+        )
+    }
+
+    fn http_clients(ctx: &Ctx, imports: &[&ImportDeclaration]) -> HandleTracker {
+        HandleTracker::from_creators(
+            ctx,
+            imports,
+            &[("imp/http", &["initHttpClient", "useHttpClient"])],
+        )
+    }
+
+    fn from_creators(
+        ctx: &Ctx,
+        imports: &[&ImportDeclaration],
+        by_source: &[(&str, &[&str])],
+    ) -> HandleTracker {
+        let creators = HelperTracker::new(imports, by_source);
         let mut names = HashSet::new();
         for declaration in imports {
             let readables: &[&str] = match import_source(declaration) {
@@ -682,6 +699,8 @@ fn single_props_object(ctx: &Ctx, factories: &FactoryTracker) {
         );
     }
 }
+
+const HTTP_VERBS: &[&str] = &["get", "post", "put", "patch", "delete", "head", "request"];
 
 const RESOLUTION: &[(&str, &[&str])] = &[
     ("imp/state", &["initState", "useState"]),
@@ -1266,6 +1285,7 @@ fn abort_check_after_await(ctx: &Ctx, imports: &[&ImportDeclaration], definition
         signal_in_await: bool,
     }
     let helpers = HelperTracker::new(imports, RESOLUTION);
+    let clients = HandleTracker::http_clients(ctx, imports);
     let mut frames: Frames<Frame> = Frames::new();
     for node in ctx.nodes() {
         let kind = node.kind();
@@ -1317,6 +1337,12 @@ fn abort_check_after_await(ctx: &Ctx, imports: &[&ImportDeclaration], definition
                 }
             }
             AstKind::CallExpression(call) => {
+                if !frame.await_ends.is_empty()
+                    && clients.method_call(&call.callee, HTTP_VERBS).is_some()
+                {
+                    frame.signal_in_await = true;
+                    continue;
+                }
                 if !frame.awaited || frame.checked {
                     continue;
                 }
@@ -1329,7 +1355,7 @@ fn abort_check_after_await(ctx: &Ctx, imports: &[&ImportDeclaration], definition
                 ctx.report(
                     "abort-check-after-await",
                     call.span,
-                    format!("'{helper}' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; test self.abortSignal.aborted after the await and return, pass self.abortSignal to the awaited call, or resolve before the first await"),
+                    format!("'{helper}' runs after an await in an async setup with no check of self.abortSignal - the component can leave the page while setup waits, and a resolution after that throws; await an http call of the component, which an unmount cancels, test self.abortSignal.aborted after the await and return, or resolve before the first await"),
                 );
             }
             _ => {}

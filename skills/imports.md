@@ -6,7 +6,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 
 | Specifier            | Exports                                                                                                                 |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`                                                                   |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`, `interval`, `delay`                                              |
 | `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)                                                   |
 | `imp/state`          | `initState`, `useState`, `computed`                                                                                     |
 | `imp/router`         | `router`, `area`, `redirect`, `guard`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute`, `url`, `screenRegion` |
@@ -18,15 +18,16 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 | `imp/service-worker` | `startDevMode`, `precacheBuild`, called from a service worker of your own                                               |
 | `imp/analytics`      | `onAnalytics`, `batch`, `zone`, `track`                                                                                 |
 | `imp/analytics/aly`  | `alySink` - the sink for imp-aly servers                                                                                |
-| `imp/std`            | `button`, `menuButton`, `heading`, `text`, `link`, `icon`                                                               |
+| `imp/std`            | `button`, `copyButton`, `menuButton`, `heading`, `text`, `link`, `icon`                                                 |
 | `imp/std/layout`     | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                |
 | `imp/std/inputs`     | `form`, `textField`, `select`, `datePicker`, `comboBox`, `segmented`, ...                                               |
 | `imp/std/display`    | `card`, `avatar`, `accordion`, `descriptionList`, `tag`, `steps`, ...                                                   |
-| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, ...                                          |
+| `imp/std/shell`      | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `accountMenu`, `orgSelect`, `themeSelect`, ...                           |
 | `imp/std/feedback`   | `loader`, `progress`, `notice`, `skeleton`, `toast`, `notify`, `dismiss`, ...                                           |
 | `imp/std/data`       | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                |
 | `imp/test`           | `test`, `expect`, `spy`, `mockModule`, `beforeAll`/`beforeEach`/...                                                     |
 | `imp/preview`        | `mockModule` (for `*.preview.js` files)                                                                                 |
+| `imp/fake`           | `fake` (generated data for mocks, tests and previews)                                                                   |
 
 ```js
 import { component } from 'imp'
@@ -40,7 +41,8 @@ Each specifier is one subject, and each subject has a manual. Read [rendering](r
 `imp/theme`, [i18n](i18n.md) for `imp/i18n`, [logging](logging.md) for `imp/log`, [std](std.md) for
 `imp/std`, [icons](icons.md) for `imp/icons`, [service-worker](service-worker.md) for
 `imp/service-worker`, [analytics](analytics.md) for `imp/analytics` and `imp/analytics/aly`,
-[testing](testing.md) for `imp/test`, and [build-flags](build-flags.md) for `flag`.
+[testing](testing.md) for `imp/test`, [mocks](mocks.md) for `imp/fake`, and [build-flags](build-flags.md) for
+`flag`.
 
 Rules an agent gets wrong:
 

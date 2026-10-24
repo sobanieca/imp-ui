@@ -360,8 +360,7 @@ fn install_globals(ctx: &Ctx<'_>, shared: &Rc<RefCell<Shared>>) -> rquickjs::Res
             }
         })?,
     )?;
-    install_console(ctx, "mocks - ")?;
-    Ok(())
+    install_console(ctx, "mocks - ")
 }
 
 impl Engine {

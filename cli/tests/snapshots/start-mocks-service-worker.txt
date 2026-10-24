@@ -5,6 +5,8 @@ mock code in the worker: no
 GET /api/users -> 200 application/json [{"id":"u1","name":"Ada"},{"id":"u2","name":"Grace"}] after the declared delay
 POST /api/users -> 201 application/json {"id":"u3","name":"Alan"}
 GET /api/reports?name=q3 -> 200 application/json {"report":"q3"}
+GET /api/orders/o%207/lines/2 -> 200 application/json {"params":{"orderId":"o 7","line":"2"},"guid":true,"hash":40,"email":true,"address":["street","city","postalCode","country"],"phone":true,"name":true}
+GET /api/orders/o7 -> 200 text/plain from the network
 GET /api/flaky -> 200 application/json {"calls":1}
 GET /api/flaky -> rejected: simulated network error on attempt 2
 GET /api/unmocked -> 200 text/plain from the network

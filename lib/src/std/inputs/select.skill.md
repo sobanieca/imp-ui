@@ -44,9 +44,12 @@ Rules an agent gets wrong:
 - imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
   to the default.
 - **The choices go in `options`, not in the children.** imp warns about a child and renders nothing.
-- **imp compares the values as strings.** So an option value of `1` matches a form value of `'1'`.
+- **The field gets the option value as you wrote it.** `{ value: 4 }` writes the number `4`, and
+  `{ value: null, label: 'No team' }` writes `null`. Do not convert the value in `onSubmit`. imp
+  matches the field to an option by its text, so a form value of `'4'` still selects `{ value: 4 }`.
 - **`placeholder` is not an option.** A person cannot select it. While it shows, the value of the
-  field is `undefined`, and that is what `required` checks.
+  field is `undefined`, and that is what `required` checks. Do not combine a `placeholder` with an
+  option whose value is `null`: both show for an empty field.
 - **The control commits on `change`**, when the person makes the choice.
 
 ```js

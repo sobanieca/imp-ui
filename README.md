@@ -63,7 +63,7 @@ Do not run a binary from `target/` directly, because it can be older than the so
 | `docs/`     | the public documentation                                             |
 | `skills/`   | the pages that `imp skill` prints for an AI agent                    |
 | `adr/`      | the accepted architectural decisions, see `adr/README.md`            |
-| `todo/`     | the planned work, one item per file                                  |
+| `.todoer/`  | the planned work as todoer todos, one item per file                  |
 | `examples/` | the todo example app                                                 |
 | `site/`     | the home page                                                        |
 | `perf/`     | the performance apps and scenarios                                   |

@@ -56,14 +56,17 @@ ADRs record accepted architectural decisions, one decision per file. Conventions
   If the decision is dropped, delete the ADR. Do not keep superseded records. Do not add status
   markers.
 - **Keep ADRs in sync with the code.** An ADR must not describe a feature that is not implemented.
-  Planned work belongs in `todo/`. When you add, rename or remove an ADR, update the table in
+  Planned work belongs in `.todoer/`. When you add, rename or remove an ADR, update the table in
   `adr/README.md`. When one ADR refers to another, use the file-name slug.
 
-## TODOs (`todo/`)
+## TODOs (`.todoer/`)
 
-Planned work lives in `todo/`, one item per file. File names are descriptive slugs
-(`version-manager.md`), the same convention as ADRs. When an item is implemented, delete its file.
-If the item introduced an architectural decision, record that decision as an ADR.
+Planned work is kept with [todoer](https://github.com/sobanieca/todoer), one todo per file in
+`.todoer/todos/`. Use the `todoer` commands (`todoer add`, `todoer claim`, `todoer pr submit`), and
+do not edit the files in `.todoer/` yourself. Run `todoer skill` for the workflow. Todo names are
+descriptive slugs (`version-manager`), the same convention as ADRs. When a todo is implemented,
+remove it with `todoer done` or `todoer pr merge`. If the todo introduced an architectural decision,
+record that decision as an ADR.
 
 ## Docs (`docs/`)
 
@@ -73,9 +76,9 @@ be published on a public site, so:
 
 - Explain everything in terms of what the reader writes and what imp does for them. Never point at
   source files, internal function names, or repo paths.
-- Do not refer to `adr/` or `todo/` from docs. When a design rationale helps the reader, summarize
+- Do not refer to `adr/` or `.todoer/` from docs. When a design rationale helps the reader, summarize
   it inline in plain language.
-- Do not put maintainer notes or TODO markers in docs. Planned work belongs in `todo/`.
+- Do not put maintainer notes or TODO markers in docs. Planned work belongs in `.todoer/`.
 
 Docs are for a person. The agent-facing text for the same subject lives in `skills/` (see below).
 
@@ -265,7 +268,7 @@ recommended rules of imp. It writes the crate list of `THIRD-PARTY-LICENSES.md` 
 
 **Keep every change that the check makes, also in files outside your scope.** The formatter runs
 repo-wide and can reformat files unrelated to your change, for example formatting drift in other
-`todo/` or `adr/` files. Do **not** revert those reformats to keep a diff "focused". The formatted
+`.todoer/` or `adr/` files. Do **not** revert those reformats to keep a diff "focused". The formatted
 state is the canonical state of the repo. Leave every change in place and include it in the commit.
 
 **Clippy and the repository lint must pass clean.** If either reports an error, fix it before you
@@ -291,7 +294,7 @@ Commit only when asked. `cargo xtask check` must pass before you commit.
 ## Prose style - Simplified Technical English
 
 **Write all prose in Simplified Technical English (ASD-STE100).** This covers `docs/`, `skills/`,
-every `*.skill.md`, `adr/`, `todo/`, commit messages, user-facing strings, and this file. Code
+every `*.skill.md`, `adr/`, `.todoer/` todos, commit messages, user-facing strings, and this file. Code
 identifiers, config keys, CLI commands, element names, and quoted CLI output are technical names.
 Keep them as they are. Apply these rules:
 

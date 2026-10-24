@@ -1,5 +1,3 @@
-# Mocks in a build - to decide
-
 `imp build` never ships `mocks/`. The mock endpoint lives only in the dev server (`imp start`,
 `imp preview`), and an interceptor cannot answer a request by itself. So a demo that needs a backend
 cannot run on a static host.

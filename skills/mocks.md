@@ -29,18 +29,55 @@ export const mocks = [
 ]
 ```
 
-Every `*.mock.js` file under the folder exports a `mocks` array of `{ match, handler, delay? }`. imp
-also reads a nested folder.
+Every `*.mock.js` file under the folder exports a `mocks` array of `{ match, handler, delay? }` or
+`{ route, handler, delay? }`. imp also reads a nested folder.
 
 | Key                | Gets                                          | Returns                                                    |
 | ------------------ | --------------------------------------------- | ---------------------------------------------------------- |
 | `match(request)`   | `{ method, url, path, query, headers, body }` | `true` to answer this request                              |
+| `route`            | a string such as `'GET /api/users/:id'`       | answers that method and path; the handler gets `params`    |
 | `handler(request)` | the same object                               | `{ status, headers, body }`. Can be async.                 |
 | `delay`            | -                                             | milliseconds of simulated latency, so a spinner is visible |
 
 The default `status` is `200`. imp sends a `body` that is not a string as JSON. A request `body`
 arrives parsed when the page sent it as JSON. A mock runs in the `imp start` process, not in the
-page. It has `setTimeout` and `console`, and no DOM and no `fetch`.
+page. It has `setTimeout` and `console`, and no DOM, no `fetch` and no `crypto`.
+
+```js
+import { fake } from 'imp/fake'
+
+export const mocks = [
+  {
+    route: 'GET /api/orders/:orderId',
+    handler: (request) => ({ body: findOrder(request.params.orderId) }),
+  },
+  {
+    route: 'POST /api/orders',
+    handler: (request) => ({ status: 201, body: { id: fake.guid(), ...request.body } }),
+  },
+]
+```
+
+A `route` matches the whole path, with or without a trailing `/`, and ignores the query. Each
+`:name` matches one segment, and imp decodes it into `request.params.name`. Do not write your own
+router of regular expressions for a mock API.
+
+## Generated data - `imp/fake`
+
+| Call                 | Gives                                                            |
+| -------------------- | ---------------------------------------------------------------- |
+| `fake.guid()`        | a random version 4 UUID                                          |
+| `fake.name()`        | `'First Last'`, such as `'Maria Novak'`                          |
+| `fake.email(name?)`  | `'maria.novak42@example.org'`; made from `name` when you pass it |
+| `fake.phone()`       | `'+1 415 555 0142'`, always in the fictional `555-01xx` range    |
+| `fake.hash(length?)` | `length` hex characters; `32` when you give no length            |
+| `fake.address()`     | `{ street, city, postalCode, country }`                          |
+
+- **Every call gives a new random value.** Keep a value in a closure when two requests must agree.
+- **Pass the name to `fake.email`** so that a person's email matches the name:
+  `const name = fake.name()`, then `fake.email(name)`.
+- **The values are not secure.** They come from `Math.random`. Never copy `fake.hash` into a backend.
+- **`imp/fake` works in a mock file, a test and a preview.** `imp build` refuses it in an app.
 
 ## How to turn the mocks on and off
 

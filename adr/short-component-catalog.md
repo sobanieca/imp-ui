@@ -35,8 +35,10 @@ only when it adds behaviour of its own. These are the merges that follow from th
 | Dated events in order       | `timeline`, with `icon` and `color`  | An activity feed, a history log, an audit trail            |
 | A chart of numbers          | `chart`, with `type` and `stacked`   | A bar, a column, a line and a stacked chart component      |
 | An arrangement in two axes  | none                                 | An app writes CSS grid in its own component                |
+| A copy action               | `copyButton`                         | A clipboard helper in every app                            |
+| An account menu             | `accountMenu`                        | A popover recipe that every app copied                     |
 | A floating button           | none                                 | A `button` that the app places with its own CSS            |
-| A submit button             | `button`, with `submitForm`          | A submit button component, a reset button component        |
+| A submit button             | `button`, with `submit`              | A submit button component, a reset button component        |
 | A tenant switcher           | `orgSelect`                          | A workspace menu that every app wrote by hand              |
 | A joined row of controls    | `flex`, with `joined`                | A button group                                             |
 | A number with step buttons  | `textField`, with `stepper`          | A number stepper, an input group                           |

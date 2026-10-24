@@ -307,6 +307,44 @@ const projectScreen = component('my-app-project', {
 This is also the correct meaning. A component that withdraws on unmount writes to the provider that
 it contributed to at mount, not to whatever sits above its old position.
 
+### Work that repeats
+
+For work that repeats while the component is on the page, such as a poll or a ticking clock, use
+`interval(self, ms, run)` from `imp`. You write no `onRemove` for it:
+
+```js
+import { component, interval } from 'imp'
+
+const liveCheck = component('my-app-live-check', {
+  setup: async (self, id) => {
+    const api = useHttpClient(self, 'myapp.api')
+    const check = initState(self, 'myapp.check', await api.get(`/checks/${id}`))
+    interval(self, 5000, async () => check.set(await api.get(`/checks/${id}`)))
+    return checkView(check)
+  },
+})
+```
+
+- **It stops when the mount ends.** The timer goes with the bindings of the component, before
+  `onRemove` runs.
+- **It does not overlap itself.** When `run` returns a promise that has not settled, imp skips the
+  next tick. A slow request never stacks up a queue of polls.
+- **A failure does not stop it.** imp logs an error that `run` throws, and the next tick runs. An
+  aborted http call after the unmount is not logged.
+- **It returns a stop function**, for a component that stops polling before it unmounts, for example
+  when a check closes.
+
+For work that runs once after a wait, such as a hint that hides after three seconds, use
+`delay(self, ms, run)` from `imp`. It works like `interval`, but it runs `run` one time:
+
+```js
+const hint = initState(self, 'myapp.hint', true)
+delay(self, 3000, () => hint.set(false))
+```
+
+An unmount before the wait ends cancels the run. `delay` also returns a stop function, and it logs
+an error that `run` throws.
+
 Each mounted component gets its **own** `self`. So a list of one hundred clocks clears one hundred
 timers, and nothing is shared between them. That is why `self` is the correct home for a resource of
 one component. A variable at module level, or a property on the definition, would be shared across

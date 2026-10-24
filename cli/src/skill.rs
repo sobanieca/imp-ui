@@ -192,7 +192,7 @@ pub const SKILLS: &[Skill] = &[
     Skill {
         name: "mocks",
         group: "toolkit",
-        aliases: &["mock", "mock.js", "fixtures", "backend"],
+        aliases: &["mock", "mock.js", "fixtures", "backend", "imp/fake", "fake"],
         summary: "answering the app's requests from *.mock.js files instead of the network",
     },
     Skill {

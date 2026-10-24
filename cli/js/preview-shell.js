@@ -6,7 +6,7 @@ import { card, emptyState, tag } from 'imp/std/display'
 import { flex, stack } from 'imp/std/layout'
 import { appLogo, shell } from 'imp/std/shell'
 import { luFolder } from 'imp/icons'
-import { copyButton } from '../../lib/src/std/shared/copy-button.js'
+import { copyButton } from '../../lib/src/std/general/copy-button.js'
 import { brandBars, geometry, MAIN_1, markdownBody, markdownStyles } from './design-chrome.js'
 
 const INDEX_STYLES = `
@@ -255,7 +255,10 @@ const agentStrip = (self, entry) =>
           `no skill - write ${sidecarNameOf(entry)} next to the component. imp shows it here, `
             + "and 'imp skill' prints it for an agent.",
         )
-      : [pre({ class: 'instruction' }, entry.skill), copyButton(self, 'skill', entry.skill)],
+      : [
+          pre({ class: 'instruction' }, entry.skill),
+          copyButton({ value: entry.skill, size: 'sm', variant: 'ghost' }),
+        ],
   )
 
 const SKILL_STYLES = `

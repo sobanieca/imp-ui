@@ -101,8 +101,15 @@ This is also how you force a remount.
   `onRemove: (self) => useState(self, 'myapp.nav').set(null)`. A name that `setup` never resolved
   throws there, because the host has left the page. The lint rule is `imp/on-remove-through-self`.
 - **A resolution after the component left the page throws.** An async `setup` that awaits past an
-  unmount cannot call `useState` or `useHttpClient` after the `await`. Check
-  `self.abortSignal.aborted` when that can happen. The lint rule is `imp/abort-check-after-await`.
+  unmount cannot call `useState` or `useHttpClient` after the `await`. An `await` of an http call of
+  the component needs no check: an unmount aborts the call, so the code after it never runs. After
+  any other `await`, check `self.abortSignal.aborted` and return. The lint rule is
+  `imp/abort-check-after-await`.
+- **Repeat work with `interval(self, ms, run)` from `imp`**, not `setInterval`. It stops when the
+  mount ends, skips a tick while an async `run` still waits, and logs a failure instead of throwing
+  it. It returns a stop function.
+- **Run work once after a wait with `delay(self, ms, run)` from `imp`**, not `setTimeout`. An
+  unmount before the wait cancels it. It logs a failure, and it returns a stop function.
 - **Never store a per-mount resource at module scope.** Use `self`. Every mount then gets its own
   resource. The lint rule is `imp/no-self-at-module-scope`.
 - **The internals of a component are private.** `document.querySelector` and a page CSS rule stop at

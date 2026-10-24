@@ -36,6 +36,9 @@ Rules an agent gets wrong:
 - **The `label` becomes the `<legend>`**, and it names the whole group. Each option gets its own
   label.
 - **Pass the state itself to `disabled`, not `disabled.get()`.**
+- **The field gets the option value as you wrote it.** `{ value: 4 }` writes the number `4`, and
+  `{ value: null, label: 'No team' }` writes `null`. Do not convert the value in `onSubmit`. imp
+  matches the field to an option by its text, so a form value of `'4'` still selects `{ value: 4 }`.
 - imp warns about an unknown prop at mount. It warns about a value outside the list, and falls back
   to the default.
 - **The choices go in `options`, not in the children.**

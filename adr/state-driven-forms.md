@@ -127,10 +127,23 @@ added to the kernel.
 - **A submit is an action, and not a mode of a button.** `submitForm(source)` and
   `resetForm(source, values?)` are plain functions of `imp/std/inputs`. They take the click event,
   or a node inside the form, and dispatch a composed, bubbling, cancelable event from it. The form
-  catches the event and claims it. So any `button` is the submit button, at any depth:
-  `button({ events: { click: submitForm } }, 'Save')`. There is no `submitButton` component and no
-  `resetButton` component. A button that must spin reads `imp.form.submitting`, in a component of
-  the app. `button` keeps no `type` prop, see `standard-component-library.md`. **The implicit
+  catches the event and claims it. So any `button` can submit, at any depth. The `submit` prop of
+  `button` is the common case: `button({ submit: true }, 'Save')` dispatches the same event, and it
+  binds `imp.form.submitting` to `loading`. So a submit button spins with no component of the app.
+  There is no `submitButton` component and no `resetButton` component. `button` keeps no `type`
+  prop, see `standard-component-library.md`.
+- **A submit carries only the values.** `onSubmit` receives `values`, and every `validate` and
+  `validateAsync` receives `(value, { values })`, so a check can compare two fields. A reason for
+  the submit, such as a draft or a publish, is a value of the form. The app reads it in `onSubmit`
+  and decides there. So the form has one input, and a test of `onSubmit` needs only the values.
+- **A field has no state of its own.** A field that follows another field uses `imp.form` with
+  the general state API. A `computed` over `imp.form` gives one field, and it skips an equal value.
+  A `set` with a function writes one field over the current values. So the form adds no API for
+  one field.
+- **A choice keeps the type of its option.** `select`, `radioGroup` and `segmented` match an option
+  by the text of its value, because the DOM holds text. They write the value of the option as the
+  app wrote it. So `{ value: 4 }` writes a number and `{ value: null }` writes `null`, and the app
+  converts nothing in `onSubmit`. **The implicit
   submit**, which is Enter in a single-line field, is implemented by the form. The platform would
   otherwise have provided it.
 
