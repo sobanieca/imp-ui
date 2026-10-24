@@ -1,5 +1,3 @@
-# Standard component library - what is left
-
 The catalog is built, and `adr/short-component-catalog.md` records its shape. This file lists the
 work that waits for a browser, or for a person.
 

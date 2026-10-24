@@ -246,25 +246,23 @@ An `HttpError` carries these fields.
 | `code`            | `status`, `network`, `timeout`, `aborted`, `parse`, or `hook`         |
 | `method`, `url`   | The call that failed                                                  |
 | `headers`, `body` | The response, when there was one - a parsed error body is right there |
-| `userMessage`     | The text for a person, from the `userMessage` option, or `null`       |
 
 `request` throws on the same failures as a verb. It differs only in what it gives you on success.
 
 ### The text for a person
 
 The `message` of an `HttpError` is for a developer. Your API often sends a sentence for the user in
-its error body. Tell the client once where that sentence is:
+its error body. The component that shows the failure reads that sentence. A `toast` takes a
+`message` function, and a `form` takes an `errorMessage` function:
 
 ```js
-initHttpClient(self, 'myapp.api', {
-  baseUrl: '/api',
-  userMessage: (error) => error.body?.error,
-})
+toast({ client: 'myapp.api', message: (error) => error.body?.error })
+
+form({ initialValues, onSubmit: save, errorMessage: (error) => error.body?.error }, ...fields)
 ```
 
-imp then sets `error.userMessage` on every failed response. A `form` shows that text when its
-`onSubmit` throws the error, and a `toast` uses it as its title. So you do not catch the error to
-turn it into a message yourself. A function that returns nothing leaves `userMessage` at `null`.
+So you do not catch the error to turn it into a message yourself. A function that returns nothing
+gives the default text of the component.
 
 ### A failure that the page shows itself
 
@@ -443,7 +441,7 @@ const status = component('api-status', {
 
 - **`api.pending`** is the number of calls in flight now.
 - **`api.lastError`** is the most recent failure as plain data, in the shape
-  `{ message, userMessage, status, code, method, url, body }`, or `null`. It clears when a later call succeeds.
+  `{ message, status, code, method, url, body }`, or `null`. It clears when a later call succeeds.
   `api.clearError()` dismisses it by hand.
 
 For one spinner on one request, name that call:

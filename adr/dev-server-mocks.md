@@ -39,8 +39,7 @@ nested folder. So you split the routes across files, in the way that the app is 
 - **A handler is code, and not data.** imp bundles the files with its bundler and loads the bundle
   once in an embedded QuickJS, on a thread of the dev server process, see `native-toolchain.md`. So
   a file imports a shared fixture, a vendored dependency, and whatever else it needs. The engine
-  gives a handler the language, `console`, timers and `crypto.getRandomValues` and
-  `crypto.randomUUID` from the random source of the system, and no DOM and no `fetch`, because a mock
+  gives a handler the language, `console` and timers, and no DOM and no `fetch`, because a mock
   answers for the network and never calls it. A closure over a counter is how a handler keeps state
   across requests. That state lives as long as the run. Every tab shares it, and a reload or a
   stopped worker keeps it. A `throw` inside a handler is how it simulates a transport failure, and
@@ -61,6 +60,13 @@ nested folder. So you split the routes across files, in the way that the app is 
   boundary for failure. An error that mock code throws outside a handler, for example in a timer,
   stops that worker and not the dev server. imp reports the error, and the next request loads the
   set again.
+- **`imp/fake` gives realistic data with one call.** `fake` has `guid`, `name`, `email`, `phone`,
+  `hash` and `address`. A mock needs plausible records, not random bytes, so imp ships the
+  high-level calls and no `crypto`. The values come from `Math.random`, because a fake value never
+  protects anything. An email uses the reserved `example.*` domains and a phone uses the fictional
+  `555-01xx` range, so a value never reaches a real person. The name says what the data is, not
+  where it is used, because a test and a preview need it too. `imp/fake` is a tooling module like
+  `imp/test`, so `imp build` refuses it in an app.
 - **An unmatched request goes to the network.** So an API that is half mocked is the normal case,
   and not a case that somebody configures. To mock one endpoint never takes the rest of the app
   offline.

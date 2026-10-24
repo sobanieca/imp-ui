@@ -9,9 +9,23 @@ pub fn repo_root() -> PathBuf {
         .to_path_buf()
 }
 
+fn is_package_variable_of_xtask(name: &str) -> bool {
+    name.starts_with("CARGO_PKG_")
+        || name.starts_with("CARGO_MANIFEST_")
+        || matches!(
+            name,
+            "CARGO_CRATE_NAME" | "CARGO_BIN_NAME" | "CARGO_PRIMARY_PACKAGE"
+        )
+}
+
 fn cargo_command() -> Command {
     let mut command = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()));
     command.current_dir(repo_root());
+    for (name, _) in std::env::vars_os() {
+        if name.to_str().is_some_and(is_package_variable_of_xtask) {
+            command.env_remove(name);
+        }
+    }
     command
 }
 

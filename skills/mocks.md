@@ -41,10 +41,11 @@ Every `*.mock.js` file under the folder exports a `mocks` array of `{ match, han
 
 The default `status` is `200`. imp sends a `body` that is not a string as JSON. A request `body`
 arrives parsed when the page sent it as JSON. A mock runs in the `imp start` process, not in the
-page. It has `setTimeout`, `console` and `crypto.getRandomValues` and `crypto.randomUUID`, and no
-DOM and no `fetch`.
+page. It has `setTimeout` and `console`, and no DOM, no `fetch` and no `crypto`.
 
 ```js
+import { fake } from 'imp/fake'
+
 export const mocks = [
   {
     route: 'GET /api/orders/:orderId',
@@ -52,7 +53,7 @@ export const mocks = [
   },
   {
     route: 'POST /api/orders',
-    handler: (request) => ({ status: 201, body: { id: crypto.randomUUID(), ...request.body } }),
+    handler: (request) => ({ status: 201, body: { id: fake.guid(), ...request.body } }),
   },
 ]
 ```
@@ -60,6 +61,23 @@ export const mocks = [
 A `route` matches the whole path, with or without a trailing `/`, and ignores the query. Each
 `:name` matches one segment, and imp decodes it into `request.params.name`. Do not write your own
 router of regular expressions for a mock API.
+
+## Generated data - `imp/fake`
+
+| Call                 | Gives                                                            |
+| -------------------- | ---------------------------------------------------------------- |
+| `fake.guid()`        | a random version 4 UUID                                          |
+| `fake.name()`        | `'First Last'`, such as `'Maria Novak'`                          |
+| `fake.email(name?)`  | `'maria.novak42@example.org'`; made from `name` when you pass it |
+| `fake.phone()`       | `'+1 415 555 0142'`, always in the fictional `555-01xx` range    |
+| `fake.hash(length?)` | `length` hex characters; `32` when you give no length            |
+| `fake.address()`     | `{ street, city, postalCode, country }`                          |
+
+- **Every call gives a new random value.** Keep a value in a closure when two requests must agree.
+- **Pass the name to `fake.email`** so that a person's email matches the name:
+  `const name = fake.name()`, then `fake.email(name)`.
+- **The values are not secure.** They come from `Math.random`. Never copy `fake.hash` into a backend.
+- **`imp/fake` works in a mock file, a test and a preview.** `imp build` refuses it in an app.
 
 ## How to turn the mocks on and off
 

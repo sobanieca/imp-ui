@@ -94,7 +94,6 @@ mount(
 | `safeNext(value, fallback)`               | `value` when it is a path of the app, else `fallback`; wrap every `?next=` value in it                                                     |
 | `beforeLeave(self, check)`                | in `setup`: `check()` returns `false`, or a Promise of `false`, to stay; asked before the route changes                                    |
 | `useRoute()`                              | read-only live `{ path, query, searchParams }` state: `get`/`watch`/`text`/`view`/`each`, no `set`                                         |
-| `crumbLabel(self, label)`                 | in a screen of a param node: names its crumb, and the title, with the data that the screen loaded; `label` is a string or a state          |
 | `url(path)`                               | prefixes `IMP_BASEPATH`, for an `href` you write as a string                                                                               |
 
 `loading` shows while the module of an **area** downloads or a guard waits. `error` is an error
@@ -205,9 +204,6 @@ and an icon is `navbar.icons` of the shell. An external link is a `sidebar.foote
 - **`options` names a state, or lists the choices.** The router resolves the name with `useState` at
   its own position, so an ancestor must `initState` it. The state holds `[{ value, label }]` or
   strings. A screen fills it. The choices reach the trail as a picker, never the sidebar as rows.
-- **Name the crumb of a param with `crumbLabel(self, label)` in the screen.** Use `options` only for
-  a picker. A screen that opened by a deep link calls `crumbLabel(self, team.name)`, and the trail
-  and the title show that name. imp keeps the label for the value, so a child screen shows it too.
 - **A tenant is `scope`, not a map prop.** Put `$org` in the map where the URL has it, and pass
   `router({ scope: app.organizations.$org })`. Inside, the sections are the children of `$org` and
   the trail starts at its crumb. Outside, on `/login`, the sections are the top-level nodes.

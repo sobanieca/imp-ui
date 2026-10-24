@@ -404,15 +404,23 @@ functions, for a click handler of your own. A submit checks every field again. W
 them. Return a promise from `onSubmit`, and the form ignores a second submit until it settles. The
 state `imp.form.submitting` is `true` meanwhile.
 
-**Two buttons can submit one form for two reasons.** Give each one an intent, such as
-`button({ submit: 'draft' }, 'Save draft')` and `button({ submit: 'publish' }, 'Publish')`.
-`onSubmit` receives `(values, { intent })`. Every `validate` receives `(value, { values, intent })`,
-so a field can be required for one intent only. `values` also lets a check compare two fields.
+**A check can compare two fields.** Every `validate` receives `(value, { values })`, and `values` is
+the whole form. When one form can be sent for two reasons, such as a draft and a publish, keep the
+reason in the values, for example a `status` field. `onSubmit` and every `validate` then read
+`values.status`.
 
-**A field that follows another field uses `useField`.** In a component inside the form,
-`useField(self, 'teamId')` is that one field as a state. Watch it, and `set` another field with
-`useField(self, 'partners').set(members)`. You do not spread the whole form state to change one
-value.
+**A field can follow another field.** The values of the form are one state, `imp.form`. In a
+component inside the form, read it with `useState`. Watch one field through a `computed`, and write
+another field with `set` and a function:
+
+```js
+const values = useState(self, 'imp.form')
+computed([values], (all) => all.teamId).watch(self, (teamId) =>
+  values.set((all) => ({ ...all, partners: membersOf(teamId) })),
+)
+```
+
+A `computed` skips an equal value, so the watcher runs only when `teamId` changes.
 
 **A choice keeps its type.** `select`, `radioGroup` and `segmented` write the value of an option as
 you wrote it. An option `{ value: 4 }` gives the number `4`, and `{ value: null, label: 'None' }`
@@ -425,9 +433,10 @@ The next submit removes it. So a failure that belongs to no single field needs n
 **Only a message that you wrote for a person reaches the person.** The text of an ordinary error,
 such as `TypeError: Cannot read properties of undefined`, means nothing to the reader of your app.
 So the form shows a translated generic message, "We could not send the form - try again", and logs
-the original error. An `HttpError` with a `userMessage` shows that text, which the `userMessage`
-option of the HTTP client reads from the error body of your API, see **[HTTP](http.md)**. To show a
-message of your own, throw a `FormError` from `imp/std/inputs`, and route its text through `t()`:
+the original error. When your API sends a sentence for the person, pass `errorMessage` to the form.
+It is a function that reads the text from the error, such as `(error) => error.body?.error`. When it
+returns nothing, the form shows the generic message. To show a message of your own, throw a
+`FormError` from `imp/std/inputs`, and route its text through `t()`:
 
 ```js
 import { HttpError } from 'imp/http'
@@ -701,7 +710,9 @@ const choice = await notify({
 ```
 
 `loader`, `notice` and `toast` take a `client` prop, the name of an HTTP client. They then show a
-request in flight and the last error on their own. See **[HTTP](http.md)**.
+request in flight and the last error on their own. The title of a failure in `toast` is the
+`message` of the error. To show the sentence that your API sends, pass a `message` function, such as
+`toast({ client: 'myapp.api', message: (error) => error.body?.error })`. See **[HTTP](http.md)**.
 
 ## Let people react to content
 

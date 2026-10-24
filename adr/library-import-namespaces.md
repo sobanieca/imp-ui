@@ -63,7 +63,7 @@ exactly the public names. An implementation module stays internal, and app code 
   only the tags that an app imports. The lint rules read the export names of the module, in place of
   a separate list of tags. So there is one list, and not two.
 - **Every future subject gets its own specifier**, named after the subject, and registered in the
-  same shared table. Planned work records the home that it will land under, in its `todo/` entry. So
+  same shared table. Planned work records the home that it will land under, in its todoer todo. So
   somebody decides the name once, in the open, and not at the moment of a merge.
 
 ## Consequences

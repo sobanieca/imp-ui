@@ -142,6 +142,8 @@ vocabulary for the options that it shares with a component, see `client-side-rou
 - **`interval(self, ms, run)` repeats work for the length of a mount.** imp stops it when the mount
   ends, with the bindings. It skips a tick while an async `run` has not settled, so a slow poll does
   not overlap itself, and it logs a failure instead of throwing it into a timer.
+- **`delay(self, ms, run)` runs work once after a wait, inside a mount.** An unmount before the wait
+  cancels it, with the bindings. A failure goes to the log, the same as for `interval`.
 - **`error(self, error, ...args)` is optional.** It makes the component an error boundary, for a
   mount failure of the component itself, and of its subtree, see `error-boundaries.md`. The boundary
   is a mounted component when its error view renders. So it gets the same `self`. The error view can

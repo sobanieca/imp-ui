@@ -159,10 +159,10 @@ response arrived in the same moment rejects with `code: 'aborted'` as well. So t
 `self.abortSignal`. A call made in `onRemove`, or a call with `detached: true`, is not bound, so an
 exit report still goes out.
 
-**The text for a person is an option of the client.** `userMessage: (error) => string` reads the
-sentence of the API from a failed response into `error.userMessage`, and into `lastError`. A `form`
-shows it when `onSubmit` throws, and a `toast` uses it as the title. So an app maps its error
-envelope once, and not in every handler.
+**The component that shows a failure reads the text for a person.** An `HttpError` and `lastError`
+carry the response, and no text for a person. A `toast` takes `message: (error) => string` for the
+title of a client failure. A `form` takes `errorMessage: (error) => string` for a failed submit. The
+text belongs to the place that shows it, so the client stays free of presentation.
 
 ## Consequences
 

@@ -19,12 +19,13 @@ form are ordinary named state**, and they live at the position of the form in th
 inside the form names the field that it owns with a dot path. It reads and writes that state
 directly. There is nothing to connect. When the form unmounts, the state goes with it.
 
-| Prop            | Values                                    | Default      | Notes                                          |
-| --------------- | ----------------------------------------- | ------------ | ---------------------------------------------- |
-| `initialValues` | plain object                              | `null`       | Seeds `imp.form`, and is the first clean state |
-| `onSubmit`      | `(values, { intent }) => void \| Promise` | -            | Runs only when every field is valid            |
-| `layout`        | `'vertical'`, `'horizontal'`, `'inline'`  | `'vertical'` | Where each field's label sits                  |
-| `gap`           | spacing step `0`-`6`                      | `4`          | Space between children                         |
+| Prop            | Values                                   | Default      | Notes                                          |
+| --------------- | ---------------------------------------- | ------------ | ---------------------------------------------- |
+| `initialValues` | plain object                             | `null`       | Seeds `imp.form`, and is the first clean state |
+| `onSubmit`      | `(values) => void \| Promise`            | -            | Runs only when every field is valid            |
+| `errorMessage`  | `(error) => string`                      | -            | The text of a failed submit for the person     |
+| `layout`        | `'vertical'`, `'horizontal'`, `'inline'` | `'vertical'` | Where each field's label sits                  |
+| `gap`           | spacing step `0`-`6`                     | `4`          | Space between children                         |
 
 ## The states it owns
 
@@ -38,7 +39,6 @@ directly. There is nothing to connect. When the form unmounts, the state goes wi
 | `imp.form.validating` | `{ [path]: true }` for fields with a check in flight   |
 | `imp.form.dirty`      | `true` while the values differ from the clean state    |
 | `imp.form.formError`  | `null`, the message of a `FormError`, or `''`          |
-| `imp.form.intent`     | the intent of the last submit, or `null`               |
 
 `imp.form`, `imp.form.submitting`, `imp.form.dirty` and `imp.form.formError` are the states for your
 code. The others are how the controls and the form agree with each other. A state of the form
@@ -50,8 +50,7 @@ reaches only the subtree of the form. So read it from a component inside the for
 
 | Export                               | Does                                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `submitForm(source, intent?)`        | Validates every field, then runs `onSubmit` when every field passes                         |
-| `useField(self, path)`               | One field of the form around `self`: `get`, `set`, `watch`, `text`, `view`                  |
+| `submitForm(source)`                 | Validates every field, then runs `onSubmit` when every field passes                         |
 | `resetForm(source)`                  | Puts the clean state back, and clears the errors, the touched state and the failure         |
 | `resetForm(source, values)`          | Makes `values` the clean state, then does the same                                          |
 | `new FormError(message)`             | An error from `onSubmit` whose message the form shows to the person                         |
@@ -61,42 +60,38 @@ reaches only the subtree of the form. So read it from a component inside the for
 any depth, so the button can sit inside a `flex`, a `card` or a component of yours.
 
 **The submit button is `button({ submit: true })`.** It submits the form around it, and it spins
-while `imp.form.submitting` is `true`. `button({ submit: 'draft' })` submits with the intent
-`'draft'`. Two buttons with two intents share one form:
+while `imp.form.submitting` is `true`.
+
+`validate` and `validateAsync` of every control get `(value, { values })`. `values` is the whole
+form, for a check that compares two fields. When one form can be sent for two reasons, such as a
+draft and a publish, keep the reason in the values, and read it in `onSubmit`:
 
 ```js
 form(
   {
-    initialValues,
-    onSubmit: (values, { intent }) => (intent === 'draft' ? saveDraft(values) : publish(values)),
+    initialValues: { title: '', status: 'draft' },
+    onSubmit: (values) => (values.status === 'draft' ? saveDraft(values) : publish(values)),
   },
   textField({
     field: 'title',
     label: 'Title',
-    validate: (value, { intent }) => (intent === 'publish' && !value ? 'Add a title' : null),
+    validate: (value, { values }) =>
+      values.status === 'published' && !value ? 'Add a title' : null,
   }),
-  flex(
-    { gap: 2 },
-    button({ submit: 'draft' }, 'Save draft'),
-    button({ variant: 'primary', submit: 'publish' }, 'Publish'),
-  ),
+  segmented({ field: 'status', label: 'Status', options: ['draft', 'published'] }),
+  button({ variant: 'primary', submit: true }, 'Save'),
 )
 ```
 
-`validate` and `validateAsync` of every control get `(value, { values, intent })`. `values` is the
-whole form, for a check that compares two fields. `intent` is the intent of the submit that runs,
-or of the last one. An Enter in a field submits with the intent `null`.
-
-`useField(self, path)` gives a component inside the form one field as a state. Use it for a field
-that follows another field:
+A field that follows another field reads and writes `imp.form` in a component inside the form:
 
 ```js
 const teamPeople = component('myapp-team-people', {
   setup: (self, { teams }) => {
-    const partners = useField(self, 'partners')
-    useField(self, 'teamId').watch(self, (teamId) => {
+    const values = useState(self, 'imp.form')
+    computed([values], (all) => all.teamId).watch(self, (teamId) => {
       const team = teams.find((item) => item.id === teamId)
-      if (team) partners.set(team.members)
+      if (team) values.set((all) => ({ ...all, partners: team.members }))
     })
     return comboBox({ field: 'partners', label: 'People', multiple: true, custom: true })
   },
@@ -115,8 +110,9 @@ const teamPeople = component('myapp-team-people', {
 - **When `onSubmit` throws, or its promise rejects, the form shows the failure.** An error `notice`
   above the **last child** of the form shows it, and a screen reader announces it. The next submit
   and `resetForm` clear it.
-- **Only a `FormError` shows its own message.** The form writes the first line of its message into
-  `imp.form.formError`. Any other error shows the translated `imp.form.submitFailed`, and
+- **A `FormError` shows its own message.** The form writes the first line of its message into
+  `imp.form.formError`. For any other error, the form shows the text that `errorMessage` returns.
+  When there is no such text, it shows the translated `imp.form.submitFailed`, and
   `imp.form.formError` is `''`. imp logs the original error with its logger.
 - **A `FormError` with `fields` maps a server error to its fields.** `fields` is
   `{ 'user.email': t('signup.emailTaken') }`. Each message goes into `imp.form.errors` under its
@@ -152,19 +148,18 @@ Rules an agent gets wrong:
 - **There is no `submitButton` and no `resetButton` component.** `button({ submit: true })` is the
   submit button. A `button` with `resetForm` as its click handler is the reset button.
 - **Do not write a component only for the spinner.** A `button` with `submit` spins on its own.
-- **Do not keep the pressed button in a state of your own.** Pass the intent to `submit`, and read
-  `intent` in `onSubmit` and in `validate`.
-- **Write one field with `useField(self, path).set(value)`**, not with a spread of the whole
-  `imp.form`. `useField(self, path).watch(self, fn)` runs at once with the current value, then on
-  each change of that field only.
+- **Watch one field through a `computed` over `imp.form`.** A `computed` skips an equal value, so
+  the watcher runs only when that field changes. A watch of `imp.form` itself runs on every edit.
+- **Write one field with `set` and a function**, as in `values.set((all) => ({ ...all, partners }))`.
+  A `set` of a copy that you read before keeps a stale value of another field.
 - **`onSubmit` receives the values object**, already validated. Read the argument. Do not call
   `useState(self, 'imp.form')` again.
 - **Put the buttons in the last child.** The failure notice goes above the last child. A row of
   buttons is one `flex`, so the notice sits above the whole row.
 - **Do not catch the error in `onSubmit` to show it yourself.** To show a specific message, throw
-  `new FormError(t('...'), { cause })`. An `HttpError` shows its `userMessage`, the text that the
-  `userMessage` option of the HTTP client reads from the response. Any other error shows only the
-  generic message, because its text is not written for a person.
+  `new FormError(t('...'), { cause })`. To show the sentence of your API, pass
+  `errorMessage: (error) => error.body?.error`. Any other error shows only the generic message,
+  because its text is not written for a person.
 - **Never read a password, a key or a token from `imp.form`.** Set `secret: true` on its field and
   read it from the argument of `onSubmit`. A plain field puts the value in a state, and the debug
   log prints every state value.
@@ -205,4 +200,4 @@ form(
 ```
 
 Related: imp skill std/button - the button with `submit`; imp skill state - `useState` for
-`imp.form` and `imp.form.submitting`; imp skill http - `userMessage`.
+`imp.form` and `imp.form.submitting`; imp skill http - `HttpError`.

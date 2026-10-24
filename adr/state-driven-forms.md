@@ -132,16 +132,14 @@ added to the kernel.
   binds `imp.form.submitting` to `loading`. So a submit button spins with no component of the app.
   There is no `submitButton` component and no `resetButton` component. `button` keeps no `type`
   prop, see `standard-component-library.md`.
-- **A submit carries an intent.** `submitForm(source, intent)` and `button({ submit: 'draft' })`
-  write the intent into `imp.form.intent` before the fields validate again. `onSubmit` receives
-  `(values, { intent })`, and every `validate` and `validateAsync` receives
-  `(value, { values, intent })`. So two buttons that save a draft and publish share one form, and a
-  field can be required for one intent only. A state of the app that remembers the pressed button
-  would race with the validation, which runs in the same tick.
-- **One field is a state of its own through `useField(self, path)`.** It is a `computed` over
-  `imp.form` that reads the path, with a `set` that writes only that path. A field that follows
-  another field watches one handle and sets the other. A spread of the whole `imp.form` would
-  overwrite an edit that arrived in between.
+- **A submit carries only the values.** `onSubmit` receives `values`, and every `validate` and
+  `validateAsync` receives `(value, { values })`, so a check can compare two fields. A reason for
+  the submit, such as a draft or a publish, is a value of the form. The app reads it in `onSubmit`
+  and decides there. So the form has one input, and a test of `onSubmit` needs only the values.
+- **A field has no state of its own.** A field that follows another field uses `imp.form` with
+  the general state API. A `computed` over `imp.form` gives one field, and it skips an equal value.
+  A `set` with a function writes one field over the current values. So the form adds no API for
+  one field.
 - **A choice keeps the type of its option.** `select`, `radioGroup` and `segmented` match an option
   by the text of its value, because the DOM holds text. They write the value of the option as the
   app wrote it. So `{ value: 4 }` writes a number and `{ value: null }` writes `null`, and the app

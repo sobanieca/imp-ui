@@ -342,29 +342,6 @@ the organization, with a picker when `options` binds it. Outside the scope, on `
 or `/login`, the sections are the top-level nodes. A link inside the organization writes
 `app.organizations.$org.admin.href()`. `href()` takes the current slug from the route.
 
-### The label of a param crumb
-
-The crumb of a param, such as `$teamId`, shows the value from the URL until something names it. A
-screen names it with `crumbLabel(self, label)` from `imp/router`, after it loads its data:
-
-```js
-const teamScreen = component('my-app-team', {
-  setup: async (self, { teamId }) => {
-    const team = initState(self, 'myapp.team', await api.get(`/teams/${teamId}`))
-    crumbLabel(
-      self,
-      computed([team], (current) => current.name),
-    )
-    return teamView(team)
-  },
-})
-```
-
-The trail and the document title then show the name. A state as the label keeps the crumb current
-after a rename. imp keeps the label for that value of the param, so a child page such as
-`/teams/t1/settings` shows it too. Use `options` when the crumb needs a picker of all the teams. A
-screen does not have to add itself to that list to get its label.
-
 ### Not found (404)
 
 Declare your not-found screen in one place, with the `notFound` option of the router:
@@ -1057,6 +1034,5 @@ So a deep link and a refresh work while you build.
 | `navigate(path, { replace?, external? })`  | -                  | Navigates programmatically; `replace` swaps the current history entry; `external` lets it leave for another site. Only http and https.     |
 | `safeNext(value, fallback)`                | a path             | `value` when it is a path of the app, else `fallback`. Use it for a `?next=` value before you navigate.                                    |
 | `useRoute()`                               | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
-| `crumbLabel(self, label)`                  | -                  | In a screen of a param node, names the crumb of that param, and so the title, with a string or a state.                                    |
 | `url(path)`                                | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |
 | `screenRegion(self, element, { effect? })` | -                  | Names the box that scrolls the screens, so imp restores its scroll; `effect` animates a change of screen, see below.                       |

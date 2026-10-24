@@ -334,6 +334,17 @@ const liveCheck = component('my-app-live-check', {
 - **It returns a stop function**, for a component that stops polling before it unmounts, for example
   when a check closes.
 
+For work that runs once after a wait, such as a hint that hides after three seconds, use
+`delay(self, ms, run)` from `imp`. It works like `interval`, but it runs `run` one time:
+
+```js
+const hint = initState(self, 'myapp.hint', true)
+delay(self, 3000, () => hint.set(false))
+```
+
+An unmount before the wait ends cancels the run. `delay` also returns a stop function, and it logs
+an error that `run` throws.
+
 Each mounted component gets its **own** `self`. So a list of one hundred clocks clears one hundred
 timers, and nothing is shared between them. That is why `self` is the correct home for a resource of
 one component. A variable at module level, or a property on the definition, would be shared across

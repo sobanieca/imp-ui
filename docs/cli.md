@@ -590,6 +590,42 @@ components keep their real calls. `imp build` leaves the folder out of productio
   ]
   ```
 
+#### Generated data
+
+A mock often needs data that looks real: an id, a person, an email. Import `fake` from `imp/fake`:
+
+```js
+import { fake } from 'imp/fake'
+
+export const mocks = [
+  {
+    route: 'POST /api/users',
+    handler: (request) => {
+      const name = fake.name()
+      return {
+        status: 201,
+        body: { id: fake.guid(), name, email: fake.email(name), ...request.body },
+      }
+    },
+  },
+]
+```
+
+| Call                 | Gives                                                           |
+| -------------------- | --------------------------------------------------------------- |
+| `fake.guid()`        | a random UUID, such as `'9b2f4e1c-0d3a-4c5e-a1b2-3c4d5e6f7a8b'` |
+| `fake.name()`        | a first name and a last name, such as `'Maria Novak'`           |
+| `fake.email(name?)`  | an address such as `'maria.novak42@example.org'`, from `name`   |
+| `fake.phone()`       | a phone number such as `'+1 415 555 0142'`                      |
+| `fake.hash(length?)` | `length` hex characters, 32 when you give no length             |
+| `fake.address()`     | `{ street, city, postalCode, country }`                         |
+
+Each call gives a new random value. The values are safe to show: an email uses the domains
+`example.com`, `example.org` and `example.net`, which never receive mail. A phone number is in the
+`555-0100` to `555-0199` range, which no person owns. The values are not secure, so do not use
+`fake.hash` for a real secret. A test and a preview can import `imp/fake` too, for example to fill a
+list with people. `imp build` refuses it in an app.
+
 #### Turning mocks on and off
 
 A project usually has both kinds of day: one against the fixtures, and one against the running

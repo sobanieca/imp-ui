@@ -23,14 +23,13 @@ The call shape is `button(props?, ...children)`. When a props object is present,
 | `haspopup`      | `'menu'`, `'listbox'`                                     | -           | Paints `aria-haspopup`                                    |
 | `popoverTarget` | an element with a `popover` attribute                     | -           | The button invokes that popover, as `popovertarget` does  |
 | `popoverAction` | `'toggle'`, `'show'`, `'hide'`                            | `'toggle'`  | What a click does to `popoverTarget`                      |
-| `submit`        | `true`, or the intent of the submit as a string           | -           | Submits the form around it, and spins while it submits    |
+| `submit`        | boolean                                                   | -           | Submits the form around it, and spins while it submits    |
 | `events`        | event map, e.g. `{ click: handler }`                      | -           | Handlers, exactly as on any element                       |
 
 Rules an agent gets wrong:
 
 - **There is no `type` prop.** `submit: true` makes the button submit the `form` around it.
-  `submit: 'draft'` submits with that intent, which `onSubmit` reads. A `type` prop gives a warning
-  about an unknown prop.
+  A `type` prop gives a warning about an unknown prop.
 - **A `submit` button needs a form around it.** Without one, imp warns and the click does nothing.
 - **`loading` takes a number too.** `loading: api.tracked('save').pending` spins while a tracked
   call is in flight.

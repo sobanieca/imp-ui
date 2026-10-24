@@ -85,6 +85,11 @@ pub fn is_imp_std_specifier(specifier: &str) -> bool {
 pub const IMP_TOOLING_MODULES: &[(&str, &str, &str)] = &[
     ("imp/test", "cli/js/test-library.js", "imp test"),
     ("imp/preview", "cli/js/preview-library.js", "imp preview"),
+    (
+        "imp/fake",
+        "cli/js/fake-library.js",
+        "imp start, imp test and imp preview",
+    ),
 ];
 
 pub fn imp_tooling_module(specifier: &str) -> Option<(&'static str, &'static str)> {

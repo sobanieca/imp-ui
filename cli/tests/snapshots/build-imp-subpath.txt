@@ -23,7 +23,7 @@ exit code: 1
 
 --- stderr ---
 [ERROR] Build failed with 1 error:
-std-entry.js:1:25: ERROR: 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/analytics/aly', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview'
+std-entry.js:1:25: ERROR: 'imp/std/charts' is not part of the imp library - import 'imp', 'imp/html', 'imp/state', 'imp/router', 'imp/theme', 'imp/i18n', 'imp/log', 'imp/http', 'imp/icons', 'imp/service-worker', 'imp/analytics', 'imp/analytics/aly', 'imp/std', 'imp/std/layout', 'imp/std/display', 'imp/std/inputs', 'imp/std/shell', 'imp/std/feedback', 'imp/std/data', 'imp/test', 'imp/preview', 'imp/fake'
 
 
 $ imp build std-entry.js --output std  (cwd: <tmp>, tooling-only subpath)
