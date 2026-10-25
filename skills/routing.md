@@ -131,8 +131,8 @@ screen factory receives `{ params, query, searchParams, node }`.
 | a value of another type   | throws, also `true`; write a string or `{}`                                                      |
 
 There is no `label`, `access`, `nav`, `group`, `path`, `title`, `redirect`, `tag`, `href` or `icon`
-in the map. A map with `label`, `access`, `nav`, `group` or `path` throws, and the message names the
-binding to use:
+in the map. A key with one of those names is a child: `settings: { access: {} }` is `/settings/access`.
+`nav: false` or another value that is not a node throws, and the message names the binding to use:
 
 | Binding                    | Where                                                              |
 | -------------------------- | ------------------------------------------------------------------ |

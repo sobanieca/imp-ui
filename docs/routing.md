@@ -142,8 +142,9 @@ elsewhere, keyed by the handle of the node:
 | an icon, a pill                      | `shell({ navbar: { map, icons, tags } })`                                            |
 | the label of a param crumb           | the state `imp.routeLabels`, see _Crumb labels_                                      |
 
-A map that holds `label`, `access`, `nav`, `group` or `path` is an error, and the message names the
-binding to use.
+A key named `label`, `access`, `nav`, `group` or `path` is a child like any other key. So
+`settings: { access: 'Who can open the project' }` is a page at `/settings/access`. When such a key
+holds a value that is not a node, such as `nav: false`, the error names the binding to use.
 
 A translation is not a prop of the map. Your translation files name a static node by its id, under
 `appMap`. `appMap.admin.users.label` translates the label of `app.admin.users`, and

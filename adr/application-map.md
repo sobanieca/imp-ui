@@ -37,9 +37,9 @@ handle per node.**
   whether the nav shows it, the group of its row, a screen, a redirect, a tag and an icon are how
   the app serves and shows it. So they are bound outside the map, keyed by handle, at the router and
   at the shell. The rule keeps the map writable before any code exists, and readable by a CLI
-  without a DOM. A map that holds `label`, `access`, `nav`, `group` or `path` throws, and the
-  message names the binding to use, because such a key reads as a prop, and as a silent child node
-  it would hide the mistake. The map carries no `title` either. The title of the document depends
+  without a DOM. A key named `label`, `access`, `nav`, `group` or `path` is a child like any other,
+  so `settings.access` can be a page. When its value is not a string, an object or a map, such as
+  `nav: false`, the error names the binding to use. The map carries no `title` either. The title of the document depends
   on the screen, so it is a function of the router.
 
 - **A param name is unique on its chain.** `params` and `imp.routeLabels` key a param by its name,
