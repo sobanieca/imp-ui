@@ -1,7 +1,7 @@
 import { appMap, component, init, mount } from 'imp'
 import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme, colorSchemeOf } from 'imp/theme'
-import { lang, setLang } from 'imp/i18n'
+import { defaultMessages, lang, setLang } from 'imp/i18n'
 import { area, navigate, router, useRoute } from 'imp/router'
 import { button, heading, icon, menuButton, text } from 'imp/std'
 import {
@@ -1050,23 +1050,27 @@ const previewArea = (entry, handle, load) =>
 const bindCatalog = (catalog, load, listed) => {
   const slugs = previewSlugs(catalog)
   const nodes = {}
+  const labels = { 'appMap.home.label': 'Components' }
   for (const group of listed) {
     const children = {}
+    const { groupKey } = slugs.get(group.entries[0].file)
     for (const entry of group.entries) {
-      const slug = slugs.get(entry.file)
-      children[slug.key] = { path: slug.segment, label: entry.name }
+      const { key } = slugs.get(entry.file)
+      children[key] = {}
+      labels[`appMap.home.${groupKey}.${key}.label`] = entry.name
     }
-    const slug = slugs.get(group.entries[0].file)
-    nodes[slug.groupKey] = { path: slug.groupSegment, label: group.name, ...children }
+    nodes[groupKey] = children
+    labels[`appMap.home.${groupKey}.label`] = group.name
   }
-  const app = appMap({ components: { path: '/', label: 'Components', ...nodes } })
+  defaultMessages(labels)
+  const app = appMap({ home: nodes })
   const icons = {}
   const tags = {}
-  const screens = { [app.components]: () => (listed.length ? previewIndex(listed) : noPreviews()) }
+  const screens = { [app.home]: () => (listed.length ? previewIndex(listed) : noPreviews()) }
   const entries = new Map()
   const groups = new Map()
   for (const group of listed) {
-    const groupHandle = app.components[slugs.get(group.entries[0].file).groupKey]
+    const groupHandle = app.home[slugs.get(group.entries[0].file).groupKey]
     icons[groupHandle] = group.icon
     tags[groupHandle] = { text: group.entries.length }
     group.href = groupHandle.href()

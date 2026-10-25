@@ -63,42 +63,18 @@ pub fn route_patterns_of_project(
     Ok(patterns.into_iter().collect())
 }
 
-fn notes_of(node: &Value) -> Vec<String> {
-    let mut notes = Vec::new();
-    if let Some(access) = node["access"].as_str() {
-        notes.push(format!("access: {access}"));
-    }
-    let mut nav = Vec::new();
-    if node["hidden"] == Value::Bool(true) {
-        nav.push("hidden from the nav".to_string());
-    }
-    if let Some(group) = node["group"].as_str() {
-        nav.push(format!("group '{group}'"));
-    }
-    if !nav.is_empty() {
-        notes.push(nav.join(", "));
-    }
-    notes
-}
-
 fn text(value: &Value) -> &str {
     value.as_str().unwrap_or("")
 }
 
 fn render_map(map: &Value) -> String {
     let mut lines = Vec::new();
-    let props = &map["props"];
-    let mut notes = notes_of(props);
-    if let Some(description) = props["description"].as_str() {
-        notes.push(description.to_string());
-    }
-    let described = if notes.is_empty() {
-        String::new()
-    } else {
-        format!(
+    let described = match map["description"].as_str() {
+        Some(description) => format!(
             " {}",
-            dim(format!("- a part of another map: {}", notes.join(" | ")))
-        )
+            dim(format!("- a part of another map: {description}"))
+        ),
+        None => String::new(),
     };
     lines.push(format!("{}{described}", bold(text(&map["name"]))));
     let rows: Vec<&Value> = map["rows"]
@@ -118,13 +94,7 @@ fn render_map(map: &Value) -> String {
     for row in rows {
         let head = format!("{}{}", INDENT.repeat(depth(row)), text(&row["location"]));
         let padded = format!("{head:<width$}", width = width + 2);
-        let notes = notes_of(row).join(" | ");
-        let notes = if notes.is_empty() {
-            String::new()
-        } else {
-            format!("  {}", dim(notes))
-        };
-        lines.push(format!("{padded}{}{notes}", text(&row["label"])));
+        lines.push(format!("{padded}{}", text(&row["label"])));
         if !text(&row["description"]).is_empty() {
             lines.push(format!(
                 "{}{}",

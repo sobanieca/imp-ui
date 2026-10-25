@@ -39,12 +39,16 @@ Each crumb has these keys:
 | `icon`    | Lucide export, DOM, or a string | -         | Drawn before the label - usually on the root                                         |
 | `onClick` | function                        | -         | Called with `{ id, item }` on activation                                             |
 | `options` | array of `{ id, label, href }`  | -         | Gives the crumb a picker of its siblings                                             |
+| `loading` | `true`                          | -         | Shows a small `loader` in place of the label, for a label that is not known yet      |
 
 Rules an agent gets wrong:
 
 - **Inside `shell` you do not call this.** The frame renders the trail from the application map,
   above the main content, see imp skill std/shell. Call `breadcrumbs` in a frame of your own, or in
   a page that has no map.
+- **`loading: true` keeps the crumb and hides its word.** The `loader` announces "Loading", from the
+  message `imp.breadcrumbs.loading`. The router of `shell` sets it on a param crumb until the screen
+  settles, see imp skill routing. Send the crumb again with its `label` and no `loading`.
 - **The last crumb is the current page.** imp renders it as text with `aria-current="page"`, never
   as a link, with or without an `href`. Do not add the current level twice.
 - **`options` renders two controls, not one.** The crumb stays a link to its level. A disclosure

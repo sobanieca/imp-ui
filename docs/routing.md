@@ -21,7 +21,7 @@ import { area, guard, navigate, router, useRoute, wait } from 'imp/router'
 import { appMap } from 'imp'
 
 export const app = appMap({
-  home: { path: '/', description: 'The welcome page' },
+  home: 'The welcome page',
   todos: { $id: 'One todo, on its own page' },
   about: 'Who made this, and why',
 })
@@ -60,11 +60,11 @@ changes the URL with no full page reload.
 ## The mental model
 
 - **The map is the feature list of the app.** It is a plain object. You read it top to bottom, and
-  you write it before a line of screen code exists. It says what a feature is: its name, a sentence
-  about it, and who it is for. It holds no component, no icon, no state name and no function. A tool
-  can print it, and a test can walk it.
-- **Everything else is a binding, keyed by a handle.** `screens` and `options` at the router, and
-  `icons` and `tags` at the shell, say how a node is served and shown. Each binding lives where its
+  you write it before a line of screen code exists. It says what a feature is: its name, its place
+  in the URL and a sentence about it. It holds no component, no icon, no state name and no function.
+  A tool can print it, and a test can walk it.
+- **Everything else is a binding, keyed by a handle.** `screens` and `need` at the router, and
+  `hide`, `groups`, `icons` and `tags` at the shell, say how a node is served and shown. Each binding lives where its
   code lives, in the composition root or in the file of a section. Nothing writes into the map.
 - **The router changes the screen on a navigation.** `router()` watches the current URL. When you
   navigate to a different node, it puts the DOM of the matched screen in, and takes the old screen
@@ -81,74 +81,114 @@ changes the URL with no full page reload.
 ## The application map
 
 `appMap(nodes)` takes one object. Every key of that object is a node, and every node can hold nodes
-of its own. A node's value is a sentence that describes it, an object with its props and its
-children, or another map. See _A map in parts_ below.
+of its own. A node's value is a sentence that describes it, an object with its children, or another
+map. See _A map in parts_ below.
 
 ```js
 export const app = appMap({
-  home: { path: '/', description: 'Counts and recent activity' },
+  home: 'Counts and recent activity',
   projects: {
     description: 'Everything a team works on',
-    access: 'user',
     $projectId: {
       builds: { $buildId: 'One build, with its log' },
-      settings: { access: 'admin', group: 'Manage' },
+      settings: {},
     },
   },
   admin: {
-    access: 'admin',
     users: 'Everyone with a login',
     createApiKey: 'Mint a key for a service',
   },
-  login: { nav: false },
+  login: {},
 })
 ```
 
 The rules are few:
 
 - **The name is the path.** `createApiKey` serves `/admin/create-api-key`. Every path is relative to
-  its parent. `path` overrides the segment. `path: '/'` marks the index of the app. Only one
-  top-level node can carry it. The children of the index node hang from the root. So `home.reports`
-  serves `/reports`. An app with one section writes its map this way, with every page under the
-  index node. Then the nav has one section, and the shell draws the column with no top bar.
-- **The name is the label.** `createApiKey` shows as "Create api key" in the nav and in the trail.
-  `label` overrides it.
+  its parent.
+- **A top-level `home` is the index of the app.** It serves `/`, and its children hang from the
+  root. So `home.reports` serves `/reports`. An app with one section writes its map this way, with
+  every page under `home`. Then the nav has one section, and the shell draws the column with no top
+  bar. A `home` deeper in the map is an ordinary node, such as `/admin/home`.
+- **The name is the label.** `createApiKey` shows as "Create api key" in the nav and in the trail. A
+  translation can name it, see below.
 - **A `$name` key is a param.** `$projectId` is the segment `:projectId`. Its value reaches the
   screen as `params.projectId`.
+- **A param name is unique on its chain.** `/orgs/:id/teams/:id` is an error, because the two
+  values would collide in `params`. Write `$orgId` and `$teamId`. Two branches can use the same
+  name, because they are never on one URL. `imp lint` reports a repeat in one map, and `appMap()`
+  throws on a repeat that comes from a part in another file.
 - **A string is a description.** `users: 'Everyone with a login'` is a node with a sentence about
-  it. Write `{}` for a node with nothing to say yet.
-- **A key from the set of props below is a prop.** Any other key with an object or a string value is
-  a child. A key with any other value, such as `lable: 3`, is an error when the map is built. A
-  mistyped prop with a string value, such as `lable: 'Admin'`, becomes a child at `/lable`, and
-  `imp map` shows it.
+  it. Write `{}` for a node with nothing to say yet. To give a description to a node with children,
+  write the `description` key beside them.
+- **Every other key is a child.** A key with a value that is not a string, an object or a map, such
+  as `lable: 3`, is an error when the map is built. A mistyped `lable: 'Admin'` becomes a child at
+  `/lable`, and `imp map` shows it.
 - **The order of the keys is the order of the nav.** The router matches a static path before a param
   path on its own. You never order the keys for priority.
 
-### Node props
+`description` is the one prop of a node. It is the `<meta name="description">` of the page. The
+placeholder of an unbound node shows it, and `imp map` prints it.
 
-| Prop          | Values                                      | Meaning                                                                                                        |
-| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `description` | string                                      | The `<meta name="description">` of the page, shown by the placeholder of an unbound node, printed by `imp map` |
-| `access`      | any value                                   | Who can see the node. The `access` guard of the router decides.                                                |
-| `path`        | one segment, or `'/'`                       | Overrides the segment derived from the name                                                                    |
-| `label`       | string, or `({ params, option }) => string` | Overrides the label derived from the name                                                                      |
-| `nav`         | `false`                                     | Hides a static node from the nav; the route stays                                                              |
-| `group`       | string                                      | The sidebar groups consecutive rows under this title                                                           |
+The map says what a feature is. How a feature is served, and how the nav shows it, is a binding
+elsewhere, keyed by the handle of the node:
 
-That is the whole set. A prop describes what a feature is. How a feature is served, and how the nav
-shows it, is a binding elsewhere. Examples are a screen or a redirect in `screens`, the choices of a
-param in `options`, and an icon or a pill in the `navbar` of the shell. Each binding is keyed by the
-handle of the node.
+| What                                 | Where                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| the screen, or a redirect            | `router({ screens })`                                                                |
+| who can open the node                | `router({ access, need })`, see _Access_                                             |
+| a node that the nav does not show    | `shell({ navbar: { map, hide: [app.login] } })`                                      |
+| a group of sidebar rows with a title | `shell({ navbar: { map, groups: { Manage: [app.projects.$projectId.settings] } } })` |
+| an icon, a pill                      | `shell({ navbar: { map, icons, tags } })`                                            |
+| the label of a param crumb           | the state `imp.routeLabels`, see _Crumb labels_                                      |
 
-A `label` function receives the current `params`. On a param node, it also receives the matching
-`option`. So a crumb inside a repository reads `({ params }) => params.repo`.
+A map that holds `label`, `access`, `nav`, `group` or `path` is an error, and the message names the
+binding to use.
 
-A translation is not a prop of the map. Your translation files name a node by its id, under
-`appMap`. `appMap.admin.users.label` translates the label of `app.admin.users`,
-`appMap.admin.users.group` its group title, and `appMap.admin.users.description` its description. A
-message wins over the prop and over the name. The nav, the trail, the document title and the
-placeholder of an unbound node follow the language. Put these keys in the translations of the app,
-not of an area. A section row shows before the code of its area loads. See **[i18n](i18n.md)**.
+A translation is not a prop of the map. Your translation files name a static node by its id, under
+`appMap`. `appMap.admin.users.label` translates the label of `app.admin.users`, and
+`appMap.admin.users.description` its description. A message wins over the name. The nav, the trail,
+the document title and the placeholder of an unbound node follow the language. Put these keys in
+the translations of the app, not of an area. A section row shows before the code of its area loads.
+See **[i18n](i18n.md)**.
+
+### Crumb labels
+
+A param crumb, such as the project in `/projects/42/builds`, needs a name that only the data knows.
+The router creates one global state for it, `imp.routeLabels`. Its value is a plain object from
+the param name, with its `$`, to the label: `{ $projectId: 'Billing', $buildId: 'Build 7' }`. Any
+component writes the keys that it knows:
+
+```js
+const team = component('app-team', {
+  setup: async (self, { teamId }) => {
+    const found = await useHttpClient(self, 'myapp.api').get(`/teams/${teamId}`)
+    useState(self, 'imp.routeLabels').set((all) => ({ ...all, $teamId: found.name }))
+    return teamView(found)
+  },
+})
+```
+
+The label of a param crumb is the entry of `imp.routeLabels`. While the screen loads, a crumb with
+no entry shows the `loader`. When the screen is ready and wrote no entry, the crumb shows the raw
+value of the param. The `crumbs` of `router({ title })` follow the same rule.
+
+**Write the labels before `setup` resolves.** The router waits for the screen to settle before it
+commits the trail. A screen settles when its async `setup` resolves and every nested component has
+rendered, or when it shows its error view. So a crumb never shows the raw `t2` and then changes to
+`Team B`, and the router writes `document.title` once per navigation. The screen calls no "ready"
+function, so a crumb can never wait forever.
+
+After the commit, a write to `imp.routeLabels` updates the crumb and `document.title` in place. A
+rename works this way, and so does a child that loads its data after `setup`.
+
+You never clear the state. On each route change, before the new screen runs `setup`, the router
+removes a key when its param is not on the new route, or when the value of its param changed. From
+`/orgs/o1/teams/t1` to `/orgs/o1/teams/t2`, `$orgId` stays and `$teamId` goes, so the crumb of `t2`
+never shows the name of `t1`. The root of an area, such as the layout of `/orgs/:orgId`, stays
+mounted across its child screens. It writes `$orgId`, and each child screen writes only its own
+params. In development, the router logs a warning for a key that names no param of the current
+route, such as a mistyped `$tamId`.
 
 ### A map in parts
 
@@ -158,7 +198,7 @@ with the props of the node that it hangs from as the first argument:
 ```js
 // admin/map.js
 export const admin = appMap(
-  { access: 'admin', description: 'The back office' },
+  { description: 'The back office' },
   {
     users: 'Everyone with a login',
     createApiKey: 'Mint a key for a service',
@@ -170,13 +210,14 @@ export const admin = appMap(
 // app-map.js
 import { admin } from './admin/map.js'
 
-export const app = appMap({ home: { path: '/' }, admin })
+export const app = appMap({ home: {}, admin })
 ```
 
 The key gives the part its place, so `admin.users` and `app.admin.users` are the same handle, and
 both print `/admin/users` once the part is in the whole. A file of a section imports the part and
-keys its screens by it. A part goes into one map only. `imp map admin/map.js` prints a part on its
-own, with its paths relative to where it will hang.
+keys its screens by it. A part goes into one map only. Its first argument takes `description` only.
+A `home` inside a part is an ordinary node, because a part is never the top of the map.
+`imp map admin/map.js` prints a part on its own, with its paths relative to where it will hang.
 
 ### Handles
 
@@ -213,7 +254,7 @@ refuses it with a message that says so. So a typo fails at startup, not on a cli
 ## The router
 
 ```js
-router({ map, screens, options, access, scope, title, loading, error, notFound })
+router({ map, screens, access, need, scope, title, loading, error, notFound })
 ```
 
 Drop the router where the current screen must appear. Everything around it stays in place across a
@@ -224,14 +265,13 @@ necessary:
 - **`map`** is the application map.
 - **`screens`** binds a node to a screen factory, to an area, or to a `redirect()`. The keys are
   handles.
-- **`options`** binds a param node to its choices: the name of a state that holds
-  `[{ value, label }]`, or such an array. The crumb of the param becomes a picker, and the label of
-  the crumb is the label of the matching choice.
-- **`access`** is the one guard that decides the `access` values of the map, see _Access_.
+- **`access`** is the one guard of the app, see _Access_.
+- **`need`** binds a value to a node, for the guard to read. A node with no `need` is open.
 - **`scope`** is the param node that the app lives under, for a multi-tenant app, see _A tenant in
   the URL_.
 - **`title`** is a function of `{ crumbs, node, params }` that returns the title of the document.
-  imp calls it on every navigation. Without it, imp leaves `document.title` alone.
+  imp calls it once the screen of a navigation settles, and again when a crumb label changes, see
+  _Crumb labels_. Without it, imp leaves `document.title` alone.
 
 The router also writes the `description` of the matched node to `<meta name="description">` on every
 navigation, with no option. A search engine and a link preview read that tag. When the node has no
@@ -322,23 +362,24 @@ export const app = appMap({
   organizations: {
     $org: {
       projects: { $projectId: {} },
-      admin: { access: 'admin' },
+      admin: {},
     },
   },
-  userSettings: { nav: false, me: 'Profile and password' },
-  login: { nav: false },
+  userSettings: { me: 'Profile and password' },
+  login: {},
 })
 
 router({
   map: app,
   scope: app.organizations.$org,
+  access,
+  need: { [app.organizations.$org.admin]: 'admin' },
   screens,
-  options: { [app.organizations.$org]: 'acme.orgs' },
 })
 ```
 
 Inside the scope, the sections of the nav are the static children of `$org`. The trail starts with
-the organization, with a picker when `options` binds it. Outside the scope, on `/user-settings/me`
+the organization. The root of the organization area writes its name to `$org` of `imp.routeLabels`. Outside the scope, on `/user-settings/me`
 or `/login`, the sections are the top-level nodes. A link inside the organization writes
 `app.organizations.$org.admin.href()`. `href()` takes the current slug from the route.
 
@@ -499,8 +540,8 @@ area can bind a deeper node to another `area()`.
 
 ## Access: how to keep a screen behind a condition
 
-A node says who can see it, with `access`. One guard on the router decides what each value means.
-The guard is a plain function of the state that it reads. It runs before imp builds the screen:
+The router binds a `need` to a node, and one guard on the router decides what each value means. The
+guard is a plain function of the state that it reads. It runs before imp builds the screen:
 
 ```js
 import { guard, wait } from 'imp/router'
@@ -511,7 +552,12 @@ const access = guard(['myapp.session'], (session, { need, path }) => {
   return session.roles.includes(need) || '/forbidden'
 })
 
-router({ map: app, access, screens })
+router({
+  map: app,
+  access,
+  need: { [app.projects]: 'user', [app.projects.$projectId.settings]: 'admin' },
+  screens,
+})
 ```
 
 The redirect to `/login` carries the requested path in `next`. The login screen reads it from the
@@ -530,7 +576,8 @@ navigate(next, { replace: true })
 
 Read that from the inside out. `['myapp.session']` declares **which states this guard reads**. The
 router looks them up for you, and passes their values in, in the same order. After the values comes
-`{ need, params, query, searchParams, path }`, where `need` is the `access` value of the node. The
+`{ need, params, query, searchParams, path }`, where `need` is the value that `need` binds to the
+node. The
 function returns one of four answers:
 
 | Return              | Means                                                      |
@@ -540,16 +587,16 @@ function returns one of four answers:
 | `'/login'`          | redirect there, replacing the current history entry        |
 | `false`             | render the `notFound` page, as if the route did not exist  |
 
-### `access` is data, and the guard gives it meaning
+### `need` is data, and the guard gives it meaning
 
-`access` takes any value. Write `access: 'admin'`, `access: ['billing', 'owner']` or
-`access: { role: 'admin', plan: 'business' }`. Your one guard reads `need` and decides. Every
-`access` on the path from the root to the matched node runs, root first, and the first answer that
-is not an allow wins. So `settings` under a `projects` node with `access: 'user'` needs the person
-to be a user and, with its own `access: 'admin'`, an admin as well.
+A `need` takes any value. Write `'admin'`, `['billing', 'owner']` or
+`{ role: 'admin', plan: 'business' }`. Your one guard reads `need` and decides. Every `need` on the
+path from the root to the matched node runs, root first, and the first answer that is not an allow
+wins. So `settings` under a `projects` node with the need `'user'` needs the person to be a user
+and, with its own need `'admin'`, an admin as well.
 
-**A node with no `access` is open.** So `/login` never loops, and there is no default to exclude a
-page from. A map with an `access` and a router with no `access` guard is an error at startup. Pass
+**A node with no `need` is open.** So `/login` never loops, and there is no default to exclude a
+page from. A `need` and a router with no `access` guard is an error at startup. Pass
 the login node to `shell` as `signIn`, and the frame shows that page without the navbar. See
 **[Standard components](std-components.md)**.
 
@@ -629,10 +676,11 @@ away from a public page, return that path from the guard. Do not watch the sessi
 
 ### A guard and a lazily loaded section
 
-An `access` on the node that an area binds covers the whole section. That is its `root` and every
+A `need` on the node that an area binds covers the whole section. That is its `root` and every
 screen under it. It decides **before the import runs**. So a person who is not an administrator
-never downloads the admin code. A node inside the area can carry its own `access` for a narrower
-rule, and the router inside the area checks it.
+never downloads the admin code. A node inside the area can have its own `need` for a narrower
+rule, and the router inside the area checks it. An area inherits the `need` of the router, so an
+area file binds no access of its own.
 
 A guard is a UI concern. It decides what to render, not what a visitor can have. Your backend still
 authorizes every request. A determined visitor can always fetch the JavaScript.
@@ -828,7 +876,7 @@ cleanup, and leaving the route runs it.
 ## The map in the tooling
 
 **`imp map`** prints the map of the project, from the `map` file of `imp.json`, or from the file
-that you pass. Every node shows its path, its label, its `access` and its `description`. So a
+that you pass. Every node shows its path, its label and its `description`. So a
 person, or an agent, sees the whole app on one screen before a line of screen code exists. See
 **[CLI](cli.md)**.
 
@@ -951,8 +999,8 @@ shell(
 )
 ```
 
-The `title` option of the router writes `document.title` on every navigation. The frame reads it one
-microtask later, after the router has written it. The focus moves in the same microtask, after the
+The `title` option of the router writes `document.title` when the screen of a navigation settles.
+The frame reads it one microtask later. The focus moves in the same microtask, after the
 router has put the new screen in place. A dialog that is still open on the old screen makes the rest
 of the page inert, and an inert element cannot take the focus. The microtask lets the router remove
 that screen, and its dialog, first. `preventScroll` leaves the scroll to the router, which has
@@ -1021,18 +1069,18 @@ So a deep link and a refresh work while you build.
 
 ## API summary
 
-| Export                                     | Returns            | What it does                                                                                                                               |
-| ------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `appMap(nodes)` / `appMap(props, nodes)`   | the handle tree    | Builds the application map, or a part of one; validates every node at startup. Imported from `imp`.                                        |
-| `router(options)`                          | a live router slot | Renders the matched screen; `options`: `map` (required), `screens`, `options`, `access`, `scope`, `title`, `loading`, `error`, `notFound`. |
-| `redirect(to)`                             | a screen binding   | Binds a node to a forward: `to` is a handle, or a path.                                                                                    |
-| `router()`                                 | a live router slot | Inside the `root` of an area, renders the screens of that area; inherits the options of the parent router.                                 |
-| `area({ screens, root?, translations? })`  | an area definition | Declares the screens of a section, the component its screens render inside, and its translations, for its `export default`.                |
-| `area(() => import(...))`                  | an area marker     | Binds a node to a lazily-loaded area - the one on-demand unit.                                                                             |
-| `guard(states, check)`                     | a guard            | A synchronous check over the values of the states it names and the `need` of the node; returns `true`, `wait`, `false`, or a path.         |
-| `wait`                                     | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `loading` up and re-runs the guard when a declared state changes.        |
-| `navigate(path, { replace?, external? })`  | -                  | Navigates programmatically; `replace` swaps the current history entry; `external` lets it leave for another site. Only http and https.     |
-| `safeNext(value, fallback)`                | a path             | `value` when it is a path of the app, else `fallback`. Use it for a `?next=` value before you navigate.                                    |
-| `useRoute()`                               | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                   |
-| `url(path)`                                | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                          |
-| `screenRegion(self, element, { effect? })` | -                  | Names the box that scrolls the screens, so imp restores its scroll; `effect` animates a change of screen, see below.                       |
+| Export                                     | Returns            | What it does                                                                                                                            |
+| ------------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `appMap(nodes)` / `appMap(props, nodes)`   | the handle tree    | Builds the application map, or a part of one; validates every node at startup. Imported from `imp`.                                     |
+| `router(options)`                          | a live router slot | Renders the matched screen; `options`: `map` (required), `screens`, `access`, `need`, `scope`, `title`, `loading`, `error`, `notFound`. |
+| `redirect(to)`                             | a screen binding   | Binds a node to a forward: `to` is a handle, or a path.                                                                                 |
+| `router()`                                 | a live router slot | Inside the `root` of an area, renders the screens of that area; inherits the options of the parent router.                              |
+| `area({ screens, root?, translations? })`  | an area definition | Declares the screens of a section, the component its screens render inside, and its translations, for its `export default`.             |
+| `area(() => import(...))`                  | an area marker     | Binds a node to a lazily-loaded area - the one on-demand unit.                                                                          |
+| `guard(states, check)`                     | a guard            | A synchronous check over the values of the states it names and the `need` of the node; returns `true`, `wait`, `false`, or a path.      |
+| `wait`                                     | a verdict          | Returned by a guard that cannot decide yet - the router keeps its `loading` up and re-runs the guard when a declared state changes.     |
+| `navigate(path, { replace?, external? })`  | -                  | Navigates programmatically; `replace` swaps the current history entry; `external` lets it leave for another site. Only http and https.  |
+| `safeNext(value, fallback)`                | a path             | `value` when it is a path of the app, else `fallback`. Use it for a `?next=` value before you navigate.                                 |
+| `useRoute()`                               | a read-only route  | The live `{ path, query, searchParams }` - `get`/`watch`/`text`/`view`/`each`, no `set`.                                                |
+| `url(path)`                                | a URL string       | An app-root path with `IMP_BASEPATH` prefixed, for an href you write as a string.                                                       |
+| `screenRegion(self, element, { effect? })` | -                  | Names the box that scrolls the screens, so imp restores its scroll; `effect` animates a change of screen, see below.                    |

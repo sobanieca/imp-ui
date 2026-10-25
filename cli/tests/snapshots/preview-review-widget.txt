@@ -52,6 +52,7 @@ state:
   imp.preview.lang = "en"
   imp.preview.editor = false
   imp.preview.nav = false
+  imp.routeLabels = {}
 
 log:
   [INFO] imp preview serving 2 previews from <tmp>

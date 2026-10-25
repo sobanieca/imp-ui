@@ -24,29 +24,36 @@ data, and it says only what a feature is. The router, the shell and the breadcru
 it. Everything about how a feature is served or shown binds to the map later, from other files, by a
 handle per node.**
 
-- **The map is a nested object of nodes.** A key whose value is a string, an object or another map
-  is a child node. A string is the description of the node. A key from the reserved set of props
-  (`path`, `label`, `description`, `access`, `nav`, `group`) is a prop of the node. Any other key
-  with any other value is an error at startup. The name of a node is its path segment in kebab case
-  and its label in sentence case, until `path` or `label` overrides one. A `$name` key is a param
-  segment `:name`. `path: '/'` marks the index of the app, on one top-level node only, and the
-  children of the index node hang from the root URL, so the index can be the one section of an app.
-  `nav: false` hides a static node from the nav. The order of the keys is the order of the nav, and
-  the router matches static siblings before param siblings on its own.
+- **The map is a nested object of nodes, with one prop.** A string is the description of a node. An
+  object holds the children of a node and an optional `description`. A map is a part. Any key other
+  than `description` is a child, and a child value that is not a string, an object or a map is an
+  error at startup. The name of a node is its path segment in kebab case and its label in sentence
+  case. A `$name` key is a param segment `:name`. The top-level key `home` is the index of the app:
+  it serves `/`, and its children hang from the root URL, so the index can be the one section of an
+  app. A `home` deeper in the tree, or inside a part, is an ordinary node. The order of the keys is
+  the order of the nav, and the router matches static siblings before param siblings on its own.
 
-- **The map holds no binding.** The set of props is the set that describes a feature: what it is
-  called, what it does, who it is for, where it sits. A screen, a redirect, the choices of a param,
-  a tag and an icon are not properties of a feature. They are how the app serves and shows it, so
-  they are bound outside the map, keyed by handle, at the router and at the shell. The rule keeps
-  the map writable before any code exists, and readable by a CLI without a DOM. The map carries no
-  `title` either. The title of the document depends on the screen, so it is a function of the
-  router.
+- **The map holds no binding.** A node says what a feature is and where it sits. Who can open it,
+  whether the nav shows it, the group of its row, a screen, a redirect, a tag and an icon are how
+  the app serves and shows it. So they are bound outside the map, keyed by handle, at the router and
+  at the shell. The rule keeps the map writable before any code exists, and readable by a CLI
+  without a DOM. A map that holds `label`, `access`, `nav`, `group` or `path` throws, and the
+  message names the binding to use, because such a key reads as a prop, and as a silent child node
+  it would hide the mistake. The map carries no `title` either. The title of the document depends
+  on the screen, so it is a function of the router.
 
-- **A map splits into parts.** `appMap(props, nodes)` builds a part: `props` are the props of the
-  node that the part hangs from. A map used as the value of a key is grafted at that key. Its nodes
-  are reparented, and its handles stay the same objects, so `admin.users` and `app.admin.users` are
-  one handle and both print the grafted pattern. A part goes into one map only, and a part cannot be
-  passed to the router or the shell as the whole. A `path: '/'` inside a part is an error.
+- **A param name is unique on its chain.** `params` and `imp.routeLabels` key a param by its name,
+  so `/orgs/:id/teams/:id` cannot hold both values. `appMap()` throws when a param repeats the name
+  of a param above it, and the message names both nodes. The check runs on every `appMap()` call,
+  so it also covers a part that another call grafts. Two branches can share a name, because they
+  are never on one chain. The lint rule `imp/app-map-unique-params` reports the inner key of a
+  repeat in one object literal, before the app runs.
+
+- **A map splits into parts.** `appMap(props, nodes)` builds a part: `props` takes the
+  `description` of the node that the part hangs from, and nothing else. A map used as the value of a
+  key is grafted at that key. Its nodes are reparented, and its handles stay the same objects, so
+  `admin.users` and `app.admin.users` are one handle and both print the grafted pattern. A part
+  goes into one map only, and a part cannot be passed to the router or the shell as the whole.
 
 - **`appMap()` returns the handle tree.** `app.admin.users` is a frozen handle. It stringifies to
   its pattern, so a handle keys an object. `handle.href(params)` fills the pattern through `url()`,
@@ -57,11 +64,11 @@ handle per node.**
 
 - **A binding is a value keyed by a handle, and it lives where the implementation lives.**
   `router({ map, screens })` binds a screen factory, an `area()` loader or a `redirect()` to a node.
-  `router({ options })` binds the choices of a param node: a state name, or a list. An area file
-  exports `area({ screens, root, translations })`, and it binds only the node it hangs from and the
-  descendants of that node. `shell({ navbar: { map, icons, tags } })` binds an icon and a pill per
-  node at the root, because a section row renders before the chunk of its area loads. Nothing
-  mutates the map, and nothing registers through a global.
+  `router({ need })` binds the value that the guard reads. An area file exports
+  `area({ screens, root, translations })`, and it binds only the node it hangs from and the
+  descendants of that node. `shell({ navbar: { map, hide, groups, icons, tags } })` hides a node,
+  titles a group of rows, and binds an icon and a pill per node at the root, because a section row
+  renders before the chunk of its area loads. Nothing mutates the map.
 
 - **A node with no screen renders a stub.** The stub is an `emptyState` with the label and the
   `description` of the node. A parent node with static children and no screen forwards to its first
@@ -75,44 +82,69 @@ handle per node.**
 - **`handle.href(params, { query, absolute })` builds every link.** A query is a plain object that
   imp encodes, and `absolute: true` adds the origin for a link that leaves the app in an email.
 
-- **`access` is the one door.** A node carries any `access` value, and one guard on the router,
-  `router({ access })`, receives that value as `need`, beside the state values and
-  `{ params, query, searchParams, path }`. Every `access` on the chain from the root to the matched
-  node must allow. A node with no `access` is open, so a login page never loops. The verdicts,
-  `wait`, the redirect path and `false`, keep the meaning of `route-guards.md`. There is no second
-  guard form. A rule that `access` cannot express is a richer `access` value, not a different
-  mechanism.
+- **`access` is the one door.** `router({ need })` binds any value to a node, and one guard on the
+  router, `router({ access })`, receives that value as `need`, beside the state values and
+  `{ params, query, searchParams, path }`. Every `need` on the chain from the root to the matched
+  node must allow. A node with no `need` is open, so a login page never loops. The verdicts, `wait`,
+  the redirect path and `false`, keep the meaning of `route-guards.md`. There is no second guard
+  form. A rule that `need` cannot express is a richer `need` value, not a different mechanism.
 
-- **A translation is a message, keyed by the id of the node.** The messages of the app translate a
-  node under `appMap.<id>.label`, `appMap.<id>.group` and `appMap.<id>.description`. A message wins
-  over the prop and over the name. The router reads it where it derives the nav, the trail and the
+- **The label of a static node is a message, then the name.** The messages of the app translate a
+  static node under `appMap.<id>.label` and `appMap.<id>.description`. A default message of a
+  library counts as a message, so a tool that builds a map, such as `imp preview`, names its nodes
+  with `defaultMessages`. The router reads the label where it derives the nav, the trail and the
   title, and the stub reads it through `lang`. So `app-map.js` never imports `t`, and `imp map`
   prints the map with no translation loaded. The keys must live in the translations of the app,
-  because a section row renders before the chunk of its area arrives. A `label` function stays for a
-  value that comes from the route, such as the name of a repository.
+  because a section row renders before the chunk of its area arrives.
+
+- **The label of a param crumb is the state `imp.routeLabels`.** The router creates it, as it
+  creates `imp.route`, and provides it to the whole document, so `useState` finds it from any
+  component. Its value is a plain object: param name with its `$` -> label. A component writes the
+  keys that it knows, and there is no helper function. A param crumb takes its entry, then the
+  `loader` while the screen loads, then the raw value. One source names a param crumb. A label
+  function of the map needed data that only a screen loads, so an app kept a state for it anyway.
+  A list of options at the router named a crumb and gave it a picker, but a picker lists only what
+  the app already loaded. A state that the screen writes covers both cases with one rule, and the
+  map stays plain data.
+
+- **The router removes the labels that the route does not use.** On each route change, before the
+  new screen runs `setup`, the router removes a key whose param is not on the new route, or whose
+  value changed. So the state never grows over a session, and the crumb of `t2` never shows the name
+  of `t1`. The removal runs before `setup`, so it never removes a label that the new screen wrote.
+  An area root stays mounted across its child screens, so it writes the param that it owns once. In
+  dev, the router warns about a key that names no param of the current route.
+
+- **The router commits the trail when the screen settles.** A screen settles when its async `setup`
+  resolves and every nested pending render is done, the same signal as the `readyView` of analytics.
+  An error view also settles it. Until then, a param crumb with no entry shows the `loader`, and the
+  router writes no title. So a crumb never shows the raw `t2` and then changes to its name, and
+  `document.title` changes once per navigation. A write after the commit updates the crumb and the
+  title in place. The screen calls no "ready" function, because a missing call would leave a crumb
+  loading forever. The rule for an app is to write its labels before `setup` resolves.
 
 - **The nav is a pure derivation, and the shell never computes it.** The router derives the
   sections, the rows of the current context, the selected ids, the label of the context and the
-  crumbs, in one `computed` over the route, the language, the guard states and the states that
-  `options` names. It writes the result into two plain-data states that the map owns. The shell
-  reads them through `navbar.map`, adds the icons and the tags it holds, and keeps its one row
-  renderer. The shell imports the map module, and nothing from the router.
+  crumbs, in one `computed` over the route, the language, the guard states, `imp.routeLabels` and
+  the settle mark. It writes the result into two plain-data states that the map owns. The shell
+  reads them through `navbar.map`, drops the nodes of `hide`, titles the rows of `groups`, adds the
+  icons and the tags it holds, and keeps its one row renderer. The shell imports the map module, and
+  nothing from the router.
   - The sections are the top-level nodes. The sidebar shows the static children of the current
     context, which is the deepest param node on the current chain, or else the current section.
-    Static grandchildren are the one collapsible level. `group` groups consecutive rows.
+    Static grandchildren are the one collapsible level. A key of `groups` titles the consecutive
+    rows that it lists, and a key that the messages hold shows as that message. A hidden row is not
+    drawn, and its page marks the nearest row above it.
   - A param node is a crumb, never a row.
   - When the nav has one section and that section has rows, the shell drops the bar and draws the
     sidebar-only layout. A bar with one item offers no choice. The rule reads the derived sections,
     so a `scope` with several sections inside a tenant keeps the bar, and a viewer whose `access`
     leaves one section gets the column.
-  - A crumb label is the message of the node, then its `label`, then the label of the matching
-    option, then the raw param value. A crumb whose param has bound `options` gets a picker. The
-    picker keeps the static tail of the path and drops what follows the next param.
   - Only an allow verdict shows a row. `wait` hides the row until the state arrives. The current
     chain stops at the first node that is not allowed, so a section is current only when the person
     is allowed inside.
   - `router({ title })` is a function of `{ crumbs, node, params }`, and the router writes its
-    result to `document.title` on every navigation. Without it, the router leaves the title alone.
+    result to `document.title` when the trail commits, and again when a label changes. Without it,
+    the router leaves the title alone.
   - The router writes the `description` of the matched node, translated, to
     `<meta name="description">` on every navigation. A page that has no description of its own, and
     a URL off the map, get the description of the HTML page back. When the HTML page has none, the
@@ -127,19 +159,19 @@ handle per node.**
 
 - **The trail is chrome of the frame.** The shell renders `breadcrumbs` above the main content when
   a map is present, and `breadcrumbs: false` turns it off. The two-line phone title is the last two
-  crumbs. `breadcrumbs` stays an export of `imp/std/shell` for a frame that an app writes itself,
-  and a crumb takes `options`: a disclosure button beside the crumb opens an anchored panel of
-  links.
+  crumbs. A crumb that waits for its label shows a small `loader`. `breadcrumbs` stays an export of
+  `imp/std/shell` for a frame that an app writes itself, and there a crumb takes `options`: a
+  disclosure button beside the crumb opens an anchored panel of links.
 
-- **The sign-in page is a node of the map.** The map has no default `access`, so the node is open,
-  and every private section carries its own `access`. The guard redirects a visitor with no session
+- **The sign-in page is a node of the map.** The router has no default `need`, so the node is open,
+  and every private section gets its own `need`. `navbar.hide` keeps the node off the nav. The guard redirects a visitor with no session
   to the sign-in node, and the router, the nav, `imp map`, `app-analytics.json` and analytics treat
   it as an ordinary page. `shell` shows it without the chrome, see `app-shell-component.md`.
   `userCard` in `extras` displays the person.
 
 - **`imp map` prints the tree.** `imp.json` names the map file under `map`. The file imports
   `appMap` and its parts, so the CLI bundles it, runs it in its embedded QuickJS, with no DOM, and
-  prints every node with its path, label, access and description. `imp map <file>` prints a part on its own. `imp init`
+  prints every node with its path, its label from its name and its description. `imp map <file>` prints a part on its own. `imp init`
   writes `src/app-map.js`, names it in `imp.json`, and writes a frame that binds the one screen it
   ships. `imp build` reads the same file and writes the pattern of every node to the `pages` of
   `app-analytics.json` in the output, for an analytics store, see `product-analytics.md`.
@@ -156,12 +188,11 @@ handle per node.**
   because every href carries the current params. A nav tree is small, and imp accepts the cost.
 - The router pulls `emptyState` into every app that routes, for the stub. That is the price of a map
   that runs before a screen exists.
-- The map cannot express a nav row that exists only at runtime. A list of runtime destinations is
-  the `options` of a param node, and it reaches the trail as a picker, not the sidebar as rows. A
-  nav row for an external link is not a node either. It is a row of `sidebar.footer` or DOM in
-  `extras`.
-- A mistyped prop with a string value, such as `lable: 'Admin'`, is a child node, because a string
-  value is a description. The map cannot tell a typo from a feature. `imp map` and the stub log at
-  mount show the stray node.
-- The picker on a phone is not in the folded title. The strip hides below the fold, and the sidebar
-  head names the context without a picker. Both are open to extension, and neither blocks an app.
+- The map cannot express a nav row that exists only at runtime. A list of runtime destinations is a
+  screen of the app, such as a list of projects, or an `orgSelect` beside the logo. A nav row for an
+  external link is not a node either. It is a row of `sidebar.footer` or DOM in `extras`.
+- A screen that writes its label after `setup` resolves shows the raw value for a moment. The rule
+  to write it before `setup` resolves is a convention that the router cannot check.
+- A mistyped `description`, such as `descripton: 'Admin'`, is a child node, because a string value is
+  a description. The map cannot tell a typo from a feature. `imp map` and the stub log at mount show
+  the stray node.

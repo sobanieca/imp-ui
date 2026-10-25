@@ -147,7 +147,7 @@ export default {
 ```js
 // src/app-map.js
 export const app = appMap({
-  home: { path: '/', description: 'The counter the scaffold starts with' },
+  home: 'The counter the scaffold starts with',
   about: 'Bind this node in src/app.js, or delete it here',
 })
 

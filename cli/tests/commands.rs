@@ -267,6 +267,15 @@ fn lint_import_source() {
 }
 
 #[test]
+fn lint_app_map_unique_params() {
+    snapshot_command(
+        "lint-app-map-unique-params",
+        &["lint", "app-map.js"],
+        Some(&fixture("lint-app-map")),
+    );
+}
+
+#[test]
 fn lint_icons_by_name() {
     snapshot_command(
         "lint-icons-by-name",

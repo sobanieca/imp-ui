@@ -19,7 +19,7 @@ Here's a complete routed app:
 import { appMap } from 'imp'
 
 export const app = appMap({
-  home: { path: '/', description: 'The welcome page' },
+  home: 'The welcome page',
   about: 'Who made this, and why',
   todos: { $id: 'One todo, on its own page' },
 })
@@ -83,18 +83,18 @@ just unmounting.
 ### `appMap(nodes)` - the feature list
 
 Every key is a node. The name is the path (`createApiKey` serves `/create-api-key`) and the label
-("Create api key"). A `$name` key is a param. Nest a node to nest a path. A few props say the rest:
+("Create api key"). A `$name` key is a param. A top-level `home` serves `/`. Nest a node to nest a
+path. A string, or `description`, says what the node is for, and that is the only prop:
 
 ```js
 export const app = appMap({
-  home: { path: '/' },
+  home: {},
   projects: {
     description: 'Everything a team works on',
-    access: 'user',
-    $projectId: { builds: {}, settings: { access: 'admin' } },
+    $projectId: { builds: {}, settings: {} },
   },
-  admin: { access: 'admin', users: 'Everyone with a login', createApiKey: {} },
-  login: { nav: false },
+  admin: { users: 'Everyone with a login', createApiKey: {} },
+  login: {},
 })
 ```
 
@@ -104,8 +104,7 @@ handle is `undefined`, and the router refuses the key at startup with a message 
 a path in one line, and every link, crumb, guard and binding follows.
 
 A big app splits the map into parts, one `appMap()` per file, and grafts each part under a key. Run
-`imp map` and the whole app prints as a tree: path, label, access, description. Before a screen
-exists.
+`imp map` and the whole app prints as a tree: path, label, description. Before a screen exists.
 
 ### `router({ map, screens })` - the slot and its bindings
 
@@ -195,9 +194,9 @@ router subtree.
 
 ---
 
-## Access is data on the node
+## Access is data bound to a node
 
-A node says who may see it. One guard on the router says what that means:
+The router binds a `need` to a node. One guard on the router says what that means:
 
 ```js
 const access = guard(['acme.session'], (session, { need }) => {
@@ -206,11 +205,20 @@ const access = guard(['acme.session'], (session, { need }) => {
   return session.roles.includes(need) || '/forbidden'
 })
 
-router({ map: app, access, screens })
+router({
+  map: app,
+  access,
+  need: {
+    [app.projects]: 'user',
+    [app.projects.$projectId.settings]: 'admin',
+    [app.admin]: 'admin',
+  },
+  screens,
+})
 ```
 
-`access: 'admin'` on the `admin` node reaches the guard as `need`. Every `access` on the path to the
-matched node runs. A node with no `access` is open, so `/login` never loops. And the **same guard
+`'admin'` on the `admin` node reaches the guard as `need`. Every `need` on the path to the matched
+node runs. A node with no `need` is open, so `/login` never loops. And the **same guard
 decides the nav**: a row shows only when the guard allows it, and a row whose state hasn't arrived
 stays hidden until it does. The nav and the route cannot disagree.
 
@@ -351,13 +359,13 @@ element to wrap anything in.
 | A nav config kept in step with the routes               | the frame reads the same map                                          |
 | A build step to code-split routes                       | `area(() => import('./area.js'))` - buildless, on demand              |
 | `<Outlet/>` + nested layout files                       | `router()` slot + layouts that are plain functions                    |
-| Per-route guard wiring                                  | `access` on the node, one guard on the router, the nav follows        |
+| Per-route guard wiring                                  | a `need` per node, one guard on the router, the nav follows           |
 | `<Suspense fallback>` around lazy routes                | the screen's `loading` + `router({ loading })` for downloads          |
 | `<ErrorBoundary>` route element                         | the screen's `error`, or `router({ error })` for the whole subtree    |
 | `loader` / `action` / `useLoaderData` data layer        | `async setup` - fetch where you render                                |
 | `useLocation` + `useParams` + `useSearchParams`         | `useRoute()` and the factory's `{ params, query, node }`              |
 | `useEffect` cleanup / `AbortController` on route change | unmounting the screen - automatic and total                           |
-| Hand-written breadcrumbs per page                       | the trail derives from the map, picker included                       |
+| Hand-written breadcrumbs per page                       | the trail derives from the map; a screen names its param crumb        |
 | A `NotFound` route wired up in several places           | one `router({ notFound })`                                            |
 | Remount-on-every-URL-change vs. update bookkeeping      | query-only changes keep the screen; path changes swap it              |
 | A build that bakes in host-specific config files        | a portable bundle for any CDN; deep-link fallback is one host setting |

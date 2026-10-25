@@ -240,24 +240,26 @@ imp map [file]
 ```
 
 `imp map` reads the file that exports your application map, named by the `map` key of `imp.json`,
-and prints the tree. Every node shows its path, its label, its `access` and its `description`:
+and prints the tree. Every node shows its path, its label from its name, and its `description`:
 
 ```
 app
-  /                        Home
-  /projects                Projects  access: "user"
-    /projects/:projectId   Project id
-      /projects/:projectId/settings  Settings  access: "admin" | group 'Manage'
-  /admin                   Admin  access: "admin"
-    /admin/users           Users
-  /login                   Login  hidden from the nav
+  /                                Home
+    The dashboard
+  /projects                        Projects
+    /projects/:projectId           Project id
+      /projects/:projectId/settings  Settings
+  /admin                           Admin
+    /admin/users                   Users
+  /login                           Login
 ```
 
-`imp map src/admin/map.js` prints a part of the map on its own, with the props of the node that it
-hangs from on the first line, and its paths relative to that node.
+`imp map src/admin/map.js` prints a part of the map on its own, with the description of the node
+that it hangs from on the first line, and its paths relative to that node.
 
-The command reads the file in a JavaScript engine that is part of the binary, with no browser. The
-file can import `t` for a translated `label`. It must not touch the DOM or the network. A file that exports no map, or a
+The command reads the file in a JavaScript engine that is part of the binary, with no browser. It
+loads no translation, so a label is the name of the node in sentence case. The file must not touch
+the DOM or the network. A file that exports no map, or a
 path that does not exist, exits with code 1 and says what it expected. See **[Routing](routing.md)**
 for the map itself.
 

@@ -36,9 +36,6 @@ export const countByPriority = (todos) =>
     }
   })
 
-export const todoOptions = (todos) =>
-  (todos ?? []).map((todo) => ({ value: todo.id, label: todo.title }))
-
 export const replaceTodo = (todos, updated) =>
   todos.map((todo) => (todo.id === updated.id ? updated : todo))
 

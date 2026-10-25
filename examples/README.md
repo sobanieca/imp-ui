@@ -24,7 +24,8 @@ so you can see a failed submit.
 | Feature                        | File                                                                                         |
 | ------------------------------ | -------------------------------------------------------------------------------------------- |
 | Application map                | `src/app-map.js`                                                                             |
-| Shell, router, guard, options  | `src/app.js`                                                                                 |
+| Shell, router, guard, `need`   | `src/app.js`                                                                                 |
+| A crumb named by the data      | `imp.routeLabels` in `src/todos/todo-detail-screen.js`                                       |
 | Sign-in page and return path   | `signIn` node in `src/app-map.js`, the guard in `src/app.js`, `next` in `src/sign-in.js`     |
 | HTTP client and interceptor    | `src/todos/todo-api.js`, initialized in `src/app.js`                                         |
 | Retry of a failed read         | `mocks/todos.mock.js` returns one `503`, the client retries it                               |

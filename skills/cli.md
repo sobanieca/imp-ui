@@ -23,7 +23,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp lint [...paths] [--fix]`            | imp's rules plus a standard set; `--fix` autofixes       | [lint](lint.md)                 |
 | `imp fmt [...paths] [--check]`           | format every file type in the project                    | [fmt](fmt.md)                   |
 | `imp resize <image>`                     | downscale an oversized PNG/JPEG asset                    | [resize](resize.md)             |
-| `imp map [file]`                         | print the application map: paths, labels, access, notes  | [routing](routing.md)           |
+| `imp map [file]`                         | print the application map: paths, labels, descriptions   | [routing](routing.md)           |
 | `imp skill [...subject]`                 | print a manual for an AI agent                           | [skill](skill.md)               |
 | `imp skill --init`                       | create the `/imp` skill for Claude Code, Codex, Cursor   | [skill](skill.md)               |
 | `imp update [version]`                   | update and pin the version in `imp.json`                 | [update](update.md)             |

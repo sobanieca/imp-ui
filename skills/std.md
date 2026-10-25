@@ -221,6 +221,8 @@ shell(
     navbar: {
       label: 'Sections',
       map: app,
+      hide: [app.signIn],
+      groups: { Money: [app.reports.revenue, app.reports.costs] },
       icons: { [app.reports]: luChartColumn },
       tags: { [app.reports.revenue]: revenueCount },
     },
@@ -228,14 +230,14 @@ shell(
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
     signIn: app.signIn,
   },
-  router({ map: app, access, screens, options }),
+  router({ map: app, access, need, screens }),
 )
 ```
 
 | Prop          | Values                                  | Default  | Notes                                                |
 | ------------- | --------------------------------------- | -------- | ---------------------------------------------------- |
 | `logo`        | DOM                                     | -        | Heads the bar, the column, or the drawer             |
-| `navbar`      | **data** `{ map, icons, tags }`         | -        | The map; or plain `items` for a frame with no router |
+| `navbar`      | **data** `{ map, hide, groups, ... }`   | -        | The map; or plain `items` for a frame with no router |
 | `sidebar`     | **data** `{ label, ... }`               | -        | Names and foots the second level                     |
 | `extras`      | DOM, or an array of it                  | -        | Theme/language pickers, `userCard`, anything         |
 | `signIn`      | a node handle of the map                | -        | The sign-in node; it shows without the chrome        |
@@ -247,7 +249,9 @@ shell(
 | `effect`      | `'none'`, `'fade'`, `'slide'`, `'zoom'` | `'none'` | Animates a change of screen in the content area      |
 | `events`      | `{ navToggle, select }`                 | -        | `{ open }` on every drawer change; `{ id, item }`    |
 
-`navbar` takes `map`, `icons` and `tags` keyed by handle, and `label`. With no map it takes `items`,
+`navbar` takes `map`, and `hide`, `groups`, `icons` and `tags` keyed by handle, and `label`.
+`hide: [app.signIn]` keeps a node off the nav. `groups: { Manage: [app.settings] }` titles
+consecutive sidebar rows, and a key that the messages hold shows translated. With no map it takes `items`,
 which are the sections and are live, and `selected`. `sidebar` takes `label`, an app-wide `extras`
 of DOM, and `footer` rows. `sidebar` also takes `groups`, `items` and `selected`, but **only when
 there is no `navbar`**. That is the sidebar-only layout. Beside a `navbar`, imp warns and drops
@@ -282,18 +286,18 @@ Rules an agent gets wrong:
   shell draws the rows, because it draws each level more than once. The main content is the
   children, as in `shell({ navbar }, page())`. There is no `header`, `footer` or `layout` prop. Put
   a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
-- **Sign-in is a node of the map, and `access` guards the rest.** Give every private section an
-  `access` value. The guard returns `wait` while the session is `undefined`, and
+- **Sign-in is a node of the map, and `access` guards the rest.** Give every private section a
+  `need` in `router({ need })`. The guard returns `wait` while the session is `undefined`, and
   `/sign-in?next=<path>` while it is `null`. The sign-in screen navigates to
   `safeNext(next, app.home.href())` after it sets the session. Pass the node as
-  `signIn: app.signIn`. Do not put `access` on it.
+  `signIn: app.signIn`, and list it in `navbar.hide`. Give it no `need`.
 - **The frame shows no chrome while it cannot know who may see the page.** While the verdict of the
   current node is `wait`, or the current node is the `signIn` node or one of its children, the frame
   shows the router content and the logo, centred, and nothing else. A redirect keeps the layout, so
   a signed-out visitor never sees the chrome. Write the sign-in page yourself; imp renders no form
   and holds no session.
 - **The frame has no account prop.** `accountMenu` in `extras` holds the person, the pickers and
-  the sign-out. Whether a person sees a section is the `access` of the map.
+  the sign-out. Whether a person sees a section is the `need` of the router.
 - **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
   of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
   there inline, or do not style it.

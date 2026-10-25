@@ -578,6 +578,28 @@ where a dependency can appear:
 The rule checks a static import, a re-export, and a dynamic `import()` call with a literal
 specifier.
 
+### `imp/app-map-unique-params`
+
+The router names a param by its name, in `params` and in the crumb labels of `imp.routeLabels`. So
+one URL must not hold two params with the same name. In `/orgs/:id/teams/:id`, the second value
+would take the place of the first. The rule reads the object of an `appMap()` call from `imp`, and
+reports a `$name` key that repeats a `$name` key above it in the same object:
+
+```js
+export const app = appMap({
+  orgs: { $id: { teams: { $id: {} } } },
+})
+```
+
+```
+error[imp/app-map-unique-params]: '$id' repeats the param '$id' above it in this map - a param name names one param of a chain, so give each param its own name, like $orgId and $teamId
+ --> src/app-map.js:2:27
+```
+
+Give each param its own name, such as `$orgId` and `$teamId`. Two branches can use the same name,
+because they are never on one URL. The rule sees one object only. A part of the map in another file
+is checked when the app starts: `appMap()` throws, and the message names both nodes.
+
 ## Dead code across the project
 
 Every rule above judges one file on its own. Three more checks judge the project as a whole. imp

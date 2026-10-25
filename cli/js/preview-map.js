@@ -5,6 +5,7 @@ const RESERVED_KEYS = new Set([
   'access',
   'nav',
   'group',
+  'home',
   'href',
   'spec',
   'toString',
@@ -36,8 +37,7 @@ const slugOf = (name, taken, fallback) => {
     candidate = `${key}${suffix}`
   }
   taken.add(candidate)
-  const segment = candidate === key ? words.join('-') : `${words.join('-')}-${suffix}`
-  return { key: candidate, segment }
+  return { key: candidate }
 }
 
 export const previewSlugs = (catalog) => {
@@ -50,14 +50,7 @@ export const previewSlugs = (catalog) => {
     }
     const group = groups.get(entry.group)
     const own = slugOf(entry.name, group.taken, 'preview')
-    slugs.set(entry.file, {
-      groupKey: group.key,
-      groupSegment: group.segment,
-      key: own.key,
-      segment: own.segment,
-    })
+    slugs.set(entry.file, { groupKey: group.key, key: own.key })
   }
   return slugs
 }
-
-export const previewHref = (slug) => `/${slug.groupSegment}/${slug.segment}`

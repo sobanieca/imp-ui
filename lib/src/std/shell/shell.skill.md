@@ -18,6 +18,8 @@ shell(
     navbar: {
       label: 'Sections',
       map: app,
+      hide: [app.signIn],
+      groups: { Money: [app.reports.revenue, app.reports.costs] },
       icons: { [app.reports]: luChartColumn, [app.directory]: luUsers },
       tags: { [app.reports.revenue]: revenueCount },
     },
@@ -25,7 +27,7 @@ shell(
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
     signIn: app.signIn,
   },
-  router({ map: app, access, screens, options }),
+  router({ map: app, access, need, screens }),
 )
 ```
 
@@ -59,6 +61,8 @@ The `navbar` keys are these:
 | Key          | Values                              | Notes                                                                        |
 | ------------ | ----------------------------------- | ---------------------------------------------------------------------------- |
 | `map`        | the value of `appMap()`             | The nav tree; the router in the content fills it                             |
+| `hide`       | `[handle, ...]`                     | Nodes the nav does not show; the route stays                                 |
+| `groups`     | `{ [title]: [handle, ...] }`        | Sidebar group titles; a title that is a message key is translated            |
 | `icons`      | `{ [handle]: icon }`                | An icon per node: a Lucide export, or any DOM                                |
 | `tags`       | `{ [handle]: tag }`                 | A pill per node: `{ text, color, title }`, or a state holding one, or `null` |
 | `label`      | string, or a state                  | Names the bar's `<nav>`; defaults to a translated "Navigation"               |
@@ -116,8 +120,13 @@ Rules an agent gets wrong:
   `navbar.selected` and `sidebar.selected` beside a map are warned about and dropped.
 - **One section means no bar.** When the derived nav has one section and that section has rows, the
   frame draws the sidebar-only layout by itself. Write a one-section app with every page under the
-  index node, `app: { path: '/', dashboard: {}, reports: {} }`. Do not pass `sidebar.groups` to get
-  the column beside a map.
+  index node, `home: { dashboard: {}, reports: {} }`. Do not pass `sidebar.groups` to get the column
+  beside a map.
+- **`hide` and `groups` bind by handle too.** `hide: [app.signIn]` keeps a node off the bar and the
+  sidebar. A hidden row is not drawn, and its page marks the nearest row above it.
+  `groups: { Manage: [app.settings, app.billing] }` titles the consecutive rows that it names. The
+  key is the title. When the messages of the app hold that key, the shell shows the message, so
+  `groups: { 'acme.nav.manage': [...] }` follows the language.
 - **`icons` and `tags` bind by handle, at the root.** Write `{ [app.reports]: luChartColumn }` and
   `{ [app.reports.revenue]: count }`. An icon is a Lucide export or any DOM. A tag is
   `{ text, color, title }`, or a **state** that holds one, or `null`; a state keeps the pill live.
@@ -132,11 +141,11 @@ Rules an agent gets wrong:
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows itself, because it draws each level more than once. `logo` and `extras` are
   still any DOM that you want.
-- **Sign-in is a node of the map, and `access` guards the rest.** Give every private section an
-  `access` value. The guard returns `wait` while the session is `undefined`, and a path to the
-  sign-in node, with the requested path in `?next=`, while it is `null`. The sign-in screen reads
-  `next` and navigates to `safeNext(next, app.home.href())` after it sets the session. Do not put
-  `access` on the sign-in node.
+- **Sign-in is a node of the map, and `access` guards the rest.** Give every private section a
+  `need` in `router({ need })`. The guard returns `wait` while the session is `undefined`, and a
+  path to the sign-in node, with the requested path in `?next=`, while it is `null`. The sign-in
+  screen reads `next` and navigates to `safeNext(next, app.home.href())` after it sets the session.
+  Give the sign-in node no `need`, and put it in `navbar.hide`.
 - **The frame shows no chrome while it cannot know who may see the page.** While the verdict of the
   current node is `wait`, the frame shows the router content, which is its `loading` content, under
   the `logo`, centred, and nothing else: no bar, no column, no `extras`. While the current node is
@@ -149,7 +158,7 @@ Rules an agent gets wrong:
   holds no session and talks to no identity provider.
 - **The frame has no account prop.** Put `accountMenu` in `extras`, with the pickers as its
   children and your sign-out as `onSignOut`. Whether a signed-in person sees a
-  section is the `access` of the map.
+  section is the `need` of the router.
 - **Keep the desktop `extras` to one or two icon buttons.** The sections and the extras share the
   bar. When they do not fit, the sections scroll with no visible scrollbar, so a section disappears
   and the extras stay. A `langSelect`, a `themeSelect` and a full `userCard` side by side take the
@@ -160,7 +169,8 @@ Rules an agent gets wrong:
 - **The trail is chrome.** With a map, the shell renders `breadcrumbs` above the content, and the
   phone title shows the last two crumbs. Do not render a second trail in a screen. Pass
   `breadcrumbs: false` to drop the strip. The strip hides on its own on a top-level page, where the
-  trail would be one crumb. The head of the column and the trail row share one height, `3.5rem`, so
+  trail would be one crumb. A param crumb takes its label from the state `imp.routeLabels`, and
+  shows the `loader` until the screen settles, see imp skill routing. The head of the column and the trail row share one height, `3.5rem`, so
   the top edge of the content lines up with the divider under the head. A gapped frame without a
   trail drops the top padding of the main region instead, so the content lines up with the top edge
   of the column. On a phone, where the trail hides, it does the same.
@@ -250,11 +260,11 @@ shell({
 shell(
   {
     logo: brand(),
-    navbar: { map: app, icons, tags },
+    navbar: { map: app, hide: [app.signIn], icons, tags },
     extras: [themeSelect(), userCard(person)],
     signIn: app.signIn,
   },
-  router({ map: app, access, screens, options }),
+  router({ map: app, access, need, screens }),
 )
 shell({ logo: brand(), sidebar: { label: 'Reports', groups, selected: page } }, page())
 shell(

@@ -32,8 +32,8 @@ refuses. So the rule has to be data on the node, and the check has to be one fun
 ## Decision
 
 **A guard is a synchronous function over the values of the states that it declares, and `wait` is
-one of its answers. A node of the map carries an `access` value, and the one `access` guard of the
-router receives that value as `need`.** Nothing in the state layer changes. `initState(name)` with
+one of its answers. `router({ need })` binds a value to a node of the map, and the one `access`
+guard of the router receives that value as `need`.** Nothing in the state layer changes. `initState(name)` with
 no initial value starts at `undefined`, which is a value like any other. Only the guard decides what
 that value means.
 
@@ -42,7 +42,7 @@ const access = guard(['myapp.session'], (session, { need }) =>
   session === undefined ? wait : session ? session.roles.includes(need) || '/forbidden' : '/login',
 )
 
-router({ map: app, access, screens })
+router({ map: app, access, need: { [app.admin]: 'admin' }, screens })
 ```
 
 - **`guard(states, check)` declares the state names that the check reads.** It takes a name, and not
@@ -58,13 +58,15 @@ router({ map: app, access, screens })
   with no message. `false` exists so that a route can be hidden, in place of refused, and an admin
   section really needs that.
 
-- **`access` is data on the node, and the guard interprets it.** Any value is allowed, so an app
-  writes `access: 'admin'`, `access: ['billing', 'owner']` or `access: { role: 'admin' }`, and its
-  one check decides what each means. Every `access` on the chain from the root to the matched node
-  runs, root first, and the first verdict that is not an allow wins. A node with no `access` is
-  open. So `/login` never loops, and there is no default across the map to exclude a page from.
-  There is no second guard form, and no guard on an area file. A rule that `access` cannot express
-  is a richer `access` value.
+- **`need` is data bound to a node, and the guard interprets it.** `router({ need })` binds any
+  value to a handle, so an app writes `'admin'`, `['billing', 'owner']` or `{ role: 'admin' }`, and
+  its one check decides what each means. The binding sits at the router, beside the guard that
+  reads it, not in the map, so the map stays a plain list of features. Every `need` on the chain
+  from the root to the matched node runs, root first, and the first verdict that is not an allow
+  wins. A node with no `need` is open. So `/login` never loops, and there is no default across the
+  map to exclude a page from. An area inherits the `need` of the router, so there is no second
+  guard form and no guard on an area file. A rule that `need` cannot express is a richer `need`
+  value.
 
 - **A guard runs inside the `imp-route` wrapper that already hosts every matched screen**, and it
   runs before the screen factory. That placement is what makes the feature small. The loading
@@ -102,11 +104,11 @@ router({ map: app, access, screens })
   guard can act on. It does not reset the state to `undefined`, which is an absence that a guard can
   only wait on.
 
-- **An `access` on the node an area binds covers the whole section, and it runs before the chunk
+- **A `need` on the node an area binds covers the whole section, and it runs before the chunk
   downloads.** The `imp-route` of the binding wraps the area. So the `root` of the area does not
   render until the guard allows it. The guard keeps watching while the visitor is inside the
-  section. So a lost session redirects out of the section. A node _inside_ the area can carry its
-  own `access`, for a narrower rule, and the router inside the area checks it. A split of the code
+  section. So a lost session redirects out of the section. A node _inside_ the area can have its
+  own `need`, for a narrower rule, and the router inside the area checks it. A split of the code
   is not access control, in either case. The server still authorizes every request.
 
 - **imp defers a redirect to a microtask, and counts it.** The delay keeps the `navigate` out of the
@@ -140,8 +142,9 @@ router({ map: app, access, screens })
   `if (session === undefined) return wait`. To forget that line is not silent. The check then runs
   against `undefined`, and it either denies the route or throws. It does not allow the route.
 - A guard across a whole map would have had a trap. It also guards the page that it redirects to.
-  That cannot occur here, because a node with no `access` is open, and the login page has none.
-- The question "is this route protected?" is answered by the line of the node in the map. The
+  That cannot occur here, because a node with no `need` is open, and the login page has none.
+- The question "is this route protected?" is answered by the `need` of the router, one line per
+  node. The
   question "why did this redirect?" is answered by one function, with the `need` it received.
 - A guard checks again for the life of the route, and once more per node in the nav derivation. So a
   state that changes often, and that a guard reads, runs that check on every change. A guard is

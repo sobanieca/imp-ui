@@ -152,14 +152,30 @@ import { app } from './app-map.js'
 shell(
   {
     logo: appLogo({ label: 'Acme' }),
-    navbar: { label: 'Sections', map: app, icons: { [app.reports]: luChartColumn } },
+    navbar: {
+      label: 'Sections',
+      map: app,
+      hide: [app.signIn],
+      groups: { Money: [app.reports.revenue, app.reports.costs] },
+      icons: { [app.reports]: luChartColumn },
+    },
     sidebar: { label: 'Pages' },
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
     signIn: app.signIn,
   },
-  router({ map: app, access, screens }),
+  router({ map: app, access, need, screens }),
 )
 ```
+
+**The nav shows every node of the map, unless you hide it.** `navbar.hide` lists the nodes that the
+bar and the sidebar leave out, such as the sign-in page. The route of a hidden node still works.
+`navbar.groups` puts consecutive sidebar rows under a title. The key is the title, and the value
+lists the rows. When the translations of the app hold a key of `groups`, the shell shows that
+message, so a group title follows the language.
+
+**A param crumb takes its label from your data.** A screen writes the name of a project to the state
+`imp.routeLabels`, and the trail shows it. While the screen loads, the crumb shows a small loader,
+never the raw id. See [Routing](routing.md).
 
 **A nav row can carry a short tag.** Bind it in `navbar.tags`, keyed by the handle of the node, as
 `{ text, color, title }` or a state that holds one. The tag shows `text` at the small size. Give it
@@ -173,8 +189,8 @@ const serversTag = { text: 'main +2', title: 'main, backup, eu-west' }
 shell({ navbar: { label: 'Sections', map: app, tags: { [app.servers]: serversTag } } }, page())
 ```
 
-**The sign-in page is a page of your map.** Add a node for it, and give an `access` value to every
-section that needs a session. The `access` guard of the router returns `wait` while the session is
+**The sign-in page is a page of your map.** Add a node for it, and give a `need` to every section
+that needs a session. The `access` guard of the router returns `wait` while the session is
 not known yet, and redirects a visitor with no session to the sign-in page. Put the requested path
 in the redirect, such as `/sign-in?next=/todos/3`. After the sign-in, navigate to
 `safeNext(next, fallback)` from `imp/router`. It drops a `next` value that leaves your app. A deep
@@ -182,9 +198,9 @@ link then works for a signed-out visitor too.
 
 ```js
 export const app = appMap({
-  signIn: { nav: false },
-  reports: { access: 'user' },
-  directory: { access: 'admin' },
+  signIn: {},
+  reports: {},
+  directory: {},
 })
 
 const access = guard(['acme.session'], (session, { need, path }) => {
@@ -192,6 +208,8 @@ const access = guard(['acme.session'], (session, { need, path }) => {
   if (!session) return `/sign-in?next=${encodeURIComponent(path)}`
   return need === 'user' || session.roles.includes(need) || '/forbidden'
 })
+
+const need = { [app.reports]: 'user', [app.directory]: 'admin' }
 ```
 
 **The frame shows no chrome until it knows who may see the page.** Pass the sign-in node to the

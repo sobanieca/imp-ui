@@ -18,7 +18,7 @@ import { logoMark } from './ui/logo-mark.js'
 import { readToken, writeToken } from './session-token.js'
 import { signInPage } from './sign-in.js'
 import { clientOptions, loadSession, loadTodos } from './todos/todo-api.js'
-import { countTodos, todoOptions } from './todos/todo-model.js'
+import { countTodos } from './todos/todo-model.js'
 import { todoDetailScreen } from './todos/todo-detail-screen.js'
 import { todoListScreen } from './todos/todo-list-screen.js'
 
@@ -40,6 +40,7 @@ const appRouter = () =>
   router({
     map: app,
     access,
+    need: { [app.todos]: 'user', [app.stats]: 'user', [app.about]: 'user' },
     screens: {
       [app.home]: redirect(app.todos),
       [app.signIn]: () => signInPage(),
@@ -48,7 +49,6 @@ const appRouter = () =>
       [app.stats]: area(() => import('./stats/area.js')),
       [app.about]: () => aboutScreen(),
     },
-    options: { [app.todos.$todoId]: 'todo.options' },
     title: ({ crumbs }) => `${crumbs.at(-1)} - ${t('app.name')}`,
     loading: () => screenLoader({ label: t('app.name') }),
     notFound: () => emptyState({ variant: 'noResults' }),
@@ -58,14 +58,12 @@ export const root = component('todo-root', {
   setup: (self) => {
     const session = initState(self, 'todo.session')
     const items = initState(self, 'todo.items')
-    const options = initState(self, 'todo.options', [])
     const api = initHttpClient(
       self,
       'todo.api',
       clientOptions({ baseUrl: env.API_URL, token: readToken }),
     )
 
-    items.watch(self, (todos) => options.set(todoOptions(todos)))
     session.watch(self, (user) => {
       if (!user) return items.set(undefined)
       log.info('signed in as', user.email)
@@ -88,6 +86,7 @@ export const root = component('todo-root', {
         background: backdrop(),
         navbar: {
           map: app,
+          hide: [app.home, app.signIn],
           icons: { [app.todos]: luListTodo, [app.stats]: luChartColumn, [app.about]: luInfo },
           tags: { [app.todos]: computed([items], openTag) },
         },

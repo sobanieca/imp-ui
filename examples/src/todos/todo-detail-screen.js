@@ -77,6 +77,8 @@ export const todoDetailScreen = component('todo-detail-screen', {
     if (self.abortSignal.aborted) return null
 
     const todo = initState(self, 'todo.current', loadedTodo)
+    const labels = useState(self, 'imp.routeLabels')
+    todo.watch(self, (current) => labels.set((all) => ({ ...all, $todoId: current.title })))
     const editing = initState(self, 'todo.editing', false)
     const confirming = initState(self, 'todo.confirming', false)
 

@@ -39,6 +39,7 @@ own rules. imp always applies them as errors, and you cannot reconfigure them.
 | `imp/img-alt`                    | an `img` factory call, or `el('img', ...)`, whose props have no `alt` key                                                                                                                                                             | describe the image: `img({ src, alt: 'Sales per month' })`; `alt: ''` for decoration       |
 | `imp/icon-button-name`           | a standard `button` or a plain `button` whose only children are `icon(...)` calls without `label`, with no name prop                                                                                                                  | `button({ label: 'Delete' }, icon(luTrash))`; the plain one takes `'aria-label'`           |
 | `imp/exact-dependency-versions`  | inexact pins in `imp.json`, inline `npm:` specifiers, undeclared bare imports, unknown `imp/...` subpaths                                                                                                                             | pin exactly, or run the `imp install` command the message prints                           |
+| `imp/app-map-unique-params`      | a `$name` key in the object of an `appMap()` call that repeats a `$name` key above it                                                                                                                                                 | give each param of a chain its own name: `$orgId`, `$teamId`                               |
 
 A rule that names a hook (`setup`, `loading`, `error`, `onMount`, `onRemove`) looks only at an
 object literal passed to `component(...)` from `imp` or `router(...)` from `imp/router`. A `setup`
@@ -48,7 +49,8 @@ Each rule protects one subject. Read [components](components.md) for the compone
 [state](state.md) for the state rules, [http](http.md) for the http client rules,
 [rendering](rendering.md) for the props rule, [imports](imports.md) for `import-source`,
 [icons](icons.md) for `icons-by-name`, [accessibility](accessibility.md) for `img-alt` and
-`icon-button-name`, and [dependencies](dependencies.md) for the pin rule.
+`icon-button-name`, [routing](routing.md) for `app-map-unique-params`, and
+[dependencies](dependencies.md) for the pin rule.
 
 imp does not check a name that you build dynamically, such as a variable or a template with an
 expression. The runtime does the same validation, and a bad name throws there.

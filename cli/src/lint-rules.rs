@@ -35,6 +35,7 @@ pub const IMP_RULES: &[&str] = &[
     "img-alt",
     "icon-button-name",
     "exact-dependency-versions",
+    "app-map-unique-params",
 ];
 
 const SELF_NAME: &str = "self";
@@ -1700,6 +1701,57 @@ fn icons_by_name(ctx: &Ctx) {
     }
 }
 
+fn repeated_params<'a>(ctx: &Ctx, nodes: &ObjectExpression<'a>, above: &mut Vec<String>) {
+    for property in &nodes.properties {
+        let ObjectPropertyKind::ObjectProperty(property) = property else {
+            continue;
+        };
+        if property.computed {
+            continue;
+        }
+        let Some(name) = property.key.static_name() else {
+            continue;
+        };
+        let param = name.starts_with('$');
+        if param && above.iter().any(|outer| outer == name.as_ref()) {
+            ctx.report(
+                "app-map-unique-params",
+                property.key.span(),
+                format!(
+                    "'{name}' repeats the param '{name}' above it in this map - a param name names one param of a chain, so give each param its own name, like $orgId and $teamId"
+                ),
+            );
+        }
+        if let Expression::ObjectExpression(children) = property.value.without_parentheses() {
+            if param {
+                above.push(name.to_string());
+            }
+            repeated_params(ctx, children, above);
+            if param {
+                above.pop();
+            }
+        }
+    }
+}
+
+fn app_map_unique_params(ctx: &Ctx, imports: &[&ImportDeclaration]) {
+    let tracker = HelperTracker::new(imports, &[("imp", &["appMap"])]);
+    for node in ctx.nodes() {
+        let AstKind::CallExpression(call) = node.kind() else {
+            continue;
+        };
+        if tracker.called(&call.callee).as_deref() != Some("appMap") {
+            continue;
+        }
+        let nodes = call
+            .arguments
+            .get(if call.arguments.len() == 2 { 1 } else { 0 });
+        if let Some(Argument::ObjectExpression(nodes)) = nodes {
+            repeated_params(ctx, nodes, &mut Vec::new());
+        }
+    }
+}
+
 struct NameTracker {
     locals: HashMap<String, &'static str>,
     namespaces: HashMap<String, &'static [(&'static str, &'static str)]>,
@@ -2035,4 +2087,5 @@ pub fn run(ctx: &Ctx) {
     icons_by_name(ctx);
     accessible_names(ctx, &imports);
     exact_dependency_versions(ctx);
+    app_map_unique_params(ctx, &imports);
 }

@@ -6,7 +6,6 @@ import {
   formatDate,
   replaceTodo,
   sortTodos,
-  todoOptions,
 } from '../src/todos/todo-model.js'
 
 const todos = [
@@ -44,14 +43,6 @@ test('the counts per priority split open and done', () => {
     { priority: 'normal', open: 1, done: 0 },
     { priority: 'high', open: 2, done: 0 },
   ])
-})
-
-test('the crumb options list every todo by title', () => {
-  expect(todoOptions(todos.slice(0, 2))).toEqual([
-    { value: '1', label: 'Write docs' },
-    { value: '2', label: 'Fix bug' },
-  ])
-  expect(todoOptions(undefined)).toEqual([])
 })
 
 test('a replace swaps one todo by id', () => {
