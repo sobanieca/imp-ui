@@ -151,47 +151,65 @@ import { app } from './app-map.js'
 
 shell(
   {
-    logo: appLogo({ label: 'Acme' }),
-    navbar: {
-      label: 'Sections',
-      map: app,
-      hide: [app.signIn],
-      groups: { Money: [app.reports.revenue, app.reports.costs] },
-      icons: { [app.reports]: luChartColumn },
+    map: app,
+    nav: {
+      [app.reports]: { icon: luChartColumn },
+      [app.reports.money]: { group: true },
+      [app.directory]: { icon: luUsers },
+      [app.signIn]: { hidden: true },
     },
+    logo: appLogo({ label: 'Acme' }),
+    navbar: { label: 'Sections' },
     sidebar: { label: 'Pages' },
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
     signIn: app.signIn,
   },
-  router({ map: app, access, need, screens }),
+  router({ map: app, guards, screens }),
 )
 ```
 
-**The nav shows every node of the map, unless you hide it.** `navbar.hide` lists the nodes that the
-bar and the sidebar leave out, such as the sign-in page. The route of a hidden node still works.
-`navbar.groups` puts consecutive sidebar rows under a title. The key is the title, and the value
-lists the rows. When the translations of the app hold a key of `groups`, the shell shows that
-message, so a group title follows the language.
+**The map is the only input of the nav, and `nav` sets each node.** `shell({ map })` takes the same
+map as `router({ map })`. The map says what a feature is. The `nav` prop binds the settings of the
+frame to a node, keyed by its handle: an `icon`, a `tag`, `group` and `hidden`.
+
+**The nav shows every node of the map, unless you hide it.** `hidden: true` keeps a node off the bar
+and the sidebar, such as the sign-in page. The route of a hidden node still works, and its page
+marks the nearest row above it.
+
+**A node with `group: true` is a heading over its children.** Put the related pages of a section
+under one node, such as `reports.money`, and mark that node as a group. The sidebar then shows
+"Money" as a heading, and the children of the node as the rows under it. The heading is not a link.
+Its text is the label of the node, so the same translation that names a row names a heading. The
+bar has no groups, so imp warns about `group: true` on a top-level node while the bar shows.
 
 **A param crumb takes its label from your data.** A screen writes the name of a project to the state
 `imp.routeLabels`, and the trail shows it. While the screen loads, the crumb shows a small loader,
 never the raw id. See [Routing](routing.md).
 
-**A nav row can carry a short tag.** Bind it in `navbar.tags`, keyed by the handle of the node, as
-`{ text, color, title }` or a state that holds one. The tag shows `text` at the small size. Give it
-a `title` when `text` is short for something longer, such as `main +2` for a list of three servers.
-The title shows as a tooltip when the pointer is on the tag. A screen reader reads it as the
-description of the row, after the name of the row:
+**A nav row can carry a short tag.** Give the node a `tag` in `nav`. A fixed tag is
+`{ text, color, title }`. A string is the name of a state, and the pill follows the state: it holds
+`{ text, color, title }`, a plain string or number, or `null` for no pill. The root component of the
+app initializes the state, so a screen can update it later. The tag shows `text` at the small size.
+Give it a `title` when `text` is short for something longer, such as `main +2` for a list of three
+servers. The title shows as a tooltip when the pointer is on the tag. A screen reader reads it as
+the description of the row, after the name of the row:
 
 ```js
-const serversTag = { text: 'main +2', title: 'main, backup, eu-west' }
-
-shell({ navbar: { label: 'Sections', map: app, tags: { [app.servers]: serversTag } } }, page())
+shell(
+  {
+    map: app,
+    nav: {
+      [app.servers]: { tag: { text: 'main +2', title: 'main, backup, eu-west' } },
+      [app.inbox]: { tag: 'acme.inbox.unread' },
+    },
+  },
+  router({ map: app, screens }),
+)
 ```
 
-**The sign-in page is a page of your map.** Add a node for it, and give a `need` to every section
-that needs a session. The `access` guard of the router returns `wait` while the session is
-not known yet, and redirects a visitor with no session to the sign-in page. Put the requested path
+**The sign-in page is a page of your map.** Add a node for it, and bind a guard to the root in
+`router({ guards })`. The guard lets the sign-in node through, and returns `wait` while the session
+is not known yet. It redirects a visitor with no session to the sign-in page. Put the requested path
 in the redirect, such as `/sign-in?next=/todos/3`. After the sign-in, navigate to
 `safeNext(next, fallback)` from `imp/router`. It drops a `next` value that leaves your app. A deep
 link then works for a signed-out visitor too.
@@ -203,13 +221,16 @@ export const app = appMap({
   directory: {},
 })
 
-const access = guard(['acme.session'], (session, { need, path }) => {
-  if (session === undefined) return wait
-  if (!session) return `/sign-in?next=${encodeURIComponent(path)}`
-  return need === 'user' || session.roles.includes(need) || '/forbidden'
-})
+const signedIn = {
+  states: ['acme.session'],
+  check: (session, { node, path }) => {
+    if (node === app.signIn) return true
+    if (session === undefined) return wait
+    return Boolean(session) || `/sign-in?next=${encodeURIComponent(path)}`
+  },
+}
 
-const need = { [app.reports]: 'user', [app.directory]: 'admin' }
+const guards = { [app]: signedIn }
 ```
 
 **The frame shows no chrome until it knows who may see the page.** Pass the sign-in node to the
@@ -217,7 +238,7 @@ frame as `signIn`. On that node, and on its children, the frame shows the screen
 middle of the screen, and nothing else: no bar, no column, no extras. It does the same while the
 guard of the current page waits, with the loading content of the router. A redirect keeps the layout
 until the next screen shows. So a signed-out visitor goes from the loading content to the sign-in
-page and never sees the navbar.
+page and never sees the bar.
 
 **The sign-in page is yours, because it differs with every app.** Write a form with a password,
 buttons for social providers, a magic link, or a passkey. For an external identity provider, put its
@@ -249,11 +270,21 @@ to, shows the current one on its trigger, and reports a choice. Put it beside th
 `extras`. What a switch means is yours: a navigation to the URL of the tenant, or a new token.
 
 **The application map drives the whole nav.** You describe the app once, as a map. See
-**[Routing](routing.md)**. The top-level nodes are the sections in the bar. The children of the
-current section fill the column. The trail above the content lists the levels down to the current
-page, and it hides on a top-level page, where it would repeat the one word in the bar. A section
-with no children gets no column, and the content takes the full width. You declare nothing twice,
-and a change to the map arrives everywhere at once.
+**[The application map](routing.md#the-application-map)**. The top-level nodes are the sections in the bar. When a screen binds
+the root at `/`, the root is the first section, so the main page of the app has its own tab. The
+children of the current section fill the column. The trail above the content lists the levels from the root down to
+the current page. It hides on a top-level page, where it would repeat the one word in the bar. A
+section with no children gets no column, and the content takes the full width. You declare nothing
+twice, and a change to the map arrives everywhere at once.
+
+**An app can show a column and no bar.** Set `navbar: false`. The frame then shows the top-level
+nodes as the rows of the column, and their children under them. The bar goes away, and the logo and
+the extras move into the column. A phone still shows a top bar with the menu button. To paint a
+backdrop on it, write `navbar: { hidden: true, background }` instead.
+
+**The column can hold app-wide content.** `sidebar.extras` is any content that shows under the rows
+in every section, such as a support card or a link to your help site. It keeps the column even in a
+section with no children.
 
 **The frame folds on a phone.** The bar becomes a hamburger and a title. The column becomes a bottom
 bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.

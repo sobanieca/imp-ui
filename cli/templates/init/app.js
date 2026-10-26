@@ -32,7 +32,7 @@ const counter = component('app-counter', {
 export const root = component('app-root', {
   setup: () =>
     shell(
-      { logo: appLogo({ label: '{{TITLE_QUOTED}}' }), navbar: { map: app } },
-      router({ map: app, screens: { [app.home]: () => counter() } }),
+      { map: app, logo: appLogo({ label: '{{TITLE_QUOTED}}' }) },
+      router({ map: app, screens: { [app]: () => counter() } }),
     ),
 })

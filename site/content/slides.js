@@ -146,7 +146,6 @@ button({ variant: 'primary', events: { click: search } }, icon(luSearch), 'Searc
       source: `import { appMap } from 'imp'
 
 export const app = appMap({
-  home: 'The welcome page',
   todos: { $id: 'One todo, on its own page' },
   about: 'Who made this, and why',
 })`,

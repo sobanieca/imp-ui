@@ -80,7 +80,7 @@ export const frame = component('myapp-frame', {
             },
           }),
         ),
-        navbar: { map: app },
+        map: app,
       },
       router({ map: app, scope: app.organizations.$org, screens }),
     )

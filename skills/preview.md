@@ -109,6 +109,25 @@ you want a person to copy. A helper is fine. It is shown above the call.
   tab and the panel with the `scenario` string. `component` is the instance or the function. Write
   `scenario: 'With a click handler'` in place of an export named `withClickHandler`. The export name
   stays the id in `?scenario=<name>`. The code panel shows the `component` expression.
+- **A scenario that mounts a router takes `frame`.** The router owns the address of its window, and
+  the page has its own router. `{ scenario, frame, component }` renders the scenario in a frame, a
+  window with its own address and history. `frame` is the start path: a handle of the map, or a
+  string such as `'/'`. Write `component` as a function, so it builds only inside the frame. Never
+  put a `router()` in a scenario without `frame`. Its links would move the preview page.
+
+  ```js
+  const app = appMap({ reports: { revenue: {}, costs: {} }, directory: {} })
+
+  export const navbarAndSidebar = {
+    scenario: 'Navbar and sidebar',
+    frame: app.reports.revenue,
+    component: () => shell({ map: app }, router({ map: app })),
+  }
+  ```
+
+- **A frame follows the page.** It takes the theme, the theme draft, the direction and the language
+  of the page. Its media queries see the width of the stage, so a narrow stage shows the phone
+  layout. The state editor does not reach into a frame.
 - **Preview files are never part of the app.** Nothing imports them, so `imp build` never sees them.
   Put fixtures there, not app code.
 - **The state editor reads the running scenario.** It lists every state that a component in the

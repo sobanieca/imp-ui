@@ -28,7 +28,7 @@ beforeEach(() => {
 })
 
 test('the map holds every section, with a param under todos', () => {
-  expect([app.home, app.signIn, app.todos, app.stats, app.about].map(String)).toEqual([
+  expect([app, app.signIn, app.todos, app.stats, app.about].map(String)).toEqual([
     '/',
     '/sign-in',
     '/todos',
@@ -37,12 +37,6 @@ test('the map holds every section, with a param under todos', () => {
   ])
   expect(app.todos.spec.children).toEqual([app.todos.$todoId])
   expect(app.todos.$todoId.href({ todoId: '7' })).toEqual('/todos/7')
-  expect([app.todos, app.stats, app.about].map((node) => node.spec.access)).toEqual([
-    'user',
-    'user',
-    'user',
-  ])
-  expect(app.signIn.spec.access).toEqual(undefined)
 })
 
 test('a visitor with no session sees the sign-in form', async () => {

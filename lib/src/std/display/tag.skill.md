@@ -69,8 +69,8 @@ flex(
   tag({ color: 'green', dot: true, label: health }),
   text(host),
 )
-shell({ sidebar: { items: [{ id: 'tasks', label: 'Tasks', href: '/tasks', tag: { text: 12 } }] } })
+shell({ map: app, nav: { [app.tasks]: { tag: { text: 12 } } } }, router({ map: app, screens }))
 ```
 
-Related: imp skill std/shell - nav rows take the same tag as plain data; imp skill theming - the
+Related: imp skill std/shell - a nav row takes the same tag through `nav`; imp skill theming - the
 palette the `color` names come from.

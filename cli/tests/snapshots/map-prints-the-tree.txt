@@ -3,22 +3,21 @@ exit code: 0
 
 --- stdout ---
 app
-  /                                           Home
-    The dashboard
-  /projects                                   Projects
-    Every project of the team
-    /projects/:projectId                      Project id
-      /projects/:projectId/builds             Builds
-        /projects/:projectId/builds/:buildId  Build id
-      /projects/:projectId/settings           Settings
-  /admin                                      Admin
-    The back office
-    /admin/users                              Users
-    /admin/create-api-key                     Create api key
-      Mint a key for a service
-  /reports                                    Reports
-    /reports/weekly                           Weekly
-  /login                                      Login
+  /                                             Home
+    /projects                                   Projects
+      Every project of the team
+      /projects/:projectId                      Project id
+        /projects/:projectId/builds             Builds
+          /projects/:projectId/builds/:buildId  Build id
+        /projects/:projectId/settings           Settings
+    /admin                                      Admin
+      The back office
+      /admin/users                              Users
+      /admin/create-api-key                     Create api key
+        Mint a key for a service
+    /reports                                    Reports
+      /reports/weekly                           Weekly
+    /login                                      Login
 
 --- stderr ---
 (empty)

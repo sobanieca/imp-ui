@@ -12,4 +12,7 @@ theme before the host offers one: light
 theme after the host offers imp-dark: dark
 theme after a pick in the gallery: host imp-light, frame light
 theme events on the element: imp-dark, imp-light
+framed scenario loads the gallery page: true, at #/inbox
+a link in the frame moves the frame only: gallery #/components/todos?scenario=routed, host #/components/todos?scenario=routed
+framed scenario follows the theme of the host: dark
 page errors: none

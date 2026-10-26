@@ -206,7 +206,7 @@ export const root = component('myapp-root', {
         }),
       )
     }
-    return shell({ navbar: { map: app } }, appRouter())
+    return shell({ map: app }, appRouter())
   },
 })
 // on each server: imp-aly app add myapp https://myapp.example/ --segments plan,role,lang

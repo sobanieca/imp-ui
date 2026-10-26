@@ -150,7 +150,6 @@ Thumbs.db
 import { appMap } from 'imp'
 
 export const app = appMap({
-  home: 'The counter the scaffold starts with',
   about: 'Bind this node in src/app.js, or delete it here',
 })
 
@@ -189,8 +188,8 @@ const counter = component('app-counter', {
 export const root = component('app-root', {
   setup: () =>
     shell(
-      { logo: appLogo({ label: 'App' }), navbar: { map: app } },
-      router({ map: app, screens: { [app.home]: () => counter() } }),
+      { map: app, logo: appLogo({ label: 'App' }) },
+      router({ map: app, screens: { [app]: () => counter() } }),
     ),
 })
 

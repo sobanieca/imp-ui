@@ -2,7 +2,7 @@ import { appMap, component, init, mount } from 'imp'
 import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme, colorSchemeOf } from 'imp/theme'
 import { defaultMessages, lang, setLang } from 'imp/i18n'
-import { area, navigate, router, useRoute } from 'imp/router'
+import { area, navigate, router, url, useRoute } from 'imp/router'
 import { button, heading, icon, menuButton, text } from 'imp/std'
 import {
   luCode,
@@ -86,6 +86,7 @@ const STATE_SCAN_ATTEMPTS = 30
 const STATE_SCAN_INTERVAL = 100
 const MAX_SCANNED_ELEMENTS = 500
 const LIBRARY_STATE_PREFIX = 'imp.'
+const FRAME_NAME_PREFIX = 'imp-preview-frame:'
 
 const DOCUMENT_STYLES = `
 body {
@@ -215,6 +216,23 @@ const STAGE_STYLES = `
     padding: var(--imp-space-4, 16px);
     ${surface}
     color: var(--imp-color-text, #0f172a);
+  }
+
+  .frame--framed {
+    block-size: 30rem;
+  }
+
+  .stage--framed {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .scenario-frame {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    border: 0;
+    border-radius: inherit;
   }
 
   .handle {
@@ -355,6 +373,17 @@ const SPECIMEN_STYLES = `
     overflow: hidden;
     padding: var(--imp-space-4, 16px);
     ${surface}
+  }
+
+  .specimen--framed {
+    padding: 0;
+  }
+
+  .scenario-frame {
+    display: block;
+    inline-size: 100%;
+    block-size: 16rem;
+    border: 0;
   }
 
   .specimen--failed {
@@ -586,10 +615,13 @@ const asStageSize = (value) => {
 
 const stageDefinition = {
   styles: STAGE_STYLES,
-  setup: (self, nodes) => {
-    const stage = div({ class: 'stage', dir: stageDirection() }, nodes)
+  setup: (self, nodes, framed) => {
+    const stage = div(
+      { class: framed ? 'stage stage--framed' : 'stage', dir: stageDirection() },
+      nodes,
+    )
     stages.push(stage)
-    const frame = div({ class: 'frame' }, stage)
+    const frame = div({ class: framed ? 'frame frame--framed' : 'frame' }, stage)
     const inlineSize = initState(self, STAGE_INLINE_STATE, null)
     const blockSize = initState(self, STAGE_BLOCK_STATE, null)
     const applySize = (property, value) => {
@@ -664,9 +696,9 @@ const stageDefinition = {
 
 let createStage = null
 
-const stagePanel = (nodes) => {
+const stagePanel = (nodes, framed = false) => {
   createStage ??= component('imp-preview-stage', stageDefinition)
-  return createStage(nodes)
+  return createStage(nodes, framed)
 }
 
 const negated = (source) => ({
@@ -811,16 +843,42 @@ const isLabelledScenario = (exported) =>
 
 const scenarioOf = (name, exported) =>
   isLabelledScenario(exported)
-    ? { label: exported.scenario, component: exported.component }
+    ? { label: exported.scenario, component: exported.component, frame: exported.frame }
     : { label: name, component: exported }
+
+const framePath = (frame) => {
+  const path = String(frame)
+  if (!path.startsWith('/')) {
+    throw new Error(
+      `'frame' is the path the frame opens at, a handle of the map or a string like '/', not '${path}'`,
+    )
+  }
+  return path
+}
+
+const scenarioFrame = (entry, name, { label, frame }) =>
+  el('iframe', {
+    class: 'scenario-frame',
+    title: label,
+    name: `${FRAME_NAME_PREFIX}${JSON.stringify({ file: entry.file, scenario: name })}`,
+    loading: 'lazy',
+    src: new URL(url(framePath(frame)), location.href).href,
+  })
 
 const buildScenario = (scenario) => asNodes(typeof scenario === 'function' ? scenario() : scenario)
 
+const scenarioNodes = (name, scenario, entry) =>
+  scenario.frame === undefined
+    ? buildScenario(scenario.component)
+    : [scenarioFrame(entry, name, scenario)]
+
 const scenarioSection = (self, name, exported, entry) => {
-  const { label, component } = scenarioOf(name, exported)
+  const scenario = scenarioOf(name, exported)
+  const { label } = scenario
+  const framed = scenario.frame !== undefined
   let nodes
   try {
-    nodes = buildScenario(component)
+    nodes = scenarioNodes(name, scenario, entry)
   } catch (error) {
     nodes = null
     console.error(`imp preview: scenario '${name}' failed to build`, error)
@@ -833,7 +891,9 @@ const scenarioSection = (self, name, exported, entry) => {
       pre({ class: 'failure' }, `${name} failed to build - see the terminal`),
     )
   }
-  const { toggle: stateToggle, editor } = statePanel(self, label, nodes)
+  const { toggle: stateToggle, editor } = framed
+    ? { toggle: null, editor: null }
+    : statePanel(self, label, nodes)
   const source = entry.code?.[name] ?? null
   const showingCode = initState(self, CODE_STATE, source !== null && readStoredCode())
   showingCode.watch((open) => remember(CODE_STORAGE_KEY, open ? 'shown' : 'hidden'))
@@ -841,7 +901,7 @@ const scenarioSection = (self, name, exported, entry) => {
     'section',
     { class: 'scenario' },
     div({ class: 'scenario-head' }, h2(label), stateToggle),
-    stagePanel(nodes),
+    stagePanel(nodes, framed),
     ...(source === null ? [] : codePanel(source, showingCode)),
     editor,
   )
@@ -901,10 +961,11 @@ const groupCard = (entry, load) => {
           fail('no scenarios in this file')
           return
         }
-        const { label, component } = scenarioOf(name, scenarios[name])
-        scenarioName.textContent = label
+        const scenario = scenarioOf(name, scenarios[name])
+        scenarioName.textContent = scenario.label
         try {
-          specimen.replaceChildren(...buildScenario(component))
+          specimen.replaceChildren(...scenarioNodes(name, scenario, entry))
+          specimen.classList.toggle('specimen--framed', scenario.frame !== undefined)
         } catch (error) {
           console.error(`imp preview: scenario '${name}' failed to build`, error)
           fail(`${name} failed to build - see the terminal`)
@@ -1050,36 +1111,34 @@ const previewArea = (entry, handle, load) =>
 const bindCatalog = (catalog, load, listed) => {
   const slugs = previewSlugs(catalog)
   const nodes = {}
-  const labels = { 'appMap.home.label': 'Components' }
+  const labels = { 'appMap.label': 'Components' }
   for (const group of listed) {
     const children = {}
     const { groupKey } = slugs.get(group.entries[0].file)
     for (const entry of group.entries) {
       const { key } = slugs.get(entry.file)
       children[key] = {}
-      labels[`appMap.home.${groupKey}.${key}.label`] = entry.name
+      labels[`appMap.${groupKey}.${key}.label`] = entry.name
     }
     nodes[groupKey] = children
-    labels[`appMap.home.${groupKey}.label`] = group.name
+    labels[`appMap.${groupKey}.label`] = group.name
   }
   defaultMessages(labels)
-  const app = appMap({ home: nodes })
-  const icons = {}
-  const tags = {}
-  const screens = { [app.home]: () => (listed.length ? previewIndex(listed) : noPreviews()) }
+  const app = appMap(nodes)
+  const nav = { [app]: { hidden: true } }
+  const screens = { [app]: () => (listed.length ? previewIndex(listed) : noPreviews()) }
   const entries = new Map()
   const groups = new Map()
   for (const group of listed) {
-    const groupHandle = app.home[slugs.get(group.entries[0].file).groupKey]
-    icons[groupHandle] = group.icon
-    tags[groupHandle] = { text: group.entries.length }
+    const groupHandle = app[slugs.get(group.entries[0].file).groupKey]
+    nav[groupHandle] = { icon: group.icon, tag: { text: group.entries.length } }
     group.href = groupHandle.href()
     groups.set(String(groupHandle), group)
     screens[groupHandle] = () => groupScreen(group, load)
     for (const entry of group.entries) {
       const handle = groupHandle[slugs.get(entry.file).key]
       entry.href = handle.href()
-      icons[handle] = previewMarker(entry.href)
+      nav[handle] = { icon: previewMarker(entry.href) }
       entries.set(String(handle), entry)
       screens[handle] =
         entry.error === undefined
@@ -1093,7 +1152,7 @@ const bindCatalog = (catalog, load, listed) => {
     const group = groups.get(String(node))
     return group === undefined ? 'imp preview' : `imp preview - ${group.name}`
   }
-  return { app, icons, tags, screens, title }
+  return { app, nav, screens, title }
 }
 
 const pageDefinition = {
@@ -1147,7 +1206,8 @@ const pageDefinition = {
     return previewShell({
       embedded: bound.embedded,
       mark: bound.mark,
-      navbar: { map: bound.app, icons: bound.icons, tags: bound.tags },
+      map: bound.app,
+      nav: bound.nav,
       navOpen,
       controls,
       editor,
@@ -1241,6 +1301,63 @@ const ensureFavicon = (favicon) => {
   document.head.append(icon)
 }
 
+const framedScenarioOf = () => {
+  if (!globalThis.name.startsWith(FRAME_NAME_PREFIX)) return null
+  try {
+    return JSON.parse(globalThis.name.slice(FRAME_NAME_PREFIX.length))
+  } catch {
+    return null
+  }
+}
+
+const followHostDocument = () => {
+  const host = globalThis.parent.document.documentElement
+  const own = document.documentElement
+  const follow = async () => {
+    const code = host.getAttribute('lang')
+    if (languages.includes(code) && code !== lang.get()) await setLang(code)
+    own.setAttribute('style', host.getAttribute('style') ?? '')
+    own.dir = host.dir || 'ltr'
+  }
+  const observer = new MutationObserver(() => {
+    follow().catch((error) => console.error('imp preview: the frame could not follow -', error))
+  })
+  observer.observe(host, { attributes: true, attributeFilter: ['style', 'dir', 'lang'] })
+  addEventListener('pagehide', (event) => {
+    if (!event.persisted) observer.disconnect()
+  })
+  return follow()
+}
+
+const mountFramedScenario = async ({ file, scenario: name }, load) => {
+  try {
+    const scenarios = await load[file]()
+    mount(document.body, buildScenario(scenarioOf(name, scenarios[name]).component))
+  } catch (error) {
+    console.error(`imp preview: scenario '${name}' failed to build`, error)
+    mount(document.body, pre({ class: 'failure' }, `${name} failed to build - see the terminal`))
+  }
+}
+
+const startDocument = async (customThemes, translations) => {
+  const styles = document.createElement('style')
+  styles.textContent = DOCUMENT_STYLES
+  document.head.append(styles)
+  registerThemes(customThemes)
+  followAppliedTheme()
+  applySelectedTheme(initialThemeName())
+  registerLanguages(translations)
+  await init(
+    translations.length
+      ? {
+          translations: Object.fromEntries(
+            translations.map(({ code, module }) => [code, () => module]),
+          ),
+        }
+      : {},
+  )
+}
+
 export async function startPreview({
   embedded = false,
   mark,
@@ -1252,24 +1369,15 @@ export async function startPreview({
   groups: declaredGroups = null,
 }) {
   ensureFavicon(favicon)
+  const framed = framedScenarioOf()
+  if (framed !== null) {
+    await startDocument(customThemes, translations)
+    await followHostDocument()
+    await mountFramedScenario(framed, load)
+    return
+  }
   const listed = groupsOf(catalog, readGroups(declaredGroups))
-  const styles = document.createElement('style')
-  styles.textContent = DOCUMENT_STYLES
-  document.head.append(styles)
-  registerThemes(customThemes)
-  followAppliedTheme()
-  applySelectedTheme(initialThemeName())
-  registerLanguages(translations)
-
-  await init(
-    translations.length
-      ? {
-          translations: Object.fromEntries(
-            translations.map(({ code, module }) => [code, () => module]),
-          ),
-        }
-      : {},
-  )
+  await startDocument(customThemes, translations)
   await applyLanguage(readStoredLanguage())
 
   mount(document.body, previewPage({ ...bindCatalog(catalog, load, listed), mark, embedded }))

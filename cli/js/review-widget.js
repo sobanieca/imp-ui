@@ -9,9 +9,11 @@ export const reviewWidget = ({
   reportModule,
   themeEditorModule,
   telemetryEntries,
+  previewFrameNamePrefix,
 }) => {
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
   if (!LOOPBACK.has(location.hostname)) return
+  if (globalThis.name.startsWith(previewFrameNamePrefix)) return
 
   const DRAG_THRESHOLD = 4
 

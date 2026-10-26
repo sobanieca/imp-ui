@@ -217,56 +217,53 @@ import { app } from './app-map.js'
 
 shell(
   {
-    logo: appLogo({ label: 'Acme' }),
-    navbar: {
-      label: 'Sections',
-      map: app,
-      hide: [app.signIn],
-      groups: { Money: [app.reports.revenue, app.reports.costs] },
-      icons: { [app.reports]: luChartColumn },
-      tags: { [app.reports.revenue]: revenueCount },
+    map: app,
+    nav: {
+      [app.reports]: { icon: luChartColumn },
+      [app.reports.money]: { group: true },
+      [app.reports.money.revenue]: { tag: 'acme.reports.newCount' },
+      [app.signIn]: { hidden: true },
     },
+    logo: appLogo({ label: 'Acme' }),
+    navbar: { label: 'Sections' },
     sidebar: { label: 'Pages' },
     extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
     signIn: app.signIn,
   },
-  router({ map: app, access, need, screens }),
+  router({ map: app, guards, screens }),
 )
 ```
 
-| Prop          | Values                                  | Default  | Notes                                                |
-| ------------- | --------------------------------------- | -------- | ---------------------------------------------------- |
-| `logo`        | DOM                                     | -        | Heads the bar, the column, or the drawer             |
-| `navbar`      | **data** `{ map, hide, groups, ... }`   | -        | The map; or plain `items` for a frame with no router |
-| `sidebar`     | **data** `{ label, ... }`               | -        | Names and foots the second level                     |
-| `extras`      | DOM, or an array of it                  | -        | Theme/language pickers, `userCard`, anything         |
-| `signIn`      | a node handle of the map                | -        | The sign-in node; it shows without the chrome        |
-| `breadcrumbs` | `false`                                 | shown    | Drops the trail; it hides on a one-crumb page anyway |
-| `navOpen`     | boolean, or a state - **live**          | `false`  | Drawer state; shell-owned when omitted               |
-| `gap`         | spacing step `0`-`6`                    | `0`      | Floats the chrome apart as rounded, bordered panels  |
-| `maxWidth`    | CSS length, or `'none'`                 | `125rem` | Caps column and content, centred on a wider screen   |
-| `background`  | DOM                                     | -        | Decorative layer under everything, e.g. an animation |
-| `effect`      | `'none'`, `'fade'`, `'slide'`, `'zoom'` | `'none'` | Animates a change of screen in the content area      |
-| `events`      | `{ navToggle, select }`                 | -        | `{ open }` on every drawer change; `{ id, item }`    |
+| Prop          | Values                                               | Default  | Notes                                                |
+| ------------- | ---------------------------------------------------- | -------- | ---------------------------------------------------- |
+| `map`         | the value of `appMap()`                              | -        | The only input of the nav                            |
+| `nav`         | `{ [handle]: { icon, tag, group, hidden } }`         | -        | The settings of one node each                        |
+| `navbar`      | omitted, `false`, or `{ label, hidden, background }` | shown    | `false` removes the bar                              |
+| `sidebar`     | `{ label, extras, background }`                      | -        | Names the column; `extras` sit under the rows        |
+| `logo`        | DOM                                                  | -        | Heads the bar, the column, or the drawer             |
+| `extras`      | DOM, or an array of it                               | -        | Theme/language pickers, `userCard`, anything         |
+| `signIn`      | a node handle of the map                             | -        | The sign-in node; it shows without the chrome        |
+| `breadcrumbs` | `false`                                              | shown    | Drops the trail; it hides on a one-crumb page anyway |
+| `navOpen`     | boolean, or a state - **live**                       | `false`  | Drawer state; shell-owned when omitted               |
+| `gap`         | spacing step `0`-`6`                                 | `0`      | Floats the chrome apart as rounded, bordered panels  |
+| `maxWidth`    | CSS length, or `'none'`                              | `125rem` | Caps column and content, centred on a wider screen   |
+| `background`  | DOM                                                  | -        | Decorative layer under everything, e.g. an animation |
+| `effect`      | `'none'`, `'fade'`, `'slide'`, `'zoom'`              | `'none'` | Animates a change of screen in the content area      |
+| `events`      | `{ navToggle, select }`                              | -        | `{ open }` on every drawer change; `{ id, item }`    |
 
-`navbar` takes `map`, and `hide`, `groups`, `icons` and `tags` keyed by handle, and `label`.
-`hide: [app.signIn]` keeps a node off the nav. `groups: { Manage: [app.settings] }` titles
-consecutive sidebar rows, and a key that the messages hold shows translated. With no map it takes `items`,
-which are the sections and are live, and `selected`. `sidebar` takes `label`, an app-wide `extras`
-of DOM, and `footer` rows. `sidebar` also takes `groups`, `items` and `selected`, but **only when
-there is no `navbar`**. That is the sidebar-only layout. Beside a `navbar`, imp warns and drops
-them.
+**The depth of a node decides its surface.** The top-level nodes are the sections of the bar. A
+root that a screen binds is the first section, and `nav: { [app]: { hidden: true } }` removes it.
+The children of the current section are the rows of the sidebar. A section with no children has no
+sidebar. A `nav` entry takes `icon`, `tag`, `group: true` and `hidden: true`. `group` makes a
+sidebar node a heading over its children, and the heading is not a link. `hidden` keeps a node off
+the bar and the sidebar, and the route stays. A `tag` is a state name, or a fixed
+`{ text, color, title }`.
 
-Without a map, a section is `{ id, label, icon, href, onClick, tag, disabled, groups?, items? }`. A
-row is `{ id, label, icon, href, onClick, tag, disabled, children? }`. A group is
-`{ id?, label, tag?, items }`.
-
-| Layout                 | Props                                | What you get                                     |
-| ---------------------- | ------------------------------------ | ------------------------------------------------ |
-| Sections with sidebars | `navbar.map`, sections with children | Top bar of sections, column for the current one  |
-| Sections only          | `navbar.map`, leaf sections          | Top bar, no column, content full width           |
-| Sidebar only           | `sidebar` with `groups` / `items`    | No bar: logo heads the column, extras foot it    |
-| One section            | `navbar.map`, one section with rows  | Sidebar only; the frame drops the bar on its own |
+| Layout                 | Props                         | What you get                                    |
+| ---------------------- | ----------------------------- | ----------------------------------------------- |
+| Sections with sidebars | `map`, sections with children | Top bar of sections, column for the current one |
+| Sections only          | `map`, leaf sections          | Top bar, no column, content full width          |
+| Sidebar only           | `map`, `navbar: false`        | No bar: the sections are the rows of the column |
 
 The sizes are custom properties, not props. They are `--imp-shell-sidebar-inline-size`, which
 defaults to `16rem`, and `--imp-shell-bottom-bar-items`, which defaults to `4` and is clamped
@@ -274,37 +271,43 @@ between 3 and 5.
 
 Rules an agent gets wrong:
 
-- **Pass the map, and put `router({ map })` in the content.** The router derives the sections, the
-  rows, the marked rows and the crumbs, and the frame draws them. Do not keep a second array in step
-  by hand. `navbar.selected` and `sidebar.selected` beside a map are dropped.
-- **`icons` and `tags` bind by handle**, as `{ [app.reports]: luChartColumn }` and
-  `{ [app.reports.revenue]: count }`. An icon is a Lucide export or any DOM. A tag is
-  `{ text, color, title }`, a state that holds one, or `null`. `title` is the full form of a short
-  `text`. It is the tooltip of the tag and the description of the row for a screen reader. Neither
-  is a prop of the map. Bind them at the root, not in an area file.
+- **Pass the map, and put `router({ map })` in the content.** `shell({ map })` mirrors
+  `router({ map, screens })`. The router derives the sections, the rows, the marked rows and the
+  crumbs, and the frame draws them. Do not keep a second array in step by hand.
+- **`navbar: false` removes the bar.** The sections are then the rows of the sidebar, with
+  their children under them. No other rule hides the bar. `navbar: { hidden: true, background }`
+  does the same, and keeps a backdrop on the top bar of a phone.
+- **`nav` binds by handle**, as `{ [app.reports]: { icon: luChartColumn } }`. An icon is a Lucide
+  export or any DOM. A `tag` string is the name of a state, initialized above the shell. The state
+  holds `{ text, color, title }`, text, or `null`, and the pill stays live. `title` is the full form
+  of a short `text`. It is the tooltip of the tag and the description of the row for a screen
+  reader. Nothing in `nav` is a prop of the map. Bind it at the root, not in an area file.
+- **`group: true` belongs on a node of the sidebar.** The bar has no groups, so imp warns about a
+  group on a node of the bar and ignores it. The heading text is the label of the node, so the
+  message `appMap.<id>.label` translates it.
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows, because it draws each level more than once. The main content is the
-  children, as in `shell({ navbar }, page())`. There is no `header`, `footer` or `layout` prop. Put
+  children, as in `shell({ map }, router(...))`. There is no `header`, `footer` or `layout` prop. Put
   a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
-- **Sign-in is a node of the map, and `access` guards the rest.** Give every private section a
-  `need` in `router({ need })`. The guard returns `wait` while the session is `undefined`, and
-  `/sign-in?next=<path>` while it is `null`. The sign-in screen navigates to
-  `safeNext(next, app.home.href())` after it sets the session. Pass the node as
-  `signIn: app.signIn`, and list it in `navbar.hide`. Give it no `need`.
+- **Sign-in is a node of the map, and the guard of the root covers the rest.** Bind it in
+  `router({ guards: { [app]: signedIn } })`. Its check returns `true` for `node === app.signIn`
+  first. Then it returns `wait` while the session is `undefined`, and `/sign-in?next=<path>` while
+  it is `null`. The sign-in screen navigates to `safeNext(next, app.href())` after it sets the
+  session. Pass the node as `signIn: app.signIn`, and hide it with `hidden: true` in `nav`.
 - **The frame shows no chrome while it cannot know who may see the page.** While the verdict of the
   current node is `wait`, or the current node is the `signIn` node or one of its children, the frame
   shows the router content and the logo, centred, and nothing else. A redirect keeps the layout, so
   a signed-out visitor never sees the chrome. Write the sign-in page yourself; imp renders no form
   and holds no session.
 - **The frame has no account prop.** `accountMenu` in `extras` holds the person, the pickers and
-  the sign-out. Whether a person sees a section is the `need` of the router.
+  the sign-out. Whether a person sees a section is the guard of the router.
 - **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
   of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
   there inline, or do not style it.
-- **A section with no rows renders no sidebar**, and the content goes full width. Do not build a
-  false column with one row. Only app-wide content keeps the column. **`sidebar.extras` and
-  `sidebar.footer` stay whichever section is current.** So a support card or a help link goes there,
-  never under a section of the map.
+- **A section with no children renders no sidebar**, and the content goes full width. Do not build
+  a false column with one row. Only app-wide content keeps the column. **`sidebar.extras` stays
+  whichever section is current.** So a support card or an external link goes there, never under a
+  section of the map.
 - **`gap: 0` is the edge-to-edge frame. Any other step floats the chrome** as bordered panels,
   rounded with `radius-container`, and inset from the screen and from each other. This covers the
   phone drawer and any `drawer` inside the frame. The frame paints the `background-app` token, which
@@ -315,15 +318,15 @@ Rules an agent gets wrong:
 - **The frame is capped at `125rem` by default.** Beyond `maxWidth` the column and the content sit
   in the middle, the background fills the rest, and the top bar centres its controls over them. A
   `drawer` in the content opens at the end edge of the content. Pass `'none'` to fill the screen.
-- **Static grandchildren of the context nest one level, and are collapsed by default**, behind a
-  caret with `aria-expanded`. The parent of the selected row starts expanded. A parent that the
+- **The children of a row nest one level, and are collapsed by default**, behind a caret with
+  `aria-expanded`. A group heading is not a level. The parent of the selected row starts expanded. A parent that the
   person folds stays folded until the selection moves to another parent. On a phone, a parent that
   the person taps in the bottom bar opens its children in the More sheet, and the title of the sheet
   links to the page of the parent.
 - **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, which
   is the last two crumbs. The sidebar becomes the bottom bar, capped at
-  `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections,
-  the footer rows and both `extras` move into the drawer. The trail strip hides. When the current
+  `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections
+  and both `extras` move into the drawer. The trail strip hides. When the current
   section has no sidebar, the bottom bar carries the **sections**, and the drawer holds the chrome
   only.
 - **There is no aside region.** Every region of the frame has a phone form, and a side column has
@@ -331,8 +334,8 @@ Rules an agent gets wrong:
   the page is your own `flex` inside the main content. Make it wrap below the page under your own
   media query.
 - **The desktop column collapses to an icon rail** from a toggle in its head. That head names the
-  context, which is the param crumb when there is one. imp offers the toggle only when every row and
-  every footer row has an `icon`. The rail hides the logo, `sidebar.extras` and the `extras` of the
+  context, which is the param crumb when there is one. imp offers the toggle only when every row has
+  an `icon`. The rail hides the logo, `sidebar.extras` and the `extras` of the
   shell. A rail row shows its label as a tooltip on hover, on focus and on a touch hold.
 - **`navOpen` must be writable if you pass it.** Never pass a `computed`. The shell writes back when
   the drawer closes itself.
@@ -987,8 +990,9 @@ Rules an agent gets wrong:
 - **`foldable: true` on a vertical strip adds a fold button at its foot.** `folded` takes a boolean
   or a state, and `events: { fold }` reports a tap. The host's `block-size` sets the height of the
   strip, so the button sits at the foot. A folded strip moves the button to the head.
-- **A menu of destinations is the `shell` nav.** There is no separate menu component. Give the rows
-  to the frame as `navbar` or `sidebar` data. Full manual: `imp skill std/tabs`.
+- **A menu of destinations is the `shell` nav.** There is no separate menu component. Add the
+  destinations to the application map and pass it to the frame as `map`. Full manual:
+  `imp skill std/tabs`.
 - **`steps` shows the progress of a flow, and no panel.** Items before `current` are done. `steps`
   never changes `current` itself. Pass a state and set it from your flow.
 - **`events: { select }` makes each done step a real button**, with `detail: { id, index }`. The
@@ -1200,15 +1204,15 @@ langSelect({ languages: ['en', 'pl'] })
 
 Rules an agent gets wrong:
 
-- **There is no sidebar-item component and no navbar-item component.** A row is a nav item, and its
-  shape takes an `icon` and an `onClick`. Give those items to the frame as data.
+- **There is no sidebar-item component and no navbar-item component.** A row is a node of the
+  application map. Give it an `icon` or a `tag` through the `nav` of the frame.
 - **The last crumb is the current page.** `breadcrumbs` renders it as text with
   `aria-current="page"`, never as a link. A crumb with `options` gets a picker of its siblings. The
   frame renders the trail from the map; call `breadcrumbs` yourself only outside `shell`.
 - **`userCard` displays. It does not act.** It has no sign-in button, no sign-out button and no
   menu. Use `accountMenu`, which holds a `userCard`, for the account actions, and decide in
   `onSignOut` how a sign-out works. imp holds no session, and it talks to no identity provider.
-  Whether anybody is signed in is the `access` guard of the router.
+  Whether anybody is signed in is the guard of the root, in the router.
 - **`themeSelect`, `langSelect` and `orgSelect` are menus.** Each renders a `menuButton` with the
   current choice on the trigger and a `menuitemradio` per option. There is no `<select>` in the
   frame.

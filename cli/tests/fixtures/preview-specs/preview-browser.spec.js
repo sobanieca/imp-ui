@@ -10,6 +10,14 @@ test('imp preview renders scenarios in a browser', async ({ page: host }) => {
   const page = await browser.newPage()
   await page.evaluateOnNewDocument(() => {
     globalThis.impResizeLoops = 0
+    globalThis.impEventStreams = 0
+    const PageEventSource = globalThis.EventSource
+    globalThis.EventSource = class extends PageEventSource {
+      constructor(...args) {
+        super(...args)
+        globalThis.impEventStreams++
+      }
+    }
     globalThis.impErrors = []
     globalThis.addEventListener('error', (event) => {
       if (String(event.message).includes('ResizeObserver loop')) globalThis.impResizeLoops++
@@ -476,6 +484,73 @@ test('imp preview renders scenarios in a browser', async ({ page: host }) => {
       .shadowRoot.querySelector('.title').textContent.trim(),
   }))
 
+  const scenarioFrameOf = async () => {
+    for (let attempt = 0; attempt < 150; attempt++) {
+      for (const frame of page.frames()) {
+        const ready = await frame.evaluate(() => {
+          globalThis.impDeepIn = (root, selector) => {
+            const direct = root.querySelector(selector)
+            if (direct) return direct
+            for (const element of root.querySelectorAll('*')) {
+              const found = element.shadowRoot && globalThis.impDeepIn(element.shadowRoot, selector)
+              if (found) return found
+            }
+            return null
+          }
+          globalThis.impFramed = (selector) => globalThis.impDeepIn(document, selector)
+          return globalThis.name.startsWith('imp-preview-frame:') &&
+            globalThis.impFramed('demo-todos')?.shadowRoot.querySelectorAll('.todo').length === 2
+        }).catch(() => false)
+        if (ready) return frame
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+    throw new Error('the framed scenario never rendered its todos')
+  }
+  await page.goto(`${base}/components/todos?scenario=routed`, { waitUntil: 'load' })
+  const scenarioFrame = await scenarioFrameOf()
+  const framedBefore = await scenarioFrame.evaluate(() => ({
+    path: location.pathname,
+    todos: [...globalThis.impFramed('demo-todos').shadowRoot.querySelectorAll('.todo')]
+      .map((item) => item.textContent).join(', '),
+    review: document.getElementById('imp-review') !== null,
+    streams: globalThis.impEventStreams,
+  }))
+  const frameTitle = await page.evaluate(() =>
+    globalThis.impDeep('iframe.scenario-frame')?.getAttribute('title')
+  )
+  await scenarioFrame.evaluate(() =>
+    globalThis.impFramed('imp-link').shadowRoot.querySelector('a').click()
+  )
+  await scenarioFrame.waitForFunction(() =>
+    location.pathname === '/done' && globalThis.impFramed('imp-empty-state') !== null
+  )
+  const framedAfter = await scenarioFrame.evaluate(() =>
+    globalThis.impFramed('imp-empty-state').shadowRoot.querySelector('.title').textContent.trim()
+  )
+  const pageAfterFrameClick = new URL(page.url())
+  const themeBeforeFollow = await page.evaluate(() => globalThis.impSwitcher('theme').selected())
+  await page.evaluate(() => globalThis.impSwitcher('theme').pick('imp-dark'))
+  await scenarioFrame.waitForFunction(() =>
+    document.documentElement.style.getPropertyValue('color-scheme') === 'dark'
+  )
+  const framedTheme = await scenarioFrame.evaluate(() =>
+    document.documentElement.style.getPropertyValue('color-scheme')
+  )
+  await page.evaluate((name) => globalThis.impSwitcher('theme').pick(name), themeBeforeFollow)
+  const framed = {
+    title: frameTitle,
+    before: framedBefore,
+    after: framedAfter,
+    page: `${pageAfterFrameClick.pathname}${pageAfterFrameClick.search}`,
+    theme: framedTheme,
+  }
+  await page.goto(`${base}/components/todos`, { waitUntil: 'load' })
+  await page.waitForFunction(() =>
+    globalThis.impRoot() &&
+    globalThis.impOne('demo-todos')?.shadowRoot?.querySelectorAll('.todo').length === 2
+  )
+
   const panelWidths = () => {
     const scenario = globalThis.impScenarios()[0]
     const width = (node) => Math.round(node.getBoundingClientRect().width)
@@ -705,6 +780,9 @@ test('imp preview renders scenarios in a browser', async ({ page: host }) => {
     `mocked todos state row: ${todos.state}`,
     `agent strip without a sidecar: ${todos.agent}`,
     `skill tab without a sidecar: ${todos.skill}`,
+    `framed scenario '${framed.title}': opens at ${framed.before.path}, todos ${framed.before.todos}, review widget ${framed.before.review}, event streams ${framed.before.streams}`,
+    `a link in the frame moves the frame only: frame shows ${framed.after}, page stays at ${framed.page}`,
+    `framed scenario follows the theme of the page: ${framed.theme}`,
     `a draft of a theme that changed since: applied ${staleDraft.applied}, drafts left: ${staleDraft.left}`,
   ].join('\n')
   console.log(`IMP-REPORT-BEGIN\n${report}\nIMP-REPORT-END`)

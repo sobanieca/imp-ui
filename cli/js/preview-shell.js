@@ -412,11 +412,13 @@ export const previewSkill = (html, entry) => {
   return createSkill(html, entry)
 }
 
-export const previewShell = ({ embedded, mark, navbar, navOpen, controls, editor, content }) => {
+export const previewShell = ({ embedded, mark, map, nav, navOpen, controls, editor, content }) => {
   const host = shell(
     {
       ...(embedded ? {} : { logo: appLogo({ label: 'imp preview', src: mark, href: '/' }) }),
-      navbar: { ...navbar, background: brandBars() },
+      map,
+      nav,
+      navbar: { hidden: true, background: brandBars() },
       navOpen,
       sidebar: { label: 'Components', background: panel() },
       extras: previewSettings(controls),

@@ -576,7 +576,7 @@ export const root = component('myapp-root', {
       )
     }
 
-    return shell({ navbar: { map: app } }, appRouter())
+    return shell({ map: app }, appRouter())
   },
 })
 ```

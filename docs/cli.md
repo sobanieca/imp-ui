@@ -144,7 +144,7 @@ What you get is deliberately small. It is a working app, not a template to study
 | `src/main.js`        | applies the theme of the app and mounts the frame                       |
 | `src/theme.js`       | the theme of the app: the built-in light theme with the font of the app |
 | `src/app-map.js`     | the application map - the features of the app, one node per line        |
-| `src/app.js`         | the frame, the router, and a click counter bound to the home node       |
+| `src/app.js`         | the frame, the router, and a click counter bound to the root of the map |
 | `test/app.test.js`   | a unit test that mounts the frame and clicks the button of the counter  |
 | `test/app.spec.js`   | an end-to-end spec that drives the same app in a real browser           |
 | `public/favicon.svg` | a placeholder mark, published at the site root                          |
@@ -153,8 +153,8 @@ What you get is deliberately small. It is a working app, not a template to study
 
 There is no `README`, no `src/components/` tree and no second example. The counter shows the shape
 of an imp app: a component, a namespaced state, and a live text node bound to that state. The map
-shows the shape of a routed app. It has two nodes. `home` binds the counter, and `about` renders a
-placeholder until you bind a screen to it. The nav of the frame works from the first run. See
+shows the shape of a routed app. The root `app` serves `/` and binds the counter. The one node,
+`about`, renders a placeholder until you bind a screen to it. The nav of the frame works from the first run. See
 **[Routing](routing.md)**. Delete the counter when you start to write your own app.
 
 The scaffold is a working project when it arrives. `imp lint`, `imp fmt --check`, `imp test --unit`
@@ -1300,6 +1300,40 @@ export const overdue = {
 imp shows the `scenario` text as the tab and as the title of the panel. `component` is the instance,
 or a function that returns one, exactly as a plain export. The export name stays the id of the
 scenario in the address, so a link to it reads `?scenario=overdue`.
+
+### A scenario with a router
+
+A router owns the address of its window, and the preview page already has a router of its own. So a
+scenario that mounts a router needs a window of its own. Add `frame` to the object form, and imp
+renders the scenario in a frame:
+
+```js
+import { appMap } from 'imp'
+import { router } from 'imp/router'
+import { shell } from 'imp/std/shell'
+
+const app = appMap({
+  reports: { revenue: 'Money that came in', costs: 'Money that went out' },
+  directory: 'Everyone in the company',
+})
+
+export const navbarAndSidebar = {
+  scenario: 'Navbar and sidebar',
+  frame: app.reports.revenue,
+  component: () => shell({ map: app }, router({ map: app })),
+}
+```
+
+`frame` is the path where the frame opens. It is a handle of the map, as above, or a string such as
+`'/'`. Write `component` as a function, so that imp builds the scenario only inside the frame. The
+frame has its own address and its own history. A click on a link in the frame moves the frame, and
+the preview page stays where it is. So the nav, the sidebar and the trail of a `shell` work exactly
+as in your app.
+
+The frame follows the theme, the direction and the language of the page, and a draft of the theme
+editor too. Its media queries see the width of the stage. So a narrow stage shows the phone layout
+of the scenario. The state editor does not reach into a frame, so a framed scenario has no state
+button. The review widget stays on the page, outside the frame.
 
 ### The code of a scenario
 

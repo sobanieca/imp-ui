@@ -114,6 +114,55 @@ test('the exported preview embeds in a page and shares its address', async ({ pa
   )
   const themeAfterPick = { host: await hostTheme(), frame: await themeShown() }
   const themeEvents = await deep.evaluate(() => globalThis.impThemeEvents)
+  const framedPage = await browser.newPage()
+  framedPage.on('pageerror', (error) => errors.push(error.message))
+  await framedPage.goto(`${base}/gallery#/components/todos?scenario=routed`, { waitUntil: 'load' })
+  const scenarioFrameOf = async () => {
+    for (let attempt = 0; attempt < 150; attempt++) {
+      for (const frame of framedPage.frames()) {
+        const ready = await frame.evaluate(() => {
+          globalThis.impDeepIn = (root, selector) => {
+            const direct = root.querySelector(selector)
+            if (direct) return direct
+            for (const element of root.querySelectorAll('*')) {
+              const found = element.shadowRoot && globalThis.impDeepIn(element.shadowRoot, selector)
+              if (found) return found
+            }
+            return null
+          }
+          globalThis.impFramed = (selector) => globalThis.impDeepIn(document, selector)
+          return globalThis.name.startsWith('imp-preview-frame:') &&
+            globalThis.impFramed('demo-todos')?.shadowRoot.querySelectorAll('.todo').length === 2
+        }).catch(() => false)
+        if (ready) return frame
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+    throw new Error('the framed scenario never rendered its todos')
+  }
+  const scenarioFrame = await scenarioFrameOf()
+  const galleryFrame = scenarioFrame.parentFrame()
+  const framedUrl = scenarioFrame.url()
+  await scenarioFrame.evaluate(() =>
+    globalThis.impFramed('imp-link').shadowRoot.querySelector('a').click()
+  )
+  await scenarioFrame.waitForFunction(() =>
+    location.hash === '#/done' && globalThis.impFramed('imp-empty-state') !== null
+  )
+  const framedAfter = {
+    gallery: await galleryFrame.evaluate(() => location.hash),
+    host: new URL(framedPage.url()).hash,
+  }
+  await framedPage.evaluate(() => {
+    document.querySelector('imp-preview').theme = 'imp-dark'
+  })
+  await scenarioFrame.waitForFunction(() =>
+    document.documentElement.style.getPropertyValue('color-scheme') === 'dark'
+  )
+  const framedTheme = await scenarioFrame.evaluate(() =>
+    document.documentElement.style.getPropertyValue('color-scheme')
+  )
+
   const report = [
     `host page keeps its own document: ${await page.evaluate(() =>
       document.querySelector('h1').textContent
@@ -137,6 +186,9 @@ test('the exported preview embeds in a page and shares its address', async ({ pa
     `theme after the host offers imp-dark: ${themeAfterOffer}`,
     `theme after a pick in the gallery: host ${themeAfterPick.host}, frame ${themeAfterPick.frame}`,
     `theme events on the element: ${themeEvents.join(', ')}`,
+    `framed scenario loads the gallery page: ${framedUrl.startsWith(`blob:${base}/`)}, at ${new URL(framedUrl).hash}`,
+    `a link in the frame moves the frame only: gallery ${framedAfter.gallery}, host ${framedAfter.host}`,
+    `framed scenario follows the theme of the host: ${framedTheme}`,
     `page errors: ${errors.length ? errors.join(' | ') : 'none'}`,
   ].join('\n')
   console.log(`IMP-REPORT-BEGIN\n${report}\nIMP-REPORT-END`)

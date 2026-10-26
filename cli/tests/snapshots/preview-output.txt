@@ -10,6 +10,7 @@ exit code: 0
   app.js (<size>)
   chunks/<name>-<hash>.js (<size>)
   chunks/<name>-<hash>.js (<size>)
+  chunks/<name>-<hash>.js (<size>)
   groups/components.js (<size>)
   groups/widgets.js (<size>)
   imp-preview.js (<size>)
@@ -22,6 +23,7 @@ exit code: 0
 .imp-output
 LICENSES.txt
 app.js
+chunks/<name>-<hash>.js
 chunks/<name>-<hash>.js
 chunks/<name>-<hash>.js
 groups/components.js

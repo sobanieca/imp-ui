@@ -493,6 +493,7 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
             "reportModule": REPORT_MODULE,
             "themeEditorModule": THEME_EDITOR_MODULE,
             "telemetryEntries": TELEMETRY_ENTRIES,
+            "previewFrameNamePrefix": crate::preview::PREVIEW_FRAME_NAME_PREFIX,
         }),
     )
 }

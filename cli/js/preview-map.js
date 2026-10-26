@@ -1,4 +1,4 @@
-const RESERVED_KEYS = new Set(['description', 'home', 'href', 'spec', 'toString'])
+const RESERVED_KEYS = new Set(['description', 'label', 'href', 'spec', 'toString'])
 
 const wordsOf = (name) =>
   name

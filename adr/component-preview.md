@@ -125,16 +125,36 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   live size readout. There are no viewport presets. A handle and a readout are enough to find the
   width where a component breaks. A resize changes the parent box only, so the component re-lays-out
   through the real DOM path (`real-dom-no-virtual-dom.md`).
+- **A scenario that mounts a router renders in a frame, `{ scenario, frame, component }`.** A
+  router owns the address and the history of its window. The preview page already routes on that
+  address, so a second router on the page would move the page with each click. The `shell` takes
+  its nav from the map through the router, so a `shell` scenario without a router cannot show its
+  real nav. With `frame`, imp renders an `iframe` of the same preview page in the stage. The name of
+  the frame window holds the file and the export. On boot, the runtime reads that name and mounts
+  the one scenario in place of the workbench. The window name stays across a navigation and a
+  reload of the frame, and the address of the frame belongs to the router of the scenario. `frame`
+  is the start path, a handle of the map or a string. The frame copies the `style`, `dir` and `lang`
+  of the root element of the page through a `MutationObserver`. So the theme, a theme draft, the
+  direction and the language follow without a message protocol. The frame loads lazily, so the
+  hidden panels of a file cost nothing until they show. Its media queries see the stage, so a narrow
+  stage shows the phone layout. The review widget does not mount in a frame, because one widget on
+  the page is enough. The frame opens no live-reload stream of its own, because the reload of the
+  page reloads it. A stream per frame held one of the six connections that a browser opens to a
+  host, so a sixth frame never loaded. The frame disconnects its observer when it unloads. An
+  observer on the page keeps the removed frame alive. Two alternatives were rejected. A router that keeps its route in memory adds a
+  second routing state to the library for one consumer. A preview that converts the map to plain
+  rows shows the shape, but it does not run the path of the map that an app uses.
 - **The frame is `shell`, and an application map drives it.** The runtime builds an `appMap()` from
-  the catalog (`application-map.md`): one index node, one child per group and one grandchild per
-  component. Group and component names become node keys and path segments through one slug function
+  the catalog (`application-map.md`): one top-level node per group and one child per component,
+  under the root. Group and component names become node keys and path segments through one slug function
   that the CLI shares, so the address the server prints is the address the app serves. The router
-  binds the catalog view to the index node, a group screen to each group node, and an `area()` per
+  binds the catalog view to the root, a group screen to each group node, and an `area()` per
   component that imports its chunk on demand. The group screen is a card per component. A card
   renders the first scenario of the file, inert, and links to the component. The card imports the
   bundle of its group, so a group page loads with one fetch. The sidebar lists the groups with the
-  components under them. The map has one section, so the shell draws the sidebar-only layout on its
-  own (`app-shell-component.md`). Group icons and counts bind at the shell by handle. The brand
+  components under them. The page passes `navbar: { hidden: true }`, so the shell draws the
+  sidebar-only layout (`app-shell-component.md`). Group icons and counts bind in the `nav` of the
+  shell by handle. The brand
   block is its `logo`, with the imp mark as the image. The mark has a light and a dark variant, and
   `appLogo` shows the one that matches the colour scheme of the active theme. The server embeds both
   in the bundle as base64 data URIs. The icon of the page is a separate `.ico` file with the inverse

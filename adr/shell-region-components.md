@@ -26,11 +26,11 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect
   them. The one piece the frame renders itself is `breadcrumbs`, from the application map, see
   `application-map.md`. The trail is chrome, because it derives from the nav tree and folds into the
   phone title.
-- **A nav row is not a new component.** A sidebar row and a navbar row are nav items. Each one takes
-  an `icon`, which is any DOM, and an `onClick`. A row with an `onClick` and no `href` renders a
-  real `<button>`. That is how a menu carries an action beside its destinations. One data shape
-  drives the column, the bar, the drawer and the bottom bar of a phone. `shell` renders that shape
-  through one shared row builder.
+- **A nav row is not a new component.** A sidebar row and a navbar row are nodes of the application
+  map. Each one takes an `icon`, which is any DOM, and a `tag`, through the `nav` of the shell. One
+  data shape drives the column, the bar, the drawer and the bottom bar of a phone. `shell` renders
+  that shape through one shared row builder. An action is not a destination, so it goes in `extras`,
+  such as the `accountMenu`.
 - **`icon` lands in the General group.** It draws one icon in `currentColor`, from a value that the
   app imports, see `bundled-icon-set.md`. Every icon prop in the library accepts **any DOM**. So
   `icon` is a convenience, and never a requirement. A component that needs a mark internally still
@@ -68,7 +68,7 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect
 - **`userCard` displays the person, and nothing else.** It has no sign-in button, no sign-out button
   and no menu, because how a person signs in and out differs with every app, and a button with a
   fixed label in the card was the wrong place for that decision. The app renders its own `button` or
-  `menuButton` beside the card. Whether anybody is signed in is the `access` guard of the router,
+  `menuButton` beside the card. Whether anybody is signed in is the guard of the root, in the router,
   and the sign-in page is a node of the map, see `app-shell-component.md`.
 
 ## Consequences

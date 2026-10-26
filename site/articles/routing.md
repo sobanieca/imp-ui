@@ -19,7 +19,6 @@ Here's a complete routed app:
 import { appMap } from 'imp'
 
 export const app = appMap({
-  home: 'The welcome page',
   about: 'Who made this, and why',
   todos: { $id: 'One todo, on its own page' },
 })
@@ -36,11 +35,11 @@ import { app } from './app-map.js'
 mount(
   '#app',
   shell(
-    { navbar: { map: app } },
+    { map: app },
     router({
       map: app,
       screens: {
-        [app.home]: () => h1('Welcome'),
+        [app]: () => h1('Welcome'),
         [app.todos.$id]: ({ params }) => todoDetail(params.id),
       },
       notFound: () => h1('Not found'),
@@ -83,12 +82,11 @@ just unmounting.
 ### `appMap(nodes)` - the feature list
 
 Every key is a node. The name is the path (`createApiKey` serves `/create-api-key`) and the label
-("Create api key"). A `$name` key is a param. A top-level `home` serves `/`. Nest a node to nest a
-path. A string, or `description`, says what the node is for, and that is the only prop:
+("Create api key"). A `$name` key is a param. The map itself is the root node, and it serves `/`.
+Nest a node to nest a path. A string, or `description`, says what the node is for, and that is the only prop:
 
 ```js
 export const app = appMap({
-  home: {},
   projects: {
     description: 'Everything a team works on',
     $projectId: { builds: {}, settings: {} },
@@ -99,7 +97,8 @@ export const app = appMap({
 ```
 
 `appMap()` hands back a **handle** per node. `app.admin.users` stringifies to `/admin/users`, so it
-keys an object; `app.projects.$projectId.href({ projectId: '42' })` builds the URL. A mistyped
+keys an object; `app.projects.$projectId.href({ projectId: '42' })` builds the URL. `app` is the
+handle of the root, so `[app]` binds the page at `/`. A mistyped
 handle is `undefined`, and the router refuses the key at startup with a message that says so. Rename
 a path in one line, and every link, crumb, guard and binding follows.
 
@@ -116,7 +115,7 @@ factory receives `{ params, query, node }`:
 router({
   map: app,
   screens: {
-    [app.home]: () => home(),
+    [app]: () => home(),
     [app.projects]: () => projectList(),
     [app.projects.$projectId]: ({ params }) => project(params.projectId),
   },
@@ -194,33 +193,45 @@ router subtree.
 
 ---
 
-## Access is data bound to a node
+## A guard binds to a node
 
-The router binds a `need` to a node. One guard on the router says what that means:
+The router binds a guard to a node, and the guard covers everything under it. The guard of `[app]`,
+the root, covers the whole app:
 
 ```js
-const access = guard(['acme.session'], (session, { need }) => {
-  if (session === undefined) return wait // the session hasn't loaded - keep the loader up
-  if (!session) return '/login'
-  return session.roles.includes(need) || '/forbidden'
+const signedIn = {
+  states: ['acme.session'],
+  check: (session, { node }) => {
+    if (node === app.login) return true // the login page is the one exception
+    if (session === undefined) return wait // the session hasn't loaded - keep the loader up
+    return Boolean(session) || '/login'
+  },
+}
+
+const role = (name) => ({
+  states: ['acme.session'],
+  check: (session, context) => {
+    const entry = signedIn.check(session, context)
+    return entry === true ? session.roles.includes(name) || '/forbidden' : entry
+  },
 })
 
 router({
   map: app,
-  access,
-  need: {
-    [app.projects]: 'user',
-    [app.projects.$projectId.settings]: 'admin',
-    [app.admin]: 'admin',
+  guards: {
+    [app]: signedIn,
+    [app.projects.$projectId.settings]: role('admin'),
+    [app.admin]: role('admin'),
   },
   screens,
 })
 ```
 
-`'admin'` on the `admin` node reaches the guard as `need`. Every `need` on the path to the matched
-node runs. A node with no `need` is open, so `/login` never loops. And the **same guard
-decides the nav**: a row shows only when the guard allows it, and a row whose state hasn't arrived
-stays hidden until it does. The nav and the route cannot disagree.
+The nearest guard decides a node, so `/admin/users` answers to `role('admin')` alone. A new page is
+protected the moment you add it to the map. The check gets the handle of the node it decides, so an
+exception is one line of code, not a second config. And the **same guard decides the nav**: a row
+shows only when the guard allows it, and a row whose state hasn't arrived stays hidden until it
+does. The nav and the route cannot disagree.
 
 `wait` is the trick that keeps a guard synchronous. The router subscribes to the states the guard
 declared, re-runs it when they change, and acts on the first real answer. A guard is a pure function
@@ -236,7 +247,7 @@ file, loaded on demand:
 
 ```js
 screens: {
-  [app.home]: () => home(),
+  [app]: () => home(),
   [app.admin]: area(() => import('./admin/area.js')), // a lazily-loaded section
 }
 ```
@@ -359,7 +370,7 @@ element to wrap anything in.
 | A nav config kept in step with the routes               | the frame reads the same map                                          |
 | A build step to code-split routes                       | `area(() => import('./area.js'))` - buildless, on demand              |
 | `<Outlet/>` + nested layout files                       | `router()` slot + layouts that are plain functions                    |
-| Per-route guard wiring                                  | a `need` per node, one guard on the router, the nav follows           |
+| Per-route guard wiring                                  | a guard per node in `router({ guards })`, the nav follows             |
 | `<Suspense fallback>` around lazy routes                | the screen's `loading` + `router({ loading })` for downloads          |
 | `<ErrorBoundary>` route element                         | the screen's `error`, or `router({ error })` for the whole subtree    |
 | `loader` / `action` / `useLoaderData` data layer        | `async setup` - fetch where you render                                |
@@ -374,7 +385,7 @@ element to wrap anything in.
 
 One map - `appMap` - one element - `router` - fed the screens that bind to it, plus `navigate` and
 the `useRoute` read. That's the core routing surface of imp; `area()` groups whole sections,
-`access` on a node and one `guard` decide who sees what, `notFound` is the single 404, `url` and
+`guards` keyed by node decide who sees what, `notFound` is the single 404, `url` and
 `IMP_BASEPATH` handle a sub-path, and each screen cleans up in its own `onRemove`. Small enough to
 hold in your head, explicit enough to debug by reading, and free of the build-time machinery and
 cleanup bookkeeping that make routing the heaviest part of most front ends.

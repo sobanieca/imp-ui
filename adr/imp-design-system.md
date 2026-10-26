@@ -105,11 +105,12 @@ change its colours, do not add a stroke, and do not draw it smaller than 20px.
   `maxWidth: 'none'`, so the sidebar stays at the start edge of a wide screen. The canvas caps its
   own column.
 - **The top bar of a phone carries the three bars.** Below the `48rem` query the frame draws a top
-  bar with the menu button and the title. The page passes the bars as `navbar.background`, so they
+  bar with the menu button and the title. The page passes `navbar: { hidden: true }` with the bars as
+  its `background`, so they
   stand at the end edge of that bar: `Main1` 14px wide, then `Main2` and `Main3` 10px wide, 6px
   apart and 6px from the edge. A desktop screen has no top bar, so it shows no bars.
-- **The page has no navbar.** The map of the preview has one section, so the frame draws the sidebar
-  alone (`app-shell-component.md`). The navbar comes with the home page, which hosts the gallery.
+- **The page has no navbar.** The page hides the bar, so the frame draws the sidebar alone
+  (`app-shell-component.md`). The navbar comes with the home page, which hosts the gallery.
 - **The mark is the logo and the page icon.** `cli/src/templates/` holds `mark-light.svg`,
   `mark-dark.svg` and `favicon.ico`, which is the inverse mark on an `Accent1` tile.
 

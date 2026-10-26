@@ -26,11 +26,11 @@ anything can run. That place is the application map, see `application-map.md`.
 
 **The router is an element with the shape of a component, that you drop into your layout. You feed
 it the application map, and the screens that bind to its nodes.** The public surface is `appMap`,
-`router`, `area`, `guard`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute` and `url`.
+`router`, `area`, `redirect`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute` and `url`.
 There is no new lifecycle, and no scheduler. A screen cleans up through the ordinary `onRemove` of a
 component.
 
-- **`router({ map, screens, access, loading, error, notFound })` renders the matched screen.** It is
+- **`router({ map, screens, guards, loading, error, notFound })` renders the matched screen.** It is
   the slot where the current screen appears. Everything around it, which is the chrome of the app,
   stays across a navigation. Only its contents change. It behaves like a regular imp component. It
   takes the same lifecycle options as a component, which are `loading` and `error`, plus one
@@ -40,7 +40,7 @@ component.
 
 - **The route table is the map, and a screen is a binding, not a registration.** `screens` is an
   object keyed by handles of the map, as in
-  `{ [app.home]: () => home(), [app.todos.$id]: ({ params }) => detail(params.id) }`. The router
+  `{ [app]: () => home(), [app.todos.$id]: ({ params }) => detail(params.id) }`. The router
   matches the current path against the whole map. It splits on `/`, and ignores an empty segment, so
   a trailing slash does not matter. At each level it tries the static children first, then the one
   param child, so a static path always shadows a param path and no order of declaration matters. imp
@@ -166,9 +166,9 @@ component.
   uses when a path is off the map. You declare it beside the other options of the router. Every
   option is optional.
 
-- **Access control is a separate primitive, on the same wrapper, see `route-guards.md`.** The one
-  `access` guard of the router runs inside `imp-route`, before the screen factory, with every
-  `access` value on the chain of the matched node. Its `wait` verdict resolves through the same
+- **Access control is a separate primitive, on the same wrapper, see `route-guards.md`.** The
+  nearest guard of the target node runs inside `imp-route`, before the screen factory. Its `wait`
+  verdict resolves through the same
   loading content that the download of an area uses. So the router gains no second path for loading,
   and the screen gains no branch for loading.
 
@@ -289,8 +289,8 @@ component.
   the loading content. An error is the error boundary. The router inherits everything that the
   lifecycle guarantees, which is a defined cleanup, the discard of a stale async result, and
   isolation against a fault.
-- The public surface stayed small enough that access control needed one guard on the router and one
-  prop on a node. It did not need a routing layer of its own.
+- The public surface stayed small enough that access control needed one `guards` option on the
+  router. It did not need a routing layer of its own.
 - The route map is data, in one place, which is the application map. `screens` reads from the top
   down. There is no free `route()` side effect spread across modules. The screens of an area live in
   the file of the area, and the composition root names every area once.

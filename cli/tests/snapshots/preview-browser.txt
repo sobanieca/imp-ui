@@ -72,4 +72,7 @@ mocked todos: Buy milk, Ship imp
 mocked todos state row: demo.todos <demo-todos>
 agent strip without a sidecar: no skill - write todos.skill.md next to the component. imp shows it here, and 'imp skill' prints it for an agent.
 skill tab without a sidecar: No skill for this component
+framed scenario 'Routed in a frame': opens at /inbox, todos Buy milk, Ship imp, review widget false, event streams 0
+a link in the frame moves the frame only: frame shows Done, page stays at /components/todos?scenario=routed
+framed scenario follows the theme of the page: dark
 a draft of a theme that changed since: applied false, drafts left: 0

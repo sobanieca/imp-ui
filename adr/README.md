@@ -31,7 +31,7 @@ These are the conventions:
 | [component-moves-rebind](component-moves-rebind.md)             | Moves keep components; subscriptions rebind                                    |
 | [error-boundaries](error-boundaries.md)                         | Error boundaries via events; isolated cleanup                                  |
 | [client-side-router](client-side-router.md)                     | Declarative route-table router on view + components                            |
-| [route-guards](route-guards.md)                                 | Synchronous guards over declared states, with wait                             |
+| [route-guards](route-guards.md)                                 | Guards bound per node, nearest wins, synchronous over states, with wait        |
 | [application-map](application-map.md)                           | One plain-data map drives the router, the shell and the trail                  |
 
 ## State

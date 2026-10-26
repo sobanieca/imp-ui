@@ -6,7 +6,6 @@ const admin = appMap(
 )
 
 export const app = appMap({
-  home: 'The welcome page',
   orgs: {
     $id: {
       teams: { $id: { members: {} } },

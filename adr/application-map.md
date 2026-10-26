@@ -28,10 +28,18 @@ handle per node.**
   object holds the children of a node and an optional `description`. A map is a part. Any key other
   than `description` is a child, and a child value that is not a string, an object or a map is an
   error at startup. The name of a node is its path segment in kebab case and its label in sentence
-  case. A `$name` key is a param segment `:name`. The top-level key `home` is the index of the app:
-  it serves `/`, and its children hang from the root URL, so the index can be the one section of an
-  app. A `home` deeper in the tree, or inside a part, is an ordinary node. The order of the keys is
-  the order of the nav, and the router matches static siblings before param siblings on its own.
+  case. A `$name` key is a param segment `:name`. No key name is special, so `home` is a node at
+  `/home`. The order of the keys is the order of the nav, and the router matches static siblings
+  before param siblings on its own.
+
+- **The map is the handle of the root node.** `appMap()` returns the root, which serves `/`. So
+  `[app]` binds the page at `/`, `[app]` in `guards` binds the guard of every node, and
+  `app.href()` is `/`. Every binding has one form, a handle, and no key such as `home` or
+  `default` stands for the root. The root is the first crumb of the trail. Its label is "Home", or
+  the message `appMap.label`, so a top-level node named `label` is an error. The root has no
+  `description`, because the description of `index.html` already describes `/`. The root cannot be
+  an area, because the router must have a page to stand in. A part is the handle of the node that
+  it hangs from, so `admin === app.admin`.
 
 - **The map holds no binding.** A node says what a feature is and where it sits. Who can open it,
   whether the nav shows it, the group of its row, a screen, a redirect, a tag and an icon are how
@@ -64,11 +72,11 @@ handle per node.**
 
 - **A binding is a value keyed by a handle, and it lives where the implementation lives.**
   `router({ map, screens })` binds a screen factory, an `area()` loader or a `redirect()` to a node.
-  `router({ need })` binds the value that the guard reads. An area file exports
+  `router({ guards })` binds a guard to a node. An area file exports
   `area({ screens, root, translations })`, and it binds only the node it hangs from and the
-  descendants of that node. `shell({ navbar: { map, hide, groups, icons, tags } })` hides a node,
-  titles a group of rows, and binds an icon and a pill per node at the root, because a section row
-  renders before the chunk of its area loads. Nothing mutates the map.
+  descendants of that node. `shell({ map, nav })` binds the settings of the frame per node at the
+  root: `hidden`, `group`, an `icon` and a `tag`, because a section row renders before the chunk of
+  its area loads. Nothing mutates the map.
 
 - **A node with no screen renders a stub.** The stub is an `emptyState` with the label and the
   `description` of the node. A parent node with static children and no screen forwards to its first
@@ -82,12 +90,11 @@ handle per node.**
 - **`handle.href(params, { query, absolute })` builds every link.** A query is a plain object that
   imp encodes, and `absolute: true` adds the origin for a link that leaves the app in an email.
 
-- **`access` is the one door.** `router({ need })` binds any value to a node, and one guard on the
-  router, `router({ access })`, receives that value as `need`, beside the state values and
-  `{ params, query, searchParams, path }`. Every `need` on the chain from the root to the matched
-  node must allow. A node with no `need` is open, so a login page never loops. The verdicts, `wait`,
-  the redirect path and `false`, keep the meaning of `route-guards.md`. There is no second guard
-  form. A rule that `need` cannot express is a richer `need` value, not a different mechanism.
+- **`router({ guards })` is the one door.** It binds a guard to a node, and `[app]` binds the
+  guard of the root. The nearest guard on the chain decides a node. The check receives the state
+  values and `{ node, params, query, searchParams, path }`, so an exception such as the login page
+  is code in the check. The verdicts, `wait`, the redirect path and `false`, keep the meaning of
+  `route-guards.md`. There is no second guard form, and an area file binds no guard.
 
 - **The label of a static node is a message, then the name.** The messages of the app translate a
   static node under `appMap.<id>.label` and `appMap.<id>.description`. A default message of a
@@ -126,19 +133,23 @@ handle per node.**
   sections, the rows of the current context, the selected ids, the label of the context and the
   crumbs, in one `computed` over the route, the language, the guard states, `imp.routeLabels` and
   the settle mark. It writes the result into two plain-data states that the map owns. The shell
-  reads them through `navbar.map`, drops the nodes of `hide`, titles the rows of `groups`, adds the
-  icons and the tags it holds, and keeps its one row renderer. The shell imports the map module, and
-  nothing from the router.
+  reads them through its `map` prop, drops the nodes that `nav` hides, turns the nodes that `nav`
+  marks as a group into headings, adds the icons and the tags, and keeps its one row renderer. The
+  shell imports the map module, and nothing from the router.
   - The sections are the top-level nodes. The sidebar shows the static children of the current
     context, which is the deepest param node on the current chain, or else the current section.
-    Static grandchildren are the one collapsible level. A key of `groups` titles the consecutive
-    rows that it lists, and a key that the messages hold shows as that message. A hidden row is not
-    drawn, and its page marks the nearest row above it.
+    The router derives every static level under them. A group node heads its children, and the
+    children of a row are the one collapsible level. A hidden row is not drawn, and its page marks
+    the nearest row above it.
+  - A root that a screen binds is a page of its own, so it is the first section, before the
+    top-level nodes. Its label is the label of the root, and it is the current section only on its
+    own path. It has no rows. A root that forwards, or an area that loads later, is not a section,
+    because the nav cannot know its page. `shell({ nav: { [app]: { hidden: true } } })` keeps the
+    root off the nav. Without this rule, the main page of an app at `/` has no tab, and only the
+    logo leads back to it. On a path with no current section, the sidebar shows no rows.
   - A param node is a crumb, never a row.
-  - When the nav has one section and that section has rows, the shell drops the bar and draws the
-    sidebar-only layout. A bar with one item offers no choice. The rule reads the derived sections,
-    so a `scope` with several sections inside a tenant keeps the bar, and a viewer whose `access`
-    leaves one section gets the column.
+  - `shell({ navbar: false })` drops the bar and makes the sections the rows of the column. The
+    shell never drops the bar on its own.
   - Only an allow verdict shows a row. `wait` hides the row until the state arrives. The current
     chain stops at the first node that is not allowed, so a section is current only when the person
     is allowed inside.
@@ -154,6 +165,7 @@ handle per node.**
 - **A tenant is a scope of the router.** A multi-tenant URL, `/organizations/:org/...`, is a param
   node in the map, because a handle must print the real pattern. `router({ scope })` names that
   param node. Inside it, the sections are its static children and the trail starts with its crumb.
+  The scope node is the first section when a screen binds it, by the same rule as the root.
   Outside it, the sections are the top-level nodes. The map says nothing about tenancy, because the
   shape of the URL is a fact of the map and the meaning of that shape is a decision of the router.
 
@@ -163,8 +175,9 @@ handle per node.**
   `imp/std/shell` for a frame that an app writes itself, and there a crumb takes `options`: a
   disclosure button beside the crumb opens an anchored panel of links.
 
-- **The sign-in page is a node of the map.** The router has no default `need`, so the node is open,
-  and every private section gets its own `need`. `navbar.hide` keeps the node off the nav. The guard redirects a visitor with no session
+- **The sign-in page is a node of the map.** The guard of the root lets that node through with a check
+  on `context.node`, and covers every other node. `hidden: true` in the `nav` of the shell keeps the
+  node off the nav. The guard redirects a visitor with no session
   to the sign-in node, and the router, the nav, `imp map`, `app-analytics.json` and analytics treat
   it as an ordinary page. `shell` shows it without the chrome, see `app-shell-component.md`.
   `userCard` in `extras` displays the person.
@@ -190,7 +203,7 @@ handle per node.**
   that runs before a screen exists.
 - The map cannot express a nav row that exists only at runtime. A list of runtime destinations is a
   screen of the app, such as a list of projects, or an `orgSelect` beside the logo. A nav row for an
-  external link is not a node either. It is a row of `sidebar.footer` or DOM in `extras`.
+  external link is not a node either. It is DOM in `sidebar.extras` or in `extras`.
 - A screen that writes its label after `setup` resolves shows the raw value for a moment. The rule
   to write it before `setup` resolves is a convention that the router cannot check.
 - A mistyped `description`, such as `descripton: 'Admin'`, is a child node, because a string value is

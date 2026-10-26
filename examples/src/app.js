@@ -3,8 +3,8 @@ import { luChartColumn, luInfo, luListTodo } from 'imp/icons'
 import { initHttpClient } from 'imp/http'
 import { t } from 'imp/i18n'
 import { createLogger } from 'imp/log'
-import { area, guard, redirect, router, wait } from 'imp/router'
-import { computed, initState } from 'imp/state'
+import { area, redirect, router, wait } from 'imp/router'
+import { initState } from 'imp/state'
 import { emptyState } from 'imp/std/display'
 import { toast } from 'imp/std/feedback'
 import { appLogo, notifications, shell } from 'imp/std/shell'
@@ -26,10 +26,14 @@ const log = createLogger('todo.app')
 
 const LANGUAGES = [{ value: 'en', label: 'English' }, { value: 'pl', label: 'Polski' }]
 
-const access = guard(['todo.session'], (session, { path }) => {
-  if (session === undefined) return wait
-  return Boolean(session) || `${app.signIn.href()}?next=${encodeURIComponent(path)}`
-})
+const signedIn = {
+  states: ['todo.session'],
+  check: (session, { node, path }) => {
+    if (node === app.signIn) return true
+    if (session === undefined) return wait
+    return Boolean(session) || `${app.signIn.href()}?next=${encodeURIComponent(path)}`
+  },
+}
 
 const openTag = (todos) => {
   const { open } = countTodos(todos)
@@ -39,10 +43,9 @@ const openTag = (todos) => {
 const appRouter = () =>
   router({
     map: app,
-    access,
-    need: { [app.todos]: 'user', [app.stats]: 'user', [app.about]: 'user' },
+    guards: { [app]: signedIn },
     screens: {
-      [app.home]: redirect(app.todos),
+      [app]: redirect(app.todos),
       [app.signIn]: () => signInPage(),
       [app.todos]: () => todoListScreen(),
       [app.todos.$todoId]: ({ params }) => todoDetailScreen({ id: params.todoId }),
@@ -58,6 +61,8 @@ export const root = component('todo-root', {
   setup: (self) => {
     const session = initState(self, 'todo.session')
     const items = initState(self, 'todo.items')
+    const openTodos = initState(self, 'todo.openTodos', openTag(items.get()))
+    items.watch(self, (todos) => openTodos.set(openTag(todos)))
     const api = initHttpClient(
       self,
       'todo.api',
@@ -84,11 +89,12 @@ export const root = component('todo-root', {
         logo: appLogo({ label: 'Todo', tagline: 'imp', icon: logoMark() }),
         gap: 3,
         background: backdrop(),
-        navbar: {
-          map: app,
-          hide: [app.home, app.signIn],
-          icons: { [app.todos]: luListTodo, [app.stats]: luChartColumn, [app.about]: luInfo },
-          tags: { [app.todos]: computed([items], openTag) },
+        map: app,
+        nav: {
+          [app.signIn]: { hidden: true },
+          [app.todos]: { icon: luListTodo, tag: 'todo.openTodos' },
+          [app.stats]: { icon: luChartColumn },
+          [app.about]: { icon: luInfo },
         },
         extras: [
           notifications(),

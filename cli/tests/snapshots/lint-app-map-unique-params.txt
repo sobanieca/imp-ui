@@ -9,7 +9,7 @@ error[imp/app-map-unique-params]: '$orgId' repeats the param '$orgId' above it i
  --> app-map.js:5:32
 
 error[imp/app-map-unique-params]: '$id' repeats the param '$id' above it in this map - a param name names one param of a chain, so give each param its own name, like $orgId and $teamId
- --> app-map.js:12:16
+ --> app-map.js:11:16
 
 Found 2 problems
 Checked 1 file

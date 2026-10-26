@@ -5,7 +5,7 @@ import { accountMenu, langSelect, shell, themeSelect } from 'imp/std/shell'
 
 accountMenu({ name: user.name, description: user.email, onSignOut: signOut })
 accountMenu({ name, description, onSignOut }, themeSelect({ themes }), langSelect({ languages }))
-shell({ navbar: { map: app }, extras: [notifications(), accountMenu({ name, onSignOut })] })
+shell({ map: app, extras: [notifications(), accountMenu({ name, onSignOut })] })
 ```
 
 The call shape is `accountMenu(props?, ...children)`. The children go into the panel, between the

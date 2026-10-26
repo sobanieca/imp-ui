@@ -46,6 +46,7 @@ const PREVIEW_APP_MARK: &str = "imp-preview:app";
 const PREVIEW_ROUTE_EVENT: &str = "imp-preview-route";
 const PREVIEW_THEME_EVENT: &str = "imp-preview-theme";
 const PREVIEW_THEME_ATTRIBUTE: &str = "theme";
+pub const PREVIEW_FRAME_NAME_PREFIX: &str = "imp-preview-frame:";
 const GROUP_SHAPE: &str =
     "import { groups } from './preview-groups.js' and export const group = groups.widgets";
 const RESERVED_KEYS: [&str; 9] = [

@@ -91,6 +91,7 @@ pub fn client_script(mocks: bool, own_worker: bool, mark: &str, theme_editor: bo
         "themeEditor": theme_editor,
         "themeDraftPrefix": THEME_DRAFT_PREFIX,
         "themeDraftModule": THEME_DRAFT_MODULE,
+        "previewFrameNamePrefix": crate::preview::PREVIEW_FRAME_NAME_PREFIX,
     });
     format!(
         "{};{}",

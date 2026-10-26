@@ -1,7 +1,6 @@
 import { appMap } from 'imp'
 
 export const app = appMap({
-  home: {},
   signIn: 'The sign-in form, shown without the chrome',
   todos: {
     description: 'The todo list, with a form to add one',

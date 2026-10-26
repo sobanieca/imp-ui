@@ -7,6 +7,7 @@ export const devClient = ({
   themeEditor,
   themeDraftPrefix,
   themeDraftModule,
+  previewFrameNamePrefix,
 }) => {
   const hasThemeDraft = () => {
     try {
@@ -28,11 +29,13 @@ export const devClient = ({
       if (e.data === 'reload') location.reload()
     }
   }
-  connect()
-  addEventListener('pagehide', () => es?.close())
-  addEventListener('pageshow', (e) => {
-    if (e.persisted) connect()
-  })
+  if (!globalThis.name.startsWith(previewFrameNamePrefix)) {
+    connect()
+    addEventListener('pagehide', () => es?.close())
+    addEventListener('pageshow', (e) => {
+      if (e.persisted) connect()
+    })
+  }
 
   const queue = []
   let timer = null

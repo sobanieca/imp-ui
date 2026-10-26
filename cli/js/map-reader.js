@@ -24,7 +24,12 @@ export const mapReader = ({ key }) => {
         description: internals.props.description ?? null,
         grafted: internals.graftedInto !== null,
         patterns: internals.nodes.map((node) => node.pattern),
-        rows: rows(internals.root, 1, []),
+        rows:
+          Object.keys(internals.props).length > 0
+            ? rows(internals.root, 1, [])
+            : rows(internals.root, 2, [
+                { depth: 1, location: '/', label: internals.root.defaultLabel, description: '' },
+              ]),
       }
     })
   return JSON.stringify(maps)
