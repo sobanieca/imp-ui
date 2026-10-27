@@ -108,6 +108,8 @@ This is also how you force a remount.
 - **Repeat work with `interval(self, ms, run)` from `imp`**, not `setInterval`. It stops when the
   mount ends, skips a tick while an async `run` still waits, and logs a failure instead of throwing
   it. It returns a stop function.
+- **Give a poll `interval(self, ms, run, { whenVisible: true })`.** It skips the ticks while the tab
+  is hidden. When the tab shows again after a skipped tick, `run` runs at once.
 - **Run work once after a wait with `delay(self, ms, run)` from `imp`**, not `setTimeout`. An
   unmount before the wait cancels it. It logs a failure, and it returns a stop function.
 - **Never store a per-mount resource at module scope.** Use `self`. Every mount then gets its own

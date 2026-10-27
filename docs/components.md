@@ -334,6 +334,21 @@ const liveCheck = component('my-app-live-check', {
 - **It returns a stop function**, for a component that stops polling before it unmounts, for example
   when a check closes.
 
+A poll has no reader while its browser tab is hidden. Pass `{ whenVisible: true }` as the fourth
+argument to stop it there:
+
+```js
+interval(self, 15_000, async () => check.set(await api.get(`/checks/${id}`)), {
+  whenVisible: true,
+})
+```
+
+- **A hidden tab skips the tick.** imp sends no request while the reader looks at another tab or
+  another app.
+- **The tab shows again, and `run` runs one time at once.** The data is current when the reader
+  comes back. The next tick comes `ms` after that run. A tab that was hidden for less than one tick
+  skips nothing, so it does not run early.
+
 For work that runs once after a wait, such as a hint that hides after three seconds, use
 `delay(self, ms, run)` from `imp`. It works like `interval`, but it runs `run` one time:
 
