@@ -32,6 +32,8 @@ The call shape is `table(props)`. It takes **no children**. imp warns about a ch
 | `selected`   | array of row keys, or a writable state - **live**   | `[]`     | The table writes the state back                |
 | `hasMore`    | boolean, or a state - **live**                      | -        | More rows exist. Necessary with `onLoadMore`   |
 | `onLoadMore` | `async () => void`                                  | -        | Loads the next rows. Append them to `rows`     |
+| `empty`      | props of `emptyState`, or a DOM node                | -        | What the table shows with no rows              |
+| `noResults`  | props of `emptyState`, or a DOM node                | -        | What the table shows when `filter` hides all   |
 | `events`     | `{ rowSelect, sort }`                               | -        | Both fire on the host - see below              |
 
 Each column has these keys:
@@ -80,6 +82,9 @@ Rules an agent gets wrong:
   append a page: `rows.set((loaded) => [...loaded, ...page])`.
 - **`selected` holds row keys, with the type that the rows use.** For `'single'` it holds one key or
   none. Read the choice from the state. Select all writes the state and fires no `rowSelect`.
+- **`empty` and `noResults` are two states.** With no rows, the table shows `empty`. With rows that
+  `filter` hides, it shows `noResults`. Without the prop, it shows `emptyState` with the `variant`
+  of the same name. A props object keeps that `variant`.
 - **Select all covers the rows that show**, so it follows the filter.
 - **A click on a row selects it, when `selection` is on.** A click on a link, a button or an input
   in a cell does not. With `selection: 'none'` a row is not a control. To open a record, render a

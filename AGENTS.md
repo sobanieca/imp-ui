@@ -63,7 +63,8 @@ ADRs record accepted architectural decisions, one decision per file. Conventions
 
 Planned work is kept with [todoer](https://github.com/sobanieca/todoer), one todo per file in
 `.todoer/todos/`. Use the `todoer` commands (`todoer add`, `todoer claim`, `todoer pr submit`), and
-do not edit the files in `.todoer/` yourself. Run `todoer skill` for the workflow. Todo names are
+do not edit the files in `.todoer/` yourself. Use the todoer workflow (`todoer skill`) only when the
+person explicitly asks to use todoer to work on a todo. For all other changes, use the Git rules below. Todo names are
 descriptive slugs (`version-manager`), the same convention as ADRs. When a todo is implemented,
 remove it with `todoer done` or `todoer pr merge`. If the todo introduced an architectural decision,
 record that decision as an ADR.
@@ -289,7 +290,8 @@ back onto `main`. The history of the repo is linear on `main`, and a branch per 
 merge to undo. When another branch is checked out, commit there instead. The rule is always to
 commit where you already are.
 
-Commit only when asked. `cargo xtask check` must pass before you commit.
+Commit the changes when they are complete. Do not wait for the person to ask. Do not push. Push
+only when the person asks. `cargo xtask check` must pass before you commit.
 
 ## Prose style - Simplified Technical English
 

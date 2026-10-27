@@ -62,6 +62,37 @@ section(
   development. Give the box its own component, use a standard component, or set an inline `style`. A
   wrapper in your own tree, `div({ class: 'box' }, stack(...))`, keeps the rule.
 - A component that you never call defines no element and compiles no styles.
+- **`init({ defaults })` sets the default props of a component for the whole app**, see below.
+
+## Defaults for the whole app - `init({ defaults })`
+
+```js
+import { init } from 'imp'
+import { luInbox } from 'imp/icons'
+
+await init({
+  defaults: {
+    emptyState: { icon: luInbox },
+    button: { size: 'sm' },
+  },
+})
+```
+
+- **The key is the name of a standard component**, the same as its export. The value is a props
+  object of that component. `init` throws on an unknown component name or a value that is not an
+  object.
+- **A prop of the call always wins.** A default fills only a prop that the call leaves out. A prop
+  set to `undefined` counts as left out.
+- **A default reaches every instance, also the instances that imp renders inside another
+  component.** `emptyState: { icon }` also changes the empty view of `list`, `table`, `timeline`,
+  `notifications` and the stub screen of the router.
+- **`icon` and `image` of `emptyState` replace each other.** An `image` in the call drops a default
+  `icon`, and the reverse.
+- imp warns once about an unknown prop in a default, and leaves it out.
+- A DOM node in a default is copied for each instance.
+- **Put the words in translations, not in defaults.** A default `title` is fixed text and does not
+  follow the language. Translate the `imp.` key of the component instead.
+- `init({ defaults })` replaces all earlier defaults. `init({ defaults: {} })` removes them.
 
 ## button
 
@@ -599,6 +630,7 @@ component reads its own key. `imp.state.empty` gives "Nothing here yet", and `im
 gives "No results". imp does not translate a `title` that you pass. To make it follow the language,
 use `computed([lang], () => t('invoices.empty'))`. A result page is this component with an `icon`
 and a `kind`. imp has no `result` component. With no `icon` and no `image`, imp draws its own mark.
+To replace the mark in the whole app, set `init({ defaults: { emptyState: { icon: luInbox } } })`.
 `image` is an inline SVG node, any DOM, or a URL that renders as an `<img>`; it wins over `icon`.
 
 ## tag - from `imp/std/display`
@@ -1074,7 +1106,8 @@ Sorting is client-side. Call `preventDefault()` on the `sort` event to sort on t
 `selection` is `'none'`, `'single'` or `'multiple'`, and `selected` is an array of row keys that the
 table writes back. **There is no pagination.** imp calls `onLoadMore` when the end of the rows comes
 into view, while `hasMore` is true. Append the page to the `rows` state. A narrow container shows
-each row as a card.
+each row as a card. `empty` is what the table shows with no rows, and `noResults` what it shows when
+`filter` hides every row. Each one takes the props of `emptyState`, or a DOM node.
 
 Full manual: `imp skill std/table`.
 
@@ -1097,6 +1130,7 @@ An item is plain data:
 with `href`, and a button when you pass `events.select`. `select` is cancelable, with
 `detail: { id, item }`. `leading` is a function that returns a control in place of the visual of a
 row, and `actions` one that returns the trailing controls. Infinite scroll works as in `table`.
+`empty` is what the list shows with no items: the props of `emptyState`, or a DOM node.
 
 Full manual: `imp skill std/list`.
 
@@ -1117,7 +1151,7 @@ timeline({
 An item is plain data: `{ id, time, title, description, icon, color, href }`. `time` is an ISO
 string, a `Date` or epoch milliseconds. A `'YYYY-MM-DD'` value shows the date only. imp draws the
 items in the order given and does not sort them. The marker shows `icon`, or a dot, in the palette
-colour `color`. The title, `select`, `actions` and infinite scroll work as in `list`.
+colour `color`. The title, `select`, `actions`, `empty` and infinite scroll work as in `list`.
 
 Full manual: `imp skill std/timeline`.
 

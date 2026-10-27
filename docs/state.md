@@ -130,7 +130,8 @@ after every `set`. It is the general-purpose hook. Use it to change DOM you alre
 first. imp then stops the subscription when the component unmounts. A component unmounts at the end
 of the task in which it leaves the document, so a move keeps it mounted. In that short time
 `watch(self, fn)` does not call `fn`. For example, a screen that the router removes does not see the
-route of the next screen:
+route of the next screen. When a moved component comes back into the document, imp calls `fn` once
+with the current value, so a value that was set during the move is not lost:
 
 ```js
 const themeWatcher = component('my-app-theme-watcher', {

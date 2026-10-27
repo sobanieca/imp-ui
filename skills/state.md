@@ -91,7 +91,7 @@ user.set({ ...user.get(), theme: 'light' })
   prop. imp releases those with the DOM.
 - **`watch(self, fn)` skips a value while the host is out of the document.** A removed component
   unmounts at the end of the task, so a screen that the router removes does not see the route of the
-  next screen.
+  next screen. When a moved host comes back in the same task, `fn` gets the current value once.
 - **Bind a prop with the state itself**, never with `state.get()`, as in
   `button('Save', { disabled: busy })`. The lint rule is `imp/no-get-in-binding`. A binding is one
   way, from the state to the DOM. A keystroke in an input does not write back. Call `set` from an

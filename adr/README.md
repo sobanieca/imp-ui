@@ -62,6 +62,7 @@ These are the conventions:
 | ADR                                                                                       | Decision                                                                            |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [standard-component-library](standard-component-library.md)                               | Standard components: `imp-` prefixed, lazily defined, token-driven, closed props    |
+| [app-wide-component-defaults](app-wide-component-defaults.md)                             | `init({ defaults })`: one props object per standard component; the call wins        |
 | [short-component-catalog](short-component-catalog.md)                                     | One component per job; a prop covers a variant; paging is an infinite scroll        |
 | [accessible-by-default-stdlib](accessible-by-default-stdlib.md)                           | One accessibility contract per component; lint, an e2e matcher and a contrast check |
 | [joined-control-seam](joined-control-seam.md)                                             | Joined controls square corners through inherited custom properties, not a box       |

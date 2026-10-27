@@ -137,6 +137,58 @@ that you assemble from these components clears the common accessibility bar, and
 it by hand. See **[Accessibility](accessibility.md)** for the full contract, and for the few things
 that stay with your app, such as a name for an icon-only button.
 
+## Set the defaults of a component once
+
+`init` takes a `defaults` option. It sets the default props of a standard component for the whole
+app. The key is the name of the component, and the value is a props object of that component:
+
+```js
+import { init } from 'imp'
+import { luInbox } from 'imp/icons'
+
+await init({
+  defaults: {
+    emptyState: { icon: luInbox },
+    button: { size: 'sm' },
+  },
+})
+```
+
+**A prop that you pass to a call always wins.** A default fills only a prop that the call leaves
+out. So `button({ size: 'lg' }, 'Save')` is still large.
+
+**A default reaches every instance, also the instances that you do not create yourself.** A
+`list`, a `table`, a `timeline` and the bell of `notifications` show an `emptyState` when they have
+nothing to show. With no `icon` and no `image`, an `emptyState` shows the imp mark. The default
+`icon` above replaces that mark everywhere in the app, in one line.
+
+Some rules keep the defaults predictable:
+
+- `init` stops with an error when a key is not the name of a standard component.
+- imp logs a prop that the component does not know, once, and ignores it.
+- The `icon` and the `image` of `emptyState` replace each other. An `image` that you pass to one
+  call hides the default `icon`.
+- Keep the words in your translations. A default `title` is fixed text, and it does not change with
+  the language. Translate the `imp.` key of the component instead. See
+  **[Translations](i18n.md)**.
+
+To change the empty view of one instance only, pass `empty` to a `list`, a `table` or a `timeline`.
+A `table` also takes `noResults`, for a filter that hides every row. Each one takes the props of
+`emptyState`, or a node that you build, for example with an action:
+
+```js
+list({ label: 'Your teams', items: teams, empty: { icon: luUsers, title: 'No teams yet' } })
+
+table({
+  label: 'Invoices',
+  columns,
+  rows,
+  filter: query,
+  empty: emptyState({ title: 'No invoices' }, button('New invoice')),
+  noResults: { icon: luSearchX, title: 'No invoice matches' },
+})
+```
+
 ## Start an app with the frame
 
 **`shell` is the recommended way to start an app.** It gives you a brand block, a top-level navbar,
@@ -839,7 +891,7 @@ first for a feed. Put the oldest event first for a history that a person reads f
 - **The title is the control of an event.** With an `href`, it is a link in the space of your app.
   Without an `href`, it is a button when you pass `events.select`, and plain text when you do not.
 - **A long history loads in pages.** Pass `hasMore` and `onLoadMore`, and append the next events to
-  the `items` state. An empty timeline shows an empty state.
+  the `items` state. An empty timeline shows an empty state. Pass `empty` to change it.
 
 ## Put things on a map, with no map server
 

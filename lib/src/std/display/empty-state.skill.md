@@ -34,7 +34,9 @@ Rules an agent gets wrong:
 - **A `title` that you pass is plain text.** imp does not translate it. To follow the language, pass
   `computed([lang], () => t('invoices.empty'))`.
 - **With no `icon` and no `image`, imp draws its own mark.** That is the imp logo, at 6rem, in the
-  ink of `color-text`. Pass an `icon` or an `image` to replace it.
+  ink of `color-text`. Pass an `icon` or an `image` to replace it. To replace it in the whole app,
+  including the empty views of `list`, `table`, `timeline` and `notifications`, set
+  `init({ defaults: { emptyState: { icon: luInbox } } })`, see imp skill std.
 - **`icon` is an icon from `imp/icons`, not an `icon()` component and not a name.** Write
   `icon: luInbox`. imp draws it at 3rem, and hides it from a screen reader, because the title says
   the same.

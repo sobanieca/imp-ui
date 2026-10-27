@@ -27,6 +27,7 @@ The call shape is `list(props)`. It takes **no children**. imp warns about a chi
 | `actions`    | `(item) => content`                               | -       | The trailing controls of each row             |
 | `hasMore`    | boolean, or a state - **live**                    | -       | More items exist. Necessary with `onLoadMore` |
 | `onLoadMore` | `async () => void`                                | -       | Loads the next items. Append them to `items`  |
+| `empty`      | props of `emptyState`, or a DOM node              | -       | What the list shows with no items             |
 | `events`     | `{ select }`                                      | -       | Fires on the host - see below                 |
 
 Each item has these keys:
@@ -66,7 +67,10 @@ Rules an agent gets wrong:
   shows a retry button, and imp logs the error.
 - **Give every control in `actions` a name.** An icon-only `button` needs its `label`. Include the
   title of the item, such as `Edit Ada Lovelace`.
-- An empty list shows `emptyState`. A narrow container moves the actions under the text. The host
+- **An empty list shows `emptyState`.** Pass `empty: { icon: luUsers, title: 'No people yet' }` to
+  change it. imp sets the `variant`. To add an action, pass a node:
+  `empty: emptyState({ title: 'No people yet' }, inviteButton)`.
+- A narrow container moves the actions under the text. The host
   fills the width of its container, also in a flex row.
 - imp warns about a missing `label`, an item with no `id`, a `tag` with no `text`, and an `actions`
   that is not a function.

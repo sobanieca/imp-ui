@@ -23,6 +23,7 @@ The call shape is `timeline(props)`. It takes **no children**. imp warns about a
 | `actions`    | `(item) => content`                               | -       | The trailing controls of each event            |
 | `hasMore`    | boolean, or a state - **live**                    | -       | More events exist. Necessary with `onLoadMore` |
 | `onLoadMore` | `async () => void`                                | -       | Loads the next events. Append them to `items`  |
+| `empty`      | props of `emptyState`, or a DOM node              | -       | What the timeline shows with no items          |
 | `events`     | `{ select }`                                      | -       | Fires on the host with `detail: { id, item }`  |
 
 Each item has these keys:
@@ -52,7 +53,9 @@ Rules an agent gets wrong:
   a `<button>` when you pass `events.select`, and plain text when you do not. `select` is
   cancelable, so `event.preventDefault()` stops the navigation.
 - **There is no pagination.** Pass `hasMore` and `onLoadMore`, and append to the `items` state.
-- An empty timeline shows `emptyState`. The time follows a change of language at once.
+- **An empty timeline shows `emptyState`.** Pass `empty: { icon: luActivity, title: 'No activity yet' }`
+  to change it, or a DOM node such as `emptyState(...)` with actions.
+- The time follows a change of language at once.
 - imp warns about a missing `label`, an item with no `id`, a `time` that is not a date, and an
   unknown `color`.
 
