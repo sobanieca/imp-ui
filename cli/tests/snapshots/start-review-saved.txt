@@ -12,7 +12,7 @@ text: hello
 html: <h1>hello</h1>
 
 log:
-  [INFO] imp start serving index.html from <tmp>
+  <timestamp> [INFO] imp start serving index.html from <tmp>
 
 comment:
 the heading should be quieter

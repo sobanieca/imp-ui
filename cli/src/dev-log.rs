@@ -1,3 +1,4 @@
+use crate::time::{iso_string, now_millis};
 use std::fs::{File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -46,7 +47,7 @@ impl DevLog {
         if state.closed {
             return;
         }
-        let entry = line.replace('\n', " ");
+        let entry = format!("{} {}", iso_string(now_millis()), line.replace('\n', " "));
         state.recent.push_back(entry.clone());
         if state.recent.len() > state.max_entries {
             state.recent.pop_front();

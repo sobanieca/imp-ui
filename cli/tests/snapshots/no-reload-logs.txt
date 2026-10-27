@@ -1,5 +1,5 @@
 --- default ---
-[DEBUG] change detected -> reload
+<timestamp> [DEBUG] change detected -> reload
 
 --- --no-reload ---
-[DEBUG] change detected -> no reload
+<timestamp> [DEBUG] change detected -> no reload

@@ -354,6 +354,15 @@ without a limit. To raise or lower the cap, set **`maxLogEntries`** in `imp.json
 }
 ```
 
+Each entry in the log starts with the time at which imp wrote it, in UTC, to the millisecond. The
+terminal shows the same lines without the time:
+
+```
+2026-10-27T13:44:23.300Z [INFO] imp start serving index.html
+2026-10-27T13:44:24.105Z [HTTP] GET /api/todos -> 200 12ms
+2026-10-27T13:44:25.871Z [BROWSER:error] Uncaught TypeError: x is not a function
+```
+
 The log is a plain text file, `.imp/dev.log`, under the served project. `.imp/` is the working
 directory of imp for that project, and git must ignore it. A fresh `imp init` project already
 ignores it.
@@ -1881,12 +1890,13 @@ imp logs [-n <count>] [-f]
 `imp logs` prints the log of the current dev server session, one entry per line. It is everything
 that `imp start` or `imp preview` printed since it started: the browser console, the errors, each
 request with its status, and the status lines of imp. See
-**[Console and error telemetry](#imp-start)** for what each prefix means. The output is the log as
-it is, with no colour and no header, so the command composes with the tools that you already use:
+**[Console and error telemetry](#imp-start)** for what each prefix means. Each entry starts with
+the UTC time at which imp wrote it, such as `2026-10-27T13:44:23.300Z`. The output is the log as it
+is, with no colour and no header, so the command composes with the tools that you already use:
 
 ```sh
 imp logs | grep '\[BROWSER:error\]'
-imp logs | grep '\[net\] POST' | tail -20
+imp logs | grep '\[HTTP\] POST' | tail -20
 imp logs -n 50
 imp logs -f
 ```

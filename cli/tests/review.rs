@@ -170,8 +170,8 @@ fn the_review_widget_picks_an_element_in_the_preview_page() {
         other => other.to_string(),
     };
     let files = list_files(&dir.join(".imp/reviews"));
-    let written = read(&dir.join(".imp/reviews").join(&files[0]));
-    let written = Regex::new(r"(?m)^ *\[HTTP\] .*\n")
+    let written = normalize(&read(&dir.join(".imp/reviews").join(&files[0])));
+    let written = Regex::new(r"(?m)^ *<timestamp> \[HTTP\] .*\n")
         .unwrap()
         .replace_all(&written, "");
     let written = Regex::new(r"(?m)^time: .*$")

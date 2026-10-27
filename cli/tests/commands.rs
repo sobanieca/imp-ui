@@ -536,10 +536,10 @@ fn logs_prints_the_session() {
     write(&dir.join("imp.json"), "{}\n");
     std::fs::create_dir_all(dir.join("src")).unwrap();
     let entries = [
-        "[INFO] imp start serving index.html",
-        "[browser:log] counter mounted",
-        "[net] GET /api/todos -> 200 12ms",
-        "[browser:error] Uncaught TypeError: x is not a function",
+        "2026-10-27T13:44:23.300Z [INFO] imp start serving index.html",
+        "2026-10-27T13:44:24.012Z [BROWSER:log] counter mounted",
+        "2026-10-27T13:44:24.105Z [HTTP] GET /api/todos -> 200 12ms",
+        "2026-10-27T13:44:25.871Z [BROWSER:error] Uncaught TypeError: x is not a function",
     ];
     write(
         &dir.join(".imp/dev.log"),
@@ -556,6 +556,27 @@ fn logs_prints_the_session() {
             ("imp logs -n 10  (cwd: <tmp>)", &more),
         ]),
     );
+}
+
+fn is_utc_timestamp(text: &str) -> bool {
+    let pattern = "dddd-dd-ddTdd:dd:dd.dddZ";
+    text.len() == pattern.len()
+        && text.chars().zip(pattern.chars()).all(|(char, expected)| {
+            if expected == 'd' {
+                char.is_ascii_digit()
+            } else {
+                char == expected
+            }
+        })
+}
+
+fn without_timestamps(text: &str) -> String {
+    text.lines()
+        .map(|line| match line.split_once(' ') {
+            Some((stamp, entry)) if is_utc_timestamp(stamp) => format!("{entry}\n"),
+            _ => format!("{line} (no timestamp)\n"),
+        })
+        .collect()
 }
 
 #[test]
@@ -607,7 +628,7 @@ fn logs_follows_the_session() {
     let mut expected = vec!["first".to_string(), "second".to_string()];
     expected.extend(later);
     check(
-        output == format!("{}\n", expected.join("\n")),
+        without_timestamps(&output) == format!("{}\n", expected.join("\n")),
         format!("imp logs -f printed every entry once and in order:\n{output}"),
     );
     check(
@@ -619,7 +640,7 @@ fn logs_follows_the_session() {
         format!("imp logs -f exits 0 on Ctrl-C, got {status:?}"),
     );
     check(
-        final_log == "entry 5\nentry 6\nentry 7\nentry 8\nentry 9\n",
+        without_timestamps(&final_log) == "entry 5\nentry 6\nentry 7\nentry 8\nentry 9\n",
         format!("the log was rewritten in place while it was followed:\n{final_log}"),
     );
 }

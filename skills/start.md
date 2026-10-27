@@ -55,12 +55,14 @@ prints `[INFO] mocks - N file(s) from mocks/ answering requests`. See [mocks](mo
 
 imp keeps everything that it prints as a log of the session, one entry per line. `imp logs` prints
 it. The log holds the browser console, the errors, the network lines and imp's own status lines.
+Each entry starts with the UTC time at which imp wrote it:
+`2026-10-27T13:44:23.300Z [INFO] imp start serving index.html`. The terminal shows no time.
 **This is the main debugging surface for an agent.** Drive the app, then search the log. You do not
 have to watch a terminal that you cannot see:
 
 ```
 imp logs | grep '\[BROWSER:error\]'
-imp logs | grep '\[net\] POST' | tail -20
+imp logs | grep '\[HTTP\] POST' | tail -20
 imp logs -n 50
 imp logs -f
 ```

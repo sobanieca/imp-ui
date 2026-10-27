@@ -123,6 +123,8 @@ pub fn copy_directory(source: &Path, destination: &Path) {
 static ANSI: LazyLock<Regex> = LazyLock::new(|| Regex::new("\x1b\\[[0-9;]*[a-zA-Z]").unwrap());
 static MILLIS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\b\d+ms\b").unwrap());
 static TIME_ATTRIBUTE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"time="[\d.]+""#).unwrap());
+static LOG_TIMESTAMP: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?m)^( *)\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z ").unwrap());
 static DURATION: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#""durationMs": \d+"#).unwrap());
 static STACK: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?m)^( *)at .*:\d+:\d+\)?\n(?:[ ]*at .*:\d+:\d+\)?\n?)*").unwrap()
@@ -135,6 +137,7 @@ pub fn normalize(text: &str) -> String {
     let text = MILLIS.replace_all(&text, "*ms");
     let text = TIME_ATTRIBUTE.replace_all(&text, "time=\"*\"");
     let text = DURATION.replace_all(&text, "\"durationMs\": *");
+    let text = LOG_TIMESTAMP.replace_all(&text, "${1}<timestamp> ");
     STACK
         .replace_all(&text, "${1}at <stack frames>\n")
         .into_owned()

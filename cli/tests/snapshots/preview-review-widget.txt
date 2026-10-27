@@ -55,7 +55,7 @@ state:
   imp.routeLabels = {}
 
 log:
-  [INFO] imp preview serving 2 previews from <tmp>
+  <timestamp> [INFO] imp preview serving 2 previews from <tmp>
 
 comment:
 The value is cut off below 320px.
