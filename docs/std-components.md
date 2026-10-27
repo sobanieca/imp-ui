@@ -450,7 +450,9 @@ build carries the drawing data for the icons that you imported, and nothing else
 `import * as icons from 'imp/icons'`. The `imp/icons-by-name` lint rule catches that line for you.
 
 `color` names a theme token, such as `'primary'` or `'danger'`, so an icon re-skins with the theme.
-The default takes the color of the text around it. Every icon prop in the library accepts any DOM,
+The default takes the color of the text around it. An icon also sits on the line of that text, so
+`link({ href: '/next' }, 'Next ', icon(luArrowRight, { size: 'sm' }))` keeps the arrow beside the
+word. Every icon prop in the library accepts any DOM,
 so your own `<svg>` goes wherever a Lucide export goes. `imp build` writes the Lucide license notice
 into `LICENSES.txt`. Deploy that file with the rest of the build.
 

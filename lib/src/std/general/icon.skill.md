@@ -39,6 +39,9 @@ Rules an agent gets wrong:
   drawing is never squashed. Do not set `inline-size` yourself.
 - **The stroke width is the theme token `icon-stroke-width`**, `2` by default, in units of the 24
   grid. A theme sets it once for every icon. There is no prop for it.
+- **An icon flows in text.** Put it in a `link`, a `text` or a `heading` next to the words, as in
+  `link({ href }, 'Next ', icon(luArrowRight, { size: 'sm' }))`. It sits on the line, centred on the
+  text. In a `flex` or a grid it is an item like any other.
 - **Every icon prop in the library accepts any DOM node.** So an icon that Lucide does not draw is
   your own inline `<svg>`. `icon()` is a convenience, not a requirement.
 
