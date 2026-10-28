@@ -1,7 +1,7 @@
 mod support;
 
 use imp::review::read_widget_mark;
-use imp::start::client_script;
+use imp::start::{Widget, client_script};
 use regex::Regex;
 use serde_json::{Value, json};
 use std::time::Duration;
@@ -13,7 +13,12 @@ fn banner_of(server: &Server) -> String {
 }
 
 fn without_client(body: &str, mocks: bool) -> String {
-    let script = client_script(mocks, false, &read_widget_mark(), true);
+    let script = client_script(
+        mocks,
+        false,
+        &read_widget_mark(),
+        Widget::ReviewAndThemeEditor,
+    );
     normalize(&body.replace(&script, "\n[imp client script]\n"))
 }
 
@@ -274,7 +279,12 @@ fn a_project_worker_gets_dev_mode_from_start_dev_mode() {
 
     let answer = get(server.port, "/");
     let html = answer.text();
-    let own_client = client_script(true, true, &read_widget_mark(), true);
+    let own_client = client_script(
+        true,
+        true,
+        &read_widget_mark(),
+        Widget::ReviewAndThemeEditor,
+    );
     let report = [
         format!(
             "registers /@imp/sw.js: {}",

@@ -1,7 +1,7 @@
 import { appMap, component, init, mount } from 'imp'
 import { div, el, h2, pre, span } from 'imp/html'
 import { applyTheme, colorSchemeOf } from 'imp/theme'
-import { defaultMessages, lang, setLang } from 'imp/i18n'
+import { defaultMessages, lang } from 'imp/i18n'
 import { area, navigate, router, url, useRoute } from 'imp/router'
 import { button, heading, icon, menuButton, text } from 'imp/std'
 import {
@@ -516,7 +516,7 @@ const applyStageDirection = () => {
 }
 
 const applyLanguage = async (code) => {
-  await setLang(code ?? lang.get())
+  await lang.set(code ?? lang.get())
   applyStageDirection()
 }
 
@@ -1315,7 +1315,7 @@ const followHostDocument = () => {
   const own = document.documentElement
   const follow = async () => {
     const code = host.getAttribute('lang')
-    if (languages.includes(code) && code !== lang.get()) await setLang(code)
+    if (languages.includes(code) && code !== lang.get()) await lang.set(code)
     own.setAttribute('style', host.getAttribute('style') ?? '')
     own.dir = host.dir || 'ltr'
   }

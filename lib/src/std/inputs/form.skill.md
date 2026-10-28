@@ -99,7 +99,8 @@ const teamPeople = component('myapp-team-people', {
 ```
 
 - **Enter in any single-line field submits the form**, because imp implements the implicit submit
-  itself. Enter in a multi-line `textField` does not submit.
+  itself. Enter in a multi-line `textField` does not submit. An Enter that a control handles and
+  prevents, such as the link address of `richTextEditor`, does not submit either.
 - On a submit, imp validates every field again. If one field fails, `onSubmit` does not run, each
   bad field starts to show its message, and the focus moves to the first bad field.
 - **When a field has an async check through `validateAsync`, the submit waits for it.**

@@ -57,7 +57,8 @@ is what you describe". That is the same answer for a developer who reviews a pre
 customer who reports a bug.
 
 - **The widget rides the injected client script.** So `imp start` and `imp preview` both have it,
-  with no work, and `imp build` cannot emit it. A preview page is the same dev server underneath,
+  with no work, and `imp build` cannot emit it. The app of `imp test --e2e` runs without it, because
+  nobody reviews a headless run, and a spec must see only the page of the app. A preview page is the same dev server underneath,
   see `component-preview.md`. So a component is reviewable in isolation, with no extra wiring. There
   is no config key. The widget is present on every development page, or on none.
 - **The widget is the imp mark, one small round button, and a person can drag it anywhere.** It
@@ -67,6 +68,15 @@ customer who reports a bug.
   **Add review**, **Console logs** and **Network logs**, and on a page of `imp start` also **Theme
   editor**. The buttons scale in from the mark, and a person who asked for reduced motion gets them
   at once.
+- **The widget follows the topmost modal dialog.** A modal dialog sits in the top layer, above any
+  z-index, and makes the rest of the page inert, so a widget left in `<body>` is hidden and unclickable
+  under the navigation drawer of the shell. The widget wraps `HTMLDialogElement.prototype.showModal`
+  and moves its host into each modal as it opens, and back to the next open modal or to `<body>`
+  when that one closes or leaves the DOM. The wrapper sees dialogs inside shadow roots, which a
+  `toggle` listener or a `MutationObserver` on the document does not, and it costs nothing until a
+  modal opens. The host is a custom element, so its `disconnectedCallback` re-homes it when the app
+  removes its parent. imp's own overlays create no containing block once shown, so a fixed widget
+  inside them keeps its place on the screen.
 - **Add review is the one action that writes anything.** A press enters pick mode. imp outlines the
   element under the pointer. A click chooses that element. The comment field then opens, and the
   chosen element stays outlined. `Escape` cancels. `Enter` takes the highlighted element. `Ctrl` or

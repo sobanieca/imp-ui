@@ -1,9 +1,9 @@
 # imp-ui - Theming
 
-Every imp app is themable by default. A theme is a plain JavaScript file that you write. Apply it at
-your entry point, and imp skins your app. A change to another theme re-skins the whole app
-immediately. There is no CSS build step. Nothing renders again. There is no framework store to
-configure. Light and dark are two theme files.
+Every imp app is themable by default. A theme is a plain JavaScript file that you write. List your
+themes in `init`, and imp skins your app. A change to another theme re-skins the whole app
+immediately. There is no CSS build step. Nothing renders again. Light and dark are two theme files,
+and imp follows the device between them when the person picks "System".
 
 ## A theme is a file
 
@@ -12,9 +12,10 @@ amount of optional metadata. A token is a named value, such as a color, a radius
 a typography value:
 
 ```js
-// dark.js
+// src/themes/brand-dark.js
 export default {
-  name: 'dark',
+  name: 'brand-dark',
+  label: 'Dark',
   base: 'imp-dark',
   tokens: {
     'color-primary': '#7c9cff',
@@ -30,7 +31,8 @@ export default {
 - **`base`** names a built-in theme to start from. imp takes every token from it, then writes your
   tokens over it. Without a `base`, a theme must give a value to every token, see
   [Token names](#token-names).
-- **`name`** labels the theme. It helps in a theme switcher UI, and when you store a choice.
+- **`name`** identifies the theme. imp stores it when the person picks the theme.
+- **`label`** is the wording of the theme in the theme picker. It is optional.
 - **The `color-scheme` token is `light` or `dark`.** imp sets the `color-scheme` of the page to that
   value. A native form control, a scrollbar, and CSS that reads `prefers-color-scheme` then follow
   your palette. A theme with a `base` takes the value from the built-in theme. A theme that sets a
@@ -38,59 +40,116 @@ export default {
   missing, or has another value, imp warns and leaves the color scheme unset. imp warns one time for
   each theme.
 
-An app can ship as many theme files as it wants. There is no registry to register them in. A theme
-is a module that you import.
+An app can ship as many theme files as it wants. A theme is a module that you import, and the list
+in `init` is the one place where the app offers it.
 
-## How to apply and change a theme - `applyTheme`
+## How to list the themes of your app - `init`
 
-At your entry point, the file that calls `mount()`, import a theme and apply it:
+At your entry point, the file that calls `mount()`, import your themes and list them in `init`:
 
 ```js
-import { mount } from 'imp'
-import { applyTheme } from 'imp/theme'
-import light from './light.js'
-import dark from './dark.js'
+import { init, mount } from 'imp'
+import brandDark from './themes/brand-dark.js'
+import brandLight from './themes/brand-light.js'
 
-applyTheme(light)
+await init({
+  themes: ['system', brandLight, brandDark],
+  theme: 'system',
+  persist: true,
+})
 mount('#app', app())
-
-// later - a settings toggle, a theme switcher:
-applyTheme(dark)
 ```
 
-`applyTheme` writes the tokens of the theme as `--imp-*` custom properties on the document root.
+- **`themes`** is the list of choices, in the order that the picker shows them. A choice is a theme
+  object, the name of a built-in theme, or `'system'`.
+- **`theme`** is the theme of a first visit. Give its name or the theme object. Without it, the app
+  starts in the first choice.
+- **`persist: true`** remembers the choice of the person on this device. The next load starts in it,
+  before the first paint. imp stores only a choice that the person made, so a first visit keeps
+  following `theme`.
+
+**"System" follows the device.** imp applies the first theme in the list whose `color-scheme` is
+`light`, or the first whose `color-scheme` is `dark`, to match the mode of the device. When the
+mode of the device changes, imp applies the other one. So a light theme and a dark theme of your own
+are all that "System" needs. `init` reports an error when the list has "System" but not both kinds.
+
+An app with one theme passes only that theme: `await init({ theme })`. An app that passes no
+`themes` offers the built-in System, Light and Dark choices.
+
+imp writes the tokens of the theme as `--imp-*` custom properties on the document root.
 From there they inherit into everything: your components, their shadow DOM, and any content that imp
 adds to the page. It also sets the `color-scheme` of the page from the token of that name.
+
+**The page before the app starts.** The browser paints `index.html` before any module of your app
+runs. That takes a moment on every load, longer on a slow network. With no `color-scheme` on the
+page, the browser paints it white. So a dark app, or a light app on a device in dark mode, flashes
+white before the theme arrives. One tag in the `<head>` of `index.html` prevents it:
+
+```html
+<meta name="color-scheme" content="light dark" />
+```
+
+The tag tells the browser that the page supports both modes. The browser then paints its default
+background, text and scrollbars in the mode of the device, before it loads any CSS or JavaScript.
+When `init` applies your theme, its `color-scheme` replaces the default, and your tokens paint the
+app.
+`imp init` writes the tag into a new project. Add it to an `index.html` of your own.
+
+The tag uses the default colors of the browser, not the colors of your theme. Painting the exact
+background before the app starts needs an inline `<style>` or `<script>`. A built app runs under a
+strict Content Security Policy that blocks inline code, and `imp build` warns about it. So imp does
+not recommend it.
 
 **A change of theme re-skins the app immediately.** A token is a CSS custom property. A new theme
 rewrites the variables in one pass. Every rule that references a token re-skins at the same time.
 Nothing renders again. Each theme must define the full set of tokens, so a new theme fully replaces
 the last one. Start from a built-in theme, described below, and every token is already covered.
 
-## How to read the active theme - the `theme` state
+## How to change the theme - the `theme` state
 
-`applyTheme` is the only function that changes the active theme, and it keeps a reactive `theme`
-state in step. Import that state to read the current theme, or to react to it:
+`theme` is an app-wide state. It holds the name of the choice, such as `'system'` or `'brand-dark'`.
+Every part of the app reads it, with no setup:
+
+```js
+import { theme } from 'imp/theme'
+
+theme.get() // 'system'
+theme.set('brand-dark') // applies the theme, and stores the choice with persist
+```
+
+A change of `theme` applies the theme on every page, also on a page with no picker. The theme picker
+of imp, `themeSelect()`, shows the choices of `init` and sets this state. So two pickers, one in the
+bar and one on a settings page, always agree.
+
+**A choice that follows the account.** To keep the theme on the account of the person, set the
+state from the account after sign-in, and send each change back:
+
+```js
+theme.set(user.theme)
+theme.watch(self, (choice) => api.put('/me', { theme: choice }))
+```
+
+**The theme in force.** `appliedTheme` is a read-only state that holds the theme object that is in
+force. For the "System" choice, it is the light or the dark theme of the list. Most of your app
+never needs it, because the re-skin happens through the CSS variables. Use it for the rare component
+that must branch on the active theme. To branch on light against dark, call `colorSchemeOf(tokens)`
+from `imp/theme`. It returns the `color-scheme` token, `'light'` or `'dark'`. So
+`colorSchemeOf(appliedTheme.get().tokens)` is the scheme of the active theme. It returns
+`undefined` when the token is missing or has another value.
 
 ```js
 import { component } from 'imp'
 import { div } from 'imp/html'
-import { theme } from 'imp/theme'
+import { appliedTheme } from 'imp/theme'
 
 const badge = component('my-app-theme-badge', {
-  setup: () => div(theme.text((t) => t.name)),
+  setup: () => div(appliedTheme.text((applied) => applied.name)),
 })
 ```
 
-`theme.get()` returns the active theme object anywhere. Inside a component, call
-`theme.watch(self, ...)`, or bind the state with `theme.text` or `theme.view`, so it updates when
-the theme changes. Most of your app never needs this, because the re-skin happens through the CSS
-variables. Use it only for the rare component that must branch on the active theme, and to build a
-theme switcher.
-
-To branch on light against dark, call `colorSchemeOf(tokens)` from `imp/theme`. It returns the
-`color-scheme` token, `'light'` or `'dark'`. So `colorSchemeOf(theme.get().tokens)` is the scheme of
-the active theme. It returns `undefined` when the token is missing or has another value.
+**A theme outside the list.** `applyTheme(themeOrName)` applies one theme object or built-in name,
+and changes no choice. It is the low-level call for a preview of a theme. The setting of the person
+goes through `theme.set`.
 
 ## Built-in starter themes
 
@@ -138,9 +197,9 @@ applyTheme({
 })
 ```
 
-`base` accepts only the four built-in names. `theme.get()` returns the resolved theme, with every
-token filled in and no `base` key. `applyTheme` stores a copy, so the object that you pass stays
-yours and stays editable. The applied theme that `theme.get()` returns is frozen. To derive one
+`base` accepts only the four built-in names. `appliedTheme.get()` returns the resolved theme, with
+every token filled in and no `base` key. imp stores a copy, so the object that you pass stays yours
+and stays editable. The applied theme that `appliedTheme.get()` returns is frozen. To derive one
 theme from another theme of your own, spread its tokens into a new object.
 
 ## Fonts
@@ -205,15 +264,17 @@ an HTML file that links the font. See **[`imp preview`](cli.md#imp-preview)**.
 
 ### How to follow the contrast preference of the reader
 
-imp does not select a theme for you. There is no built-in mode axis, for contrast or for light and
-dark. To follow the system setting of the reader, watch the media query and apply the matching theme
-yourself:
+The "System" choice follows light and dark only. imp has no contrast axis. To follow the contrast
+setting of the reader, list a high-contrast theme, watch the media query, and set the matching
+choice yourself:
 
 ```js
+await init({ themes: ['imp-light', 'imp-high-contrast-light'] })
+
 const wantsMoreContrast = matchMedia('(prefers-contrast: more)')
 
 const pickTheme = () =>
-  applyTheme(wantsMoreContrast.matches ? 'imp-high-contrast-light' : 'imp-light')
+  theme.set(wantsMoreContrast.matches ? 'imp-high-contrast-light' : 'imp-light')
 
 pickTheme()
 wantsMoreContrast.addEventListener('change', pickTheme)
@@ -224,30 +285,21 @@ replace your colors with the system palette completely. See [Forced colors](#for
 
 ## How to remember a choice
 
-imp does **not** store the selected theme. A theme is a module that your app imports, so imp cannot
-turn a stored name back into the correct module. Storage stays your decision, and it stays flexible.
-To remember a choice, save `theme.get().name`, for example to `localStorage`, when the person
-selects a theme. Apply the matching module again on load. Apply it before you call `mount()`, so the
-page does not flash the wrong theme.
+Write `persist: true` in `init`. imp stores the choice of the person in the browser, and the next
+load starts in it before the first paint. A change in another tab of the app arrives in this tab
+too. Without `persist`, the app starts in `theme` on every load. `persist: { theme: true }` stores
+the theme and not the language.
+
+Put the picker where it fits the app: in the bar, in the account menu, or on a settings page. The
+theme is correct on every page in all three cases, because imp applies it, not the picker.
 
 ```js
-import { mount } from 'imp'
-import { applyTheme } from 'imp/theme'
-import light from './light.js'
-import dark from './dark.js'
+import { component } from 'imp'
+import { themeSelect } from 'imp/std/shell'
 
-const themes = { light, dark }
-const saved = localStorage.getItem('theme')
-applyTheme(themes[saved] ?? light)
-mount('#app', app())
-```
-
-When you use only the built-in themes, there is no map to keep. The stored name goes straight back
-into `applyTheme`:
-
-```js
-const saved = localStorage.getItem('theme')
-applyTheme(saved === 'imp-dark' ? 'imp-dark' : 'imp-light')
+export const appearance = component('app-appearance', {
+  setup: () => themeSelect(),
+})
 ```
 
 ## How to check a theme without your app
@@ -272,7 +324,9 @@ You do not have to write every token by hand to get a theme. imp ships a **theme
 behind the imp mark in the corner of your app. Press the mark, then **Theme editor**. Both open the
 same editor. The first shows the standard components under your theme. The second shows your own
 screens. It edits the theme that is applied: in `imp preview` that is the theme in the sidebar, and
-in your app it is the theme that `init` applied. To write a dark theme, select a dark theme first.
+in your app it is the theme that `init` applied. In your app, a row above the editor lists the
+themes of `init`. Press one to apply it and edit it. That row changes the theme on screen only. It
+does not change the choice of the person.
 In `imp preview` the editor has two tabs. **Knobs** asks for nine things. **Tokens** holds the whole
 theme as JSON. In your app the widget shows **Tokens** alone, because that is where you tune one
 token against your real screens:
@@ -326,19 +380,22 @@ of `color-primary` in the JSON moves the **Primary** knob. A knob rewrites the t
 drives, and it leaves every other token as you set it. Set the accent with the knob, then tune
 `color-on-primary` by hand. The hand edit holds until you move the knob again.
 
-The editor changes nothing about what a theme _is_. Press **copy**, or **download theme.js**, and
-you get an ordinary module. It is the same flat token map that this page describes, as one theme
-object, with the name of the theme that you edited. Save it into your app, and pass it to `init`:
+The editor changes nothing about what a theme _is_. Press **copy**, or **download**, and you get an
+ordinary module, named after the theme, such as `brand-dark.js`. It is the same flat token map that
+this page describes, as one theme object, with the name of the theme that you edited and the label
+that `init` gives it. Save it over the file of that theme, such as `src/themes/brand-dark.js`. A
+theme that `init` already lists needs no other change. A new theme goes into the list:
 
 ```js
 import { init } from 'imp'
-import theme from './theme.js'
+import brandDark from './themes/brand-dark.js'
+import brandLight from './themes/brand-light.js'
 
-await init({ theme })
+await init({ themes: ['system', brandLight, brandDark] })
 ```
 
-For a light theme and a dark theme, edit each one in turn, and save two files. A theme switcher then
-passes the second one to `applyTheme`. From that point the generated file is yours to edit by hand.
+For a light theme and a dark theme, edit each one in turn, and save two files. From that point the
+generated file is yours to edit by hand.
 A web font that you name in the editor shows on the page only when it is loaded there. See
 **[Fonts](#fonts)**. The file is a starting point, not a format that the editor owns.
 

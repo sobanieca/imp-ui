@@ -137,19 +137,19 @@ an AI agent as a first step.
 
 What you get is deliberately small. It is a working app, not a template to study:
 
-| File                 | What it is                                                              |
-| -------------------- | ----------------------------------------------------------------------- |
-| `imp.json`           | your one config file: the imp version, and the path of the map          |
-| `index.html`         | the page imp serves, with the mount point, the entry and the font       |
-| `src/main.js`        | applies the theme of the app and mounts the frame                       |
-| `src/theme.js`       | the theme of the app: the built-in light theme with the font of the app |
-| `src/app-map.js`     | the application map - the features of the app, one node per line        |
-| `src/app.js`         | the frame, the router, and a click counter bound to the root of the map |
-| `test/app.test.js`   | a unit test that mounts the frame and clicks the button of the counter  |
-| `test/app.spec.js`   | an end-to-end spec that drives the same app in a real browser           |
-| `public/favicon.svg` | a placeholder mark, published at the site root                          |
-| `public/fonts/`      | one font family, its `@font-face` stylesheet, and its license           |
-| `.gitignore`         | ignores `dist/`, `.imp/`, every `.env` file, and the usual OS noise     |
+| File                 | What it is                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `imp.json`           | your one config file: the imp version, and the path of the map                             |
+| `index.html`         | the page imp serves, with the mount point, the entry, the font and the `color-scheme` meta |
+| `src/main.js`        | applies the theme of the app and mounts the frame                                          |
+| `src/theme.js`       | the theme of the app: the built-in light theme with the font of the app                    |
+| `src/app-map.js`     | the application map - the features of the app, one node per line                           |
+| `src/app.js`         | the frame, the router, and a click counter bound to the root of the map                    |
+| `test/app.test.js`   | a unit test that mounts the frame and clicks the button of the counter                     |
+| `test/app.spec.js`   | an end-to-end spec that drives the same app in a real browser                              |
+| `public/favicon.svg` | a placeholder mark, published at the site root                                             |
+| `public/fonts/`      | one font family, its `@font-face` stylesheet, and its license                              |
+| `.gitignore`         | ignores `dist/`, `.imp/`, every `.env` file, and the usual OS noise                        |
 
 There is no `README`, no `src/components/` tree and no second example. The counter shows the shape
 of an imp app: a component, a namespaced state, and a live text node bound to that state. The map
@@ -483,6 +483,12 @@ place across reloads. Click it, and four round buttons appear: **Add review**, *
 that your app applied, so the widget is light on a light theme and dark on a dark one. A page with
 no theme gets a dark widget.
 
+The widget stays on top and usable while a modal dialog is open, such as the navigation drawer of
+the shell on a phone or a confirm dialog of your app. A modal dialog covers the page and blocks every
+click outside itself, so the widget moves into the dialog while it is open, at the same place on
+the screen, and moves back when the dialog closes. A dialog that you give a `transform` of your own
+keeps the widget inside its box while it is open.
+
 **Add review** starts a selection. The next element that you click on the page is the element that
 you review. Move the pointer to see what imp is about to select. imp outlines the element under the
 pointer. Click the element, type a comment, and press **Save review**, or `Ctrl` or `Cmd` with
@@ -519,7 +525,8 @@ so your AI coding agent does not have to guess either. Each review becomes a pla
 read it back with **[`imp review`](#imp-review)**, described there.
 
 The widget is part of the dev server, and of nothing else. `imp start` and `imp preview` inject it.
-`imp build` never injects it, so no review code reaches your production bundle. The widget appears
+`imp build` never injects it, so no review code reaches your production bundle. `imp test --e2e`
+serves your app without it too, so your specs see only the page of your app. The widget appears
 only when you look at the server over a loopback address. The server accepts a review only from the
 machine that runs it. Open the dev server from another device on your network, and the widget is not
 there.

@@ -68,14 +68,15 @@ a theme is complete. It does the following:
   use it. So the attribute would be a hook that works exactly where theming matters least. A branch
   between light and dark belongs in the tokens themselves, where two themes carry different values
   under the same names. The inherited `color-scheme` covers what the browser renders.
-- It updates the reactive `theme` state to the applied theme object, and returns that object.
+- It updates the reactive `appliedTheme` state to the applied theme object, and returns that
+  object.
 
-**`theme`** is a readable state for the lifetime of the app. It has `get`, `watch`, `text`, `view`
-and `each`, and it has no public `set`. It holds the theme that imp applied. So a UI that changes
-the theme reads `theme.get()` and `theme.watch()`, and a component branches on the active theme when
-it must. A token is a custom property. So a new application rewrites the variables in one
+**`appliedTheme`** is a readable state for the lifetime of the app. It has `get`, `watch`, `text`,
+`view` and `each`, and it has no public `set`. It holds the theme that imp applied. So a component
+branches on the active theme when it must. The choice of the person is a separate state, `theme`,
+see `app-wide-theme-and-language.md`. A token is a custom property. So a new application rewrites the variables in one
 synchronous pass, and every rule that references a token re-skins at once. That is the path with no
-re-render, of the state layer. The watch on `theme` is only for a component that must branch. It is
+re-render, of the state layer. The watch on `appliedTheme` is only for a component that must branch. It is
 not the mechanism of the re-skin.
 
 A **malformed theme throws at the call site.** That covers a value that is not an object, and a
@@ -86,10 +87,9 @@ spelling mistake is a bug, and not a theme. imp logs a problem that is not fatal
 that looks wrong, a value that the browser ignores in silence, and a `color-surface` that imp cannot
 read as light or dark. imp does not otherwise validate the CSS value of a token.
 
-**Persistence is the job of the app.** imp keeps no registry of themes, because a theme is a module
-that the app imports. So imp cannot map a stored name back to a module, and it deliberately does
-**not** touch `localStorage`. The `theme` state exposes the active theme, with its `name`. An app
-that wants to remember a choice, and to apply it again on load, reads that state.
+**`applyTheme` stores nothing.** It is the low-level call, and it changes no choice. The list of
+themes, the choice of the person and its storage live one level up, in `init({ themes, persist })`
+and the `theme` state, see `app-wide-theme-and-language.md`.
 
 imp ships four built-in themes. Those are `imp-light`, `imp-dark`, `imp-high-contrast-light` and
 `imp-high-contrast-dark`. So an app renders correctly before somebody writes a theme of their own.
@@ -100,7 +100,7 @@ itself. The high-contrast pair widens `border-width` and `focus-ring-width`, rai
 `disabled-opacity`, and paints pure black on white, or white on black. The names carry the **`imp-`
 prefix**. So a built-in theme of imp never collides, even in a conversation, with a `light` or
 `dark` theme module of an app. A bare name always means a theme of the app. A name with the `imp-`
-prefix always means a theme of imp. `theme.get()` still reaches the resolved object, for anything
+prefix always means a theme of imp. `appliedTheme.get()` still reaches the resolved object, for anything
 that must start from it. So the hidden exports cost nothing. The state layer deep-freezes every
 value that it holds. So one corner of an app cannot edit an applied built-in theme in place, and
 silently change what a later `applyTheme('imp-dark')` produces. To start from a built-in theme
@@ -200,9 +200,8 @@ or `text-align: end`, mirrors a layout with no extra work once `dir` is set.
   each host. It is the only signal at root level that imp writes, beside the tokens. So there is no
   attribute for a mode to keep in step, and there is no hook that stops working when a component
   moves into shadow DOM.
-- An app that wants to remember a theme stores the name, and applies the matching module again on
-  load. It controls the order, to avoid a flash of the wrong theme. imp neither stores the choice
-  nor loads it again.
+- An app that wants to remember a theme lists its themes in `init` with `persist: true`. imp then
+  stores the name, and maps it back to the listed module before the first paint.
 - To change one token of a built-in theme is one object with a `base`, such as
   `{ base: 'imp-light', tokens: { 'font-family': '...' } }`. The applied theme is still complete.
 - To get a correct light app, or a correct dark app, is one call, with nothing to import, as in

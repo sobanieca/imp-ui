@@ -34,6 +34,7 @@ Each item has these keys:
 | `time`        | ISO string, `Date` or epoch milliseconds | Shown in the language of the page, in a `<time>` element                                           |
 | `title`       | string                                   | The main line                                                                                      |
 | `description` | string                                   | The second line, in the secondary colour                                                           |
+| `message`     | string of markdown                       | A comment under the title: bold, italic, strikethrough and safe links. See `markdown` format       |
 | `icon`        | an icon from `imp/icons`                 | Drawn in the marker. Without it, the marker is a dot                                               |
 | `color`       | `'neutral'`, or a palette name           | Tints the marker. The same names as `tag`                                                          |
 | `href`        | string                                   | Makes the title a link, in the space of the app. An unsafe scheme such as `javascript:` is dropped |
@@ -47,6 +48,8 @@ Rules an agent gets wrong:
   every time zone. A full ISO string shows the date and the time in the time zone of the reader.
 - **The marker is decoration.** The icon and the colour are hidden from a screen reader. Put the
   meaning in `title`.
+- **A comment goes in `message`, not in `description`.** `description` is plain text. `message` is
+  markdown in the `'message'` format of `markdown`, so a `javascript:` link loses its address.
 - **An item is plain data.** Build the controls of an event in `actions`, and give each one a name
   that includes the title, such as `Open Order placed`.
 - **The title is the only control of an event.** With `href` it is a real link. Without `href` it is

@@ -65,7 +65,17 @@ test('the review widget edits the applied theme of an app', async ({ page: host 
         if (element.shadowRoot) walkKnobs(element.shadowRoot)
       }
     }
-    walkKnobs(shadow.querySelector('.card'))
+    const deepFind = (root, tag) => {
+      for (const element of root.querySelectorAll('*')) {
+        if (element.localName === tag) return element
+        const found = element.shadowRoot ? deepFind(element.shadowRoot, tag) : null
+        if (found) return found
+      }
+      return null
+    }
+    const card = shadow.querySelector('.card')
+    steps.themeRow = deepFind(card, 'imp-segmented') ? 'shown' : 'none'
+    walkKnobs(deepFind(card, 'imp-theme-editor').shadowRoot)
     steps.knobs = knobHosts.length === 0 ? 'none' : knobHosts.join(', ')
     const editor = labelled(shadow.querySelector('.card'), 'imp-code-editor', 'Tokens')
     const shown = JSON.parse(editor.value)
@@ -131,7 +141,8 @@ test('the review widget edits the applied theme of an app', async ({ page: host 
     `view after Theme editor: ${edited.view} (aria-pressed ${edited.pressed})`,
     `panel background: ${edited.panel}`,
     `editor mounted in the panel: ${edited.editor}`,
-    `knobs in the panel: ${edited.knobs}`,
+    `row of the themes to edit: ${edited.themeRow}`,
+    `knobs in the editor: ${edited.knobs}`,
     `tokens editor shows: ${edited.json}`,
     `after editing the JSON: surface ${edited.jsonSurface}, primary ${edited.jsonPrimary}`,
     `surface while the JSON is broken: ${edited.jsonBroken}`,

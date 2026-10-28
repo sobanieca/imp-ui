@@ -24,6 +24,11 @@ lines after clear: after clear, button enabled again: true
 network view: log, filters: [Fetch], Resource, Any / [All], OK, Failed
 moved by a drag: 320,220, collapsed: true
 position remembered: true
+widget in an open modal: drawer, on top: true
+widget keeps its place in the modal: true
+widget in a modal opened over it: confirm, on top: true
+widget after that modal closes: drawer
+widget after the open modal is removed: body
 review files written: 1
 
 time: <timestamp>

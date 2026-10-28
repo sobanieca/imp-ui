@@ -11,22 +11,22 @@ current directory. With `dir`, imp creates that directory if necessary and scaff
 
 ## What it writes
 
-| File                                  | Is                                                                                            |
-| ------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `imp.json`                            | the only config file. It pins the imp version that wrote it.                                  |
-| `index.html`                          | the served page: the `#app` mount point, the `/src/main.js` entry, `/fonts/fonts.css`         |
-| `src/main.js`                         | applies `src/theme.js` with `init({ theme })` and mounts the frame                            |
-| `src/theme.js`                        | the theme: `base: 'imp-light'` and the font in `font-family`. Make the palette your own.      |
-| `src/app-map.js`                      | the application map, named in `imp.json`. It exports `app`, the root, with one node: `about`. |
-| `src/app.js`                          | the frame and the router. It exports `root`; `[app]` binds a click counter at `/`.            |
-| `test/app.test.js`                    | the unit test, in a blank page                                                                |
-| `test/app.spec.js`                    | the e2e spec, in a real browser                                                               |
-| `public/favicon.svg`                  | published at the site root                                                                    |
-| `public/fonts/fonts.css`              | the `@font-face` rules of the font, weights 400 to 700                                        |
-| `public/fonts/<font>-latin.woff2`     | the font, Latin subset                                                                        |
-| `public/fonts/<font>-latin-ext.woff2` | the font, Latin Extended subset                                                               |
-| `public/fonts/<font>-ofl.txt`         | the copyright notice and the license of the font                                              |
-| `.gitignore`                          | `dist/`, `.imp/`, every `.env`, and the usual JavaScript entries                              |
+| File                                  | Is                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `imp.json`                            | the only config file. It pins the imp version that wrote it.                                                       |
+| `index.html`                          | the served page: the `#app` mount point, the `/src/main.js` entry, `/fonts/fonts.css`, and the `color-scheme` meta |
+| `src/main.js`                         | applies `src/theme.js` with `init({ theme })` and mounts the frame                                                 |
+| `src/theme.js`                        | the theme: `base: 'imp-light'` and the font in `font-family`. Make the palette your own.                           |
+| `src/app-map.js`                      | the application map, named in `imp.json`. It exports `app`, the root, with one node: `about`.                      |
+| `src/app.js`                          | the frame and the router. It exports `root`; `[app]` binds a click counter at `/`.                                 |
+| `test/app.test.js`                    | the unit test, in a blank page                                                                                     |
+| `test/app.spec.js`                    | the e2e spec, in a real browser                                                                                    |
+| `public/favicon.svg`                  | published at the site root                                                                                         |
+| `public/fonts/fonts.css`              | the `@font-face` rules of the font, weights 400 to 700                                                             |
+| `public/fonts/<font>-latin.woff2`     | the font, Latin subset                                                                                             |
+| `public/fonts/<font>-latin-ext.woff2` | the font, Latin Extended subset                                                                                    |
+| `public/fonts/<font>-ofl.txt`         | the copyright notice and the license of the font                                                                   |
+| `.gitignore`                          | `dist/`, `.imp/`, every `.env`, and the usual JavaScript entries                                                   |
 
 `--pwa` adds a complete `pwa` block to `imp.json`. It also writes `icon.svg` at the project root.
 imp renders the whole icon set from that one source image. The image is a build input, so it does

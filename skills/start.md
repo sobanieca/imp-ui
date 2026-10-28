@@ -111,7 +111,7 @@ changes. See [theming](theming.md).
   telemetry sink, `/@imp/review` for the review sink, `/@imp/sw.js` for the dev service worker, and
   the library source. Do not serve an app file from there.
 - **The review widget is for development only, and for the local machine only.** `imp start` and
-  `imp preview` inject it. `imp build` never injects it. The server accepts a review only from the
+  `imp preview` inject it. `imp build` and the app of `imp test --e2e` never carry it. The server accepts a review only from the
   machine that runs it. Never write a review UI into the app.
 - A request for a directory redirects to the URL with a trailing slash, and serves the `index.html`
   inside the directory. imp rejects a path outside the served directory.

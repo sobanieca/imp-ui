@@ -1,5 +1,5 @@
 import { init } from 'imp'
-import { lang, setLang, t } from 'imp/i18n'
+import { lang, t } from 'imp/i18n'
 import { beforeAll, expect, test } from 'imp/test'
 import en from '../locales/en.js'
 import pl from '../locales/pl.js'
@@ -30,11 +30,11 @@ test('the stats area carries the same keys in both languages', () => {
 
 test('a switch of language changes the text and the lang attribute', async () => {
   expect(t('todos.title')).toEqual('Todos')
-  await setLang('pl')
+  await lang.set('pl')
   expect(t('todos.title')).toEqual('Zadania')
   expect(lang.get()).toEqual('pl')
   expect(document.documentElement.lang).toEqual('pl')
-  await setLang('en')
+  await lang.set('en')
 })
 
 test('a placeholder is filled from the values', () => {

@@ -12,8 +12,8 @@ The library is split by subject, so an import line shows which part of imp a fil
 | `imp/html`           | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...)                                      | [Rendering](rendering.md)                |
 | `imp/state`          | `initState`, `useState`, `computed`                                                                            | [State](state.md)                        |
 | `imp/router`         | `router`, `area`, `redirect`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute`, `url`, `screenRegion` | [Routing](routing.md)                    |
-| `imp/theme`          | `theme`, `applyTheme`, `colorSchemeOf`                                                                         | [Theming](theming.md)                    |
-| `imp/i18n`           | `t`, `lang`, `dir`, `setLang`, `missingMessages`, `defaultMessages`                                            | [Translations](i18n.md)                  |
+| `imp/theme`          | `theme`, `appliedTheme`, `applyTheme`, `colorSchemeOf`                                                         | [Theming](theming.md)                    |
+| `imp/i18n`           | `t`, `lang`, `dir`, `missingMessages`, `defaultMessages`                                                       | [Translations](i18n.md)                  |
 | `imp/log`            | `logger`, `createLogger`, `setLogLevel`, `logLevel`                                                            | [Logging](logging.md)                    |
 | `imp/http`           | `initHttpClient`, `useHttpClient`, `createHttpClient`, `HttpError`                                             | [HTTP](http.md)                          |
 | `imp/icons`          | `luHouse`, `luUser`, `luStar`, ... from the Lucide icon set                                                    | [Standard components](std-components.md) |

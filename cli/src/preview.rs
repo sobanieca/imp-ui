@@ -1198,7 +1198,7 @@ pub fn preview(options: PreviewOptions) -> Result<()> {
         AppOptions {
             env_alias: options.env.clone(),
             mocks: options.mocks,
-            theme_editor: false,
+            widget: crate::start::Widget::Review,
         },
     )?);
     let port = options.port.unwrap_or(DEFAULT_PREVIEW_PORT);

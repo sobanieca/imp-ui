@@ -1,12 +1,10 @@
-import { applyTheme, colorSchemeOf, theme } from 'imp/theme'
+import { applyTheme, colorSchemeOf, appliedTheme } from 'imp/theme'
 import { expect, test } from 'imp/test'
-import { auroraLight, THEME_CHOICES } from '../src/theme.js'
+import { auroraDark as dark, auroraLight as light, themes } from '../src/theme.js'
 
-const [light, dark] = THEME_CHOICES.map((choice) => choice.theme)
-
-test('the menu offers the light and the dark aurora theme', () => {
-  expect(THEME_CHOICES.map((choice) => choice.value)).toEqual(['aurora-light', 'aurora-dark'])
-  expect(light).toEqual(auroraLight)
+test('the menu offers system, and the light and the dark aurora theme', () => {
+  expect(themes).toEqual(['system', light, dark])
+  expect([light.label, dark.label]).toEqual(['Aurora light', 'Aurora dark'])
 })
 
 test('both themes set the same tokens, so a swap leaves nothing behind', () => {
@@ -20,9 +18,9 @@ test('each theme takes its color-scheme from its base', () => {
 
 test('a theme applies its tokens on top of the built-in base', () => {
   applyTheme(dark)
-  expect(theme.get().name).toEqual('aurora-dark')
-  expect(theme.get().tokens['color-primary']).toEqual('#a18dff')
-  expect(theme.get().tokens['space-3']).toBeTruthy()
+  expect(appliedTheme.get().name).toEqual('aurora-dark')
+  expect(appliedTheme.get().tokens['color-primary']).toEqual('#a18dff')
+  expect(appliedTheme.get().tokens['space-3']).toBeTruthy()
   expect(document.documentElement.style.getPropertyValue('--imp-color-primary')).toEqual('#a18dff')
   expect(document.documentElement.style.getPropertyValue('color-scheme')).toEqual('dark')
 })

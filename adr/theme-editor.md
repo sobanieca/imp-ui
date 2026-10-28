@@ -51,7 +51,11 @@ imports either module. `imp build` never bundles them.
 **The draft is one token map, the applied theme with edits on top, and the preview shows it on two
 tabs.** The editor has no light or dark switch of its own. The theme that the page applied is the
 one it edits. In the preview that is the theme in the sidebar, and a change there re-mounts the
-editor on the new theme. A light theme and a dark theme are two sessions in the editor and two
+editor on the new theme. In the widget of `imp start`, a row above the editor lists the named
+themes of `init({ themes })`. A press applies that theme with `applyTheme` and re-mounts the editor
+on it. The row changes no choice of the person, so a session in the editor stores nothing in
+`imp.theme`. The exported file is named after the theme, and it keeps the `label` that `init` gives
+it, so it replaces the file of that theme in the app as it is. A light theme and a dark theme are two sessions in the editor and two
 exported files. imp reads light or dark from the surface colour of the map, the same way it does for
 every theme, and the derivation uses that. The knobs are a projection of the map. The JSON is the
 map itself.

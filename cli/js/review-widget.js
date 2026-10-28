@@ -17,7 +17,26 @@ export const reviewWidget = ({
 
   const DRAG_THRESHOLD = 4
 
-  const host = document.createElement('div')
+  let modals = []
+
+  const attach = () => {
+    modals = modals.filter((dialog) => dialog.matches(':modal'))
+    const home = modals.at(-1) ?? document.body
+    if (host.parentNode !== home) home.append(host)
+  }
+
+  customElements.define(
+    'imp-review-widget',
+    class extends HTMLElement {
+      disconnectedCallback() {
+        queueMicrotask(() => {
+          if (!this.isConnected) attach()
+        })
+      }
+    },
+  )
+
+  const host = document.createElement('imp-review-widget')
   host.id = 'imp-review'
   host.setAttribute('dir', 'ltr')
   const shadow = host.attachShadow({ mode: 'open' })
@@ -362,7 +381,7 @@ export const reviewWidget = ({
       return
     }
     if (tool !== 'theme') return
-    card.replaceChildren(module.themeEditor({ theme: module.appliedThemeName(), tokensOnly: true }))
+    card.replaceChildren(module.appThemeEditor({ tokensOnly: true }))
   }
 
   let drag = null
@@ -460,14 +479,17 @@ export const reviewWidget = ({
     }
   })
 
-  const attach = () => {
-    if (!host.isConnected) document.body.append(host)
+  const showModal = HTMLDialogElement.prototype.showModal
+  HTMLDialogElement.prototype.showModal = function (...args) {
+    showModal.apply(this, args)
+    modals = [...modals.filter((dialog) => dialog !== this), this]
+    this.addEventListener('close', attach, { once: true })
+    attach()
   }
 
   const install = () => {
     restore()
     attach()
-    new MutationObserver(attach).observe(document.body, { childList: true })
   }
 
   if (document.body) install()

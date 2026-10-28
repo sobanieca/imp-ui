@@ -155,6 +155,39 @@ test('the review widget picks an element in the preview page', async ({ page: ho
     steps.moved = `${Math.round(before.left - after.left)},${Math.round(before.top - after.top)}`
     steps.collapsedByDrag = shadow.querySelector('.actions').hidden
     steps.remembered = localStorage.getItem('imp-review-position')
+
+    const widget = document.getElementById('imp-review')
+    const parentOf = () => {
+      const parent = widget.parentNode
+      return parent === document.body ? 'body' : parent?.id ?? 'none'
+    }
+    const onTop = (root) => {
+      const rect = widget.getBoundingClientRect()
+      return root.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) ===
+        widget
+    }
+    const shelf = document.createElement('div')
+    const shelfRoot = shelf.attachShadow({ mode: 'open' })
+    shelfRoot.innerHTML = '<dialog id="drawer">drawer</dialog>'
+    document.body.append(shelf)
+    const drawer = shelfRoot.querySelector('dialog')
+    const confirm = document.createElement('dialog')
+    confirm.id = 'confirm'
+    document.body.append(confirm)
+    const place = widget.getBoundingClientRect()
+    drawer.showModal()
+    steps.inModal = `${parentOf()}, on top: ${onTop(shelfRoot)}`
+    const inside = widget.getBoundingClientRect()
+    steps.keptPlace = inside.left === place.left && inside.top === place.top
+    confirm.showModal()
+    steps.inStackedModal = `${parentOf()}, on top: ${onTop(document)}`
+    confirm.close()
+    await waitFor('the widget to leave the closed modal', () => parentOf() === 'drawer')
+    steps.afterStackedClose = parentOf()
+    shelf.remove()
+    await waitFor('the widget to leave the removed modal', () => parentOf() === 'body')
+    steps.afterRemoval = parentOf()
+    confirm.remove()
     return steps
   })
   console.log(`IMP-REPORT-BEGIN\n${JSON.stringify(flow)}\nIMP-REPORT-END`)

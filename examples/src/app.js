@@ -11,7 +11,6 @@ import { appLogo, notifications, shell } from 'imp/std/shell'
 import { aboutScreen } from './about/about-screen.js'
 import { app } from './app-map.js'
 import { screenFrame, screenLoader } from './screen-frame.js'
-import { THEME_CHOICES } from './theme.js'
 import { accountMenu } from './ui/account-menu.js'
 import { backdrop } from './ui/backdrop.js'
 import { logoMark } from './ui/logo-mark.js'
@@ -24,7 +23,6 @@ import { todoListScreen } from './todos/todo-list-screen.js'
 
 const log = createLogger('todo.app')
 
-const LANGUAGES = [{ value: 'en', label: 'English' }, { value: 'pl', label: 'Polski' }]
 
 const signedIn = {
   states: ['todo.session'],
@@ -98,7 +96,7 @@ export const root = component('todo-root', {
         },
         extras: [
           notifications(),
-          accountMenu({ languages: LANGUAGES, themes: THEME_CHOICES, onSignOut: signOut }),
+          accountMenu({ onSignOut: signOut }),
         ],
         signIn: app.signIn,
       },

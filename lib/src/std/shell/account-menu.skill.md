@@ -4,7 +4,7 @@
 import { accountMenu, langSelect, shell, themeSelect } from 'imp/std/shell'
 
 accountMenu({ name: user.name, description: user.email, onSignOut: signOut })
-accountMenu({ name, description, onSignOut }, themeSelect({ themes }), langSelect({ languages }))
+accountMenu({ name, description, onSignOut }, themeSelect(), langSelect())
 shell({ map: app, extras: [notifications(), accountMenu({ name, onSignOut })] })
 ```
 
@@ -43,7 +43,7 @@ session.view((user) =>
         notifications({ variant: 'ghost' }),
         accountMenu(
           { name: user.name, description: user.email, color: 'auto', onSignOut },
-          themeSelect({ themes }),
+          themeSelect(),
         ),
       ]
     : button({ events: { click: signIn } }, 'Log in'),

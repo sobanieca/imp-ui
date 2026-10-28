@@ -2,8 +2,9 @@ primary before editing: #2563eb
 actions: Add review, Console logs, Network logs, Theme editor
 view after Theme editor: theme (aria-pressed true)
 panel background: the surface of the theme, #fcfdff
-editor mounted in the panel: imp-theme-editor
-knobs in the panel: none
+editor mounted in the panel: imp-app-theme-editor
+row of the themes to edit: shown
+knobs in the editor: none
 tokens editor shows: 65 tokens, primary #2563eb
 after editing the JSON: surface #fff7ed, primary #0f766e
 surface while the JSON is broken: #fff7ed

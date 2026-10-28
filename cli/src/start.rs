@@ -62,11 +62,19 @@ pub struct App {
     pub public_dir: PathBuf,
 }
 
+#[derive(Clone, Copy, Default, PartialEq)]
+pub enum Widget {
+    #[default]
+    None,
+    Review,
+    ReviewAndThemeEditor,
+}
+
 #[derive(Default)]
 pub struct AppOptions {
     pub env_alias: Option<String>,
     pub mocks: Option<bool>,
-    pub theme_editor: bool,
+    pub widget: Widget,
 }
 
 fn imp_module_path(module: &str) -> String {
@@ -81,7 +89,8 @@ pub fn development_checks_script() -> String {
     "<script>globalThis.__IMP_DEV__ = true</script>".into()
 }
 
-pub fn client_script(mocks: bool, own_worker: bool, mark: &str, theme_editor: bool) -> String {
+pub fn client_script(mocks: bool, own_worker: bool, mark: &str, widget: Widget) -> String {
+    let theme_editor = widget == Widget::ReviewAndThemeEditor;
     let input = json!({
         "eventsEndpoint": EVENTS_ENDPOINT,
         "logEndpoint": LOG_ENDPOINT,
@@ -93,9 +102,12 @@ pub fn client_script(mocks: bool, own_worker: bool, mark: &str, theme_editor: bo
         "themeDraftModule": THEME_DRAFT_MODULE,
         "previewFrameNamePrefix": crate::preview::PREVIEW_FRAME_NAME_PREFIX,
     });
+    let client = crate::browser_script::browser_script("dev-client.js", &input);
+    if widget == Widget::None {
+        return client;
+    }
     format!(
-        "{};{}",
-        crate::browser_script::browser_script("dev-client.js", &input),
+        "{client};{}",
         crate::review::review_widget_script(mark, theme_editor)
     )
 }
@@ -122,7 +134,7 @@ pub struct HeadParts<'a> {
     pub mocks: bool,
     pub own_worker: bool,
     pub mark: &'a str,
-    pub theme_editor: bool,
+    pub widget: Widget,
 }
 
 pub fn build_head_injection(parts: HeadParts) -> String {
@@ -150,12 +162,7 @@ pub fn build_head_injection(parts: HeadParts) -> String {
     .collect();
     format!(
         "<script>{}</script>\n{value_tags}<script type=\"importmap\">{}</script>{pwa_tags}",
-        client_script(
-            parts.mocks,
-            parts.own_worker,
-            parts.mark,
-            parts.theme_editor
-        ),
+        client_script(parts.mocks, parts.own_worker, parts.mark, parts.widget),
         import_map(parts.dependencies)
     )
 }
@@ -288,7 +295,7 @@ fn load_app_with(
         mocks: mocking,
         own_worker: service_worker_entry.is_some(),
         mark: &mark,
-        theme_editor: options.theme_editor,
+        widget: options.widget,
     });
     let mocks = match (&declared, mocking) {
         (Some(declared), true) => {
@@ -868,7 +875,7 @@ pub fn start(options: StartOptions) -> Result<()> {
         AppOptions {
             env_alias: options.env.clone(),
             mocks: options.mocks,
-            theme_editor: true,
+            widget: Widget::ReviewAndThemeEditor,
         },
     )?);
     let port = options
@@ -941,7 +948,6 @@ pub fn start_e2e_app(
         config,
         AppOptions {
             mocks,
-            theme_editor: true,
             ..AppOptions::default()
         },
     )?);

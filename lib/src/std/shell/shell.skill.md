@@ -167,7 +167,8 @@ Rules an agent gets wrong:
   `logo: flex({ gap: 2, verticalAlign: 'center' }, appLogo({ label }), orgSelect({ orgs, selected }))`,
   or put it in `extras`. See imp skill std/orgSelect.
 - **The trail is chrome.** With a map, the shell renders `breadcrumbs` above the content, and the
-  phone title shows the last two crumbs. Do not render a second trail in a screen. Pass
+  phone title shows the last two crumbs. A top-level page, where the trail would be one crumb,
+  shows the `logo` in the phone bar instead of the title. Do not render a second trail in a screen. Pass
   `breadcrumbs: false` to drop the strip. The strip hides on its own on a top-level page, where the
   trail would be one crumb. A param crumb takes its label from the state `imp.routeLabels`, and
   shows the `loader` until the screen settles, see imp skill routing. The head of the column and the trail row share one height, `3.5rem`, so
@@ -193,7 +194,8 @@ Rules an agent gets wrong:
   mounted in the main content floats in the same way.
 - **`maxWidth` caps the frame, and it is on by default.** The column and the content together never
   get wider than `maxWidth`. On a wider screen they sit in the middle, and the background fills the
-  rest. The top bar keeps its surface edge to edge, and centres its controls over the content. With
+  rest. The content area still scrolls at the end edge of the screen, so the scrollbar is where a
+  person expects it. The top bar keeps its surface edge to edge, and centres its controls over the content. With
   a `gap` the bar is a panel, and the panel is capped too. A `drawer` in the main content opens at
   the end edge of the content, not of the screen. Pass any CSS length, such as `'90rem'`, or
   `'none'` for a frame that always fills the screen.
@@ -219,9 +221,12 @@ Rules an agent gets wrong:
 - **There is no `header` region and no `footer` region.** A page title and a toolbar go at the top
   of the main content that you pass as children.
 - **The shell is the one component that changes structure by width.** Its query is `48rem`. Below it
-  the top bar becomes a hamburger and a two-line title, the sidebar becomes the bottom bar capped at
+  the top bar becomes a hamburger and a two-line title (the `logo` on a top-level page; the logo
+  joins the drawer while it is open), the sidebar becomes the bottom bar capped at
   `--imp-shell-bottom-bar-items` rows with a **More** sheet, and the sections and both `extras` move
-  into the drawer. The trail strip hides, and the title carries the crumbs. The
+  into the drawer. The top bar slides away while the content scrolls down, and back on a scroll up,
+  at the top of the content, or when a control in it takes focus. Do not write a scroll listener
+  for it. The trail strip hides, and the title carries the crumbs. The
   hamburger and the drawer are named "Menu" (`imp.shell.menu`). When the bottom bar holds every
   section, the drawer has no `<nav>`. The drawer is as tall as its content, up to the full height,
   and its nav scrolls when it does not fit.
@@ -248,7 +253,7 @@ shell({
   map: app,
   extras: [
     notifications(),
-    accountMenu({ name, description: email, onSignOut }, langSelect({ languages }), themeSelect()),
+    accountMenu({ name, description: email, onSignOut }, langSelect(), themeSelect()),
   ],
 })
 ```

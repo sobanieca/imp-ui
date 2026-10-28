@@ -477,6 +477,10 @@ recent.set((items) => [item, ...items].slice(0, 20))
 
 Do not use it for data that must be correct or shared. It never leaves the browser.
 
+The theme and the language are not states of your own. imp keeps both as app-wide states, and
+`init({ persist: true })` stores the choice of the person. See [Theming](theming.md) and
+[Translations](i18n.md).
+
 ## Scope and lifetime
 
 Every state belongs to the component that initializes it. The component you initialize in decides

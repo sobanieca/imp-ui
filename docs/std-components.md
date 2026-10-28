@@ -305,11 +305,7 @@ sections, and a section that does not fit scrolls out of view. So put those cont
 sign-out.
 
 ```js
-accountMenu(
-  { name: user.name, description: user.email, onSignOut },
-  langSelect({ languages }),
-  themeSelect(),
-)
+accountMenu({ name: user.name, description: user.email, onSignOut }, langSelect(), themeSelect())
 ```
 
 On a desktop the browser runs the popover, and CSS anchor positioning places it under the avatar.
@@ -338,7 +334,12 @@ backdrop on it, write `navbar: { hidden: true, background }` instead.
 in every section, such as a support card or a link to your help site. It keeps the column even in a
 section with no children.
 
-**The frame folds on a phone.** The bar becomes a hamburger and a title. The column becomes a bottom
+**The frame folds on a phone.** The bar becomes a hamburger and a title. The title names the page
+and the page above it, such as "Checks" over "Deploy to production". A top-level page has no page
+above it, so its bar shows your logo instead, and the logo moves into the drawer while the drawer is
+open. On a deeper page the logo waits in the drawer. The bar slides away while the content scrolls
+down, so the content gets the whole screen, and it slides back on the first scroll up, at the top
+of the content, and when a keyboard user tabs into it. The column becomes a bottom
 bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.
 The title of that sheet is a link to the page of the row itself, when the row has one. The pickers
 and the extras move into the drawer of the hamburger. imp drops nothing. A screen reader names the
@@ -365,7 +366,10 @@ content. A tap never shows it.
 
 `imp/std/shell` ships the pieces that usually fill the regions of the frame: `appLogo`, `userCard`,
 `accountMenu`, `orgSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,
-with the current choice on the trigger. Each region takes plain DOM, so you replace a piece that
+with the current choice on the trigger. `themeSelect` offers the themes that `init` lists, and
+`langSelect` offers the languages of your translations. Each one sets an app-wide state of imp, so
+every picker on the page agrees, and `init({ persist: true })` remembers the choice. The theming
+and translations guides show the setup. Each region takes plain DOM, so you replace a piece that
 does not fit with a component of your own. The gallery shows every prop of the frame, its floating
 panels, its backdrops and its maximum width.
 
@@ -635,6 +639,19 @@ embedded image makes it megabytes long. imp keeps the markdown of each block, so
 only the block that changed. The value is exact after every edit, so a submit right after a
 keystroke sends what the person sees.
 
+**Pick the buttons of the toolbar with `tools`.** Pass the ids of the tools in the order you want
+them, such as `tools: ['bold', 'italic', 'link', 'emoji']`. Neighbouring tools of one kind share a
+group. Without `tools`, the toolbar shows every tool. An empty list hides the toolbar. A tool that
+you leave out is only a missing button: a paste still keeps everything the markdown can hold. The
+one exception is the image tool. Without it, a pasted or dropped image file is dropped.
+
+**A comment or a chat line uses the message format.** Pass `format: 'message'` to `richTextEditor`
+and to `markdown`. The toolbar then has only bold, italic, strikethrough, link and emoji, and
+`tools` can pick from these five. A paste keeps only these marks, and every other block becomes a plain paragraph. The renderer shows every other
+markdown construct as text, so a message cannot add a heading, a list or an image. A link with a
+`javascript:` address loses its address. A safe link opens in a new tab, sends no referrer, and
+shows its full address on hover. So a short label cannot hide where the link goes.
+
 ```js
 imageUpload({
   field: 'avatar',
@@ -894,6 +911,9 @@ first for a feed. Put the oldest event first for a history that a person reads f
   Without an `href`, it is a button when you pass `events.select`, and plain text when you do not.
 - **A long history loads in pages.** Pass `hasMore` and `onLoadMore`, and append the next events to
   the `items` state. An empty timeline shows an empty state. Pass `empty` to change it.
+- **A comment keeps its formatting.** Put the markdown of a comment in the `message` key of the
+  event. The timeline shows it under the title in the message format of `markdown`: bold, italic,
+  strikethrough and safe links.
 
 ## Put things on a map, with no map server
 

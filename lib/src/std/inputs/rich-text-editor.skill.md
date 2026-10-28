@@ -6,31 +6,36 @@ import { button } from 'imp/std'
 
 richTextEditor({ field: 'body', label: 'Body', rows: 8 })
 richTextEditor({ value: note, label: 'Note', placeholder: 'Write here', imageSize: 800 })
+richTextEditor({ field: 'text', ariaLabel: 'Comment', rows: 2, format: 'message' })
+richTextEditor({ field: 'note', label: 'Note', tools: ['bold', 'italic', 'bullets', 'link'] })
 ```
 
 The call shape is `richTextEditor(props?)`. It takes no children. It is a form control, so every
 form rule of `textField` holds here. The person sees rich text. The value is a markdown string.
 
-| Prop          | Values                                     | Default | Notes                                             |
-| ------------- | ------------------------------------------ | ------- | ------------------------------------------------- |
-| `field`       | dot path, e.g. `'post.body'`               | -       | Binds to that path of the surrounding form        |
-| `value`       | a state, or a plain string                 | -       | Standalone use, when there is no form             |
-| `rows`        | positive integer, or a state - **live**    | `6`     | The minimum height, in lines. The editor grows    |
-| `imageSize`   | positive integer                           | `1280`  | The longest edge, in pixels, of an embedded image |
-| `label`       | string, or a state holding one             | -       | Names the text box                                |
-| `ariaLabel`   | string                                     | -       | Names it when there is no visible label           |
-| `help`        | string, or a state holding one             | -       | Hint under the editor                             |
-| `placeholder` | string                                     | -       | Shown while the editor is empty                   |
-| `readonly`    | boolean                                    | `false` | No toolbar. The text is selectable, not editable  |
-| `required`    | boolean                                    | `false` | Marks it and validates that it is filled in       |
-| `disabled`    | boolean, or a state holding one - **live** | `false` | Blocks interaction                                |
+| Prop          | Values                                     | Default      | Notes                                                     |
+| ------------- | ------------------------------------------ | ------------ | --------------------------------------------------------- |
+| `field`       | dot path, e.g. `'post.body'`               | -            | Binds to that path of the surrounding form                |
+| `value`       | a state, or a plain string                 | -            | Standalone use, when there is no form                     |
+| `rows`        | positive integer, or a state - **live**    | `6`          | The minimum height, in lines. The editor grows            |
+| `format`      | `'document'`, `'message'`                  | `'document'` | The markdown that the value holds, see below              |
+| `tools`       | array of tool ids, in toolbar order        | every tool   | Every tool that the format allows. `[]` hides the toolbar |
+| `imageSize`   | positive integer                           | `1280`       | The longest edge, in pixels, of an embedded image         |
+| `label`       | string, or a state holding one             | -            | Names the text box                                        |
+| `ariaLabel`   | string                                     | -            | Names it when there is no visible label                   |
+| `help`        | string, or a state holding one             | -            | Hint under the editor                                     |
+| `placeholder` | string                                     | -            | Shown while the editor is empty                           |
+| `readonly`    | boolean                                    | `false`      | No toolbar. The text is selectable, not editable          |
+| `required`    | boolean                                    | `false`      | Marks it and validates that it is filled in               |
+| `disabled`    | boolean, or a state holding one - **live** | `false`      | Blocks interaction                                        |
 
 The validation props are `required`, `minLength`, `maxLength`, `pattern`, `validate` and
 `validateAsync`, with the same rules as `textField`. They see the markdown string.
 
-The toolbar has these tools, in this order: bold, italic, strikethrough, code, heading 1 to 3,
-quote, code block, bulleted list, numbered list, link, image, emoji, and align start, center and
-end. Ctrl-B and Ctrl-I work as in every editor. Ctrl-Z undoes each change, also a tool, a paste and
+The tool ids, in their default order: `bold`, `italic`, `strike`, `code`, `heading1`, `heading2`,
+`heading3`, `quote`, `codeBlock`, `bullets`, `numbers`, `link`, `image`, `emoji`, `alignStart`,
+`alignCenter`, `alignEnd`. The `message` format allows `bold`, `italic`, `strike`, `link` and
+`emoji`. Ctrl-B and Ctrl-I work as in every editor. Ctrl-Z undoes each change, also a tool, a paste and
 an added image.
 
 The emoji tool opens the panel of `emojiPicker`: a search field, eight categories and 482 emoji.
@@ -73,6 +78,8 @@ Rules an agent gets wrong:
   that fails shows `imp.richTextEditor.imageFailed`.
 - **A paste shows only what the value holds.** imp converts pasted HTML to markdown, then shows that
   markdown. So underline, colour and tables do not show. A paste into a code block is plain text.
+- **A link address with no scheme gets `https://`.** `example.com/a` becomes `https://example.com/a`.
+  A path, a `#` fragment or a `?` query stays as typed.
 - **A link or an image with a `javascript:` address is dropped.** Only `http`, `https`, `mailto` and
   `tel` links pass. An image passes with `http`, `https`, a path or `data:image/`. An image with no
   address is dropped too.
@@ -85,6 +92,16 @@ Rules an agent gets wrong:
 - **The link and emoji panels close when Tab moves the focus out of them**, as on Escape.
 - **An error shows only after the person leaves the editor, or tries to submit.**
 - **There is no underline, no table and no colour.** Markdown has no such marks.
+- **`tools` picks the buttons, `format` picks the markdown.** The toolbar shows the listed tools in
+  the listed order. Neighbouring tools of one kind (marks, blocks, lists, inserts, alignment) share
+  a group. imp warns and leaves out an unknown id, a repeated id, and a tool that the format does not
+  allow. Leaving a tool out does not limit the value: a paste and the starting value keep everything
+  the format holds. Only the image tool limits input - without it, a pasted or dropped image file is
+  dropped.
+- **`format: 'message'` is for a comment or a chat line.** Its toolbar has bold, italic,
+  strikethrough, link and emoji. A paste keeps only these marks and links. Every other block becomes a
+  paragraph, and an image is dropped. Render the value with `markdown({ format: 'message' })`, or
+  the `message` key of a `timeline` item.
 - **Every colour comes from the theme.** There is no theme prop.
 - **`label` names the text box inside this component.** Do not put your own label around it. Pass
   the state itself to `disabled`, not `disabled.get()`.

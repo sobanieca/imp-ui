@@ -957,15 +957,17 @@ richTextEditor({ field: 'body', label: 'Post', rows: 8 })
 richTextEditor({ value: note, label: 'Note', imageSize: 800 })
 ```
 
-| Prop          | Values                         | Default | Notes                                         |
-| ------------- | ------------------------------ | ------- | --------------------------------------------- |
-| `field`       | dot path                       | -       | Binds to that path of the surrounding form    |
-| `value`       | a state, or a plain string     | -       | Standalone use, when there is no form         |
-| `rows`        | positive integer               | `6`     | The minimum height, in lines. It grows        |
-| `imageSize`   | positive integer               | `1280`  | Longest edge, in pixels, of an embedded image |
-| `label`       | string, or a state holding one | -       | Names the text box                            |
-| `placeholder` | string                         | -       | Shown while the editor is empty               |
-| `readonly`    | boolean                        | `false` | No toolbar. Selectable, not editable          |
+| Prop          | Values                         | Default      | Notes                                         |
+| ------------- | ------------------------------ | ------------ | --------------------------------------------- |
+| `field`       | dot path                       | -            | Binds to that path of the surrounding form    |
+| `value`       | a state, or a plain string     | -            | Standalone use, when there is no form         |
+| `rows`        | positive integer               | `6`          | The minimum height, in lines. It grows        |
+| `imageSize`   | positive integer               | `1280`       | Longest edge, in pixels, of an embedded image |
+| `format`      | `'document'`, `'message'`      | `'document'` | The markdown the value holds                  |
+| `tools`       | array of tool ids, in order    | all          | The toolbar buttons, e.g. `['bold', 'link']`  |
+| `label`       | string, or a state holding one | -            | Names the text box                            |
+| `placeholder` | string                         | -            | Shown while the editor is empty               |
+| `readonly`    | boolean                        | `false`      | No toolbar. Selectable, not editable          |
 
 - **The person sees rich text. The value is a markdown string.** Bold, italic, strikethrough, code,
   headings 1 to 3, quote, code block, lists, link, image, emoji and alignment. Every form prop and
@@ -1223,7 +1225,7 @@ breadcrumbs({
 userCard({ name: 'Ada Lovelace', description: user.email })
 orgSelect({ orgs: memberships, selected: currentOrg, events: { select: switchOrg } })
 themeSelect()
-langSelect({ languages: ['en', 'pl'] })
+langSelect()
 ```
 
 | Component       | Props                                                                                                           |
@@ -1232,8 +1234,8 @@ langSelect({ languages: ['en', 'pl'] })
 | `breadcrumbs`   | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                              |
 | `userCard`      | `name`, `description`, `picture` (all live), `href`, `compact`, `events`                                        |
 | `orgSelect`     | `orgs` (live), `selected` (live, writable), `label` (live), `variant`, `size`, `compact`, `events`              |
-| `themeSelect`   | `themes`, `remember`, `label` (live), `variant`, `size`, `events`                                               |
-| `langSelect`    | `languages`, `remember`, `label` (live), `variant`, `size`, `events`                                            |
+| `themeSelect`   | `label` (live), `variant`, `size`, `events`                                                                     |
+| `langSelect`    | `languages`, `label` (live), `variant`, `size`, `events`                                                        |
 | `notifications` | `label` (live), `variant`, `size`, `events`                                                                     |
 
 Rules an agent gets wrong:
@@ -1250,10 +1252,10 @@ Rules an agent gets wrong:
 - **`themeSelect`, `langSelect` and `orgSelect` are menus.** Each renders a `menuButton` with the
   current choice on the trigger and a `menuitemradio` per option. There is no `<select>` in the
   frame.
-- **`themeSelect` and `langSelect` own their setting.** They apply it, remember it in
-  `localStorage`, and apply the remembered choice again on the next mount. Set `remember: false`
-  when the app owns the setting. A remembered theme wins against the `applyTheme` of the app at
-  startup. That is the purpose of remembering it.
+- **`themeSelect` and `langSelect` show and set an app-wide state of imp.** `themeSelect` offers
+  the `themes` of `init` and sets `theme`. `langSelect` offers the codes of `init({ translations })`
+  and sets `lang`. `init({ persist: true })` stores the choice. Every picker on the page agrees. See
+  [theming](theming.md) and [i18n](i18n.md).
 - **`orgSelect` remembers nothing and navigates nowhere.** It marks `selected`, reports a cancelable
   `select` with `{ id, org }`, and writes the `id` into a writable `selected` state. The app
   navigates to the tenant, see `imp skill routing`. Put it in the `logo` slot beside `appLogo`, in a

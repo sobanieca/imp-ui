@@ -40,7 +40,7 @@
       "theme-colors.js#shadowSteps",
       "theme-draft.js#followAppliedTheme",
       "theme-draft.js#themeFileSource",
-      "theme-editor.js#appliedThemeName",
+      "theme-editor.js#appThemeEditor",
       "theme-editor.js#themeEditor",
       "std/general/copy-button.js#copyButton",
       "std/shared/imp-mark.js#impMarkSvg"

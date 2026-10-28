@@ -40,7 +40,7 @@ so you can see a failed submit.
 | Lazy area with own messages    | `src/stats/area.js`, `src/stats/locales/`                                                    |
 | Build flag                   | `BULK_ACTIONS` in `imp.json` and `env/`, read in the todo list screen                        |
 | Analytics                      | `src/analytics.js`, zones and outcomes in `src/todos/`                                       |
-| Custom light and dark theme    | `src/theme.js`, applied in `src/main.js`, offered by `themeSelect`                           |
+| Custom light and dark theme    | `src/theme.js`, listed in `init` in `src/main.js`, offered by `themeSelect`                  |
 | Styled components of your own  | `src/ui/`: the hero, the stat tiles, the backdrop and the logo mark                          |
 | Account menu                   | `src/ui/account-menu.js`: a popover on desktop, inline in the drawer                         |
 | QR code of the app address     | `qrCode` in `src/about/about-screen.js`, with the address as text                            |

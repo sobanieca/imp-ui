@@ -157,6 +157,8 @@ writes it again, and a change in another tab arrives through the `storage` event
 
 - **Use it for a convenience of one person on one device**, such as the checks that the person
   started here, a filter or a closed panel. It never reaches another device or the server.
+- **Do not use it for the theme or the language.** imp owns those two states. Write
+  `init({ persist: true })`. See [theming](theming.md) and [i18n](i18n.md).
 - **The value must be JSON.** A `Date` comes back as a string.
 - **Storage can be blocked or empty**, as in a private window. imp then starts from `value` and logs
   at debug level. Do not wrap the call in `try`.

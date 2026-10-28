@@ -51,8 +51,9 @@ Rules an agent gets wrong:
   `logo: flex({ gap: 2, verticalAlign: 'center' }, appLogo({ label: 'Acme' }), orgSelect(...))`. The
   frame moves the whole block into the drawer on a phone. In the icon rail the block is hidden with
   the logo.
-- **Do not confuse it with `themeSelect` and `langSelect`.** Those own their setting and remember
-  it. `orgSelect` remembers nothing, because the tenant belongs to the session and the URL.
+- **Do not confuse it with `themeSelect` and `langSelect`.** Those set an app-wide state of imp,
+  which `init` can store. `orgSelect` remembers nothing, because the tenant belongs to the session
+  and the URL.
 - imp warns about an `orgs` entry without a `name`, about an empty list, and about an unknown prop.
 
 ```js

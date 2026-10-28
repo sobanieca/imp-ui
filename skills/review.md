@@ -154,10 +154,14 @@ disabled submit button carries the field values that explain why the button is d
   "what were you doing?".
 - **git ignores `.imp/`.** So a review exists only on the machine that wrote it. Never point a
   colleague or an issue at the path. Paste the contents.
-- **There is nothing to set up.** `imp start` and `imp preview` inject the widget, and `imp build`
-  never injects it. Do not write a review UI or a `/@imp/review` caller into the app. An app that
+- **There is nothing to set up.** `imp start` and `imp preview` inject the widget. `imp build` and
+  the app of `imp test --e2e` never carry it, so a spec never sees `#imp-review`. Do not write a review UI or a `/@imp/review` caller into the app. An app that
   wants its own users to report a problem ships `bugReport` from `imp/std/feedback`, see
   `imp skill std/bugReport`. That is a component. It never writes to `.imp/reviews/`, and it does
   not replace this widget.
+- **The widget follows every modal dialog.** While a `showModal()` dialog is open, the widget host
+  (`#imp-review`) is a child of that dialog, so it stays on top and clickable. Never raise a
+  z-index or change the app's dialogs to reach the widget. A dialog with its own `transform` or
+  `translate` clips the widget to its box while open.
 - `imp review` reads the project that you run it from, and works from any subdirectory. An unknown
   argument exits `1`. The only two forms are `clear` and no argument.

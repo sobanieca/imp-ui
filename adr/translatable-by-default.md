@@ -24,9 +24,9 @@ would leave two sources of truth, and somebody would keep them in step by hand.
 
 ## Decision
 
-The i18n subject ships as **six names on `imp/i18n`**. Those are `t`, `lang`, `dir`, `setLang`,
-`missingMessages` and `defaultMessages`. It also adds the `translations` and `dir` options on
-`init`, and the `translations` option on `area`. There is deliberately **no register call for the
+The i18n subject ships as **five names on `imp/i18n`**. Those are `t`, `lang`, `dir`,
+`missingMessages` and `defaultMessages`. `lang` is the one writable state of the five. It also adds
+the `translations`, `lang` and `dir` options on `init`, and the `translations` option on `area`. There is deliberately **no register call for the
 translations of a language**. An app declares its languages where it declares everything else about
 itself, and imp owns the load and the drop. `defaultMessages` is not that call. It registers the
 **fallback wording of a component**, which belongs to the component, and not to any language that
@@ -35,11 +35,11 @@ no locale data of its own. The one API of the platform that it uses is `Intl.Loc
 writing direction of a language.
 
 - **`<html lang>` is the language.** `lang.get()` and `t()` read the attribute on every call. So
-  they can never disagree with the document. `setLang(code)` writes the attribute, and it writes
-  nothing else. To write the attribute in another way works in the same manner, because a
+  they can never disagree with the document. `lang.set(code)` writes the attribute, and it writes
+  nothing else, apart from the stored choice of `app-wide-theme-and-language.md`. To write the attribute in another way works in the same manner, because a
   `MutationObserver` on it feeds the state of imp, and starts the same load. When the attribute is
   not set, imp uses `navigator.language`. So an app that declares its languages, and that never
-  calls `setLang`, already serves the preferred language of the visitor.
+  calls `lang.set`, already serves the preferred language of the visitor.
 
 - **`<html dir>` is the direction, and imp derives it from the language.** The direction is not a
   second thing to configure. Wherever imp writes `lang`, it writes `dir`. imp resolves the direction
@@ -90,7 +90,7 @@ writing direction of a language.
   exactly one loader. That is the entry that matches the current language, with the entry of its
   base language. So `en-GB` can be a few overrides, in place of a full copy of `en`. `init` loads
   before the app mounts. An area loads before its first screen paints. So nothing ever paints
-  untranslated. That is why `setLang` is **async**. To change the language means to load the
+  untranslated. That is why `lang.set` is **async**. To change the language means to load the
   messages of every live scope, for the target language. Only then does imp write the attribute, and
   drop the previous messages. So the change is atomic, from the point of view of the DOM. A loader
   is a dynamic `import()` of the file, and nothing else. There is one way to write it, one thing for
@@ -146,15 +146,15 @@ writing direction of a language.
   any other value.
 - An app declares its languages once, in `init` and in each `area`. It never writes code for loading
   or for teardown. What imp downloads, when it downloads it, and what it drops, all follow from the
-  place where the app declared the language. The cost is that `setLang` is async. So a change is
-  `await setLang(code)`.
+  place where the app declared the language. The cost is that `lang.set` is async. So a change is
+  `await lang.set(code)`.
 - An app that never changes language at runtime can ignore all of that, and reload the page instead.
   `init({ lang })` starts in whichever language somebody chose. A change in place is the same
   feature, with the strings bound through `lang`. That is the rule that the standard components
   follow, so they localize again in place.
 - The attribute is the source of truth. So a value that you read is always current. A notification
   about a write from **outside** costs one microtask, because of the timing of a `MutationObserver`.
-  Code that changes the language through `setLang` sees both parts synchronously.
+  Code that changes the language through `lang.set` sees both parts synchronously.
 - Support for right to left costs an app nothing that it would not do anyway. Declare the
   translations, write logical CSS, and the layout follows the reader. The cost is that imp writes
   `<html dir>`. An app that wants a different value pins it. It does not fight for the attribute.

@@ -42,11 +42,10 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect
   see `overlay-top-layer.md`. To fold both into one control would remove the way to navigate to the
   level the picker belongs to. The component does not derive a trail from the route. The router
   derives it, and the shell hands it over. So an app with a literal trail carries no router.
-- **`themeSelect` and `langSelect` own their setting completely.** They apply it, remember it in
-  `localStorage`, and apply the remembered choice again on the next mount. `remember: false` turns
-  that off. A remembered choice deliberately wins against the `applyTheme` of the app at startup.
-  With no remembered choice, the component applies its first option only when the app has applied no
-  theme. So imp never overwrites the theme of an app on a first visit.
+- **`themeSelect` and `langSelect` own no setting.** They show and set the app-wide `theme` and
+  `lang` states of imp. The choices come from `init`, and so does the storage of the choice, see
+  `app-wide-theme-and-language.md`. So two pickers on one page always agree, and a picker on a
+  settings page sets the theme of every page.
 - **Every picker of the group is a `menuButton`.** `themeSelect`, `langSelect` and `orgSelect`
   render the shared menu, with the current choice on the trigger and a `menuitemradio` per option. A
   native `<select>` in a bar had a different look in every browser and no room for an icon or an

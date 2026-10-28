@@ -8,6 +8,7 @@ const shared = {
 export const auroraLight = {
   base: 'imp-light',
   name: 'aurora-light',
+  label: 'Aurora light',
   tokens: {
     ...shared,
     loader: 'dots',
@@ -32,9 +33,10 @@ export const auroraLight = {
   },
 }
 
-const auroraDark = {
+export const auroraDark = {
   base: 'imp-dark',
   name: 'aurora-dark',
+  label: 'Aurora dark',
   tokens: {
     ...shared,
     loader: 'pulse',
@@ -59,7 +61,4 @@ const auroraDark = {
   },
 }
 
-export const THEME_CHOICES = [
-  { value: 'aurora-light', label: 'Aurora light', theme: auroraLight },
-  { value: 'aurora-dark', label: 'Aurora dark', theme: auroraDark },
-]
+export const themes = ['system', auroraLight, auroraDark]

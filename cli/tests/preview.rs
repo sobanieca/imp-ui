@@ -1,7 +1,7 @@
 mod support;
 
 use imp::review::read_widget_mark;
-use imp::start::client_script;
+use imp::start::{Widget, client_script};
 use regex::Regex;
 use std::time::Duration;
 use support::*;
@@ -116,7 +116,7 @@ fn preview_serves_the_catalog() {
         "preview-banner",
         &normalize(&server.banner).replace(&format!(":{port}"), ":<port>"),
     );
-    let preview_client = client_script(false, false, &read_widget_mark(), false);
+    let preview_client = client_script(false, false, &read_widget_mark(), Widget::Review);
     let page = |name: &str, path: &str| {
         let answer = get(port, path);
         let body = normalize(

@@ -59,7 +59,7 @@ export const accountMenu = component('todo-account-menu', {
       .panel { background: Canvas; border-color: CanvasText; }
     }
   `,
-  setup: (self, { languages, themes, onSignOut }) => {
+  setup: (self, { onSignOut }) => {
     const session = useState(self, 'todo.session')
     const name = computed([session], (user) => user?.name ?? '')
     const panel = div(
@@ -71,12 +71,12 @@ export const accountMenu = component('todo-account-menu', {
         div(
           { class: 'row' },
           span({ class: 'name' }, tr('account.language')),
-          langSelect({ languages }),
+          langSelect(),
         ),
         div(
           { class: 'row' },
           span({ class: 'name' }, tr('account.theme')),
-          themeSelect({ themes }),
+          themeSelect(),
         ),
         div({ class: 'rule' }),
         button(

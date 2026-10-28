@@ -252,7 +252,7 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   `index.html` of the app, because that file starts the app from its own script tag. A path that
   resolves to no file fails the command at startup.
 - **Language and direction are chrome controls on the same seam.** A language picker calls
-  `setLang`, and a direction picker writes `<html dir>` (`translatable-by-default.md`). So a
+  `lang.set`, and a direction picker writes `<html dir>` (`translatable-by-default.md`). So a
   component is checked in another language, and right to left, without a code edit. Both selections
   are remembered like the theme. The languages offered are the ones the project lists in
   `preview.translations`, a map of code to file. The generated entry imports them and hands them to
