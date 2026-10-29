@@ -221,8 +221,8 @@ Rules an agent gets wrong:
 - **There is no `header` region and no `footer` region.** A page title and a toolbar go at the top
   of the main content that you pass as children.
 - **The shell is the one component that changes structure by width.** Its query is `48rem`. Below it
-  the top bar becomes a hamburger and a two-line title (the `logo` on a top-level page; the logo
-  joins the drawer while it is open), the sidebar becomes the bottom bar capped at
+  the top bar becomes a hamburger and a two-line title (the `logo` on a top-level page, where it
+  stays while the drawer is open and the drawer head reads "Menu"), the sidebar becomes the bottom bar capped at
   `--imp-shell-bottom-bar-items` rows with a **More** sheet, and the sections and both `extras` move
   into the drawer. The top bar slides away while the content scrolls down, and back on a scroll up,
   at the top of the content, or when a control in it takes focus. Do not write a scroll listener

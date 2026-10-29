@@ -49,7 +49,7 @@ The call shape is `comboBox(props?)`. The choices are the `options` prop, never 
 | ------------------ | ------------------------------------------------------------------- |
 | ArrowDown, ArrowUp | Open the list, and move the active option                           |
 | Home, End          | Move to the first or the last option, while an option is active     |
-| Enter              | Commit the active option. With `custom`, commit the text            |
+| Enter              | Commit the active option. With `custom` and no option, the text     |
 | Escape             | Close the list. A second Escape clears the text, and a single value |
 | Backspace          | In an empty `multiple` input, remove the last chip                  |
 | Tab                | Close the list. The active option is not committed                  |
@@ -83,6 +83,9 @@ Rules an agent gets wrong:
 - **Text that matches no option does not stay.** Without `custom`, imp restores the label of the
   current value when the person leaves. Text equal to a label selects that option. Empty text clears
   a single value.
+- **Typing marks a suggestion, so Enter picks it.** The option whose label equals the text wins,
+  else the first one shown. With `custom`, Enter keeps the typed text only when nothing matches.
+  To keep text that matches a suggestion, press Escape and then Enter, or type a comma in a tag input.
 - **Enter in an open list does not submit the form.** Enter with a closed list and no typed text
   does.
 - **The list is a popover in the same component.** Do not build your own panel or portal. Do not put

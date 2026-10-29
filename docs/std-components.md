@@ -336,8 +336,8 @@ section with no children.
 
 **The frame folds on a phone.** The bar becomes a hamburger and a title. The title names the page
 and the page above it, such as "Checks" over "Deploy to production". A top-level page has no page
-above it, so its bar shows your logo instead, and the logo moves into the drawer while the drawer is
-open. On a deeper page the logo waits in the drawer. The bar slides away while the content scrolls
+above it, so its bar shows your logo instead, and the logo stays there while the drawer is open, so the
+bar never changes height. On a deeper page the logo waits in the drawer. The bar slides away while the content scrolls
 down, so the content gets the whole screen, and it slides back on the first scroll up, at the top
 of the content, and when a keyboard user tabs into it. The column becomes a bottom
 bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.
