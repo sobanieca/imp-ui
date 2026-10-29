@@ -2,7 +2,7 @@
 
 ```
 imp start [file.html] [--port 4400] [--env <name>] [--mock | --no-mock] [--no-reload]
-          [--host <address>]
+          [--host <address>] [--allow-host <name>]
 ```
 
 `imp start` serves the directory that holds the entry HTML file. The default entry is `index.html`
@@ -16,8 +16,10 @@ imp resolves the port in this order: `--port`, then `devServerPort` in `imp.json
 - **The dev server is a local tool.** It listens on `127.0.0.1`. Never deploy it or expose it.
   `--host 0.0.0.0` opens it to the network, for a phone test only. Every device on that network can
   then read the project files.
-- **It answers only a loopback host name or a `--host` address.** Any other `Host` gets `403`. With
-  `--host 0.0.0.0`, open a printed URL, not a name such as `mybox.local`.
+- **It answers only a loopback host name, a `--host` address or an `--allow-host` name.** Any other
+  `Host` gets `403`. With `--host 0.0.0.0`, open a printed URL, not a name such as `mybox.local`.
+- **A tunnel needs `--allow-host <name>`** with its public name, without a scheme. Repeat it for each
+  name. It does not change the listen address. Everyone who reaches the tunnel can read the files.
 - **Its endpoints answer only its own pages.** `/@imp/events`, `/@imp/log`, `/@imp/mock` and
   `/@imp/review` refuse another origin with `403`. A POST must be `application/json`.
 - **A path segment that starts with `.` is `404`**, except `.well-known/`. Do not put a served file

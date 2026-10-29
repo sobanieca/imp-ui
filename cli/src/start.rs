@@ -41,6 +41,7 @@ pub struct StartOptions {
     pub entry: String,
     pub port: Option<u16>,
     pub host: Option<String>,
+    pub allowed_hosts: Vec<String>,
     pub env: Option<String>,
     pub mocks: Option<bool>,
     pub reload: bool,
@@ -559,8 +560,8 @@ pub fn network_addresses() -> Vec<String> {
         .collect()
 }
 
-pub fn served_hostnames(host: Option<&str>) -> Vec<String> {
-    match host {
+pub fn served_hostnames(host: Option<&str>, allowed_hosts: &[String]) -> Vec<String> {
+    let listened = match host {
         None => Vec::new(),
         Some(host) if is_loopback_host(host) => Vec::new(),
         Some(host) if is_wildcard_host(host) => interface_addresses()
@@ -568,7 +569,11 @@ pub fn served_hostnames(host: Option<&str>) -> Vec<String> {
             .map(|address| url_hostname(&address.to_string()))
             .collect(),
         Some(host) => vec![url_hostname(host)],
-    }
+    };
+    listened
+        .into_iter()
+        .chain(allowed_hosts.iter().map(|name| authority_hostname(name)))
+        .collect()
 }
 
 pub fn server_urls(host: Option<&str>, port: u16, path: &str) -> Vec<String> {
@@ -593,14 +598,31 @@ pub fn exposed_host_warning(host: &str) -> String {
     )
 }
 
-fn request_hostname(request: &Request) -> String {
-    let host = request.host();
-    if let Some(rest) = host.strip_prefix('[')
+pub fn allowed_hosts_warning(allowed_hosts: &[String]) -> String {
+    format!(
+        "the dev server answers for {} - everyone who reaches it through that name can read the files of this project. Use --allow-host only for a tunnel that you control, and stop the server when you are done",
+        allowed_hosts.join(", ")
+    )
+}
+
+fn authority_hostname(authority: &str) -> String {
+    if let Some(rest) = authority.strip_prefix('[')
         && let Some((inside, _)) = rest.split_once(']')
     {
         return format!("[{}]", inside.to_ascii_lowercase());
     }
-    host.split(':').next().unwrap_or("").to_ascii_lowercase()
+    if authority.matches(':').count() > 1 {
+        return url_hostname(authority);
+    }
+    authority
+        .split(':')
+        .next()
+        .unwrap_or("")
+        .to_ascii_lowercase()
+}
+
+fn request_hostname(request: &Request) -> String {
+    authority_hostname(&request.host())
 }
 
 pub fn is_served_host(request: &Request, hostnames: &[String]) -> bool {
@@ -612,19 +634,22 @@ pub fn unknown_host_response(request: &Request) -> Response {
     Response::text(
         403,
         format!(
-            "forbidden - the dev server does not answer for the host name '{}'; open one of the addresses that it printed, or pass that name with --host",
+            "forbidden - the dev server does not answer for the host name '{}'; open one of the addresses that it printed, or pass that name with --allow-host",
             request_hostname(request)
         ),
     )
 }
 
-fn origin_of(request: &Request) -> String {
-    format!("http://{}", request.host())
+fn is_origin_of(origin: &str, request: &Request) -> bool {
+    let host = request.host();
+    ["http://", "https://"]
+        .iter()
+        .any(|scheme| origin.strip_prefix(scheme) == Some(host.as_str()))
 }
 
 pub fn is_own_page_request(request: &Request) -> bool {
     match request.header("origin") {
-        Some(origin) => origin == origin_of(request),
+        Some(origin) => is_origin_of(origin, request),
         None => request.header("sec-fetch-site") == Some("same-origin"),
     }
 }
@@ -843,6 +868,12 @@ pub fn warn_about_exposed_host(host: Option<&str>) {
     }
 }
 
+pub fn warn_about_allowed_hosts(allowed_hosts: &[String]) {
+    if !allowed_hosts.is_empty() {
+        logger::warn(&allowed_hosts_warning(allowed_hosts));
+    }
+}
+
 pub fn bind(host: Option<&str>, port: u16) -> Result<TcpListener> {
     let hostname = listen_hostname(host);
     let address = if hostname.contains(':') {
@@ -913,7 +944,7 @@ pub fn start(options: StartOptions) -> Result<()> {
     let bound = listener.local_addr()?.port();
     let mut handler = Handler::new(app.clone(), clients);
     handler.recent_log = Some(dev_log.clone());
-    handler.hostnames = served_hostnames(options.host.as_deref());
+    handler.hostnames = served_hostnames(options.host.as_deref(), &options.allowed_hosts);
     logger::info(&format!(
         "imp start serving {} from {}",
         app.entry_name,
@@ -921,6 +952,7 @@ pub fn start(options: StartOptions) -> Result<()> {
     ));
     print_server_urls(options.host.as_deref(), bound, "/");
     warn_about_exposed_host(options.host.as_deref());
+    warn_about_allowed_hosts(&options.allowed_hosts);
     println!("{}", dim("  logs -> imp logs (-f follows the session)"));
     println!("{}", reload_banner_line(reload));
     let handler = Arc::new(handler);

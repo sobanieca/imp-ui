@@ -42,6 +42,24 @@ fn host_flag(args: &[String]) -> Result<Option<String>> {
     )
 }
 
+fn allow_host_flags(args: &[String]) -> Result<Vec<String>> {
+    let mut names = Vec::new();
+    for (index, arg) in args.iter().enumerate() {
+        if arg != "--allow-host" {
+            continue;
+        }
+        match args.get(index + 1) {
+            Some(value) if !value.is_empty() && !value.starts_with("--") => {
+                names.push(value.clone())
+            }
+            _ => bail!(
+                "--allow-host needs a host name, like '--allow-host my-tunnel.example' to answer a tunnel that forwards to the dev server"
+            ),
+        }
+    }
+    Ok(names)
+}
+
 fn port_flag(args: &[String]) -> Result<Option<u16>> {
     let Some(raw) = flag(args, "port") else {
         return Ok(None);
@@ -134,6 +152,7 @@ pub fn run(args: &[String]) -> Result<i32> {
                 entry,
                 port: port_flag(rest)?,
                 host: host_flag(rest)?,
+                allowed_hosts: allow_host_flags(rest)?,
                 env: flag(rest, "env"),
                 mocks: mock_flag(rest),
                 reload: !has(rest, RELOAD_FLAG),
@@ -149,6 +168,7 @@ pub fn run(args: &[String]) -> Result<i32> {
                 paths: positional(&filtered),
                 port: port_flag(rest)?,
                 host: host_flag(rest)?,
+                allowed_hosts: allow_host_flags(rest)?,
                 env: flag(rest, "env"),
                 list: has(rest, "--list"),
                 json: has(rest, "--json"),

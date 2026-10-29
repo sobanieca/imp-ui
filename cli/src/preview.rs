@@ -20,7 +20,8 @@ use crate::preview_source::{
 use crate::start::{
     AppOptions, Clients, Handler, has_hidden_segment, inject_imp, is_served_host, load_app,
     print_server_urls, reload_banner_line, served_hostnames, unknown_host_response,
-    warn_about_exposed_host, warn_missing_dependencies, watch_for_changes,
+    warn_about_allowed_hosts, warn_about_exposed_host, warn_missing_dependencies,
+    watch_for_changes,
 };
 use anyhow::{Result, anyhow, bail};
 use serde_json::{Value, json};
@@ -66,6 +67,7 @@ pub struct PreviewOptions {
     pub paths: Vec<String>,
     pub port: Option<u16>,
     pub host: Option<String>,
+    pub allowed_hosts: Vec<String>,
     pub env: Option<String>,
     pub list: bool,
     pub json: bool,
@@ -1224,7 +1226,7 @@ pub fn preview(options: PreviewOptions) -> Result<()> {
     let mut handler = Handler::new(app.clone(), clients.clone());
     handler.history_fallback = false;
     handler.recent_log = Some(dev_log.clone());
-    handler.hostnames = served_hostnames(options.host.as_deref());
+    handler.hostnames = served_hostnames(options.host.as_deref(), &options.allowed_hosts);
     let server = Arc::new(PreviewServer {
         app: handler,
         root: root.clone(),
@@ -1261,6 +1263,7 @@ pub fn preview(options: PreviewOptions) -> Result<()> {
     ));
     print_server_urls(options.host.as_deref(), bound, &open_path);
     warn_about_exposed_host(options.host.as_deref());
+    warn_about_allowed_hosts(&options.allowed_hosts);
     println!("{}", dim("  logs -> imp logs (-f follows the session)"));
     if !settings.themes.is_empty() {
         let names: Vec<&str> = settings

@@ -21,6 +21,9 @@ USAGE
                      [--host <address>] listen on another address than 127.0.0.1, like
                                         0.0.0.0 to test on a phone (every device on the
                                         network can then read the project files)
+                     [--allow-host <name>]
+                                        also answer for this host name, such as the public
+                                        name of a tunnel (repeat it for more names)
   imp build [file.html] [--output dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
@@ -38,8 +41,8 @@ USAGE
                      [--output <dir>]   --output writes the same page as static files, with one
                                         bundle per group and a script that defines <imp-preview>,
                                         the element that embeds the catalog in any web page
-                     [--host <address>] --host listens on another address than 127.0.0.1, as for
-                                        imp start
+                     [--host <address>] --host and --allow-host work as for imp start
+                     [--allow-host <name>]
   imp review [clear]                    list what was written from the browser by the review
                                         widget the dev server puts on every page - the page,
                                         the element picked and the comment left on it

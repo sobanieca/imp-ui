@@ -1,0 +1,15 @@
+imp start | the host my-box.tunnel.example: GET / -> HTTP/1.1 200 OK
+imp start | the host my-box.tunnel.example:443: GET / -> HTTP/1.1 200 OK
+imp start | the host 95.216.245.98:8080: GET / -> HTTP/1.1 200 OK
+imp start | the host other.example: GET / -> HTTP/1.1 403 Forbidden
+imp start | the tunnel host, origin https://my-box.tunnel.example: POST /@imp/log -> HTTP/1.1 200 OK
+imp start | the tunnel host, origin http://my-box.tunnel.example: POST /@imp/log -> HTTP/1.1 200 OK
+imp start | the tunnel host, origin https://evil.example: POST /@imp/log -> HTTP/1.1 403 Forbidden
+imp preview | the host my-box.tunnel.example: GET / -> HTTP/1.1 200 OK
+imp preview | the host my-box.tunnel.example:443: GET / -> HTTP/1.1 200 OK
+imp preview | the host 95.216.245.98:8080: GET / -> HTTP/1.1 200 OK
+imp preview | the host other.example: GET / -> HTTP/1.1 403 Forbidden
+imp preview | the tunnel host, origin https://my-box.tunnel.example: POST /@imp/log -> HTTP/1.1 200 OK
+imp preview | the tunnel host, origin http://my-box.tunnel.example: POST /@imp/log -> HTTP/1.1 200 OK
+imp preview | the tunnel host, origin https://evil.example: POST /@imp/log -> HTTP/1.1 403 Forbidden
+--allow-host with no name: exit 1 | [ERROR] --allow-host needs a host name, like '--allow-host my-tunnel.example' to answer a tunnel that forwards to the dev server

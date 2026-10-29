@@ -2,7 +2,7 @@
 
 ```
 imp preview [path] [--port 4401] [--env <name>] [--mock | --no-mock] [--no-reload]
-            [--host <address>]
+            [--host <address>] [--allow-host <name>]
 imp preview --list [--json]
 imp preview --output <dir> [--env <name>]
 ```
@@ -15,7 +15,8 @@ two toggle buttons. A **Skill** tab renders the component's `*.skill.md`. There 
 backend, and no navigation to the right screen. It is the same dev server as [start](start.md)
 underneath, with terminal telemetry and reload on save. `--no-reload` keeps the page as it is on a
 save. imp still reads the catalog again, and a reload made by the user shows the new files. It
-listens on `127.0.0.1`, and `--host` and the endpoint rules work as on `imp start`.
+listens on `127.0.0.1`, and `--host`, `--allow-host` and the endpoint rules work as on
+`imp start`.
 
 ## The preview file
 

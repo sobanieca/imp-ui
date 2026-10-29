@@ -61,12 +61,13 @@ imp start [file.html] [--port 4400]   serve a page (default: index.html)
           [--mock | --no-mock]        answer from the mocks folder, or from the real API
           [--no-reload]               keep the page as it is when a file changes
           [--host <address>]          listen on another address than 127.0.0.1
+          [--allow-host <name>]       also answer for this host name, such as a tunnel
 imp build [file.html] [--output dist]   build the app for production
           [--pwa]                     also emit an installable, offline PWA
 imp preview [path] [--port 4401]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
             [--output <dir>]          export the gallery as static files that any page embeds
-            [--mock | --no-mock] [--no-reload] [--host <address>]
+            [--mock | --no-mock] [--no-reload] [--host <address>] [--allow-host <name>]
 imp review [clear]                    list the reviews written from the browser
                                       (clear: delete every saved review)
 imp logs [-n <count>] [-f]            print the log of the dev server session
@@ -267,7 +268,7 @@ for the map itself.
 
 ```
 imp start [file.html] [--port 4400] [--env <name>] [--mock | --no-mock] [--no-reload]
-          [--host <address>]
+          [--host <address>] [--allow-host <name>]
 ```
 
 `imp start` serves the directory that contains the HTML file that you give. The default file is
@@ -304,6 +305,22 @@ The dev server answers only a request that names it by a loopback name, such as 
 `127.0.0.1`, or by an address of `--host`. Any other host name gets the status `403`. This stops a
 web page that points its own domain name at your machine, a DNS rebinding attack, from reading your
 files. With `--host 0.0.0.0`, open one of the URLs that the server prints.
+
+A tunnel sends the request with its own public name, for example `my-box.tunnel.example` or the IP
+address of a remote machine. That name is not an address of your machine, so the server refuses it.
+Pass the name with `--allow-host`. The server then answers for that name too, and it still listens
+only on its own address:
+
+```
+imp start --allow-host my-box.tunnel.example
+```
+
+Give the host name without a scheme. A port is ignored. Repeat the flag for each name. The page of a
+tunnel can use `https`, and the endpoints of the dev server accept it.
+
+> **Warning:** With `--allow-host`, everyone who reaches the tunnel can read the files of your
+> project. Use `--allow-host` only for a tunnel that you control, and stop the server when you are
+> done.
 
 The dev server protects its own endpoints. Live reload, the log of the page, the mock responses and
 the saved reviews answer only a request from a page of the dev server itself. A POST must send

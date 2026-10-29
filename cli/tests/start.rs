@@ -893,6 +893,79 @@ fn the_dev_server_listens_on_loopback_unless_host_opens_it() {
 }
 
 #[test]
+fn the_dev_server_answers_a_tunnel_name_that_allow_host_names() {
+    let dir = TempDir::new();
+    copy_directory(&fixture("start-mocks"), &dir.path);
+    write(
+        &dir.join("note.preview.js"),
+        "import { div } from 'imp/html'\nexport const plain = div('note')\n",
+    );
+    let allowed = [
+        "--allow-host",
+        "My-Box.Tunnel.example",
+        "--allow-host",
+        "95.216.245.98",
+    ];
+    let servers = [
+        ("imp start", start_dev(&dir.path, &allowed)),
+        ("imp preview", start_preview(&dir.path, &allowed)),
+    ];
+    let mut transcript_lines = Vec::new();
+    for (label, server) in &servers {
+        let port = server.port;
+        check(
+            server
+                .banner
+                .contains("answers for My-Box.Tunnel.example, 95.216.245.98"),
+            format!(
+                "{label} does not warn about the allowed names:\n{}",
+                server.banner
+            ),
+        );
+        for host in [
+            "my-box.tunnel.example".to_string(),
+            "my-box.tunnel.example:443".to_string(),
+            "95.216.245.98:8080".to_string(),
+            "other.example".to_string(),
+        ] {
+            let status = raw_status_line(port, "/", "GET", &host, &[]);
+            transcript_lines.push(format!("{label} | the host {host}: GET / -> {status}"));
+        }
+        for origin in [
+            "https://my-box.tunnel.example",
+            "http://my-box.tunnel.example",
+            "https://evil.example",
+        ] {
+            let origin_header = format!("origin: {origin}");
+            let status = raw_status_line(
+                port,
+                "/@imp/log",
+                "POST",
+                "my-box.tunnel.example",
+                &[
+                    &origin_header,
+                    "content-type: application/json",
+                    "content-length: 2",
+                ],
+            );
+            transcript_lines.push(format!(
+                "{label} | the tunnel host, origin {origin}: POST /@imp/log -> {status}"
+            ));
+        }
+    }
+    let missing = run_imp(&["start", "--allow-host"], &fixture("basic"));
+    transcript_lines.push(format!(
+        "--allow-host with no name: exit {} | {}",
+        missing.code,
+        missing.stderr.trim()
+    ));
+    assert_snapshot(
+        "start-allow-host",
+        &format!("{}\n", transcript_lines.join("\n")),
+    );
+}
+
+#[test]
 fn the_dev_server_serves_a_file_and_a_folder_with_a_non_ascii_name() {
     let dir = TempDir::new();
     copy_directory(&fixture("basic"), &dir.path);
