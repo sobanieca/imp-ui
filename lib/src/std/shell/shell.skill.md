@@ -43,6 +43,7 @@ The call shape is `shell(props?, ...mainContent)`. When a props object is presen
 | `sidebar`     | **data** - see below                         | none     | Names the column, and adds app-wide `extras` under the rows        |
 | `logo`        | DOM                                          | none     | Brand block; heads the bar, the sidebar, or the drawer             |
 | `extras`      | DOM, or an array of it                       | none     | Theme picker, language picker, `userCard`, anything                |
+| `footer`      | omitted, `false`, or **data** - below        | none     | The foot of every page: a note and a row of links and DOM          |
 | `signIn`      | a node handle of the map                     | none     | The sign-in node; it and its children show without the chrome      |
 | `breadcrumbs` | `false`                                      | shown    | Turns the trail above the content off; needs a map                 |
 | `navOpen`     | boolean, or a state - **live**               | `false`  | Drawer state; the shell owns one if the prop is omitted            |
@@ -218,11 +219,9 @@ Rules an agent gets wrong:
 - **There is no aside region. Do not ask for one.** Content that comes and goes is a `drawer` in the
   main content. Content that must stand beside the page is your own layout inside the main content,
   as in `shell({ map }, flex({ gap: 4 }, router(...), sideColumn()))`.
-- **There is no `header` region and no `footer` region.** A page title and a toolbar go at the top
-  of the main content that you pass as children. An app footer, with the legal links, Contact and
-  a `bugReport({ as: 'link' })`, is the last child of the main content, after the router. Give its
-  host `display: block; margin-block-start: auto`: the main region is a column flex box, so the
-  footer then sits at the foot of a short page and under the content of a long one.
+- **There is no `header` region.** A page title and a toolbar go at the top of the main content
+  that you pass as children. The foot of every page is the `footer` prop, see below. Do not add a
+  footer element of your own after the router.
 - **The shell is the one component that changes structure by width.** Its query is `48rem`. Below it
   the top bar becomes a hamburger and a two-line title (the `logo` on a top-level page, where it
   stays while the drawer is open and the drawer head reads "Menu"), the sidebar becomes the bottom bar capped at
@@ -244,6 +243,52 @@ Rules an agent gets wrong:
   only. Its text is `imp.shell.skip`. It is `100dvb` tall, and it scrolls each region on its own.
   The main region is a column flex box. A child with `flex: 1` and `min-block-size: 0` takes the
   height that the trail leaves, and can scroll on its own inside the region.
+
+## The footer
+
+```js
+import { bugReport } from 'imp/std/feedback'
+
+shell(
+  {
+    map: app,
+    footer: {
+      note: '© 2026 Acme',
+      items: [
+        app.privacy,
+        { node: app.contact, label: 'Contact us' },
+        { href: 'https://status.acme.test', label: 'Status' },
+        bugReport({ as: 'link', size: 'sm', onSubmit: sendReport }),
+      ],
+    },
+  },
+  router({ map: app, screens }),
+)
+```
+
+| Key     | Values                                          | Notes                                        |
+| ------- | ----------------------------------------------- | -------------------------------------------- |
+| `note`  | string, DOM, or a state - **live**              | The start side: a copyright, a version       |
+| `items` | an array of the entries below, or a state of it | The end side, in order, wrapping when narrow |
+
+| Entry              | Renders                                                           |
+| ------------------ | ----------------------------------------------------------------- |
+| `app.privacy`      | a routed `link` to the node, with the label of its nav row        |
+| `{ node, label }`  | the same link with a label of its own (string or state)           |
+| `{ href, label }`  | a `link` to any address; one outside the app opens as a plain one |
+| text, DOM, a state | as it is: a `bugReport`, a `themeSelect`, any component of yours  |
+
+- **The footer is part of the content area, not a fixed bar.** It is the last thing in the main
+  region. On a short page it sits at the bottom of the screen; on a long one it follows the content
+  and scrolls with it. On a phone it stays above the bottom bar.
+- **It shows on the sign-in screen too**, under the form, so the legal links are there before
+  someone signs in. Pass the footer only when every page should show it.
+- **A node under a param cannot be a footer link.** It has no address without the value. imp warns
+  and skips it. Pass `{ href, label }` built from `app.node.href({ ... })` instead.
+- **A node label follows the language**, as the nav does. A `label` that you pass is already
+  translated.
+- **Do not style the links.** They are std `link`s at `size: 'sm'`. Pass a component when an entry
+  must look different.
 
 ## The account menu
 

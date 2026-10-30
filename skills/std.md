@@ -322,10 +322,10 @@ Rules an agent gets wrong:
   message `appMap.<id>.label` translates it.
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows, because it draws each level more than once. The main content is the
-  children, as in `shell({ map }, router(...))`. There is no `header`, `footer` or `layout` prop. Put
-  a page toolbar at the top of the main content. An app footer is the last child of the main
-  content, after the router, with `margin-block-start: auto` on its host, so it sits at the foot of
-  a short page. The trail is the frame's; do not add a second one.
+  children, as in `shell({ map }, router(...))`. There is no `header` or `layout` prop. Put a page
+  toolbar at the top of the main content. The foot of every page is the `footer` prop, as
+  `footer: { note, items: [app.privacy, { href, label }, bugReport(...)] }`, see imp skill
+  std/shell. The trail is the frame's; do not add a second one.
 - **Sign-in is a node of the map, and the guard of the root covers the rest.** Bind it in
   `router({ guards: { [app]: signedIn } })`. Its check returns `true` for `node === app.signIn`
   first. Then it returns `wait` while the session is `undefined`, and `/sign-in?next=<path>` while

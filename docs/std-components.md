@@ -354,9 +354,28 @@ with a view transition of the browser: `effect: 'fade'` cross-fades, `'slide'` m
 along the reading direction, and `'zoom'` scales the new screen in. The default is `'none'`. The
 bar, the column and the trail never move. See **[Routing](routing.md#screen-transitions)**.
 
-**There is no footer region either.** An app footer, with the legal links, a contact link and a
-`bugReport` link, is the last child of the main content, after the router. The main region is a
-column flex box, so `margin-block-start: auto` on the footer keeps it at the foot of a short page.
+**The `footer` prop is the foot of every page.** It takes a `note` for the start side, such as a
+copyright, and `items` for the end side. An item is a node of the application map, which becomes a
+link with the label of its nav row, a `{ node, label }` or `{ href, label }` link, or any component,
+such as a `bugReport` link. The footer ends the content area: on a short page it sits at the bottom
+of the screen, and on a long one it follows the content. It shows under the sign-in screen too.
+
+```js
+shell(
+  {
+    map: app,
+    footer: {
+      note: '© 2026 Acme',
+      items: [
+        app.privacy,
+        { node: app.contact, label: 'Contact us' },
+        bugReport({ as: 'link', onSubmit }),
+      ],
+    },
+  },
+  router({ map: app, screens }),
+)
+```
 
 **There is no aside region, on purpose.** A contextual side column has no phone form. Content that
 comes and goes, such as filters or an inspector, is a `drawer` that you mount in the main content.
@@ -1027,7 +1046,7 @@ The library has one component per job. A name from another library often maps to
 | submit button      | a `button` whose click is `submitForm`                                   |
 | workspace switcher | `orgSelect`                                                              |
 | feedback widget    | `bugReport`, the "Report a bug" trigger                                  |
-| footer             | your own element as the last child of the `shell` content                |
+| footer             | the `footer` prop of `shell`                                             |
 | avatar group       | a `flex` of avatars, with a `tag` for "+4"                               |
 | button group       | `flex({ joined: true })`                                                 |
 | split button       | a joined `flex` of a `button` and a `menuButton`                         |
