@@ -52,8 +52,17 @@ pub const SKILLS: &[Skill] = &[
     Skill {
         name: "components",
         group: "app",
-        aliases: &["component"],
-        summary: "custom elements with a setup lifecycle: instance, styles, cleanup",
+        aliases: &[
+            "component",
+            "interval",
+            "delay",
+            "timer",
+            "timers",
+            "poll",
+            "polling",
+            "background",
+        ],
+        summary: "custom elements with a setup lifecycle: styles, cleanup, and timers for polling and background work",
     },
     Skill {
         name: "custom-components",

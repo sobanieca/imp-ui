@@ -187,6 +187,10 @@ await api.delete(`/users/${id}`)
   to `null`.
 - imp joins a path onto `baseUrl`. It uses a full URL, such as `https://...`, as given.
 
+There is no polling option. To load the same data again every few seconds, call the client from
+`interval(self, ms, run, { whenVisible: true })`, see **[Components](components.md)**. The poll stops
+when the component unmounts, skips the hidden tab, and never stacks a slow request on another.
+
 `request` returns the whole response, and takes the method as an option:
 
 ```js

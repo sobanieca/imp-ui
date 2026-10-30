@@ -138,10 +138,10 @@ there. See _How to run code after imp places the DOM_ below.
 ### `onRemove(self, ...args)` - optional
 
 `onRemove` runs after the browser removes the component from the document, before imp empties the
-shadow root. Use it for the cleanup that imp cannot do for you, such as a timer, a socket or a
-third-party widget. It receives the **same `self`** as its `setup`, and then the arguments of the
-factory call. So anything that `setup` stored on `self`, such as a timer handle, is there to clean
-up. `onRemove` can be `async`. imp awaits it, and logs a rejection without a break in the rest of
+shadow root. Use it for the cleanup that imp cannot do for you, such as a socket, a document-level
+listener or a third-party widget. A timer needs none: `interval` and `delay`, below, stop on their
+own. `onRemove` receives the **same `self`** as its `setup`, and then the arguments of the factory
+call. So anything that `setup` stored on `self`, such as a socket, is there to clean up. `onRemove` can be `async`. imp awaits it, and logs a rejection without a break in the rest of
 the unmount.
 
 There is one edge case, and it applies only when the same host can **mount again**. Sometimes
@@ -275,16 +275,16 @@ These details are worth knowing:
 receives:
 
 ```js
-const clock = component('my-app-clock', {
+const feed = component('my-app-feed', {
   setup: (self) => {
-    const face = span('0s')
-    const startedAt = Date.now()
-    self.timer = setInterval(() => {
-      face.textContent = `${Math.round((Date.now() - startedAt) / 1000)}s`
-    }, 1000)
-    return span('elapsed: ', face)
+    const last = span('waiting...')
+    self.socket = new WebSocket('wss://example.com/feed')
+    self.socket.addEventListener('message', (event) => {
+      last.textContent = event.data
+    })
+    return span('latest: ', last)
   },
-  onRemove: (self) => clearInterval(self.timer),
+  onRemove: (self) => self.socket.close(),
 })
 ```
 
@@ -360,8 +360,31 @@ delay(self, 3000, () => hint.set(false))
 An unmount before the wait ends cancels the run. `delay` also returns a stop function, and it logs
 an error that `run` throws.
 
-Each mounted component gets its **own** `self`. So a list of one hundred clocks clears one hundred
-timers, and nothing is shared between them. That is why `self` is the correct home for a resource of
+Work that runs for the whole app, such as a check for new notifications, is a component that renders
+nothing. Mount it once, next to the router, under the component that created the states and the
+HTTP client it reads:
+
+```js
+const watcher = component('my-app-watcher', {
+  setup: (self) => {
+    const api = useHttpClient(self, 'myapp.api')
+    interval(
+      self,
+      15_000,
+      async () => {
+        for (const item of await api.get('/news', { silent: true })) notify({ title: item.title })
+      },
+      { whenVisible: true },
+    )
+    return null
+  },
+})
+
+shell({ map: app }, toast(), watcher(), router({ map: app, screens }))
+```
+
+Each mounted component gets its **own** `self`. So a list of one hundred feeds closes one hundred
+sockets, and nothing is shared between them. That is why `self` is the correct home for a resource of
 one component. A variable at module level, or a property on the definition, would be shared across
 every instance and overwritten. Name the `self` parameter only when you use it. A component that
 does not use it can write `setup: () => ...`.

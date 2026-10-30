@@ -99,6 +99,10 @@ anything else to a `Blob`. A `204` response and an empty body both give `null`.
 - **Every call goes to the network.** There is no response cache, and imp does not merge two
   identical calls in flight. Two components that each load `/users` on mount make two requests. Load
   the data once above them and pass it down, or hold it in [state](state.md).
+- **There is no polling or refetch option.** Repeat a call with
+  `interval(self, ms, run, { whenVisible: true })` from `imp`, see
+  [components](components.md#timers-polling-and-background-work). It stops on unmount and never
+  overlaps a slow request.
 - **`useHttpClient` throws when no ancestor initialized the name.** `initHttpClient` throws when the
   same component already initialized it. The nearest client wins. A nested client shadows the client
   of an ancestor for its subtree.

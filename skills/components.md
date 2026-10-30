@@ -105,13 +105,8 @@ This is also how you force a remount.
   the component needs no check: an unmount aborts the call, so the code after it never runs. After
   any other `await`, check `self.abortSignal.aborted` and return. The lint rule is
   `imp/abort-check-after-await`.
-- **Repeat work with `interval(self, ms, run)` from `imp`**, not `setInterval`. It stops when the
-  mount ends, skips a tick while an async `run` still waits, and logs a failure instead of throwing
-  it. It returns a stop function.
-- **Give a poll `interval(self, ms, run, { whenVisible: true })`.** It skips the ticks while the tab
-  is hidden. When the tab shows again after a skipped tick, `run` runs at once.
-- **Run work once after a wait with `delay(self, ms, run)` from `imp`**, not `setTimeout`. An
-  unmount before the wait cancels it. It logs a failure, and it returns a stop function.
+- **A timer is `interval` or `delay` from `imp`**, never `setInterval` or `setTimeout`. See
+  _Timers, polling and background work_ below.
 - **Never store a per-mount resource at module scope.** Use `self`. Every mount then gets its own
   resource. The lint rule is `imp/no-self-at-module-scope`.
 - **The internals of a component are private.** `document.querySelector` and a page CSS rule stop at
@@ -136,6 +131,67 @@ This is also how you force a remount.
   form belong in one component. A form control inside a component does not join a `<form>` outside
   it.
 - When you define the same name twice, imp warns and keeps the first definition.
+
+## Timers, polling and background work
+
+Both come from `imp` and take the `self` of the component that owns the work:
+
+| Call                                        | Runs                                      | Returns |
+| ------------------------------------------- | ----------------------------------------- | ------- |
+| `interval(self, ms, run, { whenVisible? })` | `run` every `ms`, until the mount ends    | `stop`  |
+| `delay(self, ms, run)`                      | `run` once after `ms`, unless it unmounts | `stop`  |
+
+```js
+import { component, interval } from 'imp'
+
+export const liveCheck = component('my-app-live-check', {
+  setup: async (self, id) => {
+    const api = useHttpClient(self, 'myapp.api')
+    const check = initState(self, 'myapp.check', await api.get(`/checks/${id}`))
+    interval(self, 15_000, async () => check.set(await api.get(`/checks/${id}`)), {
+      whenVisible: true,
+    })
+    return checkView(check)
+  },
+})
+```
+
+- **The mount owns the timer.** It stops when the component unmounts. Write no `onRemove` for it,
+  and keep no timer id on `self`.
+- **A poll takes `whenVisible: true`.** A hidden tab skips the ticks. When the tab shows again after
+  a skipped tick, `run` runs at once, so the data is current.
+- **An async `run` never overlaps itself.** imp skips a tick while the last run still waits, so a
+  slow request does not queue polls. `run` can be `async`, and it should await its request.
+- **A throw does not stop it.** imp logs the error and the next tick runs. A call that the unmount
+  aborted is not logged. Use `silent: true` on an [http](http.md) call that must not reach a toast.
+- **Call the returned `stop` to end the work early**, for example when a check closes.
+- **Work that runs for the whole app** - a poll of new notifications, a session keep-alive - is a
+  component that renders nothing, mounted once next to the router:
+
+```js
+const watcher = component('my-app-watcher', {
+  setup: (self) => {
+    const api = useHttpClient(self, 'myapp.api')
+    const session = useState(self, 'myapp.session')
+    interval(
+      self,
+      15_000,
+      async () => {
+        if (!session.get()) return
+        for (const item of await api.get('/news', { silent: true })) notify({ title: item.title })
+      },
+      { whenVisible: true },
+    )
+    return null
+  },
+})
+
+shell({ map: app }, toast(), watcher(), router({ map: app, screens }))
+```
+
+Mount it under the component that initialized the states and the client it uses, so `useState`
+and `useHttpClient` find them. Never start a timer at module scope: nothing would stop it, and it
+could not reach a state.
 
 ## Styles, errors, loading
 
@@ -166,8 +222,8 @@ const userCard = component('my-app-user-card', {
   `self.abortSignal` for a retry. It does not catch an error in an event handler or in a state
   subscriber.
 - imp releases a binding automatically on unmount. This covers `text`, `view`, `each`, a bound prop
-  and a `watch(self, fn)`. Use `onRemove` for what imp cannot see: a timer, a socket, a third-party
-  widget. `onRemove` can be `async`. A remount aborts `self.abortSignal` while an async `onRemove`
+  and a `watch(self, fn)`. Use `onRemove` for what imp cannot see: a socket, a document-level
+  listener, a third-party widget. A timer is `interval` or `delay`, which clean up themselves. `onRemove` can be `async`. A remount aborts `self.abortSignal` while an async `onRemove`
   still runs, so check `self.abortSignal.aborted` before you touch a shared resource there.
 
 ## Every component ships a skill file
