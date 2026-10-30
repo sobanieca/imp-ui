@@ -354,6 +354,10 @@ with a view transition of the browser: `effect: 'fade'` cross-fades, `'slide'` m
 along the reading direction, and `'zoom'` scales the new screen in. The default is `'none'`. The
 bar, the column and the trail never move. See **[Routing](routing.md#screen-transitions)**.
 
+**There is no footer region either.** An app footer, with the legal links, a contact link and a
+`bugReport` link, is the last child of the main content, after the router. The main region is a
+column flex box, so `margin-block-start: auto` on the footer keeps it at the foot of a short page.
+
 **There is no aside region, on purpose.** A contextual side column has no phone form. Content that
 comes and goes, such as filters or an inspector, is a `drawer` that you mount in the main content.
 Content that must stand beside the page is your own layout inside the content, where you decide what
@@ -834,6 +838,21 @@ request in flight and the last error on their own. The title of a failure in `to
 `message` of the error. To show the sentence that your API sends, pass a `message` function, such as
 `toast({ client: 'myapp.api', message: (error) => error.body?.error })`. See **[HTTP](http.md)**.
 
+`bugReport` is the "Report a bug" button or link of an app. A press lets the person point at the
+part of the page that is wrong and write what they expected. imp hands your `onSubmit` the comment
+with what was on the screen: the page, the element, the values of the form and the imp states in
+scope. You decide where it goes and what leaves the browser:
+
+```js
+import { bugReport } from 'imp/std/feedback'
+
+bugReport({
+  as: 'link',
+  size: 'sm',
+  onSubmit: ({ state, ...report }) => api.post('/bug-reports', { body: report }),
+})
+```
+
 ## Let people react to content
 
 `reactions` from `imp/std/feedback` puts a reaction bar under any content that you give it. Each
@@ -1007,6 +1026,8 @@ The library has one component per job. A name from another library often maps to
 | illustration       | `emptyState` with an `image`                                             |
 | submit button      | a `button` whose click is `submitForm`                                   |
 | workspace switcher | `orgSelect`                                                              |
+| feedback widget    | `bugReport`, the "Report a bug" trigger                                  |
+| footer             | your own element as the last child of the `shell` content                |
 | avatar group       | a `flex` of avatars, with a `tag` for "+4"                               |
 | button group       | `flex({ joined: true })`                                                 |
 | split button       | a joined `flex` of a `button` and a `menuButton`                         |

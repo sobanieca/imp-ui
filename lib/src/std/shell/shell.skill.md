@@ -219,7 +219,10 @@ Rules an agent gets wrong:
   main content. Content that must stand beside the page is your own layout inside the main content,
   as in `shell({ map }, flex({ gap: 4 }, router(...), sideColumn()))`.
 - **There is no `header` region and no `footer` region.** A page title and a toolbar go at the top
-  of the main content that you pass as children.
+  of the main content that you pass as children. An app footer, with the legal links, Contact and
+  a `bugReport({ as: 'link' })`, is the last child of the main content, after the router. Give its
+  host `display: block; margin-block-start: auto`: the main region is a column flex box, so the
+  footer then sits at the foot of a short page and under the content of a long one.
 - **The shell is the one component that changes structure by width.** Its query is `48rem`. Below it
   the top bar becomes a hamburger and a two-line title (the `logo` on a top-level page, where it
   stays while the drawer is open and the drawer head reads "Menu"), the sidebar becomes the bottom bar capped at

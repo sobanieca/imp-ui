@@ -30,6 +30,10 @@ section(
 
 ## The shared rules
 
+- **Look for a standard component before you write one.** Read the list that `imp skill` prints,
+  and the skill of each candidate. A job that sounds app-specific often has one: a bug report is
+  `bugReport`, a notification bell is `notifications`, a tenant switcher is `orgSelect`. Write your
+  own component only when no standard one does the job, and never as a copy of one that does.
 - **imp separates props from children by type**, exactly as on an element. A plain object is props.
   Everything else is content. Pass one props object per call, see the `imp/single-props-object` lint
   rule.
@@ -319,7 +323,9 @@ Rules an agent gets wrong:
 - **The nav is data, not DOM.** imp warns about a node in `navbar` or `sidebar`, and drops it. The
   shell draws the rows, because it draws each level more than once. The main content is the
   children, as in `shell({ map }, router(...))`. There is no `header`, `footer` or `layout` prop. Put
-  a page toolbar at the top of the main content. The trail is the frame's; do not add a second one.
+  a page toolbar at the top of the main content. An app footer is the last child of the main
+  content, after the router, with `margin-block-start: auto` on its host, so it sits at the foot of
+  a short page. The trail is the frame's; do not add a second one.
 - **Sign-in is a node of the map, and the guard of the root covers the rest.** Bind it in
   `router({ guards: { [app]: signedIn } })`. Its check returns `true` for `node === app.signIn`
   first. Then it returns `wait` while the session is `undefined`, and `/sign-in?next=<path>` while

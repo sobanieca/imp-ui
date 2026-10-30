@@ -1,4 +1,4 @@
-# bugReport - a trigger that lets a person point at an element and describe what is wrong with it
+# bugReport - the Report a bug button or link: the person points at an element and describes what is wrong
 
 ```js
 import { bugReport } from 'imp/std/feedback'
@@ -70,6 +70,12 @@ comment is about, even when the app moved on:
 
 ## Rules an agent gets wrong
 
+- **Use this component for every bug report of the app.** Do not write a report dialog of your own,
+  with a form, a "what went wrong" field and the page address. `bugReport` is that dialog, and it
+  captures more than a form can.
+- **Put the trigger where a person looks for it**: `as: 'link'`, `size: 'sm'` in the app footer,
+  see imp skill std/shell, or the default button in the `extras` of the shell. After a report is
+  sent, the trigger shows the thanks beside it on the same line.
 - **Import the component from `imp/std/feedback`**, not from `imp/std`.
 - **`onSubmit` is a prop, not an `events` entry.** Storing a report is asynchronous and can fail,
   and you cannot await a `CustomEvent`. Return a promise. `bugReport` disables its buttons while the

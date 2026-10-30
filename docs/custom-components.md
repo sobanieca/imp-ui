@@ -2,7 +2,9 @@
 
 The standard library covers the controls most apps share: a button, a form, a dialog, a card. It
 does not cover everything. A kanban board, a product tile, a seat map, or a chart more advanced than
-the built-in one is yours to write. You write it with `component`, the same way imp writes its own.
+the built-in one is yours to write. You write it with `component`, the same way imp writes its own. Check the gallery first: a bug
+report, a notification bell or a theme menu is already there, and a second one of yours only drifts
+from the first.
 See **[Components](components.md)** for the mechanics: the definition object, `self`, the lifecycle,
 and the styles.
 

@@ -2,7 +2,9 @@
 
 `imp/std` does not cover every app. A kanban board, a product tile, a seat map or a chart more
 advanced than the built-in one is yours to write with `component`, see [components](components.md)
-for the mechanics. This page is the contract that a standard component follows, so that yours
+for the mechanics. **First check the list of standard components that `imp skill` prints**, see
+[std](std.md). A bug report, a notification bell, a confirmation toast or a theme menu already
+exists there. Do not write a second one. This page is the contract that a standard component follows, so that yours
 follows it too: theme, direction, words, accessibility, props. Check every item before you consider
 a component done.
 
