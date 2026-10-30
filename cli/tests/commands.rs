@@ -168,6 +168,15 @@ fn lint_no_root_query_in_setup() {
 }
 
 #[test]
+fn lint_no_raw_timer() {
+    snapshot_command(
+        "lint-no-raw-timer",
+        &["lint", "app.js"],
+        Some(&fixture("lint-raw-timer")),
+    );
+}
+
+#[test]
 fn lint_watch_with_self() {
     snapshot_command(
         "lint-watch-with-self",

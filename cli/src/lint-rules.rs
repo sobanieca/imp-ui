@@ -29,6 +29,7 @@ pub const IMP_RULES: &[&str] = &[
     "no-state-as-child",
     "no-get-in-binding",
     "no-root-query-in-setup",
+    "no-raw-timer",
     "component-name",
     "import-source",
     "icons-by-name",
@@ -1517,6 +1518,80 @@ fn no_root_query_in_setup(ctx: &Ctx, definitions: &Definitions) {
     }
 }
 
+const COMPONENT_HOOKS: &[&str] = &["setup", "onMount", "onRemove", "error", "loading"];
+
+// The global timer that `callee` names: `setInterval`, or `window.setTimeout` and the like, when no
+// local binding shadows the name.
+fn raw_timer_name<'e>(ctx: &Ctx, callee: &'e Expression) -> Option<&'e str> {
+    let timers = ["setInterval", "setTimeout"];
+    match callee.without_parentheses() {
+        Expression::Identifier(identifier) if timers.contains(&identifier.name.as_str()) => {
+            let scoping = ctx.semantic.scoping();
+            let local = identifier
+                .reference_id
+                .get()
+                .and_then(|reference| scoping.get_reference(reference).symbol_id())
+                .is_some();
+            (!local).then_some(identifier.name.as_str())
+        }
+        Expression::StaticMemberExpression(member)
+            if timers.contains(&member.property.name.as_str())
+                && matches!(
+                    identifier_name(&member.object),
+                    Some("window" | "globalThis" | "self")
+                ) =>
+        {
+            Some(member.property.name.as_str())
+        }
+        _ => None,
+    }
+}
+
+fn no_raw_timer(ctx: &Ctx, definitions: &Definitions) {
+    let mut frames: Frames<()> = Frames::new();
+    for node in ctx.nodes() {
+        let kind = node.kind();
+        frames.leave_before(kind.span().start, |_| {});
+        let is_function = matches!(kind, AstKind::Function(_))
+            || matches!(kind, AstKind::ArrowFunctionExpression(_));
+        if is_function {
+            let info = function_info(kind, node.id()).unwrap();
+            let hook = definitions
+                .hook_property(ctx, info.id, info.span, COMPONENT_HOOKS)
+                .is_some();
+            frames.push(info.span, if hook { Some(()) } else { frames.inherited() });
+            continue;
+        }
+        let AstKind::CallExpression(call) = kind else {
+            continue;
+        };
+        if frames.current().is_none() {
+            continue;
+        }
+        let Some(name) = raw_timer_name(ctx, &call.callee) else {
+            continue;
+        };
+        let (replacement, behaviour) = if name == "setInterval" {
+            (
+                "interval(self, ms, run)",
+                "it stops when the component unmounts, never overlaps a slow async run, and takes { whenVisible: true } for a poll",
+            )
+        } else {
+            (
+                "delay(self, ms, run)",
+                "an unmount before the wait cancels it",
+            )
+        };
+        ctx.report(
+            "no-raw-timer",
+            call.span,
+            format!(
+                "'{name}' in a component keeps running after the component unmounts unless you clear it yourself - use {replacement} from 'imp': {behaviour}"
+            ),
+        );
+    }
+}
+
 fn sorts_after(existing: &str, added: &str) -> bool {
     existing.to_lowercase() > added.to_lowercase()
 }
@@ -2082,6 +2157,7 @@ pub fn run(ctx: &Ctx) {
     no_state_as_child(ctx, &factories, &handles);
     no_get_in_binding(ctx, &factories, &handles);
     no_root_query_in_setup(ctx, &definitions);
+    no_raw_timer(ctx, &definitions);
     component_name_rule(ctx, &imports);
     import_source_rule(ctx, &imports);
     icons_by_name(ctx);

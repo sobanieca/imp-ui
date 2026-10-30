@@ -165,6 +165,10 @@ export const liveCheck = component('my-app-live-check', {
 - **A throw does not stop it.** imp logs the error and the next tick runs. A call that the unmount
   aborted is not logged. Use `silent: true` on an [http](http.md) call that must not reach a toast.
 - **Call the returned `stop` to end the work early**, for example when a check closes.
+- **A wait inside an async function** is `await new Promise((resolve) => delay(self, ms, resolve))`.
+  An unmount cancels it, so the code after it never runs on a component that left the page.
+- **`imp lint` reports a `setInterval` or `setTimeout` in a component**, see the
+  `imp/no-raw-timer` rule of [lint](lint.md).
 - **Work that runs for the whole app** - a poll of new notifications, a session keep-alive - is a
   component that renders nothing, mounted once next to the router:
 

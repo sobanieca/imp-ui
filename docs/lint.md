@@ -418,6 +418,34 @@ Keep a reference to the node that you build, and change it directly. You can als
 **[Components](components.md)** describes both fixes, under _self_ and _How to run code after imp
 places the DOM_.
 
+### `imp/no-raw-timer`
+
+A `setInterval` or a `setTimeout` in a component keeps running after the component leaves the page,
+unless you clear it yourself in `onRemove`. A poll then sends requests for a screen nobody sees.
+This rule reports both, bare or as `window.setTimeout` or `globalThis.setInterval`, anywhere inside
+a hook of a component: `setup`, `onMount`, `onRemove`, `error` and `loading`, and the event handlers
+and callbacks written there. A local function that happens to be named `setTimeout` is not
+reported:
+
+```js
+const live = component('my-app-live', {
+  setup: (self) => {
+    self.timer = setInterval(refresh, 15_000)
+    return view()
+  },
+  onRemove: (self) => clearInterval(self.timer),
+})
+```
+
+```
+error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes { whenVisible: true } for a poll
+ --> src/live.js:3:18
+```
+
+Write `interval(self, 15_000, refresh, { whenVisible: true })` instead, and drop the `onRemove`. A
+wait that runs once is `delay(self, ms, run)`. See _Work that repeats_ in
+**[Components](components.md)**.
+
 ### `imp/component-name`
 
 A component name becomes a real element tag. So it must be lowercase, and it must hold at least one
