@@ -490,6 +490,26 @@ disappears when nothing is left on it.
 imp checks its own specifiers only. So imp never reports a name that your app, or a dependency,
 shares with an imp export.
 
+### `imp/unknown-export`
+
+A name that an imp specifier does not export fails in the browser, with a missing-export error,
+before any of your code runs. The rule reports it as you write it: a typo, an icon that Lucide
+renamed, or a standard component imported from the wrong barrel. When another imp specifier exports
+the name, the message names it. When a name of the same specifier is close, the message suggests it:
+
+```js
+import { useStat } from 'imp/state'
+import { luHome } from 'imp/icons'
+```
+
+```
+error[imp/unknown-export]: 'useStat' is not exported by 'imp/state' - did you mean 'useState'?
+ --> src/app.js:1:10
+
+error[imp/unknown-export]: 'luHome' is not exported by 'imp/icons' - no icon has that name; find the current name at https://lucide.dev/icons
+ --> src/app.js:2:10
+```
+
 ### `imp/icons-by-name`
 
 `imp/icons` holds the whole Lucide set. That is 1791 icons, and 434 kB of drawing data. An app pays

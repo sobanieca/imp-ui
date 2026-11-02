@@ -48,7 +48,8 @@ Rules an agent gets wrong:
 
 - **A name has exactly one home.** `imp` does not export `div`. `imp/html` does not export
   `component`. An import from the wrong specifier is an `imp/import-source` lint error, and the
-  error names the correct specifier. `imp lint --fix` moves the import.
+  error names the correct specifier. `imp lint --fix` moves the import. A name that no imp
+  specifier exports is an `imp/unknown-export` lint error, with the closest name when there is one.
 - **`button` exists twice on purpose.** `imp/html` gives the plain `<button>`, and `imp/std` gives
   the styled component. The two never collide, because the specifiers differ. When a file needs
   both, give one an alias: `import { button as styledButton } from 'imp/std'`.

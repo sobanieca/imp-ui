@@ -1,0 +1,100 @@
+$ imp bogus --help
+exit code: 1
+
+--- stdout ---
+imp - buildless UI toolkit
+
+USAGE
+  imp init [dir] [--pwa]                scaffold a runnable project: a page, a theme,
+           [--font <name>]              a font, a counter component, a unit test and
+                                        an e2e spec (no dir: here | --pwa: installable,
+                                        offline-ready | --font: a font of imp skill
+                                        init instead of a random one)
+  imp start [file.html] [--port 4400]   serve a page: imp auto-injected,
+                     [--env <name>]     live reload, console + network -> terminal
+                                        (--env selects an "environments" entry
+                                        from imp.json, exposed as import { env })
+                     [--mock]           answer requests from the *.mock.js files in
+                     [--no-mock]        the "mocks" folder instead of the network
+                                        (--no-mock forces a run against the real API)
+                     [--no-reload]      keep the page as it is when a file changes
+                     [--host <address>] listen on another address than 127.0.0.1, like
+                                        0.0.0.0 to test on a phone (every device on the
+                                        network can then read the project files)
+                     [--allow-host <name>]
+                                        also answer for this host name, such as the public
+                                        name of a tunnel (repeat it for more names)
+  imp build [file.html] [--output dist]   build the app for production: minified,
+                                        code-split JS, ready to upload as-is
+                                        ("targetImpHost": true in imp.json keeps
+                                        imp imports for the host app to provide)
+                     [--pwa]            also emit a PWA: web manifest, icon set,
+                                        and an offline service worker (needs a
+                                        "pwa" block in imp.json)
+                     [--env <name>]     select an "environments" entry from imp.json
+  imp preview [path] [--port 4401]      preview components in isolation: each *.preview.js
+                     [--env <name>]     file renders its named exports as labeled, drag-resizable
+                     [--list] [--json]  stages with a live state editor (no path: every preview,
+                     [--mock]           listed on an index page | --list prints what was found |
+                     [--no-mock]        --mock serves the "mocks" folder to previewed components |
+                     [--no-reload]      --no-reload keeps the page as it is when a file changes)
+                     [--output <dir>]   --output writes the same page as static files, with one
+                                        bundle per group and a script that defines <imp-preview>,
+                                        the element that embeds the catalog in any web page
+                     [--host <address>] --host and --allow-host work as for imp start
+                     [--allow-host <name>]
+  imp review [clear]                    list what was written from the browser by the review
+                                        widget the dev server puts on every page - the page,
+                                        the element picked and the comment left on it
+                                        (clear: delete every saved review)
+  imp logs [-n <count>] [-f]            print the log of the dev server session: the browser
+                                        console, the errors, the network and imp's own lines
+                                        (-n: the last <count> entries | -f: keep printing
+                                        each new entry until Ctrl-C)
+  imp install [package[@version]]       vendor a dependency into dependencies/
+                                        (no version: latest | no package: update all)
+  imp uninstall <package>               remove a vendored dependency
+  imp audit [--sbom]                    check every vendored package against the OSV
+            [--output <file>]           database of known vulnerabilities (--sbom: write a
+                                        CycloneDX bill of materials instead, by default to
+                                        sbom.cdx.json | --output: another path for it)
+  imp test <file>                       run one test file in headless Chrome: *.test.js
+                                        unit in a blank page, *.spec.js e2e against the app
+  imp test --unit | --e2e               run every file of that level, each in its own
+                                        process, in parallel - passing files are summarized,
+                                        failing files print their full output
+                                        (--jobs <n> caps parallelism | --filter <text> |
+                                        --list prints the selected files as JSON |
+                                        --screenshots <dir> saves a screenshot per failed e2e test |
+                                        --video <dir> records each e2e spec as an animated GIF |
+                                        --mock / --no-mock: serve the "mocks" folder to e2e specs)
+  imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
+                     [--output <path>]  keeping aspect ratio (-w & -h: fit within that box |
+                     [--stretch]        --stretch: exact -wx-h, may distort |
+                                        neither -w nor -h: report current dimensions and
+                                        size, plus a recommended resize command |
+                                        --output writes a copy instead of overwriting)
+  imp lint [...paths] [--fix]           lint with imp rules (--fix applies autofixes)
+  imp fmt [...paths]                    format source
+  imp map [file]                        print the application map of the app: every
+                                        node with its path, label, access and
+                                        description (the 'map' file of imp.json)
+  imp skill [...subject]                print imp's usage manual for a subject -
+             [./component.js]           the documentation shipped inside this binary,
+                                        written to be read before writing imp code
+                                        (a path prints that component's own skill,
+                                        from the .skill.md file next to it |
+                                        no argument: an index of everything there is)
+  imp skill --init                      create the /imp skill for Claude Code, Codex and
+                                        Cursor: at the git root (searched up to the
+                                        home folder), or else in the home folder
+  imp update [version] [--check]        update to the latest release (or a given version) and
+                                        pin it in imp.json (--check only reports if one is available)
+  imp prune                             delete cached imp versions unused for 30+ days
+  imp licenses                          print third-party license notices for the bundled tools
+  imp --version                         print the imp version this binary runs
+
+If you are an AI agent, run 'imp skill' to learn more about imp before writing any code.
+
+--- stderr ---
+(empty)

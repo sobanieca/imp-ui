@@ -48,8 +48,8 @@ Rules an agent gets wrong:
   `imp/icons-by-name` lint error.
 - **An old name is not the new name.** Lucide renames an icon between releases, and imp ships one
   release. So `luHome` does not exist. The name is `luHouse`, and the drop-down arrow is
-  `luChevronDown`. An unknown export is a build error that names the import. It is not a runtime
-  warning.
+  `luChevronDown`. An unknown name is an `imp/unknown-export` lint error that names the import, and
+  a build error.
 - **An icon imported from `imp` or another framework specifier** is an `imp/import-source` lint
   error. `imp lint --fix` moves the import to `imp/icons`.
 - **A decorative icon takes no `label`.** A `label` makes the icon `role="img"`, and a screen reader

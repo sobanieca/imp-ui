@@ -101,8 +101,10 @@ imp --version                         print the version this binary runs
 imp help                              show usage
 ```
 
-imp prints the usage text when you run `imp` with no argument, `imp help`, or `imp --help`. An
-unknown command prints the usage text and exits with code 1. The last line of the usage text is
+imp prints the usage text when you run `imp` with no argument, `imp help`, or `imp --help`.
+`imp <command> --help` and `imp help <command>` print the usage of that one command and run
+nothing, so `imp start --help` does not start a server. An unknown command prints the usage text
+and exits with code 1. The last line of the usage text is
 addressed to an AI agent. It points at `imp skill`, which prints the manuals that imp carries for
 exactly that reader.
 

@@ -1,0 +1,18 @@
+$ imp lint app.js  (cwd: tests/fixtures/lint-unknown-export)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/unknown-export]: 'luHistory' is not exported by 'imp/icons' - no icon has that name; find the current name at https://lucide.dev/icons
+ --> app.js:3:10
+
+error[imp/unknown-export]: 'useStat' is not exported by 'imp/state' - did you mean 'useState'?
+ --> app.js:4:10
+
+error[imp/unknown-export]: 'card' is not exported by 'imp/std' - it comes from 'imp/std/display': import { card } from 'imp/std/display'
+ --> app.js:5:18
+
+Found 3 problems
+Checked 1 file

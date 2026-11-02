@@ -36,7 +36,8 @@ key, and the `--env` environment files.
 
 ## Shared behaviour
 
-- **imp prints the usage text** when you run `imp` with no argument, `imp help`, or `imp --help`. An
+- **imp prints the usage text** when you run `imp` with no argument, `imp help`, or `imp --help`.
+  `imp <command> --help` and `imp help <command>` print that command's usage and run nothing. An
   unknown command prints the usage text and exits `1`. The last line of the usage text points an AI
   agent at `imp skill`.
 - **A path defaults to the whole project** for `imp lint` and `imp fmt`. Every command that walks

@@ -107,6 +107,28 @@ fn without(args: &[String], removed: &[&str]) -> Vec<String> {
         .collect()
 }
 
+// The usage lines of one command: each line of the usage text that starts 'imp <command> ', with
+// the lines indented under it. None for a word that is no command.
+fn command_help(command: &str) -> Option<String> {
+    if command.is_empty() || command.starts_with('-') {
+        return None;
+    }
+    let prefix = format!("  imp {command} ");
+    let mut lines = Vec::new();
+    let mut inside = false;
+    for line in HELP.lines() {
+        if line.starts_with("  imp ") {
+            inside = line.starts_with(&prefix);
+        } else if !line.starts_with("    ") {
+            inside = false;
+        }
+        if inside {
+            lines.push(line);
+        }
+    }
+    (!lines.is_empty()).then(|| format!("USAGE\n{}", lines.join("\n")))
+}
+
 fn js_number(raw: &str) -> Option<f64> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -130,6 +152,20 @@ pub fn run(args: &[String]) -> Result<i32> {
     let command = args.first().map(String::as_str).unwrap_or("");
     let rest = if args.is_empty() { &[][..] } else { &args[1..] };
     crate::version_manager::maybe_delegate(args)?;
+    // 'imp <command> --help' and 'imp help <command>' print the usage of that command and run nothing.
+    let asked = match command {
+        "help" | "--help" => positional(rest).first().cloned(),
+        _ if has(rest, "--help") => Some(command.to_string()),
+        _ => None,
+    };
+    if let Some(asked) = asked {
+        let Some(text) = command_help(&asked) else {
+            println!("{HELP}");
+            return Ok(1);
+        };
+        println!("{text}");
+        return Ok(0);
+    }
     let mut code = 0;
     match command {
         "--version" | "-v" => println!("{VERSION}"),

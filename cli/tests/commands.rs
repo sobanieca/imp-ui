@@ -17,6 +17,21 @@ fn help_command() {
 }
 
 #[test]
+fn command_help_flag() {
+    snapshot_command("command-help-flag", &["start", "--help"], None);
+}
+
+#[test]
+fn help_of_command() {
+    snapshot_command("help-of-command", &["help", "test"], None);
+}
+
+#[test]
+fn help_of_unknown_command() {
+    snapshot_command("help-of-unknown-command", &["bogus", "--help"], None);
+}
+
+#[test]
 fn unknown_command() {
     snapshot_command("unknown-command", &["bogus"], None);
 }
@@ -272,6 +287,15 @@ fn lint_import_source() {
         "lint-import-source",
         &["lint", "app.js"],
         Some(&fixture("lint-import-source")),
+    );
+}
+
+#[test]
+fn lint_unknown_export() {
+    snapshot_command(
+        "lint-unknown-export",
+        &["lint", "app.js"],
+        Some(&fixture("lint-unknown-export")),
     );
 }
 

@@ -1,0 +1,18 @@
+$ imp help test
+exit code: 0
+
+--- stdout ---
+USAGE
+  imp test <file>                       run one test file in headless Chrome: *.test.js
+                                        unit in a blank page, *.spec.js e2e against the app
+  imp test --unit | --e2e               run every file of that level, each in its own
+                                        process, in parallel - passing files are summarized,
+                                        failing files print their full output
+                                        (--jobs <n> caps parallelism | --filter <text> |
+                                        --list prints the selected files as JSON |
+                                        --screenshots <dir> saves a screenshot per failed e2e test |
+                                        --video <dir> records each e2e spec as an animated GIF |
+                                        --mock / --no-mock: serve the "mocks" folder to e2e specs)
+
+--- stderr ---
+(empty)

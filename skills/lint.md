@@ -36,6 +36,7 @@ own rules. imp always applies them as errors, and you cannot reconfigure them.
 | `imp/no-raw-timer`               | `setInterval` or `setTimeout`, bare or on `window`/`globalThis`, inside a hook of a component, event handlers included                                                                                                                | `interval(self, ms, run)` or `delay(self, ms, run)` from `imp`, which stop on unmount      |
 | `imp/component-name`             | a literal `component()` name that is not lowercase-with-a-dash (or is HTML-reserved)                                                                                                                                                  | name it `my-app-profile`                                                                   |
 | `imp/import-source`              | an imp export imported from the wrong specifier                                                                                                                                                                                       | autofixed - the name is moved to the right import                                          |
+| `imp/unknown-export`             | a name imported from an imp specifier that does not export it                                                                                                                                                                         | use the name or the specifier the message suggests                                         |
 | `imp/icons-by-name`              | `import * as`, `export *` or `import()` of `imp/icons`                                                                                                                                                                                | import each icon by name: `import { luHouse } from 'imp/icons'`                            |
 | `imp/img-alt`                    | an `img` factory call, or `el('img', ...)`, whose props have no `alt` key                                                                                                                                                             | describe the image: `img({ src, alt: 'Sales per month' })`; `alt: ''` for decoration       |
 | `imp/icon-button-name`           | a standard `button` or a plain `button` whose only children are `icon(...)` calls without `label`, with no name prop                                                                                                                  | `button({ label: 'Delete' }, icon(luTrash))`; the plain one takes `'aria-label'`           |
@@ -48,7 +49,7 @@ key in any other object, such as a bundler plugin, is not a hook.
 
 Each rule protects one subject. Read [components](components.md) for the component rules,
 [state](state.md) for the state rules, [http](http.md) for the http client rules,
-[rendering](rendering.md) for the props rule, [imports](imports.md) for `import-source`,
+[rendering](rendering.md) for the props rule, [imports](imports.md) for `import-source` and `unknown-export`,
 [icons](icons.md) for `icons-by-name`, [accessibility](accessibility.md) for `img-alt` and
 `icon-button-name`, [routing](routing.md) for `app-map-unique-params`, and
 [dependencies](dependencies.md) for the pin rule.

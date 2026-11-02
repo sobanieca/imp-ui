@@ -1,0 +1,22 @@
+$ imp start --help
+exit code: 0
+
+--- stdout ---
+USAGE
+  imp start [file.html] [--port 4400]   serve a page: imp auto-injected,
+                     [--env <name>]     live reload, console + network -> terminal
+                                        (--env selects an "environments" entry
+                                        from imp.json, exposed as import { env })
+                     [--mock]           answer requests from the *.mock.js files in
+                     [--no-mock]        the "mocks" folder instead of the network
+                                        (--no-mock forces a run against the real API)
+                     [--no-reload]      keep the page as it is when a file changes
+                     [--host <address>] listen on another address than 127.0.0.1, like
+                                        0.0.0.0 to test on a phone (every device on the
+                                        network can then read the project files)
+                     [--allow-host <name>]
+                                        also answer for this host name, such as the public
+                                        name of a tunnel (repeat it for more names)
+
+--- stderr ---
+(empty)

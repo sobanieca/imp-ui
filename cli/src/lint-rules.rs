@@ -11,7 +11,7 @@ use crate::specifiers::{
 use oxc::ast::AstKind;
 use oxc::ast::ast::*;
 use oxc::span::{GetSpan, Span};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 pub const IMP_RULES: &[&str] = &[
     "no-capital-component",
@@ -32,6 +32,7 @@ pub const IMP_RULES: &[&str] = &[
     "no-raw-timer",
     "component-name",
     "import-source",
+    "unknown-export",
     "icons-by-name",
     "img-alt",
     "icon-button-name",
@@ -1725,6 +1726,78 @@ fn import_source_rule(ctx: &Ctx, imports: &[&ImportDeclaration]) {
     }
 }
 
+fn edit_distance(a: &str, b: &str) -> usize {
+    let b: Vec<char> = b.chars().collect();
+    let mut row: Vec<usize> = (0..=b.len()).collect();
+    for (i, left) in a.chars().enumerate() {
+        let mut diagonal = row[0];
+        row[0] = i + 1;
+        for (j, right) in b.iter().enumerate() {
+            let above = row[j + 1];
+            row[j + 1] = if left.eq_ignore_ascii_case(right) {
+                diagonal
+            } else {
+                1 + diagonal.min(above).min(row[j])
+            };
+            diagonal = above;
+        }
+    }
+    row[b.len()]
+}
+
+// The export of `names` closest to `name`, when it is close enough to be a typo or a rename.
+fn closest_export<'n>(name: &str, names: &'n BTreeSet<String>) -> Option<&'n str> {
+    let limit = (name.len() / 4).max(1);
+    names
+        .iter()
+        .map(|candidate| (edit_distance(name, candidate), candidate))
+        .filter(|(distance, _)| *distance <= limit)
+        .min_by_key(|(distance, _)| *distance)
+        .map(|(_, candidate)| candidate.as_str())
+}
+
+fn unknown_export(ctx: &Ctx, imports: &[&ImportDeclaration]) {
+    let exports = imp_module_exports();
+    for declaration in imports {
+        let source = import_source(declaration);
+        let Some(names) = exports.get(source).filter(|names| !names.is_empty()) else {
+            continue;
+        };
+        for specifier in declaration.specifiers.iter().flatten() {
+            let ImportDeclarationSpecifier::ImportSpecifier(named) = specifier else {
+                continue;
+            };
+            let name = imported_name(named);
+            if names.contains(&name) {
+                continue;
+            }
+            if !is_imp_std_specifier(source) && export_home(&name).is_some() {
+                continue;
+            }
+            let elsewhere = exports
+                .iter()
+                .find(|(_, other)| other.contains(&name))
+                .map(|(specifier, _)| *specifier);
+            let hint = match (elsewhere, closest_export(&name, names)) {
+                (Some(home), _) => {
+                    format!(" - it comes from '{home}': import {{ {name} }} from '{home}'")
+                }
+                (None, Some(close)) => format!(" - did you mean '{close}'?"),
+                (None, None) if source == "imp/icons" => {
+                    " - no icon has that name; find the current name at https://lucide.dev/icons"
+                        .into()
+                }
+                (None, None) => String::new(),
+            };
+            ctx.report(
+                "unknown-export",
+                named.span,
+                format!("'{name}' is not exported by '{source}'{hint}"),
+            );
+        }
+    }
+}
+
 fn icons_by_name(ctx: &Ctx) {
     let count = imp_module_exports()
         .get("imp/icons")
@@ -2160,6 +2233,7 @@ pub fn run(ctx: &Ctx) {
     no_raw_timer(ctx, &definitions);
     component_name_rule(ctx, &imports);
     import_source_rule(ctx, &imports);
+    unknown_export(ctx, &imports);
     icons_by_name(ctx);
     accessible_names(ctx, &imports);
     exact_dependency_versions(ctx);
