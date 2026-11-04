@@ -1,4 +1,4 @@
-# PWA toolkit - manifest, icons, and a build-graph service worker behind `imp build --pwa`
+# PWA toolkit - manifest, icons, and a build-graph service worker from the `pwa` block
 
 ## Context
 
@@ -24,15 +24,17 @@ how the asset generator of `vite-plugin-pwa` works.
 
 ## Decision
 
-PWA support rides on the production build, behind one `--pwa` flag. The command is
-`imp build [entry] [--output dist] [--pwa]`. There is no command of its own, and there is no
-subcommand. A `pwa` block in `imp.json` describes the app once. `name` and `icon` are necessary.
-`shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl` and `scope` are optional.
-`--pwa` is the trigger per build. So a PWA project still makes a plain build with a bare
-`imp build`. imp rejects `--pwa`, with a clear message, when there is no `pwa` block, and when the
-entry is a JS component, where a PWA means nothing.
+PWA support rides on the production build, and the `pwa` block in `imp.json` is the only trigger.
+There is no command of its own, no subcommand and no flag. The block describes the app once.
+`name` and `icon` are necessary. `shortName`, `themeColor`, `backgroundColor`, `display`,
+`startUrl` and `scope` are optional. A page build of a project with the block is always a PWA
+build. A JS component build ignores the block, because a PWA means nothing there.
 
-With `--pwa` on an HTML entry, the build also does the following:
+The block is one decision for development and for production. `imp start` makes the app
+installable from the same block. A build flag would be a second switch for that decision. A build
+that forgets the flag ships an app with no manifest and no worker, and nothing warns.
+
+With a `pwa` block and an HTML entry, the build also does the following:
 
 - **imp scales one source icon**, which is a `.svg` or a `.png` file, to the full set. That set is a
   192 app icon, a 512 app icon, a 512 maskable icon that imp insets to a safe zone over an opaque
@@ -94,16 +96,16 @@ worker reports network activity, and it caches nothing. So development keeps liv
 telemetry, and production gets the offline behaviour.
 
 **The offline worker is one library call, `precacheBuild()` from `imp/service-worker`.** For a
-project with no worker of its own, `imp build --pwa` bundles a two-line entry that calls it. The
+project with no worker of its own, the PWA build bundles a two-line entry that calls it. The
 build writes the precache values in front of the bundle: the version, the shell and the three lists.
 The build writes `sw.js` last, after `public/` is copied, so the list holds every file of the build.
 `sw.js` is never in its own list.
 
-A project that names its own `serviceWorker` in `imp.json` keeps that worker. `imp build --pwa` then
+A project that names its own `serviceWorker` in `imp.json` keeps that worker. The PWA build then
 writes the manifest and the icons, registers the worker of the project, and writes the same precache
 values in front of its bundle. Two workers cannot share `sw.js` and root scope, so imp writes no
 second one. The worker of the project calls `precacheBuild()`, and it gets exactly the behaviour of
-the worker that imp writes. A build without `--pwa`, and the dev server, write no values. The call
+the worker that imp writes. A build without a `pwa` block, and the dev server, write no values. The call
 then adds no listener. So the call needs no gate, and development keeps a worker that caches
 nothing. The first `respondWith` of a `fetch` event wins, so a `fetch` listener of the project that
 answers first takes that request.
@@ -119,12 +121,14 @@ answers first takes that request.
   source scales cleanly to any size. resvg scales a PNG source, and you must supply that source at
   or above the largest target, which is 512, to avoid a blur from an upscale.
 - The generation of an icon calls nothing outside the binary.
+- A project with a `pwa` block has no plain page build. Its offline worker has root scope, so a
+  local preview of a build must use another port than `imp start`.
 - `imp.json` gains a `pwa` block that imp validates, beside `dependencies`, `fmt`, `lint` and
   `test`, in `cli/src/config.rs`. A user edits `imp.json` only.
 
 ## Scope and non-goals
 
-The term "PWA" covers far more in the wider ecosystem than what `--pwa` emits. This section fixes
+The term "PWA" covers far more in the wider ecosystem than what a PWA build emits. This section fixes
 the boundary. So nobody reads the decision as "offline is fully solved".
 
 The emitted worker **does** cover the model of a precached app shell. That is a precache of the
@@ -146,7 +150,7 @@ otherwise:
   for eviction, and a build flag cannot decide it correctly.
 - **A capability of the app that needs app code, and not a build artifact.** That covers Background
   Sync, a push notification, Periodic Background Sync, a Web Share Target, and a handler for a file
-  or a protocol. `--pwa` generates infrastructure. The author of the app writes these behaviours.
+  or a protocol. A PWA build generates infrastructure. The author of the app writes these behaviours.
 - **A richer manifest**, beyond the set that installability needs. That covers `shortcuts`,
   `share_target`, `display_override` and `screenshots`. The manifest guarantees installability, and
   nothing more.

@@ -1,4 +1,4 @@
-$ imp build --pwa  (cwd: <tmp>)
+$ imp build  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---
@@ -33,7 +33,7 @@ precache required: ["/icons/icon-192.png","/icons/icon-512.png","/icons/icon-mas
 precache optional: []
 listeners: activate, fetch, install
 
-without --pwa:
+without a pwa block:
 precache version: (none)
 precache shell: null
 precache hashed: null

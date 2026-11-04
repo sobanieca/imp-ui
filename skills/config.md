@@ -23,7 +23,7 @@ works from any subfolder. In a monorepo, each app folder carries its own `imp.js
 | `test`              | object                               | `{}`         | `imp test`                                                        |
 | `map`               | path of the application map file     | -            | `imp map`; `imp init` writes `src/app-map.js`                     |
 | `preview`           | object                               | `{}`         | `imp preview`                                                     |
-| `pwa`               | object                               | -            | `imp start`, `imp build --pwa`                                    |
+| `pwa`               | object                               | -            | `imp start`, `imp build`                                          |
 | `environments`      | alias -> env file path               | `{}`         | `imp start`, `imp build`, `imp preview` (`--env`)                 |
 | `flags`             | array of build flag names            | `[]`         | `imp start`, `imp build` (folds them), `imp preview`              |
 | `mocks`             | `{ folder, enabled }`, both required | -            | `imp start`, `imp preview`, `imp test --e2e` (`--mock` wins)      |

@@ -11,7 +11,7 @@ This page is the map. Each command has its own manual. Read that manual before y
 | `imp init [dir] [--pwa] [--font <name>]` | scaffold a runnable project - page, theme, font, tests   | [init](init.md)                 |
 | `imp start [file.html]`                  | serve a page with live reload and terminal telemetry     | [start](start.md)               |
 | `--mock` / `--no-mock`                   | answer from `*.mock.js` files, or from the real API      | [mocks](mocks.md)               |
-| `imp build [file.html\|file.js]`         | production build; `--pwa` for an installable offline app | [build](build.md)               |
+| `imp build [file.html\|file.js]`         | production build; a `pwa` block makes an offline app     | [build](build.md)               |
 | `imp preview [path]`                     | render components in isolation from `*.preview.js`       | [preview](preview.md)           |
 | `imp preview --output <dir>`             | export the gallery as static files that any page embeds  | [preview](preview.md)           |
 | `imp review [clear]`                     | read what the review widget saved to `.imp/reviews/`     | [review](review.md)             |

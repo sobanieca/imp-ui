@@ -257,12 +257,12 @@ track('myapp.invoice-sent')`,
     points: [
       'There is no runtime, no import map and no server to run.',
       'What you tested in development is what you ship.',
-      'Add --pwa for an installable app that works offline.',
+      'A pwa block in imp.json makes an installable app that works offline.',
     ],
     code: {
       language: 'sh',
       source: `imp build
-imp build --pwa`,
+imp build --env prod`,
     },
   },
 ]

@@ -1,8 +1,0 @@
-$ imp build --pwa  (cwd: <tmp>)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] --pwa requires a 'pwa' block in imp.json (name, icon, ...)

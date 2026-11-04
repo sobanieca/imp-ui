@@ -183,22 +183,12 @@ pub fn service_worker_registration(href: &str) -> String {
     )
 }
 
-pub fn validate_pwa_build(
-    pwa: Option<&Map<String, Value>>,
-    is_html_entry: bool,
-    root: &Path,
-) -> Result<()> {
-    let Some(pwa) = pwa else {
-        bail!("--pwa requires a 'pwa' block in imp.json (name, icon, ...)")
-    };
-    if !is_html_entry {
-        bail!("--pwa applies to an HTML page - a JS component build has no PWA to emit");
-    }
+pub fn validate_pwa_build(pwa: &Map<String, Value>, root: &Path) -> Result<()> {
     if pwa_str(pwa, "name").is_none_or(str::is_empty) {
-        bail!("invalid imp.json - 'pwa.name' is required to build with --pwa");
+        bail!("invalid imp.json - 'pwa.name' is required");
     }
     let Some(icon) = pwa_str(pwa, "icon").filter(|icon| !icon.is_empty()) else {
-        bail!("invalid imp.json - 'pwa.icon' is required to build with --pwa");
+        bail!("invalid imp.json - 'pwa.icon' is required");
     };
     let icon_path = resolve_icon(root, icon);
     if media_type_of(&crate::paths::extension(&icon_path)).is_none() {

@@ -1,7 +1,7 @@
 # build - the production build, and the PWA output
 
 ```
-imp build [file.html|file.js] [--output dist] [--pwa] [--env <name>]
+imp build [file.html|file.js] [--output dist] [--env <name>]
 ```
 
 `imp build` writes plain static files that you upload to any host or CDN. The default output
@@ -177,9 +177,10 @@ the assets and the navigation move together. See [routing](routing.md).
   you built against. When you are not sure, leave the key off and ship a self-contained file. imp
   ignores the key for an HTML entry, because a page is its own host.
 
-## `--pwa` (page builds only)
+## The PWA build (page builds only)
 
-`--pwa` needs a `pwa` block with at least `name` and `icon`. In one step imp does the following:
+A `pwa` block in `imp.json` makes every page build a PWA build. There is no flag. The block needs at
+least `name` and `icon`. A JS entry ignores the block. In one step imp does the following:
 
 - **imp generates the icon set** from that one source. It writes a 192px icon, a 512px icon, a
   padded 512px maskable icon and a 180px apple-touch-icon. Prefer an SVG source. A raster source
@@ -215,11 +216,11 @@ was open at the update remains. So an app has at most two build caches. The cach
 scope of the worker, and a worker deletes only the caches of its own scope. Write no update prompt
 and no reload code for this.
 
-Without the flag, a PWA project still builds normally. In development, installability needs no flag.
-But the **offline** worker comes only from `imp build --pwa`. See [start](start.md).
+In development, `imp start` makes the app installable from the same block. But the **offline**
+worker comes only from `imp build`. See [start](start.md).
 
 When `imp.json` names a `serviceWorker`, every page build bundles that source and writes it as
-`sw.js`. With `--pwa`, imp registers that worker in the HTML and writes no second worker. Call
+`sw.js`. With a `pwa` block, imp registers that worker in the HTML and writes no second worker. Call
 `precacheBuild()` in your worker for the same offline behaviour. See
 [service-worker](service-worker.md).
 
@@ -286,7 +287,7 @@ attribute.
   imp. See [components](components.md) and [analytics](analytics.md).
 - **Do not run a build to test a change.** `imp start` serves the source with live reload. Build
   when you ship.
-- **Preview a `--pwa` build on a different port from `imp start`.** Its offline worker has root
+- **Preview a PWA build on a different port from `imp start`.** Its offline worker has root
   scope. It stays registered and serves its cache to the dev server, which looks like stale content
   or a broken live reload. If this happens, unregister the worker and clear the site data in the
   developer tools of the browser.

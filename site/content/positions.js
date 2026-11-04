@@ -73,7 +73,7 @@ export const positions = [
       + 'app installs to a home screen from a link, with no store and no second codebase. It is '
       + 'where the SPA position leads.',
     link: {
-      href: '/docs/cli#progressive-web-app---imp-build---pwa',
+      href: '/docs/cli#progressive-web-app',
       label: 'Build a PWA',
     },
   },

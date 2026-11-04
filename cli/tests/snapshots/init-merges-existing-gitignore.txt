@@ -32,6 +32,7 @@ Created a new imp project here.
 Next steps:
   imp start        serve the app with live reload
   imp test --unit  run the unit test (--e2e for the browser spec)
+  imp build        build the app for production into dist/
   imp skill        read imp's manuals - an AI agent starts here
 
 The font is Inter, named by --font. An AI agent keeps it and follows `imp skill init`
@@ -79,6 +80,7 @@ Created a new imp project here.
 Next steps:
   imp start        serve the app with live reload
   imp test --unit  run the unit test (--e2e for the browser spec)
+  imp build        build the app for production into dist/
   imp skill        read imp's manuals - an AI agent starts here
 
 The font is Inter, named by --font. An AI agent keeps it and follows `imp skill init`

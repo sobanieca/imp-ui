@@ -1,4 +1,4 @@
-$ imp build --pwa  (cwd: <tmp>)
+$ imp build  (cwd: <tmp>)
 exit code: 0
 
 --- stdout ---

@@ -246,7 +246,6 @@ pub fn run(args: &[String]) -> Result<i32> {
                     .cloned()
                     .unwrap_or_else(|| "index.html".into()),
                 output: flag(rest, "output").unwrap_or_else(|| "dist".into()),
-                pwa: has(rest, "--pwa"),
                 env: flag(rest, "env"),
             })?;
         }

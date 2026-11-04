@@ -16,7 +16,7 @@ dist/
   LICENSES.txt                <- the licence notices of the code in your bundle
   app-analytics.json          <- the pages, zones and outcomes of your app, for an analytics store
   styles.css                  <- a copy of each file in public/
-  manifest.webmanifest        <- with --pwa: the manifest, the icons and sw.js
+  manifest.webmanifest        <- with a pwa block: the manifest, the icons and sw.js
   icons/icon-192.png
   sw.js
 ```
@@ -95,7 +95,7 @@ When a file is gone anyway, imp loads the page again one time:
 
 A tab loads the page again at most once for each build. So a broken deploy cannot start a loop of
 reloads. A reload loses the state of the page that the app does not store, such as text in a field.
-Keep the previous build to prevent this. An app that you build with `--pwa` also keeps the previous
+Keep the previous build to prevent this. A PWA build also keeps the previous
 build in the cache of its service worker, see
 [The update of an installed app](#the-update-of-an-installed-app).
 
@@ -130,10 +130,10 @@ Under a sub-path, such as `/my-app/`, prefix every path of the rules with it. Se
 
 ## The update of an installed app
 
-An app that you build with `--pwa` updates itself. The new service worker takes control of an open
+A PWA, an app with a `pwa` block in `imp.json`, updates itself. The new service worker takes control of an open
 tab at once, and a tab that still runs the previous build keeps its lazy chunks. You write no code
 for this, and the app shows no prompt. The host only has to serve `sw.js` with `no-cache`, which the
-rules above already do. See [Progressive Web App](cli.md#progressive-web-app---imp-build---pwa).
+rules above already do. See [Progressive Web App](cli.md#progressive-web-app).
 
 ## The errors of a live app
 

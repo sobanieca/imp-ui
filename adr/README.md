@@ -108,7 +108,7 @@ These are the conventions:
 | [license-policy-gate](license-policy-gate.md)                               | 'licenses' in imp.json; install and build refuse a violation                         |
 | [production-bundling](production-bundling.md)                               | imp build from vendored bundles + baked-in library                                   |
 | [public-folder-static-assets](public-folder-static-assets.md)               | public/ is the site root; IMP_BASEPATH prefixes built URLs                           |
-| [pwa-toolkit](pwa-toolkit.md)                                               | imp build --pwa: manifest, icons, build-graph SW                                     |
+| [pwa-toolkit](pwa-toolkit.md)                                               | the pwa block: manifest, icons, build-graph SW                                       |
 | [raster-image-pipeline](raster-image-pipeline.md)                           | resvg for icons, image crate for resize, format-preserving encode                    |
 | [transitive-duplication-accepted](transitive-duplication-accepted.md)       | No dedupe across vendored bundles - by design                                        |
 | [two-level-testing](two-level-testing.md)                                   | imp test: unit tests in a blank page, specs against the app, both in Chrome          |

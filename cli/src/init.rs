@@ -475,12 +475,14 @@ pub fn init(cwd: &Path, dir: Option<String>, pwa: bool, font: Option<String>) ->
         "  imp test --unit  {}",
         dim("run the unit test (--e2e for the browser spec)")
     );
-    if pwa {
-        println!(
-            "  imp build --pwa  {}",
-            dim("build an installable, offline app into dist/")
-        );
-    }
+    println!(
+        "  imp build        {}",
+        dim(if pwa {
+            "build an installable, offline app into dist/"
+        } else {
+            "build the app for production into dist/"
+        })
+    );
     println!(
         "  imp skill        {}",
         dim("read imp's manuals - an AI agent starts here")

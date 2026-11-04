@@ -23,10 +23,9 @@ USAGE
   imp build [file.html] [--output dist]   build the app for production: minified,
                                         code-split JS, ready to upload as-is
                                         ("targetImpHost": true in imp.json keeps
-                                        imp imports for the host app to provide)
-                     [--pwa]            also emit a PWA: web manifest, icon set,
-                                        and an offline service worker (needs a
-                                        "pwa" block in imp.json)
+                                        imp imports for the host app to provide;
+                                        a "pwa" block also emits a PWA: web
+                                        manifest, icon set, offline service worker)
                      [--env <name>]     select an "environments" entry from imp.json
   imp preview [path] [--port 4401]      preview components in isolation: each *.preview.js
                      [--env <name>]     file renders its named exports as labeled, drag-resizable

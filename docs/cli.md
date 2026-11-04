@@ -62,8 +62,8 @@ imp start [file.html] [--port 4400]   serve a page (default: index.html)
           [--no-reload]               keep the page as it is when a file changes
           [--host <address>]          listen on another address than 127.0.0.1
           [--allow-host <name>]       also answer for this host name, such as a tunnel
-imp build [file.html] [--output dist]   build the app for production
-          [--pwa]                     also emit an installable, offline PWA
+imp build [file.html] [--output dist]   build the app for production (a pwa block in imp.json:
+                                      also emit an installable, offline PWA)
 imp preview [path] [--port 4401]      preview components in isolation, one page per
             [--list] [--json]         *.preview.js file (no path: an index of all of them)
             [--output <dir>]          export the gallery as static files that any page embeds
@@ -197,7 +197,7 @@ The font is **hosted by the app itself**. imp copies the font files from its own
 origin. This has three results:
 
 - The reader's browser does not tell a font service which pages the reader opens.
-- The app works offline, and a `--pwa` build caches the font with the rest of the app.
+- The app works offline, and a PWA build caches the font with the rest of the app.
 - A Content Security Policy of `style-src 'self'` permits the font. You add no origin.
 
 Each family is the Latin and the Latin Extended subset, with the weights from 400 to 700. A script
@@ -231,8 +231,8 @@ renders the whole icon set from that one source image, at build time, so there i
 to manage. Replace the image with your own artwork, and every generated size follows. The image
 lives at the project root, not in `public/`, because it is a build input, not a published file.
 
-The project is then ready for `imp build --pwa`, and you connect nothing else. The **Progressive Web
-App** section under `imp build`, below, describes what that build emits.
+Every `imp build` of the project is then a PWA build, and you connect nothing else. The
+**Progressive Web App** section under `imp build`, below, describes what that build emits.
 
 At the end, `imp init` prints what it wrote, and the commands to run next.
 
@@ -472,8 +472,8 @@ new bundle installs on that navigation. When the bundle cannot be built, imp rep
 the line in the terminal, and the worker request fails with the same message. Under a sub-path, see
 [Deploying under a sub-path](#deploying-under-a-sub-path), register `url('/sw.js')`.
 
-Your worker can also work offline, with the same behaviour as the worker that `imp build --pwa`
-writes for a project without one. Call `precacheBuild` from `imp/service-worker`:
+Your worker can also work offline, with the same behaviour as the worker that a PWA build writes
+for a project without one. Call `precacheBuild` from `imp/service-worker`:
 
 ```js
 import { precacheBuild } from 'imp/service-worker'
@@ -485,11 +485,11 @@ self.addEventListener('push', (event) => {
 precacheBuild()
 ```
 
-`imp build --pwa` writes the list of the files of the build into your bundle, and `precacheBuild`
+A PWA build writes the list of the files of the build into your bundle, and `precacheBuild`
 caches them when the worker installs. It serves your page network-first, with the cached app shell
 as the fallback, and every other file of the build from the cache. It keeps the previous build for
-an open tab, see [Progressive Web App](#progressive-web-app---imp-build---pwa). A build without
-`--pwa` writes no list, and in development there is no list either. The call then does nothing, so
+an open tab, see [Progressive Web App](#progressive-web-app). A build without a
+`pwa` block writes no list, and in development there is no list either. The call then does nothing, so
 you never need to gate it. Call it at the top level of the worker. When your own `fetch` listener
 answers a request first, your answer wins.
 
@@ -738,7 +738,7 @@ When a declared dependency has no vendored bundle yet, `imp start` prints a warn
 ## `imp build`
 
 ```
-imp build [file.html|file.js] [--output dist] [--pwa]
+imp build [file.html|file.js] [--output dist]
 ```
 
 `imp build` builds the production version of your app into an output directory. The default is
@@ -862,7 +862,7 @@ only the scripts that your own server sends. imp builds for it:
 
 - **imp writes no inline script.** An inline `<script type="module">` of your page goes into a
   hashed file under `chunks/`. The environment values go into `chunks/env-<hash>.js`. The script
-  that registers the service worker of `--pwa` goes into a hashed file too.
+  that registers the service worker of a PWA build goes into a hashed file too.
 - **A classic inline `<script>` in your page stays as you wrote it**, and the policy blocks it. Move
   its code into a module.
 - **`imp build` warns about each inline construct in your page that the policy blocks.** That is a
@@ -1077,15 +1077,13 @@ Know two things:
 so nothing could resolve a bare import that it left there. A bundle of an HTML page compiles imp in
 as usual, because the page is its own host.
 
-### Progressive Web App - `imp build --pwa`
+### Progressive Web App
 
-Add `--pwa` to a page build, and imp emits everything that an app needs to install to a home screen
-and to keep working offline: a web app manifest, a full icon set scaled from one source image, and
-an offline service worker. imp emits those beside the normal production output. Without the flag,
-`imp build` produces a plain build. A PWA project can still make a quick, plain build with a bare
-`imp build`.
-
-Describe the app once, in a `pwa` block in `imp.json`:
+Describe the app once, in a `pwa` block in `imp.json`. Every page build of the project is then a PWA
+build. imp emits everything that an app needs to install to a home screen and to keep working
+offline: a web app manifest, a full icon set scaled from one source image, and an offline service
+worker. imp emits those beside the normal production output. You add no flag. A build of a JS
+component ignores the block.
 
 ```json
 {
@@ -1163,15 +1161,14 @@ knows the exact set of files the app is made of:
   setup.
 
 **A project with its own service worker keeps it.** When `imp.json` names a `serviceWorker`, see
-[Your own service worker](#your-own-service-worker), `imp build --pwa` still writes the manifest and
+[Your own service worker](#your-own-service-worker), the PWA build still writes the manifest and
 the icons, and registers your worker in the built HTML. It writes no second worker, because the two
 would claim the same file and the same scope. Call `precacheBuild()` in your worker, and it gets the
 same precache and the same update behaviour as the worker that imp writes.
 
-**In development, with `imp start`, installability is automatic.** You need no `--pwa` flag and no
-edit to the HTML. When your `imp.json` has a `pwa` block, the dev server injects the manifest link
+**In development, with `imp start`, installability is automatic.** You need no edit to the HTML. When your `imp.json` has a `pwa` block, the dev server injects the manifest link
 and the icon links. It generates and serves the manifest and the icons while it runs, so you can
-install the app and check its icons and its colours while you work. But only `imp build --pwa`
+install the app and check its icons and its colours while you work. But only `imp build`
 generates the **offline** service worker. In development the app keeps live reload and the network
 telemetry in the terminal, because the development service worker reports a request and caches
 nothing. You get the offline behaviour in the production build, where it belongs. That split is
@@ -1179,7 +1176,7 @@ deliberate: a caching worker must never fight live reload while you edit.
 
 **There is one problem when you preview a production build.** A service worker controls a whole
 origin, and the development telemetry worker and the offline PWA worker both claim root scope. So
-when you serve the output of `imp build --pwa`, and then run `imp start` on the _same host and
+when you serve the output of a PWA build, and then run `imp start` on the _same host and
 port_, the offline worker from the production preview can stay registered and keep serving its
 cache. In the dev server that looks like stale content, or a broken live reload. The problem clears
 when the development worker takes over. The production caches remain until then. To fix it now, open

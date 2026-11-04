@@ -52,7 +52,7 @@ network request.
 | `work-sans`         | Work Sans         | SIL Open Font License 1.1 |
 
 The font is self-hosted under `public/fonts/`. The page sends no request to another origin. So the
-app works offline, a `--pwa` build caches the font, and a `style-src 'self'` policy allows it.
+app works offline, a PWA build caches the font, and a `style-src 'self'` policy allows it.
 
 ## Give the new app its own look
 

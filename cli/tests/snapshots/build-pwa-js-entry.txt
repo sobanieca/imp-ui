@@ -1,8 +1,0 @@
-$ imp build app.js --pwa  (cwd: <tmp>)
-exit code: 1
-
---- stdout ---
-(empty)
-
---- stderr ---
-[ERROR] --pwa applies to an HTML page - a JS component build has no PWA to emit

@@ -13,7 +13,7 @@ imp test --unit        run the unit tests
 imp test --e2e         run the browser specs against the mocks
 imp preview            show the todoProgress component in isolation
 imp map                print the application map
-imp build --env prod --pwa   build an installable app, with BULK_ACTIONS and ANALYTICS off
+imp build --env prod   build an installable app, with BULK_ACTIONS and ANALYTICS off
 ```
 
 Sign in with any name and email. The mock backend refuses only an email that starts with `locked@`,
@@ -45,7 +45,7 @@ so you can see a failed submit.
 | Account menu                   | `src/ui/account-menu.js`: a popover on desktop, inline in the drawer                         |
 | QR code of the app address     | `qrCode` in `src/about/about-screen.js`, with the address as text                            |
 | Environments                   | `env/dev.json`, `env/prod.json`                                                              |
-| Installable offline app        | `pwa` in `imp.json`, built with `imp build --pwa`                                            |
+| Installable offline app        | `pwa` in `imp.json`, so `imp build` writes the manifest, the icons and the offline worker   |
 | Size budget of the build       | `build.maxSize` in `imp.json`                                                                |
 | Logger                         | `createLogger` in `src/app.js` and `src/todos/todo-list-screen.js`                           |
 | Custom component with a skill  | `src/todos/todo-progress.js`, `.skill.md` and `.preview.js` beside it                        |
@@ -56,7 +56,7 @@ so you can see a failed submit.
 
 ## Deploy it
 
-`imp build --env prod --pwa` writes `dist/`. Upload that folder, and give the host these rules:
+`imp build --env prod` writes `dist/`. Upload that folder, and give the host these rules:
 
 - Serve `index.html` for a path that has no file, so a deep link works. A missing file under
   `/chunks/` must get a `404`, not `index.html`.

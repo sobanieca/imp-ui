@@ -58,9 +58,8 @@ has its own `imp.json` (or `imp.jsonc`) and its own `dependencies/` folder.
   page. See **[`imp preview`](cli.md#imp-preview)**.
 - **`pwa`** describes your app as a Progressive Web App. `name` and `icon` are required. The
   optional keys are `shortName`, `themeColor`, `backgroundColor`, `display`, `startUrl`, and
-  `scope`. The block drives the manifest that `imp start` injects and the offline app that
-  `imp build --pwa` produces. See
-  **[Progressive Web App](cli.md#progressive-web-app---imp-build---pwa)**.
+  `scope`. The block drives the manifest that `imp start` injects, and it makes every `imp build`
+  of a page an offline app. See **[Progressive Web App](cli.md#progressive-web-app)**.
 - **`environments`** lists the named configuration sets you select with `--env`. Each name maps to a
   JSON file of values. See _Environments_ below.
 - **`flags`** lists, by name, the build flags your app can check. Each environment says whether a

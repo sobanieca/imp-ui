@@ -34,7 +34,6 @@ use std::path::{Path, PathBuf};
 pub struct BuildOptions {
     pub entry: String,
     pub output: String,
-    pub pwa: bool,
     pub env: Option<String>,
 }
 
@@ -268,9 +267,13 @@ pub fn build(options: BuildOptions) -> Result<()> {
     );
     let target_imp_host = config.get("targetImpHost").and_then(Value::as_bool) == Some(true);
     let imp_provided_by_host = target_imp_host && !is_html_entry;
-    let pwa_config = config.get("pwa").and_then(Value::as_object).cloned();
-    if options.pwa {
-        validate_pwa_build(pwa_config.as_ref(), is_html_entry, &root)?;
+    let pwa_config = config
+        .get("pwa")
+        .and_then(Value::as_object)
+        .filter(|_| is_html_entry)
+        .cloned();
+    if let Some(pwa) = &pwa_config {
+        validate_pwa_build(pwa, &root)?;
     }
     let service_worker_declared = config
         .get("serviceWorker")
@@ -423,7 +426,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
                 .map(|id| (id, chunk.file_name.clone()))
         })
         .collect();
-    let worker_bundle = if service_worker.is_some() || (options.pwa && is_html_entry) {
+    let worker_bundle = if service_worker.is_some() || pwa_config.is_some() {
         let mut worker_options = Options::new(&root);
         worker_entry(&mut worker_options, &root, OFFLINE_WORKER_SOURCE);
         let entry = service_worker
@@ -548,8 +551,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
                 site_url(&base, &file)
             ));
         }
-        if options.pwa {
-            let pwa = pwa_config.as_ref().unwrap();
+        if let Some(pwa) = &pwa_config {
             for icon in render_icon_set(&root, pwa)? {
                 let path = outdir.join(icon.file);
                 std::fs::create_dir_all(path.parent().unwrap())?;
@@ -677,7 +679,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
         };
         copy_public_files(&public_directory(&root), &outdir, &mut written, &reserved)?;
         if let Some(worker) = &worker_bundle {
-            let precache = if options.pwa {
+            let precache = if pwa_config.is_some() {
                 let app: Vec<&String> = emitted
                     .iter()
                     .filter(|name| *name != LICENSE_NOTICES_FILE && *name != APP_ANALYTICS_FILE)
@@ -794,7 +796,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
     if let (Some(_), Some(declared)) = (&service_worker, &service_worker_declared) {
         println!("  {SERVICE_WORKER_FILE} - your service worker, bundled from {declared}");
     }
-    if options.pwa {
+    if pwa_config.is_some() {
         println!(
             "{}",
             if service_worker.is_some() {

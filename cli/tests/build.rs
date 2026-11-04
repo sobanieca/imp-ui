@@ -721,7 +721,7 @@ fn build_pwa() {
             .into_owned();
         SIZE.replace_all(&text, "(<size>)").into_owned()
     };
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    let result = run_imp(&["build"], &dir.path);
     let dist = dir.join("dist");
     let icons = [
         "icons/icon-192.png",
@@ -746,7 +746,7 @@ fn build_pwa() {
         "build-pwa",
         &mask(&format!(
             "{}\n{}\n\n{}\n\n{}\n\n{}\n\n{}\n",
-            transcript("imp build --pwa  (cwd: <tmp>)", &result),
+            transcript("imp build  (cwd: <tmp>)", &result),
             output_tree(&dir.path, "dist"),
             section(
                 "dist/manifest.webmanifest",
@@ -763,7 +763,7 @@ fn build_pwa() {
         &dir.path,
         &json!({ "pwa": { "name": "Fixture PWA", "shortName": "Fixture", "themeColor": "#101828", "backgroundColor": "#ffffff", "display": "standalone", "icon": "assets/icon.png" } }),
     );
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    let result = run_imp(&["build"], &dir.path);
     let report = format!(
         "icons/icon-512.png: {}",
         if is_png(&dir.join("dist/icons/icon-512.png")) {
@@ -776,7 +776,7 @@ fn build_pwa() {
         "build-pwa-png-source",
         &mask(&format!(
             "{}\n{}\n",
-            transcript("imp build --pwa  (cwd: <tmp>)", &result),
+            transcript("imp build  (cwd: <tmp>)", &result),
             section("icon from PNG source", &report)
         )),
     );
@@ -790,27 +790,41 @@ fn build_pwa() {
         &dir.path,
         &json!({ "pwa": { "name": "Fixture PWA", "icon": "assets/icon-small.png" } }),
     );
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    let result = run_imp(&["build"], &dir.path);
     assert_snapshot(
         "build-pwa-small-source-warns",
-        &mask(&transcript("imp build --pwa  (cwd: <tmp>)", &result)),
+        &mask(&transcript("imp build  (cwd: <tmp>)", &result)),
     );
 
     write_config(&dir.path, &json!({}));
-    let result = run_imp(&["build", "--pwa"], &dir.path);
-    assert_snapshot(
-        "build-pwa-no-block",
-        &mask(&transcript("imp build --pwa  (cwd: <tmp>)", &result)),
+    std::fs::remove_dir_all(dir.join("dist")).unwrap();
+    let result = run_imp(&["build"], &dir.path);
+    check(
+        result.code == 0,
+        format!("a build with no pwa block failed:\n{}", result.stderr),
+    );
+    check(
+        !dir.join("dist/manifest.webmanifest").exists() && !dir.join("dist/sw.js").exists(),
+        "a build with no pwa block writes no manifest and no worker",
     );
 
     write_config(
         &dir.path,
         &json!({ "pwa": { "name": "Fixture PWA", "icon": "assets/icon.svg" } }),
     );
-    let result = run_imp(&["build", "app.js", "--pwa"], &dir.path);
-    assert_snapshot(
-        "build-pwa-js-entry",
-        &mask(&transcript("imp build app.js --pwa  (cwd: <tmp>)", &result)),
+    std::fs::remove_dir_all(dir.join("dist")).unwrap();
+    write(&dir.join("app.skill.md"), "app - the fixture component\n");
+    let result = run_imp(&["build", "app.js"], &dir.path);
+    check(
+        result.code == 0,
+        format!(
+            "a JS entry build with a pwa block failed:\n{}",
+            result.stderr
+        ),
+    );
+    check(
+        !dir.join("dist/manifest.webmanifest").exists() && !dir.join("dist/sw.js").exists(),
+        "a JS entry build writes no manifest and no worker",
     );
 }
 
@@ -840,7 +854,7 @@ fn build_pwa_precaches_only_the_files_that_the_app_loads_from_the_host() {
     let mut config: Value = serde_json::from_str(&read(&dir.join("imp.json"))).unwrap();
     config["environments"] = json!({ "default": "env/prod.json" });
     write(&dir.join("imp.json"), &config.to_string());
-    let result = run_imp(&["build", "--pwa", "--output", "site/app"], &dir.path);
+    let result = run_imp(&["build", "--output", "site/app"], &dir.path);
     check(
         result.code == 0,
         format!("the build failed:\n{}", result.stderr),
@@ -967,7 +981,7 @@ fn build_pwa_keeps_the_previous_build_for_a_running_page() {
             ),
         );
         let result = run_imp(
-            &["build", "--pwa", "--output", &format!("releases/{release}")],
+            &["build", "--output", &format!("releases/{release}")],
             &dir.path,
         );
         check(
@@ -1062,7 +1076,7 @@ fn precache_build_in_a_project_worker_serves_the_app_offline() {
         &json!({ "serviceWorker": "src/sw.js", "pwa": { "name": "Offline", "icon": "icon.svg" } })
             .to_string(),
     );
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    let result = run_imp(&["build"], &dir.path);
     check(
         result.code == 0,
         format!("the build failed:\n{}", result.stderr),
@@ -1140,7 +1154,7 @@ fn a_built_app_runs_under_a_strict_content_security_policy() {
         &dir.join("imp.json"),
         &json!({ "environments": { "default": "env/prod.json" }, "pwa": { "name": "Strict", "icon": "icon.svg" } }).to_string(),
     );
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    let result = run_imp(&["build"], &dir.path);
     check(
         result.code == 0,
         format!("the build failed:\n{}", result.stderr),
@@ -1283,13 +1297,13 @@ fn build_refuses_an_output_folder_that_it_must_not_delete() {
 }
 
 #[test]
-fn the_offline_worker_of_build_pwa() {
+fn the_offline_worker_of_a_pwa_build() {
     if !has_browser() {
         return;
     }
     let dir = TempDir::new();
     copy_directory(&fixture("build-pwa"), &dir.path);
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    let result = run_imp(&["build"], &dir.path);
     check(
         result.code == 0,
         format!("the build failed:\n{}", result.stderr),

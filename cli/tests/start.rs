@@ -474,6 +474,7 @@ fn build_bundles_the_service_worker_of_the_project() {
     );
     let mut config: Value = serde_json::from_str(&read(&dir.join("imp.json"))).unwrap();
     config["serviceWorker"] = Value::from("src/sw.js");
+    let pwa = config.as_object_mut().unwrap().remove("pwa").unwrap();
     write(
         &dir.join("imp.json"),
         &format!("{}\n", serde_json::to_string_pretty(&config).unwrap()),
@@ -484,7 +485,12 @@ fn build_bundles_the_service_worker_of_the_project() {
         format!("the plain build failed:\n{}", plain.stderr),
     );
     let plain_worker = read(&dir.join("dist/sw.js"));
-    let result = run_imp(&["build", "--pwa"], &dir.path);
+    config["pwa"] = pwa;
+    write(
+        &dir.join("imp.json"),
+        &format!("{}\n", serde_json::to_string_pretty(&config).unwrap()),
+    );
+    let result = run_imp(&["build"], &dir.path);
     let html = with_built_scripts(&dir.join("dist"), &read(&dir.join("dist/index.html")));
     let sw = read(&dir.join("dist/sw.js"));
     let registration = Regex::new(r"serviceWorker\.register\([^)]*\)")
@@ -504,7 +510,7 @@ fn build_bundles_the_service_worker_of_the_project() {
         ),
         precache_report(&sw),
         String::new(),
-        "without --pwa:".into(),
+        "without a pwa block:".into(),
         precache_report(&plain_worker),
     ];
     assert_snapshot(
@@ -512,7 +518,7 @@ fn build_bundles_the_service_worker_of_the_project() {
         &mask_build(
             &format!(
                 "{}\n{}\n",
-                transcript("imp build --pwa  (cwd: <tmp>)", &result),
+                transcript("imp build  (cwd: <tmp>)", &result),
                 section("output", &report.join("\n"))
             ),
             &dir,
