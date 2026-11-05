@@ -151,6 +151,13 @@ theme.watch(self, (choice) => api.put('/me', { theme: choice }))
 
 ## Rules an agent gets wrong
 
+- **The theme is the only place for the look and feel of an app.** Colours, fonts, corner shape,
+  shadows and the loader are tokens, and the standard components read nothing else. To change how a
+  button, an input or a dialog looks, change a token in the theme, and every component follows
+  together. Do not restyle one standard component in a component's `styles`, do not set an `--imp-*`
+  property on one subtree to change one control, and do not hand-write a control to get a look the
+  theme does not give. See [std](std.md) and [custom-components](custom-components.md).
+
 - **A token key is a bare name with no prefix**, such as `color-primary`. The map is flat, with no
   nesting. The CSS property is `--imp-color-primary`.
 - **A theme must define the full token set.** A new theme fully replaces the last one. Name a
@@ -201,7 +208,9 @@ takes `currentColor` and the size of its place. To show the loader of the theme 
 
 `radius-item` rounds a button, an input, a tag, a nav row and a tab. `radius-container` rounds a
 dialog, a drawer, a menu and the frame of a `shell`. Set `radius-item` and `radius-container`
-together. The container radius must be the larger one.
+together. The container radius must be the larger one. For pill-shaped buttons, inputs and tags, set
+`'radius-item': '999px'`. Every item then rounds its ends fully, whatever its height, and an
+icon-only `button({ square: true })` turns into a circle.
 
 `color-on-primary` and `color-on-danger` are the text colours that sit **on** those backgrounds.
 There is no hover token and no active token. Mix them from the base colour and `color-text`:

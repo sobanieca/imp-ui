@@ -30,10 +30,16 @@ section(
 
 ## The shared rules
 
-- **Look for a standard component before you write one.** Read the list that `imp skill` prints,
-  and the skill of each candidate. A job that sounds app-specific often has one: a bug report is
-  `bugReport`, a notification bell is `notifications`, a tenant switcher is `orgSelect`. Write your
-  own component only when no standard one does the job, and never as a copy of one that does.
+- **Build every screen from standard components.** imp is opinionated: the library is the set of
+  controls an app has, and every one looks the same in every app with the same theme. Read the list
+  that `imp skill` prints, and the skill of each candidate. A job that sounds app-specific often has
+  one: a bug report is `bugReport`, a notification bell is `notifications`, a tenant switcher is
+  `orgSelect`. Write your own component only when no standard one does the job, and never as a copy
+  of one that does.
+- **Never hand-write a control that the library has.** A `button`, `a` or `input` from `imp/html`
+  with CSS that makes it look like a button, a link, a pill, a toggle or a segmented choice is a
+  second, inconsistent copy of `button`, `link`, `toggle` or `segmented`. Use the standard one. This
+  holds for a game, a canvas overlay and a landing page as much as for a form.
 - **imp separates props from children by type**, exactly as on an element. A plain object is props.
   Everything else is content. Pass one props object per call, see the `imp/single-props-object` lint
   rule.
@@ -43,8 +49,13 @@ section(
 - **A prop marked live takes the state itself**, not `state.get()`. The component then updates that
   one attribute in place, and renders nothing again.
 - **A component is themed. You do not style it.** Every value comes from an `--imp-*` token of
-  [theming](theming.md). So a new theme re-skins the library. The components use CSS logical
-  properties, so they mirror under `dir="rtl"`.
+  [theming](theming.md). So a new theme re-skins the library. The look and feel of an app is the job
+  of its theme, never of one component. Do not wrap a standard component in a box that paints a
+  background, a border or a radius on it. Do not set an `--imp-*` property in your own `styles` to
+  restyle the component inside: the shape and colour must change for the whole app, in the theme,
+  or not at all. A rounder button is `radius-item` in the theme, and a pill is `'radius-item':
+  '999px'`. When no prop and no token gives the look you want, use the look the library gives. The
+  components use CSS logical properties, so they mirror under `dir="rtl"`.
 - **The words of a component are translatable, and imp already wrote them.** imp finds them under an
   `imp.` key and falls back to English. Your translation of that key wins. See [i18n](i18n.md).
 - **A component has no outer margin.** Spacing is the job of whatever lays the components out.

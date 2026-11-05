@@ -8,6 +8,26 @@ exists there. Do not write a second one. This page is the contract that a standa
 follows it too: theme, direction, words, accessibility, props. Check every item before you consider
 a component done.
 
+## Compose standard components, do not re-skin them
+
+A component of yours is a new **arrangement**, not a new look. Its own CSS places things: grid,
+flex, position, size of a canvas or a board. Every control inside it is a standard one.
+
+- **Every control is a standard component.** A button is `button`, a link is `link`, an icon-only
+  action is `button({ square: true, label })`, a choice is `segmented`, `radioGroup` or `select`, a
+  switch is `toggle`, a modal is `dialog`, a short message is `text`. Never write a `button`, `a` or
+  `input` from `imp/html` with your own colours, radius, padding or hover rules.
+- **Never restyle a standard component from outside.** No wrapper that paints a background, a border
+  or a radius on it. No `--imp-*` property set in your `styles` to change it. Both make one control
+  look different from the same control elsewhere in the app.
+- **The theme owns the look.** Want pill buttons, rounder inputs, a softer surface, another accent?
+  Change the token in the theme, see [theming](theming.md). The whole app follows, every standard
+  component together.
+- **A size or a shape that no prop and no token offers is not available.** Use what the library
+  gives. Do not copy the look of a standard component into a custom element to get one.
+- What is genuinely yours, such as the tile of a kanban card or a seat on a map, follows the token
+  table below, so it still matches the standard components next to it.
+
 ## Theme: every value is a token
 
 Read every colour, length, radius, shadow and font from an `--imp-*` custom property, with its

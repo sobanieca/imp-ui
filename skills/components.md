@@ -217,6 +217,10 @@ const userCard = component('my-app-user-card', {
 - CSS is isolated in both directions. The `--imp-*` custom properties of [theming](theming.md)
   inherit **into** the component. A page rule can style the host tag and win against `:host`. To
   share CSS, compose plain strings.
+- **`styles` lays out your own markup. It never skins a control.** Buttons, links, inputs and
+  dialogs are standard components, themed by the theme alone. Do not re-create one with an
+  `imp/html` element and CSS, and do not set an `--imp-*` property to restyle one. See
+  [custom-components](custom-components.md).
 - An async `setup` shows the loading content until it settles. imp discards a result that arrives
   after unmount. A rejection goes to the nearest boundary. An `HttpError` from an [http](http.md)
   client arrives there like any other error.

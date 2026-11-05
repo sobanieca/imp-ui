@@ -56,8 +56,11 @@ app works offline, a PWA build caches the font, and a `style-src 'self'` policy 
 
 ## Give the new app its own look
 
-A new app must not look like the bare built-in theme. After `imp init`, do these steps before you
-build features:
+A new app must not look like the bare built-in theme. Its look comes from `src/theme.js` alone, and
+its screens are built from standard components, see [std](std.md). Never hand-write a button, a
+link or another control with your own CSS to get a look: set the token in the theme instead, such
+as `'radius-item': '999px'` for pill buttons. After `imp init`, do these steps before you build
+features:
 
 1. Keep the font that `imp init` wrote. Do not replace it, and do not add a second family.
 2. Choose a palette that suits the subject of the app. Do not copy the colours of the built-in
@@ -79,7 +82,7 @@ build features:
 | `color-surface`, `color-surface-sunken`, `color-surface-hover` | tints of one hue, light to dark in a light theme |
 | `color-text`, `color-heading`, `color-border`                  | the ink of the palette                           |
 | `background-app`                                               | a colour or a gradient under the `shell`         |
-| `radius-item`, `radius-container`                              | for example `0.5rem` and `1rem`                  |
+| `radius-item`, `radius-container`                              | for example `0.5rem` and `1rem`; `999px` is pill |
 | `color-shadow`, `shadow-sm`, `shadow-md`, `shadow-lg`          | a tinted shadow, or `none`                       |
 | `loader`                                                       | `spinner`, `dots`, `bar` or `pulse`              |
 
@@ -174,4 +177,4 @@ imp test --e2e   the browser spec
 ```
 
 Related: [cli](cli.md), [start](start.md), [testing](testing.md), [config](config.md),
-[build](build.md), [theming](theming.md)
+[build](build.md), [theming](theming.md), [std](std.md)
