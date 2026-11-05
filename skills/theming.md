@@ -210,7 +210,9 @@ takes `currentColor` and the size of its place. To show the loader of the theme 
 dialog, a drawer, a menu and the frame of a `shell`. Set `radius-item` and `radius-container`
 together. The container radius must be the larger one. For pill-shaped buttons, inputs and tags, set
 `'radius-item': '999px'`. Every item then rounds its ends fully, whatever its height, and an
-icon-only `button({ square: true })` turns into a circle.
+icon-only `button({ square: true })` turns into a circle. Keep `radius-container` a plain length
+then, such as `1.5rem`: a pill is the one case where the item radius is the larger one, and a
+dialog or a card at `999px` would turn into a capsule.
 
 `color-on-primary` and `color-on-danger` are the text colours that sit **on** those backgrounds.
 There is no hover token and no active token. Mix them from the base colour and `color-text`:
