@@ -9,8 +9,10 @@ imp lint --fix [...paths]    apply every available autofix
 It reports an inline block at its real line. It skips a script with a `src` attribute, and a script
 with a type that is not JavaScript. imp lints the code as a modern browser ES module, with the
 browser globals. imp always skips `.git`, `node_modules`, `dist` and the vendored `dependencies/`
-folder. The command exits `1` when an **error** remains, and `0` when only warnings remain. **Run
-`imp lint` and `imp fmt` after every batch of edits.**
+folder. The command exits `1` when an **error** remains, and `0` when only warnings remain. Exit `0` is
+not the goal: fix the warnings too. **After every batch of edits, run `imp fmt`, then `imp lint`, in every imp project.** Fix every
+error and every warning that `imp lint` reports. Work is not done until both run clean. Run `imp fmt` first, so the
+lines that `imp lint` reports are the final ones. After `imp lint --fix`, run `imp fmt` again.
 
 The base is a standard recommended JavaScript rule set that uses the ESLint rule names. imp adds its
 own rules. imp always applies them as errors, and you cannot reconfigure them.

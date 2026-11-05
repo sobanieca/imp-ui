@@ -22,8 +22,10 @@ memory. Read the manuals that ship with the imp version the project runs.
    the browser, run `imp review` first.
 5. Run `imp logs` to read the browser console, the errors and the network of
    the dev server.
-6. When you are done, run `imp lint`, `imp fmt` and the tests
-   (`imp test --unit`, `imp test --e2e`).
+6. After every batch of edits, run `imp fmt`, then `imp lint`, in every imp
+   project, the scaffolded and the existing alike. Fix every error and every
+   warning that `imp lint` reports. Work is not done until both run clean and
+   the tests pass (`imp test --unit`, `imp test --e2e`).
 
 ## Rules
 

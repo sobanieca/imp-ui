@@ -684,7 +684,8 @@ const OUTRO: &str =
 component you build, and an agent can learn it the same way it learns imp. When the person
 mentions a review, a comment they left, or an element they marked in the browser, run
 'imp review' first: it tells you the page, the element and the state they mean. 'imp help'
-lists every command; run 'imp lint' and 'imp fmt' when you are done editing.";
+lists every command. After every batch of edits, run 'imp fmt', then 'imp lint', and fix every
+error and warning it reports - work is not done until both run clean.";
 
 fn section(title: &str, entries: &[Listed], width: usize) -> String {
     let lines: Vec<String> = entries

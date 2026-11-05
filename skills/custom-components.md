@@ -148,8 +148,10 @@ Rules an agent gets wrong:
   `display: contents`, and a grid cannot size it.
 - Name the element `my-app-*`. The `imp-` prefix is reserved.
 
-## Done means learnable and visible
+## Done means formatted, linted, learnable and visible
 
+- `imp fmt`, then `imp lint`, run clean: no error and no warning. See [fmt](fmt.md) and
+  [lint](lint.md).
 - `seat-map.skill.md` next to `seat-map.js`: import, call shape, prop table, events, the mistakes it
   invites. See [skill](skill.md).
 - `seat-map.preview.js` next to it: one export per scenario. The preview page shows the skill file

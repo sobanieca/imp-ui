@@ -7,8 +7,8 @@ imp fmt --check [...paths]   report what would change, write nothing, exit non-z
 
 The formatter is part of the binary. There is nothing to install, it works offline, and one imp
 release formats the same way on every machine. imp always skips `.git`, `node_modules`, `dist` and
-the vendored `dependencies/` folder. A path that does not exist is an error. **Run `imp fmt` and
-`imp lint` after every batch of edits.**
+the vendored `dependencies/` folder. A path that does not exist is an error. **After every batch of edits, run `imp fmt`, then `imp lint`, in every imp project.** Fix every
+error and every warning that `imp lint` reports. Work is not done until both run clean.
 
 | Files                    | Language   |
 | ------------------------ | ---------- |

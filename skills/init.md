@@ -140,7 +140,8 @@ export default {
   writes nothing then.
 - **Never add a `package.json` or a bundler config** to the scaffolded project.
 - **The scaffold passes `imp lint`, `imp fmt --check`, `imp test --unit` and `imp test --e2e` as
-  written.** Keep `imp lint` and `imp fmt --check` passing while you edit.
+  written.** Keep it so: after every batch of edits, run `imp fmt`, then `imp lint`, and fix every
+  error and warning. See [fmt](fmt.md) and [lint](lint.md).
 - **The scaffold tests check the counter only.** When you replace the counter, delete
   `test/app.test.js` and `test/app.spec.js`. Do not write new tests in the first phase of the app,
   unless the person asks for them. See [testing](testing.md).
@@ -177,4 +178,4 @@ imp test --e2e   the browser spec
 ```
 
 Related: [cli](cli.md), [start](start.md), [testing](testing.md), [config](config.md),
-[build](build.md), [theming](theming.md), [std](std.md)
+[build](build.md), [theming](theming.md), [std](std.md), [fmt](fmt.md), [lint](lint.md)

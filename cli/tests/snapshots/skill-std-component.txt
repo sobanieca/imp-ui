@@ -45,6 +45,12 @@ Rules an agent gets wrong:
 - **A live prop takes the state itself, not its value.** Write `disabled: saving`, never
   `disabled: saving.get()`. The second form freezes at the value read during mount.
 - **The button has no outer margin.** Spacing between buttons belongs to whatever lays them out.
+- **The shape and the colours come from the theme, not from the call site.** The corners are
+  `radius-item`, so `'radius-item': '999px'` in the theme makes every button a pill and every
+  `square` button a circle. There is no prop for a shape, a height or a colour, and no CSS hook. Do
+  not wrap the button in a box that paints it, and do not set `--imp-*` properties around it.
+- **Never hand-write a button.** A `button` from `imp/html` with your own CSS is a second, different
+  button in the app. Use this one, with `variant`, `size` and `square`.
 - **An icon next to text needs no wrapper.** Pass the icon and the text as children. The button
   centres them on one line and puts the standard gap between them.
 - The accessible name is the content of the button. An icon-only button needs `label`, and
