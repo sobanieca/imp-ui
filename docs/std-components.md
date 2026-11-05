@@ -479,8 +479,9 @@ build carries the drawing data for the icons that you imported, and nothing else
 `color` names a theme token, such as `'primary'` or `'danger'`, so an icon re-skins with the theme.
 The default takes the color of the text around it. An icon also sits on the line of that text, so
 `link({ href: '/next' }, 'Next ', icon(luArrowRight, { size: 'sm' }))` keeps the arrow beside the
-word. Every icon prop in the library accepts any DOM,
-so your own `<svg>` goes wherever a Lucide export goes. `imp build` writes the Lucide license notice
+word. Every icon prop of a component also accepts a DOM node, so your own `<svg>`, or a drawing on a
+`<canvas>`, goes wherever a Lucide export goes. A toast is the one exception: its keys are plain
+data, so its `icon` is always a Lucide export. `imp build` writes the Lucide license notice
 into `LICENSES.txt`. Deploy that file with the rest of the build.
 
 ## Forms are state, not a framework

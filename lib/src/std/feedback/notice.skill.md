@@ -21,7 +21,7 @@ They sit under the title.
 | ------------- | --------------------------------------------- | -------- | ---------------------------------------------------------------- |
 | `kind`        | `'info'`, `'success'`, `'warning'`, `'error'` | `'info'` | Picks the icon, the colour and the role. `'error'` with `client` |
 | `title`       | string or state                               | none     | Live. The bold first line                                        |
-| `icon`        | an icon from `imp/icons`                      | by kind  | Replaces the icon of the kind                                    |
+| `icon`        | an icon from `imp/icons`, or a DOM node       | by kind  | Replaces the icon of the kind                                    |
 | `dismissible` | boolean                                       | `false`  | Adds a close button. `true` with `client`                        |
 | `open`        | boolean or state                              | `true`   | Live. A dismiss writes `false` into a writable state             |
 | `client`      | the name of an HTTP client, or the client     | none     | Shows the last error of that client                              |

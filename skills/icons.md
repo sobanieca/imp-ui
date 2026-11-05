@@ -55,8 +55,9 @@ Rules an agent gets wrong:
 - **A decorative icon takes no `label`.** A `label` makes the icon `role="img"`, and a screen reader
   announces it. Leave the label off beside a text label. Name an icon-only control on the
   **control** itself, with `button({ label })`. Do not name the icon inside it.
-- **For an icon that Lucide does not draw, write your own inline `<svg>`.** Every icon prop in the
-  library takes any DOM node. So nothing forces an icon through this module.
+- **For an icon that Lucide does not draw, write your own inline `<svg>`.** Every icon prop of a
+  component takes a DOM node too, such as an `<svg>` or a `<canvas>`. The exception is `notify`: a
+  toast is plain data, so its `icon` is a Lucide export only.
 
 ## Colour and size
 

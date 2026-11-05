@@ -21,7 +21,7 @@ text.
 | `variant`     | `'empty'`, `'noResults'`                                   | `'empty'`   | Which of the two situations this is           |
 | `title`       | string, or a state holding one - **live**                  | see below   | The line saying there is nothing              |
 | `description` | string, or a state holding one - **live**                  | -           | One sentence of explanation; omitted if unset |
-| `icon`        | an icon from `imp/icons`                                   | -           | Drawn large and muted above the title         |
+| `icon`        | an icon from `imp/icons`, or a DOM node                    | -           | Drawn large and muted above the title         |
 | `image`       | a DOM node, or an image URL                                | -           | A drawing above the title; wins over `icon`   |
 | `kind`        | `'neutral'`, `'success'`, `'error'`, `'warning'`, `'info'` | `'neutral'` | Tints the icon only                           |
 
@@ -37,9 +37,9 @@ Rules an agent gets wrong:
   ink of `color-text`. Pass an `icon` or an `image` to replace it. To replace it in the whole app,
   including the empty views of `list`, `table`, `timeline` and `notifications`, set
   `init({ defaults: { emptyState: { icon: luInbox } } })`, see imp skill std.
-- **`icon` is an icon from `imp/icons`, not an `icon()` component and not a name.** Write
-  `icon: luInbox`. imp draws it at 3rem, and hides it from a screen reader, because the title says
-  the same.
+- **`icon` is an icon from `imp/icons`, not a name.** Write `icon: luInbox`. imp draws it at 3rem,
+  tinted by `kind`, and hides it from a screen reader, because the title says the same. A DOM node
+  also works, at its own size and colours. For a large picture, use `image`.
 - **`image` is any drawing.** Pass an inline `<svg>` node, any DOM, or the URL of an SVG or a PNG. A
   URL renders as an `<img>` with an empty `alt`. imp draws it 6rem wide and at most 6rem tall, and
   it keeps the ratio of the picture. An inline SVG that uses `currentColor` follows `color-text`.

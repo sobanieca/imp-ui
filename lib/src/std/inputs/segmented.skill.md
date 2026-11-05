@@ -22,7 +22,7 @@ The call shape is `segmented(props?)`. The choices are the `options` prop, never
 
 | Prop       | Values                                           | Default | Notes                                   |
 | ---------- | ------------------------------------------------ | ------- | --------------------------------------- |
-| `options`  | strings, or `{ value, label, icon?, disabled? }` | -       | `icon` is an icon from `imp/icons`      |
+| `options`  | strings, or `{ value, label, icon?, disabled? }` | -       | `icon`: from `imp/icons`, or a DOM node |
 | `multiple` | boolean                                          | `false` | The value becomes an array              |
 | `size`     | `'sm'`, `'md'`, `'lg'`                           | `'md'`  | The same heights as `button`            |
 | `block`    | boolean                                          | `false` | The segments share the full inline size |
@@ -43,6 +43,9 @@ Rules an agent gets wrong:
 - **In single mode a second click does not clear the choice.** That is how a radio works.
 - **An option with `icon` shows the icon only.** Its `label` is still necessary. It becomes the
   accessible name and the native tooltip. Do not wrap the control in `tooltip`.
+- **`icon` is an export of `imp/icons`, or a DOM node such as an `<svg>` or a `<canvas>`.** imp draws
+  an export at `1.25em`. A node keeps its own size, and the segment grows to fit it. Give each
+  option its own node: one node cannot sit in two segments.
 - **The arrow keys move the focus and select in single mode.** Left and Right mirror under
   `dir="rtl"`. In `multiple` mode, Tab moves between the segments, and Space or Enter toggles one.
 - **The field gets the option value as you wrote it.** `{ value: 4 }` writes the number `4`, and
