@@ -71,7 +71,7 @@ pub fn module_exports(path: &str, seen: &mut BTreeSet<String>) -> BTreeSet<Strin
                     names.insert(exported.name().to_string());
                 }
                 None => {
-                    let target = join(path, declaration.source.value.as_str());
+                    let target = join(path, declaration.source.value.as_str().unwrap_or_default());
                     names.extend(
                         module_exports(&target, seen)
                             .into_iter()

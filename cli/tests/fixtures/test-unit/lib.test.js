@@ -1,4 +1,5 @@
 import { expect, test } from 'imp/test'
+import data from './data.json' with { type: 'json' }
 import { add, greet } from './lib.js'
 
 test('adds numbers', () => {
@@ -13,4 +14,8 @@ test('greets by name', () => {
   expect(() => greet()).toThrow('name required')
   expect(add(0.1, 0.2)).toEqual(expect.closeTo(0.3))
   expect(greet('x')).not.toEqual('hello y')
+})
+
+test('imports a JSON module as its value', () => {
+  expect(data).toEqual({ name: 'imp', sizes: [1, 2] })
 })

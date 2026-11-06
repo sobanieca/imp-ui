@@ -287,6 +287,9 @@ attribute.
   imp. See [components](components.md) and [analytics](analytics.md).
 - **Do not run a build to test a change.** `imp start` serves the source with live reload. Build
   when you ship.
+- **`imp build` is always a production build.** It has no development mode and no flag that keeps
+  the developer messages. It removes every warning and every debug message of imp, with its text.
+  To find a misused prop or option, or to read the debug trace, use `imp start` or `imp test`.
 - **Preview a PWA build on a different port from `imp start`.** Its offline worker has root
   scope. It stays registered and serves its cache to the dev server, which looks like stale content
   or a broken live reload. If this happens, unregister the worker and clear the site data in the

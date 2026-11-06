@@ -1860,19 +1860,20 @@ fn repeated_params<'a>(ctx: &Ctx, nodes: &ObjectExpression<'a>, above: &mut Vec<
         let Some(name) = property.key.static_name() else {
             continue;
         };
-        let param = name.starts_with('$');
-        if param && above.iter().any(|outer| outer == name.as_ref()) {
+        let param = name.as_js_str().starts_with('$');
+        if param && above.iter().any(|outer| name == outer.as_str()) {
             ctx.report(
                 "app-map-unique-params",
                 property.key.span(),
                 format!(
-                    "'{name}' repeats the param '{name}' above it in this map - a param name names one param of a chain, so give each param its own name, like $orgId and $teamId"
+                    "'{name}' repeats the param '{name}' above it in this map - a param name names one param of a chain, so give each param its own name, like $orgId and $teamId",
+                    name = name.display(),
                 ),
             );
         }
         if let Expression::ObjectExpression(children) = property.value.without_parentheses() {
             if param {
-                above.push(name.to_string());
+                above.push(name.display().to_string());
             }
             repeated_params(ctx, children, above);
             if param {
@@ -2092,7 +2093,7 @@ fn is_relative_or_url(specifier: &str) -> bool {
 fn exact_dependency_versions(ctx: &Ctx) {
     let aliases: HashSet<&str> = ctx.dependency_aliases.iter().map(String::as_str).collect();
     let check = |literal: &StringLiteral| {
-        let specifier = literal.value.as_str();
+        let specifier = literal.value.as_str().unwrap_or_default();
         if let Some(install) = specifier.strip_prefix(NPM_PREFIX) {
             let alias = parse_specifier(specifier)
                 .map(|parsed| default_alias(&parsed))

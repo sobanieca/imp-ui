@@ -83,7 +83,7 @@ listeners: activate, fetch, install
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#101828">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<script src="/chunks/register-service-worker-<hash>.js"></script>
+<script defer src="/chunks/register-service-worker-<hash>.js"></script>
     <title>pwa fixture</title>
   </head>
   <body>

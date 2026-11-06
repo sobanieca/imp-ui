@@ -114,7 +114,7 @@ impl<'s, 'a> Ctx<'s, 'a> {
 }
 
 pub fn import_source<'a>(declaration: &ImportDeclaration<'a>) -> &'a str {
-    declaration.source.value.as_str()
+    declaration.source.value.as_str().unwrap_or_default()
 }
 
 pub fn imported_name<'a>(specifier: &ImportSpecifier<'a>) -> String {
@@ -186,7 +186,7 @@ pub fn property_key_name(property: &ObjectProperty) -> Option<String> {
     }
     match &property.key {
         PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.to_string()),
-        PropertyKey::StringLiteral(literal) => Some(literal.value.to_string()),
+        PropertyKey::StringLiteral(literal) => Some(literal.value.display().to_string()),
         PropertyKey::NumericLiteral(literal) => Some(number_text(literal.value)),
         _ => None,
     }
@@ -217,7 +217,9 @@ pub fn literal_argument(argument: Option<&Argument>) -> Option<LiteralValue> {
 
 pub fn literal_expression(expression: &Expression) -> Option<LiteralValue> {
     match expression.without_parentheses() {
-        Expression::StringLiteral(literal) => Some(LiteralValue::Str(literal.value.to_string())),
+        Expression::StringLiteral(literal) => {
+            Some(LiteralValue::Str(literal.value.display().to_string()))
+        }
         Expression::NumericLiteral(literal) => {
             Some(LiteralValue::Other(number_text(literal.value)))
         }
@@ -243,7 +245,7 @@ pub fn literal_expression(expression: &Expression) -> Option<LiteralValue> {
                     .quasis
                     .first()
                     .and_then(|quasi| quasi.value.cooked.as_ref())
-                    .map(|cooked| cooked.to_string())
+                    .map(|cooked| cooked.display().to_string())
                     .unwrap_or_default(),
             ))
         }

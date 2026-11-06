@@ -1,7 +1,7 @@
 use crate::workspace::repo_root;
 use imp::bundler::{Assets, Format, ImpLibrary, LegalComments, Options, bundle};
 
-pub const PUPPETEER_VERSION: &str = "24.43.1";
+pub const PUPPETEER_VERSION: &str = "25.16.0";
 
 pub fn puppeteer() -> anyhow::Result<()> {
     let root = repo_root();
@@ -9,9 +9,7 @@ pub fn puppeteer() -> anyhow::Result<()> {
     let mut options = Options::new(&root);
     options.entries.push((
         Some("puppeteer".into()),
-        format!(
-            "npm:puppeteer-core@{PUPPETEER_VERSION}/lib/esm/puppeteer/puppeteer-core-browser.js"
-        ),
+        format!("npm:puppeteer-core@{PUPPETEER_VERSION}/lib/puppeteer/puppeteer-core-browser.js"),
     ));
     options.imp = ImpLibrary::External;
     options.externals = vec![

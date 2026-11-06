@@ -147,7 +147,7 @@ test('the exported preview embeds in a page and shares its address', async ({ pa
     globalThis.impFramed('imp-link').shadowRoot.querySelector('a').click()
   )
   await scenarioFrame.waitForFunction(() =>
-    location.hash === '#/done' && globalThis.impFramed('imp-empty-state') !== null
+    location.hash === '#/done' && globalThis.impFramed('.done-title') !== null
   )
   const framedAfter = {
     gallery: await galleryFrame.evaluate(() => location.hash),

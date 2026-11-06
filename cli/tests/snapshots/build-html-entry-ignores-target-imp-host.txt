@@ -11,7 +11,7 @@ built index.html -> dist/
   chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   chunks/lib-<hash>.js (<size>)
-  chunks/log-<hash>.js (<size>)
+  chunks/logger-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)
 

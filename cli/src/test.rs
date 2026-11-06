@@ -658,6 +658,9 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
                 "--no-mock".into()
             });
         }
+        // Get the browser once here, so the workers do not each start the
+        // first-time download.
+        resolve_browser(get_str(&config, &["test", "browser"]))?;
         let relative: Vec<String> = files.iter().map(to_relative).collect();
         return orchestrate(
             &root,

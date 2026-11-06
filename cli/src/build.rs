@@ -380,6 +380,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
     bundle_options.assets = Assets::Files;
     bundle_options.legal_comments = LegalComments::External;
     bundle_options.define = production_defines();
+    bundle_options.strip_dev_logs = true;
     bundle_options.entry_names = if is_html_entry {
         format!("{HASHED_FOLDER}/[name]-[hash].js")
     } else {
@@ -443,6 +444,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
         worker_options.assets = Assets::Files;
         worker_options.legal_comments = LegalComments::External;
         worker_options.define = production_defines();
+        worker_options.strip_dev_logs = true;
         worker_options.entry_names = "[name].js".into();
         worker_options.asset_names = format!("{HASHED_FOLDER}/[name]-[hash][extname]");
         worker_options.public_path = Some(format!("{base}/"));
@@ -580,7 +582,7 @@ pub fn build(options: BuildOptions) -> Result<()> {
                 &mut written,
             )?;
             head_tags.push(format!(
-                "<script src=\"{}\"></script>",
+                "<script defer src=\"{}\"></script>",
                 site_url(&base, &registration)
             ));
         }

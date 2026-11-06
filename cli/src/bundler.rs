@@ -8,6 +8,7 @@ use crate::specifiers::{
 use anyhow::{Result, anyhow};
 use arcstr::ArcStr;
 use rolldown::{BundlerOptions, InputItem, OutputFormat, Platform};
+use rolldown_common::side_effects::HookSideEffects;
 use rolldown_common::{EmittedAsset, ImportKind, ModuleType, Output, StrOrBytes};
 use rolldown_plugin::{
     HookLoadArgs, HookLoadOutput, HookLoadReturn, HookRenderChunkArgs, HookRenderChunkOutput,
@@ -28,7 +29,7 @@ const ASSET_PREFIX: &str = "__IMP_ASSET__#";
 pub const BINARY_ASSET_EXTENSIONS: [&str; 10] = [
     "wasm", "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "woff", "woff2",
 ];
-const TEXT_ASSET_EXTENSIONS: [&str; 3] = ["css", "txt", "json"];
+const TEXT_ASSET_EXTENSIONS: [&str; 2] = ["css", "txt"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImpLibrary {
@@ -90,6 +91,9 @@ pub struct Options {
     pub external_imp: bool,
     pub externals: Vec<String>,
     pub split: bool,
+    /// Replaces the developer messages of the imp library (`impLogger.warn` and `impLogger.debug`)
+    /// with `void 0`, for a production bundle.
+    pub strip_dev_logs: bool,
 }
 
 impl Options {
@@ -117,6 +121,7 @@ impl Options {
             external_imp: false,
             externals: Vec::new(),
             split: false,
+            strip_dev_logs: false,
         }
     }
 
@@ -260,6 +265,7 @@ struct PluginConfig {
     legal_external: bool,
     public_path: Option<String>,
     externals: Vec<String>,
+    strip_dev_logs: bool,
 }
 
 fn runtime() -> &'static tokio::runtime::Runtime {
@@ -341,7 +347,6 @@ fn mime_of(extension: &str) -> &'static str {
         "woff2" => "font/woff2",
         "wasm" => "application/wasm",
         "css" => "text/css",
-        "json" => "application/json",
         "txt" => "text/plain",
         _ => "application/octet-stream",
     }
@@ -351,7 +356,7 @@ fn data_url(extension: &str, bytes: &[u8]) -> String {
     use base64::Engine;
     let mime = mime_of(extension);
     if let Ok(text) = std::str::from_utf8(bytes)
-        && matches!(extension, "svg" | "css" | "txt" | "json")
+        && matches!(extension, "svg" | "css" | "txt")
     {
         return format!("data:{mime};charset=utf-8,{}", percent_encode(text));
     }
@@ -739,9 +744,18 @@ impl ImpPlugin {
             let code = embedded::text(path)
                 .ok_or_else(|| anyhow!("{path} is not embedded in this imp build"))?;
             self.state.lock().unwrap().0.inputs.insert(id.to_string());
+            let library = path.starts_with("lib/src/");
+            let code = if self.config.strip_dev_logs && library {
+                crate::dev_logs::strip(code)
+            } else {
+                code.to_string()
+            };
             return Ok(Some(HookLoadOutput {
                 code: code.into(),
                 module_type: Some(ModuleType::Js),
+                // A module of the library runs no code on import. So a module that a barrel
+                // re-exports, and that the app never names, stays out of the bundle.
+                side_effects: library.then_some(HookSideEffects::False),
                 ..Default::default()
             }));
         }
@@ -774,11 +788,9 @@ impl ImpPlugin {
         self.state.lock().unwrap().0.inputs.insert(id.to_string());
         let extension = extension_of(id);
         let binary = BINARY_ASSET_EXTENSIONS.contains(&extension.as_str());
-        let text_asset = TEXT_ASSET_EXTENSIONS.contains(&extension.as_str()) && extension != "json";
+        let text_asset = TEXT_ASSET_EXTENSIONS.contains(&extension.as_str());
         if binary
-            || (self.config.assets == Assets::DataUrl
-                && (text_asset || extension == "json")
-                && !self.config.reject_css)
+            || (self.config.assets == Assets::DataUrl && text_asset && !self.config.reject_css)
         {
             let bytes = std::fs::read(path)?;
             let code = match self.config.assets {
@@ -980,6 +992,7 @@ pub fn bundle(options: Options) -> Result<Bundle, BundleError> {
             legal_external: options.legal_comments == LegalComments::External,
             public_path: options.public_path.clone(),
             externals: options.externals.clone(),
+            strip_dev_logs: options.strip_dev_logs,
         }),
         state: state.clone(),
     };

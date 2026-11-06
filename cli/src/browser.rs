@@ -8,7 +8,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
-pub const CHROME_VERSION: &str = "150.0.7871.46";
+pub const CHROME_VERSION: &str = "156.0.8078.47";
 
 struct Build {
     platform: &'static str,
@@ -20,12 +20,12 @@ fn current_build() -> Option<Build> {
     Some(match (std::env::consts::OS, std::env::consts::ARCH) {
         ("linux", "x86_64") => Build {
             platform: "linux64",
-            sha256: "ad115a7498a17f53f6ed0914458326c6516addc756224db14c32184a9b1ab078",
+            sha256: "e6c94490f0b6b337225aeb2d2a5034858516b7017356980ba94f5176d8774a50",
             executable: &["chrome-linux64", "chrome"],
         },
         ("macos", "aarch64") => Build {
             platform: "mac-arm64",
-            sha256: "9b6c6fbbda6f2948c74425828bd18f0e59542fd2beb056697478c38a956d83cb",
+            sha256: "ad7f2b49a4dc679af286b1b1b386670d93ca7868079f69012d21ba0ac8293df3",
             executable: &[
                 "chrome-mac-arm64",
                 "Google Chrome for Testing.app",
@@ -36,7 +36,7 @@ fn current_build() -> Option<Build> {
         },
         ("macos", "x86_64") => Build {
             platform: "mac-x64",
-            sha256: "dc6280df5fa5cb1da96f7026a20d7622df921fa5ba03c07e95af4a8dde17b131",
+            sha256: "5a38b8e3d621514fff0775dcae678a152ce378890188c88eef79fc97aa59fccd",
             executable: &[
                 "chrome-mac-x64",
                 "Google Chrome for Testing.app",
@@ -47,7 +47,7 @@ fn current_build() -> Option<Build> {
         },
         ("windows", "x86_64") => Build {
             platform: "win64",
-            sha256: "2245f764e024897195bce1cf6ff16d60544351e4d1b68edb6956ea875ab8b929",
+            sha256: "a4e0d57245e167e98a9d465af1e3774d2b4ec9f04e483d19bcd97a6f63cf46dd",
             executable: &["chrome-win64", "chrome.exe"],
         },
         _ => return None,
@@ -173,9 +173,20 @@ pub fn download_browser() -> Result<PathBuf> {
         "https://storage.googleapis.com/chrome-for-testing-public/{CHROME_VERSION}/{}/chrome-{}.zip",
         build.platform, build.platform
     );
+    let directory = browser_cache_directory()?;
+    let parent = directory.parent().unwrap();
+    std::fs::create_dir_all(parent)?;
+    // Parallel `imp test` workers are separate processes that can all find the
+    // cache empty at once. One downloads under the lock; the rest wait for it
+    // and then find the finished browser.
+    let lock = std::fs::File::create(parent.join(format!("chrome-{CHROME_VERSION}.lock")))?;
+    lock.lock()?;
+    if let Some(executable) = find_cached_browser() {
+        return Ok(executable);
+    }
     logger::info(&format!(
         "downloading Chrome {CHROME_VERSION} for browser tests (one-time, cached in {})...",
-        imp_cache_directory()?.join("browser").display()
+        parent.display()
     ));
     let response = get(&url, &[], None)?;
     if !response.ok() {
@@ -188,9 +199,13 @@ pub fn download_browser() -> Result<PathBuf> {
             build.sha256
         );
     }
-    let directory = browser_cache_directory()?;
+    // Unpack beside the cache and rename it into place when complete, so
+    // find_cached_browser never sees an executable that is still being written.
+    let staging = parent.join(format!("chrome-{CHROME_VERSION}.partial"));
+    let _ = std::fs::remove_dir_all(&staging);
+    extract_zip(&response.body, &staging)?;
     let _ = std::fs::remove_dir_all(&directory);
-    extract_zip(&response.body, &directory)?;
+    std::fs::rename(&staging, &directory)?;
     let executable = find_cached_browser()
         .ok_or_else(|| anyhow!("browser download completed but no executable was found"))?;
     logger::info(&format!("browser ready: {}", executable.display()));

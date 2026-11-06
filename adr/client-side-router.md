@@ -48,8 +48,8 @@ component.
   `/user/%zz` from an external link, matches nothing, so the URL renders `notFound`. The failure is
   in the URL, and not in the app, so it must not surface as an error of a mount. There is no `*`
   wildcard. The page for a URL that is off the map is `notFound`. That keeps "the 404" one named
-  concept. A node on the map with no screen renders a stub, forwards to its first static child, or
-  forwards where a `redirect()` binding says, see `application-map.md`. A screen factory receives
+  concept. A node on the map with no screen forwards to its first static child, forwards where a
+  `redirect()` binding says, or renders `notFound`, see `application-map.md`. A screen factory receives
   `{ params, query, searchParams, node }`, where `node` is the handle of the matched node.
 - **The query is two views of one search string.** `query` is an object of plain strings, and the
   first value of a repeated key wins. It covers the common case, a single value per key, with plain

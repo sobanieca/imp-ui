@@ -35,7 +35,7 @@ test('counts every click', () => {
   expect(find(page, '#clicks').textContent).toEqual('Clicks: 2')
 })
 
-test('the map gives every node a screen, bound or not', () => {
+test('the nav links every node of the map', () => {
   const page = render()
   expect(find(page, 'imp-shell')).toBeTruthy()
   expect(find(page, 'nav a[href="/about"]')).toBeTruthy()

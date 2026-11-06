@@ -24,6 +24,16 @@ imp adds no new configuration.
   So a warning and an error from the library always show, a built app does not fill the console of
   every user, and you turn debug tracing on yourself. There is deliberately no way to silence an
   error.
+- **`imp build` removes the warnings and the debug trace of the library.** Both are developer
+  messages: a warning points at a mistake in the code of the app, and the trace shows what the
+  library does. `imp build` is always a production build, so it replaces every
+  `impLogger.warn(...)` and `impLogger.debug(...)` call of a library module with `void 0`, with its
+  arguments, in the app and in the offline worker. A problem of a running app, such as a full cache
+  or lost analytics records, is an `impLogger.error(...)`, and stays. The pass works on the syntax
+  tree in `cli/src/dev-logs.rs`. The `manualPureFunctions` option of the bundler is not enough: it
+  drops the call but keeps each `${...}` of the message, and each condition in front of the call.
+  The pass matches the callee by name, so library code always calls `impLogger.<level>(...)`
+  directly, never through an alias.
 - **The level comes from the environment.** It is the `IMP_LOG_LEVEL` value in the selected
   environment file. imp reads it from the injected `env` object on first use, and remembers it. imp
   warns about an unknown value, and falls back to the default. `setLogLevel` overrides the level at

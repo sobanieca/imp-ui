@@ -51,7 +51,7 @@ impl<'a> Visit<'a> for Collector<'_> {
                 ImportDeclarationSpecifier::ImportNamespaceSpecifier(_) => {
                     self.record
                         .imports
-                        .push((declaration.source.value.to_string(), Names::All));
+                        .push((declaration.source.value.display().to_string(), Names::All));
                     return;
                 }
                 ImportDeclarationSpecifier::ImportDefaultSpecifier(_) => {
@@ -62,9 +62,10 @@ impl<'a> Visit<'a> for Collector<'_> {
                 }
             }
         }
-        self.record
-            .imports
-            .push((declaration.source.value.to_string(), Names::Some(names)));
+        self.record.imports.push((
+            declaration.source.value.display().to_string(),
+            Names::Some(names),
+        ));
     }
 
     fn visit_export_named_declaration(&mut self, declaration: &ExportNamedDeclaration<'a>) {
@@ -82,9 +83,10 @@ impl<'a> Visit<'a> for Collector<'_> {
             .iter()
             .map(|specifier| specifier.local.name().to_string())
             .collect();
-        self.record
-            .imports
-            .push((declaration.source.value.to_string(), Names::Some(names)));
+        self.record.imports.push((
+            declaration.source.value.display().to_string(),
+            Names::Some(names),
+        ));
         for specifier in &declaration.specifiers {
             let at = self.at(specifier.exported.span().start);
             self.record
@@ -127,14 +129,14 @@ impl<'a> Visit<'a> for Collector<'_> {
             Some(exported) => {
                 self.record
                     .imports
-                    .push((declaration.source.value.to_string(), Names::All));
+                    .push((declaration.source.value.display().to_string(), Names::All));
                 let at = self.at(exported.span().start);
                 self.record.exports.push((exported.name().to_string(), at));
             }
             None => self
                 .record
                 .star_exports
-                .push(declaration.source.value.to_string()),
+                .push(declaration.source.value.display().to_string()),
         }
     }
 
@@ -149,13 +151,13 @@ impl<'a> Visit<'a> for Collector<'_> {
             Expression::StringLiteral(literal) => self
                 .record
                 .imports
-                .push((literal.value.to_string(), Names::All)),
+                .push((literal.value.display().to_string(), Names::All)),
             Expression::TemplateLiteral(template) => {
                 let head = template
                     .quasis
                     .first()
                     .and_then(|quasi| quasi.value.cooked.as_ref())
-                    .map(|cooked| cooked.to_string())
+                    .map(|cooked| cooked.display().to_string())
                     .unwrap_or_default();
                 if template.expressions.is_empty() {
                     self.record.imports.push((head, Names::All));

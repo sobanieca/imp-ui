@@ -5,8 +5,9 @@ exit code: 0
 lib.test.js
   ✓ adds numbers (*ms)
   - greets by name (skipped)
+  - imports a JSON module as its value (skipped)
 
-imp test: 1 passed, 1 skipped (1 file, *ms)
+imp test: 1 passed, 2 skipped (1 file, *ms)
 
 --- stderr ---
 (empty)

@@ -33,6 +33,13 @@ export const root = component('app-root', {
   setup: () =>
     shell(
       { map: app, logo: appLogo({ label: '{{TITLE_QUOTED}}' }) },
-      router({ map: app, screens: { [app]: () => counter() } }),
+      router({
+        map: app,
+        screens: {
+          [app]: () => counter(),
+          [app.about]: () => div(heading('About'), text('Replace this screen in src/app.js.')),
+        },
+        notFound: () => div(heading('Page not found'), text('This page is not part of the app.')),
+      }),
     ),
 })

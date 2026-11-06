@@ -117,6 +117,28 @@ only place a component's skill is written.
 reader, and its `skills/` page (and any component's `*.skill.md`) for the agent. No test can check
 this, because a page can be present and stale. The person who makes the change is responsible.
 
+## Library modules run no code on import
+
+The bundler treats every module of `lib/src` as free of side effects. A module that a barrel
+re-exports, and that the app never names, stays out of the bundle. So a module of the library must
+run no code when it is imported: no listener, no `customElements.define`, no write to a global, no
+registration in another module. Do that work in a function that the app calls, such as `init()` or
+the setup of a component. A top-level value that is only computed, such as a CSS string, is correct.
+
+## Developer messages leave the production bundle
+
+`imp build` replaces every `impLogger.warn(...)` and `impLogger.debug(...)` call of a module of
+`lib/src` with `void 0`, with its arguments (`cli/src/dev-logs.rs`). So:
+
+- **A warning is for the developer.** Use `impLogger.warn` for a mistake in the code of the app,
+  such as an unknown prop, and `impLogger.debug` for the trace. A problem that a running app must
+  report, such as a full cache or a lost record, is an `impLogger.error`.
+- **Call the logger directly.** Write `impLogger.warn(...)`, never `const log = impLogger`,
+  `impLogger['warn']`, or a helper that wraps the call. The pass matches the callee by name and
+  misses every other form.
+- **Work that the app needs never happens in the arguments of a message.** The build drops the
+  arguments with the call.
+
 ## Standard component groups - one folder, one name
 
 **The folder of a standard component is its group, and that one name is used everywhere.** A

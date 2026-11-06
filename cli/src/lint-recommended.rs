@@ -237,7 +237,7 @@ fn is_getter_or_setter<'a>(
                 method
                     .key
                     .static_name()
-                    .map(|name| name.to_string())
+                    .map(|name| name.display().to_string())
                     .unwrap_or_default(),
             )),
             MethodDefinitionKind::Set => Some((
@@ -245,7 +245,7 @@ fn is_getter_or_setter<'a>(
                 method
                     .key
                     .static_name()
-                    .map(|name| name.to_string())
+                    .map(|name| name.display().to_string())
                     .unwrap_or_default(),
             )),
             _ => None,
@@ -1310,7 +1310,7 @@ pub fn run(ctx: &Ctx) {
                         MethodDefinitionKind::Set => "set",
                         _ => "method",
                     };
-                    let key = (name.to_string(), method.r#static, kind);
+                    let key = (name.display().to_string(), method.r#static, kind);
                     let conflicts = match kind {
                         "method" => seen
                             .keys()
@@ -1328,7 +1328,7 @@ pub fn run(ctx: &Ctx) {
                         ctx.report(
                             "no-dupe-class-members",
                             method.span,
-                            format!("Duplicate name '{name}'."),
+                            format!("Duplicate name '{}'.", name.display()),
                         );
                     }
                     seen.insert(key, ());

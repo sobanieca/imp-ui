@@ -35,9 +35,16 @@ when its level is at or above the active level. The default level is `info` whil
 test, so the warnings and errors of imp show, and debug tracing stays quiet. In a built app the
 default level is `warn`, so an info message does not fill the console of every user.
 
+`imp build` always makes a production build. It removes the warnings and the debug trace of imp
+itself from the bundle, with their text. A warning of imp points at a mistake in the code of the
+app, so you fix it during development, where it shows. The debug trace is for you while you develop.
+Their text is a large part of the library, and your users do not need it. The build keeps the errors
+of imp, which report a problem of the running app, and every message of your own loggers. To read
+the warnings and the trace of imp, run the app with `imp start`.
+
 To set the level per environment, use the `IMP_LOG_LEVEL` value in an environment file. See
-_Environments_ in **[Configuration](config.md)**. Use debug tracing in development, and warnings and
-errors in production:
+_Environments_ in **[Configuration](config.md)**. In a built app, the level filters your own
+loggers and the errors of imp:
 
 ```json
 {
@@ -57,8 +64,9 @@ logLevel() // 'debug'
 
 ## What imp logs at the debug level
 
-With `IMP_LOG_LEVEL` set to `debug`, imp traces its own activity. This is the fastest way to see why
-a binding updates too often, or does not update at all:
+With `IMP_LOG_LEVEL` set to `debug`, imp traces its own activity under `imp start` and `imp test`.
+A built app has no trace, because `imp build` removes it. The trace is the fastest way to see why a
+binding updates too often, or does not update at all:
 
 - **State reads.** Every `get()`, with the value it returned.
 - **State sets.** Every applied `set()`, with the new value. imp also logs a set it skipped because
@@ -78,4 +86,5 @@ value out of the form state, so the log never contains it. See _Forms_ in
 **[Standard components](std-components.md)**. Keep any other secret out of state.
 
 Everything at `warn` and `error` shows at the default level. That covers an invalid state value, a
-failed subscriber, a mount failure, and similar problems.
+failed subscriber, a mount failure, and similar problems. In a built app, only the errors of imp
+remain, because the build removes its warnings and its debug trace.

@@ -99,8 +99,8 @@ await init({
 - **A prop of the call always wins.** A default fills only a prop that the call leaves out. A prop
   set to `undefined` counts as left out.
 - **A default reaches every instance, also the instances that imp renders inside another
-  component.** `emptyState: { icon }` also changes the empty view of `list`, `table`, `timeline`,
-  `notifications` and the stub screen of the router.
+  component.** `emptyState: { icon }` also changes the empty view of `list`, `table`, `timeline`
+  and `notifications`.
 - **`icon` and `image` of `emptyState` replace each other.** An `image` in the call drops a default
   `icon`, and the reverse.
 - imp warns once about an unknown prop in a default, and leaves it out.

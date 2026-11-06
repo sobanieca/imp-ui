@@ -363,13 +363,13 @@ a warning and drops the batch.
 
 The sink logs each problem that the server reports:
 
-| Answer           | What the sink does                                                                     |
-| ---------------- | -------------------------------------------------------------------------------------- |
-| `202`            | It logs a warning when the server rejected some records. `imp-aly app show` gives why. |
-| `404`            | It logs an error. Register the app on that server.                                     |
-| `429`            | It logs a warning. The rate limit of the server dropped the batch.                     |
-| other `4xx`      | It logs an error and drops the batch. The visit stays on the same server.              |
-| `5xx`, no answer | It sends the batch to the next server.                                                 |
+| Answer           | What the sink does                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| `202`            | It logs an error when the server rejected some records. `imp-aly app show` gives why. |
+| `404`            | It logs an error. Register the app on that server.                                    |
+| `429`            | It logs an error. The rate limit of the server dropped the batch.                     |
+| other `4xx`      | It logs an error and drops the batch. The visit stays on the same server.             |
+| `5xx`, no answer | It sends the batch to the next server.                                                |
 
 Register the app on every server of the list, with the segments that `segments` returns. Give the
 URL of the folder of your build output. imp-aly reads `app-analytics.json` from there. A local build

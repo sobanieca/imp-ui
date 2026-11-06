@@ -7,7 +7,7 @@ exit code: 1
 --- stderr ---
 [ERROR] the build is <size>, over the budget of 2.0 kB that 'build.maxSize' sets in imp.json. imp wrote nothing. The largest files:
   LICENSES.txt (<size>)
-  chunks/log-<hash>.js (<size>)
+  chunks/logger-<hash>.js (<size>)
   chunks/app-<hash>.js (<size>)
   index.html (<size>)
   chunks/lazy-<hash>.js (<size>)

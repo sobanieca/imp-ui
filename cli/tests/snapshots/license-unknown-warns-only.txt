@@ -3,7 +3,7 @@ exit code: 0
 
 --- stdout ---
 installed indexof (npm:indexof@0.0.1)
-  dependencies/indexof/indexof.js (244 B)
+  dependencies/indexof/indexof.js (254 B)
   dependencies/indexof/manifest.json (packages, versions, licenses)
   bundled packages:
     indexof@0.0.1 - license not declared

@@ -152,7 +152,7 @@ Thumbs.db
 import { appMap } from 'imp'
 
 export const app = appMap({
-  about: 'Bind this node in src/app.js, or delete it here',
+  about: 'What this app is for',
 })
 
 --- src/app.js ---
@@ -191,7 +191,14 @@ export const root = component('app-root', {
   setup: () =>
     shell(
       { map: app, logo: appLogo({ label: 'App' }) },
-      router({ map: app, screens: { [app]: () => counter() } }),
+      router({
+        map: app,
+        screens: {
+          [app]: () => counter(),
+          [app.about]: () => div(heading('About'), text('Replace this screen in src/app.js.')),
+        },
+        notFound: () => div(heading('Page not found'), text('This page is not part of the app.')),
+      }),
     ),
 })
 
@@ -266,7 +273,7 @@ test('counts every click', () => {
   expect(find(page, '#clicks').textContent).toEqual('Clicks: 2')
 })
 
-test('the map gives every node a screen, bound or not', () => {
+test('the nav links every node of the map', () => {
   const page = render()
   expect(find(page, 'imp-shell')).toBeTruthy()
   expect(find(page, 'nav a[href="/about"]')).toBeTruthy()

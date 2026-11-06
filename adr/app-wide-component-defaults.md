@@ -7,8 +7,8 @@ look, see `themable-by-default-tokens.md`. Message keys change the words, see
 `translatable-by-default.md`. A third kind of choice has no global place: a prop such as the `icon`
 of `emptyState` or the `size` of `button`.
 
-Some instances of a standard component are not in the code of the app. `list`, `table`, `timeline`,
-`notifications` and the stub screen of the router render their own `emptyState`. The app cannot
+Some instances of a standard component are not in the code of the app. `list`, `table`, `timeline`
+and `notifications` render their own `emptyState`. The app cannot
 pass a prop to those instances. With no `icon` and no `image`, `emptyState` draws the imp mark. That
 mark is the deliberate fallback, because it shows the toolkit in a new app. An app that wants a
 neutral picture had no way to replace it in those instances.

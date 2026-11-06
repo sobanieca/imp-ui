@@ -20,6 +20,8 @@ pub mod dependency_manifest;
 pub mod deps;
 #[path = "dev-log.rs"]
 pub mod dev_log;
+#[path = "dev-logs.rs"]
+pub mod dev_logs;
 pub mod embedded;
 pub mod entry;
 pub mod environments;

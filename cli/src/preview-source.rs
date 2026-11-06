@@ -197,18 +197,18 @@ fn exported_declarators<'a, 'b>(program: &'b Program<'a>) -> Vec<&'b VariableDec
 
 fn string_literal_of(expression: Option<&Expression>) -> Option<String> {
     match expression {
-        Some(Expression::StringLiteral(literal)) => Some(literal.value.to_string()),
+        Some(Expression::StringLiteral(literal)) => Some(literal.value.display().to_string()),
         _ => None,
     }
 }
 
 fn text_literal_of(expression: &Expression) -> Option<String> {
     match expression {
-        Expression::StringLiteral(literal) => Some(literal.value.to_string()),
+        Expression::StringLiteral(literal) => Some(literal.value.display().to_string()),
         Expression::TemplateLiteral(template) if template.expressions.is_empty() => template
             .quasis
             .first()
-            .and_then(|quasi| quasi.value.cooked.map(|text| text.to_string())),
+            .and_then(|quasi| quasi.value.cooked.map(|text| text.display().to_string())),
         _ => None,
     }
 }
@@ -268,7 +268,7 @@ impl<'s, 'a> Module<'s, 'a> {
                     key: member.property.name.to_string(),
                     specifier: self
                         .import_declaration_of(&object.name)
-                        .map(|import| import.source.value.to_string()),
+                        .map(|import| import.source.value.display().to_string()),
                 },
                 _ => GroupReference::Literal(None),
             },

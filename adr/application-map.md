@@ -6,7 +6,7 @@ An app kept four things in step by hand: the route table of `router`, the nav tr
 two `selected` states of the shell, and a breadcrumb list. Each one named the same features again,
 with its own ids and its own paths. A rename of a path touched every one of them. A guard lived on
 one route entry, and the nav did not know about it, so a section could show a row that its guard
-would refuse. A screen that a section lacked was an empty column, not a stub.
+would refuse.
 
 The four had one source. Every one of them is a projection of the feature tree of the app, over the
 current path. So imp gives that tree one home, as plain data, and derives the rest.
@@ -78,15 +78,15 @@ handle per node.**
   root: `hidden`, `group`, an `icon` and a `tag`, because a section row renders before the chunk of
   its area loads. Nothing mutates the map.
 
-- **A node with no screen renders a stub.** The stub is an `emptyState` with the label and the
-  `description` of the node. A parent node with static children and no screen forwards to its first
-  static child. A node bound to `redirect(handle)` forwards there, with the params of the route. So
-  the whole map runs before one screen exists, in production too. The router logs the nodes that
-  render a stub when it mounts.
-- **A node that holds only params, and has no `description`, is a prefix.** `join: { $key: {} }`
-  exists to give `/join/:key` its first segment. Its own URL renders `notFound`, and its crumb is
-  text. A `description` marks a page that is still to come, and then the node renders a stub as
-  before. So an app does not bind a `redirect` only to hide a stub.
+- **A node is a page only when something serves it.** A node with a screen renders it. A parent
+  node with static children and no screen forwards to its first static child. A node bound to
+  `redirect(handle)` forwards there, with the params of the route. Any other node is not a page. Its
+  URL renders `notFound`, and its nav row and its crumb are text. A URL has two outcomes, a page or
+  `notFound`. A third "page to come" state put `emptyState` and its artwork into every routed bundle,
+  and it gave `description` a second meaning.
+- **The router warns about a node that renders `notFound` for lack of a screen.** It lists them when
+  it mounts. A node that only holds param children, such as `join: { $key: {} }`, is not in the list.
+  It exists to give `/join/:key` its first segment.
 - **`handle.href(params, { query, absolute })` builds every link.** A query is a plain object that
   imp encodes, and `absolute: true` adds the origin for a link that leaves the app in an email.
 
@@ -100,7 +100,7 @@ handle per node.**
   static node under `appMap.<id>.label` and `appMap.<id>.description`. A default message of a
   library counts as a message, so a tool that builds a map, such as `imp preview`, names its nodes
   with `defaultMessages`. The router reads the label where it derives the nav, the trail and the
-  title, and the stub reads it through `lang`. So `app-map.js` never imports `t`, and `imp map`
+  title. So `app-map.js` never imports `t`, and `imp map`
   prints the map with no translation loaded. The keys must live in the translations of the app,
   because a section row renders before the chunk of its area arrives.
 
@@ -199,13 +199,13 @@ handle per node.**
   the sidebar of a section renders before its chunk arrives, and only the screens arrive later.
 - The nav of every section is rebuilt when the tree changes, which includes a change of a param,
   because every href carries the current params. A nav tree is small, and imp accepts the cost.
-- The router pulls `emptyState` into every app that routes, for the stub. That is the price of a map
-  that runs before a screen exists.
+- A map runs only as far as its screens. To click through a new map, an app binds a small screen to
+  each node. The warning at mount names the nodes that still need one.
 - The map cannot express a nav row that exists only at runtime. A list of runtime destinations is a
   screen of the app, such as a list of projects, or an `orgSelect` beside the logo. A nav row for an
   external link is not a node either. It is DOM in `sidebar.extras` or in `extras`.
 - A screen that writes its label after `setup` resolves shows the raw value for a moment. The rule
   to write it before `setup` resolves is a convention that the router cannot check.
 - A mistyped `description`, such as `descripton: 'Admin'`, is a child node, because a string value is
-  a description. The map cannot tell a typo from a feature. `imp map` and the stub log at mount show
+  a description. The map cannot tell a typo from a feature. `imp map` and the warning at mount show
   the stray node.

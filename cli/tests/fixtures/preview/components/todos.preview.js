@@ -1,7 +1,7 @@
 import { appMap } from 'imp'
 import { router } from 'imp/router'
 import { link } from 'imp/std'
-import { div } from 'imp/html'
+import { div, h2 } from 'imp/html'
 import { mockModule } from 'imp/preview'
 import { todoList } from './todos.js'
 
@@ -18,6 +18,9 @@ export const routed = {
   component: () =>
     router({
       map: app,
-      screens: { [app.inbox]: () => div(todoList(), link({ href: app.done.href() }, 'Done')) },
+      screens: {
+        [app.inbox]: () => div(todoList(), link({ href: app.done.href() }, 'Done')),
+        [app.done]: () => h2({ class: 'done-title' }, 'Done'),
+      },
     }),
 }

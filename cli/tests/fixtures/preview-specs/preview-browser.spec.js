@@ -523,10 +523,10 @@ test('imp preview renders scenarios in a browser', async ({ page: host }) => {
     globalThis.impFramed('imp-link').shadowRoot.querySelector('a').click()
   )
   await scenarioFrame.waitForFunction(() =>
-    location.pathname === '/done' && globalThis.impFramed('imp-empty-state') !== null
+    location.pathname === '/done' && globalThis.impFramed('.done-title') !== null
   )
   const framedAfter = await scenarioFrame.evaluate(() =>
-    globalThis.impFramed('imp-empty-state').shadowRoot.querySelector('.title').textContent.trim()
+    globalThis.impFramed('.done-title').textContent.trim()
   )
   const pageAfterFrameClick = new URL(page.url())
   const themeBeforeFollow = await page.evaluate(() => globalThis.impSwitcher('theme').selected())

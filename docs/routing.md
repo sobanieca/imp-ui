@@ -54,8 +54,8 @@ mount(
 That is a complete routed app. The map says which pages exist, at which paths. The `router()` is the
 slot where the matched screen renders. Its `screens` bind a factory to a node of the map. `app`
 itself is the root node, so `[app]` binds the page at `/`. The
-`about` node has no screen yet, so it renders a placeholder that says "About". `navigate(...)`
-changes the URL with no full page reload.
+`about` node has no screen yet, so `/about` renders the `notFound` page until you bind one.
+`navigate(...)` changes the URL with no full page reload.
 
 ## The mental model
 
@@ -130,8 +130,8 @@ The rules are few:
 - **The order of the keys is the order of the nav.** The router matches a static path before a param
   path on its own. You never order the keys for priority.
 
-`description` is the one prop of a node. It is the `<meta name="description">` of the page. The
-placeholder of an unbound node shows it, and `imp map` prints it.
+`description` is the one prop of a node. It is the `<meta name="description">` of the page, and
+`imp map` prints it.
 
 The map says what a feature is. How a feature is served, and how the nav shows it, is a binding
 elsewhere, keyed by the handle of the node:
@@ -152,7 +152,7 @@ holds a value that is not a node, such as `nav: false`, the error names the bind
 A translation is not a prop of the map. Your translation files name a static node by its id, under
 `appMap`. `appMap.admin.users.label` translates the label of `app.admin.users`, and
 `appMap.admin.users.description` its description. A message wins over the name. The nav, the trail,
-the document title and the placeholder of an unbound node follow the language. Put these keys in
+and the document title follow the language. Put these keys in
 the translations of the app, not of an area. A section row shows before the code of its area loads.
 See **[i18n](i18n.md)**.
 
@@ -295,7 +295,9 @@ declares. When the page declares none, the router removes the tag. Translate a d
   not handle goes up to the router. imp calls the router `error` with
   `(self, error, { params, query, searchParams, node })`. `self` belongs to the host that wraps the
   screen. imp logs the failure in both cases.
-- **`notFound`** is the one screen that imp shows for a URL that matches no node of the map.
+- **`notFound`** is the one screen that imp shows for a URL that is not a page of the app. That is
+  a URL that matches no node of the map, or a node that has no screen. Without `notFound`, the
+  router renders nothing there.
 
 A screen factory receives one argument, `{ params, query, searchParams, node }`:
 
@@ -316,23 +318,22 @@ the place to `await` anything. Do not fetch the data of a screen there. Load it 
 of the screen component, so the wait shows the `loading` of the screen. Do not call `import()` there
 either. Code that must load on demand goes behind an **area**, described below.
 
-### A node with no screen still renders
+### What a URL of the map renders
 
-Every node of the map answers its URL from the first run:
+A node of the map is a page only when something serves it:
 
 - A node with a screen renders it.
 - A node bound to `redirect(app.reports.weekly)` forwards there, with the params of the route filled
   in. `redirect('/somewhere')` takes a path.
 - A node with static children and no screen forwards to its first child. So `/admin` opens
   `/admin/users` until you bind a screen to `admin`.
-- A node whose children are all params, and which has no `description`, is a prefix. It is not a
-  page. So `/join` of `join: { $key: {} }` renders the not-found page, and its crumb in the trail is
-  plain text. Give the node a `description` when it is a page that you still have to build.
-- Any other node renders a placeholder with its label and its `description`.
+- Any other node is not a page. Its URL renders `notFound`, the same as a URL off the map. Its row
+  in the nav and its crumb in the trail are plain text, not links.
 
-So you write the map first, run the app, and see every page as a placeholder, with the nav and the
-trail in place. Then you bind screens one by one. When the router mounts, it logs the nodes that
-still render a placeholder.
+So `/join` of `join: { $key: {} }` renders `notFound` until you bind a screen to `join`, and
+`/join/abc` renders the screen of `join.$key`. When the router mounts, it warns about each node that
+renders `notFound` because it has no screen and no static child. Bind a screen to each one, or remove
+it from the map. A node that only gives a URL segment to its param children is not in that warning.
 
 ### A navigation is a clean start, except a change of the query
 
@@ -396,9 +397,22 @@ Declare your not-found screen in one place, with the `notFound` option of the ro
 router({ map: app, screens, notFound: () => notFoundPage() })
 ```
 
-It renders whenever the current URL matches no node of the map. A URL with a broken percent encoding
-in a param, such as `/todos/%zz` from an external link, also renders it. It is a factory. It has no
-node, because it is not a page. It is the one page for every URL that matches nothing in the map.
+It renders whenever the current URL is not a page of the app. That is a URL that matches no node of
+the map, or a node with no screen, see [What a URL of the map renders](#what-a-url-of-the-map-renders).
+A URL with a broken percent encoding in a param, such as `/todos/%zz` from an external link, also
+renders it. It is a factory. It has no node, because it is not a page.
+
+Without `notFound`, such a URL renders nothing. So give every app one. Keep it small, for example a
+heading and a link home:
+
+```js
+const notFoundPage = component('app-not-found', {
+  setup: () => div(heading('Page not found'), link({ href: app.href() }, 'Go to the start page')),
+})
+```
+
+`emptyState` also makes a good not-found page, but it adds about 16 KB of artwork to the bundle.
+Use it there when the app already shows `emptyState` somewhere else.
 
 ## Areas: how to load a section on demand
 
@@ -467,8 +481,8 @@ each build. Otherwise the `error` of the router shows. See
 [A deploy and the open tabs](deploy.md#a-deploy-and-the-open-tabs).
 
 An area binds only its own nodes. A binding for a node outside its subtree is an error when the area
-loads, and the message names both. A node inside the area that the area does not bind renders the
-same placeholder as anywhere else.
+loads, and the message names both. A node inside the area that the area does not bind renders
+`notFound`, the same as anywhere else.
 
 ### A root component for the whole section
 
@@ -918,7 +932,7 @@ person, or an agent, sees the whole app on one screen before a line of screen co
 **[CLI](cli.md)**.
 
 **`imp init`** writes an `app-map.js` with two nodes, names it in `imp.json`, and writes a frame
-that binds the one screen it ships. The second node renders a placeholder until you bind it.
+that binds a screen to each of its two nodes, and a `notFound` page.
 
 **A test can walk the map.** `app.spec.children` lists the handles under a node. A smoke test
 can loop over the tree, visit every node, and assert that something mounts.

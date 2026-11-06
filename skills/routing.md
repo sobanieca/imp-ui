@@ -115,7 +115,8 @@ mount(
 
 `loading` shows while the module of an **area** downloads or a guard waits. `error` is an error
 boundary at route level, called with `(self, error, { params, query, searchParams, node })`.
-`notFound` is the one page for a URL that is off the map, or with a broken percent encoding. A
+`notFound` is the one page for a URL that is not a page of the app: off the map, a node with no
+screen, or a broken percent encoding. A
 screen factory receives `{ params, query, searchParams, node }`.
 
 | Router option | Shape                                  | Meaning                                                                    |
@@ -156,8 +157,8 @@ in the map. A key with one of those names is a child: `settings: { access: {} }`
 | an external link           | DOM in `sidebar.extras` of the shell                            |
 
 The messages of the app translate a static node by its id: `appMap.admin.users.label` and
-`appMap.admin.users.description`, see [i18n](i18n.md). The nav, the trail, the title and the stub
-follow the language.
+`appMap.admin.users.description`, see [i18n](i18n.md). The nav, the trail and the title follow the
+language.
 
 ```js
 // locales/pl.js
@@ -213,7 +214,7 @@ setup: async (self, { teamId }) => {
   `.label` or `.description`. Put these keys in the translations of the app, not of an area. A
   section row shows before the chunk of its area loads.
 - **A mistyped prop with a string value is a node.** `lable: 'Admin'` is a child at `/lable`,
-  because a string is a description. `imp map` and the stub log show it. `lable: 3` throws. A
+  because a string is a description. `imp map` and the unbound-node warning show it. `lable: 3` throws. A
   mistyped handle is `undefined`, its key is `"undefined"`, and `router()` throws and says so.
 - **A part takes its props first.** `appMap({ description: 'Back office' }, { users: {} })` is a
   part, and `description` is its only prop. Pass the whole map, never a part, to `router()` and
@@ -226,13 +227,16 @@ setup: async (self, { teamId }) => {
 - **Give every public page a `description`.** The router writes it to `<meta name="description">` on
   each navigation. A node with none gets the description of `index.html` back. Never set that meta
   tag yourself.
-- **Every node renders from the first run.** Unbound leaf: a stub with the label and `description`.
-  Unbound parent with static children, the root included: forwards to the first child. `redirect(handle)` in `screens`:
-  forwards there. The router logs the stub nodes when it mounts. Write the map first, then bind
-  screens.
-- **A node with only a param child and no `description` is a prefix, not a page.** `join: { $key: {...} }`
-  serves `/join/:key`. An unbound `/join` renders `notFound`, and its crumb is text, not a link. Do
-  not bind it to a `redirect` to hide the stub.
+- **A node with no screen is not a page.** It renders `notFound`, and its nav row and crumb are text.
+  Exception: an unbound parent with static children, the root included, forwards to its first child.
+  `redirect(handle)` in `screens` forwards there. The router warns at mount about each node that
+  renders `notFound` this way. Bind a screen to every page of the map, or remove the node.
+- **A node that only holds param children needs no screen.** `join: { $key: {...} }` serves
+  `/join/:key`. `/join` renders `notFound`. Do not bind a `redirect` to it only to silence a warning.
+  It is not in the warning.
+- **Always pass `notFound`.** Without it, a URL that is not a page renders nothing. Give it a small
+  component of your own, such as a heading and a link home. `emptyState` adds about 16 KB of
+  artwork to the bundle. Use it for `notFound` only when the app already imports it.
 - **A screen factory builds its screen immediately.** Never `await` in it, and never `import()` in
   it. Fetch in the async `setup` of the screen component. Put on-demand code behind `area()`.
 - **`area()` is the only lazy binding.** The nodes of the section stay in the map, so its nav shows

@@ -28,8 +28,10 @@ to `console.error`.
 
 The order is `debug` < `info` < `warn` < `error`. imp writes a message only at the active level or
 above it. The default level is **`info`** under `imp start` and `imp test`, and **`warn`** in a
-built app. To set the level per environment, put `IMP_LOG_LEVEL` in an environment file, see
-[config](config.md):
+built app. `imp build` is always a production build: it removes every `warn` and every `debug` of
+imp itself, with its text. Read the warnings and the debug trace of imp under `imp start` or
+`imp test`, never in a built app. The errors of imp and your own loggers stay. To set the level per
+environment, put `IMP_LOG_LEVEL` in an environment file, see [config](config.md):
 
 ```json
 {

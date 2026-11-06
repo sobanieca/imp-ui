@@ -157,7 +157,7 @@ What you get is deliberately small. It is a working app, not a template to study
 There is no `README`, no `src/components/` tree and no second example. The counter shows the shape
 of an imp app: a component, a namespaced state, and a live text node bound to that state. The map
 shows the shape of a routed app. The root `app` serves `/` and binds the counter. The one node,
-`about`, renders a placeholder until you bind a screen to it. The nav of the frame works from the first run. See
+`about`, has a one-line screen to replace. A small `notFound` page answers every other URL. The nav of the frame works from the first run. See
 **[Routing](routing.md)**. Delete the counter when you start to write your own app.
 
 The scaffold is a working project when it arrives. `imp lint`, `imp fmt --check`, `imp test --unit`
@@ -767,6 +767,12 @@ the module scripts of the page. It bundles each one into minified, self-containe
   vendored dependency alias, resolve exactly as they do under `imp start`. Every `imp` specifier
   resolves to the built-in library, and each alias resolves to the bundle in your `dependencies/`
   folder. The build runs offline. What you tested in development is what you ship.
+- **The warnings and the debug trace of imp stay in development.** A warning of the library points
+  at a mistake in the code of the app, such as an unknown prop. The debug trace shows what the
+  library does. You see both under `imp start` and `imp test`. `imp build` is always a production
+  build: it removes every warning and every debug message of imp, with its text, so your users do
+  not download it. No option keeps them. The errors of imp and every message of your own loggers
+  stay. See [Logging](logging.md).
 - **Every script gets a content hash in its name.** So does every file that your code imports, such
   as an image or a font. All of them go into `chunks/`, and only imp writes there. A
   `public/chunks/` folder stops the build, see [Deploying an app](deploy.md). imp writes the bundle
@@ -799,8 +805,8 @@ the module scripts of the page. It bundles each one into minified, self-containe
   build whose output is larger fails. imp names the largest files, and leaves no output folder, so
   an oversized build cannot reach a deploy. imp sets no budget by default.
 - **A built app logs warnings and errors only.** The default log level of a built app is `warn`, so
-  a debug message and an info message stay out of the console of every user. `IMP_LOG_LEVEL` sets
-  another level, see [Logging](logging.md).
+  a debug message and an info message of your own loggers stay out of the console of every user.
+  `IMP_LOG_LEVEL` sets another level for your loggers, see [Logging](logging.md).
 - **imp drops its development checks.** While `imp start` serves your app, imp checks the page as it
   renders, and warns in the console about a mistake that the browser hides. One such check finds a
   styled element that moved into the shadow root of another component. `imp build` folds every such

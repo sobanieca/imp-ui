@@ -1,4 +1,4 @@
-// puppeteer-core@24.43.1
+// puppeteer-core@25.16.0
 import{ChromeReleaseChannel as e}from"@puppeteer/browsers";
 /**
 * @license

@@ -135,7 +135,7 @@ export default {
   `.env.*`. imp puts the new entries under an `# added by imp init` comment, and warns that it
   changed the file. If there is nothing to merge, imp writes nothing.
 - **That is the whole file set.** There is no `README` and no example other than the counter. The
-  `about` node renders a stub until you bind it. Do not expect a larger template.
+  `about` node has a one-line screen, and the router has a small `notFound` page. Do not expect a larger template.
 - **`--font` takes a name from the font table.** Any other name exits `1` and lists the names. imp
   writes nothing then.
 - **Never add a `package.json` or a bundler config** to the scaffolded project.

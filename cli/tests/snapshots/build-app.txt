@@ -12,7 +12,7 @@ built index.html -> dist/
   chunks/inline-1-<hash>.js (<size>)
   chunks/lazy-<hash>.js (<size>)
   chunks/lib-<hash>.js (<size>)
-  chunks/log-<hash>.js (<size>)
+  chunks/logger-<hash>.js (<size>)
   index.html (<size>)
   styles.css (<size>)
 
@@ -28,7 +28,7 @@ dist/chunks/app-<hash>.js
 dist/chunks/inline-1-<hash>.js
 dist/chunks/lazy-<hash>.js
 dist/chunks/lib-<hash>.js
-dist/chunks/log-<hash>.js
+dist/chunks/logger-<hash>.js
 dist/index.html
 dist/styles.css
 
@@ -37,7 +37,7 @@ dist/styles.css
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<link rel="modulepreload" href="/chunks/log-<hash>.js">
+<link rel="modulepreload" href="/chunks/logger-<hash>.js">
 <link rel="modulepreload" href="/chunks/lib-<hash>.js">
     <title>bundle fixture</title>
     <link rel="stylesheet" href="/styles.css">

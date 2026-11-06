@@ -49,8 +49,8 @@ mount(
 ```
 
 The map says what pages exist. `router()` is the slot the current screen renders into, and its
-`screens` bind a factory to a node of the map. `about` has no screen yet, so it renders a
-placeholder that says "About" - the app runs before the screen exists. The `shell` reads the same
+`screens` bind a factory to a node of the map. `about` has no screen yet, so `/about` is the
+`notFound` page until you bind one - and the router tells you so when it mounts. The `shell` reads the same
 map and draws the nav. That's the app. No `routes.config.js`, no `app/` directory that means
 something to a compiler, no provider to wrap everything in.
 
@@ -129,10 +129,9 @@ Static paths always beat param paths - the router orders them itself. No precede
 reverse-engineer, no `exact` prop, no ranking heuristic deciding whether `/todos/new` or
 `/todos/:id` wins.
 
-A node with no binding still answers its URL. A leaf renders a placeholder with its label and
-description. A parent forwards to its first child. A node bound to `redirect(app.x)` forwards there.
-So you write the map first, run the app, click through every page as a stub, and bind screens one by
-one.
+A page is a node with a screen. A parent with no screen forwards to its first child, and a node
+bound to `redirect(app.x)` forwards there. Anything else is not a page: its URL is `notFound`, and
+its nav row is plain text. No third "coming soon" state ships in your bundle.
 
 Shared layouts aren't a framework feature here - they're a function:
 
