@@ -6,11 +6,11 @@ imp is a UI toolkit in one binary. The binary is a Rust program in `cli/`. It em
 library in `lib/src`, the browser modules in `cli/js`, the templates in `cli/templates` and the
 skill pages in `skills/`. Maintainer tasks live in `xtask/`.
 
-## imp is experimental - do not preserve backward compatibility
+## imp is experimental - no backward compatibility before 1.0.0
 
-imp is released as an experimental version. Until imp ships a `1.` version or higher, **any part of
-it can change without notice**. A user of an experimental version accepts breaking changes, so a
-change in this repo has no compatibility cost. When a better design shows up, take it in full. Rename or remove an export, change a config key, change what a command prints, or
+imp is released as an experimental version. **Before version `1.0.0`, imp needs no backward
+compatibility.** Any part of it can change without notice. A user of an experimental version
+accepts breaking changes. When a better design shows up, take it in full. Rename or remove an export, change a config key, change what a command prints, or
 change the shape of anything.
 
 - **Never add a compatibility shim, a deprecated alias, a fallback path, or a migration note.** Fix
