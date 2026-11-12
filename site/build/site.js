@@ -18,8 +18,14 @@ import {
 import { slides } from '../content/slides.js'
 import { steps, stepsNote } from '../content/steps.js'
 import { positions } from '../content/positions.js'
+import { analyticsNameProblem } from '../../lib/src/analytics-bus.js'
 
-const DEFAULT_INSTALL_ORIGIN = 'https://sobanieca.github.io/imp-ui'
+const DEFAULT_INSTALL_ORIGIN = 'https://imp-ui.com'
+
+const ALY_APP = 'imp-ui-site'
+const ANALYTICS_FILE = 'app-analytics.json'
+const ZONE_ATTRIBUTE = /\sdata-zone="([^"]*)"/g
+const OUTCOME_ATTRIBUTE = /\sdata-outcome="([^"]*)"/g
 
 const SCHEME_STORAGE_KEY = 'imp.site.scheme'
 const SCHEMES = ['light', 'dark']
@@ -72,6 +78,7 @@ const DESCRIPTION_LIMIT = 160
 const FLAGS_GLOBAL = /__IMP_FLAGS__/g
 const CODE_SLOT = /<!--imp-code-(\d+)-->/g
 const SECTION_START = /(?=<h2 )/
+const HEADING_TEXT = /^<h2[^>]*>([\s\S]*?)<\/h2>/
 const INSTALL_SLOT = '<!-- install -->'
 const NOTICE_SLOT = '<!-- notice -->'
 const OVERVIEW_SLOT = /^<!-- (tour|workflow|positions) -->$/m
@@ -142,15 +149,24 @@ const renderDocs = (docs, render) => {
   return pages
 }
 
+const zoneOfSection = (chunk) => {
+  const heading = textOf(chunk.match(HEADING_TEXT)?.[1] ?? '')
+  const slug = heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  return `site.${slug || 'section'}`
+}
+
 const wrapOverview = (html, withHero, installOrigin) => {
   const chunks = html.split(SECTION_START)
   return chunks
     .map((chunk, index) =>
       withHero && index === 0
-        ? `<div class="hero">${chunk
+        ? `<div class="hero" data-zone="site.hero">${chunk
             .replace(NOTICE_SLOT, renderNotice())
             .replace(INSTALL_SLOT, renderInstall(installOrigin))}</div>`
-        : `<section class="section">${chunk}</section>`,
+        : `<section class="section" data-zone="${zoneOfSection(chunk)}">${chunk}</section>`,
     )
     .join('')
 }
@@ -612,7 +628,7 @@ const link = (href, label, current = false) =>
   `<a href="${escape(href)}"${current ? ' aria-current="page"' : ''}>${escape(label)}</a>`
 
 const bar = (route, version) =>
-  `<header class="bar">`
+  `<header class="bar" data-zone="site.bar">`
   + `<a class="brand" href="/" aria-label="imp - home"><img src="/mark-dark.svg" alt="">`
   + `<span>imp</span></a>`
   + `<nav aria-label="Sections"><ul class="links">`
@@ -637,7 +653,7 @@ const corner = () =>
   + `</div></div>`
 
 const docsNav = (pages, currentSlug) =>
-  `<nav aria-label="Documentation pages"><ul class="pages">`
+  `<nav aria-label="Documentation pages" data-zone="site.docs-nav"><ul class="pages">`
   + pages
     .map((page) => `<li>${link(`/docs/${page.slug}`, page.label, page.slug === currentSlug)}</li>`)
     .join('')
@@ -646,8 +662,8 @@ const docsNav = (pages, currentSlug) =>
 const EXAMPLES_NOTE =
   `<p>For complete apps that are built with imp, see `
   + `<a href="https://github.com/sobanieca/imp-examples">imp-examples</a>. Two of them run live: `
-  + `<a href="https://sobanieca.github.io/imp-examples/observability/">Beacon</a>, an `
-  + `observability SPA, and <a href="https://sobanieca.github.io/imp-examples/brickfall/">`
+  + `<a href="https://adam.sobaniec.com/imp-examples/observability/">Beacon</a>, an `
+  + `observability SPA, and <a href="https://adam.sobaniec.com/imp-examples/brickfall/">`
   + `Brickfall</a>, a game that installs as a PWA.</p>`
 
 const docsIndex = (pages) =>
@@ -672,7 +688,7 @@ const pagesOf = ({ docs, overview }) => [
     title: 'Components - imp',
     description:
       'Every standard component of imp, rendered live, with its scenarios and its skill.',
-    main: `<imp-preview></imp-preview>`,
+    main: `<imp-preview data-zone="site.components"></imp-preview>`,
     scripts: ['/gallery/imp-preview.js'],
   },
   {
@@ -681,7 +697,7 @@ const pagesOf = ({ docs, overview }) => [
     description:
       'The documentation of imp: the CLI, rendering, components, state, routing, '
       + 'theming, testing and more.',
-    main: `<div class="docs">${docsNav(docs, null)}<article class="paper md"><h1>Docs</h1>${docsIndex(
+    main: `<div class="docs">${docsNav(docs, null)}<article class="paper md" data-zone="site.docs-page"><h1>Docs</h1>${docsIndex(
       docs,
     )}${EXAMPLES_NOTE}</article></div>`,
   },
@@ -690,12 +706,19 @@ const pagesOf = ({ docs, overview }) => [
     title: `${page.label} - imp`,
     description: page.description,
     main:
-      `<div class="docs">${docsNav(docs, page.slug)}<article class="paper md">${page.html}`
+      `<div class="docs">${docsNav(docs, page.slug)}`
+      + `<article class="paper md" data-zone="site.docs-page">${page.html}`
       + `</article></div>`,
   })),
 ]
 
-const documentOf = (page, version, origin) => {
+const pagePattern = (route) => `/${route}`
+
+const alyScript = (page, aly) =>
+  `<script type="module" src="/aly.js" data-aly-server="${escape(aly)}" `
+  + `data-aly-app="${ALY_APP}" data-aly-page="${escape(pagePattern(page.route))}"></script>`
+
+const documentOf = (page, version, origin, aly) => {
   const url = origin === null ? null : `${origin}/${page.route}`
   const head = [
     `<meta charset="utf-8">`,
@@ -714,7 +737,10 @@ const documentOf = (page, version, origin) => {
     `<link rel="stylesheet" href="/site.css">`,
     earlyScript(),
   ]
-  const scripts = ['/site.js', ...(page.scripts ?? [])]
+  const scripts = ['/site.js', ...(page.scripts ?? [])].map(
+    (src) => `<script type="module" src="${src}"></script>`,
+  )
+  if (aly !== null) scripts.push(alyScript(page, aly))
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -723,7 +749,7 @@ const documentOf = (page, version, origin) => {
   <body>
     ${bar(page.route, version)}
     <div class="canvas">${corner()}<main>${page.main}</main></div>
-    ${scripts.map((src) => `<script type="module" src="${src}"></script>`).join('\n    ')}
+    ${scripts.join('\n    ')}
   </body>
 </html>
 `
@@ -735,16 +761,43 @@ const sitemapOf = (pages, origin) =>
   + pages.map((page) => `  <url><loc>${origin}/${page.route}</loc></url>`).join('\n')
   + `\n</urlset>\n`
 
+const namesOf = (documents, pattern, subject, example) => {
+  const names = new Set()
+  for (const document of documents) {
+    for (const [, name] of document.matchAll(pattern)) {
+      const problem = analyticsNameProblem(name, subject, example)
+      if (problem) throw new Error(`site: ${problem}`)
+      names.add(name)
+    }
+  }
+  return [...names].sort()
+}
+
+export const analyticsFileOf = (pages, documents) =>
+  `${JSON.stringify(
+    {
+      pages: pages.map((page) => pagePattern(page.route)),
+      zones: namesOf(documents, ZONE_ATTRIBUTE, 'zone', 'site.hero'),
+      outcomes: namesOf(documents, OUTCOME_ATTRIBUTE, 'outcome', 'site.install-copied'),
+    },
+    null,
+    2,
+  )}\n`
+
 const pagePath = (route) => (route === '' ? 'index.html' : `${route}/index.html`)
 
-export const buildSite = ({ docs, overview, version, origin, markdown }) => {
+export const buildSite = ({ docs, overview, version, origin, aly = null, markdown }) => {
   const render = markdownRenderer(markdown)
   const pages = pagesOf({
     docs: renderDocs(docs, render),
     overview: renderOverview(overview, render, origin ?? DEFAULT_INSTALL_ORIGIN),
   })
   const files = {}
-  for (const page of pages) files[pagePath(page.route)] = documentOf(page, version, origin)
+  const documents = pages.map((page) => documentOf(page, version, origin, aly))
+  pages.forEach((page, index) => {
+    files[pagePath(page.route)] = documents[index]
+  })
+  files[ANALYTICS_FILE] = analyticsFileOf(pages, documents)
   files['site.css'] = stylesheet()
   files['site.js'] = clientScript()
   files['overview.js'] = overviewScript()

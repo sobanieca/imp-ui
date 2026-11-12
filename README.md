@@ -9,21 +9,21 @@ imp is not released yet. Until version `1.0.0`, any part of it can change.
 ## Install
 
 ```
-curl -fsSL https://sobanieca.github.io/imp-ui/install.sh | bash
+curl -fsSL https://imp-ui.com/install.sh | bash
 ```
 
 The script supports Linux and macOS. On Windows, run this command in PowerShell:
 
 ```
-irm https://sobanieca.github.io/imp-ui/install.ps1 | iex
+irm https://imp-ui.com/install.ps1 | iex
 ```
 
 The docs are in [`docs/`](docs/). Start with [`docs/cli.md`](docs/cli.md).
 
 For complete apps that are built with imp, see
 [sobanieca/imp-examples](https://github.com/sobanieca/imp-examples). Two of them run live:
-[Beacon](https://sobanieca.github.io/imp-examples/observability/), an observability SPA, and
-[Brickfall](https://sobanieca.github.io/imp-examples/brickfall/), a game that installs as a PWA.
+[Beacon](https://adam.sobaniec.com/imp-examples/observability/), an observability SPA, and
+[Brickfall](https://adam.sobaniec.com/imp-examples/brickfall/), a game that installs as a PWA.
 
 ## Work on imp
 
@@ -31,7 +31,7 @@ For complete apps that are built with imp, see
 
 - [Rust](https://rustup.rs/), stable, with `rustfmt` and `clippy`.
 - A C compiler, for the JavaScript engine that the CLI embeds.
-- [rfm](https://sobanieca.github.io/remote-file-manager/), a static file server. `cargo xtask site`
+- [rfm](https://adam.sobaniec.com/remote-file-manager/), a static file server. `cargo xtask site`
   uses it to serve the built home page. No other task needs it.
 
 The first browser test downloads a pinned Chrome into `~/.imp/browser/`, when the machine has no

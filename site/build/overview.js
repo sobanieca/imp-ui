@@ -83,7 +83,8 @@ const installPanel = ({ id, prompt, command }, origin, index) =>
   `<div class="install-command" role="tabpanel" id="install-panel-${id}" `
   + `aria-labelledby="install-tab-${id}"${index === 0 ? '' : ' hidden'}>`
   + `<code data-prompt="${prompt} ">${escape(command(origin))}</code>`
-  + `<button class="copy" type="button" aria-label="Copy the install command">`
+  + `<button class="copy" type="button" aria-label="Copy the install command" `
+  + `data-outcome="site.install-copied">`
   + `${svgIcon('copy-icon', luCopy)}${svgIcon('copied-icon', luCheck)}</button>`
   + `</div>`
 
@@ -149,7 +150,7 @@ const slideText = (slide) =>
   + `</div>`
 
 export const renderTour = (slides, highlight) =>
-  `<section class="section tour" aria-roledescription="carousel" aria-label="How imp works">`
+  `<section class="section tour" data-zone="site.tour" aria-roledescription="carousel" aria-label="How imp works">`
   + `<div class="tour-head"><h2>How imp works</h2>`
   + `<div class="tour-controls">`
   + `<button class="tour-prev" type="button" aria-label="Previous slide">${svgIcon(
@@ -186,7 +187,7 @@ export const renderTour = (slides, highlight) =>
   + `</section>`
 
 export const renderWorkflow = (steps, note) =>
-  `<section class="section flow"><h2>The workflow with imp</h2>`
+  `<section class="section flow" data-zone="site.workflow"><h2>The workflow with imp</h2>`
   + `<ol class="steps">`
   + steps
     .map(
@@ -238,7 +239,7 @@ const renderTags = (tags) =>
   + `</ul>`
 
 export const renderPositions = (positions) =>
-  `<section class="section positions"><h2>Why imp</h2>`
+  `<section class="section positions" data-zone="site.positions"><h2>Why imp</h2>`
   + `<ul class="cards">`
   + positions
     .map(

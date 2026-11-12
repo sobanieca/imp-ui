@@ -3,7 +3,7 @@
 cannot run on a static host.
 
 An example: the observability demo of imp-examples on GitHub Pages
-(<https://sobanieca.github.io/imp-examples/observability/>). `/api/session` returns 404 there, so
+(<https://adam.sobaniec.com/imp-examples/observability/>). `/api/session` returns 404 there, so
 the demo stops at the sign-in page.
 
 ## The feature

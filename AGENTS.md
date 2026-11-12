@@ -197,7 +197,7 @@ the time of a rebuild.
 | `cargo update-snapshots` | runs the CLI tests and rewrites their snapshots                          |
 
 `rfm` is a static file server installed on the machine, not part of the repo. Install it from
-<https://sobanieca.github.io/remote-file-manager/>. `cargo xtask test` runs the library unit tests
+<https://adam.sobaniec.com/remote-file-manager/>. `cargo xtask test` runs the library unit tests
 with `TZ=Europe/Warsaw`, because the calendar tests need a day that skips an hour. To run one test
 file, use `cargo imp test <file>` from `lib/test`, with the same `TZ` for `calendar.test.js`.
 
@@ -257,7 +257,9 @@ The loop for a component edit is Ctrl-C, then `cargo xtask preview` again. The t
 ## The home page of imp
 
 `site/` is the home page: static HTML pages, Overview, Components and Docs, under one navbar.
-`cargo xtask build-site` writes the whole site into `site/dist/`. The pages come from
+`cargo xtask build-site` writes the whole site into `site/dist/`, with `install.sh` and
+`install.ps1`. A CI run on `main` deploys it to GitHub Pages at <https://imp-ui.com>, with
+`IMP_SITE_URL` set for the canonical links and the sitemap. The pages come from
 `site/build/site.js`, a module of pure functions that xtask runs in QuickJS. xtask renders
 `docs/*.md` and `site/content/overview.md` with `pulldown-cmark`, and the module highlights every
 code block at build time with the tokenizer of `codeBlock`. It writes one `index.html` per page with
@@ -270,8 +272,16 @@ The site takes its look from the same source as the preview page. `site.css` hol
 scheme, and the styles of `cli/js/design-styles.js`: the corner geometry and the Markdown prose. So
 the site matches the imp theme without an imp runtime. An inline script reads the remembered scheme
 before the first paint, so a dark page never flashes light. The build copies `lib/src/public/fonts/`
-to `/fonts/`, so the pages and the gallery load the same font files from the site. The site sends no
-request to another origin.
+to `/fonts/`, so the pages and the gallery load the same font files from the site.
+
+The site sends its visits to imp-aly as the app `imp-ui-site` when `IMP_SITE_ALY_SERVER` holds the
+URL of an imp-aly server. Each page then loads `site/aly.js`, a small tracker without imp that sends
+the records of `imp/analytics`: `page`, `seen` and `used` for each element with `data-zone`, and
+`outcome` for a click on an element with `data-outcome`. The page pattern is the route of the page,
+written into the script tag. The build writes `app-analytics.json` with every page, zone and
+outcome of the pages, and fails on a name that is not a namespaced name. Without the variable, the
+site sends no request to another origin. After a deploy that adds a page, a zone or an outcome, run
+`imp-aly app refresh imp-ui-site`.
 
 `cargo xtask build-site` renders the pages, then runs `imp preview --output` from `lib/src` into
 `site/dist/gallery/`. A module of `site/build/` may import only by relative path, because the

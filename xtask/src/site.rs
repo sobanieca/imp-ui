@@ -8,7 +8,12 @@ use std::process::Command;
 
 const INSTALL_SCRIPTS: &[&str] = &["install.sh", "install.ps1"];
 
-const COPIES: &[(&str, &str)] = &[("cli/templates/favicon.ico", "favicon.ico")];
+const COPIES: &[(&str, &str)] = &[
+    ("cli/templates/favicon.ico", "favicon.ico"),
+    ("site/aly.js", "aly.js"),
+];
+
+const ALY_SERVER_ENV: &str = "IMP_SITE_ALY_SERVER";
 
 fn escape(text: &str) -> String {
     text.replace('&', "&amp;")
@@ -156,6 +161,10 @@ pub fn build_site() -> Result<()> {
         .ok()
         .map(|origin| origin.trim_end_matches('/').to_string())
         .filter(|origin| !origin.is_empty());
+    let aly = std::env::var(ALY_SERVER_ENV)
+        .ok()
+        .map(|server| server.trim_end_matches('/').to_string())
+        .filter(|server| !server.is_empty());
     let mut docs = Map::new();
     for entry in std::fs::read_dir(root.join("docs"))? {
         let path = entry?.path();
@@ -169,6 +178,7 @@ pub fn build_site() -> Result<()> {
         "overview": std::fs::read_to_string(root.join("site/content/overview.md"))?,
         "version": imp::version::VERSION,
         "origin": origin,
+        "aly": aly,
     });
     let built = call_export(
         &root.join("site/build/site.js"),
@@ -201,6 +211,10 @@ pub fn build_site() -> Result<()> {
         &root.join("lib/src"),
     )?;
     let pages = built["pages"].as_u64().unwrap_or(0);
+    match &aly {
+        Some(server) => println!("site: records of the pages are sent to imp-aly at {server}"),
+        None => println!("site: set {ALY_SERVER_ENV} to send the records of the pages to imp-aly"),
+    }
     match origin {
         Some(origin) => {
             println!("site: {pages} pages written into site/dist/, with a sitemap for {origin}")
@@ -218,7 +232,7 @@ pub fn serve_site() -> Result<()> {
         .current_dir(repo_root().join("site/dist"))
         .status()
         .context(
-            "cannot run rfm - install it from https://sobanieca.github.io/remote-file-manager/",
+            "cannot run rfm - install it from https://adam.sobaniec.com/remote-file-manager/",
         )?;
     if !status.success() {
         bail!("rfm failed");

@@ -10,7 +10,7 @@ NC='\033[0m'
 REPO="sobanieca/imp-ui"
 DEFAULT_INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="imp"
-SCRIPT_URL="https://sobanieca.github.io/imp-ui/install.sh"
+SCRIPT_URL="https://imp-ui.com/install.sh"
 
 usage() {
   cat <<USAGE
