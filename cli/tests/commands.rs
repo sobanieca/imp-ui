@@ -612,6 +612,23 @@ fn without_timestamps(text: &str) -> String {
         .collect()
 }
 
+#[cfg(unix)]
+fn stop_with_ctrl_c(child: &mut std::process::Child) -> Option<std::process::ExitStatus> {
+    let sent = std::process::Command::new("kill")
+        .args(["-INT", &child.id().to_string()])
+        .status()
+        .unwrap();
+    check(sent.success(), format!("kill -INT failed: {sent:?}"));
+    Some(child.wait().unwrap())
+}
+
+#[cfg(windows)]
+fn stop_with_ctrl_c(child: &mut std::process::Child) -> Option<std::process::ExitStatus> {
+    child.kill().unwrap();
+    child.wait().unwrap();
+    None
+}
+
 #[test]
 fn logs_follows_the_session() {
     let dir = TempDir::new();
@@ -627,28 +644,39 @@ fn logs_follows_the_session() {
         .spawn()
         .unwrap();
     let mut stdout = child.stdout.take().unwrap();
-    let mut output = String::new();
-    let mut read_until = |text: &str, output: &mut String| {
-        while !output.contains(text) {
-            let mut buffer = [0u8; 256];
-            let count = stdout.read(&mut buffer).unwrap_or(0);
-            if count == 0 {
+    let (chunks, received) = std::sync::mpsc::channel::<String>();
+    std::thread::spawn(move || {
+        let mut buffer = [0u8; 256];
+        while let Ok(count @ 1..) = stdout.read(&mut buffer) {
+            if chunks
+                .send(String::from_utf8_lossy(&buffer[..count]).into_owned())
+                .is_err()
+            {
                 break;
             }
-            output.push_str(&String::from_utf8_lossy(&buffer[..count]));
+        }
+    });
+    let mut output = String::new();
+    let read_until = |text: &str, output: &mut String, child: &mut std::process::Child| {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !output.contains(text) {
+            let left = deadline.saturating_duration_since(std::time::Instant::now());
+            match received.recv_timeout(left) {
+                Ok(chunk) => output.push_str(&chunk),
+                Err(_) => {
+                    let _ = child.kill();
+                    panic!("imp logs -f did not print {text:?} within 10s:\n{output}");
+                }
+            }
         }
     };
-    read_until("second\n", &mut output);
+    read_until("second\n", &mut output, &mut child);
     let later: Vec<String> = (1..=9).map(|index| format!("entry {index}")).collect();
     for entry in &later {
         dev_log.write(entry);
-        read_until(&format!("{entry}\n"), &mut output);
+        read_until(&format!("{entry}\n"), &mut output, &mut child);
     }
-    std::process::Command::new("kill")
-        .args(["-INT", &child.id().to_string()])
-        .status()
-        .unwrap();
-    let status = child.wait().unwrap();
+    let status = stop_with_ctrl_c(&mut child);
     dev_log.close();
     let mut stderr = String::new();
     child
@@ -668,10 +696,12 @@ fn logs_follows_the_session() {
         stderr.is_empty(),
         format!("imp logs -f wrote nothing to stderr:\n{stderr}"),
     );
-    check(
-        status.code() == Some(0),
-        format!("imp logs -f exits 0 on Ctrl-C, got {status:?}"),
-    );
+    if let Some(status) = status {
+        check(
+            status.code() == Some(0),
+            format!("imp logs -f exits 0 on Ctrl-C, got {status:?}"),
+        );
+    }
     check(
         without_timestamps(&final_log) == "entry 5\nentry 6\nentry 7\nentry 8\nentry 9\n",
         format!("the log was rewritten in place while it was followed:\n{final_log}"),
