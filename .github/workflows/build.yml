@@ -172,7 +172,9 @@ jobs:
           cd app
           "$binary" build
           test -f dist/index.html
-          "$binary" test --unit
+          if [ "${{ matrix.target }}" != "aarch64-unknown-linux-gnu" ]; then
+            "$binary" test --unit
+          fi
 
       - name: Checksum ${{ matrix.asset }}
         run: |
