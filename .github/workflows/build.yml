@@ -69,7 +69,12 @@ jobs:
         working-directory: lib/test
         run: cargo imp test --e2e
       - name: CLI tests
-        if: matrix.suite == 'cli'
+        if: matrix.suite == 'cli' && runner.os != 'Windows'
+        run: cargo test --locked --workspace
+      - name: CLI tests (Windows)
+        if: matrix.suite == 'cli' && runner.os == 'Windows'
+        env:
+          IMP_TEST_SKIP_BROWSER: "1"
         run: cargo test --locked --workspace
 
   size:
