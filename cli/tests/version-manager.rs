@@ -293,6 +293,7 @@ fn update_downloads_the_version_and_pins_it_in_the_project() {
 }
 
 #[test]
+#[cfg(unix)]
 fn a_pinned_project_runs_its_version_once() {
     let dir = TempDir::new();
     let cache = dir.join("cache");

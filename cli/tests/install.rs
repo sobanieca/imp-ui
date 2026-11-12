@@ -1005,6 +1005,7 @@ fn install_takes_the_skill_of_an_imp_component_from_beside_its_entry_module() {
 }
 
 #[test]
+#[cfg(unix)]
 fn install_sh_downloads_the_binary_and_its_checksum_from_one_resolved_release_tag() {
     let dir = TempDir::new();
     let bin = dir.join("bin");
