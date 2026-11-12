@@ -948,7 +948,7 @@ pub fn start(options: StartOptions) -> Result<()> {
     logger::info(&format!(
         "imp start serving {} from {}",
         app.entry_name,
-        app.root.display()
+        crate::paths::posix(&app.root)
     ));
     print_server_urls(options.host.as_deref(), bound, "/");
     warn_about_exposed_host(options.host.as_deref());

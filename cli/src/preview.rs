@@ -1259,7 +1259,7 @@ pub fn preview(options: PreviewOptions) -> Result<()> {
     logger::info(&format!(
         "imp preview serving {} from {}",
         preview_count(previews.len()),
-        root.display()
+        crate::paths::posix(&root)
     ));
     print_server_urls(options.host.as_deref(), bound, &open_path);
     warn_about_exposed_host(options.host.as_deref());

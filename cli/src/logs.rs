@@ -37,7 +37,7 @@ fn no_log_message(root: &Path, path: &Path) -> String {
     if nested.is_empty() {
         return format!(
             "no dev server has run in this project - imp start writes the log to {}",
-            path.display()
+            crate::paths::posix(path)
         );
     }
     let place = if nested.len() == 1 {
@@ -47,7 +47,7 @@ fn no_log_message(root: &Path, path: &Path) -> String {
     };
     format!(
         "no session log at {} - there is one in {}, run imp logs from {place}",
-        path.display(),
+        crate::paths::posix(path),
         nested.join(", ")
     )
 }
