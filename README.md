@@ -4,7 +4,7 @@ imp is a complete UI toolkit in one binary. It is the dev server, the component 
 the router, the test runner, the linter, the formatter and the bundler. You install one file, and
 you build the app.
 
-imp is not released yet. Until version `1.0.0`, any part of it can change.
+imp is released as an experimental version. Until version `1.0.0`, any part of it can change.
 
 ## Install
 
