@@ -222,19 +222,22 @@ async function connectBrowser(defaultViewport) {
   return puppeteer.connect({ browserWSEndpoint, defaultViewport })
 }
 
-async function keepPageFocused(browser) {
+async function prepareRunnerPage(browser) {
   const pages = await browser.pages()
   const own = pages.find((page) => page.url() === location.href)
   if (!own) return
   const session = await own.createCDPSession()
   await session.send('Emulation.setFocusEmulationEnabled', { enabled: true })
+  await session.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }],
+  })
 }
 
 async function runUnit() {
   keepRunnerPage()
   const browser = await connectBrowser(null)
   try {
-    await keepPageFocused(browser)
+    await prepareRunnerPage(browser)
     const registry = freshRegistry()
     await importTests()
     return await runRegistry(registry, {

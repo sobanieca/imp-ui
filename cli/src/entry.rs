@@ -17,10 +17,10 @@ pub fn resolve_entry_path(entry: &str, expected: &str) -> Result<PathBuf> {
             {
                 bail!(
                     "file not found: {}\n{indent}public/{entry_name} exists - move it to the project root: public/ ships verbatim, while the entry page is the one imp bundles, injects environment values into and adds PWA tags to",
-                    entry_path.display()
+                    crate::paths::posix(&entry_path)
                 );
             }
-            bail!("file not found: {}", entry_path.display());
+            bail!("file not found: {}", crate::paths::posix(&entry_path));
         }
         Ok(meta) if meta.is_dir() => bail!("expected {expected}, got a directory: {entry}"),
         Ok(_) => Ok(entry_path),

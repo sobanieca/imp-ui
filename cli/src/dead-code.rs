@@ -245,7 +245,7 @@ pub fn report_dead_code(root: &Path, config: &Config, config_name: &str) -> Resu
         })
         .collect();
     let exclude = get_strings(config, &["lint", "exclude"]);
-    let project_root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
+    let project_root = crate::paths::canonical(root).unwrap_or_else(|_| root.to_path_buf());
     let files = collect_files(Collect {
         root: &project_root,
         paths: &[],

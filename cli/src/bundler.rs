@@ -317,7 +317,7 @@ pub fn resolve_module_file(candidate: &Path) -> Option<PathBuf> {
     attempts
         .into_iter()
         .find(|attempt| attempt.is_file())
-        .map(|found| std::fs::canonicalize(&found).unwrap_or(found))
+        .map(|found| crate::paths::canonical(&found).unwrap_or(found))
 }
 
 fn is_relative(specifier: &str) -> bool {

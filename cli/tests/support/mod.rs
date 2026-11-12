@@ -48,8 +48,13 @@ impl TempDir {
                 .unwrap_or(0)
         ));
         std::fs::create_dir_all(&path).unwrap();
+        let canonical = path.canonicalize().unwrap();
+        let plain = canonical
+            .to_str()
+            .and_then(|text| text.strip_prefix(r"\\?\"))
+            .map(PathBuf::from);
         TempDir {
-            path: path.canonicalize().unwrap(),
+            path: plain.unwrap_or(canonical),
         }
     }
 

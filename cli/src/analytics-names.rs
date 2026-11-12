@@ -56,7 +56,7 @@ fn is_development_file(path: &str) -> bool {
 }
 
 pub fn report_duplicate_analytics_names(root: &Path, config: &Config) -> Result<usize> {
-    let project_root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
+    let project_root = crate::paths::canonical(root).unwrap_or_else(|_| root.to_path_buf());
     let exclude = get_strings(config, &["lint", "exclude"]);
     let files = collect_files(Collect {
         root: &project_root,

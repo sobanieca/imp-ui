@@ -33,6 +33,19 @@ pub fn resolve(base: &Path, path: impl AsRef<Path>) -> PathBuf {
     normalize(&base.join(path))
 }
 
+pub fn canonical(path: &Path) -> std::io::Result<PathBuf> {
+    std::fs::canonicalize(path).map(without_verbatim_prefix)
+}
+
+fn without_verbatim_prefix(path: PathBuf) -> PathBuf {
+    let plain = path
+        .to_str()
+        .and_then(|text| text.strip_prefix(r"\\?\"))
+        .filter(|rest| rest.as_bytes().get(1) == Some(&b':'))
+        .map(PathBuf::from);
+    plain.unwrap_or(path)
+}
+
 pub fn cwd() -> PathBuf {
     std::env::current_dir().expect("the current folder is readable")
 }
