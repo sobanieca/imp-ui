@@ -1,8 +1,11 @@
 name: CI
 
-# Runs only on demand: start it from the Actions tab (a run on main also releases and deploys
-# the site to https://imp-ui.com), or add the `ci` label to a PR to check it and every later push.
+# Runs on every push to main and on demand from the Actions tab. A run on main deploys the site to
+# https://imp-ui.com. It also releases the version in Cargo.toml when that version has no tag.
+# Add the `ci` label to a PR to check it and every later push.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
   pull_request:
     branches: [main]
