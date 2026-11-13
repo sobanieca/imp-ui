@@ -172,20 +172,14 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-node@v7
-        if: matrix.target == 'aarch64-unknown-linux-musl'
-        with:
-          node-version: 26
+      # The arm64 Linux runner has no Chrome, and Chrome for Testing has no arm64 Linux build,
+      # so the smoke test uses Ubuntu's Chromium. imp finds chromium-browser on the PATH.
       - name: Install Chromium for the smoke test
         if: matrix.target == 'aarch64-unknown-linux-musl'
         run: |
-          npx --yes playwright@1.65.0 install --with-deps chromium
-          chrome="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chromium-*' | head -n 1)"
-          test -x "$chrome"
-          mkdir -p "$RUNNER_TEMP/chromium-bin"
-          ln -s "$chrome" "$RUNNER_TEMP/chromium-bin/chromium"
-          echo "$RUNNER_TEMP/chromium-bin" >> "$GITHUB_PATH"
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+          chromium-browser --version
 
       - name: Smoke test ${{ matrix.asset }}
         run: |
