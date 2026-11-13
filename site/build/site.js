@@ -662,8 +662,8 @@ const docsNav = (pages, currentSlug) =>
 const EXAMPLES_NOTE =
   `<p>For complete apps that are built with imp, see `
   + `<a href="https://github.com/sobanieca/imp-examples">imp-examples</a>. Two of them run live: `
-  + `<a href="https://adam.sobaniec.com/imp-examples/observability/">Beacon</a>, an `
-  + `observability SPA, and <a href="https://adam.sobaniec.com/imp-examples/brickfall/">`
+  + `<a href="https://examples.imp-ui.com/observability/">Beacon</a>, an `
+  + `observability SPA, and <a href="https://examples.imp-ui.com/brickfall/">`
   + `Brickfall</a>, a game that installs as a PWA.</p>`
 
 const docsIndex = (pages) =>
