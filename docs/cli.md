@@ -50,8 +50,8 @@ irm https://imp-ui.com/install.ps1 | iex
 
 The asset names are `imp-linux-x64`, `imp-linux-arm64`, `imp-macos-x64`, `imp-macos-arm64`,
 `imp-windows-x64.exe` and `imp-windows-arm64.exe`. Each asset has a `.sha256` file beside it, and
-both scripts verify it. There is no binary for Linux with musl, such as Alpine. To confirm the
-install, run `imp --version`. It prints the version that the binary runs.
+both scripts verify it. The Linux binaries are static, so they run on every distribution, also on
+Alpine. To confirm the install, run `imp --version`. It prints the version that the binary runs.
 
 ## Commands
 

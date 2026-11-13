@@ -963,6 +963,7 @@ lazy-regex-proc_macros@3.6.2 - MIT - authors: Canop <cano.petrole@gmail.com>
 lazy-regex@3.6.2 - MIT - Copyright (c) 2018 Canop
 lazy_static@1.5.1 - MIT OR Apache-2.0 - authors: Marvin Löbel <loebel.marvin@gmail.com>
 libc@0.2.191 - MIT OR Apache-2.0 - Copyright (c) The Rust Project Developers
+libmimalloc-sys@0.1.49 - MIT - Copyright 2019 Octavian Oncescu
 linux-raw-sys@0.12.1 - Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT - authors: Dan Gohman <dev@sunfishcode.online>
 litemap@0.8.3 - Unicode-3.0 - COPYRIGHT AND PERMISSION NOTICE - Copyright © 2020-2024 Unicode, Inc.
 lock_api@0.4.14 - MIT OR Apache-2.0 - Copyright (c) 2016 The Rust Project Developers
@@ -971,6 +972,7 @@ malva@0.16.0 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 markdown@1.0.0 - MIT - Copyright (c) 2022 Titus Wormer <tituswormer@gmail.com>
 markup_fmt@0.27.6 - MIT - authors: Pig Fang <g-plane@hotmail.com>
 memchr@2.8.3 - Unlicense OR MIT - Copyright (c) 2015 Andrew Gallant
+mimalloc@0.1.52 - MIT - Copyright 2019 Octavian Oncescu
 mime@0.3.18 - MIT OR Apache-2.0 - Copyright (c) 2014 Sean McArthur
 miniz_oxide@0.8.9 - MIT OR Zlib OR Apache-2.0 - Copyright 2013-2014 RAD Game Tools and Valve Software - Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC - Copyright (c) 2017 Frommi - Copyright (c) 2017-2024 oyvindln - Copyright (c) 2020 Frommi
 miniz_oxide@0.9.1 - MIT OR Zlib OR Apache-2.0 - Copyright 2013-2014 RAD Game Tools and Valve Software - Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC - Copyright (c) 2017 Frommi - Copyright (c) 2017-2024 oyvindln - Copyright (c) 2020 Frommi

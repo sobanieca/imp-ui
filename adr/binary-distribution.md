@@ -36,13 +36,22 @@ mirrors the release mechanism of jsonr.
   two pushes of the same version cannot publish twice. GitHub keeps one waiting job per group, so a
   newer waiting release job replaces an older one that waits.
 - **There are six targets.** They are `x86_64` and `aarch64` for `linux`, `macos` and `windows`.
-  There is no `musl` target. Each build job compiles its target with
+  Each build job compiles its target with
   `cargo build --release --package imp --target <triple>`. So a release binary embeds exactly what
   the binary that the tests ran embeds: the library without its `public/` fonts, the browser
   modules, the templates, the browser driver, the skills and the licence notices, see
   `cli/build.rs`. The release profile turns on link-time optimization and strips the symbols. imp
   names an asset `imp-{os}-{arch}`, and adds `.exe`
   on Windows. `{os}` is `linux`, `macos` or `windows`. `{arch}` is `x64` or `arm64`.
+- **The Linux binaries are static.** The two Linux targets are `x86_64-unknown-linux-musl` and
+  `aarch64-unknown-linux-musl`. A `gnu` binary links the glibc of the system, and it needs the glibc
+  version of the build runner or a newer one. A release built on a new runner image then failed to
+  start on Debian 13. A musl binary contains its C library, so it runs on every Linux distribution.
+  The build job installs `musl-tools`, and compiles the C code of the dependencies with `musl-gcc`.
+  After the compile, the job fails when `objdump -p` shows a `NEEDED` library in the binary.
+- **A musl binary uses mimalloc.** The allocator of musl made `imp build` and `imp lint` about 1.5
+  times slower than the `gnu` binary. With `mimalloc` as the global allocator, the two take the same
+  time. The other targets keep the allocator of the system.
 - **Windows is tested in CI.** The test job runs the library unit tests, the library e2e tests and
   the CLI tests on Ubuntu and on Windows. Each suite runs in its own job, at the same time as the
   other suites. A release waits for all of them. So a change that breaks Windows cannot ship,
@@ -77,8 +86,10 @@ mirrors the release mechanism of jsonr.
 - A release is fully automated from one change to the version in the root `Cargo.toml`. Nobody can forget to
   tag, or to build a platform. A push with no change of the version does not release again by
   mistake.
-- Linux with musl, such as Alpine, has no binary. The CLI fails immediately, with a clear message,
-  on a platform that has no binary. The e2e tests on Windows use the pinned Chrome build for
+- One Linux binary per architecture runs on every distribution, also on Alpine. The pinned Chrome
+  build for `linux64` needs glibc. So on a musl distribution, `imp test` needs a Chromium from the
+  package manager of the system.
+- The CLI fails immediately, with a clear message, on a platform that has no binary. The e2e tests on Windows use the pinned Chrome build for
   `win64`, on both architectures.
 - The CI of every push takes longer, because the tests run twice.
 - A release needs six runners, two of them macOS and two of them Windows. When GitHub retires a

@@ -662,7 +662,9 @@ A test needs a Chrome or Chromium binary. imp resolves one in this order:
    runner, imp uses the preinstalled Chrome, and you need no setup step.
 4. **A managed download.** Otherwise imp downloads a pinned Chrome build once, and verifies its
    checksum. It stores the build in `~/.imp/browser/`, per user and never inside your project, and
-   it uses that build from then on. To keep the cache somewhere else, set `IMP_CACHE_DIR`.
+   it uses that build from then on. To keep the cache somewhere else, set `IMP_CACHE_DIR`. The
+   Linux build needs glibc. On Alpine or another musl distribution, install Chromium with the
+   package manager of the system, for example `apk add chromium`.
 
 ### A CI with no network
 

@@ -123,10 +123,10 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             asset: imp-linux-x64
           - runner: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-musl
             asset: imp-linux-arm64
           - runner: macos-15-intel
             target: x86_64-apple-darwin
@@ -150,20 +150,34 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
+      - name: Install the musl C toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Compile ${{ matrix.asset }}
+        env:
+          CC_x86_64_unknown_linux_musl: musl-gcc
+          CC_aarch64_unknown_linux_musl: musl-gcc
         run: |
           cargo build --locked --release --package imp --target ${{ matrix.target }}
           suffix=""
           case "${{ matrix.target }}" in *windows*) suffix=".exe" ;; esac
           cp "target/${{ matrix.target }}/release/imp${suffix}" "${{ matrix.asset }}"
 
+      - name: ${{ matrix.asset }} links no shared library
+        if: runner.os == 'Linux'
+        run: |
+          if objdump -p "${{ matrix.asset }}" | grep NEEDED; then
+            echo "${{ matrix.asset }} must be a static binary"
+            exit 1
+          fi
+
       - uses: actions/setup-node@v4
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        if: matrix.target == 'aarch64-unknown-linux-musl'
         with:
           node-version: 22
       - name: Install Chromium for the smoke test
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        if: matrix.target == 'aarch64-unknown-linux-musl'
         run: |
           npx --yes playwright@1.48.2 install --with-deps chromium
           chrome="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*/chromium-*' | head -n 1)"

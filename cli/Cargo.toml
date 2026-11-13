@@ -52,3 +52,6 @@ zip = { version = "9", default-features = false, features = ["deflate"] }
 rquickjs = { version = "0.14", features = ["loader"] }
 if-addrs = "0.15.0"
 ctrlc = "3.5.2"
+
+[target.'cfg(target_env = "musl")'.dependencies]
+mimalloc = "0.1"
