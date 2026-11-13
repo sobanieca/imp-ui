@@ -1,5 +1,4 @@
 {
-  "version": "0.1.1",
   "map": "src/app-map.js",
   "environments": {
     "default": "env/dev.json",
