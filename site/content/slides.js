@@ -229,7 +229,7 @@ imp skill ./components/counter.js`,
       'A zone counts how often any part of a screen is seen and used, with no code in the component.',
       [
         'imp comes with its own analytics server, ',
-        { href: 'https://github.com/sobanieca/imp-aly', label: 'imp-aly' },
+        { href: 'https://aly.imp-ui.com/', label: 'imp-aly' },
         '. Run it on your own VPS. Google Analytics, PostHog or your own endpoint also work.',
       ],
       'A record carries no personal data, and imp stores no id on the device.',

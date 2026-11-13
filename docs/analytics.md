@@ -306,7 +306,7 @@ the store otherwise counts each page twice.
 
 ### imp-aly
 
-[imp-aly](https://github.com/sobanieca/imp-aly) is an analytics server for imp apps. You run it on
+[imp-aly](https://aly.imp-ui.com/) is an analytics server for imp apps. You run it on
 your own VPS. It checks each record against the lists that `imp build` writes, stores it on the disk
 of the server, and answers the queries of the report. imp ships the sink for it in a separate
 module:

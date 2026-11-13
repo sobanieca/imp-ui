@@ -18,7 +18,7 @@ you build the app. You assemble nothing, and you connect nothing.
 
 ## Examples
 
-The [imp-examples](https://github.com/sobanieca/imp-examples) repository holds three complete apps
+The [imp-examples](https://examples.imp-ui.com/) project holds three complete apps
 that are built with imp. Two of them run live in the browser:
 
 - [Beacon](https://examples.imp-ui.com/observability/) is an observability SPA with a
