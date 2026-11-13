@@ -2,7 +2,7 @@
 
 ```
 imp test <file>            run one test file
-imp test --unit            run every *.test.js file, each in its own process, in parallel
+imp test --unit            run every *.test.js file, each in a page of its own, in parallel
 imp test --e2e             run every *.spec.js file, each in its own process, in parallel
 imp test --unit --jobs 4   cap how many files run at once (default: your CPU count)
 imp test --e2e --filter x  run only tests whose name contains <text>
@@ -26,14 +26,14 @@ There is nothing to install and nothing to configure. The runner and the asserti
 of the `imp` binary. The only external piece is the browser, and imp finds it or fetches it for you.
 See _The browser_ below.
 
-imp runs **one test file per process and per browser**. That is the unit of isolation. So no two
-files share the globals, the timers or the module state of a page. For an e2e file, no two files
-share a server either. `imp test <file>` runs exactly that one file in the current process, and exits with
-its result. The exit code is `0` when everything passed, and `1` otherwise.
+imp isolates **each test file**. A unit file gets a fresh page, in a browser context of its own. So
+no two files share the globals, the timers, the storage or the module state of a page. An e2e file
+gets a server and a browser of its own. `imp test <file>` runs exactly that one file, and exits
+with its result. The exit code is `0` when everything passed, and `1` otherwise.
 
 To run a whole level, name it, and imp does the fan-out. `imp test --unit` discovers every
-`*.test.js` file, and `imp test --e2e` discovers every `*.spec.js` file. imp then runs each file in
-**its own process, in parallel**. A file that passes collapses to a single `✓ <file>` line. A file
+`*.test.js` file, and `imp test --e2e` discovers every `*.spec.js` file. imp then runs the files
+**in parallel, each one in isolation**. A file that passes collapses to a single `✓ <file>` line. A file
 that fails prints its full output, so you see exactly what broke. See _How to read the results_. The
 command exits `1` when a file failed. imp always skips `.git`, `node_modules`, `dist` and `.imp`
 during the discovery.
@@ -49,11 +49,11 @@ code**. This stops imp from running a partial or unintended subset in silence. I
 
 The flags are these:
 
-- `--unit` and `--e2e` run every `.test.js` file, or every `.spec.js` file, each one in its own
-  process. Add a path to narrow the discovery, as in `imp test --e2e checkout/`.
+- `--unit` and `--e2e` run every `.test.js` file, or every `.spec.js` file, each one in
+  isolation. Add a path to narrow the discovery, as in `imp test --e2e checkout/`.
 - `--jobs <n>` caps how many files run at the same time during a level run. The default is the CPU
-  count of your machine. Lower it when each file is heavy, because an e2e spec launches a browser.
-  Raise it for a light unit file.
+  count of your machine. Each job holds one browser. Lower the number on a machine with little
+  memory.
 - `--filter <text>` runs only a test whose name contains the text. imp reports everything else as
   skipped.
 - `--list` prints the selected test files as a JSON array, and runs nothing. Combine it with
@@ -310,7 +310,7 @@ mockModule('./math.js', ({ spy, orig }) => ({
 }))
 ```
 
-A mock is scoped to **one test file**. imp runs each test file in its own process. So the mock of a
+A mock is scoped to **one test file**. imp bundles each test file on its own. So the mock of a
 module applies to every test in that file, and it never leaks to another file.
 
 **A few rules keep this simple and fast:**
@@ -324,7 +324,7 @@ module applies to every test in that file, and it never leaks to another file.
 
 ## Unit tests - `*.test.js`
 
-A unit test file runs in a fresh, blank page of its own headless Chrome. `document`, `window`, the
+A unit test file runs in a fresh, blank page of a headless Chrome. `document`, `window`, the
 elements, the events, `localStorage` and the rest of the DOM API are the real ones. So a component
 renders and behaves exactly as it does in your app, and you start no server:
 
@@ -349,9 +349,9 @@ test('reacts to clicks', () => {
 ```
 
 Your whole module graph is available. A relative import, `imp`, and every vendored dependency alias
-resolve exactly as they do under `imp start`. Each file gets its own browser. The tests in one file
-share its page, so reset what you need in `beforeEach`. Two separate files never see the state of
-each other.
+resolve exactly as they do under `imp start`. Each file gets a page of its own, in a browser context
+of its own. So its storage and its cookies start empty. The tests in one file share its page, so
+reset what you need in `beforeEach`. Two separate files never see the state of each other.
 
 A component renders into a shadow root. So `document.querySelector` does not see its internals. Go
 in through the `shadowRoot` of the host:
@@ -684,10 +684,15 @@ repository, so `imp test` never talks to a package registry.
 
 ## How to run tests in parallel
 
-Every `imp test <file>` is self-contained. A unit file gets its own browser and a fresh page. A spec
-file gets its own server, port and browser. Nothing is shared between files. So the files can run at the
-same time, and they do not interfere. `imp test --unit` and `imp test --e2e` do exactly that. Each
-one names a level, and imp runs every file of that level in its own process, several at a time.
+Every test file is self-contained. A unit file gets a fresh page, with its own storage and cookies. A
+spec file gets its own server, port and browser. No state is shared between files. So the files can
+run at the same time, and they do not interfere. `imp test --unit` and `imp test --e2e` do exactly
+that. Each one names a level, and imp runs several files of that level at a time.
+
+A unit run starts one browser per job. A job runs one file at a time in its browser, and then uses
+the same browser for its next file. Each file still gets a new page and a new browser context, so a
+file never sees the state of the file before it. A page that crashes fails its own file only. A new
+page costs a fraction of a browser start, so a suite of many small files stays fast.
 
 ```bash
 imp test --unit            # every *.test.js, in parallel across your CPU cores

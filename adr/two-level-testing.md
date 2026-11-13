@@ -21,19 +21,34 @@ served app, in a headless Chrome. Both import their API from `imp/test`, which i
 `afterEach` and `afterAll`. It holds a set of `expect` matchers. The file walker of imp feeds the
 discovery.
 
-- **One file per process and per browser is the primitive of isolation. `imp test` fans out across
-  processes for a whole level.** A single `imp test <file>` runs exactly that one file in its own
-  Chrome, and exits with its result. The bundler and the server stay in the imp process. So the
-  globals, the timers and the module graph of a file, and for an e2e file its server and its
-  browser, never leak into another file. That invocation of a worker is also the unit that imp
-  schedules. To run a whole level needs an explicit flag for the level. imp then discovers every
-  file of that kind, and **starts one `imp test <file>` subprocess per file**. It runs them through
-  a pool with a limit, which `--jobs <n>` sets, and which defaults to the CPU count. imp summarizes a file that passes in one line. It reproduces the
-  full output of a child process that failed, without a change. The aggregate exits `1` when a file
-  failed. This is a **deliberate exception about a subprocess**, against the rule of
-  `native-toolchain.md`. The CLI invokes its own executable again. It does not delegate to an
-  external tool. The isolation of one file per process is exactly what makes a fan-out to a
-  subprocess equivalent to a run of each file alone.
+- **One file is the primitive of isolation, and the level chooses the mechanism.** A unit file runs
+  in a page of its own, in a browser context of its own. A spec file runs in a process of its own,
+  with its own server and its own Chrome. So the globals, the timers, the module graph, the storage
+  and the cookies of a file never leak into another file. A single `imp test <file>` runs exactly
+  that one file, and exits with its result. To run a whole level needs an explicit flag for the
+  level. imp then discovers every file of that kind. It runs them through a pool with a limit,
+  which `--jobs <n>` sets, and which defaults to the CPU count. imp summarizes a file that passes in
+  one line. It reproduces the full output of a file that failed, without a change. The aggregate
+  exits `1` when a file failed.
+  - **A unit run uses one Chrome per job, for one file after another.** Each job of the pool starts
+    one Chrome, and runs its files in that Chrome, one file at a time. For each file, imp bundles
+    the file, serves it on a port of its own, and opens a new browser context with one page in a
+    window of its own. imp disposes the context when the file is done. A Chrome per file costs about
+    1.3 seconds of start per file, and that cost dominated a suite of many small files. Six pages at
+    a time in one Chrome saturated the main thread of that browser, and a test that depends on
+    timing failed. So a browser holds one page at a time.
+  - **imp speaks the DevTools protocol to that Chrome from Rust.** `cli/src/cdp.rs` is a WebSocket
+    client over a TCP socket of the standard library. It creates the context and the page, turns on
+    the focus emulation, and loads the runner page as a replacement of the blank entry. So the
+    history of the page holds one entry, as in a new tab.
+  - **A failure stays in its file.** The browser reports a page that crashed, and imp fails that
+    file at once. When a browser exits, its file fails, and the job starts a new browser for its
+    next file.
+  - **An e2e run starts one `imp test <file>` subprocess per spec.** The bundler and the server stay
+    in that imp process. This is a **deliberate exception about a subprocess**, against the rule of
+    `native-toolchain.md`. The CLI invokes its own executable again. It does not delegate to an
+    external tool. The isolation of one spec per process is exactly what makes a fan-out to a
+    subprocess equivalent to a run of each spec alone.
   - **A bare `imp test` refuses to guess.** With no flag for a level, and with more than one
     candidate file, imp prints the three ways to run. Those are `--unit`, `--e2e`, and a single
     file. imp then exits with a **non-zero** code, and runs nothing. That case covers a bare
@@ -83,7 +98,7 @@ discovery.
 - **The model of execution is imp's own runner, in the page.** imp bundles each test file with its
   embedded bundler. That resolves `imp`, `imp/test`, a vendored dependency alias, and a relative
   import, with the same resolution as `imp build`. imp starts a small server on an ephemeral port
-  and launches Chrome on its runner page. The runner page imports the bundle, runs the registry,
+  for the file, and opens the runner page of that server in Chrome. The runner page imports the bundle, runs the registry,
   and posts each result line back to the imp process, which prints it. The registration flows
   through a global registry, keyed by `Symbol.for`. So the bundled copy of `imp/test` and the
   runner share state, and they do not share a module identity. The runner sets
@@ -127,9 +142,10 @@ discovery.
   equality to a finite set of values. So no form of `toEqual` expresses it correctly.
 - **The unit environment is the real page.** `document`, `window`, the elements, the events and the
   top layer are the ones of Chrome. A Navigation API handler keeps the runner page in place when a
-  test navigates, so a reload or a pushed URL does not unload the tests. The runner connects
-  Puppeteer to its own page and turns on the focus emulation of the DevTools protocol. So focus
-  behaves as in a focused window, also when many browsers run at the same time. `toEqual` compares
+  test navigates, so a reload or a pushed URL does not unload the tests. imp turns on the focus
+  emulation of the DevTools protocol for the page, before the page loads the runner. So focus
+  behaves as in a focused window, also when many browsers run at the same time. The page is the
+  only page of its window, so it is visible, and it gets animation frames. `toEqual` compares
   by a structural tag, and not by the identity of a prototype.
 - **The e2e environment gives each spec file a fresh instance of the app.** The internals of
   `imp start` serve the entry page on an ephemeral port, with the standard injection. The default
@@ -153,7 +169,7 @@ discovery.
   enough, and a mirror would be one more address to trust.
 - **`imp test` has two approved exceptions about a subprocess**, against `native-toolchain.md`. The
   first is the browser, which is the system under test, and not a delegated tool. The second is the
-  fan-out over a level, where imp invokes itself again, as one worker per file. Inside any single
+  fan-out over the e2e level, where imp invokes itself again, as one worker per spec file. Inside any single
   `imp test <file>` worker, the bundler and the server run in the imp process, and the runner and
   the assertions run in the page. The subprocesses are the browser under test, and copies of imp
   itself. They are never an external toolchain.
@@ -174,23 +190,25 @@ discovery.
   real timing of the platform. A popover `toggle` event and a dialog `close` event arrive one task
   later, so a test awaits a task before it checks their effect. An event that a test dispatches is
   not trusted, so the light dismiss of a popover on `Escape` belongs to an e2e spec. A unit run
-  starts one Chrome per file, which costs about a second per file of startup. The total e2e time in CI falls to the time of the slowest
+  starts one Chrome per job, and a new context with its page costs about a third of a second per
+  file. The total e2e time in CI falls to the time of the slowest
   spec file. The deliberate cost is that each spec repeats its own setup state, such as a sign-in.
   That repetition is what makes a spec schedulable on its own.
 - A bare `imp test` does not run the suite. It asks which level to run. To run a level is one
-  command, which is `imp test --unit` or `imp test --e2e`, and it fans out across local processes. A
+  command, which is `imp test --unit` or `imp test --e2e`, and it runs the files in parallel. A
   pipeline can also feed `imp test --list` into a CI matrix, for a fan-out across machines. One file
-  is still the unit of the isolation, and of the exit code per file. A run of a level is many such
-  processes for one file, scheduled together. So no two files ever share the globals, the timers,
-  the server or the browser of one process.
-- The fan-out makes imp start copies of itself, through the path of its own executable. A run of a
-  level costs one process and one browser per file. For an e2e run it also costs one server per file
-  that runs at the same time. `--jobs` limits that. A CI system that needs a
+  is still the unit of the isolation. So no two files ever share the globals, the timers, the
+  storage or the server.
+- The e2e fan-out makes imp start copies of itself, through the path of its own executable. An e2e
+  run costs one process, one server and one browser per file that runs at the same time. A unit run
+  costs one browser per job. `--jobs` limits both.
+- Two unit files of one job share the process of the browser, and no page, storage or cookie. The
+  DevTools client adds no crate to the binary. A CI system that needs a
   spread across machines still uses `--list`, and not a large local `--jobs`.
 - imp bundles a test file before it runs it. So a failure reports per test, with the detail of the
   assertion, and with no stack trace to the original file and line. The granularity per file, and
   the name of the test, carry the location.
-- imp resolves a mock per file, and that fits the model of one file per process. A `mockModule`
+- imp resolves a mock per file, and that fits the model of one bundle per file. A `mockModule`
   applies to every test in its file, and it cannot leak across files. But a mock is fixed for the
   file, and it is not swappable per test. The behaviour of a spy is chosen when somebody creates it,
   and the runner clears `.calls` between two tests. So nobody resets a spy by hand. The scan is

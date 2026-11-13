@@ -10,6 +10,7 @@ pub mod build;
 pub mod bundler;
 #[path = "cache-dir.rs"]
 pub mod cache_dir;
+pub mod cdp;
 pub mod cli;
 pub mod colors;
 pub mod config;

@@ -55,8 +55,9 @@ USAGE
                                         sbom.cdx.json | --output: another path for it)
   imp test <file>                       run one test file in headless Chrome: *.test.js
                                         unit in a blank page, *.spec.js e2e against the app
-  imp test --unit | --e2e               run every file of that level, each in its own
-                                        process, in parallel - passing files are summarized,
+  imp test --unit | --e2e               run every file of that level in parallel: a unit file
+                                        in a page of its own, a spec in a browser of its own -
+                                        passing files are summarized,
                                         failing files print their full output
                                         (--jobs <n> caps parallelism | --filter <text> |
                                         --list prints the selected files as JSON |

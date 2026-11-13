@@ -4,7 +4,7 @@ use support::*;
 
 #[test]
 fn test_command_transcripts() {
-    let cases: [(&str, &[&str], &str); 26] = [
+    let cases: [(&str, &[&str], &str); 27] = [
         ("test-unit-pass", &["test", "counter.test.js"], "test-unit"),
         ("test-fake-timers", &["test"], "test-fake-timers"),
         ("test-mock", &["test", "profile.test.js"], "test-mock"),
@@ -22,6 +22,11 @@ fn test_command_transcripts() {
             "test-unit",
         ),
         ("test-unit-level-fail", &["test", "--unit"], "test-fail"),
+        (
+            "test-unit-isolation",
+            &["test", "--unit", "--jobs", "1"],
+            "test-isolation",
+        ),
         (
             "test-bad-jobs",
             &["test", "--unit", "--jobs", "0"],

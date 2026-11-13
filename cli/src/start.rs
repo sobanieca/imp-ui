@@ -988,10 +988,11 @@ pub fn start_e2e_app(
     let port = listener.local_addr()?.port();
     let mock_server = app.mocks.is_some();
     let handler = Arc::new(Handler::new(app, Clients::default()));
-    crate::http_server::spawn(listener, Arc::new(move |request| handler.handle(request)));
+    let server =
+        crate::http_server::spawn(listener, Arc::new(move |request| handler.handle(request)));
     Ok(crate::test::E2eApp {
         base_url: format!("http://127.0.0.1:{port}/"),
         mock_server,
-        _server: Box::new(()),
+        _server: server,
     })
 }

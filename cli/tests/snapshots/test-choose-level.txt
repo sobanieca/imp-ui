@@ -3,7 +3,7 @@ exit code: 1
 
 --- stdout ---
 imp test needs a single file, or a level to run every file of that kind in parallel:
-  imp test --unit   run every *.test.js file, each in its own browser
+  imp test --unit   run every *.test.js file, each in a page of its own
   imp test --e2e    run every *.spec.js file, each in its own browser
   imp test <file>   run a single test file
 

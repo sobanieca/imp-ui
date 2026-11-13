@@ -1,8 +1,8 @@
-use crate::browser::{Chrome, resolve_browser};
+use crate::browser::{Chrome, RunnerPage, UnitBrowser, resolve_browser};
 use crate::bundler::{Assets, ImpLibrary, Mock, Options, bundle};
 use crate::colors::{bold, dim, green, red};
 use crate::config::{Config, get_path, get_str, get_strings, load_imp_config};
-use crate::http_server::{Request, Response};
+use crate::http_server::{Request, Response, Server};
 use crate::js_scan::{extract_calls, parse_string_literal, split_first_argument};
 use crate::paths::{absolute, file_name, relative_posix, resolve};
 use crate::project_files::{is_spec_file, is_test_file, is_unit_file};
@@ -11,12 +11,15 @@ use anyhow::{Result, anyhow, bail};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 type ReportSlot = Arc<(Mutex<Option<String>>, Condvar)>;
 
 type WorkerResult = (i32, String);
+
+type Emit = Arc<dyn Fn(String) + Send + Sync>;
 
 pub struct TestOptions {
     pub root: PathBuf,
@@ -211,22 +214,40 @@ fn runner_page() -> &'static str {
 pub struct E2eApp {
     pub base_url: String,
     pub mock_server: bool,
-    pub _server: Box<dyn std::any::Any + Send>,
+    pub _server: Server,
 }
 
-pub struct FileRun<'a> {
-    pub root: &'a Path,
-    pub file: &'a Path,
-    pub code: String,
-    pub filter: Option<String>,
-    pub browser: &'a Path,
-    pub e2e: Option<&'a E2eApp>,
-    pub screenshot_dir: Option<PathBuf>,
-    pub video_dir: Option<PathBuf>,
-    pub video: Value,
+#[derive(Clone, Copy)]
+enum Level<'a> {
+    Unit(&'a UnitBrowser),
+    E2e { browser: &'a Path, app: &'a E2eApp },
 }
 
-pub fn run_in_browser(options: FileRun) -> Result<Counts> {
+struct Suite<'a> {
+    root: &'a Path,
+    config: &'a Config,
+    dependencies: &'a [String],
+    filter: Option<String>,
+    screenshot_dir: Option<PathBuf>,
+    video_dir: Option<PathBuf>,
+}
+
+struct FileRun<'a> {
+    suite: &'a Suite<'a>,
+    file: &'a Path,
+    code: String,
+    level: Level<'a>,
+    emit: Emit,
+}
+
+struct Runner {
+    state: Arc<Run>,
+    endpoint: Arc<Mutex<Option<ReportSlot>>>,
+    url: String,
+    _server: Server,
+}
+
+fn serve_runner(options: FileRun) -> Result<Runner> {
     let state = Arc::new(Run {
         activity: Mutex::new(Instant::now()),
         lines: Mutex::new(Vec::new()),
@@ -236,25 +257,31 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
     let endpoint: Arc<Mutex<Option<ReportSlot>>> = Arc::new(Mutex::new(None));
+    let app = match options.level {
+        Level::Unit(_) => None,
+        Level::E2e { app, .. } => Some(app),
+    };
+    let suite = options.suite;
+    let screenshot_dir = app.and(suite.screenshot_dir.clone());
+    let video_dir = app.and(suite.video_dir.clone());
+    let video = video_options(suite.config);
     let run_config = json!({
-        "mode": if options.e2e.is_some() { "e2e" } else { "unit" },
-        "filter": options.filter,
+        "mode": if app.is_some() { "e2e" } else { "unit" },
+        "filter": suite.filter,
         "color": crate::colors::red("x") != "x",
         "unitTimeout": UNIT_TIMEOUT,
         "e2eTimeout": E2E_TIMEOUT,
-        "baseUrl": options.e2e.map(|app| app.base_url.clone()),
-        "mockServer": options.e2e.is_some_and(|app| app.mock_server),
-        "screenshots": options.screenshot_dir.is_some(),
-        "video": if options.video_dir.is_some() { options.video.clone() } else { Value::Null },
+        "baseUrl": app.map(|app| app.base_url.clone()),
+        "mockServer": app.is_some_and(|app| app.mock_server),
+        "screenshots": screenshot_dir.is_some(),
+        "video": if video_dir.is_some() { video.clone() } else { Value::Null },
     });
     let handler_state = state.clone();
-    let code = Arc::new(options.code.clone());
+    let code = Arc::new(options.code);
     let handler_endpoint = endpoint.clone();
-    let root = options.root.to_path_buf();
+    let root = suite.root.to_path_buf();
     let file = options.file.to_path_buf();
-    let screenshot_dir = options.screenshot_dir.clone();
-    let video_dir = options.video_dir.clone();
-    let video = options.video.clone();
+    let emit = options.emit;
     let handler = move |request: Request| -> Response {
         let path = request.path.as_str();
         match (request.method.as_str(), path) {
@@ -283,8 +310,8 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
                 if let Some(lines) = request.json().and_then(|body| body.get("lines").cloned()) {
                     for line in lines.as_array().into_iter().flatten() {
                         let text = line.as_str().unwrap_or("").to_string();
-                        println!("{text}");
-                        handler_state.lines.lock().unwrap().push(text);
+                        handler_state.lines.lock().unwrap().push(text.clone());
+                        emit(text);
                     }
                 }
                 Response::text(200, "ok")
@@ -307,13 +334,10 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
                     let target =
                         dir.join(format!("{}-{}.png", slug(&file_name(&file)), slug(test)));
                     if write_base64(&target, data).is_ok() {
-                        println!(
-                            "{}",
-                            dim(format!(
-                                "      screenshot: {}",
-                                relative_posix(&root, &target)
-                            ))
-                        );
+                        emit(dim(format!(
+                            "      screenshot: {}",
+                            relative_posix(&root, &target)
+                        )));
                     }
                 }
                 Response::text(200, "ok")
@@ -346,10 +370,7 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
                             if std::fs::create_dir_all(dir).is_ok()
                                 && std::fs::write(&target, bytes).is_ok()
                             {
-                                println!(
-                                    "{}",
-                                    dim(format!("  video: {}", relative_posix(&root, &target)))
-                                );
+                                emit(dim(format!("  video: {}", relative_posix(&root, &target))));
                             }
                         }
                         Ok(None) => {}
@@ -378,14 +399,15 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
             _ => Response::text(404, "not found"),
         }
     };
-    crate::http_server::spawn(listener, Arc::new(handler));
-    let mut chrome = Chrome::launch(options.browser, &format!("http://127.0.0.1:{port}/"))?;
-    *endpoint.lock().unwrap() = Some(chrome.shared_endpoint());
-    let idle_limit = Duration::from_millis(if options.e2e.is_some() {
-        E2E_TIMEOUT * 4
-    } else {
-        UNIT_TIMEOUT * 12
-    });
+    Ok(Runner {
+        state,
+        endpoint,
+        url: format!("http://127.0.0.1:{port}/"),
+        _server: crate::http_server::spawn(listener, Arc::new(handler)),
+    })
+}
+
+fn await_counts(state: &Run, page: &mut dyn RunnerPage, idle_limit: Duration) -> Result<Counts> {
     loop {
         let guard = state.done.lock().unwrap();
         let (guard, _) = state
@@ -396,8 +418,8 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
             return Ok(counts);
         }
         drop(guard);
-        if chrome.exited() {
-            bail!("the browser exited before the tests finished");
+        if let Some(failure) = page.failure() {
+            bail!("{failure}");
         }
         let idle = state.activity.lock().unwrap().elapsed();
         if idle > idle_limit {
@@ -418,6 +440,80 @@ pub fn run_in_browser(options: FileRun) -> Result<Counts> {
             );
         }
     }
+}
+
+fn run_in_browser(options: FileRun) -> Result<Counts> {
+    let level = options.level;
+    let runner = serve_runner(options)?;
+    match level {
+        Level::Unit(browser) => {
+            let mut page = browser.open(&runner.url)?;
+            await_counts(
+                &runner.state,
+                &mut page,
+                Duration::from_millis(UNIT_TIMEOUT * 12),
+            )
+        }
+        Level::E2e { browser, .. } => {
+            let mut chrome = Chrome::launch(browser, &runner.url)?;
+            *runner.endpoint.lock().unwrap() = Some(chrome.shared_endpoint());
+            await_counts(
+                &runner.state,
+                &mut chrome,
+                Duration::from_millis(E2E_TIMEOUT * 4),
+            )
+        }
+    }
+}
+
+fn run_file<'a>(
+    suite: &'a Suite<'a>,
+    file: &'a Path,
+    emit: &Emit,
+    started: Instant,
+    level: impl FnOnce() -> Result<Level<'a>>,
+) -> Counts {
+    let mut totals = Counts::default();
+    emit(relative_posix(suite.root, file));
+    match bundle_test_file(file, suite.root, suite.dependencies) {
+        Err(error) => {
+            totals.failed += 1;
+            emit(format!("  {} failed to load", red("✗")));
+            emit(red(indent(&format!("{error:#}"))));
+        }
+        Ok(code) => {
+            let result = level().and_then(|level| {
+                run_in_browser(FileRun {
+                    suite,
+                    file,
+                    code,
+                    level,
+                    emit: emit.clone(),
+                })
+            });
+            match result {
+                Ok(counts) => totals = counts,
+                Err(error) => {
+                    totals.failed += 1;
+                    emit(format!("  {} failed to run", red("✗")));
+                    emit(red(indent(&format!("{error:#}"))));
+                }
+            }
+        }
+    }
+    let mut parts = vec![format!("{} passed", totals.passed)];
+    if totals.failed > 0 {
+        parts.push(red(format!("{} failed", totals.failed)));
+    }
+    if totals.skipped > 0 {
+        parts.push(format!("{} skipped", totals.skipped));
+    }
+    emit(format!(
+        "\nimp test: {} {}",
+        parts.join(", "),
+        dim(format!("(1 file, {}ms)", started.elapsed().as_millis()))
+    ));
+    totals
 }
 
 fn write_base64(target: &Path, data: &str) -> Result<()> {
@@ -483,7 +579,7 @@ fn print_choose_level() {
         "imp test needs a single file, or a level to run every file of that kind in parallel:"
     );
     println!(
-        "  {}   run every *.test.js file, each in its own browser",
+        "  {}   run every *.test.js file, each in a page of its own",
         bold("imp test --unit")
     );
     println!(
@@ -516,67 +612,126 @@ fn indent_block(text: &str) -> String {
         .join("\n")
 }
 
-fn orchestrate(root: &Path, files: &[String], jobs: usize, passthrough: &[String]) -> Result<i32> {
+fn run_pool<State, Work>(count: usize, jobs: usize, work: Work) -> Vec<WorkerResult>
+where
+    State: Default,
+    Work: Fn(&mut State, usize) -> WorkerResult + Sync,
+{
+    let next = AtomicUsize::new(0);
+    let results: Mutex<Vec<Option<WorkerResult>>> = Mutex::new(vec![None; count]);
+    std::thread::scope(|scope| {
+        for _ in 0..jobs.min(count).max(1) {
+            scope.spawn(|| {
+                let mut state = State::default();
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    if index >= count {
+                        return;
+                    }
+                    let result = work(&mut state, index);
+                    results.lock().unwrap()[index] = Some(result);
+                }
+            });
+        }
+    });
+    results
+        .into_inner()
+        .unwrap()
+        .into_iter()
+        .map(|result| result.unwrap_or((1, String::new())))
+        .collect()
+}
+
+fn ready_browser<'a>(
+    slot: &'a mut Option<UnitBrowser>,
+    executable: &Path,
+) -> Result<&'a UnitBrowser> {
+    if !slot.as_ref().is_some_and(UnitBrowser::alive) {
+        slot.take();
+        *slot = Some(UnitBrowser::launch(executable)?);
+    }
+    slot.as_ref()
+        .ok_or_else(|| anyhow!("the browser did not start"))
+}
+
+fn run_unit_files(
+    suite: &Suite,
+    files: &[PathBuf],
+    jobs: usize,
+    executable: &Path,
+) -> Vec<WorkerResult> {
+    run_pool(
+        files.len(),
+        jobs,
+        |browser: &mut Option<UnitBrowser>, index| {
+            let lines = Arc::new(Mutex::new(Vec::new()));
+            let sink = lines.clone();
+            let emit: Emit = Arc::new(move |line| sink.lock().unwrap().push(line));
+            let counts = run_file(suite, &files[index], &emit, Instant::now(), || {
+                Ok(Level::Unit(ready_browser(browser, executable)?))
+            });
+            let output = lines.lock().unwrap().join("\n");
+            (i32::from(counts.failed > 0), output)
+        },
+    )
+}
+
+fn run_spec_files(
+    suite: &Suite,
+    files: &[PathBuf],
+    jobs: usize,
+    passthrough: &[String],
+) -> Result<Vec<WorkerResult>> {
+    let executable = std::env::current_exe()?;
+    Ok(run_pool(files.len(), jobs, |_: &mut (), index| {
+        let output = std::process::Command::new(&executable)
+            .arg("test")
+            .arg(relative_posix(suite.root, &files[index]))
+            .args(passthrough)
+            .current_dir(suite.root)
+            .env("IMP_DELEGATED", "1")
+            .output();
+        match output {
+            Ok(output) => (
+                output.status.code().unwrap_or(1),
+                format!(
+                    "{}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                ),
+            ),
+            Err(error) => (1, error.to_string()),
+        }
+    }))
+}
+
+struct LevelRun<'a> {
+    units: &'a [PathBuf],
+    specs: &'a [PathBuf],
+    jobs: usize,
+    browser: &'a Path,
+    passthrough: &'a [String],
+}
+
+fn run_level(suite: &Suite, run: LevelRun) -> Result<i32> {
     let started = Instant::now();
+    let files: Vec<&PathBuf> = run.units.iter().chain(run.specs).collect();
     let file_count = format!(
         "{} {}",
         files.len(),
         if files.len() == 1 { "file" } else { "files" }
     );
     println!("imp test: running {file_count} in parallel\n");
-    let executable = std::env::current_exe()?;
-    let results: Arc<Mutex<Vec<Option<WorkerResult>>>> =
-        Arc::new(Mutex::new(vec![None; files.len()]));
-    let next = Arc::new(Mutex::new(0usize));
-    let workers: Vec<_> = (0..jobs.min(files.len()).max(1))
-        .map(|_| {
-            let results = results.clone();
-            let next = next.clone();
-            let files = files.to_vec();
-            let executable = executable.clone();
-            let root = root.to_path_buf();
-            let passthrough = passthrough.to_vec();
-            std::thread::spawn(move || {
-                loop {
-                    let index = {
-                        let mut next = next.lock().unwrap();
-                        let index = *next;
-                        *next += 1;
-                        index
-                    };
-                    if index >= files.len() {
-                        return;
-                    }
-                    let output = std::process::Command::new(&executable)
-                        .arg("test")
-                        .arg(&files[index])
-                        .args(&passthrough)
-                        .current_dir(&root)
-                        .env("IMP_DELEGATED", "1")
-                        .output();
-                    let result = match output {
-                        Ok(output) => (
-                            output.status.code().unwrap_or(1),
-                            format!(
-                                "{}{}",
-                                String::from_utf8_lossy(&output.stdout),
-                                String::from_utf8_lossy(&output.stderr)
-                            ),
-                        ),
-                        Err(error) => (1, error.to_string()),
-                    };
-                    results.lock().unwrap()[index] = Some(result);
-                }
-            })
-        })
-        .collect();
-    for worker in workers {
-        let _ = worker.join();
+    let mut results = Vec::new();
+    if !run.units.is_empty() {
+        results.extend(run_unit_files(suite, run.units, run.jobs, run.browser));
     }
-    let results = results.lock().unwrap();
+    if !run.specs.is_empty() {
+        results.extend(run_spec_files(suite, run.specs, run.jobs, run.passthrough)?);
+    }
     let mut failed = 0;
-    for (file, result) in files.iter().zip(results.iter()) {
-        let (code, output) = result.clone().unwrap_or((1, String::new()));
+    for (file, (code, output)) in files.iter().zip(results) {
+        let file = relative_posix(suite.root, file);
         if code == 0 {
             println!("{} {file}", green("✓"));
         } else {
@@ -640,6 +795,17 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
         println!("no test files found (unit tests end with .test.js, e2e specs with .spec.js)");
         return Ok(0);
     }
+    let suite = Suite {
+        root: &root,
+        config: &config,
+        dependencies: &dependencies,
+        filter: options.filter.clone(),
+        screenshot_dir: options
+            .screenshot_dir
+            .as_ref()
+            .map(|dir| absolute(root.join(dir))),
+        video_dir: video_dir.as_ref().map(|dir| absolute(root.join(dir))),
+    };
     if options.unit || options.e2e {
         let mut passthrough = Vec::new();
         if let Some(filter) = &options.filter {
@@ -658,15 +824,16 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
                 "--no-mock".into()
             });
         }
-        // Get the browser once here, so the workers do not each start the
-        // first-time download.
-        resolve_browser(get_str(&config, &["test", "browser"]))?;
-        let relative: Vec<String> = files.iter().map(to_relative).collect();
-        return orchestrate(
-            &root,
-            &relative,
-            options.jobs.unwrap_or_else(default_jobs),
-            &passthrough,
+        let browser = resolve_browser(get_str(&config, &["test", "browser"]))?;
+        return run_level(
+            &suite,
+            LevelRun {
+                units: &units,
+                specs: &specs,
+                jobs: options.jobs.unwrap_or_else(default_jobs),
+                browser: &browser,
+                passthrough: &passthrough,
+            },
         );
     }
     if files.len() > 1 {
@@ -676,62 +843,20 @@ pub fn run_tests(options: TestOptions) -> Result<i32> {
     let started = Instant::now();
     let file = &files[0];
     let browser_path = resolve_browser(get_str(&config, &["test", "browser"]))?;
-    let mut totals = Counts::default();
-    let app = if is_spec_file(&file.to_string_lossy()) {
-        Some(crate::start::start_e2e_app(&root, &config, options.mocks)?)
-    } else {
-        None
-    };
-    println!("{}", relative_posix(&root, file));
-    let code = match bundle_test_file(file, &root, &dependencies) {
-        Ok(code) => Some(code),
-        Err(error) => {
-            totals.failed += 1;
-            println!("  {} failed to load", red("✗"));
-            println!("{}", red(indent(&format!("{error:#}"))));
-            None
-        }
-    };
-    if let Some(code) = code {
-        let result = run_in_browser(FileRun {
-            root: &root,
-            file,
-            code,
-            filter: options.filter.clone(),
+    let emit: Emit = Arc::new(|line| println!("{line}"));
+    let totals = if is_spec_file(&file.to_string_lossy()) {
+        let app = crate::start::start_e2e_app(&root, &config, options.mocks)?;
+        let level = Level::E2e {
             browser: &browser_path,
-            e2e: app.as_ref(),
-            screenshot_dir: options
-                .screenshot_dir
-                .as_ref()
-                .map(|dir| absolute(root.join(dir))),
-            video_dir: video_dir.as_ref().map(|dir| absolute(root.join(dir))),
-            video: video_options(&config),
-        });
-        match result {
-            Ok(counts) => {
-                totals.passed += counts.passed;
-                totals.failed += counts.failed;
-                totals.skipped += counts.skipped;
-            }
-            Err(error) => {
-                totals.failed += 1;
-                println!("  {} failed to run", red("✗"));
-                println!("{}", red(indent(&format!("{error:#}"))));
-            }
-        }
-    }
-    let mut parts = vec![format!("{} passed", totals.passed)];
-    if totals.failed > 0 {
-        parts.push(red(format!("{} failed", totals.failed)));
-    }
-    if totals.skipped > 0 {
-        parts.push(format!("{} skipped", totals.skipped));
-    }
-    println!(
-        "\nimp test: {} {}",
-        parts.join(", "),
-        dim(format!("(1 file, {}ms)", started.elapsed().as_millis()))
-    );
+            app: &app,
+        };
+        run_file(&suite, file, &emit, started, || Ok(level))
+    } else {
+        let mut browser = None;
+        run_file(&suite, file, &emit, started, || {
+            Ok(Level::Unit(ready_browser(&mut browser, &browser_path)?))
+        })
+    };
     Ok(if totals.failed > 0 { 1 } else { 0 })
 }
 

@@ -1,10 +1,13 @@
 use crate::cache_dir::imp_cache_directory;
+use crate::cdp::Cdp;
 use crate::http_client::{get, sha256_hex};
 use crate::logger;
 use anyhow::{Result, anyhow, bail};
+use serde_json::json;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
@@ -232,6 +235,9 @@ pub fn resolve_browser(configured: Option<&str>) -> Result<PathBuf> {
     download_browser()
 }
 
+const WINDOW_WIDTH: u32 = 800;
+const WINDOW_HEIGHT: u32 = 600;
+
 pub struct Chrome {
     child: Child,
     profile: PathBuf,
@@ -253,10 +259,12 @@ fn running_as_root() -> bool {
 
 impl Chrome {
     pub fn launch(executable: &Path, url: &str) -> Result<Chrome> {
+        static LAUNCHES: AtomicUsize = AtomicUsize::new(0);
         let profile = std::env::temp_dir().join(format!(
-            "imp-chrome-{}-{}",
+            "imp-chrome-{}-{}-{}",
             std::process::id(),
-            crate::time::now_millis()
+            crate::time::now_millis(),
+            LAUNCHES.fetch_add(1, Ordering::Relaxed)
         ));
         std::fs::create_dir_all(&profile)?;
         let mut command = Command::new(executable);
@@ -284,10 +292,10 @@ impl Chrome {
             "--use-mock-keychain",
             "--mute-audio",
             "--hide-scrollbars",
-            "--window-size=800,600",
             "--remote-debugging-port=0",
             "--remote-allow-origins=*",
         ]);
+        command.arg(format!("--window-size={WINDOW_WIDTH},{WINDOW_HEIGHT}"));
         if running_as_root() {
             command.arg("--no-sandbox");
         }
@@ -350,5 +358,122 @@ impl Drop for Chrome {
             }
             std::thread::sleep(Duration::from_millis(100));
         }
+    }
+}
+
+pub trait RunnerPage {
+    fn failure(&mut self) -> Option<&'static str>;
+}
+
+const BROWSER_EXITED: &str = "the browser exited before the tests finished";
+const PAGE_CRASHED: &str = "the page crashed before the tests finished";
+const DEVTOOLS_TIMEOUT: Duration = Duration::from_secs(30);
+
+impl RunnerPage for Chrome {
+    fn failure(&mut self) -> Option<&'static str> {
+        self.exited().then_some(BROWSER_EXITED)
+    }
+}
+
+pub struct UnitBrowser {
+    chrome: Mutex<Chrome>,
+    cdp: Cdp,
+}
+
+pub struct IsolatedPage<'a> {
+    browser: &'a UnitBrowser,
+    context: String,
+    target: String,
+}
+
+fn text_field(value: &serde_json::Value, key: &str) -> Result<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+        .ok_or_else(|| anyhow!("the browser answered without {key}"))
+}
+
+impl UnitBrowser {
+    pub fn launch(executable: &Path) -> Result<UnitBrowser> {
+        let chrome = Chrome::launch(executable, "about:blank")?;
+        let endpoint = chrome
+            .endpoint(DEVTOOLS_TIMEOUT)
+            .ok_or_else(|| anyhow!("the browser did not open its DevTools port"))?;
+        Ok(UnitBrowser {
+            cdp: Cdp::connect(&endpoint)?,
+            chrome: Mutex::new(chrome),
+        })
+    }
+
+    pub fn alive(&self) -> bool {
+        !self.chrome.lock().unwrap().exited()
+    }
+
+    pub fn open(&self, url: &str) -> Result<IsolatedPage<'_>> {
+        let created = self
+            .cdp
+            .call(None, "Target.createBrowserContext", json!({}))?;
+        let mut page = IsolatedPage {
+            browser: self,
+            context: text_field(&created, "browserContextId")?,
+            target: String::new(),
+        };
+        let created = self.cdp.call(
+            None,
+            "Target.createTarget",
+            json!({
+                "url": "about:blank",
+                "browserContextId": page.context,
+                "newWindow": true,
+                "width": WINDOW_WIDTH,
+                "height": WINDOW_HEIGHT,
+            }),
+        )?;
+        page.target = text_field(&created, "targetId")?;
+        let attached = self.cdp.call(
+            None,
+            "Target.attachToTarget",
+            json!({ "targetId": page.target, "flatten": true }),
+        )?;
+        let session = text_field(&attached, "sessionId")?;
+        self.cdp.call(
+            Some(&session),
+            "Emulation.setFocusEmulationEnabled",
+            json!({ "enabled": true }),
+        )?;
+        self.cdp.call(
+            Some(&session),
+            "Emulation.setEmulatedMedia",
+            json!({ "features": [{ "name": "prefers-reduced-motion", "value": "no-preference" }] }),
+        )?;
+        self.cdp.call(
+            Some(&session),
+            "Runtime.evaluate",
+            json!({ "expression": format!("location.replace({})", json!(url)) }),
+        )?;
+        Ok(page)
+    }
+}
+
+impl RunnerPage for IsolatedPage<'_> {
+    fn failure(&mut self) -> Option<&'static str> {
+        if !self.browser.alive() {
+            return Some(BROWSER_EXITED);
+        }
+        self.browser
+            .cdp
+            .crashed(&self.target)
+            .then_some(PAGE_CRASHED)
+    }
+}
+
+impl Drop for IsolatedPage<'_> {
+    fn drop(&mut self) {
+        let _ = self.browser.cdp.call(
+            None,
+            "Target.disposeBrowserContext",
+            json!({ "browserContextId": self.context }),
+        );
     }
 }

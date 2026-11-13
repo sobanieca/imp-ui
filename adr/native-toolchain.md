@@ -53,6 +53,7 @@ and imp never starts a subprocess for its own toolchain.
 - A rule of the recommended set exists only when imp implements it. A user cannot load a lint plugin
   of their own.
 - `imp test` keeps two approved exceptions about a subprocess, see `two-level-testing.md`: the
-  browser, which is the system under test, and the fan-out of a level over copies of imp itself.
+  browser, which is the system under test, and the fan-out of the e2e level over copies of imp
+  itself.
 - In this repository, `cargo imp <args>` builds the binary and runs it. There is no second code path
   that could differ from the binary that users get.

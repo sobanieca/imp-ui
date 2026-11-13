@@ -1,7 +1,7 @@
 # testing - unit tests in a blank page, e2e specs against the served app, both in Chrome
 
 There are two levels, one command and one import. The runner and the assertions are part of the
-binary. Every file runs in its own headless Chrome.
+binary. Every file runs in a headless Chrome.
 
 - **`*.test.js`** holds a unit test or an integration test. It runs in a blank page of a real
   headless Chrome, with no server.
@@ -12,7 +12,7 @@ binary. Every file runs in its own headless Chrome.
 
 ```
 imp test <file>              run one file (exit 0/1)
-imp test --unit | --e2e      run every file of that level, one process each, in parallel
+imp test --unit | --e2e      run every file of that level in parallel, each in isolation
 imp test --unit --jobs 4     cap concurrency (default: CPU count)
 imp test --e2e --filter x    only tests whose name contains x
 imp test --unit --list       print the selected files as JSON (for a CI matrix)
@@ -20,8 +20,9 @@ imp test --e2e --video vid   record each spec as an animated GIF into ./vid
 imp test --e2e --mock        answer the app's requests from the *.mock.js files (--no-mock forces real)
 ```
 
-There is no watch mode. Run the tests when a piece of work is done. One test file per process and per
-browser is the unit of isolation. A bare `imp test` with several candidate files runs nothing and exits with a
+There is no watch mode. Run the tests when a piece of work is done. One test file is the unit of
+isolation: a unit file gets a page and a browser context of its own, a spec gets a server and a
+browser of its own. A bare `imp test` with several candidate files runs nothing and exits with a
 non-zero code. Always name a level or a file.
 
 **Do not write tests in the first phase of a new app, unless the person asks for them.** In that
@@ -134,7 +135,8 @@ attempts. See [http](http.md).
 
 ## Unit tests
 
-Each file gets a fresh page in its own browser. `document`, `window`, the elements, the events and
+Each file gets a fresh page in a browser context of its own, so storage and cookies start empty.
+`document`, `window`, the elements, the events and
 `localStorage` are the real globals. Tests in one file share the page, so reset it in `beforeEach`.
 
 Rules an agent gets wrong in a real page:

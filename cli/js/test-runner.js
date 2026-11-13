@@ -222,33 +222,16 @@ async function connectBrowser(defaultViewport) {
   return puppeteer.connect({ browserWSEndpoint, defaultViewport })
 }
 
-async function prepareRunnerPage(browser) {
-  const pages = await browser.pages()
-  const own = pages.find((page) => page.url() === location.href)
-  if (!own) return
-  const session = await own.createCDPSession()
-  await session.send('Emulation.setFocusEmulationEnabled', { enabled: true })
-  await session.send('Emulation.setEmulatedMedia', {
-    features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }],
-  })
-}
-
 async function runUnit() {
   keepRunnerPage()
-  const browser = await connectBrowser(null)
-  try {
-    await prepareRunnerPage(browser)
-    const registry = freshRegistry()
-    await importTests()
-    return await runRegistry(registry, {
-      context: {},
-      defaultTimeout: run.unitTimeout,
-      filter: run.filter,
-      environment: 'unit',
-    })
-  } finally {
-    await browser.disconnect().catch(() => {})
-  }
+  const registry = freshRegistry()
+  await importTests()
+  return runRegistry(registry, {
+    context: {},
+    defaultTimeout: run.unitTimeout,
+    filter: run.filter,
+    environment: 'unit',
+  })
 }
 
 async function startScreencast(page, options) {

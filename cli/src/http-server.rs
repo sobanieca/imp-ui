@@ -1,6 +1,7 @@
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 pub struct Request {
@@ -286,8 +287,38 @@ pub fn serve(listener: TcpListener, handler: Handler) {
     }
 }
 
-pub fn spawn(listener: TcpListener, handler: Handler) {
-    std::thread::spawn(move || serve(listener, handler));
+#[must_use]
+pub struct Server {
+    address: Option<SocketAddr>,
+    stopped: Arc<AtomicBool>,
+}
+
+impl Drop for Server {
+    fn drop(&mut self) {
+        self.stopped.store(true, Ordering::Relaxed);
+        if let Some(address) = self.address {
+            let _ = TcpStream::connect(address);
+        }
+    }
+}
+
+pub fn spawn(listener: TcpListener, handler: Handler) -> Server {
+    let stopped = Arc::new(AtomicBool::new(false));
+    let server = Server {
+        address: listener.local_addr().ok(),
+        stopped: stopped.clone(),
+    };
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            if stopped.load(Ordering::Relaxed) {
+                return;
+            }
+            let Ok(stream) = stream else { continue };
+            let handler = handler.clone();
+            std::thread::spawn(move || handle_connection(stream, handler));
+        }
+    });
+    server
 }
 
 pub fn content_type(path: &str) -> &'static str {

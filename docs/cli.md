@@ -79,8 +79,8 @@ imp audit [--sbom] [--output <file>]  check the vendored packages for known vuln
                                       (--sbom: write a CycloneDX bill of materials)
 imp test  <file>                      run one test file in headless Chrome: *.test.js
                                       unit in a blank page, *.spec.js e2e against the app
-imp test  --unit | --e2e              run every file of that level, each in its own
-                                      process, in parallel (--jobs <n> caps concurrency |
+imp test  --unit | --e2e              run every file of that level in parallel, each in
+                                      isolation (--jobs <n> caps concurrency |
                                       --screenshots <dir> | --video <dir>)
 imp resize <image> [-w <px>] [-h <px>]   shrink an oversized PNG/JPEG asset in place,
            [--output <path>]          keeping aspect ratio unless --stretch is given
@@ -1253,12 +1253,14 @@ and the network activity of the browser stream to the terminal. You write a test
 `expect` from `imp/test`. The runner and the assertions are part of the binary, so there is nothing
 to install.
 
-imp runs **one test file per process and per browser**. That is the unit of isolation, so no two
-files share the globals, the timers, the server or the browser of a process. `imp test <file>` runs exactly that one
-file, and exits with its result. To run a whole level, name it. `imp test --unit` covers every
-`*.test.js` file, and `imp test --e2e` covers every `*.spec.js` file. Each command discovers its
-files, and runs each one in its own process, in parallel. `--jobs <n>` caps the number, and the
-default is your CPU count. imp summarizes a passing file in one line. A failing file prints its full
+imp isolates **each test file**. A unit file runs in a page of its own, in a browser context of its
+own. A spec file runs with a server and a browser of its own. So no two files share the globals, the
+timers, the storage or the server.
+
+`imp test <file>` runs exactly that one file, and exits with its result. To run a whole level, name
+it. `imp test --unit` covers every `*.test.js` file, and `imp test --e2e` covers every `*.spec.js`
+file. Each command discovers its files, and runs them in parallel. `--jobs <n>` caps the number, and
+the default is your CPU count. imp summarizes a passing file in one line. A failing file prints its full
 output. The run exits `1` when a file failed. A bare `imp test` with more than one candidate file
 does not guess. It asks you to select `--unit`, `--e2e` or a single file. It runs nothing, and exits
 with a non-zero code, so a stray `imp test` fails CI instead of passing green. To spread the files

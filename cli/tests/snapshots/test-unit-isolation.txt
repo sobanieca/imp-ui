@@ -1,0 +1,13 @@
+$ imp test --unit --jobs 1  (cwd: tests/fixtures/test-isolation)
+exit code: 0
+
+--- stdout ---
+imp test: running 2 files in parallel
+
+✓ first.test.js
+✓ second.test.js
+
+imp test: 2 passed (2 files, *ms)
+
+--- stderr ---
+(empty)
