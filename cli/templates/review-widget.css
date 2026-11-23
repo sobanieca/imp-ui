@@ -62,6 +62,7 @@
   }
 
   .toggle {
+    position: relative;
     display: block;
     inline-size: 40px;
     block-size: 40px;
@@ -83,6 +84,34 @@
     inline-size: 100%;
     block-size: 100%;
     pointer-events: none;
+  }
+
+  .toggle .ring {
+    position: absolute;
+    inset: 0;
+    rotate: -90deg;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    opacity: 0;
+    transition: stroke-dashoffset 160ms ease-out, opacity 160ms ease-out;
+  }
+
+  .toggle.holding .ring {
+    opacity: 1;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset var(--hold-duration) linear;
+  }
+
+  .hint-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .toggle.dragging {
@@ -149,6 +178,10 @@
     border-radius: var(--radius);
     background: var(--surface);
     box-shadow: var(--shadow);
+  }
+
+  .panel:has([data-view='log']:not([hidden])) {
+    inline-size: 600px;
   }
 
   .view {
@@ -232,7 +265,7 @@
   .lines {
     margin: 0;
     padding: 8px;
-    max-block-size: min(240px, 40dvb);
+    max-block-size: min(320px, 45dvb);
     overflow: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius-item);
@@ -263,8 +296,11 @@
 
   .entry .level {
     flex: none;
-    min-inline-size: 3.5em;
+    inline-size: 6ch;
+    overflow: hidden;
     color: var(--muted);
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .entry .text {
@@ -387,5 +423,9 @@
   @media (prefers-reduced-motion: reduce) {
     .action {
       transition: none;
+    }
+
+    .toggle.holding .ring {
+      transition-timing-function: steps(5, jump-start);
     }
   }

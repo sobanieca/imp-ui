@@ -9,6 +9,7 @@ export const reviewWidget = ({
   reportModule,
   themeEditorModule,
   telemetryEntries,
+  closeHoldMs,
   previewFrameNamePrefix,
 }) => {
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
@@ -16,6 +17,8 @@ export const reviewWidget = ({
   if (globalThis.name.startsWith(previewFrameNamePrefix)) return
 
   const DRAG_THRESHOLD = 4
+
+  const HOLD_KEYS = new Set(['Enter', ' '])
 
   let modals = []
 
@@ -39,6 +42,7 @@ export const reviewWidget = ({
   const host = document.createElement('imp-review-widget')
   host.id = 'imp-review'
   host.setAttribute('dir', 'ltr')
+  host.style.setProperty('--hold-duration', `${closeHoldMs}ms`)
   const shadow = host.attachShadow({ mode: 'open' })
   shadow.innerHTML = html
 
@@ -49,6 +53,7 @@ export const reviewWidget = ({
   const actions = find('.actions')
   const toggle = find('.toggle')
   const status = find('.status')
+  const closeHint = find('#imp-review-close-hint')
   const comment = find('textarea')
   const saveButton = find('[data-action="save"]')
   const logTitle = find('[data-log-title]')
@@ -129,6 +134,9 @@ export const reviewWidget = ({
     if (open) orient()
     actions.hidden = !open
     toggle.setAttribute('aria-expanded', String(open))
+    toggle.title = open ? closeHint.textContent : ''
+    if (open) toggle.setAttribute('aria-describedby', closeHint.id)
+    else toggle.removeAttribute('aria-describedby')
   }
 
   const highlight = (placeOverElement) => (node) => {
@@ -237,13 +245,13 @@ export const reviewWidget = ({
     if (entry.type === 'page') {
       return { level: 'uncaught', text: entry.text, tone: 'error', group: 'Error' }
     }
-    const result = entry.error ?? String(entry.status)
     const failed = entry.error !== undefined || entry.status >= 400
     const from = entry.mock ? ` (mock: ${entry.mock})` : ''
     const what = entry.destination ? ` (${entry.destination})` : ''
+    const request = `${entry.method} ${entry.url} ${entry.ms}ms${what}${from}`
     return {
-      level: result,
-      text: `${entry.method} ${entry.url} ${entry.ms}ms${what}${from}`,
+      level: entry.error === undefined ? String(entry.status) : 'error',
+      text: entry.error === undefined ? request : `${request}\n${entry.error}`,
       tone: failed ? 'failed' : 'ok',
       group: failed ? 'Failed' : 'OK',
       kind: entry.kind === 'resource' ? 'Resource' : 'Fetch',
@@ -386,6 +394,34 @@ export const reviewWidget = ({
 
   let drag = null
   let dragged = false
+  let holdTimer = 0
+  let pressing = false
+  let swallowClick = false
+
+  const cancelHold = () => {
+    clearTimeout(holdTimer)
+    holdTimer = 0
+    toggle.classList.remove('holding')
+  }
+
+  const closeByHold = () => {
+    cancelHold()
+    swallowClick = true
+    collapse()
+  }
+
+  const startPress = () => {
+    pressing = true
+    swallowClick = false
+    if (actions.hidden || holdTimer) return
+    toggle.classList.add('holding')
+    holdTimer = setTimeout(closeByHold, closeHoldMs)
+  }
+
+  const endPress = () => {
+    pressing = false
+    cancelHold()
+  }
 
   toggle.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return
@@ -393,6 +429,7 @@ export const reviewWidget = ({
     drag = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top }
     dragged = false
     toggle.setPointerCapture(event.pointerId)
+    startPress()
   })
 
   toggle.addEventListener('pointermove', (event) => {
@@ -402,6 +439,7 @@ export const reviewWidget = ({
     if (!dragged && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
     if (!dragged) {
       dragged = true
+      cancelHold()
       toggle.classList.add('dragging')
       collapse()
     }
@@ -409,6 +447,7 @@ export const reviewWidget = ({
   })
 
   const endDrag = () => {
+    endPress()
     if (!drag) return
     drag = null
     toggle.classList.remove('dragging')
@@ -418,13 +457,30 @@ export const reviewWidget = ({
   toggle.addEventListener('pointerup', endDrag)
   toggle.addEventListener('pointercancel', endDrag)
 
+  toggle.addEventListener('keydown', (event) => {
+    if (HOLD_KEYS.has(event.key) && !event.repeat) startPress()
+  })
+
+  toggle.addEventListener('keyup', (event) => {
+    if (HOLD_KEYS.has(event.key)) endPress()
+  })
+
+  toggle.addEventListener('blur', endPress)
+
+  toggle.addEventListener('contextmenu', (event) => {
+    if (holdTimer) event.preventDefault()
+  })
+
   toggle.addEventListener('click', () => {
     if (dragged) {
       dragged = false
       return
     }
+    if (swallowClick) {
+      if (!pressing) swallowClick = false
+      return
+    }
     if (actions.hidden) expand(true)
-    else collapse()
   })
 
   actions.addEventListener('click', (event) => {
@@ -468,6 +524,7 @@ export const reviewWidget = ({
     'keydown',
     (event) => {
       if (event.key !== 'Escape' || actions.hidden || stopPicking) return
+      if (!event.composedPath().includes(host)) return
       collapse()
     },
     true,

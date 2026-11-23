@@ -502,6 +502,11 @@ place across reloads. Click it, and four round buttons appear: **Add review**, *
 that your app applied, so the widget is light on a light theme and dark on a dark one. A page with
 no theme gets a dark widget.
 
+To close the widget, press and hold the mark for five seconds. A ring fills around the mark while
+you hold it. Release it early, and the widget stays open. So a stray click on the mark does not
+close the tools that you work in. `Escape` closes the widget too, but only when the focus is in the
+widget. An `Escape` that closes a dialog of your app leaves the widget open.
+
 The widget stays on top and usable while a modal dialog is open, such as the navigation drawer of
 the shell on a phone or a confirm dialog of your app. A modal dialog covers the page and blocks every
 click outside itself, so the widget moves into the dialog while it is open, at the same place on
@@ -517,8 +522,10 @@ when you prefer the keyboard to the mouse.
 
 **Console logs** and **Network logs** show what the page sent to your terminal since it loaded: what
 it logged, what failed, and each request with its status and its time. A new line appears as it
-happens, so press a button in the app and watch what it logged. Each line is one row, cut with an
-ellipsis. Click a row to read all of it. The console view filters by level. The network view filters
+happens, so press a button in the app and watch what it logged. The panel is wider while a log view
+is open. Each line is one row, cut with an ellipsis. Click a row to read all of it. A failed request
+shows `error` in the status column and the message of the error on the next line. A logged error
+shows its name, its message, its stack and its cause. The console view filters by level. The network view filters
 by kind and by outcome. It starts on **Fetch**, a request that your code made with `fetch` or
 `XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
 font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and

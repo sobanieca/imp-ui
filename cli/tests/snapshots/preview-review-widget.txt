@@ -22,6 +22,10 @@ clear button: Clear console logs (disabled false)
 after clear: Cleared. The next line appears as it happens., console entries left in the page: 0, button disabled: true, network entries untouched: true
 lines after clear: after clear, button enabled again: true
 network view: log, filters: [Fetch], Resource, Any / [All], OK, Failed
+open after a click on the mark: true, ring while held: true, open after a short hold: true
+open after Escape outside the widget: true
+mark title while open: Press and hold to close imp tools
+open after a long hold and its click: false, open after the next click: true
 moved by a drag: 320,220, collapsed: true
 position remembered: true
 widget in an open modal: drawer, on top: true

@@ -24,6 +24,7 @@ The call shape is `button(props?, ...children)`. When a props object is present,
 | `popoverTarget` | an element with a `popover` attribute                     | -           | The button invokes that popover, as `popovertarget` does  |
 | `popoverAction` | `'toggle'`, `'show'`, `'hide'`                            | `'toggle'`  | What a click does to `popoverTarget`                      |
 | `submit`        | boolean                                                   | -           | Submits the form around it, and spins while it submits    |
+| `hold`          | `true` (5000 ms), or a number of milliseconds             | -           | A click fires only after a press held for that time       |
 | `events`        | event map, e.g. `{ click: handler }`                      | -           | Handlers, exactly as on any element                       |
 
 Rules an agent gets wrong:
@@ -60,6 +61,14 @@ Rules an agent gets wrong:
 - **A read-only `pressed` state, such as a `computed`, is never flipped by a click.** The button
   only shows the state. Set the source state in the `click` handler. Use this for a pick of one in a
   group: `pressed: computed([picked], (id) => id === 'a')`. Give an icon-only toggle a `label`.
+- **`hold` guards a destructive action.** The `click` handler runs only after the person holds the
+  pointer, `Enter` or `Space` on the button for the whole time. A fill sweeps across the button
+  while they hold. A release, a pointer that leaves, or a blur cancels the hold. A plain click does
+  nothing. `pressed` and `submit` wait for the hold too. Use it instead of a confirm dialog for a
+  quick, sensitive action: `button({ variant: 'danger', hold: true, events: { click: remove } })`.
+- **A `hold` button describes itself.** It takes `aria-describedby` with the words of
+  `imp.button.hold`, "Press and hold to confirm". Override the words in your translations. Do not
+  put the instruction in the label.
 - **`variant: 'link'` is a button that looks like a link.** Use it for an action inside running
   text. For a place that a person can go to, use link (imp skill std/link), which needs an `href`.
 - **There is no menu.** A button that opens a menu is menuButton (imp skill std/menuButton). A
@@ -81,6 +90,7 @@ const sending = initState(self, 'contact.sending', false)
 
 button({ variant: 'primary', loading: sending, events: { click: send } }, 'Send')
 button({ variant: 'danger', size: 'sm', events: { click: remove } }, 'Delete')
+button({ variant: 'danger', hold: 2000, events: { click: removeAccount } }, 'Delete account')
 button({ block: true, events: { click: next } }, 'Continue')
 button({ variant: 'link', events: { click: showDetails } }, 'What is this?')
 button({ variant: 'ghost', size: 'sm' }, icon(luCode, { size: 'sm' }), 'Code example')

@@ -221,6 +221,19 @@ fn the_review_widget_picks_an_element_in_the_preview_page() {
         ),
         format!("lines after clear: {}, button enabled again: {}", field("linesAfterClear"), field("clearEnabledAgain")),
         format!("network view: {}, filters: {}", field("networkView"), field("networkChips")),
+        format!(
+            "open after a click on the mark: {}, ring while held: {}, open after a short hold: {}",
+            field("openAfterClick"),
+            field("ringWhileHeld"),
+            field("openAfterShortHold")
+        ),
+        format!("open after Escape outside the widget: {}", field("openAfterOutsideEscape")),
+        format!("mark title while open: {}", field("toggleHint")),
+        format!(
+            "open after a long hold and its click: {}, open after the next click: {}",
+            field("openAfterLongHold"),
+            field("openAgain")
+        ),
         format!("moved by a drag: {}, collapsed: {}", field("moved"), field("collapsedByDrag")),
         format!("position remembered: {}", !flow["remembered"].is_null()),
         format!("widget in an open modal: {}", field("inModal")),

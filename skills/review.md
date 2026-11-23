@@ -11,7 +11,8 @@ already told imp the page, the element and the state of the app. The command pri
 it first, then act on it.
 
 The dev server puts a **review widget** on every page that it serves. It is the imp mark in the
-corner, and the person can drag it anywhere. The person presses the mark, presses **Add review**,
+corner, and the person can drag it anywhere. A click on the mark opens the widget. A hold of five
+seconds on the mark closes it. The person presses the mark, presses **Add review**,
 clicks an element and types a comment. imp writes the result to `.imp/reviews/`. This is the inbound
 half of the development loop. [start](start.md) is the outbound half, through `imp logs`. The mark
 also opens **Console logs** and **Network logs**, which show the person the same entries in the

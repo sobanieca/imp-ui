@@ -136,6 +136,28 @@ test('the review widget picks an element in the preview page', async ({ page: ho
           ).join(', ')
       ).join(' / ')
     const toggle = shadow.querySelector('.toggle')
+    const open = () => !shadow.querySelector('.actions').hidden
+    const press = (type) =>
+      toggle.dispatchEvent(new PointerEvent(type, { button: 0, pointerId: 1, bubbles: true }))
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+    toggle.click()
+    steps.openAfterClick = open()
+    press('pointerdown')
+    steps.ringWhileHeld = toggle.classList.contains('holding')
+    await wait(300)
+    press('pointerup')
+    toggle.click()
+    steps.openAfterShortHold = open() && !toggle.classList.contains('holding')
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    steps.openAfterOutsideEscape = open()
+    steps.toggleHint = toggle.title
+    press('pointerdown')
+    await waitFor('the hold to close the widget', () => !open())
+    press('pointerup')
+    toggle.click()
+    steps.openAfterLongHold = open()
+    toggle.click()
+    steps.openAgain = open()
     const pointer = (type, x, y) =>
       toggle.dispatchEvent(
         new PointerEvent(type, {

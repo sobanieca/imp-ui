@@ -59,10 +59,23 @@ export const devClient = ({
     },
   }
 
+  const isErrorLike = (v) =>
+    v instanceof Error || (typeof v?.message === 'string' && typeof v?.stack === 'string')
+
+  const describeError = (error) => {
+    const head = String(error)
+    const stack = error.stack ?? ''
+    const full = stack.startsWith(head) ? stack : [head, stack].filter(Boolean).join('\n')
+    return error.cause === undefined ? full : `${full}\nCaused by: ${safe(error.cause)}`
+  }
+
+  const errorFields = (key, value) =>
+    isErrorLike(value) ? { name: value.name, message: value.message } : value
+
   const safe = (v) => {
     try {
-      if (v instanceof Error) return v.stack || String(v)
-      if (typeof v === 'object') return JSON.stringify(v)
+      if (isErrorLike(v)) return describeError(v)
+      if (typeof v === 'object' && v !== null) return JSON.stringify(v, errorFields) ?? String(v)
       return String(v)
     } catch {
       return String(v)
@@ -105,7 +118,11 @@ export const devClient = ({
   }
 
   addEventListener('error', (e) => {
-    push({ type: 'page', text: `${e.message || 'error'} @ ${e.filename || '?'}:${e.lineno || 0}` })
+    const where = `@ ${e.filename || '?'}:${e.lineno || 0}`
+    const text = isErrorLike(e.error)
+      ? `${safe(e.error)}\n${where}`
+      : `${e.message || 'error'} ${where}`
+    push({ type: 'page', text })
   })
   addEventListener('unhandledrejection', (e) => {
     push({ type: 'page', text: `Unhandled rejection: ${safe(e.reason)}` })

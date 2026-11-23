@@ -15,6 +15,8 @@ const MAX_COMMENT: usize = 20000;
 pub const REPORT_MODULE: &str = "/@imp/report.js";
 pub const THEME_EDITOR_MODULE: &str = "/@imp/theme-editor.js";
 const WIDGET_SIZE: u32 = 40;
+
+const WIDGET_CLOSE_HOLD_MS: u32 = 5000;
 const WIDGET_MARGIN: u32 = 16;
 const WIDGET_POSITION_KEY: &str = "imp-review-position";
 
@@ -493,6 +495,7 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
             "reportModule": REPORT_MODULE,
             "themeEditorModule": THEME_EDITOR_MODULE,
             "telemetryEntries": TELEMETRY_ENTRIES,
+            "closeHoldMs": WIDGET_CLOSE_HOLD_MS,
             "previewFrameNamePrefix": crate::preview::PREVIEW_FRAME_NAME_PREFIX,
         }),
     )
