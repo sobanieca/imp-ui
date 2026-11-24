@@ -206,7 +206,12 @@
     gap: 8px;
   }
 
-  .clear {
+  .tools {
+    display: flex;
+    gap: 6px;
+  }
+
+  .tool {
     display: grid;
     place-items: center;
     inline-size: 28px;
@@ -219,9 +224,17 @@
     transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
 
-  .clear svg {
+  .tool svg {
     inline-size: 15px;
     block-size: 15px;
+  }
+
+  .tool span {
+    display: grid;
+  }
+
+  .tool:disabled {
+    opacity: 0.45;
   }
 
   .clear:not(:disabled):hover {
@@ -230,8 +243,24 @@
     color: var(--danger);
   }
 
-  .clear:disabled {
-    opacity: 0.45;
+  .copy:not(:disabled):hover {
+    border-color: var(--accent);
+    background: var(--hover);
+    color: var(--accent);
+  }
+
+  .copy .done,
+  .copy[data-copied] .idle {
+    display: none;
+  }
+
+  .copy[data-copied] .done {
+    display: grid;
+  }
+
+  .copy[data-copied] {
+    border-color: var(--success);
+    color: var(--success);
   }
 
   .hint,

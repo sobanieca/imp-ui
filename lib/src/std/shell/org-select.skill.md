@@ -17,19 +17,19 @@ orgSelect({ orgs, selected, onCreateClick: () => navigate(app.newOrg.href()) })
 
 The call shape is `orgSelect(props)`. It takes no content, and it renders one `menuButton`. The
 trigger shows the avatar and the name of the current organization. The menu lists every organization
-with a check mark on the current one. With `onCreateClick` a second, triple-dot `menuButton` sits
-beside the trigger, with one item: "Create organization".
+with a check mark on the current one. With `onCreateClick` the menu opens with "Create
+organization" above the organizations, an item that runs only after a held press.
 
-| Prop            | Values                                                                 | Default                          | Notes                                                |
-| --------------- | ---------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------- |
-| `orgs`          | array of `{ id, name, description?, picture? }`, or a state - **live** | `[]`                             | The organizations the person belongs to              |
-| `selected`      | an `id`, or a **writable** state - **live**                            | the first org                    | The current organization                             |
-| `label`         | string, or a state - **live**                                          | "Organization: {org}", via `t()` | The accessible name of the trigger                   |
-| `variant`       | as on `button`                                                         | `'ghost'`                        | The look of the trigger                              |
-| `size`          | `'sm'`, `'md'`, `'lg'`                                                 | `'md'`                           | The size of the trigger                              |
-| `compact`       | boolean                                                                | `false`                          | Avatar only on the trigger; the name stays for AT    |
-| `onCreateClick` | `() => void`                                                           | -                                | Shows the triple-dot menu with "Create organization" |
-| `events`        | `{ select }`                                                           | -                                | `detail: { id, org }`, cancelable, before the write  |
+| Prop            | Values                                                                 | Default                          | Notes                                               |
+| --------------- | ---------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------- |
+| `orgs`          | array of `{ id, name, description?, picture? }`, or a state - **live** | `[]`                             | The organizations the person belongs to             |
+| `selected`      | an `id`, or a **writable** state - **live**                            | the first org                    | The current organization                            |
+| `label`         | string, or a state - **live**                                          | "Organization: {org}", via `t()` | The accessible name of the trigger                  |
+| `variant`       | as on `button`                                                         | `'ghost'`                        | The look of the trigger                             |
+| `size`          | `'sm'`, `'md'`, `'lg'`                                                 | `'md'`                           | The size of the trigger                             |
+| `compact`       | boolean                                                                | `false`                          | Avatar only on the trigger; the name stays for AT   |
+| `onCreateClick` | `() => void`                                                           | -                                | Puts a held "Create organization" first in the menu |
+| `events`        | `{ select }`                                                           | -                                | `detail: { id, org }`, cancelable, before the write |
 
 Rules an agent gets wrong:
 
@@ -42,12 +42,14 @@ Rules an agent gets wrong:
 - **Pass a writable state as `selected` when the app must move it.** imp writes the chosen `id` back
   into it, after a `select` that nothing cancelled. A `computed` is read-only, and imp warns when it
   cannot write. A plain `id` is the start value, and the component then owns the choice.
-- **The create action is never in the list of organizations.** It sits behind its own triple-dot
-  menu beside the trigger, named "Organization actions", so a person who switches organizations
-  never creates one by a slip. It takes the `variant` and `size` of the trigger. What it does is
-  yours: `onCreateClick` opens a page or a dialog. Without it there is no create menu. It shows
-  also when `orgs` is empty, so a person in no organization can create the first one.
-- **The words are `imp.org.actions` and `imp.org.create`.** An app that calls its tenants "teams"
+- **The create action is the first item of the menu, and it is held.** "Create organization" sits
+  above the organizations, where a person finds it, and it runs only after they hold the pointer,
+  `Enter` or `Space` on it for 1.5 seconds, the time of `hold: true`, while a fill sweeps across it. A plain click does
+  nothing, so a person who switches organizations never creates one by a slip. What it does is
+  yours: `onCreateClick` opens a page or a dialog. Without it there is no create item. When `orgs`
+  is empty, a triple-dot menu named "Organization actions" holds the item alone, so a person in no
+  organization can create the first one.
+- **The words are `imp.org.create` and `imp.org.actions`.** An app that calls its tenants "teams"
   or "workspaces" overrides them, with `imp.org.current`, in its translations. See i18n (imp skill
   i18n).
 - **`select` is cancelable.** A `preventDefault()` in the handler keeps the current organization.

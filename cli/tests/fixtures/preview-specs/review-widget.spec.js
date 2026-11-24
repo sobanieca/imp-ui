@@ -99,6 +99,17 @@ test('the review widget picks an element in the preview page', async ({ page: ho
     steps.filtered = [...shadow.querySelectorAll('.entry .text')]
       .map((text) => text.textContent).join(' | ')
     steps.pressedChip = chip('Error').getAttribute('aria-pressed')
+    const copyButton = shadow.querySelector('[data-action="copy"]')
+    let copied = null
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (text) => { copied = text } },
+    })
+    steps.copyLabel = `${copyButton.getAttribute('aria-label')} (disabled ${copyButton.disabled})`
+    copyButton.click()
+    await waitFor('the copied lines', () => copied !== null)
+    steps.copied = copied
+    steps.copiedLabel = `${copyButton.getAttribute('aria-label')} (marked ${copyButton.hasAttribute('data-copied')})`
     chip('Info').click()
     steps.noMatch = shadow.querySelector('.lines').textContent.trim()
     chip('All').click()

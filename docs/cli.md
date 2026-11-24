@@ -530,7 +530,9 @@ by kind and by outcome. It starts on **Fetch**, a request that your code made wi
 `XMLHttpRequest`. **Resource** is what the browser fetched on its own: a script, a style sheet, a
 font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and
 the level or the status of a row carries the same colour. The page keeps the last 2000 entries, and
-a reload starts the list again. The bin button beside the title empties the view, so the next line
+a reload starts the list again. The copy button beside the title copies every line the view shows, with
+its filters, one line per entry, ready to paste into an issue or a chat with an agent. The bin
+button beside it empties the view, so the next line
 stands alone. It clears the page only. The terminal and `imp logs` keep the whole session. The views
 give a glance, not a debugger. For a stack trace, a request body or a timing chart, open the
 developer tools of the browser.

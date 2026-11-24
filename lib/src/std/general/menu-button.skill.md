@@ -12,15 +12,15 @@ flex({ joined: true }, button({ variant: 'primary' }, 'Save'), menuButton({ item
 The call shape is `menuButton(props?, ...children)`. The children are the text of the trigger. With
 no children the trigger is a square icon: a triple-dot, or a chevron with `trigger: 'arrow'`.
 
-| Prop       | Values                                                          | Default     | Notes                                   |
-| ---------- | --------------------------------------------------------------- | ----------- | --------------------------------------- |
-| `items`    | array of `{ id?, label, icon?, onClick?, disabled?, checked? }` | -           | The options of the menu                 |
-| `trigger`  | `'more'`, `'arrow'`                                             | `'more'`    | Triple-dot or chevron                   |
-| `variant`  | as on button                                                    | `'default'` | The look of the trigger                 |
-| `size`     | as on button                                                    | `'md'`      | The size of the trigger                 |
-| `disabled` | boolean, or a state - **live**                                  | `false`     | Disables the trigger and shuts the menu |
-| `label`    | string, or a state - **live**                                   | -           | Replaces the name of the trigger        |
-| `events`   | event map                                                       | -           | Handlers on the host, such as `select`  |
+| Prop       | Values                                                                 | Default     | Notes                                   |
+| ---------- | ---------------------------------------------------------------------- | ----------- | --------------------------------------- |
+| `items`    | array of `{ id?, label, icon?, onClick?, disabled?, checked?, hold? }` | -           | The options of the menu                 |
+| `trigger`  | `'more'`, `'arrow'`                                                    | `'more'`    | Triple-dot or chevron                   |
+| `variant`  | as on button                                                           | `'default'` | The look of the trigger                 |
+| `size`     | as on button                                                           | `'md'`      | The size of the trigger                 |
+| `disabled` | boolean, or a state - **live**                                         | `false`     | Disables the trigger and shuts the menu |
+| `label`    | string, or a state - **live**                                          | -           | Replaces the name of the trigger        |
+| `events`   | event map                                                              | -           | Handlers on the host, such as `select`  |
 
 Rules an agent gets wrong:
 
@@ -43,6 +43,12 @@ Rules an agent gets wrong:
   the option as `role="menuitemradio"` with `aria-checked`, and a check mark after the label of the
   checked one. Use it for a menu that picks one of several settings, such as a sort order. The menu
   still closes on a click. Write the new choice into your state in `onClick`.
+- **An item with `hold` runs only after a held press.** Pass `true` (1500 ms) or a number of
+  milliseconds, as on button (imp skill std/button). A plain click on the item does nothing; the
+  person holds the pointer, `Enter` or `Space` on it while a fill sweeps across it, and then the
+  menu closes and the item is chosen. Use it for an item that a person must not pick by a slip. It
+  takes `aria-describedby` with the words of `imp.button.hold`, and the tooltip of a `hold` button:
+  "Press and hold to confirm", and "Hold longer to confirm" after a press that ends too soon.
 - **The browser places the menu, not imp.** It opens under the trigger at the trailing edge, flips
   above it near the bottom of the screen, and flips to the other side near an edge. There is no
   `placement` prop.

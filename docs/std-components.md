@@ -110,7 +110,7 @@ place.
 
 **A button can ask for a hold before it acts.** Give a button `hold`, and a click does nothing. The
 person must hold the pointer, `Enter` or `Space` on the button. A fill sweeps across the button, and
-the click fires when the fill is full. A release before that cancels it. `hold: true` waits five
+the click fires when the fill is full. A release before that cancels it. `hold: true` waits 1.5
 seconds, and a number sets the time in milliseconds. Use it for a sensitive action, such as a
 delete, where a confirm dialog is too heavy:
 
@@ -118,8 +118,11 @@ delete, where a confirm dialog is too heavy:
 button({ variant: 'danger', hold: true, events: { click: removeProject } }, 'Delete project')
 ```
 
-A screen reader announces "Press and hold to confirm" with the button. The words are the message
-`imp.button.hold`, so you can translate them.
+A screen reader announces "Press and hold to confirm" with the button, and a tooltip shows the same
+words on a hover. A press that ends too soon, such as a plain or a rage click, shows "Hold longer to
+confirm" instead. The words are the messages `imp.button.hold` and `imp.button.holdLonger`, so you
+can translate them. An item of a `menuButton` takes `hold` too, and is
+chosen only after the same held press.
 
 **A component is themed. You do not style it.** Every component reads its colors, its spacing, its
 radii and its type from the `--imp-*` design tokens. See **[Theming](theming.md)**. A new theme
@@ -329,8 +332,8 @@ button.
 **A multi-tenant app gets a switcher.** `orgSelect` lists the organizations that a person belongs
 to, shows the current one on its trigger, and reports a choice. Put it beside the logo, or in
 `extras`. What a switch means is yours: a navigation to the URL of the tenant, or a new token. Pass
-`onCreateClick`, and a quiet triple-dot menu beside the trigger offers "Create organization". It stays out of the list of organizations, so nobody who only switches
-creates one by a slip.
+`onCreateClick`, and the menu opens with "Create organization" above the organizations. It runs
+only after a held press, so nobody who only switches creates one by a slip.
 
 **The application map drives the whole nav.** You describe the app once, as a map. See
 **[The application map](routing.md#the-application-map)**. The top-level nodes are the sections in the bar. When a screen binds

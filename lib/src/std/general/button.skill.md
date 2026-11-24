@@ -24,7 +24,7 @@ The call shape is `button(props?, ...children)`. When a props object is present,
 | `popoverTarget` | an element with a `popover` attribute                     | -           | The button invokes that popover, as `popovertarget` does  |
 | `popoverAction` | `'toggle'`, `'show'`, `'hide'`                            | `'toggle'`  | What a click does to `popoverTarget`                      |
 | `submit`        | boolean                                                   | -           | Submits the form around it, and spins while it submits    |
-| `hold`          | `true` (5000 ms), or a number of milliseconds             | -           | A click fires only after a press held for that time       |
+| `hold`          | `true` (1500 ms), or a number of milliseconds             | -           | A click fires only after a press held for that time       |
 | `events`        | event map, e.g. `{ click: handler }`                      | -           | Handlers, exactly as on any element                       |
 
 Rules an agent gets wrong:
@@ -69,6 +69,10 @@ Rules an agent gets wrong:
 - **A `hold` button describes itself.** It takes `aria-describedby` with the words of
   `imp.button.hold`, "Press and hold to confirm". Override the words in your translations. Do not
   put the instruction in the label.
+- **A `hold` button has a tooltip of its own.** It shows "Press and hold to confirm" on a hover and
+  on a keyboard focus. A press that ends before the hold is full shows "Hold longer to confirm"
+  for a moment, again on every click of a rage click. The words are `imp.button.hold` and
+  `imp.button.holdLonger`. Do not wrap a `hold` button in a `tooltip`.
 - **`variant: 'link'` is a button that looks like a link.** Use it for an action inside running
   text. For a place that a person can go to, use link (imp skill std/link), which needs an `href`.
 - **There is no menu.** A button that opens a menu is menuButton (imp skill std/menuButton). A

@@ -439,6 +439,11 @@ fn widget_markup(mark: &str, theme_editor: bool) -> String {
             "<path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>",
             "<line x1=\"10\" y1=\"11\" x2=\"10\" y2=\"17\"/><line x1=\"14\" y1=\"11\" x2=\"14\" y2=\"17\"/>"
         )))
+        .replace(
+            "{{ICON_COPY}}",
+            &icon("<rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M4 16V4a2 2 0 0 1 2-2h10\"/>"),
+        )
+        .replace("{{ICON_CHECK}}", &icon("<polyline points=\"20 6 9 17 4 12\"/>"))
         .replace("{{ICON_REVIEW}}", &icon("<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z\"/>"))
         .replace("{{ICON_CONSOLE}}", &icon("<polyline points=\"4 17 10 11 4 5\"/><line x1=\"12\" y1=\"19\" x2=\"20\" y2=\"19\"/>"))
         .replace(
@@ -454,6 +459,8 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
         "console": {
             "title": "Console logs",
             "clear": "Clear console logs",
+            "copy": "Copy the console logs shown",
+            "copied": "Copied the console logs shown",
             "empty": "Nothing logged since the page loaded.",
             "cleared": "Cleared. The next line appears as it happens.",
             "filters": [{ "key": "level", "options": ["All", "Log", "Info", "Warn", "Error"], "initial": "All" }],
@@ -461,6 +468,8 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
         "network": {
             "title": "Network logs",
             "clear": "Clear network logs",
+            "copy": "Copy the network logs shown",
+            "copied": "Copied the network logs shown",
             "empty": "No requests since the page loaded.",
             "cleared": "Cleared. The next request appears as it happens.",
             "filters": [

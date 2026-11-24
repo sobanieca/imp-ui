@@ -26,12 +26,17 @@
     <div class="view" data-view="log" hidden>
       <div class="head">
         <p class="title" data-log-title></p>
-        <button type="button" class="clear" data-action="clear" disabled>{{ICON_CLEAR}}</button>
+        <div class="tools">
+          <button type="button" class="tool copy" data-action="copy" disabled>
+            <span class="idle">{{ICON_COPY}}</span><span class="done">{{ICON_CHECK}}</span>
+          </button>
+          <button type="button" class="tool clear" data-action="clear" disabled>{{ICON_CLEAR}}</button>
+        </div>
       </div>
       <div class="chips" role="group" aria-label="Filter the lines" style="flex-direction: column"></div>
       <ol class="lines"></ol>
       <p class="hint">What the page did since it loaded, as it happens. Click a line to see all of
-        it. Open the developer tools of the browser for more.</p>
+        it, or copy every line shown. Open the developer tools of the browser for more.</p>
     </div>
     <div class="view" data-view="theme" hidden>
       <p class="title">Theme editor</p>

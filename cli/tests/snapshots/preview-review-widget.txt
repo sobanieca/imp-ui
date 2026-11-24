@@ -17,6 +17,9 @@ line that arrived live, with tone: entry error
 entry collapsed at first: aria-expanded false, after a click: true
 console filters: All, Log, Info, Warn, Error
 filtered to Error (aria-pressed true): arrived live
+copy button: Copy the console logs shown (disabled false)
+copied: error arrived live
+after copy: Copied the console logs shown (marked true)
 filter with no match: No line matches.
 clear button: Clear console logs (disabled false)
 after clear: Cleared. The next line appears as it happens., console entries left in the page: 0, button disabled: true, network entries untouched: true

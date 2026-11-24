@@ -16,7 +16,8 @@ seconds on the mark closes it. The person presses the mark, presses **Add review
 clicks an element and types a comment. imp writes the result to `.imp/reviews/`. This is the inbound
 half of the development loop. [start](start.md) is the outbound half, through `imp logs`. The mark
 also opens **Console logs** and **Network logs**, which show the person the same entries in the
-page, live, since the page loaded. A bin button empties a view in the page. The terminal and
+page, live, since the page loaded. A copy button copies the lines a view shows, and a bin button
+empties a view in the page. The terminal and
 `imp logs` keep every entry. The views add nothing that `imp logs` does not print. On a page of
 `imp start` the mark also opens the **Theme editor**, which is the whole theme as JSON, see
 [theming](theming.md). It writes no review. The widget takes its colours from the theme the app

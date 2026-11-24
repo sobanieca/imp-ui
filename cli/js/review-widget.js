@@ -58,6 +58,7 @@ export const reviewWidget = ({
   const saveButton = find('[data-action="save"]')
   const logTitle = find('[data-log-title]')
   const clearButton = find('[data-action="clear"]')
+  const copyButton = find('[data-action="copy"]')
   const chips = find('.chips')
   const lines = find('.lines')
   const views = {
@@ -78,6 +79,8 @@ export const reviewWidget = ({
   let unwatch = null
   let active = {}
   const cleared = new Set()
+  let copiedTimer = null
+  const COPIED_MS = 1500
 
   const load = () => (engine ??= import(reportModule))
 
@@ -321,6 +324,7 @@ export const reviewWidget = ({
     const all = (globalThis.__impTelemetry?.entries() ?? []).filter(belongs)
     const shown = all.filter(matchesFilter)
     clearButton.disabled = !all.length
+    copyButton.disabled = !shown.length
     lines.replaceChildren(...shown.map(entryFor))
     if (!shown.length) {
       const reason = all.length ? 'No line matches.' : cleared.has(tool) ? emptied : empty
@@ -342,8 +346,32 @@ export const reviewWidget = ({
     const atEnd = lines.scrollTop + lines.clientHeight >= lines.scrollHeight - 4
     lines.querySelector('.empty')?.remove()
     lines.append(entryFor(entry))
+    copyButton.disabled = false
     while (lines.children.length > telemetryEntries) lines.firstElementChild.remove()
     if (atEnd) lines.scrollTop = lines.scrollHeight
+  }
+
+  const labelCopy = (copied) => {
+    const label = logViews[tool][copied ? 'copied' : 'copy']
+    copyButton.setAttribute('aria-label', label)
+    copyButton.title = label
+    copyButton.toggleAttribute('data-copied', copied)
+  }
+
+  // One line per entry, as the view shows it: the level or the status, then the whole text.
+  const copy = async () => {
+    const all = (globalThis.__impTelemetry?.entries() ?? []).filter(belongs)
+    const text = all
+      .filter(matchesFilter)
+      .map((entry) => {
+        const { level, text } = describe(entry)
+        return `${level} ${text}`
+      })
+      .join('\n')
+    await navigator.clipboard.writeText(text)
+    labelCopy(true)
+    clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => labelCopy(false), COPIED_MS)
   }
 
   const showLog = (name) => {
@@ -358,6 +386,8 @@ export const reviewWidget = ({
     logTitle.textContent = logViews[name].title
     clearButton.setAttribute('aria-label', logViews[name].clear)
     clearButton.title = logViews[name].clear
+    clearTimeout(copiedTimer)
+    labelCopy(false)
     active = Object.fromEntries(logViews[name].filters.map((group) => [group.key, group.initial]))
     renderChips()
     showView('log')
@@ -503,6 +533,7 @@ export const reviewWidget = ({
     if (action === 'save') save()
     else if (action === 'cancel') reset()
     else if (action === 'clear') clear()
+    else if (action === 'copy') copy()
   })
 
   chips.addEventListener('click', (event) => {

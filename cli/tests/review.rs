@@ -210,6 +210,9 @@ fn the_review_widget_picks_an_element_in_the_preview_page() {
         ),
         format!("console filters: {}", field("consoleChips")),
         format!("filtered to Error (aria-pressed {}): {}", field("pressedChip"), field("filtered")),
+        format!("copy button: {}", field("copyLabel")),
+        format!("copied: {}", field("copied")),
+        format!("after copy: {}", field("copiedLabel")),
         format!("filter with no match: {}", field("noMatch")),
         format!("clear button: {}", field("clearLabel")),
         format!(
