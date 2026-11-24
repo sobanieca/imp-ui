@@ -60,7 +60,7 @@ code. Every script imp emitted points back here.
 
 The imp library bundled into this build
 
-imp@0.1.2 - MIT
+imp@0.1.3 - MIT
 
 MIT License
 
