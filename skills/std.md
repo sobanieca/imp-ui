@@ -10,7 +10,7 @@ include. Each component is a real imp component. It renders as its own element, 
 | `imp/std/layout`   | `flex`, `stack`, `splitPane`, `tabs`, `dialog`, `drawer`                                                                                                                                                                                                                               | `imp skill std/flex`, `std/stack`, `std/splitPane`, `std/tabs`, `std/dialog`, `std/drawer`                                                                                                                                                                                                                                                                                           |
 | `imp/std/inputs`   | `form`, `submitForm`, `resetForm`, `FormError`, `textField`, `select`, `checkbox`, `toggle`, `radioGroup`, `segmented`, `comboBox`, `treeSelect`, `slider`, `colorPicker`, `datePicker`, `dateRangePicker`, `emojiPicker`, `fileUpload`, `imageUpload`, `codeEditor`, `richTextEditor` | `imp skill std/form`, `std/submitForm`, `std/resetForm`, `std/FormError`, `std/textField`, `std/select`, `std/checkbox`, `std/toggle`, `std/radioGroup`, `std/segmented`, `std/comboBox`, `std/treeSelect`, `std/slider`, `std/colorPicker`, `std/datePicker`, `std/dateRangePicker`, `std/emojiPicker`, `std/fileUpload`, `std/imageUpload`, `std/codeEditor`, `std/richTextEditor` |
 | `imp/std/display`  | `card`, `codeBlock`, `emptyState`, `markdown`, `tag`, `tooltip`, `avatar`, `accordion`, `descriptionList`, `steps`, `qrCode`                                                                                                                                                           | `imp skill std/card`, `std/codeBlock`, `std/emptyState`, `std/markdown`, `std/tag`, `std/tooltip`, `std/avatar`, `std/accordion`, `std/descriptionList`, `std/steps`, `std/qrCode`                                                                                                                                                                                                   |
-| `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `accountMenu`, `orgSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                                                | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/accountMenu`, `std/orgSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                                                                |
+| `imp/std/shell`    | `shell`, `appLogo`, `breadcrumbs`, `userCard`, `accountMenu`, `tenantSelect`, `themeSelect`, `langSelect`, `notifications`                                                                                                                                                             | `imp skill std/shell`, `std/appLogo`, `std/breadcrumbs`, `std/userCard`, `std/accountMenu`, `std/tenantSelect`, `std/themeSelect`, `std/langSelect`, `std/notifications`                                                                                                                                                                                                             |
 | `imp/std/feedback` | `bugReport`, `notice`, `loader`, `progress`, `skeleton`, `toast`, `notify`, `dismiss`, `reactions`                                                                                                                                                                                     | `imp skill std/bugReport`, `std/notice`, `std/loader`, `std/progress`, `std/skeleton`, `std/toast`, `std/notify`, `std/dismiss`, `std/reactions`                                                                                                                                                                                                                                     |
 | `imp/std/data`     | `table`, `list`, `timeline`, `tree`, `chart`, `gantt`, `calendar`, `map`                                                                                                                                                                                                               | `imp skill std/table`, `std/list`, `std/timeline`, `std/tree`, `std/chart`, `std/gantt`, `std/calendar`, `std/map`                                                                                                                                                                                                                                                                   |
 
@@ -34,7 +34,7 @@ section(
   controls an app has, and every one looks the same in every app with the same theme. Read the list
   that `imp skill` prints, and the skill of each candidate. A job that sounds app-specific often has
   one: a bug report is `bugReport`, a notification bell is `notifications`, a tenant switcher is
-  `orgSelect`. Write your own component only when no standard one does the job, and never as a copy
+  `tenantSelect`. Write your own component only when no standard one does the job, and never as a copy
   of one that does.
 - **Never hand-write a control that the library has.** A `button`, `a` or `input` from `imp/html`
   with CSS that makes it look like a button, a link, a pill, a toggle or a segmented choice is a
@@ -252,11 +252,11 @@ the library accepts any DOM.
 
 **Build the frame of an app with `shell`. Do not assemble a header and sidebar grid by hand.** The
 application map, see [routing](routing.md), drives the bar, the column, the bottom bar of a phone
-and the trail. `logo` and `extras` are DOM. The main content is the children, and the router sits in
+and the trail. `logo`, `tenant`, `navbarExtras` and `sidebarExtras` are DOM. The main content is the children, and the router sits in
 it.
 
 ```js
-import { appLogo, shell, themeSelect, userCard } from 'imp/std/shell'
+import { accountMenu, appLogo, notifications, shell, themeSelect } from 'imp/std/shell'
 import { router } from 'imp/router'
 import { luChartColumn } from 'imp/icons'
 import { app } from './app-map.js'
@@ -273,29 +273,32 @@ shell(
     logo: appLogo({ label: 'Acme' }),
     navbar: { label: 'Sections' },
     sidebar: { label: 'Pages' },
-    extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
+    navbarExtras: [notifications(), accountMenu({ name: user.name, onSignOut }, themeSelect())],
+    sidebarExtras: supportCard(),
     signIn: app.signIn,
   },
   router({ map: app, guards, screens }),
 )
 ```
 
-| Prop          | Values                                               | Default  | Notes                                                |
-| ------------- | ---------------------------------------------------- | -------- | ---------------------------------------------------- |
-| `map`         | the value of `appMap()`                              | -        | The only input of the nav                            |
-| `nav`         | `{ [handle]: { icon, tag, group, hidden } }`         | -        | The settings of one node each                        |
-| `navbar`      | omitted, `false`, or `{ label, hidden, background }` | shown    | `false` removes the bar                              |
-| `sidebar`     | `{ label, extras, background }`                      | -        | Names the column; `extras` sit under the rows        |
-| `logo`        | DOM                                                  | -        | Heads the bar, the column, or the drawer             |
-| `extras`      | DOM, or an array of it                               | -        | Theme/language pickers, `userCard`, anything         |
-| `signIn`      | a node handle of the map                             | -        | The sign-in node; it shows without the chrome        |
-| `breadcrumbs` | `false`                                              | shown    | Drops the trail; it hides on a one-crumb page anyway |
-| `navOpen`     | boolean, or a state - **live**                       | `false`  | Drawer state; shell-owned when omitted               |
-| `gap`         | spacing step `0`-`6`                                 | `0`      | Floats the chrome apart as rounded, bordered panels  |
-| `maxWidth`    | CSS length, or `'none'`                              | `125rem` | Caps column and content, centred on a wider screen   |
-| `background`  | DOM                                                  | -        | Decorative layer under everything, e.g. an animation |
-| `effect`      | `'none'`, `'fade'`, `'slide'`, `'zoom'`              | `'none'` | Animates a change of screen in the content area      |
-| `events`      | `{ navToggle, select }`                              | -        | `{ open }` on every drawer change; `{ id, item }`    |
+| Prop            | Values                                               | Default  | Notes                                                  |
+| --------------- | ---------------------------------------------------- | -------- | ------------------------------------------------------ |
+| `map`           | the value of `appMap()`                              | -        | The only input of the nav                              |
+| `nav`           | `{ [handle]: { icon, tag, group, hidden } }`         | -        | The settings of one node each                          |
+| `navbar`        | omitted, `false`, or `{ label, hidden, background }` | shown    | `false` removes the bar                                |
+| `sidebar`       | `{ label, background }`                              | -        | Names the column                                       |
+| `logo`          | DOM                                                  | -        | Heads the bar, the column, or the drawer               |
+| `tenant`        | DOM                                                  | -        | The `tenantSelect`, beside the logo                    |
+| `navbarExtras`  | DOM, or an array of it                               | -        | End of the top bar, also on a phone                    |
+| `sidebarExtras` | DOM, or an array of it                               | -        | Under the rows of the column, in the drawer on a phone |
+| `signIn`        | a node handle of the map                             | -        | The sign-in node; it shows without the chrome          |
+| `breadcrumbs`   | `false`                                              | shown    | Drops the trail; it hides on a one-crumb page anyway   |
+| `navOpen`       | boolean, or a state - **live**                       | `false`  | Drawer state; shell-owned when omitted                 |
+| `gap`           | spacing step `0`-`6`                                 | `0`      | Floats the chrome apart as rounded, bordered panels    |
+| `maxWidth`      | CSS length, or `'none'`                              | `125rem` | Caps column and content, centred on a wider screen     |
+| `background`    | DOM                                                  | -        | Decorative layer under everything, e.g. an animation   |
+| `effect`        | `'none'`, `'fade'`, `'slide'`, `'zoom'`              | `'none'` | Animates a change of screen in the content area        |
+| `events`        | `{ navToggle, select }`                              | -        | `{ open }` on every drawer change; `{ id, item }`      |
 
 **The depth of a node decides its surface.** The top-level nodes are the sections of the bar. A
 root that a screen binds is the first section, and `nav: { [app]: { hidden: true } }` removes it.
@@ -347,13 +350,18 @@ Rules an agent gets wrong:
   shows the router content and the logo, centred, and nothing else. A redirect keeps the layout, so
   a signed-out visitor never sees the chrome. Write the sign-in page yourself; imp renders no form
   and holds no session.
-- **The frame has no account prop.** `accountMenu` in `extras` holds the person, the pickers and
-  the sign-out. Whether a person sees a section is the guard of the router.
-- **Page CSS does not reach a region.** `logo`, `extras` and the main content sit in the shadow root
+- **The frame has no account prop.** `accountMenu` in `navbarExtras` holds the person, the pickers
+  and the sign-out. Whether a person sees a section is the guard of the router.
+- **`navbarExtras` stay in the top bar on every width.** Keep them to one or two compact controls,
+  such as a Log in button, the bell and the `accountMenu`. With `navbar: false` they sit at the foot
+  of the column on a desktop.
+- **`sidebarExtras` show wherever the sidebar shows**: under the rows on a desktop, in the drawer
+  on a phone. A support card, an upgrade card or an external link goes there.
+- **Page CSS does not reach a region.** `logo`, `tenant`, both extras props and the main content sit in the shadow root
   of the shell. This is deliberate. Pass imp components, which carry their own styles. Style raw DOM
   there inline, or do not style it.
 - **A section with no children renders no sidebar**, and the content goes full width. Do not build
-  a false column with one row. Only app-wide content keeps the column. **`sidebar.extras` stays
+  a false column with one row. Only app-wide content keeps the column. **`sidebarExtras` stay
   whichever section is current.** So a support card or an external link goes there, never under a
   section of the map.
 - **`gap: 0` is the edge-to-edge frame. Any other step floats the chrome** as bordered panels,
@@ -373,8 +381,8 @@ Rules an agent gets wrong:
   links to the page of the parent.
 - **Below `48rem` the frame changes.** The top bar becomes a hamburger and a two-line title, which
   is the last two crumbs. The sidebar becomes the bottom bar, capped at
-  `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections
-  and both `extras` move into the drawer. The trail strip hides. When the current
+  `--imp-shell-bottom-bar-items`, with a **More** bottom sheet and flattened groups. The sections,
+  `tenant` and `sidebarExtras` move into the drawer, and `navbarExtras` stay in the bar. The trail strip hides. When the current
   section has no sidebar, the bottom bar carries the **sections**, and the drawer holds the chrome
   only.
 - **There is no aside region.** Every region of the frame has a phone form, and a side column has
@@ -383,8 +391,8 @@ Rules an agent gets wrong:
   media query.
 - **The desktop column collapses to an icon rail** from a toggle in its head. That head names the
   context, which is the param crumb when there is one. imp offers the toggle only when every row has
-  an `icon`. The rail hides the logo, `sidebar.extras` and the `extras` of the
-  shell. A rail row shows its label as a tooltip on hover, on focus and on a touch hold.
+  an `icon`. The rail hides the logo, `tenant` and both extras
+  props. A rail row shows its label as a tooltip on hover, on focus and on a touch hold.
 - **`navOpen` must be writable if you pass it.** Never pass a `computed`. The shell writes back when
   the drawer closes itself.
 - **The shell is the only breakpoint exception in imp.** The width is `48rem`, and it is a **media
@@ -1215,8 +1223,8 @@ and update the `items` state. The full manual is `imp skill std/calendar`.
 
 ## Shell parts - from `imp/std/shell`
 
-These are ready-made contents for the regions of `shell`. Each one is optional. `logo` and `extras`
-take DOM, so you can replace a piece that does not fit with your own.
+These are ready-made contents for the regions of `shell`. Each one is optional. `logo`, `tenant`
+and both extras props take DOM, so you can replace a piece that does not fit with your own.
 
 ```js
 import {
@@ -1224,7 +1232,7 @@ import {
   breadcrumbs,
   langSelect,
   notifications,
-  orgSelect,
+  tenantSelect,
   themeSelect,
   userCard,
 } from 'imp/std/shell'
@@ -1240,20 +1248,20 @@ breadcrumbs({
   ],
 })
 userCard({ name: 'Ada Lovelace', description: user.email })
-orgSelect({ orgs: memberships, selected: currentOrg, events: { select: switchOrg } })
+tenantSelect({ tenants: memberships, selected: currentTenant, events: { select: switchTenant } })
 themeSelect()
 langSelect()
 ```
 
-| Component       | Props                                                                                                           |
-| --------------- | --------------------------------------------------------------------------------------------------------------- |
-| `appLogo`       | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `image`, `compact`, `events` |
-| `breadcrumbs`   | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                              |
-| `userCard`      | `name`, `description`, `picture` (all live), `href`, `compact`, `events`                                        |
-| `orgSelect`     | `orgs` (live), `selected` (live, writable), `label` (live), `variant`, `size`, `compact`, `events`              |
-| `themeSelect`   | `label` (live), `variant`, `size`, `events`                                                                     |
-| `langSelect`    | `languages`, `label` (live), `variant`, `size`, `events`                                                        |
-| `notifications` | `label` (live), `variant`, `size`, `events`                                                                     |
+| Component       | Props                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `appLogo`       | `label`, `tagline`, `href`, `src` (a string, or `{ light, dark }`), `alt`, `icon`, `image`, `compact`, `events`                                     |
+| `breadcrumbs`   | `items` (live, a crumb can carry `options`), `label` (live), `separator`, `events`                                                                  |
+| `userCard`      | `name`, `description`, `picture` (all live), `href`, `compact`, `events`                                                                            |
+| `tenantSelect`  | `tenants` (live, each with an optional `tag`), `selected` (live, writable), `label` (live), `variant`, `size`, `compact`, `onCreateClick`, `events` |
+| `themeSelect`   | `label` (live), `variant`, `size`, `events`                                                                                                         |
+| `langSelect`    | `languages`, `label` (live), `variant`, `size`, `events`                                                                                            |
+| `notifications` | `label` (live), `variant`, `size`, `events`                                                                                                         |
 
 Rules an agent gets wrong:
 
@@ -1266,31 +1274,31 @@ Rules an agent gets wrong:
   menu. Use `accountMenu`, which holds a `userCard`, for the account actions, and decide in
   `onSignOut` how a sign-out works. imp holds no session, and it talks to no identity provider.
   Whether anybody is signed in is the guard of the root, in the router.
-- **`themeSelect`, `langSelect` and `orgSelect` are menus.** Each renders a `menuButton` with the
+- **`themeSelect`, `langSelect` and `tenantSelect` are menus.** Each renders a `menuButton` with the
   current choice on the trigger and a `menuitemradio` per option. There is no `<select>` in the
   frame.
 - **`themeSelect` and `langSelect` show and set an app-wide state of imp.** `themeSelect` offers
   the `themes` of `init` and sets `theme`. `langSelect` offers the codes of `init({ translations })`
   and sets `lang`. `init({ persist: true })` stores the choice. Every picker on the page agrees. See
   [theming](theming.md) and [i18n](i18n.md).
-- **`orgSelect` remembers nothing and navigates nowhere.** It marks `selected`, reports a cancelable
-  `select` with `{ id, org }`, and writes the `id` into a writable `selected` state. The app
-  navigates to the tenant, see `imp skill routing`. Put it in the `logo` slot beside `appLogo`, in a
-  `flex`, or in `extras`.
+- **`tenantSelect` remembers nothing and navigates nowhere.** It marks `selected`, reports a
+  cancelable `select` with `{ id, tenant }`, and writes the `id` into a writable `selected` state.
+  The app navigates to the tenant, see `imp skill routing`. Put it in the `tenant` prop of `shell`,
+  never in `logo`: the frame shows it beside the logo, and under the logo in the drawer on a phone.
+  Its words say "Workspace" by default.
 - **`appLogo` with `image` is the whole logo as one picture.** No words render, and `label` is the
   `alt`. Use it for a brand that sets its name in a font of its own.
 - **`compact` on `appLogo` and on `userCard` hides the words visually, not from assistive
   technology.** That is how a brand block with a mark only keeps its name.
-- **Inside `shell`, `accountMenu` goes in `extras`.** The frame has no account prop. It places the
-  extras in the bar on a wide screen and in the drawer on a phone.
-- **Keep the desktop `extras` to one or two icon buttons.** When the bar is full, the sections give
+- **Inside `shell`, `accountMenu` goes in `navbarExtras`.** The frame has no account prop. The
+  `navbarExtras` stay in the top bar on every width, so the avatar is in sight on a phone too.
+- **Keep the `navbarExtras` to one or two icon buttons.** When the bar is full, the sections give
   way, not the extras. Put `langSelect` and `themeSelect` as children of `accountMenu`, and pass the
-  sign-out as `onSignOut`. The same panel shows inline in the phone drawer.
-
+  sign-out as `onSignOut`.
 - **`notifications` is the bell, and it takes no data.** It lists what `notify` from
-  `imp/std/feedback` raised. It renders its own modal drawer. Put it in `extras`, beside `accountMenu`.
+  `imp/std/feedback` raised. It renders its own modal drawer. Put it in `navbarExtras`, beside `accountMenu`.
 
-Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/orgSelect` |
+Full manuals: `imp skill std/appLogo` | `std/breadcrumbs` | `std/userCard` | `std/tenantSelect` |
 `std/themeSelect` | `std/langSelect`.
 
 ## Feedback - from `imp/std/feedback`
@@ -1375,7 +1383,7 @@ Full manuals: `imp skill std/loader`, `imp skill std/progress`, `imp skill std/s
 ```js
 import { dismiss, notify, toast } from 'imp/std/feedback'
 
-shell({ extras: [notifications()] }, toast({ client: 'acme.api' }), router(routes))
+shell({ navbarExtras: [notifications()] }, toast({ client: 'acme.api' }), router(routes))
 
 notify({ kind: 'success', title: 'Report sent' })
 const choice = await notify({

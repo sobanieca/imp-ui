@@ -396,6 +396,10 @@ module scope, because a global cannot reach another module. A test fails on anyt
 the line. Do not use `/* @__PURE__ */` to silence the test. That trades a checked rule for an
 unchecked claim.
 
+**Put every `:hover` rule of the library in `@media (hover: hover)`.** A touch screen keeps
+`:hover` on the last element tapped, so an unguarded hover background stays on a toggle that the tap
+just turned off. A test fails on a `:hover` rule outside that query and names the line.
+
 **Use modern JavaScript syntax (ES2017 / ES7 and newer).** This project targets modern browsers
 only. There is no transpilation and no legacy support, so write current idiomatic JS. Prefer
 `const`/`let` over `var`; arrow functions and rest/spread params over `function`/`arguments`;

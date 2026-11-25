@@ -160,7 +160,7 @@ the shared file walker, so imp finds a preview file the way it finds a test file
   in the bundle as base64 data URIs. The icon of the page is a separate `.ico` file with the inverse
   mark on an ink tile, embedded the same way. It does not follow the theme, because the tab strip of
   a browser is painted by the browser, not by the page. So the page requests no asset for its own
-  look, and a copy of it stands alone. The theme, language and direction pickers are its `extras`.
+  look, and a copy of it stands alone. The theme, language and direction pickers are its `sidebarExtras`.
   The theme editor is in a non-modal `drawer` opened from a button beside them. So navigation
   between components is one click from anywhere, with no page load. The workbench uses imp's own
   map, router and frame on purpose: a regression in any of them shows up while you work on anything.

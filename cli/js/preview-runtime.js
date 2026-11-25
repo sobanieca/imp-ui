@@ -267,9 +267,11 @@ const STAGE_STYLES = `
     border-block-end: 3px solid var(--imp-color-border, #cbd5e1);
   }
 
-  .handle:hover {
-    background: var(--imp-color-primary, #2563eb);
-    opacity: 0.25;
+  @media (hover: hover) {
+    .handle:hover {
+      background: var(--imp-color-primary, #2563eb);
+      opacity: 0.25;
+    }
   }
 `
 

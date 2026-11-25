@@ -447,6 +447,34 @@ fn nothing_in_the_library_runs_work_when_it_is_imported() {
 }
 
 #[test]
+fn a_hover_style_of_the_library_applies_only_to_a_pointer_that_hovers() {
+    let indent = |line: &str| line.len() - line.trim_start().len();
+    let mut problems = Vec::new();
+    for (path, source) in library_modules(false) {
+        let lines: Vec<&str> = source.lines().collect();
+        for (index, line) in lines.iter().enumerate() {
+            if !line.contains(":hover") {
+                continue;
+            }
+            let enclosing = lines[..index]
+                .iter()
+                .rev()
+                .find(|above| !above.trim().is_empty() && indent(above) < indent(line));
+            if !enclosing.is_some_and(|above| above.contains("@media (hover: hover)")) {
+                problems.push(format!("lib/src/{path}:{}: {}", index + 1, line.trim()));
+            }
+        }
+    }
+    check(
+        problems.is_empty(),
+        format!(
+            "a touch screen keeps :hover on the last element tapped - put these rules in @media (hover: hover):\n  {}",
+            problems.join("\n  ")
+        ),
+    );
+}
+
+#[test]
 fn a_bundle_of_code_block_alone_carries_no_editor() {
     let dir = TempDir::new();
     copy_directory(&fixture("build"), &dir.path);

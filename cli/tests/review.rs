@@ -213,6 +213,9 @@ fn the_review_widget_picks_an_element_in_the_preview_page() {
         format!("copy button: {}", field("copyLabel")),
         format!("copied: {}", field("copied")),
         format!("after copy: {}", field("copiedLabel")),
+        format!("line copy button: {}", field("lineCopyLabel")),
+        format!("line copied: {}", field("lineCopied")),
+        format!("after line copy: {}", field("lineCopiedLabel")),
         format!("filter with no match: {}", field("noMatch")),
         format!("clear button: {}", field("clearLabel")),
         format!(
@@ -225,18 +228,18 @@ fn the_review_widget_picks_an_element_in_the_preview_page() {
         format!("lines after clear: {}, button enabled again: {}", field("linesAfterClear"), field("clearEnabledAgain")),
         format!("network view: {}, filters: {}", field("networkView"), field("networkChips")),
         format!(
-            "open after a click on the mark: {}, ring while held: {}, open after a short hold: {}",
+            "open after a click on the open mark: {}, panel: {}",
+            field("openAfterClickWhileOpen"),
+            field("panelAfterClickWhileOpen")
+        ),
+        format!(
+            "open after a click on the mark: {}, ring while held: {}, closed by a short press: {}",
             field("openAfterClick"),
             field("ringWhileHeld"),
-            field("openAfterShortHold")
+            field("closedByShortPress")
         ),
         format!("open after Escape outside the widget: {}", field("openAfterOutsideEscape")),
-        format!("mark title while open: {}", field("toggleHint")),
-        format!(
-            "open after a long hold and its click: {}, open after the next click: {}",
-            field("openAfterLongHold"),
-            field("openAgain")
-        ),
+        format!("mark title: {}", field("toggleHint")),
         format!("moved by a drag: {}, collapsed: {}", field("moved"), field("collapsedByDrag")),
         format!("position remembered: {}", !flow["remembered"].is_null()),
         format!("widget in an open modal: {}", field("inModal")),
@@ -244,6 +247,12 @@ fn the_review_widget_picks_an_element_in_the_preview_page() {
         format!("widget in a modal opened over it: {}", field("inStackedModal")),
         format!("widget after that modal closes: {}", field("afterStackedClose")),
         format!("widget after the open modal is removed: {}", field("afterRemoval")),
+        format!(
+            "collapsed before the long hold: {}, in the page after it: {}, after the next modal: {}",
+            field("collapsedBeforeLongHold"),
+            field("inPageAfterLongHold"),
+            field("inPageAfterNextModal")
+        ),
         format!("review files written: {}", files.len()),
         String::new(),
         written,

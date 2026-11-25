@@ -74,7 +74,7 @@ comment is about, even when the app moved on:
   with a form, a "what went wrong" field and the page address. `bugReport` is that dialog, and it
   captures more than a form can.
 - **Put the trigger where a person looks for it**: `as: 'link'`, `size: 'sm'` in the `footer`
-  items of the shell, see imp skill std/shell, or the default button in the `extras` of the shell. After a report is
+  items of the shell, see imp skill std/shell, or the default button in the `navbarExtras` of the shell. After a report is
   sent, the trigger shows the thanks beside it on the same line.
 - **Import the component from `imp/std/feedback`**, not from `imp/std`.
 - **`onSubmit` is a prop, not an `events` entry.** Storing a report is asynchronous and can fail,

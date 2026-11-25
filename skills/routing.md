@@ -154,7 +154,7 @@ in the map. A key with one of those names is a child: `settings: { access: {} }`
 | the label of a param crumb | the state `imp.routeLabels`, then the raw value                 |
 | a redirect                 | `redirect()` in `screens`                                       |
 | a pill, an icon            | `shell({ map, nav: { [app.x]: { tag, icon } } })`               |
-| an external link           | DOM in `sidebar.extras` of the shell                            |
+| an external link           | DOM in `sidebarExtras` of the shell                             |
 
 The messages of the app translate a static node by its id: `appMap.admin.users.label` and
 `appMap.admin.users.description`, see [i18n](i18n.md). The nav, the trail and the title follow the

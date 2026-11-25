@@ -421,7 +421,7 @@ export const previewShell = ({ embedded, mark, map, nav, navOpen, controls, edit
       navbar: { hidden: true, background: brandBars() },
       navOpen,
       sidebar: { label: 'Components', background: panel() },
-      extras: previewSettings(controls),
+      sidebarExtras: previewSettings(controls),
       maxWidth: 'none',
     },
     previewCanvas(stack({ gap: 4 }, content)),

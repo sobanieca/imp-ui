@@ -502,10 +502,12 @@ place across reloads. Click it, and four round buttons appear: **Add review**, *
 that your app applied, so the widget is light on a light theme and dark on a dark one. A page with
 no theme gets a dark widget.
 
-To close the widget, press and hold the mark for five seconds. A ring fills around the mark while
-you hold it. Release it early, and the widget stays open. So a stray click on the mark does not
-close the tools that you work in. `Escape` closes the widget too, but only when the focus is in the
-widget. An `Escape` that closes a dialog of your app leaves the widget open.
+Click the mark again to close the buttons and the open view. `Escape` closes them too, but only
+when the focus is in the widget. An `Escape` that closes a dialog of your app leaves the widget open.
+
+When the widget is in your way, press and hold the mark for 1.5 seconds. A ring fills around the
+mark while you hold it. When the ring is full, imp removes the widget from the page. Release the
+mark early, and the press is a click. The widget comes back when you reload the page.
 
 The widget stays on top and usable while a modal dialog is open, such as the navigation drawer of
 the shell on a phone or a confirm dialog of your app. A modal dialog covers the page and blocks every
@@ -531,7 +533,8 @@ by kind and by outcome. It starts on **Fetch**, a request that your code made wi
 font or an image. **OK** and **Failed** split them by status. Each filter has its own colour, and
 the level or the status of a row carries the same colour. The page keeps the last 2000 entries, and
 a reload starts the list again. The copy button beside the title copies every line the view shows, with
-its filters, one line per entry, ready to paste into an issue or a chat with an agent. The bin
+its filters, one line per entry, ready to paste into an issue or a chat with an agent. To copy one line, point
+at its row and click the copy button at the end of the row. The bin
 button beside it empties the view, so the next line
 stands alone. It clears the page only. The terminal and `imp logs` keep the whole session. The views
 give a glance, not a debugger. For a stack trace, a request body or a timing chart, open the

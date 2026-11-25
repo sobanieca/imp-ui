@@ -161,9 +161,14 @@
     }
   }
 
-  .action:hover,
   .action[aria-pressed='true'] {
     border-color: var(--accent);
+  }
+
+  @media (hover: hover) {
+    .action:hover {
+      border-color: var(--accent);
+    }
   }
 
   .panel {
@@ -237,16 +242,21 @@
     opacity: 0.45;
   }
 
-  .clear:not(:disabled):hover {
-    border-color: var(--danger);
-    background: var(--hover);
-    color: var(--danger);
+  @media (hover: hover) {
+    .clear:not(:disabled):hover {
+      border-color: var(--danger);
+      background: var(--hover);
+      color: var(--danger);
+    }
   }
 
-  .copy:not(:disabled):hover {
-    border-color: var(--accent);
-    background: var(--hover);
-    color: var(--accent);
+  @media (hover: hover) {
+    .copy:not(:disabled):hover,
+    .line-copy:hover {
+      border-color: var(--accent);
+      background: var(--hover);
+      color: var(--accent);
+    }
   }
 
   .copy .done,
@@ -305,6 +315,53 @@
     overflow-wrap: anywhere;
   }
 
+  .lines li:not(.empty) {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .line-copy {
+    display: grid;
+    flex: none;
+    place-items: center;
+    inline-size: 20px;
+    block-size: 20px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted);
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .line-copy svg {
+    inline-size: 12px;
+    block-size: 12px;
+  }
+
+  .line-copy span {
+    display: grid;
+  }
+
+  .line-copy:focus-visible,
+  .line-copy[data-copied] {
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .lines li:hover .line-copy {
+      opacity: 1;
+    }
+  }
+
+  @media (hover: none) {
+    .line-copy {
+      opacity: 1;
+    }
+  }
+
   .entry {
     display: flex;
     gap: 8px;
@@ -319,8 +376,10 @@
     cursor: pointer;
   }
 
-  .entry:hover {
-    background: var(--hover);
+  @media (hover: hover) {
+    .entry:hover {
+      background: var(--hover);
+    }
   }
 
   .entry .level {
@@ -378,8 +437,10 @@
     font-size: 12px;
   }
 
-  .chip:hover {
-    border-color: var(--chip);
+  @media (hover: hover) {
+    .chip:hover {
+      border-color: var(--chip);
+    }
   }
 
   .chip[aria-pressed='true'] {
@@ -425,8 +486,10 @@
     color: var(--on-accent);
   }
 
-  .primary:hover {
-    background: color-mix(in oklab, var(--accent) 88%, var(--text));
+  @media (hover: hover) {
+    .primary:hover {
+      background: color-mix(in oklab, var(--accent) 88%, var(--text));
+    }
   }
 
   .ghost {
@@ -435,8 +498,10 @@
     color: var(--text);
   }
 
-  .ghost:hover {
-    background: var(--hover);
+  @media (hover: hover) {
+    .ghost:hover {
+      background: var(--hover);
+    }
   }
 
   button:disabled {

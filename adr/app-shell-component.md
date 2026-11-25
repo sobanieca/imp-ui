@@ -51,7 +51,8 @@ approves.**
   row of sections has no room for a heading. imp warns about `group: true` on a node of the bar and
   ignores it.
 - **`navbar: false` removes the bar, and nothing else does.** The sections are then the rows of the
-  sidebar, with their children under them. The logo and the extras move to the column. No
+  sidebar, with their children under them. The logo, the tenant and the `navbarExtras` move to the
+  column. No
   rule hides the bar on its own, because a layout that changes when the map grows a second section
   surprises the app. `navbar: { hidden: true, background }` is the same as `false`, but keeps a
   backdrop on the top bar of a phone, which `imp preview` paints with the brand bars. There is one
@@ -61,23 +62,36 @@ approves.**
 - **A section with no children renders no sidebar**, and the content takes the full width. The
   frame does not imitate a column that holds one row. The change of layout is the signal that the
   context changed.
-- **The sidebar carries one app-wide slot, and it is not per section.** That is `sidebar.extras`,
-  which is DOM. It stays whichever section is current. A help link, a support card and an upgrade
-  prompt belong to the app, and a person expects them in one place. An external link goes there
-  too, because it is not a node of the map. It is the one thing that keeps the column on the screen
-  in a section with no children. A column that shows app-wide content is not the false column above.
-  `extras` sits below the rows. The icon rail hides it, because arbitrary DOM has no form as an icon.
-  On a phone it folds into the drawer. imp merges the `extras` of the sidebar with the `extras` of
-  the shell. So the drawer is the one place that holds everything that is not the current section.
-  `sidebar` takes `label`, `extras` and `background`, and nothing else.
-- **A region takes DOM. A role that the frame must present again takes data.** `logo` and `extras`
-  are any DOM. The shell wraps it, sizes it, places it, moves it and scrolls it, and it does not
+- **The chrome takes four DOM props, and each name says where it shows.** `logo` is the brand.
+  `tenant` is the tenant switcher beside it. `navbarExtras` show at the end of the top bar, also on
+  a phone. `sidebarExtras` show wherever the sidebar shows: under the rows of the column, and in the
+  drawer on a phone. A prop named for a role, such as "actions" or "extras", made an author learn a
+  placement table before using it. The frame keeps that table as data, one row per prop:
+
+  | Prop            | Desktop with the bar | Desktop, `navbar: false`     | Phone                   |
+  | --------------- | -------------------- | ---------------------------- | ----------------------- |
+  | `logo`          | start of the bar     | head of the column           | drawer head, or the bar |
+  | `tenant`        | beside the logo      | under the head of the column | drawer, under the logo  |
+  | `navbarExtras`  | end of the bar       | foot of the column           | end of the phone bar    |
+  | `sidebarExtras` | under the rows       | under the rows               | drawer                  |
+
+  On a top-level page of a phone, the logo stays in the bar in place of the title. With no bar on a
+  desktop, the `navbarExtras` go to the foot of the column, so a control never disappears with the
+  bar. The drawer exists only when one of its rows holds something.
+- **The `sidebarExtras` are app-wide, not per section.** They stay whichever section is current. A
+  help link, a support card and an upgrade prompt belong to the app, and a person expects them in
+  one place. An external link goes there too, because it is not a node of the map. They are the one
+  thing that keeps the column on the screen in a section with no children. A column that shows
+  app-wide content is not the false column above. The icon rail hides them, because arbitrary DOM
+  has no form as an icon. `sidebar` takes `label` and `background`, and nothing else.
+- **A region takes DOM. A role that the frame must present again takes data.** `logo`, `tenant`
+  and both extras props are any DOM. The shell wraps it, sizes it, places it, moves it and scrolls it, and it does not
   look inside. The nav is **data**. The shell renders it more than once, and it cannot make a second
   presentation out of DOM that somebody handed it. The row of the bar is also a column of the
   drawer. The column of the sidebar is also a bottom bar with a capped length. **That is the line.
   To place or to move DOM is free. To make a second presentation of it is not.**
 - **The DOM of a region lands inside the shadow root of the shell, and page CSS does not reach it,
-  by design.** imp appends `logo`, `extras`, the `extras` of the sidebar, and the main content, into
+  by design.** imp appends `logo`, `tenant`, both extras props, and the main content, into
   the tree of the frame. So a rule in the stylesheet of the app never styles them. Only an inherited
   property, and an `--imp-*` custom property, cross the boundary, see `shadow-dom-isolation.md`.
   That is the intended contract, and not a cost to hide. What goes into a region is an imp
@@ -99,9 +113,6 @@ approves.**
   points `aria-describedby` at a hidden copy of it in the same shadow root, so a screen reader reads
   it after the name, and the name stays the visible label. A `title` attribute on the tag alone
   would reach no screen reader, because the name of a link comes from the text of its content.
-- **The shell owns where the chrome sits, and that depends on the bar.** With the bar, the logo
-  heads the bar, and `extras` sit at its end. With `navbar: false`, the logo heads the column, the
-  chrome sits at its foot, and imp renders no bar on a desktop.
 - **Below `48rem` the frame folds into a phone app.** The top bar becomes a hamburger and a two-line
   title, with the section over the current row, or the last two crumbs when a map is present. On a
   phone, the frame must say where you are, and a brand block does not. The **sidebar becomes the
@@ -114,8 +125,8 @@ approves.**
   bottom bar like any row. A tap on it there opens its children in that same sheet, under the label
   of the parent. The one level of nesting that a phone gets is a sheet, and not an outline either.
   On a desktop, the parent of the selected row starts expanded. So the row that is current is never
-  hidden behind a collapsed caret. The **sections and both sets of `extras` move into the hamburger
-  drawer**. **When the current section has no sidebar, the bottom bar carries the
+  hidden behind a collapsed caret. The **sections, the tenant and the `sidebarExtras` move into the
+  hamburger drawer**, and the `navbarExtras` stay in the bar. **When the current section has no sidebar, the bottom bar carries the
   sections instead**, and the drawer then holds the chrome only. A row is one node, and it lives in
   one place at a time.
 - **The length of the bottom bar is a custom property, and not a prop.**
@@ -127,8 +138,7 @@ approves.**
   about the view of the frame, and not something that an app routes on. **The toggle exists only
   when every row can survive the rail.** Each row of the current section must carry an `icon`. A rail of empty rows shows nothing. So a column with one row that has no icon
   keeps its width, and offers no toggle. A change of section that lands on such a column expands the
-  rail again. The rail keeps the icons of the rows, and hides everything else. It hides the logo, the name of the context, the `extras` of the sidebar, and the
-  `extras` of the shell, at the foot of the column. Arbitrary DOM has no form as an icon, and a rail
+  rail again. The rail keeps the icons of the rows, and hides everything else. It hides the logo, the name of the context, the tenant, and both extras props. Arbitrary DOM has no form as an icon, and a rail
   is a strip of icons, or it is not a rail. **imp deliberately does not build a drag to resize.** A
   width is a custom property. A splitter that a pointer drives is a component of its own, if
   somebody ever wants one.
@@ -136,7 +146,7 @@ approves.**
   node of the map, and the guard of the root redirects a visitor with no session to it, see
   `route-guards.md`. `signIn` names that node. On it and on its children, the frame shows the main
   content and the `logo` in the middle of the screen, and nothing else: no bar, no column, no
-  drawer, no `extras`. The frame does the same while the verdict of the current node is `wait`,
+  drawer, no extras. The frame does the same while the verdict of the current node is `wait`,
   because the app does not know yet who may see the page, and the main content is the loading
   content of the router. A redirect verdict keeps the layout, so the move from the loading content
   to the sign-in page never paints the chrome. The router stays mounted in both layouts, so the
@@ -145,15 +155,15 @@ approves.**
   no return path for a deep link. The frame holds no account prop, it renders no form, and it talks
   to no identity provider. The sign-in page is the app's, because it differs with every app: a
   password form, social buttons, a magic link, a passkey, or the return URL of an external identity
-  provider under the sign-in node. `userCard` in `extras` displays the person, and the sign-out
-  action is a button or a `menuButton` of the app beside it.
+  provider under the sign-in node. `accountMenu` in `navbarExtras` displays the person, and calls
+  the sign-out of the app.
 - **The shell owns the drawer, and the drawer is a `<dialog>`.** The top layer, `inert` on the rest
   of the page, the entry of the focus, the restore of the focus, and Escape, all belong to the
   platform. The shell adds a dismissal from the backdrop. It closes itself when the viewport crosses
   back to a desktop width. It closes when a person chooses a row inside it. It is as tall as its
   content, up to the height of the frame, and its nav scrolls when the rows do not fit. A drawer
-  that holds only the logo and the extras would otherwise be a full-height panel that is mostly
-  empty. `navOpen` belongs to the shell by default, and a writable state overrides it. `navToggle`
+  that holds only the logo and the `sidebarExtras` would otherwise be a full-height panel that is
+  mostly empty. `navOpen` belongs to the shell by default, and a writable state overrides it. `navToggle`
   reports every change that the shell makes itself. **The drawer is the first consumer of the
   overlay seam**, see `overlay-top-layer.md`. So the dismissal from the backdrop, the hold on the
   page scroll, and the motion, are shared code, and not code of the shell. **The More sheet is a
@@ -181,7 +191,7 @@ approves.**
 - **There is no aside region, because a region of the frame must work on a phone.** The frame of imp
   exists so that one call makes an app suit a desktop and a phone at the same time, and nobody
   designs anything twice. Every region that the shell owns has a form for a phone. The bar folds
-  into the drawer. The sidebar becomes the bottom bar. The extras move into the drawer. A contextual
+  into the drawer. The sidebar becomes the bottom bar. The `sidebarExtras` move into the drawer. A contextual
   side column has no such form. It is an idea from the desktop. On a phone there is no room beside
   the content. There are two honest answers, and both are wrong here. To hide the column means that
   the frame drops content that the app put there, with no message. To stack it under the page is not
@@ -267,9 +277,9 @@ approves.**
 
 - The frame of an app is one call. Two apps that somebody builds with imp look like the same kind of
   software, and neither author decided to make them look alike.
-- **The nav is data, and that costs the arbitrary widget in a nav region.** A switcher of tenants
-  above the sections, or a checkbox below them, has no place in the frame. It belongs at the top of
-  the main content, or in `extras`. That is the price of a bottom bar that the frame can count, cap
+- **The nav is data, and that costs the arbitrary widget in a nav region.** A checkbox between the
+  rows has no place in the frame. It belongs at the top of the main content, or in `sidebarExtras`
+  under the rows. The tenant switcher has its own `tenant` prop. That is the price of a bottom bar that the frame can count, cap
   and overflow, and of a nav that the frame can present in three ways.
 - **imp builds the sidebar of every section at the mount, and not on demand.** A tree with many
   sections pays for all of them at the start. A nav tree is small. The alternative is to build on a
@@ -286,8 +296,8 @@ approves.**
   `overlay-top-layer.md`. A contribution across screens is a state that the map names, as the
   `options` of a param node or the `tag` of a row, which a screen fills. That is why the rule about
   plain data, see `state-plain-data-values.md`, governs the tree.
-- **imp moves the chrome that changes parent. It does not duplicate it.** So the same `extras` node
-  lives in the bar on a wide screen, and in the drawer on a narrow one. Anything in a region must
+- **imp moves the chrome that changes parent. It does not duplicate it.** So the same `sidebarExtras`
+  node lives in the column on a wide screen, and in the drawer on a narrow one. Anything in a region must
   therefore survive a change of parent. `component-moves-rebind.md` guarantees that for an imp
   component. It does not guarantee it for raw DOM that holds a listener that imp does not track.
 - `100dvb` on the host means that the page itself stops scrolling. That works only because `mount`

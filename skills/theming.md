@@ -193,7 +193,7 @@ name, not on each toggle. A theme with a `base` is always complete.
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Typography | `font-family`, `font-family-mono`, `font-family-heading`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                           |
 | Color      | `color-primary`, `color-on-primary`, `color-secondary`, `color-danger`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                |
-| Surface    | `color-text`, `color-heading`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                   |
+| Surface    | `color-text`, `color-heading`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `background-content`, `shadow-sm`, `shadow-md`, `shadow-lg`                                             |
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
@@ -220,7 +220,11 @@ There is no hover token and no active token. Mix them from the base colour and `
 `24%` is the active step. A link and the focus ring take `color-primary`. `color-secondary` is the
 muted tone. `color-surface` is a panel, and `color-surface-sunken` is the page behind it.
 `background-app` is what `shell` paints under everything. It is a CSS `background`, not a colour, so
-a gradient or an image is valid. The built-in themes set it to `color-surface`. The **palette** is
+a gradient or an image is valid. The built-in themes set it to `color-surface`.
+`background-content` is what `shell` paints under the content column, over `background-app`. It
+is a CSS `background` too, `none` by default; set it to a surface colour to keep a busy
+`background-app` out from behind the text. The shell then floats the column as a panel, with a gap
+of step 3 when the frame names none. The **palette** is
 16 named hues for a per-item colour, such as a tag, a chart series or an avatar. `tag` and `icon`
 take the palette names as a `color` option. Nothing else reads them. The four colour roles are
 `var()` references into the palette. `color-danger` is `var(--imp-color-red)`, `color-success` is
@@ -305,9 +309,9 @@ for error text there. So every text pair of a derived theme reaches 4.5:1.
 The editor lists every text and background pair of the draft below 4.5:1, the WCAG AA level, under
 its tabs. The report changes with each edit. It blocks nothing.
 
-- It checks `color-text` on `color-surface`, `color-surface-sunken`, `color-surface-hover` and
-  `background-app`; `color-heading` on `color-surface`, `color-surface-sunken` and `background-app`;
-  `color-secondary` on `color-surface`, `color-surface-sunken` and `background-app`; `color-primary`
+- It checks `color-text` on `color-surface`, `color-surface-sunken`, `color-surface-hover`,
+  `background-app` and `background-content`; `color-heading` and `color-secondary` on
+  `color-surface`, `color-surface-sunken`, `background-app` and `background-content`; `color-primary`
   on `color-surface` and `color-surface-sunken`; `color-danger` on `color-surface`;
   `color-on-primary` on `color-primary`; `color-on-danger` on `color-danger`.
 - It reads hex, color names, `rgb()`, `hsl()`, `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()` and

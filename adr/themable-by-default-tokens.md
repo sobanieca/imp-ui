@@ -129,7 +129,10 @@ surface, as somebody builds the component. So every `--imp-*` name lands with a 
 something references a name, that name is public API. `background-app` is the one token whose value
 is a CSS `background`, and not a colour. The app frame paints it under everything. So a theme can
 set a gradient or an image there. The built-in themes derive it from `color-surface`. So a theme
-that names no background still has one.
+that names no background still has one. `background-content` is a CSS `background` as well: the frame paints
+it under the content column, over `background-app`. It is `none` by default, so a theme opts in to
+a solid column over a busy background. A painted column is a panel of a floating frame, and a frame
+with no gap takes one, because a solid column that meets a solid bar reads as one block.
 
 **Somebody writes a theme from four values, and not from sixty.** To write a full token map by hand
 is not a thing that a person must do. So imp derives one. A **primary** colour, a **secondary**

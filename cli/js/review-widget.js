@@ -9,7 +9,7 @@ export const reviewWidget = ({
   reportModule,
   themeEditorModule,
   telemetryEntries,
-  closeHoldMs,
+  removeHoldMs,
   previewFrameNamePrefix,
 }) => {
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
@@ -21,8 +21,10 @@ export const reviewWidget = ({
   const HOLD_KEYS = new Set(['Enter', ' '])
 
   let modals = []
+  let removed = false
 
   const attach = () => {
+    if (removed) return
     modals = modals.filter((dialog) => dialog.matches(':modal'))
     const home = modals.at(-1) ?? document.body
     if (host.parentNode !== home) home.append(host)
@@ -42,7 +44,7 @@ export const reviewWidget = ({
   const host = document.createElement('imp-review-widget')
   host.id = 'imp-review'
   host.setAttribute('dir', 'ltr')
-  host.style.setProperty('--hold-duration', `${closeHoldMs}ms`)
+  host.style.setProperty('--hold-duration', `${removeHoldMs}ms`)
   const shadow = host.attachShadow({ mode: 'open' })
   shadow.innerHTML = html
 
@@ -53,7 +55,6 @@ export const reviewWidget = ({
   const actions = find('.actions')
   const toggle = find('.toggle')
   const status = find('.status')
-  const closeHint = find('#imp-review-close-hint')
   const comment = find('textarea')
   const saveButton = find('[data-action="save"]')
   const logTitle = find('[data-log-title]')
@@ -79,6 +80,7 @@ export const reviewWidget = ({
   let unwatch = null
   let active = {}
   const cleared = new Set()
+  const lineEntries = new WeakMap()
   let copiedTimer = null
   const COPIED_MS = 1500
 
@@ -137,9 +139,6 @@ export const reviewWidget = ({
     if (open) orient()
     actions.hidden = !open
     toggle.setAttribute('aria-expanded', String(open))
-    toggle.title = open ? closeHint.textContent : ''
-    if (open) toggle.setAttribute('aria-describedby', closeHint.id)
-    else toggle.removeAttribute('aria-describedby')
   }
 
   const highlight = (placeOverElement) => (node) => {
@@ -308,7 +307,16 @@ export const reviewWidget = ({
     body.className = 'text'
     body.textContent = text
     row.append(tag, body)
-    item.append(row)
+    const { copyLine } = logViews[tool]
+    const lineCopy = document.createElement('button')
+    lineCopy.type = 'button'
+    lineCopy.className = 'copy line-copy'
+    lineCopy.dataset.action = 'copy-line'
+    lineCopy.setAttribute('aria-label', copyLine)
+    lineCopy.title = copyLine
+    lineCopy.append(...[...copyButton.children].map((icon) => icon.cloneNode(true)))
+    lineEntries.set(lineCopy, entry)
+    item.append(row, lineCopy)
     return item
   }
 
@@ -358,20 +366,37 @@ export const reviewWidget = ({
     copyButton.toggleAttribute('data-copied', copied)
   }
 
-  // One line per entry, as the view shows it: the level or the status, then the whole text.
+  const lineText = (entry) => {
+    const { level, text } = describe(entry)
+    return `${level} ${text}`
+  }
+
   const copy = async () => {
     const all = (globalThis.__impTelemetry?.entries() ?? []).filter(belongs)
-    const text = all
-      .filter(matchesFilter)
-      .map((entry) => {
-        const { level, text } = describe(entry)
-        return `${level} ${text}`
-      })
-      .join('\n')
+    const text = all.filter(matchesFilter).map(lineText).join('\n')
     await navigator.clipboard.writeText(text)
     labelCopy(true)
     clearTimeout(copiedTimer)
     copiedTimer = setTimeout(() => labelCopy(false), COPIED_MS)
+  }
+
+  const labelLineCopy = (button, copied) => {
+    const label = logViews[tool][copied ? 'copiedLine' : 'copyLine']
+    button.setAttribute('aria-label', label)
+    button.title = label
+    button.toggleAttribute('data-copied', copied)
+  }
+
+  const copyLine = async (button) => {
+    const entry = lineEntries.get(button)
+    if (!entry) return
+    const view = tool
+    await navigator.clipboard.writeText(lineText(entry))
+    if (tool !== view) return
+    labelLineCopy(button, true)
+    setTimeout(() => {
+      if (button.isConnected && tool === view) labelLineCopy(button, false)
+    }, COPIED_MS)
   }
 
   const showLog = (name) => {
@@ -434,18 +459,20 @@ export const reviewWidget = ({
     toggle.classList.remove('holding')
   }
 
-  const closeByHold = () => {
+  const removeByHold = () => {
     cancelHold()
     swallowClick = true
     collapse()
+    removed = true
+    host.remove()
   }
 
   const startPress = () => {
     pressing = true
     swallowClick = false
-    if (actions.hidden || holdTimer) return
+    if (holdTimer) return
     toggle.classList.add('holding')
-    holdTimer = setTimeout(closeByHold, closeHoldMs)
+    holdTimer = setTimeout(removeByHold, removeHoldMs)
   }
 
   const endPress = () => {
@@ -511,6 +538,7 @@ export const reviewWidget = ({
       return
     }
     if (actions.hidden) expand(true)
+    else collapse()
   })
 
   actions.addEventListener('click', (event) => {
@@ -534,6 +562,7 @@ export const reviewWidget = ({
     else if (action === 'cancel') reset()
     else if (action === 'clear') clear()
     else if (action === 'copy') copy()
+    else if (action === 'copy-line') copyLine(event.target.closest('[data-action]'))
   })
 
   chips.addEventListener('click', (event) => {

@@ -16,7 +16,6 @@ pub const REPORT_MODULE: &str = "/@imp/report.js";
 pub const THEME_EDITOR_MODULE: &str = "/@imp/theme-editor.js";
 const WIDGET_SIZE: u32 = 40;
 
-const WIDGET_CLOSE_HOLD_MS: u32 = 5000;
 const WIDGET_MARGIN: u32 = 16;
 const WIDGET_POSITION_KEY: &str = "imp-review-position";
 
@@ -33,6 +32,21 @@ pub fn imp_mark_svg(scheme: &str) -> String {
         "#ffffff"
     };
     source[start..end].replace("currentColor", ink)
+}
+
+fn library_hold_ms() -> u64 {
+    let source = embedded::library_file("std/shared/hold.js").expect("hold.js is embedded");
+    let start = source
+        .find("const HOLD_MS = ")
+        .expect("the hold time of the library")
+        + "const HOLD_MS = ".len();
+    let digits: String = source[start..]
+        .chars()
+        .take_while(char::is_ascii_digit)
+        .collect();
+    digits
+        .parse()
+        .expect("the hold time is a number of milliseconds")
 }
 
 pub fn read_widget_mark() -> String {
@@ -461,6 +475,8 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
             "clear": "Clear console logs",
             "copy": "Copy the console logs shown",
             "copied": "Copied the console logs shown",
+            "copyLine": "Copy this console line",
+            "copiedLine": "Copied this console line",
             "empty": "Nothing logged since the page loaded.",
             "cleared": "Cleared. The next line appears as it happens.",
             "filters": [{ "key": "level", "options": ["All", "Log", "Info", "Warn", "Error"], "initial": "All" }],
@@ -470,6 +486,8 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
             "clear": "Clear network logs",
             "copy": "Copy the network logs shown",
             "copied": "Copied the network logs shown",
+            "copyLine": "Copy this network line",
+            "copiedLine": "Copied this network line",
             "empty": "No requests since the page loaded.",
             "cleared": "Cleared. The next request appears as it happens.",
             "filters": [
@@ -504,7 +522,7 @@ pub fn review_widget_script(mark: &str, theme_editor: bool) -> String {
             "reportModule": REPORT_MODULE,
             "themeEditorModule": THEME_EDITOR_MODULE,
             "telemetryEntries": TELEMETRY_ENTRIES,
-            "closeHoldMs": WIDGET_CLOSE_HOLD_MS,
+            "removeHoldMs": library_hold_ms(),
             "previewFrameNamePrefix": crate::preview::PREVIEW_FRAME_NAME_PREFIX,
         }),
     )

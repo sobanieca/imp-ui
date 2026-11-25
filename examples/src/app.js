@@ -94,7 +94,7 @@ export const root = component('todo-root', {
           [app.stats]: { icon: luChartColumn },
           [app.about]: { icon: luInfo },
         },
-        extras: [
+        navbarExtras: [
           notifications(),
           accountMenu({ onSignOut: signOut }),
         ],

@@ -407,15 +407,15 @@ edit. It blocks no edit and no export, because a brand can accept a pair on purp
 large text only. The editor checks these pairs, because the standard components draw text in these
 combinations:
 
-| Text               | Background                                                                       |
-| ------------------ | -------------------------------------------------------------------------------- |
-| `color-text`       | `color-surface`, `color-surface-sunken`, `color-surface-hover`, `background-app` |
-| `color-heading`    | `color-surface`, `color-surface-sunken`, `background-app`                        |
-| `color-secondary`  | `color-surface`, `color-surface-sunken`, `background-app`                        |
-| `color-primary`    | `color-surface`, `color-surface-sunken`, for a link                              |
-| `color-danger`     | `color-surface`, for an error message                                            |
-| `color-on-primary` | `color-primary`, for the label of a primary button                               |
-| `color-on-danger`  | `color-danger`, for the label of a danger button                                 |
+| Text               | Background                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| `color-text`       | `color-surface`, `color-surface-sunken`, `color-surface-hover`, `background-app`, `background-content` |
+| `color-heading`    | `color-surface`, `color-surface-sunken`, `background-app`, `background-content`                        |
+| `color-secondary`  | `color-surface`, `color-surface-sunken`, `background-app`, `background-content`                        |
+| `color-primary`    | `color-surface`, `color-surface-sunken`, for a link                                                    |
+| `color-danger`     | `color-surface`, for an error message                                                                  |
+| `color-on-primary` | `color-primary`, for the label of a primary button                                                     |
+| `color-on-danger`  | `color-danger`, for the label of a danger button                                                       |
 
 The editor reads every CSS color syntax: a hex color, a color name, `rgb()`, `hsl()`, `hwb()`,
 `lab()`, `lch()`, `oklab()`, `oklch()` and `color()`. It converts the color to sRGB, as the screen
@@ -452,7 +452,7 @@ theme of your own must define all of them:
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Typography | `font-family`, `font-family-mono`, `font-family-heading`, `font-size-sm`, `font-size-md`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-weight-normal`, `font-weight-bold`, `line-height-tight`, `line-height-normal`                           |
 | Color      | `color-primary`, `color-on-primary`, `color-secondary`, `color-danger`, `color-on-danger`, `color-success`, `color-warning`, `color-info`                                                                                                                |
-| Surface    | `color-text`, `color-heading`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `shadow-sm`, `shadow-md`, `shadow-lg`                                                                   |
+| Surface    | `color-text`, `color-heading`, `color-surface`, `color-surface-sunken`, `color-surface-hover`, `color-border`, `color-shadow`, `background-app`, `background-content`, `shadow-sm`, `shadow-md`, `shadow-lg`                                             |
 | Palette    | `color-gray`, `color-brown`, `color-red`, `color-orange`, `color-amber`, `color-yellow`, `color-lime`, `color-green`, `color-teal`, `color-cyan`, `color-sky`, `color-blue`, `color-indigo`, `color-violet`, `color-purple`, `color-pink`                |
 | Metrics    | `space-1`, `space-2`, `space-3`, `space-4`, `space-5`, `space-6`, `space-page`, `radius-item`, `radius-container`, `border-width`, `focus-ring-width`, `icon-stroke-width`, `duration-fast`, `duration-medium`, `disabled-opacity`, `breakpoint-desktop` |
 | Loader     | `loader`                                                                                                                                                                                                                                                 |
@@ -473,7 +473,12 @@ tone, for secondary text and for a link with less emphasis. `color-surface` is a
 `color-surface-sunken` is the page behind the panel. `color-surface-hover` is the tint under the
 pointer. `background-app` is what the app frame paints under everything. It is the one token that
 takes a CSS `background` and not a plain color, so it can take a gradient or an image as readily as
-a flat value. The built-in themes set it to their `color-surface`. See
+a flat value. The built-in themes set it to their `color-surface`. `background-content` is what
+the frame paints under the content column, over `background-app`. It is `none` by default, so the
+content sits on the app background. Set it to a surface color when a picture or a busy gradient in
+`background-app` distracts from the page. The column turns into a solid panel, rounded and apart
+from the bar, and the background still shows in the gaps and the margins. A frame that names no gap
+takes a small one, so the column never runs into the bar. See
 **[Standard components](std-components.md)** for how the library uses these tokens. See the
 [component gallery](/components) to watch one token change land on every component at the same time.
 

@@ -3,7 +3,7 @@
 ```js
 import { dismiss, notify, toast } from 'imp/std/feedback'
 
-shell({ extras: [notifications()] }, toast({ client: 'acme.api' }), router(...))
+shell({ navbarExtras: [notifications()] }, toast({ client: 'acme.api' }), router(...))
 
 notify({ kind: 'success', title: 'Report sent' })
 

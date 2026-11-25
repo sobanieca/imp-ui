@@ -214,7 +214,7 @@ pickers. imp lays all of that out, scrolls each region on its own, and makes it 
 ```js
 import { luChartColumn, luUsers } from 'imp/icons'
 import { router } from 'imp/router'
-import { appLogo, shell, themeSelect, userCard } from 'imp/std/shell'
+import { accountMenu, appLogo, notifications, shell, themeSelect } from 'imp/std/shell'
 import { app } from './app-map.js'
 
 shell(
@@ -229,7 +229,8 @@ shell(
     logo: appLogo({ label: 'Acme' }),
     navbar: { label: 'Sections' },
     sidebar: { label: 'Pages' },
-    extras: [themeSelect(), userCard({ name: user.name, description: user.email })],
+    navbarExtras: [notifications(), accountMenu({ name: user.name, onSignOut }, themeSelect())],
+    sidebarExtras: supportCard(),
     signIn: app.signIn,
   },
   router({ map: app, guards, screens }),
@@ -314,9 +315,22 @@ return URL under the sign-in node, so that it also shows without the chrome. imp
 talks to no identity provider. Sign-out is your own function, which you pass to `accountMenu` as
 `onSignOut`. The sign-in page is an ordinary page, so analytics counts its views.
 
-**Keep the bar light, and group the account controls.** The sections and the extras share the top
-bar. A language picker, a theme picker and a user card side by side take the place of two or three
-sections, and a section that does not fit scrolls out of view. So put those controls in one
+**Two props hold your own controls, and their names say where they show.**
+
+- `navbarExtras` show at the end of the top bar, on every width. A phone keeps them in its top bar,
+  so a person reaches them without opening the menu. Put one or two compact controls here: a Log in
+  button, the `notifications` bell, the `accountMenu`.
+- `sidebarExtras` show wherever the sidebar shows: under the rows of the column on a desktop, and in
+  the drawer of the hamburger on a phone. Put a support card, an upgrade card or a link to your help
+  site here. They show in every section, and they keep the column even in a section with no
+  children.
+
+With `navbar: false` there is no top bar on a desktop, so the `navbarExtras` move to the foot of the
+column. A phone still shows them in its top bar.
+
+**Keep the bar light, and group the account controls.** The sections and the `navbarExtras` share
+the top bar. A language picker, a theme picker and a user card side by side take the place of two or
+three sections, and a section that does not fit scrolls out of view. So put those controls in one
 `accountMenu`: an avatar button that opens a small popover with the person, the pickers and the
 sign-out.
 
@@ -324,16 +338,20 @@ sign-out.
 accountMenu({ name: user.name, description: user.email, onSignOut }, langSelect(), themeSelect())
 ```
 
-On a desktop the browser runs the popover, and CSS anchor positioning places it under the avatar.
-The panel closes when the focus leaves it, so an open panel never covers the focused control. On a
-phone the shell moves the extras into its drawer, and the same panel shows inline there, without the
-button.
+The browser runs the popover, and CSS anchor positioning places it under the avatar, also in the
+top bar of a phone. The panel closes when the focus leaves it, so an open panel never covers the
+focused control.
 
-**A multi-tenant app gets a switcher.** `orgSelect` lists the organizations that a person belongs
-to, shows the current one on its trigger, and reports a choice. Put it beside the logo, or in
-`extras`. What a switch means is yours: a navigation to the URL of the tenant, or a new token. Pass
-`onCreateClick`, and the menu opens with "Create organization" above the organizations. It runs
-only after a held press, so nobody who only switches creates one by a slip.
+**A multi-tenant app gets a switcher.** A tenant is the unit that your app keeps apart, such as an
+organization, a workspace or a team. `tenantSelect` lists the tenants that a person belongs to,
+shows the current one on its trigger, and reports a choice. Give it to the `tenant` prop of the
+shell. The bar shows it beside the logo. A phone shows it in the drawer, on a row of its own under
+the logo, so neither is squeezed. A `tag` on a tenant, such as `{ text: 'Admin', color: 'violet' }`,
+shows the role of the person beside the name. What a switch means is yours: a navigation to the URL
+of the tenant, or a new token. Pass `onCreateClick`, and the menu opens with "Create workspace"
+above the tenants. It runs only after a held press, so nobody who only switches creates one by a
+slip. The words say "Workspace" by default. An app that calls its tenants something else changes
+them in its translations.
 
 **The application map drives the whole nav.** You describe the app once, as a map. See
 **[The application map](routing.md#the-application-map)**. The top-level nodes are the sections in the bar. When a screen binds
@@ -344,13 +362,9 @@ section with no children gets no column, and the content takes the full width. Y
 twice, and a change to the map arrives everywhere at once.
 
 **An app can show a column and no bar.** Set `navbar: false`. The frame then shows the top-level
-nodes as the rows of the column, and their children under them. The bar goes away, and the logo and
-the extras move into the column. A phone still shows a top bar with the menu button. To paint a
+nodes as the rows of the column, and their children under them. The bar goes away, and the logo, the
+tenant and the `navbarExtras` move into the column. A phone still shows a top bar with the menu button. To paint a
 backdrop on it, write `navbar: { hidden: true, background }` instead.
-
-**The column can hold app-wide content.** `sidebar.extras` is any content that shows under the rows
-in every section, such as a support card or a link to your help site. It keeps the column even in a
-section with no children.
 
 **The frame folds on a phone.** The bar becomes a hamburger and a title. The title names the page
 and the page above it, such as "Checks" over "Deploy to production". A top-level page has no page
@@ -359,11 +373,12 @@ bar never changes height. On a deeper page the logo waits in the drawer. The bar
 down, so the content gets the whole screen, and it slides back on the first scroll up, at the top
 of the content, and when a keyboard user tabs into it. The column becomes a bottom
 bar, where a thumb can reach it. A tap on a row with children opens them in a sheet above the bar.
-The title of that sheet is a link to the page of the row itself, when the row has one. The pickers
-and the extras move into the drawer of the hamburger. imp drops nothing. A screen reader names the
+The title of that sheet is a link to the page of the row itself, when the row has one. The sections,
+the tenant switcher and the `sidebarExtras` move into the drawer of the hamburger, and the
+`navbarExtras` stay in the top bar. imp drops nothing. A screen reader names the
 hamburger and its drawer "Menu". When the bottom bar holds every section, the drawer has no
 navigation region, so the reader does not find an empty one. The drawer is as tall as its content,
-up to the height of the screen, so a drawer with only the extras leaves no empty panel. On a desktop
+up to the height of the screen, so a drawer with only a few rows leaves no empty panel. On a desktop
 the column collapses to an icon rail when every row has an icon.
 
 **The content area is the screen region of the router, and it can animate.** A forward navigation
@@ -406,7 +421,7 @@ page. The link is hidden until the keyboard moves the focus to it, and it moves 
 content. A tap never shows it.
 
 `imp/std/shell` ships the pieces that usually fill the regions of the frame: `appLogo`, `userCard`,
-`accountMenu`, `orgSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,
+`accountMenu`, `tenantSelect`, `themeSelect`, `langSelect` and the `notifications` bell. The three pickers are menus,
 with the current choice on the trigger. `themeSelect` offers the themes that `init` lists, and
 `langSelect` offers the languages of your translations. Each one sets an app-wide state of imp, so
 every picker on the page agrees, and `init({ persist: true })` remembers the choice. The theming
@@ -859,7 +874,7 @@ looked away can still read the message and answer its question:
 import { notify, toast } from 'imp/std/feedback'
 import { notifications } from 'imp/std/shell'
 
-shell({ extras: [notifications()] }, toast(), router({ map: app, screens }))
+shell({ navbarExtras: [notifications()] }, toast(), router({ map: app, screens }))
 
 const choice = await notify({
   kind: 'warning',
@@ -1063,7 +1078,7 @@ The library has one component per job. A name from another library often maps to
 | result page        | `emptyState` with a `kind`                                               |
 | illustration       | `emptyState` with an `image`                                             |
 | submit button      | a `button` whose click is `submitForm`                                   |
-| workspace switcher | `orgSelect`                                                              |
+| tenant switcher    | `tenantSelect`                                                           |
 | feedback widget    | `bugReport`, the "Report a bug" trigger                                  |
 | footer             | the `footer` prop of `shell`                                             |
 | avatar group       | a `flex` of avatars, with a `tag` for "+4"                               |

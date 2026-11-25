@@ -11,12 +11,12 @@ already told imp the page, the element and the state of the app. The command pri
 it first, then act on it.
 
 The dev server puts a **review widget** on every page that it serves. It is the imp mark in the
-corner, and the person can drag it anywhere. A click on the mark opens the widget. A hold of five
-seconds on the mark closes it. The person presses the mark, presses **Add review**,
+corner, and the person can drag it anywhere. A click on the mark opens the widget, and the next click closes it. A hold of 1.5
+seconds on the mark removes the widget from the page until the next reload. The person presses the mark, presses **Add review**,
 clicks an element and types a comment. imp writes the result to `.imp/reviews/`. This is the inbound
 half of the development loop. [start](start.md) is the outbound half, through `imp logs`. The mark
 also opens **Console logs** and **Network logs**, which show the person the same entries in the
-page, live, since the page loaded. A copy button copies the lines a view shows, and a bin button
+page, live, since the page loaded. A copy button copies the lines a view shows. A copy button on a line copies that line. A bin button
 empties a view in the page. The terminal and
 `imp logs` keep every entry. The views add nothing that `imp logs` does not print. On a page of
 `imp start` the mark also opens the **Theme editor**, which is the whole theme as JSON, see

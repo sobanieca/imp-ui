@@ -39,7 +39,7 @@ only when it adds behaviour of its own. These are the merges that follow from th
 | An account menu             | `accountMenu`                        | A popover recipe that every app copied                     |
 | A floating button           | none                                 | A `button` that the app places with its own CSS            |
 | A submit button             | `button`, with `submit`              | A submit button component, a reset button component        |
-| A tenant switcher           | `orgSelect`                          | A workspace menu that every app wrote by hand              |
+| A tenant switcher           | `tenantSelect`                       | A workspace menu that every app wrote by hand              |
 | A joined row of controls    | `flex`, with `joined`                | A button group                                             |
 | A number with step buttons  | `textField`, with `stepper`          | A number stepper, an input group                           |
 | Panes that a person resizes | `splitPane`, nested for a third pane | A splitter, a resizable panel group                        |
@@ -50,8 +50,8 @@ component, and no page number prop.
 
 **The shared code lives in `std/shared/`, and a component never copies a drawing.** The menu panel
 of `menuButton` and of `breadcrumbs` is `shared/menu.js`. The avatar of `userCard`, of `list` and of
-`avatar` is `shared/avatar.js`, and `orgSelect` renders `avatar` itself. The ring of a loading
-`button` and of `loader` is `shared/spinner.js`. `themeSelect`, `langSelect` and `orgSelect` render
+`avatar` is `shared/avatar.js`, and `tenantSelect` renders `avatar` itself. The ring of a loading
+`button` and of `loader` is `shared/spinner.js`. `themeSelect`, `langSelect` and `tenantSelect` render
 `menuButton`, and add no menu of their own. The infinite scroll of `table`, `list` and `timeline` is
 `shared/load-more.js`. The month matrix of `datePicker` and `calendar` is `shared/dates.js`. The
 check of an `items` array, with the warning for a bad entry and the `id` that defaults to the index,

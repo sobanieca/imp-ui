@@ -17,10 +17,11 @@ same component as the one in the bar.
 ## Decision
 
 **`imp/std/shell` is a component group like any other.** It holds the pieces that usually fill the
-frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect`, `langSelect` and
+frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `tenantSelect`, `themeSelect`, `langSelect` and
 `notifications`.
 
-- **`shell` gains no prop for a piece.** Each piece is DOM that the app passes into a region. So the
+- **`shell` gains no prop for a piece.** Each piece is DOM that the app passes into a region: `logo`, `tenant`,
+  `navbarExtras` or `sidebarExtras`. So the
   frame does not change, and you can replace any piece with your own, and you ask the frame for no
   permission. The name of the group says where these pieces are usually used, not where you can use
   them. The one piece the frame renders itself is `breadcrumbs`, from the application map, see
@@ -29,8 +30,8 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect
 - **A nav row is not a new component.** A sidebar row and a navbar row are nodes of the application
   map. Each one takes an `icon`, which is any DOM, and a `tag`, through the `nav` of the shell. One
   data shape drives the column, the bar, the drawer and the bottom bar of a phone. `shell` renders
-  that shape through one shared row builder. An action is not a destination, so it goes in `extras`,
-  such as the `accountMenu`.
+  that shape through one shared row builder. An action is not a destination, so it goes in
+  `navbarExtras`, such as the `accountMenu`.
 - **`icon` lands in the General group.** It draws one icon in `currentColor`, from a value that the
   app imports, see `bundled-icon-set.md`. Every icon prop in the library accepts **any DOM**. So
   `icon` is a convenience, and never a requirement. A component that needs a mark internally still
@@ -46,12 +47,12 @@ frame of an app: `appLogo`, `breadcrumbs`, `userCard`, `orgSelect`, `themeSelect
   `lang` states of imp. The choices come from `init`, and so does the storage of the choice, see
   `app-wide-theme-and-language.md`. So two pickers on one page always agree, and a picker on a
   settings page sets the theme of every page.
-- **Every picker of the group is a `menuButton`.** `themeSelect`, `langSelect` and `orgSelect`
+- **Every picker of the group is a `menuButton`.** `themeSelect`, `langSelect` and `tenantSelect`
   render the shared menu, with the current choice on the trigger and a `menuitemradio` per option. A
   native `<select>` in a bar had a different look in every browser and no room for an icon or an
   avatar. A menu is the one control of the library for a choice from a short list, and the three
   pickers add no drawing of their own to it.
-- **`orgSelect` is the tenant switcher, and it remembers nothing.** It shows the organizations that
+- **`tenantSelect` is the tenant switcher, and it remembers nothing.** It shows the tenants that
   the app passes, marks the current one, and reports a choice through a cancelable `select` event
   and a write into the `selected` state. The tenant belongs to the session and to the URL, so what a
   switch does is the app's: a navigation to the param node of the tenant, see `application-map.md`.

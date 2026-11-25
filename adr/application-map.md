@@ -180,7 +180,7 @@ handle per node.**
   node off the nav. The guard redirects a visitor with no session
   to the sign-in node, and the router, the nav, `imp map`, `app-analytics.json` and analytics treat
   it as an ordinary page. `shell` shows it without the chrome, see `app-shell-component.md`.
-  `userCard` in `extras` displays the person.
+  `accountMenu` in `navbarExtras` displays the person.
 
 - **`imp map` prints the tree.** `imp.json` names the map file under `map`. The file imports
   `appMap` and its parts, so the CLI bundles it, runs it in its embedded QuickJS, with no DOM, and
@@ -202,8 +202,8 @@ handle per node.**
 - A map runs only as far as its screens. To click through a new map, an app binds a small screen to
   each node. The warning at mount names the nodes that still need one.
 - The map cannot express a nav row that exists only at runtime. A list of runtime destinations is a
-  screen of the app, such as a list of projects, or an `orgSelect` beside the logo. A nav row for an
-  external link is not a node either. It is DOM in `sidebar.extras` or in `extras`.
+  screen of the app, such as a list of projects, or a `tenantSelect` in the `tenant` prop of the shell. A nav row for an
+  external link is not a node either. It is DOM in `sidebarExtras` or in `navbarExtras`.
 - A screen that writes its label after `setup` resolves shows the raw value for a moment. The rule
   to write it before `setup` resolves is a convention that the router cannot check.
 - A mistyped `description`, such as `descripton: 'Admin'`, is a child node, because a string value is

@@ -1,11 +1,11 @@
-# accountMenu - the avatar button of the signed-in person, with a panel that folds into the drawer
+# accountMenu - the avatar button of the signed-in person, with a popover panel
 
 ```js
 import { accountMenu, langSelect, shell, themeSelect } from 'imp/std/shell'
 
 accountMenu({ name: user.name, description: user.email, onSignOut: signOut })
 accountMenu({ name, description, onSignOut }, themeSelect(), langSelect())
-shell({ map: app, extras: [notifications(), accountMenu({ name, onSignOut })] })
+shell({ map: app, navbarExtras: [notifications(), accountMenu({ name, onSignOut })] })
 ```
 
 The call shape is `accountMenu(props?, ...children)`. The children go into the panel, between the
@@ -20,13 +20,13 @@ person and the sign-out button. Pickers such as `themeSelect` and `langSelect` g
 | `label`       | string, or a state            | "Account and settings" | The name of the trigger                   |
 | `onSignOut`   | `() => void`                  | -                      | Adds a "Sign out" button that calls it    |
 
-On a desktop the trigger is an avatar button, and the panel is a popover under it. Below `48rem`
-the shell moves `extras` into the drawer. There the trigger hides, and the panel shows inline.
+The trigger is an avatar button on every width, and the panel is a popover under it. The panel
+flips to fit the screen, so it works in the phone bar too.
 
 Rules an agent gets wrong:
 
-- **Put it in `extras` of `shell`**, and render it only for a signed-in person, through
-  `session.view(...)`.
+- **Put it in `navbarExtras` of `shell`**, and render it only for a signed-in person, through
+  `session.view(...)`. It then stays in the top bar on a phone, so the person is one tap away.
 - **Do not write the popover yourself.** The panel opens and closes through the platform: Escape, a
   click outside, and a Tab out of the panel close it.
 - **The sign-out is yours.** `onSignOut` runs your code. imp holds no session.
@@ -50,5 +50,5 @@ session.view((user) =>
 )
 ```
 
-Related: imp skill std/userCard - the card inside the panel; imp skill std/shell - the extras that
-hold it; imp skill std/themeSelect - a picker for the panel.
+Related: imp skill std/userCard - the card inside the panel; imp skill std/shell - the `navbarExtras`
+that hold it; imp skill std/themeSelect - a picker for the panel.

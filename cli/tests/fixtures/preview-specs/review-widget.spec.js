@@ -110,6 +110,13 @@ test('the review widget picks an element in the preview page', async ({ page: ho
     await waitFor('the copied lines', () => copied !== null)
     steps.copied = copied
     steps.copiedLabel = `${copyButton.getAttribute('aria-label')} (marked ${copyButton.hasAttribute('data-copied')})`
+    const lineCopy = shadow.querySelector('.lines [data-action="copy-line"]')
+    copied = null
+    steps.lineCopyLabel = lineCopy.getAttribute('aria-label')
+    lineCopy.click()
+    await waitFor('the copied line', () => copied !== null)
+    steps.lineCopied = copied
+    steps.lineCopiedLabel = `${lineCopy.getAttribute('aria-label')} (marked ${lineCopy.hasAttribute('data-copied')})`
     chip('Info').click()
     steps.noMatch = shadow.querySelector('.lines').textContent.trim()
     chip('All').click()
@@ -152,23 +159,20 @@ test('the review widget picks an element in the preview page', async ({ page: ho
       toggle.dispatchEvent(new PointerEvent(type, { button: 0, pointerId: 1, bubbles: true }))
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
     toggle.click()
+    steps.openAfterClickWhileOpen = open()
+    steps.panelAfterClickWhileOpen = shadow.querySelector('.panel').hidden ? 'hidden' : 'shown'
+    toggle.click()
     steps.openAfterClick = open()
     press('pointerdown')
     steps.ringWhileHeld = toggle.classList.contains('holding')
     await wait(300)
     press('pointerup')
     toggle.click()
-    steps.openAfterShortHold = open() && !toggle.classList.contains('holding')
+    steps.closedByShortPress = !open() && !toggle.classList.contains('holding')
+    toggle.click()
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     steps.openAfterOutsideEscape = open()
     steps.toggleHint = toggle.title
-    press('pointerdown')
-    await waitFor('the hold to close the widget', () => !open())
-    press('pointerup')
-    toggle.click()
-    steps.openAfterLongHold = open()
-    toggle.click()
-    steps.openAgain = open()
     const pointer = (type, x, y) =>
       toggle.dispatchEvent(
         new PointerEvent(type, {
@@ -221,6 +225,18 @@ test('the review widget picks an element in the preview page', async ({ page: ho
     await waitFor('the widget to leave the removed modal', () => parentOf() === 'body')
     steps.afterRemoval = parentOf()
     confirm.remove()
+    steps.collapsedBeforeLongHold = !open()
+    press('pointerdown')
+    await waitFor('the hold to remove the widget', () => !widget.isConnected)
+    press('pointerup')
+    await wait(0)
+    steps.inPageAfterLongHold = widget.isConnected
+    const later = document.createElement('dialog')
+    document.body.append(later)
+    later.showModal()
+    await wait(0)
+    steps.inPageAfterNextModal = widget.isConnected
+    later.remove()
     return steps
   })
   console.log(`IMP-REPORT-BEGIN\n${JSON.stringify(flow)}\nIMP-REPORT-END`)

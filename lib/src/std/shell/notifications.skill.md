@@ -1,10 +1,10 @@
 # notifications - the bell with the unread count, and the drawer of recent notifications
 
 ```js
-import { notifications, userCard } from 'imp/std/shell'
+import { accountMenu, notifications } from 'imp/std/shell'
 import { notify, toast } from 'imp/std/feedback'
 
-shell({ extras: [notifications(), userCard(session)] }, toast(), router(...))
+shell({ navbarExtras: [notifications(), accountMenu({ name })] }, toast(), router(...))
 
 notify({ kind: 'success', title: 'Report sent' })
 ```
@@ -23,6 +23,7 @@ Rules an agent gets wrong:
 
 - **There is no `items` prop and no `count` prop.** The bell reads the app-wide store that `notify`
   writes. To add a row, call `notify`. To remove one, call `dismiss(id)`.
+- **Put the bell in `navbarExtras` of `shell`.** It then stays in the top bar on a phone.
 - **The bell renders its own drawer.** Do not mount a `drawer` for it, and do not pass an `open`
   state. A press opens a modal drawer titled "Notifications", and Escape closes it.
 - **To open the drawer takes the listed popups out of the corner.** While the drawer is open, a new
@@ -50,7 +51,7 @@ Rules an agent gets wrong:
 shell(
   {
     logo: appLogo({ label: 'Acme' }),
-    extras: [notifications({ variant: 'ghost' }), userCard({ name })],
+    navbarExtras: [notifications({ variant: 'ghost' }), accountMenu({ name })],
   },
   toast({ client: 'acme.api' }),
   router(routes),
