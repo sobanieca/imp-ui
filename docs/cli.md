@@ -27,9 +27,10 @@ it on your `PATH`:
 curl -fsSL https://imp-ui.com/install.sh | bash
 ```
 
-The script installs to `/usr/local/bin` by default, for all users. If you can't write to that
-folder, the script stops with an error: run it with `sudo bash` instead of `bash`. To choose another
-location, set `INSTALL_DIR` to a folder on your `PATH`, such as
+The script installs to `~/.imp/bin`, with no `sudo` needed. If that folder is not on your `PATH`,
+the script asks to add it in your shell's startup file (`~/.bashrc`, `~/.zshrc`, fish's `conf.d` or
+`~/.profile`). Set `IMP_NO_MODIFY_PATH=1` to leave the file unchanged. Run as root, the script
+installs to `/usr/local/bin`. To choose another folder, set `INSTALL_DIR`, such as
 `curl -fsSL https://imp-ui.com/install.sh | INSTALL_DIR=~/.local/bin bash`.
 To install by hand, download the binary for your platform from the
 [releases page](https://github.com/sobanieca/imp-ui/releases/latest). Make it executable and put it

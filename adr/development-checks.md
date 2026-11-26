@@ -4,11 +4,13 @@
 
 Some mistakes are silent in the browser. A node that a component passes into another component moves
 into the shadow root of that component. The styles of the caller stop at the boundary, so the box
-renders without its CSS, and nothing reports it. A lint rule cannot see this boundary. It reads one
-file, and the callee is often in another file. The node can also arrive through a prop, or from a
-`view` that renders later. A lint rule also flags correct code, when two components in one file
-share a class name. The runtime knows the truth: which component created a node, where the node
-ended up, and whether a rule of the creator matches it.
+renders without its CSS, and nothing reports it. A lint rule sees only part of this boundary. It
+reads one file, and a component of the app is often in another file. The node can also arrive
+through a prop, or from a `view` that renders later. The runtime knows the truth: which component
+created a node, where the node ended up, and whether a rule of the creator matches it. The plain
+case is visible in the source, though: an element with a class of the `styles` around it, written
+as a child or a prop of a standard component, which always renders its children in its own shadow
+root.
 
 Such a check costs work on every render, and a production bundle must not carry it. imp already
 folds a build flag out of the build, see `build-flags.md`. So there is a precedent for code that
@@ -34,8 +36,15 @@ shadow root, imp compares the creator of each element with the component that no
 they differ, and a rule of the styles of the creator matches the element, imp logs one warning per
 rule. The warning names both components and the rule.
 
+`imp lint` reports the plain case before the app runs, as `imp/styles-boundary`: an element whose
+literal `class` names a class of the `styles` of the component that defines it, written as a child
+or a prop of a standard component in the same definition. The rule does not follow helper functions,
+`view` and `each` callbacks, or components of the app. The runtime check covers those.
+
 ## Consequences
 
+- The most common form of the mistake, a layout box of classes inside `stack`, `flex` or `card`,
+  fails `imp lint`, so it does not depend on someone reading the console.
 - A silent CSS failure has a message in development, in the console and in the session log. The
   message names the two components and the rule. It fires for a callee in another file, for a node
   passed through a prop, and for a node that a `view` or an `each` renders later.

@@ -28,6 +28,7 @@ pub const IMP_RULES: &[&str] = &[
     "abort-check-after-await",
     "no-state-as-child",
     "no-get-in-binding",
+    "styles-boundary",
     "no-root-query-in-setup",
     "no-raw-timer",
     "component-name",
@@ -1393,6 +1394,280 @@ fn no_state_as_child(ctx: &Ctx, factories: &FactoryTracker, handles: &HandleTrac
     }
 }
 
+/// The class selectors of a CSS text: `.name` where the dot follows no
+/// letter or digit (so `0.5rem` and `url(./a.svg)` are not classes).
+fn css_class_names(css: &str) -> BTreeSet<String> {
+    let chars: Vec<char> = css.chars().collect();
+    let mut names = BTreeSet::new();
+    let mut index = 0;
+    while index < chars.len() {
+        let starts_class = chars[index] == '.'
+            && (index == 0 || !chars[index - 1].is_alphanumeric())
+            && chars
+                .get(index + 1)
+                .is_some_and(|next| next.is_alphabetic() || *next == '_' || *next == '-');
+        if !starts_class {
+            index += 1;
+            continue;
+        }
+        let start = index + 1;
+        let mut end = start;
+        while end < chars.len()
+            && (chars[end].is_alphanumeric() || chars[end] == '_' || chars[end] == '-')
+        {
+            end += 1;
+        }
+        names.insert(chars[start..end].iter().collect());
+        index = end;
+    }
+    names
+}
+
+fn styles_text(expression: &Expression) -> Option<String> {
+    match expression.without_parentheses() {
+        Expression::StringLiteral(literal) => Some(literal.value.display().to_string()),
+        Expression::TemplateLiteral(template) => Some(
+            template
+                .quasis
+                .iter()
+                .map(|quasi| quasi.value.raw.as_str())
+                .collect::<Vec<_>>()
+                .join(" "),
+        ),
+        _ => None,
+    }
+}
+
+/// The class names a literal `class` prop sets: a string, an array of
+/// strings, or the keys of an object.
+fn class_prop_names(value: &Expression) -> Vec<String> {
+    let split = |text: &str| {
+        text.split_whitespace()
+            .map(String::from)
+            .collect::<Vec<_>>()
+    };
+    match value.without_parentheses() {
+        Expression::StringLiteral(literal) => split(&literal.value.display().to_string()),
+        Expression::TemplateLiteral(template) if template.expressions.is_empty() => template
+            .quasis
+            .iter()
+            .flat_map(|quasi| split(quasi.value.raw.as_str()))
+            .collect(),
+        Expression::ArrayExpression(array) => array
+            .elements
+            .iter()
+            .filter_map(|element| element.as_expression())
+            .flat_map(class_prop_names)
+            .collect(),
+        Expression::ObjectExpression(object) => object
+            .properties
+            .iter()
+            .filter_map(|property| match property {
+                ObjectPropertyKind::ObjectProperty(property) => property_key_name(property),
+                ObjectPropertyKind::SpreadProperty(_) => None,
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+struct StylesBoundary {
+    html: ImportTracker,
+    std: ImportTracker,
+    std_names: HashSet<String>,
+    html_names: HashSet<String>,
+}
+
+impl StylesBoundary {
+    fn html_tag<'e>(&self, callee: &'e Expression) -> Option<&'e str> {
+        if let Some(name) = identifier_name(callee) {
+            return self.html.locals.contains_key(name).then_some(name);
+        }
+        self.html
+            .namespace_callee_name(callee)
+            .filter(|name| self.html_names.contains(*name))
+    }
+
+    fn std_component<'e>(&self, callee: &'e Expression) -> Option<&'e str> {
+        if let Some(name) = identifier_name(callee) {
+            return self.std.locals.contains_key(name).then_some(name);
+        }
+        self.std
+            .namespace_callee_name(callee)
+            .filter(|name| self.std_names.contains(*name))
+    }
+}
+
+struct StyledComponent {
+    name: String,
+    classes: BTreeSet<String>,
+}
+
+/// Reports the elements of `expression`, a child or a prop value of the
+/// standard component `owner`, whose `class` names a class of the styles of
+/// the component that builds them.
+fn report_lost_classes(
+    ctx: &Ctx,
+    tracker: &StylesBoundary,
+    styled: &StyledComponent,
+    owner: &str,
+    expression: &Expression,
+) {
+    match expression.without_parentheses() {
+        Expression::CallExpression(call) => {
+            let Some(tag) = tracker.html_tag(&call.callee) else {
+                return;
+            };
+            for argument in &call.arguments {
+                if let Argument::ObjectExpression(props) = argument {
+                    for property in &props.properties {
+                        let ObjectPropertyKind::ObjectProperty(property) = property else {
+                            continue;
+                        };
+                        if property_key_name(property).as_deref() != Some("class") {
+                            continue;
+                        }
+                        for class in class_prop_names(&property.value) {
+                            if styled.classes.contains(&class) {
+                                ctx.report(
+                                    "styles-boundary",
+                                    property.span,
+                                    format!(
+                                        "'.{class}' of the styles of '{}' does not reach this '{tag}': it is a child of '{owner}', a standard component that renders its children in its own shadow root - give the element a component of its own, keep it out of '{owner}' (for example as the node that setup returns), or set an inline style",
+                                        styled.name
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                } else if let Some(child) = argument.as_expression() {
+                    report_lost_classes(ctx, tracker, styled, owner, child);
+                }
+            }
+        }
+        Expression::ArrayExpression(array) => {
+            for element in array
+                .elements
+                .iter()
+                .filter_map(|element| element.as_expression())
+            {
+                report_lost_classes(ctx, tracker, styled, owner, element);
+            }
+        }
+        Expression::ConditionalExpression(conditional) => {
+            report_lost_classes(ctx, tracker, styled, owner, &conditional.consequent);
+            report_lost_classes(ctx, tracker, styled, owner, &conditional.alternate);
+        }
+        Expression::LogicalExpression(logical) => {
+            report_lost_classes(ctx, tracker, styled, owner, &logical.right);
+        }
+        _ => {}
+    }
+}
+
+fn styles_boundary(ctx: &Ctx, imports: &[&ImportDeclaration]) {
+    let exports = imp_module_exports();
+    let mut definitions = ImportTracker::default();
+    let mut tracker = StylesBoundary {
+        html: ImportTracker::default(),
+        std: ImportTracker::default(),
+        std_names: HashSet::new(),
+        html_names: HashSet::new(),
+    };
+    for specifier in std_specifiers() {
+        if let Some(names) = exports.get(specifier) {
+            tracker.std_names.extend(
+                names
+                    .iter()
+                    .filter(|name| !matches!(name.as_str(), "notify" | "dismiss"))
+                    .cloned(),
+            );
+        }
+    }
+    if let Some(names) = exports.get("imp/html") {
+        tracker
+            .html_names
+            .extend(names.iter().filter(|name| *name != "html").cloned());
+    }
+    for declaration in imports {
+        definitions.collect(declaration, "imp", |name| {
+            (name == "component").then(|| name.to_string())
+        });
+        tracker.html.collect(declaration, "imp/html", |name| {
+            (name != "html").then(|| name.to_string())
+        });
+        for specifier in std_specifiers() {
+            let std_names = &tracker.std_names;
+            tracker.std.collect(declaration, specifier, |name| {
+                std_names.contains(name).then(|| name.to_string())
+            });
+        }
+    }
+    let is_component = |callee: &Expression| {
+        identifier_name(callee).is_some_and(|name| definitions.locals.contains_key(name))
+            || definitions.namespace_callee_name(callee) == Some("component")
+    };
+    for node in ctx.nodes() {
+        let AstKind::CallExpression(definition_call) = node.kind() else {
+            continue;
+        };
+        if !is_component(&definition_call.callee) {
+            continue;
+        }
+        let Some(Argument::ObjectExpression(definition)) = definition_call.arguments.get(1) else {
+            continue;
+        };
+        let classes = definition
+            .properties
+            .iter()
+            .find_map(|property| match property {
+                ObjectPropertyKind::ObjectProperty(property)
+                    if property_key_name(property).as_deref() == Some("styles") =>
+                {
+                    styles_text(&property.value)
+                }
+                _ => None,
+            })
+            .map(|css| css_class_names(&css))
+            .unwrap_or_default();
+        if classes.is_empty() {
+            continue;
+        }
+        let name = match definition_call.arguments.first() {
+            Some(Argument::StringLiteral(literal)) => literal.value.display().to_string(),
+            _ => "this component".to_string(),
+        };
+        let styled = StyledComponent { name, classes };
+        for inner in ctx.nodes() {
+            let AstKind::CallExpression(call) = inner.kind() else {
+                continue;
+            };
+            if call.span.start < definition.span.start || call.span.end > definition.span.end {
+                continue;
+            }
+            let Some(owner) = tracker.std_component(&call.callee) else {
+                continue;
+            };
+            for argument in &call.arguments {
+                match argument {
+                    Argument::ObjectExpression(props) => {
+                        for property in &props.properties {
+                            if let ObjectPropertyKind::ObjectProperty(property) = property {
+                                report_lost_classes(ctx, &tracker, &styled, owner, &property.value);
+                            }
+                        }
+                    }
+                    other => {
+                        if let Some(child) = other.as_expression() {
+                            report_lost_classes(ctx, &tracker, &styled, owner, child);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn no_get_in_binding(ctx: &Ctx, factories: &FactoryTracker, handles: &HandleTracker) {
     for node in ctx.nodes() {
         let AstKind::CallExpression(call) = node.kind() else {
@@ -2230,6 +2505,7 @@ pub fn run(ctx: &Ctx) {
     abort_check_after_await(ctx, &imports, &definitions);
     no_state_as_child(ctx, &factories, &handles);
     no_get_in_binding(ctx, &factories, &handles);
+    styles_boundary(ctx, &imports);
     no_root_query_in_setup(ctx, &definitions);
     no_raw_timer(ctx, &definitions);
     component_name_rule(ctx, &imports);

@@ -1,0 +1,21 @@
+$ imp lint app.js  (cwd: tests/fixtures/lint-styles-boundary)
+exit code: 1
+
+--- stdout ---
+(empty)
+
+--- stderr ---
+error[imp/styles-boundary]: '.choices' of the styles of 'demo-page' does not reach this 'div': it is a child of 'stack', a standard component that renders its children in its own shadow root - give the element a component of its own, keep it out of 'stack' (for example as the node that setup returns), or set an inline style
+ --> app.js:19:15
+
+error[imp/styles-boundary]: '.note' of the styles of 'demo-page' does not reach this 'span': it is a child of 'stack', a standard component that renders its children in its own shadow root - give the element a component of its own, keep it out of 'stack' (for example as the node that setup returns), or set an inline style
+ --> app.js:20:24
+
+error[imp/styles-boundary]: '.hint' of the styles of 'demo-page' does not reach this 'div': it is a child of 'card', a standard component that renders its children in its own shadow root - give the element a component of its own, keep it out of 'card' (for example as the node that setup returns), or set an inline style
+ --> app.js:21:30
+
+error[imp/styles-boundary]: '.choices' of the styles of 'demo-page' does not reach this 'div': it is a child of 'stack', a standard component that renders its children in its own shadow root - give the element a component of its own, keep it out of 'stack' (for example as the node that setup returns), or set an inline style
+ --> app.js:22:24
+
+Found 4 problems
+Checked 1 file

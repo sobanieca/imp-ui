@@ -16,7 +16,7 @@ scheme.
 | Prop    | Values                                    | Default     | Notes                                               |
 | ------- | ----------------------------------------- | ----------- | --------------------------------------------------- |
 | `icon`  | an export from `imp/icons` - **required** | -           | Also accepted positionally; a missing one is logged |
-| `size`  | `'sm'`, `'md'`, `'lg'`, or any CSS length | `'md'`      | `1rem`, `1.5rem`, `2rem` square                     |
+| `size`  | `'sm'`, `'md'`, `'lg'`, or any CSS length | see below   | `1rem`, `1.5rem`, `2rem` square                     |
 | `color` | a colour name below, or `'current'`       | `'current'` | `'current'` inherits the surrounding text colour    |
 | `label` | string, or a state - **live**             | -           | Names the icon; without it it is decorative         |
 
@@ -25,7 +25,17 @@ scheme.
 `'brown'`, `'red'`, `'orange'`, `'amber'`, `'yellow'`, `'lime'`, `'green'`, `'teal'`, `'cyan'`,
 `'sky'`, `'blue'`, `'indigo'`, `'violet'`, `'purple'` and `'pink'`.
 
+With no `size`, the icon is `--imp-icon-size` square, and `1.5rem` where nothing sets it. A `button`
+sets it to `1.25em` for the icons inside it, so an icon in a button follows the size of the button.
+
+| Property          | Default  |
+| ----------------- | -------- |
+| `--imp-icon-size` | `1.5rem` |
+
 Rules an agent gets wrong:
+
+- **Leave `size` off an icon in a button.** It follows the button: `button({ size: 'sm' }, icon(luPlus), 'Add')`.
+  A `size` on it wins, so `icon(luPlus, { size: 'md' })` in a small button crowds its padding.
 
 - **The icon is an imported name, not a string.** `icon('home')` draws nothing and logs an error.
   Import `luHouse` from `imp/icons` and pass the value. The bundler then ships that one drawing.

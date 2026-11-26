@@ -510,7 +510,9 @@ build carries the drawing data for the icons that you imported, and nothing else
 `import * as icons from 'imp/icons'`. The `imp/icons-by-name` lint rule catches that line for you.
 
 `color` names a theme token, such as `'primary'` or `'danger'`, so an icon re-skins with the theme.
-The default takes the color of the text around it. An icon also sits on the line of that text, so
+The default takes the color of the text around it. With no `size`, an icon is 1.5rem, except
+inside a `button`, where it follows the size of the button: write `button({ size: 'sm' },
+icon(luPlus), 'Add')` and the icon shrinks with the button. An icon also sits on the line of that text, so
 `link({ href: '/next' }, 'Next ', icon(luArrowRight, { size: 'sm' }))` keeps the arrow beside the
 word. Every icon prop of a component also accepts a DOM node, so your own `<svg>`, or a drawing on a
 `<canvas>`, goes wherever a Lucide export goes. A toast is the one exception: its keys are plain

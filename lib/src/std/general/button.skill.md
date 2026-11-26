@@ -50,6 +50,9 @@ Rules an agent gets wrong:
   button in the app. Use this one, with `variant`, `size` and `square`.
 - **An icon next to text needs no wrapper.** Pass the icon and the text as children. The button
   centres them on one line and puts the standard gap between them.
+- **An icon in a button takes the size of the button.** Leave `size` off the `icon`: the button
+  sets `--imp-icon-size` to `1.25em` of its text, so a `size: 'sm'` square button gets a small icon
+  with room around it.
 - The accessible name is the content of the button. An icon-only button needs `label`, and
   `imp lint` reports one without it (`imp/icon-button-name`). There is no `aria-label` prop, and imp
   warns that it is unknown.
@@ -97,7 +100,7 @@ button({ variant: 'danger', size: 'sm', events: { click: remove } }, 'Delete')
 button({ variant: 'danger', hold: 2000, events: { click: removeAccount } }, 'Delete account')
 button({ block: true, events: { click: next } }, 'Continue')
 button({ variant: 'link', events: { click: showDetails } }, 'What is this?')
-button({ variant: 'ghost', size: 'sm' }, icon(luCode, { size: 'sm' }), 'Code example')
+button({ variant: 'ghost', size: 'sm' }, icon(luCode), 'Code example')
 
 const showingCode = initState(self, 'panel.code', false)
 button({ variant: 'ghost', square: true, label: 'Show code', pressed: showingCode }, icon(luCode))

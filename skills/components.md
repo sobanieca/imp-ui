@@ -116,7 +116,8 @@ This is also how you force a remount.
   its own shadow root, and a layout such as `stack` or `flex` is a component too. So
   `stack({}, div({ class: 'usage' }))` renders the div without your `.usage` rule. In development,
   imp logs a warning that names your component, the rule and the component that holds the element.
-  `imp build` drops the check. Give the box its own component, use a standard component such as
+  `imp build` drops the check. `imp lint` reports the plain case, a classed element written as a
+  child or a prop of a standard component, as `imp/styles-boundary`. Give the box its own component, use a standard component such as
   `card` or `text`, or set an inline `style`. `div({ class: 'usage' }, stack(...))` is fine, because
   the div stays in your tree.
 - **`host.focus()` works from outside.** The host of a component forwards the focus to the first

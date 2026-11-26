@@ -273,6 +273,15 @@ fn lint_no_get_in_binding() {
 }
 
 #[test]
+fn lint_styles_boundary() {
+    snapshot_command(
+        "lint-styles-boundary",
+        &["lint", "app.js"],
+        Some(&fixture("lint-styles-boundary")),
+    );
+}
+
+#[test]
 fn lint_component_name() {
     snapshot_command(
         "lint-component-name",

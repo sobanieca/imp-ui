@@ -44,6 +44,8 @@ Rules an agent gets wrong:
   with such a fragment highlights the lines and scrolls to them. With `id: 'install'` the fragment
   is `#install-L12`, so give every numbered block on a page an `id`.
 - **The block does not wrap long lines.** It scrolls sideways, and the line numbers stay in view.
+  In a grid of your own, give the column `minmax(0, 1fr)`, and in a flex row `min-inline-size: 0`:
+  a grid or flex item is as wide as its content by default, so a long line widens the page instead.
 - **Every colour comes from the theme.** The tokens read the palette of the theme, so a new theme
   recolours the code. There is no theme prop and no colour prop.
 - **The block is not an editor.** The text is selectable and copyable, and nothing else. For a code

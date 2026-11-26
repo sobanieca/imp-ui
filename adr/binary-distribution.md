@@ -64,10 +64,11 @@ mirrors the release mechanism of jsonr.
 - **An `install.sh` script detects the OS and the architecture with `uname`.** It resolves the tag
   of the latest release once. Then it downloads the matching asset and its checksum from that same
   tag, so a release published during the install cannot mix the two. It installs the binary to
-  `INSTALL_DIR`, which must be a folder on the `PATH`. The default is `/usr/local/bin`. The script
-  never calls `sudo` itself: when it cannot write to the default folder, it stops with an error
-  that says to run it with `sudo` or to set `INSTALL_DIR`. That is
-  the one-line install that `docs/cli.md` documents.
+  `~/.imp/bin`, or to `INSTALL_DIR` when it is set, or to `/usr/local/bin` when it runs as root.
+  The script never calls `sudo`. When the folder is not on the `PATH`, it asks to add it in the
+  shell's startup file, reading the answer from `/dev/tty`. Without a terminal, or with
+  `IMP_NO_MODIFY_PATH=1`, it only prints the line to add. That is the one-line install that
+  `docs/cli.md` documents.
 - **An `install.ps1` script does the same on Windows, in PowerShell.** It installs
   `imp-windows-x64.exe` as `imp.exe` into `%LOCALAPPDATA%\Programs\imp`, or `INSTALL_DIR`, and adds
   that folder to the `PATH` of the user. It needs no administrator rights.

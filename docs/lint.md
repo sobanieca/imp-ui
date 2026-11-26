@@ -388,6 +388,30 @@ error[imp/no-get-in-binding]: 'busy.get()' as the 'disabled' prop of 'button' co
 Pass the handle, as in `{ disabled: busy }`. Use `get()` in an event handler, where a snapshot is
 what you want.
 
+### `imp/styles-boundary`
+
+The `styles` of a component apply inside its own shadow root. A standard component, `stack`,
+`flex` and `card` included, moves the children you pass it into **its** shadow root, where your
+`styles` do not apply. See **[Components](components.md)**. The rule reports an element whose
+`class` names a class of the `styles` of its component, written as a child or a prop of a standard
+component:
+
+```js
+const page = component('my-app-page', {
+  styles: '.choices { display: grid; gap: 1rem }',
+  setup: () => stack({ gap: 4 }, heading('Plans'), div({ class: 'choices' }, planA(), planB())),
+})
+```
+
+```
+error[imp/styles-boundary]: '.choices' of the styles of 'my-app-page' does not reach this 'div': it is a child of 'stack', a standard component that renders its children in its own shadow root - give the element a component of its own, keep it out of 'stack' (for example as the node that setup returns), or set an inline style
+ --> src/page.js:3:58
+```
+
+Make the element the node that `setup` returns, with your own layout around the rest, give it a
+component of its own, or set an inline `style`. In development, imp also logs a warning for the
+cases the rule cannot see, such as an element built in a helper function.
+
 ### `imp/no-root-query-in-setup`
 
 While `setup` runs, the DOM that it returns is **not yet in the shadow root**. imp inserts the DOM
