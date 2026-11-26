@@ -325,6 +325,18 @@ commit where you already are.
 Commit the changes when they are complete. Do not wait for the person to ask. Do not push. Push
 only when the person asks. `cargo xtask check` must pass before you commit.
 
+### Release with every push
+
+**A push to `main` releases only a new version.** CI releases the version in `Cargo.toml` when that
+version has no tag. A push that keeps a released version releases nothing. So before you push,
+compare the version with the tags (`git tag`):
+
+- When the version already has a tag, increase the patch number in a commit named
+  `Release <version>`.
+- Change the version in `Cargo.toml`, `Cargo.lock`, `cli/tests/fixtures/map/imp.json` and
+  `cli/tests/snapshots/build-app.txt`.
+- When the version has no tag yet, do not increase it again.
+
 ## Prose style - Simplified Technical English
 
 **Write all prose in Simplified Technical English (ASD-STE100).** This covers `docs/`, `skills/`,
