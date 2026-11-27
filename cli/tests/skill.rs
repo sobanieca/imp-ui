@@ -419,7 +419,12 @@ fn skill_refresh_rewrites_the_generated_skills() {
         .unwrap()
         .to_string();
     let stale = format!("---\nname: imp\n---\n{marker}\nold\n");
-    let claude = |dir: &std::path::Path| dir.join(".claude/skills/imp/SKILL.md");
+    let claude = |dir: &std::path::Path| {
+        dir.join(".claude")
+            .join("skills")
+            .join("imp")
+            .join("SKILL.md")
+    };
     for dir in [&repo, &other, &home] {
         write(&claude(dir), &stale);
     }

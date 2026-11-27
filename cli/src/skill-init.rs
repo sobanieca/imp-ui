@@ -72,7 +72,12 @@ fn is_generated(text: &str) -> bool {
 fn skill_files(root: &Path) -> Vec<PathBuf> {
     SKILL_TARGETS
         .iter()
-        .map(|(dir, _)| root.join(dir).join(SKILL_NAME).join("SKILL.md"))
+        .map(|(dir, _)| {
+            // Join each part so a printed path uses one separator on Windows.
+            let mut path = root.to_path_buf();
+            path.extend(dir.split('/'));
+            path.join(SKILL_NAME).join("SKILL.md")
+        })
         .collect()
 }
 
