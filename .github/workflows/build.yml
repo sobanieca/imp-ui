@@ -44,7 +44,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         suite: [unit, e2e, cli]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    # A version bump changes Cargo.lock and misses the Rust cache, and a cold Windows build takes over 15 minutes.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
