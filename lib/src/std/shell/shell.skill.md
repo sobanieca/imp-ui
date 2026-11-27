@@ -254,7 +254,8 @@ Rules an agent gets wrong:
   at the top of the content, or when a control in it takes focus. Do not write a scroll listener
   for it. The trail strip hides, and the title carries the crumbs. The
   hamburger and the drawer are named "Menu" (`imp.shell.menu`). When the bottom bar holds every
-  section, the drawer has no `<nav>`. The drawer is as tall as its content, up to the full height,
+  section, the drawer has no `<nav>`. A drawer with no sections, no `tenant` and no `sidebarExtras`
+  holds only the logo, so the phone bar shows no hamburger. The drawer is as tall as its content, up to the full height,
   and its nav scrolls when it does not fit.
 - **The desktop sidebar collapses to an icon rail** from a toggle in its head. That head names the
   context, which is the param crumb when there is one. imp shows the toggle only when every row has

@@ -462,11 +462,11 @@ const live = component('my-app-live', {
 ```
 
 ```
-error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes { whenVisible: true } for a poll
+error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes a period per level, like { active: 15_000, idle: 60_000 }, for a poll
  --> src/live.js:3:18
 ```
 
-Write `interval(self, 15_000, refresh, { whenVisible: true })` instead, and drop the `onRemove`. A
+Write `interval(self, { active: 15_000, idle: 60_000 }, refresh)` instead, and drop the `onRemove`. A
 wait that runs once is `delay(self, ms, run)`. See _Work that repeats_ in
 **[Components](components.md)**.
 

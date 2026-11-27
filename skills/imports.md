@@ -6,7 +6,7 @@ configure. Never import imp by a relative path, by a URL, or with a version.
 
 | Specifier            | Exports                                                                                                        |
 | -------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`, `interval`, `delay`                                     |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`, `interval`, `delay`, `usePresence`                      |
 | `imp/html`           | `el`, `html`, ~80 tag factories (`div`, `span`, `button`, `input`...)                                          |
 | `imp/state`          | `initState`, `useState`, `computed`                                                                            |
 | `imp/router`         | `router`, `area`, `redirect`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute`, `url`, `screenRegion` |

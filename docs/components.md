@@ -334,20 +334,49 @@ const liveCheck = component('my-app-live-check', {
 - **It returns a stop function**, for a component that stops polling before it unmounts, for example
   when a check closes.
 
-A poll has no reader while its browser tab is hidden. Pass `{ whenVisible: true }` as the fourth
-argument to stop it there:
+A poll has no reader while its browser tab is hidden, and few readers while the user does nothing
+on the page. Each poll still costs a request. So instead of one number, give `interval` a period
+for each state of the user:
 
 ```js
-interval(self, 15_000, async () => check.set(await api.get(`/checks/${id}`)), {
-  whenVisible: true,
-})
+interval(self, { active: 15_000, idle: 120_000 }, async () =>
+  check.set(await api.get(`/checks/${id}`)),
+)
 ```
 
-- **A hidden tab skips the tick.** imp sends no request while the reader looks at another tab or
-  another app.
-- **The tab shows again, and `run` runs one time at once.** The data is current when the reader
-  comes back. The next tick comes `ms` after that run. A tab that was hidden for less than one tick
-  skips nothing, so it does not run early.
+This poll runs every 15 seconds while the user works on the page. When the user is idle, it runs
+every two minutes. In a hidden tab, it does not run, because the object has no `hidden` period.
+
+| Key      | The user                                          |
+| -------- | ------------------------------------------------- |
+| `active` | works on the page. This key is required.          |
+| `idle`   | sees the page, but gave no input for `idleAfter`. |
+| `hidden` | looks at another tab, or minimized the window.    |
+
+A state without a period does not run. So `{ active: 15_000 }` polls only for an active user. A
+plain number, such as `15_000`, runs in every state.
+
+The fourth argument takes two options:
+
+| Option      | Value                       | What imp does                              |
+| ----------- | --------------------------- | ------------------------------------------ |
+| `idleAfter` | ms, five minutes by default | how long without input makes the user idle |
+| `when`      | a state                     | runs only while the state is truthy        |
+
+- **The user is idle after `idleAfter` without input.** Input is a pointer, a key, a wheel or a
+  touch anywhere on the page.
+- **The user comes back, and `run` runs at once when the `active` period has passed.** The data is
+  current when the reader returns. The next tick comes one period after that run. A short absence
+  skips nothing, so the poll does not run early.
+- **Keep `idleAfter` long.** People read a page without a move of the mouse. A user that imp thinks
+  is idle sees older data until the next input. The default of five minutes suits most pages.
+- **`when` stops the poll for a reason of your app**, such as a signed-out user, an offline device
+  or a closed panel. Pass a state or a `computed`, such as `when: session`. When the state becomes
+  truthy again, the poll catches up the same way.
+
+The HTTP client has no such option. A client cannot tell a poll from a save that the user clicked,
+and a save must go through while the user is idle. So the rule goes on the timer that repeats the
+call.
 
 For work that runs once after a wait, such as a hint that hides after three seconds, use
 `delay(self, ms, run)` from `imp`. It works like `interval`, but it runs `run` one time:
@@ -368,20 +397,47 @@ HTTP client it reads:
 const watcher = component('my-app-watcher', {
   setup: (self) => {
     const api = useHttpClient(self, 'myapp.api')
-    interval(
-      self,
-      15_000,
-      async () => {
-        for (const item of await api.get('/news', { silent: true })) notify({ title: item.title })
-      },
-      { whenVisible: true },
-    )
+    interval(self, { active: 15_000, idle: 300_000 }, async () => {
+      for (const item of await api.get('/news', { silent: true })) notify({ title: item.title })
+    })
     return null
   },
 })
 
 shell({ map: app }, toast(), watcher(), router({ map: app, screens }))
 ```
+
+### Know when the user is away
+
+Some work is not a poll, but it also depends on the user. A sign-out warning waits for a long
+pause. A live connection can close in a hidden tab. `usePresence(self)` from `imp` gives you that
+signal as a read-only state:
+
+```js
+import { component, usePresence } from 'imp'
+
+const sessionGuard = component('my-app-session-guard', {
+  setup: (self) => {
+    const presence = usePresence(self, { idleAfter: 15 * 60_000 })
+    presence.watch(self, (level) => {
+      if (level === 'idle') openSignOutWarning()
+    })
+    return null
+  },
+})
+```
+
+The state holds one of three values:
+
+- **`'hidden'`** - the tab is hidden, or the window is minimized.
+- **`'idle'`** - the tab shows, but there was no input for `idleAfter` ms. The default is five
+  minutes.
+- **`'active'`** - all other cases.
+
+A tab that shows again counts as input. A window that loses the focus is not idle at once. It counts
+down as usual, so a dashboard on a second screen stays active. Bind the state, watch it, or pass it
+to `computed`, as with any other state. It ends with the component. Activity in one tab does not
+count for another tab.
 
 Each mounted component gets its **own** `self`. So a list of one hundred feeds closes one hundred
 sockets, and nothing is shared between them. That is why `self` is the correct home for a resource of

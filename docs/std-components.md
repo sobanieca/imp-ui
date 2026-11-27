@@ -377,7 +377,8 @@ The title of that sheet is a link to the page of the row itself, when the row ha
 the tenant switcher and the `sidebarExtras` move into the drawer of the hamburger, and the
 `navbarExtras` stay in the top bar. imp drops nothing. A screen reader names the
 hamburger and its drawer "Menu". When the bottom bar holds every section, the drawer has no
-navigation region, so the reader does not find an empty one. The drawer is as tall as its content,
+navigation region, so the reader does not find an empty one. When the drawer then has no tenant
+switcher and no `sidebarExtras`, it holds only the logo, so the bar shows no hamburger. The drawer is as tall as its content,
 up to the height of the screen, so a drawer with only a few rows leaves no empty panel. On a desktop
 the column collapses to an icon rail when every row has an icon.
 

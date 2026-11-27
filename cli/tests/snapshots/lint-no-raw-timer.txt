@@ -5,7 +5,7 @@ exit code: 1
 (empty)
 
 --- stderr ---
-error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes { whenVisible: true } for a poll
+error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes a period per level, like { active: 15_000, idle: 60_000 }, for a poll
  --> app.js:6:18
 
 error[imp/no-raw-timer]: 'setTimeout' in a component keeps running after the component unmounts unless you clear it yourself - use delay(self, ms, run) from 'imp': an unmount before the wait cancels it
@@ -14,7 +14,7 @@ error[imp/no-raw-timer]: 'setTimeout' in a component keeps running after the com
 error[imp/no-raw-timer]: 'setTimeout' in a component keeps running after the component unmounts unless you clear it yourself - use delay(self, ms, run) from 'imp': an unmount before the wait cancels it
  --> app.js:8:44
 
-error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes { whenVisible: true } for a poll
+error[imp/no-raw-timer]: 'setInterval' in a component keeps running after the component unmounts unless you clear it yourself - use interval(self, ms, run) from 'imp': it stops when the component unmounts, never overlaps a slow async run, and takes a period per level, like { active: 15_000, idle: 60_000 }, for a poll
  --> app.js:15:5
 
 Found 4 problems

@@ -61,8 +61,12 @@ pub const SKILLS: &[Skill] = &[
             "poll",
             "polling",
             "background",
+            "presence",
+            "usepresence",
+            "idle",
+            "inactivity",
         ],
-        summary: "custom elements with a setup lifecycle: styles, cleanup, and timers for polling and background work",
+        summary: "custom elements with a setup lifecycle: styles, cleanup, timers for polling, and user presence",
     },
     Skill {
         name: "custom-components",

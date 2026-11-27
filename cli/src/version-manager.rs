@@ -435,8 +435,35 @@ pub fn prune() -> Result<()> {
 }
 
 pub fn update(root: &Path, check: bool, requested: Option<String>) -> Result<()> {
-    println!("{}", system()?.update(root, check, requested)?);
+    let releases = system()?;
+    let target = match requested {
+        Some(version) => version,
+        None => releases.resolve_latest_version(None)?,
+    };
+    println!("{}", releases.update(root, check, Some(target.clone()))?);
+    if !check {
+        refresh_skills(&releases, &target);
+    }
     Ok(())
+}
+
+/// The skill text is part of each imp version, so the version that `imp
+/// update` pins rewrites the skills written by `imp skill --init`. A version
+/// older than this one may not know `skill --refresh`, so an update to it
+/// leaves the skills as they are.
+fn refresh_skills(releases: &Releases, target: &str) {
+    if is_newer(VERSION, target) {
+        return;
+    }
+    let status = releases.ensure_version(target).and_then(|binary| {
+        Ok(std::process::Command::new(binary)
+            .args(["skill", "--refresh"])
+            .env(DELEGATED_ENV, "1")
+            .status()?)
+    });
+    if !status.is_ok_and(|status| status.success()) {
+        eprintln!("cannot update the skills - run imp skill --init again");
+    }
 }
 
 pub fn ensure_version(version: &str) -> Result<PathBuf> {

@@ -1850,7 +1850,7 @@ fn no_raw_timer(ctx: &Ctx, definitions: &Definitions) {
         let (replacement, behaviour) = if name == "setInterval" {
             (
                 "interval(self, ms, run)",
-                "it stops when the component unmounts, never overlaps a slow async run, and takes { whenVisible: true } for a poll",
+                "it stops when the component unmounts, never overlaps a slow async run, and takes a period per level, like { active: 15_000, idle: 60_000 }, for a poll",
             )
         } else {
             (

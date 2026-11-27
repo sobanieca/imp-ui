@@ -141,7 +141,8 @@ vocabulary for the options that it shares with a component, see `client-side-rou
   `imp/abort-check-after-await` lint rule counts such an `await` as a guard.
 - **`interval(self, ms, run)` repeats work for the length of a mount.** imp stops it when the mount
   ends, with the bindings. It skips a tick while an async `run` has not settled, so a slow poll does
-  not overlap itself, and it logs a failure instead of throwing it into a timer.
+  not overlap itself, and it logs a failure instead of throwing it into a timer. It can slow down or
+  pause while the user is idle or the tab is hidden, see `presence-paced-polling`.
 - **`delay(self, ms, run)` runs work once after a wait, inside a mount.** An unmount before the wait
   cancels it, with the bindings. A failure goes to the log, the same as for `interval`.
 - **`error(self, error, ...args)` is optional.** It makes the component an error boundary, for a

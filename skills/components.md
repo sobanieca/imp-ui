@@ -135,12 +135,27 @@ This is also how you force a remount.
 
 ## Timers, polling and background work
 
-Both come from `imp` and take the `self` of the component that owns the work:
+All three come from `imp` and take the `self` of the component that owns the work:
 
-| Call                                        | Runs                                      | Returns |
-| ------------------------------------------- | ----------------------------------------- | ------- |
-| `interval(self, ms, run, { whenVisible? })` | `run` every `ms`, until the mount ends    | `stop`  |
-| `delay(self, ms, run)`                      | `run` once after `ms`, unless it unmounts | `stop`  |
+| Call                                   | Does                                                 | Returns         |
+| -------------------------------------- | ---------------------------------------------------- | --------------- |
+| `interval(self, every, run, options?)` | runs `run` every `every` ms, until the mount ends    | `stop`          |
+| `delay(self, ms, run)`                 | runs `run` once after `ms`, unless it unmounts       | `stop`          |
+| `usePresence(self, { idleAfter? })`    | follows the user: `'active'`, `'idle'` or `'hidden'` | read-only state |
+
+`every` is a number of ms, or an object with a period in ms per presence level:
+
+| `every`                                              | Runs                                                            |
+| ---------------------------------------------------- | --------------------------------------------------------------- |
+| `15_000`                                             | every 15 s, always                                              |
+| `{ active: 15_000 }`                                 | every 15 s while active; no run while idle or hidden            |
+| `{ active: 15_000, idle: 120_000 }`                  | every 15 s while active, every 2 min while idle; hidden: no run |
+| `{ active: 15_000, idle: 120_000, hidden: 600_000 }` | a period at each level                                          |
+
+| Option      | Value                 | Means                                                                  |
+| ----------- | --------------------- | ---------------------------------------------------------------------- |
+| `idleAfter` | ms, default `300_000` | how long without input makes the user idle. Needs `every` as an object |
+| `when`      | a state               | runs only while the state is truthy                                    |
 
 ```js
 import { component, interval } from 'imp'
@@ -149,9 +164,9 @@ export const liveCheck = component('my-app-live-check', {
   setup: async (self, id) => {
     const api = useHttpClient(self, 'myapp.api')
     const check = initState(self, 'myapp.check', await api.get(`/checks/${id}`))
-    interval(self, 15_000, async () => check.set(await api.get(`/checks/${id}`)), {
-      whenVisible: true,
-    })
+    interval(self, { active: 15_000, idle: 120_000 }, async () =>
+      check.set(await api.get(`/checks/${id}`)),
+    )
     return checkView(check)
   },
 })
@@ -159,8 +174,12 @@ export const liveCheck = component('my-app-live-check', {
 
 - **The mount owns the timer.** It stops when the component unmounts. Write no `onRemove` for it,
   and keep no timer id on `self`.
-- **A poll takes `whenVisible: true`.** A hidden tab skips the ticks. When the tab shows again after
-  a skipped tick, `run` runs at once, so the data is current.
+- **A poll takes periods per level.** A level with no period does not run. `active` is required.
+  When the user comes back and the `active` period has passed, `run` runs at once.
+- **Do not set a short `idleAfter`.** People read a page without input. An idle user sees older data
+  until the next input. Keep the default of five minutes unless the data is costly.
+- **Gate a poll on the state of the app with `when`**, such as `when: session`. Do not return early
+  from `run` for that.
 - **An async `run` never overlaps itself.** imp skips a tick while the last run still waits, so a
   slow request does not queue polls. `run` can be `async`, and it should await its request.
 - **A throw does not stop it.** imp logs the error and the next tick runs. A call that the unmount
@@ -180,12 +199,11 @@ const watcher = component('my-app-watcher', {
     const session = useState(self, 'myapp.session')
     interval(
       self,
-      15_000,
+      { active: 15_000, idle: 300_000 },
       async () => {
-        if (!session.get()) return
         for (const item of await api.get('/news', { silent: true })) notify({ title: item.title })
       },
-      { whenVisible: true },
+      { when: session },
     )
     return null
   },
@@ -197,6 +215,33 @@ shell({ map: app }, toast(), watcher(), router({ map: app, screens }))
 Mount it under the component that initialized the states and the client it uses, so `useState`
 and `useHttpClient` find them. Never start a timer at module scope: nothing would stop it, and it
 could not reach a state.
+
+### usePresence
+
+`usePresence(self, { idleAfter })` returns a read-only [state](state.md) for work that is not a
+poll, such as a sign-out warning or a live connection:
+
+```js
+import { component, usePresence } from 'imp'
+
+const sessionGuard = component('my-app-session-guard', {
+  setup: (self) => {
+    const presence = usePresence(self, { idleAfter: 15 * 60_000 })
+    presence.watch(self, (level) => {
+      if (level === 'idle') openSignOutWarning()
+    })
+    return null
+  },
+})
+```
+
+- **`'hidden'`** - the tab is hidden. **`'idle'`** - the tab shows, with no input for `idleAfter`
+  ms. **`'active'`** - all other cases. `idleAfter` defaults to `300_000`.
+- **Input is a pointer, a key, a wheel or a touch on the page.** A tab that shows again counts as
+  input. A window that loses the focus is not idle at once. It counts down as usual.
+- **The state ends with the mount.** It has `get`, `watch`, `text` and `view`, and no `set`.
+- **Activity in one tab does not count for another tab.**
+- **For a poll, use the options of `interval`**, not a `watch` that starts and stops timers.
 
 ## Styles, errors, loading
 

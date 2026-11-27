@@ -19,7 +19,7 @@ Read one in full - no flags, the text goes to stdout:
 WRITING AN APP
   imports              every bare specifier imp resolves, and what each one exports
   rendering            element factories, props objects, children, and mount
-  components           custom elements with a setup lifecycle: styles, cleanup, and timers for polling and background work
+  components           custom elements with a setup lifecycle: styles, cleanup, timers for polling, and user presence
   custom-components    the theme, direction, wording and accessibility rules a component of yours must follow
   state                named reactive state shared down the tree and bound straight to the DOM
   http                 the configured HTTP client a component owns, with retries and request state

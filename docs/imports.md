@@ -8,7 +8,7 @@ The library is split by subject, so an import line shows which part of imp a fil
 
 | Specifier            | What it holds                                                                                                  | Page                                     |
 | -------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`, `interval`, `delay`                                     | [Components](components.md)              |
+| `imp`                | `component`, `mount`, `init`, `env`, `flag`, `appMap`, `interval`, `delay`, `usePresence`                      | [Components](components.md)              |
 | `imp/html`           | `el`, `html`, and one factory per HTML tag (`div`, `span`, `button`, ...)                                      | [Rendering](rendering.md)                |
 | `imp/state`          | `initState`, `useState`, `computed`                                                                            | [State](state.md)                        |
 | `imp/router`         | `router`, `area`, `redirect`, `wait`, `navigate`, `safeNext`, `beforeLeave`, `useRoute`, `url`, `screenRegion` | [Routing](routing.md)                    |

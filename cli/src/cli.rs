@@ -330,7 +330,10 @@ pub fn run(args: &[String]) -> Result<i32> {
         }
         "map" => crate::map::print_map(&cwd(), positional(rest).first().cloned())?,
         "skill" => {
-            if has(rest, "--init") {
+            // Not in the help: `imp update` runs the version it pins with it.
+            if rest == ["--refresh"] {
+                crate::skill_init::refresh_agent_skills()?;
+            } else if has(rest, "--init") {
                 if let Some(stray) = rest.iter().find(|arg| *arg != "--init") {
                     bail!("unknown argument '{stray}' - imp skill --init takes no other");
                 }

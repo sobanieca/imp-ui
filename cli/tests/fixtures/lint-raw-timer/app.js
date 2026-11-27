@@ -19,7 +19,7 @@ export const flaggedMethod = component('demo-flagged-method', {
 
 export const allowed = component('demo-allowed', {
   setup: (self) => {
-    interval(self, 15_000, async () => {}, { whenVisible: true })
+    interval(self, { active: 15_000, idle: 60_000 }, async () => {})
     delay(self, 3000, () => {})
     return div('hi')
   },
